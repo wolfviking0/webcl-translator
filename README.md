@@ -24,3 +24,9 @@ line 180 => var OPENCL_DEBUG = 0; // Print out debugging information from our Op
 Change : src/module.js
 line 400 => var libraries = ['library.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_opencl.js'].concat(additionalLibraries);
 
+Patch of Emscripten :
+---------------------
+
+You can launch index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
+
+

@@ -54,15 +54,15 @@ var LibraryOpenCL = {
 
       // If we read int and is float we have a very big value 1e8
       if (Math.abs(v_int) > 100000000) {
-#if OPENCL_DEBUG
-        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
-#endif     
+// #if OPENCL_DEBUG
+//        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
+// #endif     
         return 1;
       }
 
-#if OPENCL_DEBUG
-      console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
-#endif     
+// #if OPENCL_DEBUG
+//       console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
+// #endif     
 
       return 0;      
     },
