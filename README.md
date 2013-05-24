@@ -30,7 +30,10 @@ Launch Sample :
 You can launch index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
 
 1) hello_world OK
+
 2) hello_world_2 OK
+
 3) qjulia WORK IN PROGRESS 
+
 4) reduce WORK IN PROGRESS
 
