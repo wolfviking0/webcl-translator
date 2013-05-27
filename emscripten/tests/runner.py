@@ -4071,7 +4071,7 @@ def process(filename):
 
           int main( int argc, const char *argv[] ) {
             unsigned int x = 0xfffffff1;
-            x >>= 0; // force it to be unsigned for purpose of checking our switch comparison in signed/unsigned
+            x >>= (argc-1); // force it to be unsigned for purpose of checking our switch comparison in signed/unsigned
             printf("*%d,%d,%d,%d,%d,%d*\\n", switcher('a'), switcher('b'), switcher('c'), switcher(x), switcher(-15), switcher('e'));
             return 0;
           }
@@ -8680,6 +8680,28 @@ def process(filename):
 
         Settings.ALIASING_FUNCTION_POINTERS = 1 - Settings.ALIASING_FUNCTION_POINTERS # flip the test
         self.do_run(src, '''Hello 7 from JS!''')
+
+    def test_embind(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+      Building.COMPILER_TEST_OPTS += ['--bind']
+
+      src = r'''
+        #include<stdio.h>
+        #include<emscripten/val.h>
+
+        using namespace emscripten;
+
+        int main() {
+          val Math = val::global("Math");
+
+          // two ways to call Math.abs
+          printf("abs(-10): %d\n", Math.call<int>("abs", -10));
+          printf("abs(-11): %d\n", Math["abs"](-11).as<int>());
+
+          return 0;
+        }
+      '''
+      self.do_run(src, 'abs(-10): 10\nabs(-11): 11');
 
     def test_scriptaclass(self):
         if self.emcc_args is None: return self.skip('requires emcc')

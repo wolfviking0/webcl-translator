@@ -110,7 +110,7 @@ while response_file:
       sys.argv[index:index+1] = extra_args
       break
 
-if len(sys.argv) == 1 or sys.argv[1] == '--help':
+if len(sys.argv) == 1 or '--help' in sys.argv:
   this = os.path.basename('em++' if os.environ.get('EMMAKEN_CXX') else 'emcc')
 
   print '''%s [options] file...
@@ -601,7 +601,7 @@ if EMMAKEN_CFLAGS: CC_ADDITIONAL_ARGS += shlex.split(EMMAKEN_CFLAGS)
 
 # ---------------- Utilities ---------------
 
-SOURCE_SUFFIXES = ('.c', '.cpp', '.cxx', '.cc')
+SOURCE_SUFFIXES = ('.c', '.cpp', '.cxx', '.cc', '.m', '.mm')
 BITCODE_SUFFIXES = ('.bc', '.o', '.obj')
 DYNAMICLIB_SUFFIXES = ('.dylib', '.so', '.dll')
 STATICLIB_SUFFIXES = ('.a',)
@@ -629,7 +629,7 @@ header = False # pre-compiled headers. We fake that by just copying the file
 for i in range(1, len(sys.argv)):
   arg = sys.argv[i]
   if not arg.startswith('-'):
-    if arg.endswith('.c'):
+    if arg.endswith(('.c','.m')):
       use_cxx = False
     if arg.endswith('.h') and sys.argv[i-1] != '-include':
       header = True
@@ -1002,8 +1002,7 @@ try:
     assert opt_level >= 1, 'asm.js requires -O1 or above'
 
     if bind:
-      shared.Settings.ASM_JS = 0
-      logging.warning('disabling asm.js because it is not compatible with embind yet')
+      shared.Settings.RESERVED_FUNCTION_POINTERS = max(shared.Settings.RESERVED_FUNCTION_POINTERS, 10)
     if shared.Settings.CORRECT_SIGNS != 1:
       logging.warning('setting CORRECT_SIGNS to 1 for asm.js code generation')
       shared.Settings.CORRECT_SIGNS = 1

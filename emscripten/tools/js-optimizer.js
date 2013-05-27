@@ -1505,7 +1505,7 @@ function registerize(ast) {
     // Replace all var definitions with assignments; we will add var definitions at the top after we registerize
     // We also mark local variables - i.e., having a var definition
     var localVars = {};
-    var hasSwitch = false; // we cannot optimize variables if there is a switch
+    var hasSwitch = false; // we cannot optimize variables if there is a switch, unless in asm mode
     traverse(fun, function(node, type) {
       if (type == 'var') {
         node[1].forEach(function(defined) { localVars[defined[0]] = 1 });
@@ -1596,7 +1596,15 @@ function registerize(ast) {
     var varLevels = {};
     var possibles = {};
     var unoptimizables = {};
-    traverse(fun, function(node, type) {
+    function purgeLevel() {
+      // Invalidate all dominating on this level, further users make it unoptimizable
+      for (var name in levelDominations[level]) {
+        varLevels[name] = 0;
+      }
+      levelDominations[level] = null;
+      level--;
+    }
+    traverse(fun, function possibilifier(node, type) {
       if (type == 'name') {
         var name = node[1];
         if (localVars[name]) {
@@ -1617,24 +1625,61 @@ function registerize(ast) {
           }
         }
       } else if (type in CONTROL_FLOW) {
-        level++;
-      }
-    }, function(node, type) {
-      if (type in CONTROL_FLOW) {
-        // Invalidate all dominating on this level, further users make it unoptimizable
-        for (var name in levelDominations[level]) {
-          varLevels[name] = 0;
+        // recurse children, in the context of a loop
+        switch(type) {
+          case 'while': case 'do': {
+            traverse(node[1], possibilifier);
+            level++;
+            traverse(node[2], possibilifier);
+            purgeLevel();
+            break;
+          }
+          case 'for': {
+            traverse(node[1], possibilifier);
+            for (var i = 2; i <= 4; i++) {
+              level++;
+              traverse(node[i], possibilifier);
+              purgeLevel();
+            }
+            break;
+          }
+          case 'if': {
+            traverse(node[1], possibilifier);
+            level++;
+            traverse(node[2], possibilifier);
+            purgeLevel();
+            if (node[3]) {
+              level++;
+              traverse(node[3], possibilifier);
+              purgeLevel();
+            }
+            break;
+          }
+          case 'switch': {
+            traverse(node[1], possibilifier);
+            var cases = node[2];
+            for (var i = 0; i < cases.length; i++) {
+              level++;
+              traverse(cases[i][1], possibilifier);
+              purgeLevel();
+            }
+            break;
+          }
+          default: throw dumpAst(node);
         }
-        levelDominations[level] = null;
-        level--;
+        return null; // prevent recursion into children, which we already did
       }
     });
     var optimizables = {};
-    if (!hasSwitch) {
+    if (!hasSwitch || asm) {
       for (var possible in possibles) {
         if (!unoptimizables[possible]) optimizables[possible] = 1;
       }
     }
+
+    //printErr('optimizables: ' + JSON.stringify(optimizables));
+    //printErr('unoptimizables: ' + JSON.stringify(unoptimizables));
+
     // Go through the function's code, assigning 'registers'.
     // The only tricky bit is to keep variables locked on a register through loops,
     // since they can potentially be returned to. Optimizable variables lock onto
@@ -1794,10 +1839,10 @@ function registerize(ast) {
 // In memSafe mode, we are more careful and assume functions can replace HEAP and FUNCTION_TABLE, which
 // can happen in ALLOW_MEMORY_GROWTH mode
 
-var ELIMINATION_SAFE_NODES = set('var', 'assign', 'call', 'if', 'toplevel', 'do', 'return', 'label'); // do is checked carefully, however
+var ELIMINATION_SAFE_NODES = set('var', 'assign', 'call', 'if', 'toplevel', 'do', 'return', 'label', 'switch'); // do is checked carefully, however
 var NODES_WITHOUT_ELIMINATION_SIDE_EFFECTS = set('name', 'num', 'string', 'binary', 'sub', 'unary-prefix');
 var IGNORABLE_ELIMINATOR_SCAN_NODES = set('num', 'toplevel', 'string', 'break', 'continue', 'dot'); // dot can only be STRING_TABLE.*
-var ABORTING_ELIMINATOR_SCAN_NODES = set('new', 'object', 'function', 'defun', 'switch', 'for', 'while', 'array', 'throw'); // we could handle some of these, TODO, but nontrivial (e.g. for while, the condition is hit multiple times after the body)
+var ABORTING_ELIMINATOR_SCAN_NODES = set('new', 'object', 'function', 'defun', 'for', 'while', 'array', 'throw'); // we could handle some of these, TODO, but nontrivial (e.g. for while, the condition is hit multiple times after the body)
 
 function eliminate(ast, memSafe) {
   // Find variables that have a single use, and if they can be eliminated, do so
@@ -1859,12 +1904,7 @@ function eliminate(ast, memSafe) {
     });
 
     // we cannot eliminate variables if there is a switch
-    if (traverse(func, function(node, type) {
-      if (type == 'switch') return true;
-    })) {
-      if (asm) denormalizeAsm(func, asmData);
-      return;
-    }
+    if (hasSwitch && !asm) return;
 
     var potentials = {}; // local variables with 1 definition and 1 use
     var sideEffectFree = {}; // whether a local variable has no side effects in its definition
@@ -2171,10 +2211,18 @@ function eliminate(ast, memSafe) {
               invalidateCalls();
               callsInvalidated = true;
             }
+
             allowTracking = false;
+
+            var lastAbort = abort; // do not let an abort in 2 cause 3 to be skipped
             traverseInOrder(node[2]); // 2 and 3 could be 'parallel', really..
+            var midAbort = abort;
+            abort = lastAbort;
             if (node[3]) traverseInOrder(node[3]);
+            abort = midAbort || lastAbort;
+
             allowTracking = true;
+
           } else {
             tracked = {};
             abort = true;
@@ -2206,6 +2254,22 @@ function eliminate(ast, memSafe) {
           traverseInOrder(node[1]);
           traverseInOrder(node[2]);
           traverseInOrder(node[3]);
+        } else if (type == 'switch') {
+          traverseInOrder(node[1]);
+          var cases = node[2];
+          var lastAbort = abort;
+          var finalAbort = abort;
+          for (var i = 0; i < cases.length; i++) {
+            var c = cases[i];
+            assert(c[0] === null || c[0][0] == 'num' || (c[0][0] == 'unary-prefix' && c[0][2][0] == 'num'));
+            var stats = c[1];
+            abort = lastAbort;
+            for (var j = 0; j < stats.length; j++) {
+              traverseInOrder(stats[j]);
+            }
+            finalAbort = finalAbort || abort;
+          }
+          abort = finalAbort;
         } else {
           if (!(type in ABORTING_ELIMINATOR_SCAN_NODES)) {
             printErr('unfamiliar eliminator scan node: ' + JSON.stringify(node));
@@ -2252,7 +2316,8 @@ function eliminate(ast, memSafe) {
       }
     }
     traverse(func, function(block) {
-      var stats = getStatements(block);
+      // Look for statements, including while-switch pattern
+      var stats = getStatements(block) || (block[0] == 'while' && block[2][0] == 'switch' ? [block[2]] : stats);
       if (!stats) return;
       tracked = {};
       //printErr('new StatBlock');
