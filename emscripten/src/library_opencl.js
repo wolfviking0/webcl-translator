@@ -1397,7 +1397,7 @@ var LibraryOpenCL = {
     var queue = command_queue - 1;
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
-      console.error("clEnqueueNDRangeKernel: Invalid command queue : "+queue);
+      console.error("clEnqueueUnmapMemObject: Invalid command queue : "+queue);
 #endif
 
       return -36; /* CL_INVALID_COMMAND_QUEUE */
@@ -1464,6 +1464,9 @@ var LibraryOpenCL = {
     console.info("Global [ "+ global +" ]")
     console.info("Local [ "+ local +" ]")
 #endif
+  
+    // empty “localWS” array because give some trouble on CPU mode with mac
+    value_local_work_size = [];  
 
     try {
 

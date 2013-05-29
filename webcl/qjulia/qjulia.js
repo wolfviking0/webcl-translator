@@ -2,6 +2,7 @@
 // Note: Some Emscripten settings may limit the speed of the generated code.
 try {
   this['Module'] = Module;
+  Module.test;
 } catch(e) {
   this['Module'] = Module = {};
 }
@@ -6950,6 +6951,8 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
+      // empty “localWS” array because give some trouble on CPU mode with mac
+      value_local_work_size = [];  
       try {
         // \todo how add some event inside the array
         CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
