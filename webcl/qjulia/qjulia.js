@@ -869,8 +869,8 @@ function loadMemoryInitializer(filename) {
 }
 // === Body ===
 STATIC_BASE = 8;
-STATICTOP = STATIC_BASE + 2392;
-/* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,107,101,114,110,101,108,32,115,111,117,114,99,101,33,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,113,117,101,117,101,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,0,0,83,104,117,116,116,105,110,103,32,100,111,119,110,46,46,46,0,0,0,0,0,0,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,0,0,83,116,97,114,116,105,110,103,32,101,118,101,110,116,32,108,111,111,112,46,46,46,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,97,114,114,97,121,33,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,104,111,115,116,32,105,109,97,103,101,32,98,117,102,102,101,114,33,0,0,0,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,105,109,97,103,101,32,105,110,32,104,111,115,116,32,109,101,109,111,114,121,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,32,37,100,32,102,114,111,109,32,82,101,99,111,109,112,117,116,101,33,10,0,0,0,0,0,0,0,103,112,117,0,0,0,0,0,67,114,101,97,116,105,110,103,32,84,101,120,116,117,114,101,32,37,100,32,120,32,37,100,46,46,46,10,0,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,102,114,111,109,32,102,105,108,101,32,37,115,10,0,0,0,0,0,99,112,117,0,0,0,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,115,116,97,116,117,115,32,102,111,114,32,102,105,108,101,32,37,115,10,0,0,0,0,0,0,0,69,114,114,111,114,32,111,112,101,110,105,110,103,32,102,105,108,101,32,37,115,10,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,81,74,117,108,105,97,75,101,114,110,101,108,0,0,0,0,67,114,101,97,116,105,110,103,32,107,101,114,110,101,108,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,10,37,115,32,40,37,100,41,10,37,115,32,40,37,100,41,10,37,115,0,0,0,0,0,69,112,115,105,108,111,110,32,61,32,37,102,10,0,0,0,35,100,101,102,105,110,101,32,72,69,73,71,72,84,0,0,35,100,101,102,105,110,101,32,87,73,68,84,72,0,0,0,113,106,117,108,105,97,95,107,101,114,110,101,108,46,99,108,0,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,107,101,114,110,101,108,32,115,111,117,114,99,101,32,102,114,111,109,32,102,105,108,101,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,0,102,97,108,115,101,0,0,0,81,106,117,108,105,97,32,114,101,113,117,105,114,101,115,32,105,109,97,103,101,115,58,32,73,109,97,103,101,115,32,110,111,116,32,115,117,112,112,111,114,116,101,100,32,111,110,32,116,104,105,115,32,100,101,118,105,99,101,46,0,0,0,0,85,110,97,98,108,101,32,116,111,32,113,117,101,114,121,32,100,101,118,105,99,101,32,102,111,114,32,105,109,97,103,101,32,115,117,112,112,111,114,116,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,110,110,101,99,116,32,116,111,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,32,69,114,114,111,114,32,37,100,10,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,117,102,102,101,114,33,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,107,101,114,110,101,108,33,32,37,100,10,0,0,0,99,111,112,121,105,110,103,0,67,80,85,0,0,0,0,0,71,80,85,0,0,0,0,0,91,37,115,93,32,67,111,109,112,117,116,101,58,32,37,51,46,50,102,32,109,115,32,32,68,105,115,112,108,97,121,58,32,37,51,46,50,102,32,102,112,115,32,40,37,115,41,10,0,0,0,0,0,0,0,0,116,114,117,101,0,0,0,0,65,110,105,109,97,116,101,100,32,61,32,37,115,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,86,142,190,125,63,245,190,68,139,108,190,215,163,112,62,4,86,142,62,125,63,245,62,0,0,0,0,0,0,0,0,4,86,142,190,125,63,245,190,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,166,155,68,59,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
+STATICTOP = STATIC_BASE + 2368;
+/* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,107,101,114,110,101,108,32,115,111,117,114,99,101,33,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,113,117,101,117,101,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,0,0,83,104,117,116,116,105,110,103,32,100,111,119,110,46,46,46,0,0,0,0,0,0,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,0,0,10,0,0,0,0,0,0,0,83,116,97,114,116,105,110,103,32,101,118,101,110,116,32,108,111,111,112,46,46,46,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,97,114,114,97,121,33,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,104,111,115,116,32,105,109,97,103,101,32,98,117,102,102,101,114,33,0,0,0,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,105,109,97,103,101,32,105,110,32,104,111,115,116,32,109,101,109,111,114,121,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,69,114,114,111,114,32,37,100,32,102,114,111,109,32,82,101,99,111,109,112,117,116,101,33,10,0,0,0,0,0,0,0,103,112,117,0,0,0,0,0,67,114,101,97,116,105,110,103,32,84,101,120,116,117,114,101,32,37,100,32,120,32,37,100,46,46,46,10,0,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,99,112,117,0,0,0,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,102,114,111,109,32,102,105,108,101,32,37,115,10,0,0,0,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,115,116,97,116,117,115,32,102,111,114,32,102,105,108,101,32,37,115,10,0,0,0,0,0,0,0,69,114,114,111,114,32,111,112,101,110,105,110,103,32,102,105,108,101,32,37,115,10,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,81,74,117,108,105,97,75,101,114,110,101,108,0,0,0,0,67,114,101,97,116,105,110,103,32,107,101,114,110,101,108,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,112,115,105,108,111,110,32,61,32,37,102,10,0,0,0,10,37,115,32,40,37,100,41,10,37,115,32,40,37,100,41,10,37,115,0,0,0,0,0,35,100,101,102,105,110,101,32,72,69,73,71,72,84,0,0,35,100,101,102,105,110,101,32,87,73,68,84,72,0,0,0,113,106,117,108,105,97,95,107,101,114,110,101,108,46,99,108,0,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,107,101,114,110,101,108,32,115,111,117,114,99,101,32,102,114,111,109,32,102,105,108,101,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,102,97,108,115,101,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,0,81,106,117,108,105,97,32,114,101,113,117,105,114,101,115,32,105,109,97,103,101,115,58,32,73,109,97,103,101,115,32,110,111,116,32,115,117,112,112,111,114,116,101,100,32,111,110,32,116,104,105,115,32,100,101,118,105,99,101,46,0,0,0,0,85,110,97,98,108,101,32,116,111,32,113,117,101,114,121,32,100,101,118,105,99,101,32,102,111,114,32,105,109,97,103,101,32,115,117,112,112,111,114,116,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,110,110,101,99,116,32,116,111,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,32,69,114,114,111,114,32,37,100,10,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,117,102,102,101,114,33,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,107,101,114,110,101,108,33,32,37,100,10,0,0,0,82,32,58,32,37,100,32,47,32,71,32,58,32,37,100,32,47,32,66,32,58,32,37,100,32,47,32,65,32,58,32,37,100,10,0,0,0,0,0,0,116,114,117,101,0,0,0,0,65,110,105,109,97,116,101,100,32,61,32,37,115,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,86,142,190,125,63,245,190,68,139,108,190,215,163,112,62,4,86,142,62,125,63,245,62,0,0,0,0,0,0,0,0,4,86,142,190,125,63,245,190,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,166,155,68,59,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,128,62,102,102,230,62,0,0,128,63,0,0,128,63,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
 function runPostSets() {
 }
 if (!awaitingMemoryInitializer) runPostSets();
@@ -2502,42 +2502,26 @@ function copyTempDouble(ptr) {
       _glutPostRedisplay();
       throw 'SimulateInfiniteLoop';
     }
-  var CL={ctx:[],ctx_clean:0,cmdQueue:[],enqueueFloat:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
-  // #if OPENCL_DEBUG
-  //       console.info("isFloat() check pointer : ");
-  // #endif  
+  var CL={ctx:[],ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],sig:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
+        console.error("But may be the kernel source is not yet parse !!! \n");
         var v_int = HEAP32[((ptr)>>2)]; 
         var v_float = HEAPF32[((ptr)>>2)]; 
         // If the value is 0
         if ( v_int == 0 ) {
-  // #if OPENCL_DEBUG
-  //         console.info("\tisFloat() value is null check is array");
-  // #endif  
           // If is an array
           if (size > 1) {
             v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)]; 
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is array, check the last element");
-  // #endif          
-          } else {
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is not array, use float by default");
-  // #endif     
+            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
+          } else { 
             // Use float by default 
             return 1;
           }                
         }
         // If we read int and is float we have a very big value 1e8
         if (Math.abs(v_int) > 100000000) {
-  // #if OPENCL_DEBUG
-  //        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
-  // #endif     
           return 1;
         }
-  // #if OPENCL_DEBUG
-  //       console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
-  // #endif     
         return 0;      
       },catchError:function (name,e) {
         var str=""+e;
@@ -2854,7 +2838,7 @@ function copyTempDouble(ptr) {
       }
     }
   function _glGetIntegerv(name_, p) {
-      switch(name_) { // Handle a few trivial GLES values 
+      switch(name_) { // Handle a few trivial GLES values
         case 0x8DFA: // GL_SHADER_COMPILER
           HEAP32[((p)>>2)]=1;
           return;
@@ -2982,7 +2966,7 @@ function copyTempDouble(ptr) {
     }
   function _glGenTextures(n, textures) {
       for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GL.textures); 
+        var id = GL.getNewId(GL.textures);
         GL.textures[id] = Module.ctx.createTexture();
         HEAP32[(((textures)+(i*4))>>2)]=id;
       }
@@ -3148,7 +3132,7 @@ function copyTempDouble(ptr) {
       var ptable = GL.uniformTable[program];
       if (!ptable) ptable = GL.uniformTable[program] = {};
       var id = ptable[name];
-      if (id) return id; 
+      if (id) return id;
       var loc = Module.ctx.getUniformLocation(GL.programs[program], name);
       if (!loc) return -1;
       id = GL.getNewId(GL.uniforms);
@@ -3346,12 +3330,13 @@ function copyTempDouble(ptr) {
       Module.ctx.uniformMatrix4fv(location, transpose, view);
     }
   function _glBindBuffer(target, buffer) {
+      var bufferObj = buffer ? GL.buffers[buffer] : null;
       if (target == Module.ctx.ARRAY_BUFFER) {
         GL.currArrayBuffer = buffer;
       } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
         GL.currElementArrayBuffer = buffer;
       }
-      Module.ctx.bindBuffer(target, buffer ? GL.buffers[buffer] : null);
+      Module.ctx.bindBuffer(target, bufferObj);
     }
   function _glVertexAttrib1fv(index, v) {
       v = HEAPF32.subarray((v)>>2,(v+4)>>2);
@@ -3598,6 +3583,14 @@ function copyTempDouble(ptr) {
       HEAP32[((p)>>2)]=attribute ? attribute.pointer : 0;
     }
   function _glBegin(mode) {
+      // Push the old state:
+      GL.immediate.enabledClientAttributes_preBegin = GL.immediate.enabledClientAttributes;
+      GL.immediate.enabledClientAttributes = [];
+      GL.immediate.clientAttributes_preBegin = GL.immediate.clientAttributes;
+      GL.immediate.clientAttributes = []
+      for (var i = 0; i < GL.immediate.clientAttributes_preBegin.length; i++) {
+        GL.immediate.clientAttributes.push({});
+      }
       GL.immediate.mode = mode;
       GL.immediate.vertexCounter = 0;
       var components = GL.immediate.rendererComponents = [];
@@ -3614,6 +3607,10 @@ function copyTempDouble(ptr) {
       GL.immediate.flush();
       GL.immediate.disableBeginEndClientAttributes();
       GL.immediate.mode = -1;
+      // Pop the old state:
+      GL.immediate.enabledClientAttributes = GL.immediate.enabledClientAttributes_preBegin;
+      GL.immediate.clientAttributes = GL.immediate.clientAttributes_preBegin;
+      GL.immediate.modifiedClientAttributes = true;
     }
   function _glVertex3f(x, y, z) {
       GL.immediate.vertexData[GL.immediate.vertexCounter++] = x;
@@ -3791,7 +3788,7 @@ function copyTempDouble(ptr) {
     }
   var GLEMulation=undefined;function _glGenVertexArrays(n, vaos) {
       for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GLEmulation.vaos); 
+        var id = GL.getNewId(GLEmulation.vaos);
         GLEmulation.vaos[id] = {
           id: id,
           arrayBuffer: 0,
@@ -4062,7 +4059,15 @@ function copyTempDouble(ptr) {
   function _glVertexAttrib4f(x0, x1, x2, x3, x4) { Module.ctx.vertexAttrib4f(x0, x1, x2, x3, x4) }
   function _glCopyTexImage2D(x0, x1, x2, x3, x4, x5, x6, x7) { Module.ctx.copyTexImage2D(x0, x1, x2, x3, x4, x5, x6, x7) }
   function _glCopyTexSubImage2D(x0, x1, x2, x3, x4, x5, x6, x7) { Module.ctx.copyTexSubImage2D(x0, x1, x2, x3, x4, x5, x6, x7) }
-  var GLEmulation={fogStart:0,fogEnd:1,fogDensity:1,fogColor:null,fogMode:2048,fogEnabled:false,vaos:[],currentVao:null,enabledVertexAttribArrays:{},init:function () {
+  var GLEmulation={fogStart:0,fogEnd:1,fogDensity:1,fogColor:null,fogMode:2048,fogEnabled:false,vaos:[],currentVao:null,enabledVertexAttribArrays:{},hasRunInit:false,init:function () {
+        // Do not activate immediate/emulation code (e.g. replace glDrawElements) when in FULL_ES2 mode.
+        // We do not need full emulation, we instead emulate client-side arrays etc. in FULL_ES2 code in
+        // a straightforward manner, and avoid not having a bound buffer be ambiguous between es2 emulation
+        // code and legacy gl emulation code.
+        if (GLEmulation.hasRunInit) {
+          return;
+        }
+        GLEmulation.hasRunInit = true;
         GLEmulation.fogColor = new Float32Array(4);
         // Add some emulation workarounds
         Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work');
@@ -4078,6 +4083,7 @@ function copyTempDouble(ptr) {
           0x809E: 1, // GL_SAMPLE_ALPHA_TO_COVERAGE
           0x80A0: 1  // GL_SAMPLE_COVERAGE
         };
+        var glEnable = _glEnable;
         _glEnable = function(cap) {
           // Clean up the renderer on any change to the rendering state. The optimization of
           // skipping renderer setup is aimed at the case of multiple glDraw* right after each other
@@ -4088,13 +4094,17 @@ function copyTempDouble(ptr) {
           } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
             // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
             // it by forwarding to glEnableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
             _glEnableClientState(cap);
+            */
             return;
           } else if (!(cap in validCapabilities)) {
             return;
           }
-          Module.ctx.enable(cap);
+          glEnable(cap);
         };
+        var glDisable = _glDisable;
         _glDisable = function(cap) {
           if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
           if (cap == 0x0B60 /* GL_FOG */) {
@@ -4103,12 +4113,15 @@ function copyTempDouble(ptr) {
           } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
             // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
             // it by forwarding to glDisableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
             _glDisableClientState(cap);
+            */
             return;
           } else if (!(cap in validCapabilities)) {
             return;
           }
-          Module.ctx.disable(cap);
+          glDisable(cap);
         };
         _glIsEnabled = function(cap) {
           if (cap == 0x0B60 /* GL_FOG */) {
@@ -4278,9 +4291,7 @@ function copyTempDouble(ptr) {
             }
             if (source.indexOf('gl_Color') >= 0) {
               source = 'attribute vec4 a_color; \n' +
-                       'uniform vec4 u_color; \n' +
-                       'uniform int u_hasColorAttrib; \n' +
-                       source.replace(/gl_Color/g, '(u_hasColorAttrib > 0 ? a_color : u_color)');
+                       source.replace(/gl_Color/g, 'a_color');
             }
             if (source.indexOf('gl_Normal') >= 0) {
               source = 'attribute vec3 a_normal; \n' +
@@ -4440,8 +4451,9 @@ function copyTempDouble(ptr) {
       },getAttributeFromCapability:function (cap) {
         var attrib = null;
         switch (cap) {
-          case 0x8078: // GL_TEXTURE_COORD_ARRAY
           case 0x0de1: // GL_TEXTURE_2D - XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support it
+            // Fall through:
+          case 0x8078: // GL_TEXTURE_COORD_ARRAY
             attrib = GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture; break;
           case 0x8074: // GL_VERTEX_ARRAY
             attrib = GL.immediate.VERTEX; break;
@@ -4499,19 +4511,19 @@ function copyTempDouble(ptr) {
           case 'glEnableVertexAttribArray': ret = 34; break;
           case 'glDisableVertexAttribArray': ret = 12; break;
           case 'glVertexAttribPointer': ret = 2; break;
-  	case 'glVertexAttrib1f': ret = 68; break;
-  	case 'glVertexAttrib2f': ret = 54; break;
-  	case 'glVertexAttrib3f': ret = 16; break;
-  	case 'glVertexAttrib4f': ret = 2; break;
-  	case 'glVertexAttrib1fv': ret = 54; break;
-  	case 'glVertexAttrib2fv': ret = 20; break;
-  	case 'glVertexAttrib3fv': ret = 52; break;
-  	case 'glVertexAttrib4fv': ret = 56; break;
-  	case 'glGetVertexAttribfv': ret = 12; break;
-  	case 'glGetVertexAttribiv': ret = 14; break;
-  	case 'glGetVertexAttribPointerv': ret = 48; break;
-  	case 'glGetAttribLocation': ret = 10; break;
-  	case 'glGetActiveAttrib': ret = 4; break;
+          case 'glVertexAttrib1f': ret = 68; break;
+          case 'glVertexAttrib2f': ret = 54; break;
+          case 'glVertexAttrib3f': ret = 16; break;
+          case 'glVertexAttrib4f': ret = 2; break;
+          case 'glVertexAttrib1fv': ret = 54; break;
+          case 'glVertexAttrib2fv': ret = 20; break;
+          case 'glVertexAttrib3fv': ret = 52; break;
+          case 'glVertexAttrib4fv': ret = 56; break;
+          case 'glGetVertexAttribfv': ret = 12; break;
+          case 'glGetVertexAttribiv': ret = 14; break;
+          case 'glGetVertexAttribPointerv': ret = 48; break;
+          case 'glGetAttribLocation': ret = 10; break;
+          case 'glGetActiveAttrib': ret = 4; break;
           case 'glBindRenderbuffer': ret = 22; break;
           case 'glDeleteRenderbuffers': ret = 62; break;
           case 'glGenRenderbuffers': ret = 4; break;
@@ -4530,90 +4542,843 @@ function copyTempDouble(ptr) {
           case 'glDeleteVertexArrays': ret = 24; break;
           case 'glBindVertexArray': ret = 36; break;
           case 'glGetString': ret = 10; break;
-  	case 'glBindTexture': ret = 46; break;
-  	case 'glGetBufferParameteriv': ret = 28; break;
-  	case 'glIsBuffer': ret = 4; break;
-  	case 'glDeleteShader': ret = 40; break;
+          case 'glBindTexture': ret = 46; break;
+          case 'glGetBufferParameteriv': ret = 28; break;
+          case 'glIsBuffer': ret = 4; break;
+          case 'glDeleteShader': ret = 40; break;
           case 'glUniformMatrix2fv': ret = 4; break;
           case 'glUniformMatrix3fv': ret = 2; break;
           case 'glUniformMatrix4fv': ret = 6; break;
-  	case 'glIsRenderbuffer': ret = 16; break;
-  	case 'glBlendEquation': ret = 10; break;
-  	case 'glBlendFunc': ret = 8; break;
-  	case 'glBlendFuncSeparate': ret = 34; break;
-  	case 'glBlendEquationSeparate': ret = 70; break;
-  	case 'glDepthRangef': ret = 64; break;
-  	case 'glClear': ret = 44; break;
-  	case 'glGenerateMipmap': ret = 16; break;
-  	case 'glBlendColor': ret = 48; break;
-  	case 'glClearDepthf': ret = 26; break;
-  	case 'glDeleteProgram': ret = 8; break;
-  	case 'glUniformMatrix3fv': ret = 2; break;
-  	case 'glClearColor': ret = 36; break;
-  	case 'glGetRenderbufferParameteriv': ret = 40; break;
-  	case 'glGetShaderInfoLog': ret = 8; break;
-  	case 'glUniformMatrix4fv': ret = 6; break;
-  	case 'glClearStencil': ret = 4; break;
-  	case 'glGetProgramInfoLog': ret = 20; break;
-  	case 'glGetUniformfv': ret = 30; break;
-  	case 'glStencilFuncSeparate': ret = 50; break;
-  	case 'glSampleCoverage': ret = 38; break;
-  	case 'glColorMask': ret = 46; break;
-  	case 'glGetShaderiv': ret = 50; break;
-  	case 'glGetUniformiv': ret = 44; break;
-  	case 'glCopyTexSubImage2D': ret = 6; break;
-  	case 'glDetachShader': ret = 38; break;
-  	case 'glGetShaderSource': ret = 38; break;
-  	case 'glDeleteTextures': ret = 26; break;
-  	case 'glGetAttachedShaders': ret = 44; break;
-  	case 'glValidateProgram': ret = 14; break;
-  	case 'glDepthFunc': ret = 20; break;
-  	case 'glIsShader': ret = 6; break;
-  	case 'glDepthMask': ret = 18; break;
-  	case 'glStencilMaskSeparate': ret = 32; break;
-  	case 'glIsProgram': ret = 12; break;
-  	case 'glDisable': ret = 50; break;
-  	case 'glStencilOpSeparate': ret = 28; break;
-  	case 'glDrawArrays': ret = 38; break;
-  	case 'glDrawElements': ret = 22; break;
-  	case 'glEnable': ret = 46; break;
-  	case 'glFinish': ret = 12; break;
-  	case 'glFlush': ret = 14; break;
-  	case 'glFrontFace': ret = 30; break;
-  	case 'glCullFace': ret = 24; break;
-  	case 'glGenTextures': ret = 28; break;
-  	case 'glGetError': ret = 4; break;
-  	case 'glGetIntegerv': ret = 30; break;
-  	case 'glGetBooleanv': ret = 16; break;
-  	case 'glGetFloatv': ret = 48; break;
-  	case 'glHint': ret = 18; break;
-  	case 'glIsTexture': ret = 8; break;
-  	case 'glPixelStorei': ret = 66; break;
-  	case 'glReadPixels': ret = 2; break;
-  	case 'glScissor': ret = 42; break;
-  	case 'glStencilFunc': ret = 2; break;
-  	case 'glStencilMask': ret = 52; break;
-  	case 'glStencilOp': ret = 10; break;
-  	case 'glTexImage2D': ret = 2; break;
-  	case 'glTexParameterf': ret = 62; break;
-  	case 'glTexParameterfv': ret = 16; break;
-  	case 'glTexParameteri': ret = 60; break;
-  	case 'glTexParameteriv': ret = 4; break;
-  	case 'glGetTexParameterfv': ret = 26; break;
-  	case 'glGetTexParameteriv': ret = 36; break;
-  	case 'glTexSubImage2D': ret = 6; break;
-  	case 'glCopyTexImage2D': ret = 4; break;
-  	case 'glViewport': ret = 26; break;
-  	case 'glIsEnabled': ret = 18; break;
-  	case 'glLineWidth': ret = 6; break;
-  	case 'glPolygonOffset': ret = 12; break;
-  	case 'glReleaseShaderCompiler': ret = 16; break;
-  	case 'glGetShaderPrecisionFormat': ret = 4; break;
-  	case 'glShaderBinary': ret = 2; break;
+          case 'glIsRenderbuffer': ret = 16; break;
+          case 'glBlendEquation': ret = 10; break;
+          case 'glBlendFunc': ret = 8; break;
+          case 'glBlendFuncSeparate': ret = 34; break;
+          case 'glBlendEquationSeparate': ret = 70; break;
+          case 'glDepthRangef': ret = 64; break;
+          case 'glClear': ret = 44; break;
+          case 'glGenerateMipmap': ret = 16; break;
+          case 'glBlendColor': ret = 48; break;
+          case 'glClearDepthf': ret = 26; break;
+          case 'glDeleteProgram': ret = 8; break;
+          case 'glUniformMatrix3fv': ret = 2; break;
+          case 'glClearColor': ret = 36; break;
+          case 'glGetRenderbufferParameteriv': ret = 40; break;
+          case 'glGetShaderInfoLog': ret = 8; break;
+          case 'glUniformMatrix4fv': ret = 6; break;
+          case 'glClearStencil': ret = 4; break;
+          case 'glGetProgramInfoLog': ret = 20; break;
+          case 'glGetUniformfv': ret = 30; break;
+          case 'glStencilFuncSeparate': ret = 50; break;
+          case 'glSampleCoverage': ret = 38; break;
+          case 'glColorMask': ret = 46; break;
+          case 'glGetShaderiv': ret = 50; break;
+          case 'glGetUniformiv': ret = 44; break;
+          case 'glCopyTexSubImage2D': ret = 6; break;
+          case 'glDetachShader': ret = 38; break;
+          case 'glGetShaderSource': ret = 38; break;
+          case 'glDeleteTextures': ret = 26; break;
+          case 'glGetAttachedShaders': ret = 44; break;
+          case 'glValidateProgram': ret = 14; break;
+          case 'glDepthFunc': ret = 20; break;
+          case 'glIsShader': ret = 6; break;
+          case 'glDepthMask': ret = 18; break;
+          case 'glStencilMaskSeparate': ret = 32; break;
+          case 'glIsProgram': ret = 12; break;
+          case 'glDisable': ret = 50; break;
+          case 'glStencilOpSeparate': ret = 28; break;
+          case 'glDrawArrays': ret = 38; break;
+          case 'glDrawElements': ret = 22; break;
+          case 'glEnable': ret = 46; break;
+          case 'glFinish': ret = 12; break;
+          case 'glFlush': ret = 14; break;
+          case 'glFrontFace': ret = 30; break;
+          case 'glCullFace': ret = 24; break;
+          case 'glGenTextures': ret = 28; break;
+          case 'glGetError': ret = 4; break;
+          case 'glGetIntegerv': ret = 30; break;
+          case 'glGetBooleanv': ret = 16; break;
+          case 'glGetFloatv': ret = 48; break;
+          case 'glHint': ret = 18; break;
+          case 'glIsTexture': ret = 8; break;
+          case 'glPixelStorei': ret = 66; break;
+          case 'glReadPixels': ret = 2; break;
+          case 'glScissor': ret = 42; break;
+          case 'glStencilFunc': ret = 2; break;
+          case 'glStencilMask': ret = 52; break;
+          case 'glStencilOp': ret = 10; break;
+          case 'glTexImage2D': ret = 2; break;
+          case 'glTexParameterf': ret = 62; break;
+          case 'glTexParameterfv': ret = 16; break;
+          case 'glTexParameteri': ret = 60; break;
+          case 'glTexParameteriv': ret = 4; break;
+          case 'glGetTexParameterfv': ret = 26; break;
+          case 'glGetTexParameteriv': ret = 36; break;
+          case 'glTexSubImage2D': ret = 6; break;
+          case 'glCopyTexImage2D': ret = 4; break;
+          case 'glViewport': ret = 26; break;
+          case 'glIsEnabled': ret = 18; break;
+          case 'glLineWidth': ret = 6; break;
+          case 'glPolygonOffset': ret = 12; break;
+          case 'glReleaseShaderCompiler': ret = 16; break;
+          case 'glGetShaderPrecisionFormat': ret = 4; break;
+          case 'glShaderBinary': ret = 2; break;
         }
         if (!ret) Module.printErr('WARNING: getProcAddress failed for ' + name);
         return ret;
-      }};var GLImmediate={MAX_TEXTURES:7,vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererCacheItemTemplate:[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,NUM_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,setClientAttribute:function (name, size, type, stride, pointer) {
+      }};var GLImmediate={MapTreeLib:null,spawnMapTreeLib:function () {
+        /* A naive implementation of a map backed by an array, and accessed by
+         * naive iteration along the array. (hashmap with only one bucket)
+         */
+        function CNaiveListMap() {
+          var list = [];
+          this.insert = function(key, val) {
+            if (this.contains(key|0)) return false;
+            list.push([key, val]);
+            return true;
+          };
+          var __contains_i;
+          this.contains = function(key) {
+            for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
+              if (list[__contains_i][0] === key) return true;
+            }
+            return false;
+          };
+          var __get_i;
+          this.get = function(key) {
+            for (__get_i = 0; __get_i < list.length; ++__get_i) {
+              if (list[__get_i][0] === key) return list[__get_i][1];
+            }
+            return undefined;
+          };
+        };
+        /* A tree of map nodes.
+          Uses `KeyView`s to allow descending the tree without garbage.
+          Example: {
+            // Create our map object.
+            var map = new ObjTreeMap();
+            // Grab the static keyView for the map.
+            var keyView = map.GetStaticKeyView();
+            // Let's make a map for:
+            // root: <undefined>
+            //   1: <undefined>
+            //     2: <undefined>
+            //       5: "Three, sir!"
+            //       3: "Three!"
+            // Note how we can chain together `Reset` and `Next` to
+            // easily descend based on multiple key fragments.
+            keyView.Reset().Next(1).Next(2).Next(5).Set("Three, sir!");
+            keyView.Reset().Next(1).Next(2).Next(3).Set("Three!");
+          }
+        */
+        function CMapTree() {
+          function CNLNode() {
+            var map = new CNaiveListMap();
+            this.child = function(keyFrag) {
+              if (!map.contains(keyFrag|0)) {
+                map.insert(keyFrag|0, new CNLNode());
+              }
+              return map.get(keyFrag|0);
+            };
+            this.value = undefined;
+            this.get = function() {
+              return this.value;
+            };
+            this.set = function(val) {
+              this.value = val;
+            };
+          }
+          function CKeyView(root) {
+            var cur;
+            this.reset = function() {
+              cur = root;
+              return this;
+            };
+            this.reset();
+            this.next = function(keyFrag) {
+              cur = cur.child(keyFrag);
+              return this;
+            };
+            this.get = function() {
+              return cur.get();
+            };
+            this.set = function(val) {
+              cur.set(val);
+            };
+          };
+          var root;
+          var staticKeyView;
+          this.createKeyView = function() {
+            return new CKeyView(root);
+          }
+          this.clear = function() {
+            root = new CNLNode();
+            staticKeyView = this.createKeyView();
+          };
+          this.clear();
+          this.getStaticKeyView = function() {
+            staticKeyView.reset();
+            return staticKeyView;
+          };
+        };
+        // Exports:
+        return {
+          create: function() {
+            return new CMapTree();
+          },
+        };
+      },TexEnvJIT:null,spawnTexEnvJIT:function () {
+        // GL defs:
+        var GL_TEXTURE0 = 0x84C0;
+        var GL_TEXTURE_1D = 0x0DE0;
+        var GL_TEXTURE_2D = 0x0DE1;
+        var GL_TEXTURE_3D = 0x806f;
+        var GL_TEXTURE_CUBE_MAP = 0x8513;
+        var GL_TEXTURE_ENV = 0x2300;
+        var GL_TEXTURE_ENV_MODE = 0x2200;
+        var GL_TEXTURE_ENV_COLOR = 0x2201;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A;
+        var GL_SRC0_RGB = 0x8580;
+        var GL_SRC1_RGB = 0x8581;
+        var GL_SRC2_RGB = 0x8582;
+        var GL_SRC0_ALPHA = 0x8588;
+        var GL_SRC1_ALPHA = 0x8589;
+        var GL_SRC2_ALPHA = 0x858A;
+        var GL_OPERAND0_RGB = 0x8590;
+        var GL_OPERAND1_RGB = 0x8591;
+        var GL_OPERAND2_RGB = 0x8592;
+        var GL_OPERAND0_ALPHA = 0x8598;
+        var GL_OPERAND1_ALPHA = 0x8599;
+        var GL_OPERAND2_ALPHA = 0x859A;
+        var GL_COMBINE_RGB = 0x8571;
+        var GL_COMBINE_ALPHA = 0x8572;
+        var GL_RGB_SCALE = 0x8573;
+        var GL_ALPHA_SCALE = 0x0D1C;
+        // env.mode
+        var GL_ADD      = 0x0104;
+        var GL_BLEND    = 0x0BE2;
+        var GL_REPLACE  = 0x1E01;
+        var GL_MODULATE = 0x2100;
+        var GL_DECAL    = 0x2101;
+        var GL_COMBINE  = 0x8570;
+        // env.color/alphaCombiner
+        //var GL_ADD         = 0x0104;
+        //var GL_REPLACE     = 0x1E01;
+        //var GL_MODULATE    = 0x2100;
+        var GL_SUBTRACT    = 0x84E7;
+        var GL_INTERPOLATE = 0x8575;
+        // env.color/alphaSrc
+        var GL_TEXTURE       = 0x1702;
+        var GL_CONSTANT      = 0x8576;
+        var GL_PRIMARY_COLOR = 0x8577;
+        var GL_PREVIOUS      = 0x8578;
+        // env.color/alphaOp
+        var GL_SRC_COLOR           = 0x0300;
+        var GL_ONE_MINUS_SRC_COLOR = 0x0301;
+        var GL_SRC_ALPHA           = 0x0302;
+        var GL_ONE_MINUS_SRC_ALPHA = 0x0303;
+        var GL_RGB  = 0x1907;
+        var GL_RGBA = 0x1908;
+        // Our defs:
+        var TEXENVJIT_NAMESPACE_PREFIX = "tej_";
+        // Not actually constant, as they can be changed between JIT passes:
+        var TEX_UNIT_UNIFORM_PREFIX = "uTexUnit";
+        var TEX_COORD_VARYING_PREFIX = "vTexCoord";
+        var PRIM_COLOR_VARYING = "vPrimColor";
+        var TEX_MATRIX_UNIFORM_PREFIX = "uTexMatrix";
+        // Static vars:
+        var s_texUnits = null; //[];
+        var s_activeTexture = 0;
+        var s_requiredTexUnitsForPass = [];
+        // Static funcs:
+        function abort(info) {
+          assert(false, "[TexEnvJIT] ABORT: " + info);
+        }
+        function abort_noSupport(info) {
+          abort("No support: " + info);
+        }
+        function abort_sanity(info) {
+          abort("Sanity failure: " + info);
+        }
+        function genTexUnitSampleExpr(texUnitID) {
+          var texUnit = s_texUnits[texUnitID];
+          var texType = texUnit.getTexType();
+          var func = null;
+          switch (texType) {
+            case GL_TEXTURE_1D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_2D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_3D:
+              return abort_noSupport("No support for 3D textures.");
+            case GL_TEXTURE_CUBE_MAP:
+              func = "textureCube";
+              break;
+            default:
+              return abort_sanity("Unknown texType: 0x" + texType.toString(16));
+          }
+          var texCoordExpr = TEX_COORD_VARYING_PREFIX + texUnitID;
+          if (TEX_MATRIX_UNIFORM_PREFIX != null) {
+            texCoordExpr = "(" + TEX_MATRIX_UNIFORM_PREFIX + texUnitID + " * " + texCoordExpr + ")";
+          }
+          return func + "(" + TEX_UNIT_UNIFORM_PREFIX + texUnitID + ", " + texCoordExpr + ".xy)";
+        }
+        function getTypeFromCombineOp(op) {
+          switch (op) {
+            case GL_SRC_COLOR:
+            case GL_ONE_MINUS_SRC_COLOR:
+              return "vec3";
+            case GL_SRC_ALPHA:
+            case GL_ONE_MINUS_SRC_ALPHA:
+              return "float";
+          }
+          return Abort_NoSupport("Unsupported combiner op: 0x" + op.toString(16));
+        }
+        function getCurTexUnit() {
+          return s_texUnits[s_activeTexture];
+        }
+        function genCombinerSourceExpr(texUnitID, constantExpr, previousVar,
+                                       src, op)
+        {
+          var srcExpr = null;
+          switch (src) {
+            case GL_TEXTURE:
+              srcExpr = genTexUnitSampleExpr(texUnitID);
+              break;
+            case GL_CONSTANT:
+              srcExpr = constantExpr;
+              break;
+            case GL_PRIMARY_COLOR:
+              srcExpr = PRIM_COLOR_VARYING;
+              break;
+            case GL_PREVIOUS:
+              srcExpr = previousVar;
+              break;
+            default:
+                return abort_noSupport("Unsupported combiner src: 0x" + src.toString(16));
+          }
+          var expr = null;
+          switch (op) {
+            case GL_SRC_COLOR:
+              expr = srcExpr + ".rgb";
+              break;
+            case GL_ONE_MINUS_SRC_COLOR:
+              expr = "(vec3(1.0) - " + srcExpr + ".rgb)";
+              break;
+            case GL_SRC_ALPHA:
+              expr = srcExpr + ".a";
+              break;
+            case GL_ONE_MINUS_SRC_ALPHA:
+              expr = "(1.0 - " + srcExpr + ".a)";
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner op: 0x" + op.toString(16));
+          }
+          return expr;
+        }
+        function valToFloatLiteral(val) {
+          if (val == Math.round(val)) return val + '.0';
+          return val;
+        }
+        // Classes:
+        function CTexEnv() {
+          this.mode = GL_MODULATE;
+          this.colorCombiner = GL_MODULATE;
+          this.alphaCombiner = GL_MODULATE;
+          this.colorScale = 1;
+          this.alphaScale = 1;
+          this.envColor = [0, 0, 0, 0];
+          this.colorSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.alphaSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.colorOp = [
+            GL_SRC_COLOR,
+            GL_SRC_COLOR,
+            GL_SRC_ALPHA
+          ];
+          this.alphaOp = [
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA
+          ];
+          this.traverseState = function(keyView) {
+            keyView.next(this.mode);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaCombiner);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaScale);
+            keyView.next(this.envColor[0]);
+            keyView.next(this.envColor[1]);
+            keyView.next(this.envColor[2]);
+            keyView.next(this.envColor[3]);
+            keyView.next(this.colorSrc[0]);
+            keyView.next(this.colorSrc[1]);
+            keyView.next(this.colorSrc[2]);
+            keyView.next(this.alphaSrc[0]);
+            keyView.next(this.alphaSrc[1]);
+            keyView.next(this.alphaSrc[2]);
+            keyView.next(this.colorOp[0]);
+            keyView.next(this.colorOp[1]);
+            keyView.next(this.colorOp[2]);
+            keyView.next(this.alphaOp[0]);
+            keyView.next(this.alphaOp[1]);
+            keyView.next(this.alphaOp[2]);
+          };
+        }
+        function CTexUnit() {
+          this.env = new CTexEnv();
+          this.enabled_tex1D   = false;
+          this.enabled_tex2D   = false;
+          this.enabled_tex3D   = false;
+          this.enabled_texCube = false;
+          this.traverseState = function(keyView) {
+            var texUnitType = this.getTexType();
+            keyView.next(texUnitType);
+            if (!texUnitType) return;
+            this.env.traverseState(keyView);
+          };
+        };
+        // Class impls:
+        CTexUnit.prototype.enabled = function() {
+          return this.getTexType() != 0;
+        }
+        CTexUnit.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          if (!this.enabled()) {
+            return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
+          }
+          return this.env.genPassLines(passOutputVar, passInputVar, texUnitID);
+        }
+        CTexUnit.prototype.getTexType = function() {
+          if (this.enabled_texCube) {
+            return GL_TEXTURE_CUBE_MAP;
+          } else if (this.enabled_tex3D) {
+            return GL_TEXTURE_3D;
+          } else if (this.enabled_tex2D) {
+            return GL_TEXTURE_2D;
+          } else if (this.enabled_tex1D) {
+            return GL_TEXTURE_1D;
+          }
+          return 0;
+        }
+        CTexEnv.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          switch (this.mode) {
+            case GL_REPLACE: {
+              /* RGB:
+               * Cv = Cs
+               * Av = Ap // Note how this is different, and that we'll
+               *            need to track the bound texture internalFormat
+               *            to get this right.
+               *
+               * RGBA:
+               * Cv = Cs
+               * Av = As
+               */
+              return [
+                "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+              ];
+            }
+            case GL_ADD: {
+              /* RGBA:
+               * Cv = Cp + Cs
+               * Av = ApAs
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
+                "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_MODULATE: {
+              /* RGBA:
+               * Cv = CpCs
+               * Av = ApAs
+               */
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  passInputVar,
+                  " * ",
+                  genTexUnitSampleExpr(texUnitID),
+                ";",
+              ];
+              return [line.join("")];
+            }
+            case GL_DECAL: {
+              /* RGBA:
+               * Cv = Cp(1 - As) + CsAs
+               * Av = Ap
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
+                      " + ",
+                    texVar + ".rgb * " + texVar + ".a",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + passInputVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_BLEND: {
+              /* RGBA:
+               * Cv = Cp(1 - Cs) + CcCs
+               * Av = As
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
+                      " + ",
+                    PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_COMBINE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              var colorLines = this.genCombinerLines(true, colorVar,
+                                                     passInputVar, texUnitID,
+                                                     this.colorCombiner, this.colorSrc, this.colorOp);
+              var alphaLines = this.genCombinerLines(false, alphaVar,
+                                                     passInputVar, texUnitID,
+                                                     this.alphaCombiner, this.alphaSrc, this.alphaOp);
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  "vec4(",
+                      colorVar + " * " + valToFloatLiteral(this.colorScale),
+                      ", ",
+                      alphaVar + " * " + valToFloatLiteral(this.alphaScale),
+                  ")",
+                ";",
+              ].join("");
+              return [].concat(colorLines, alphaLines, [line]);
+            }
+          }
+          return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
+        }
+        CTexEnv.prototype.genCombinerLines = function(isColor, outputVar,
+                                                      passInputVar, texUnitID,
+                                                      combiner, srcArr, opArr)
+        {
+          var argsNeeded = null;
+          switch (combiner) {
+            case GL_REPLACE:
+              argsNeeded = 1;
+              break;
+            case GL_MODULATE:
+            case GL_ADD:
+            case GL_SUBTRACT:
+              argsNeeded = 2;
+              break;
+            case GL_INTERPOLATE:
+              argsNeeded = 3;
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner: 0x" + combiner.toString(16));
+          }
+          var constantExpr = [
+            "vec4(",
+              valToFloatLiteral(this.envColor[0]),
+              ", ",
+              valToFloatLiteral(this.envColor[1]),
+              ", ",
+              valToFloatLiteral(this.envColor[2]),
+              ", ",
+              valToFloatLiteral(this.envColor[3]),
+            ")",
+          ].join("");
+          var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
+                                           : null;
+          var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
+                                           : null;
+          var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
+                                           : null;
+          var outputType = isColor ? "vec3" : "float";
+          var lines = null;
+          switch (combiner) {
+            case GL_REPLACE: {
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_MODULATE: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " * " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_ADD: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " + " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_SUBTRACT: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " - " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_INTERPOLATE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var arg2Var = prefix + "colorSrc2";
+              var arg2Line = getTypeFromCombineOp(this.colorOp[2]) + " " + arg2Var + " = " + src2Expr + ";";
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr + " * " + arg2Var,
+                  " + ",
+                  src1Expr + " * (1.0 - " + arg2Var + ")",
+                ";",
+              ];
+              lines = [
+                arg2Line,
+                line.join(""),
+              ];
+              break;
+            }
+            default:
+              return abort_sanity("Unmatched TexEnv.colorCombiner?");
+          }
+          return lines;
+        }
+        return {
+          // Exports:
+          init: function(gl, specifiedMaxTextureImageUnits) {
+            var maxTexUnits = 0;
+            if (specifiedMaxTextureImageUnits) {
+              maxTexUnits = specifiedMaxTextureImageUnits;
+            } else if (gl) {
+              maxTexUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+            }
+            assert(maxTexUnits > 0);
+            s_texUnits = [];
+            for (var i = 0; i < maxTexUnits; i++) {
+              s_texUnits.push(new CTexUnit());
+            }
+          },
+          setGLSLVars: function(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix) {
+            TEX_UNIT_UNIFORM_PREFIX   = uTexUnitPrefix;
+            TEX_COORD_VARYING_PREFIX  = vTexCoordPrefix;
+            PRIM_COLOR_VARYING        = vPrimColor;
+            TEX_MATRIX_UNIFORM_PREFIX = uTexMatrixPrefix;
+          },
+          genAllPassLines: function(resultDest, indentSize) {
+            indentSize = indentSize || 0;
+            s_requiredTexUnitsForPass.length = 0; // Clear the list.
+            var lines = [];
+            var lastPassVar = PRIM_COLOR_VARYING;
+            for (var i = 0; i < s_texUnits.length; i++) {
+              if (!s_texUnits[i].enabled()) continue;
+              s_requiredTexUnitsForPass.push(i);
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + i + "_";
+              var passOutputVar = prefix + "result";
+              var newLines = s_texUnits[i].genPassLines(passOutputVar, lastPassVar, i);
+              lines = lines.concat(newLines, [""]);
+              lastPassVar = passOutputVar;
+            }
+            lines.push(resultDest + " = " + lastPassVar + ";");
+            var indent = "";
+            for (var i = 0; i < indentSize; i++) indent += " ";
+            var output = indent + lines.join("\n" + indent);
+            return output;
+          },
+          getUsedTexUnitList: function() {
+            return s_requiredTexUnitsForPass;
+          },
+          traverseState: function(keyView) {
+            for (var i = 0; i < s_texUnits.length; i++) {
+              var texUnit = s_texUnits[i];
+              var enabled = texUnit.enabled();
+              keyView.next(enabled);
+              if (enabled) {
+                texUnit.traverseState(keyView);
+              }
+            }
+          },
+          getTexUnitType: function(texUnitID) {
+            assert(texUnitID >= 0 &&
+                   texUnitID < s_texUnits.length);
+            return s_texUnits[texUnitID].getTexType();
+          },
+          // Hooks:
+          hook_activeTexture: function(texture) {
+            s_activeTexture = texture - GL_TEXTURE0;
+          },
+          hook_enable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = true;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = true;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = true;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = true;
+                break;
+            }
+          },
+          hook_disable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = false;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = false;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = false;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = false;
+                break;
+            }
+          },
+          hook_texEnvf: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvf`.');
+            }
+          },
+          hook_texEnvi: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_MODE:
+                env.mode = param;
+                break;
+              case GL_COMBINE_RGB:
+                env.colorCombiner = param;
+                break;
+              case GL_COMBINE_ALPHA:
+                env.alphaCombiner = param;
+                break;
+              case GL_SRC0_RGB:
+                env.colorSrc[0] = param;
+                break;
+              case GL_SRC1_RGB:
+                env.colorSrc[1] = param;
+                break;
+              case GL_SRC2_RGB:
+                env.colorSrc[2] = param;
+                break;
+              case GL_SRC0_ALPHA:
+                env.alphaSrc[0] = param;
+                break;
+              case GL_SRC1_ALPHA:
+                env.alphaSrc[1] = param;
+                break;
+              case GL_SRC2_ALPHA:
+                env.alphaSrc[2] = param;
+                break;
+              case GL_OPERAND0_RGB:
+                env.colorOp[0] = param;
+                break;
+              case GL_OPERAND1_RGB:
+                env.colorOp[1] = param;
+                break;
+              case GL_OPERAND2_RGB:
+                env.colorOp[2] = param;
+                break;
+              case GL_OPERAND0_ALPHA:
+                env.alphaOp[0] = param;
+                break;
+              case GL_OPERAND1_ALPHA:
+                env.alphaOp[1] = param;
+                break;
+              case GL_OPERAND2_ALPHA:
+                env.alphaOp[2] = param;
+                break;
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvi`.');
+            }
+          },
+          hook_texEnvfv: function(target, pname, params) {
+            if (target != GL_TEXTURE_ENV) return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_COLOR: {
+                for (var i = 0; i < 4; i++) {
+                  var param = HEAPF32[(((params)+(i*4))>>2)];
+                  env.envColor[i] = param;
+                }
+                break
+              }
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvfv`.');
+            }
+          },
+        };
+      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,MAX_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function (name, size, type, stride, pointer) {
         var attrib = this.clientAttributes[name];
         if (!attrib) {
           for (var i = 0; i <= name; i++) { // keep flat
@@ -4654,19 +5419,16 @@ function copyTempDouble(ptr) {
         // return a renderer object given the liveClientAttributes
         // we maintain a cache of renderers, optimized to not generate garbage
         var attributes = GL.immediate.liveClientAttributes;
-        var cacheItem = GL.immediate.rendererCache;
+        var cacheMap = GL.immediate.rendererCache;
         var temp;
+        var keyView = cacheMap.getStaticKeyView().reset();
+        // By attrib state:
         for (var i = 0; i < attributes.length; i++) {
           var attribute = attributes[i];
-          temp = cacheItem[attribute.name];
-          cacheItem = temp ? temp : (cacheItem[attribute.name] = GL.immediate.rendererCacheItemTemplate.slice());
-          temp = cacheItem[attribute.size];
-          cacheItem = temp ? temp : (cacheItem[attribute.size] = GL.immediate.rendererCacheItemTemplate.slice());
-          var typeIndex = attribute.type - GL.byteSizeByTypeRoot; // ensure it starts at 0 to keep the cache items dense
-          temp = cacheItem[typeIndex];
-          cacheItem = temp ? temp : (cacheItem[typeIndex] = GL.immediate.rendererCacheItemTemplate.slice());
+          keyView.next(attribute.name).next(attribute.size).next(attribute.type);
         }
-        var fogParam;
+        // By fog state:
+        var fogParam = 0;
         if (GLEmulation.fogEnabled) {
           switch (GLEmulation.fogMode) {
             case 0x0801: // GL_EXP2
@@ -4679,28 +5441,31 @@ function copyTempDouble(ptr) {
               fogParam = 3;
               break;
           }
-        } else {
-          fogParam = 0;
         }
-        temp = cacheItem[fogParam];
-        cacheItem = temp ? temp : (cacheItem[fogParam] = GL.immediate.rendererCacheItemTemplate.slice());
-        if (GL.currProgram) { // Note the order here; this one is last, and optional. Note that we cannot ensure it is dense, sadly
-          temp = cacheItem[GL.currProgram];
-          cacheItem = temp ? temp : (cacheItem[GL.currProgram] = GL.immediate.rendererCacheItemTemplate.slice());
+        keyView.next(fogParam);
+        // By cur program:
+        keyView.next(GL.currProgram);
+        if (!GL.currProgram) {
+          GL.immediate.TexEnvJIT.traverseState(keyView);
         }
-        if (!cacheItem.renderer) {
-          cacheItem.renderer = this.createRenderer();
+        // If we don't already have it, create it.
+        if (!keyView.get()) {
+          keyView.set(this.createRenderer());
         }
-        return cacheItem.renderer;
+        return keyView.get();
       },createRenderer:function (renderer) {
         var useCurrProgram = !!GL.currProgram;
         var hasTextures = false, textureSizes = [], textureTypes = [];
-        for (var i = 0; i < GL.immediate.NUM_TEXTURES; i++) {
-          if (GL.immediate.enabledClientAttributes[GL.immediate.TEXTURE0 + i]) {
-            textureSizes[i] = GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + i].size;
-            textureTypes[i] = GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + i].type;
-            hasTextures = true;
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          var texAttribName = GL.immediate.TEXTURE0 + i;
+          if (!GL.immediate.enabledClientAttributes[texAttribName])
+            continue;
+          if (!useCurrProgram) {
+            assert(GL.immediate.TexEnvJIT.getTexUnitType(i) != 0, "GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
           }
+          textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
+          textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
+          hasTextures = true;
         }
         var positionSize = GL.immediate.clientAttributes[GL.immediate.VERTEX].size;
         var positionType = GL.immediate.clientAttributes[GL.immediate.VERTEX].type;
@@ -4716,6 +5481,12 @@ function copyTempDouble(ptr) {
         }
         var ret = {
           init: function() {
+            // For fixed-function shader generation.
+            var uTexUnitPrefix = 'u_texUnit';
+            var aTexCoordPrefix = 'a_texCoord';
+            var vTexCoordPrefix = 'v_texCoord';
+            var vPrimColor = 'v_color';
+            var uTexMatrixPrefix = GL.immediate.useTextureMatrix ? 'u_textureMatrix' : null;
             if (useCurrProgram) {
               if (GL.shaderInfos[GL.programShaders[GL.currProgram][0]].type == Module.ctx.VERTEX_SHADER) {
                 this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
@@ -4725,13 +5496,12 @@ function copyTempDouble(ptr) {
                 this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
               }
               this.program = GL.programs[GL.currProgram];
+              this.usedTexUnitList = [];
             } else {
               // IMPORTANT NOTE: If you parameterize the shader source based on any runtime values
               // in order to create the least expensive shader possible based on the features being
               // used, you should also update the code in the beginning of getRenderer to make sure
               // that you cache the renderer based on the said parameters.
-              this.vertexShader = Module.ctx.createShader(Module.ctx.VERTEX_SHADER);
-              var zero = positionSize == 2 ? '0, ' : '';
               if (GLEmulation.fogEnabled) {
                 switch (GLEmulation.fogMode) {
                   case 0x0801: // GL_EXP2
@@ -4748,46 +5518,85 @@ function copyTempDouble(ptr) {
                     break;
                 }
               }
-              Module.ctx.shaderSource(this.vertexShader, 'attribute vec' + positionSize + ' a_position;  \n' +
-                                                         'attribute vec2 a_texCoord0;  \n' +
-                                                         (hasTextures ? 'varying vec2 v_texCoord;    \n' : '') +
-                                                         'varying vec4 v_color; \n' +
-                                                         (colorSize ? 'attribute vec4 a_color; \n': 'uniform vec4 u_color; \n') +
-                                                         (GLEmulation.fogEnabled ? 'varying float v_fogFragCoord; \n' : '') +
-                                                         'uniform mat4 u_modelView;   \n' +
-                                                         'uniform mat4 u_projection;  \n' +
-                                                         'void main()                 \n' +
-                                                         '{                           \n' +
-                                                         '  vec4 ecPosition = (u_modelView * vec4(a_position, ' + zero + '1.0)); \n' + // eye-coordinate position
-                                                         '  gl_Position = u_projection * ecPosition; \n' +
-                                                         (hasTextures ? 'v_texCoord = a_texCoord0;    \n' : '') +
-                                                         (colorSize ? 'v_color = a_color; \n' : 'v_color = u_color; \n') +
-                                                         (GLEmulation.fogEnabled ? 'v_fogFragCoord = abs(ecPosition.z);\n' : '') +
-                                                         '}                           \n');
+              GL.immediate.TexEnvJIT.setGLSLVars(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix);
+              var fsTexEnvPass = GL.immediate.TexEnvJIT.genAllPassLines('gl_FragColor', 2);
+              var texUnitAttribList = '';
+              var texUnitVaryingList = '';
+              var texUnitUniformList = '';
+              var vsTexCoordInits = '';
+              this.usedTexUnitList = GL.immediate.TexEnvJIT.getUsedTexUnitList();
+              for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                var texUnit = this.usedTexUnitList[i];
+                texUnitAttribList += 'attribute vec4 ' + aTexCoordPrefix + texUnit + ';\n';
+                texUnitVaryingList += 'varying vec4 ' + vTexCoordPrefix + texUnit + ';\n';
+                texUnitUniformList += 'uniform sampler2D ' + uTexUnitPrefix + texUnit + ';\n';
+                vsTexCoordInits += '  ' + vTexCoordPrefix + texUnit + ' = ' + aTexCoordPrefix + texUnit + ';\n';
+                if (GL.immediate.useTextureMatrix) {
+                  texUnitUniformList += 'uniform mat4 ' + uTexMatrixPrefix + texUnit + ';\n';
+                }
+              }
+              var vsFogVaryingInit = null;
+              if (GLEmulation.fogEnabled) {
+                vsFogVaryingInit = '  v_fogFragCoord = abs(ecPosition.z);\n';
+              }
+              var vsSource = [
+                'attribute vec4 a_position;',
+                'attribute vec4 a_color;',
+                'varying vec4 v_color;',
+                texUnitAttribList,
+                texUnitVaryingList,
+                (GLEmulation.fogEnabled ? 'varying float v_fogFragCoord;' : null),
+                'uniform mat4 u_modelView;',
+                'uniform mat4 u_projection;',
+                'void main()',
+                '{',
+                '  vec4 ecPosition = u_modelView * a_position;', // eye-coordinate position
+                '  gl_Position = u_projection * ecPosition;',
+                '  v_color = a_color;',
+                vsTexCoordInits,
+                vsFogVaryingInit,
+                '}',
+                ''
+              ].join('\n').replace(/\n\n+/g, '\n');
+              this.vertexShader = Module.ctx.createShader(Module.ctx.VERTEX_SHADER);
+              Module.ctx.shaderSource(this.vertexShader, vsSource);
               Module.ctx.compileShader(this.vertexShader);
+              var fogHeaderIfNeeded = null;
+              if (GLEmulation.fogEnabled) {
+                fogHeaderIfNeeded = [
+                  '',
+                  'varying float v_fogFragCoord; ',
+                  'uniform vec4 u_fogColor;      ',
+                  'uniform float u_fogEnd;       ',
+                  'uniform float u_fogScale;     ',
+                  'uniform float u_fogDensity;   ',
+                  'float ffog(in float ecDistance) { ',
+                  fogFormula,
+                  '  fog = clamp(fog, 0.0, 1.0); ',
+                  '  return fog;                 ',
+                  '}',
+                  '',
+                ].join("\n");
+              }
+              var fogPass = null;
+              if (GLEmulation.fogEnabled) {
+                fogPass = 'gl_FragColor = vec4(mix(u_fogColor.rgb, gl_FragColor.rgb, ffog(v_fogFragCoord)), gl_FragColor.a);\n';
+              }
+              var fsSource = [
+                'precision mediump float;',
+                texUnitVaryingList,
+                texUnitUniformList,
+                'varying vec4 v_color;',
+                fogHeaderIfNeeded,
+                'void main()',
+                '{',
+                fsTexEnvPass,
+                fogPass,
+                '}',
+                ''
+              ].join("\n").replace(/\n\n+/g, '\n');
               this.fragmentShader = Module.ctx.createShader(Module.ctx.FRAGMENT_SHADER);
-              Module.ctx.shaderSource(this.fragmentShader, 'precision mediump float;                            \n' +
-                                                           'varying vec2 v_texCoord;                            \n' +
-                                                           'uniform sampler2D u_texture;                        \n' +
-                                                           'varying vec4 v_color;                               \n' +
-                                                           (GLEmulation.fogEnabled ? (
-                                                             'varying float v_fogFragCoord; \n' +
-                                                             'uniform vec4 u_fogColor; \n' +
-                                                             'uniform float u_fogEnd; \n' +
-                                                             'uniform float u_fogScale; \n' +
-                                                             'uniform float u_fogDensity; \n' +
-                                                             'float ffog(in float ecDistance) { \n' +
-                                                             fogFormula +
-                                                             '  fog = clamp(fog, 0.0, 1.0); \n' +
-                                                             '  return fog; \n' +
-                                                             '} \n'
-                                                             ) : '') +
-                                                           'void main()                                         \n' +
-                                                           '{                                                   \n' +
-                                                           (hasTextures ? 'gl_FragColor = v_color * texture2D( u_texture, v_texCoord );\n' :
-                                                                          'gl_FragColor = v_color;\n') +
-                                                           (GLEmulation.fogEnabled ? 'gl_FragColor = vec4(mix(u_fogColor.rgb, gl_FragColor.rgb, ffog(v_fogFragCoord)), gl_FragColor.a); \n' : '') +
-                                                           '}                                                   \n');
+              Module.ctx.shaderSource(this.fragmentShader, fsSource);
               Module.ctx.compileShader(this.fragmentShader);
               this.program = Module.ctx.createProgram();
               Module.ctx.attachShader(this.program, this.vertexShader);
@@ -4797,10 +5606,29 @@ function copyTempDouble(ptr) {
             }
             this.positionLocation = Module.ctx.getAttribLocation(this.program, 'a_position');
             this.texCoordLocations = [];
-            for (var i = 0; i < textureSizes.length; i++) {
-              if (textureSizes[i]) {
-                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, 'a_texCoord' + i);
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              if (!GL.immediate.enabledClientAttributes[GL.immediate.TEXTURE0 + i]) {
+                this.texCoordLocations[i] = -1;
+                continue;
               }
+              if (useCurrProgram) {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, 'a_texCoord' + i);
+              } else {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, aTexCoordPrefix + i);
+              }
+            }
+            if (!useCurrProgram) {
+              // Temporarily switch to the program so we can set our sampler uniforms early.
+              var prevBoundProg = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              Module.ctx.useProgram(this.program);
+              {
+                for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                  var texUnitID = this.usedTexUnitList[i];
+                  var texSamplerLoc = Module.ctx.getUniformLocation(this.program, uTexUnitPrefix + texUnitID);
+                  Module.ctx.uniform1i(texSamplerLoc, texUnitID);
+                }
+              }
+              Module.ctx.useProgram(prevBoundProg);
             }
             this.textureMatrixLocations = [];
             for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
@@ -4808,15 +5636,11 @@ function copyTempDouble(ptr) {
             }
             this.colorLocation = Module.ctx.getAttribLocation(this.program, 'a_color');
             this.normalLocation = Module.ctx.getAttribLocation(this.program, 'a_normal');
-            this.textureLocation = Module.ctx.getUniformLocation(this.program, 'u_texture'); // only for immediate mode with no shaders, so only one is enough
             this.modelViewLocation = Module.ctx.getUniformLocation(this.program, 'u_modelView');
             this.projectionLocation = Module.ctx.getUniformLocation(this.program, 'u_projection');
-            this.hasColorAttribLocation = Module.ctx.getUniformLocation(this.program, 'u_hasColorAttrib');
-            this.colorUniformLocation = Module.ctx.getUniformLocation(this.program, 'u_color');
             this.hasTextures = hasTextures;
-            this.hasColorAttrib = colorSize > 0 && this.colorLocation >= 0;
-            this.hasColorUniform = !!this.colorUniformLocation;
             this.hasNormal = normalSize > 0 && this.normalLocation >= 0;
+            this.hasColor = (this.colorLocation === 0) || this.colorLocation > 0;
             this.floatType = Module.ctx.FLOAT; // minor optimization
             this.fogColorLocation = Module.ctx.getUniformLocation(this.program, 'u_fogColor');
             this.fogEndLocation = Module.ctx.getUniformLocation(this.program, 'u_fogEnd');
@@ -4863,6 +5687,7 @@ function copyTempDouble(ptr) {
             GL.immediate.matricesModified = false;
             if (!GL.currProgram) {
               Module.ctx.useProgram(this.program);
+              GL.immediate.fixedFunctionProgram = this.program;
             }
             if (this.modelViewLocation) Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
             if (this.projectionLocation) Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
@@ -4871,11 +5696,20 @@ function copyTempDouble(ptr) {
                                            GL.immediate.stride, clientAttributes[GL.immediate.VERTEX].offset);
             Module.ctx.enableVertexAttribArray(this.positionLocation);
             if (this.hasTextures) {
-              for (var i = 0; i < textureSizes.length; i++) {
-                if (textureSizes[i] && this.texCoordLocations[i] >= 0) {
-                  Module.ctx.vertexAttribPointer(this.texCoordLocations[i], textureSizes[i], textureTypes[i], false,
-                                                 GL.immediate.stride, clientAttributes[GL.immediate.TEXTURE0 + i].offset);
-                  Module.ctx.enableVertexAttribArray(this.texCoordLocations[i]);
+              //for (var i = 0; i < this.usedTexUnitList.length; i++) {
+              //  var texUnitID = this.usedTexUnitList[i];
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                var texUnitID = i;
+                var attribLoc = this.texCoordLocations[texUnitID];
+                if (attribLoc === undefined || attribLoc < 0) continue;
+                if (texUnitID < textureSizes.length && textureSizes[texUnitID]) {
+                  Module.ctx.vertexAttribPointer(attribLoc, textureSizes[texUnitID], textureTypes[texUnitID], false,
+                                                 GL.immediate.stride, GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + texUnitID].offset);
+                  Module.ctx.enableVertexAttribArray(attribLoc);
+                } else {
+                  // These two might be dangerous, but let's try them.
+                  Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
+                  Module.ctx.disableVertexAttribArray(attribLoc);
                 }
               }
               for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
@@ -4884,25 +5718,18 @@ function copyTempDouble(ptr) {
                 }
               }
             }
-            if (this.hasColorAttrib) {
+            if (colorSize) {
               Module.ctx.vertexAttribPointer(this.colorLocation, colorSize, colorType, true,
                                              GL.immediate.stride, clientAttributes[GL.immediate.COLOR].offset);
               Module.ctx.enableVertexAttribArray(this.colorLocation);
-              Module.ctx.uniform1i(this.hasColorAttribLocation, 1);
-            } else if (this.hasColorUniform) {
-              Module.ctx.uniform1i(this.hasColorAttribLocation, 0);
-              Module.ctx.uniform4fv(this.colorUniformLocation, GL.immediate.clientColor);
+            } else if (this.hasColor) {
+              Module.ctx.disableVertexAttribArray(this.colorLocation);
+              Module.ctx.vertexAttrib4fv(this.colorLocation, GL.immediate.clientColor);
             }
             if (this.hasNormal) {
               Module.ctx.vertexAttribPointer(this.normalLocation, normalSize, normalType, true,
                                              GL.immediate.stride, clientAttributes[GL.immediate.NORMAL].offset);
               Module.ctx.enableVertexAttribArray(this.normalLocation);
-            }
-            if (!useCurrProgram) { // otherwise, the user program will set the sampler2D binding and uniform itself
-              var texture = Module.ctx.getParameter(Module.ctx.TEXTURE_BINDING_2D);
-              Module.ctx.activeTexture(Module.ctx.TEXTURE0);
-              Module.ctx.bindTexture(Module.ctx.TEXTURE_2D, texture);
-              Module.ctx.uniform1i(this.textureLocation, 0);
             }
             if (this.hasFog) {
               if (this.fogColorLocation) Module.ctx.uniform4fv(this.fogColorLocation, GLEmulation.fogColor);
@@ -4920,7 +5747,7 @@ function copyTempDouble(ptr) {
                 }
               }
             }
-            if (this.hasColorAttrib) {
+            if (this.hasColor) {
               Module.ctx.disableVertexAttribArray(this.colorLocation);
             }
             if (this.hasNormal) {
@@ -4977,10 +5804,78 @@ function copyTempDouble(ptr) {
           GL.immediate.flush(count, 0, indices);
           GL.immediate.mode = -1;
         };
+        // TexEnv stuff needs to be prepared early, so do it here.
+        // init() is too late for -O2, since it freezes the GL functions
+        // by that point.
+        GL.immediate.MapTreeLib = GL.immediate.spawnMapTreeLib();
+        GL.immediate.spawnMapTreeLib = null;
+        GL.immediate.TexEnvJIT = GL.immediate.spawnTexEnvJIT();
+        GL.immediate.spawnTexEnvJIT = null;
+        GL.immediate.setupHooks();
+      },setupHooks:function () {
+        if (!GLEmulation.hasRunInit) {
+          GLEmulation.init();
+        }
+        var glActiveTexture = _glActiveTexture;
+        _glActiveTexture = function(texture) {
+          GL.immediate.TexEnvJIT.hook_activeTexture(texture);
+          glActiveTexture(texture);
+        };
+        var glEnable = _glEnable;
+        _glEnable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_enable(cap);
+          glEnable(cap);
+        };
+        var glDisable = _glDisable;
+        _glDisable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_disable(cap);
+          glDisable(cap);
+        };
+        var glTexEnvf = (typeof(_glTexEnvf) != 'undefined') ? _glTexEnvf : function(){};
+        _glTexEnvf = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvf(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvf(target, pname, param);
+        };
+        var glTexEnvi = (typeof(_glTexEnvi) != 'undefined') ? _glTexEnvi : function(){};
+        _glTexEnvi = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvi(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvi(target, pname, param);
+        };
+        var glTexEnvfv = (typeof(_glTexEnvfv) != 'undefined') ? _glTexEnvfv : function(){};
+        _glTexEnvfv = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvfv(target, pname, param);
+        };
+        var glGetIntegerv = _glGetIntegerv;
+        _glGetIntegerv = function(pname, params) {
+          switch (pname) {
+            case 0x8B8D: { // GL_CURRENT_PROGRAM
+              // Just query directly so we're working with WebGL objects.
+              var cur = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              if (cur == GL.immediate.fixedFunctionProgram) {
+                // Pretend we're not using a program.
+                HEAP32[((params)>>2)]=0;
+                return;
+              }
+              break;
+            }
+          }
+          glGetIntegerv(pname, params);
+        };
       },initted:false,init:function () {
         Module.printErr('WARNING: using emscripten GL immediate mode emulation. This is very limited in what it supports');
         GL.immediate.initted = true;
         if (!Module.useWebGL) return; // a 2D canvas may be currently used TODO: make sure we are actually called in that case
+        this.TexEnvJIT.init(Module.ctx);
+        GL.immediate.MAX_TEXTURES = Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
+        GL.immediate.NUM_ATTRIBUTES = GL.immediate.TEXTURE0 + GL.immediate.MAX_TEXTURES;
+        GL.immediate.clientAttributes = [];
+        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+          GL.immediate.clientAttributes.push({});
+        }
         this.matrixStack['m'] = [];
         this.matrixStack['p'] = [];
         for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
@@ -4995,7 +5890,7 @@ function copyTempDouble(ptr) {
           GL.immediate.matrix['t' + i] = GL.immediate.matrix.lib.mat4.create();
         }
         // Renderer cache
-        this.rendererCache = this.rendererCacheItemTemplate.slice();
+        this.rendererCache = this.MapTreeLib.create();
         // Buffers for data
         this.tempData = new Float32Array(GL.MAX_TEMP_BUFFER_SIZE >> 2);
         this.indexData = new Uint16Array(GL.MAX_TEMP_BUFFER_SIZE >> 1);
@@ -5086,8 +5981,8 @@ function copyTempDouble(ptr) {
         ptr = ptr || 0;
         var renderer = this.getRenderer();
         // Generate index data in a format suitable for GLES 2.0/WebGL
-        var numVertexes = 4 * this.vertexCounter / GL.immediate.stride; // XXX assuming float
-        assert(numVertexes % 1 == 0);
+        var numVertexes = 4 * this.vertexCounter / GL.immediate.stride;
+        assert(numVertexes % 1 == 0, "`numVertexes` must be an integer.");
         var emulatedElementArrayBuffer = false;
         var numIndexes = 0;
         if (numProvidedIndexes) {
@@ -6875,6 +7770,7 @@ function copyTempDouble(ptr) {
       } else if (mode == 0x1701 /* GL_PROJECTION */) {
         GL.immediate.currentMatrix = 'p';
       } else if (mode == 0x1702) { // GL_TEXTURE
+        GL.immediate.useTextureMatrix = true;
         GL.immediate.currentMatrix = 't' + GL.immediate.clientActiveTexture;
       } else {
         throw "Wrong mode " + mode + " passed to glMatrixMode";
@@ -6891,9 +7787,14 @@ function copyTempDouble(ptr) {
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
-        var isFloat = CL.isFloat(arg_value,arg_size);
+        var isFloat = 0;
+        if (CL.sig.length > 0 && arg_index < CL.sig.length) {
+          isFloat = ( CL.sig[arg_index] == WebCL.types.FLOAT_V ) || ( CL.sig[arg_index] == WebCL.types.FLOAT ) 
+        } else {
+          console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
+          return -1; /* CL_FAILED */
+        }
         var isNull = (HEAP32[((arg_value)>>2)] == 0);
-        //console.log("clSetKernelArg : isFloat = "+isFloat);
         var value;
         if (isNull == 1) {
           CL.kernels[ker].setKernelArgLocal(arg_index,arg_size);
@@ -6905,7 +7806,6 @@ function copyTempDouble(ptr) {
             } else {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
             }
-            //console.log("clSetKernelArg : value["+i+"] = "+value[i]);       
           }
           if (isFloat == 1) {
             CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V);
@@ -6918,7 +7818,6 @@ function copyTempDouble(ptr) {
           } else {
             value = HEAP32[((arg_value)>>2)];
           }
-          //console.log("clSetKernelArg : value = "+value);   
           if (arg_index >= 0 && arg_index < CL.buffers.length) {
             CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]);
           } else {
@@ -6926,8 +7825,8 @@ function copyTempDouble(ptr) {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT);
             } else {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT);
-            }
-          }
+            }            
+          }        
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -6973,25 +7872,31 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
+        if (CL.sig.length == 0 || buff > CL.sig.length) {
+          console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
+          return -1; /* CL_FAILED */     
+        }
+        var isFloat = 0;
         var vector;    
-        if (CL.enqueueFloat[queue]) {
+        if (CL.sig[buff] == WebCL.types.FLOAT_V) {
           vector = new Float32Array(size / 4);
-        } else {
+          isFloat = 1;
+        } else if (CL.sig[buff] == WebCL.types.UINT_V) {
           vector = new Uint32Array(size / 4);
+        } else if (CL.sig[buff] == WebCL.types.INT_V) {
+          vector = new Int32Array(size / 4);
+        } else {
+          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+CL.sig[buff]);
+          return -1; /* CL_FAILED */     
         }
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        //var str_vector = "clEnqueueReadBuffer : vector(";
         for (var i = 0; i < (size / 4); i++) {
-          if (CL.enqueueFloat[queue]) {
+          if (isFloat) {
             HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAPF32[(((results)+(i*4))>>2)] + ",";
           } else {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAP32[(((results)+(i*4))>>2)] + ",";
           }         
         }
-        //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-        //console.info("clEnqueueReadBuffer: Vector "+str_vector+" - Size : "+vector.length+"");
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);
@@ -7321,25 +8226,29 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
               return 0;
             }
-            var isFloat = CL.isFloat(host_ptr,size);
-            if (isFloat) {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
-              vector = new Float32Array(size / 4);
-            } else {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
-              vector = new Uint32Array(size / 4);
+            if (CL.sig.length == 0 || CL.buffers-1 > CL.sig.length) {
+              console.error("clCreateBuffer: Invalid signature : "+buff);
+              return -1; /* CL_FAILED */     
             }
-            //var str_vector = "clEnqueueWriteBuffer : vector(";
+            var isFloat = 0;
+            var vector;    
+            if (CL.sig[CL.buffers.length-1] == WebCL.types.FLOAT_V) {
+              vector = new Float32Array(size / 4);
+              isFloat = 1;
+            } else if (CL.sig[CL.buffers.length-1] == WebCL.types.UINT_V) {
+              vector = new Uint32Array(size / 4);
+            } else if (CL.sig[CL.buffers.length-1] == WebCL.types.INT_V) {
+              vector = new Int32Array(size / 4);
+            } else {
+              console.error("clCreateBuffer: Unknow ouptut type : "+CL.sig[CL.buffers.length-1]);
+            }
             for (var i = 0; i < (size / 4); i++) {
-              if (CL.enqueueFloat[CL.cmdQueue.length-1]) {
+              if (isFloat) {
                 vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
               } else {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
-              //str_vector += vector[i] + ",";
             }
-            //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-            //console.info(str_vector);
             CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
             break;
           default:
@@ -7384,7 +8293,41 @@ function copyTempDouble(ptr) {
         return 0; // Null pointer    
       }
       var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx);       
+      var kernel = Pointer_stringify(sourceIdx); 
+      // Experimental parse of kernel for have the different type of the kernel (input and output)
+      var start_kernel = kernel.indexOf("__kernel");
+      var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
+      var start_kernel_brace = kernel_sub_part.indexOf("(");
+      var close_kernel_brace = kernel_sub_part.indexOf(")");
+      kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
+      kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
+      var kernel_sub_part_split = kernel_sub_part.split(",");
+      for (var i = 0; i < kernel_sub_part_split.length; i++) {
+        if (kernel_sub_part_split[i].contains("float4") ||
+           (kernel_sub_part_split[i].contains("float") && kernel_sub_part_split[i].contains("*"))) {
+          console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+WebCL.types.FLOAT_V+")");
+          CL.sig[i] = WebCL.types.FLOAT_V;
+        } else if (kernel_sub_part_split[i].contains("float")) {
+          console.info("Kernel Parameter "+i+" typeof is float ("+WebCL.types.FLOAT+")");
+          CL.sig[i] = WebCL.types.FLOAT;    
+        } else if (kernel_sub_part_split[i].contains("uchar4") ||
+                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("char") && kernel_sub_part_split[i].contains("*")) ||
+                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*"))) {
+          console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+WebCL.types.UINT_V+")");
+          CL.sig[i] = WebCL.types.UINT_V;
+        } else if (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int")) {
+          console.info("Kernel Parameter "+i+" typeof is unsigned int ("+WebCL.types.UINT+")");
+          CL.sig[i] = WebCL.types.UINT;        
+        } else if (kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*")) {
+          console.info("Kernel Parameter "+i+" typeof is int * ("+WebCL.types.INT_V+")");
+          CL.sig[i] = WebCL.types.INT_V;    
+        } else if (kernel_sub_part_split[i].contains("int")) {
+          console.info("Kernel Parameter "+i+" typeof is int ("+WebCL.types.INT+")");
+          CL.sig[i] = WebCL.types.INT;    
+        } else {
+          console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
+        }
+      }
       try {
         // \todo set the properties 
         CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
@@ -8192,7 +9135,7 @@ function copyTempDouble(ptr) {
   function _llvm_lifetime_start() {}
   function _llvm_lifetime_end() {}
 __ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
-___errno_state = Runtime.staticAlloc(4);
+___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
@@ -8354,7 +9297,7 @@ function asmPrintFloat(x, y) {
 // EMSCRIPTEN_START_ASM
 var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=env.cttz_i8|0;var n=env.ctlz_i8|0;var o=+env.NaN;var p=+env.Infinity;var q=0;var r=0;var s=0;var t=0;var u=0,v=0,w=0,x=0,y=0.0,z=0,A=0,B=0,C=0.0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=0;var M=0;var N=global.Math.floor;var O=global.Math.abs;var P=global.Math.sqrt;var Q=global.Math.pow;var R=global.Math.cos;var S=global.Math.sin;var T=global.Math.tan;var U=global.Math.acos;var V=global.Math.asin;var W=global.Math.atan;var X=global.Math.atan2;var Y=global.Math.exp;var Z=global.Math.log;var _=global.Math.ceil;var $=global.Math.imul;var aa=env.abort;var ab=env.assert;var ac=env.asmPrintInt;var ad=env.asmPrintFloat;var ae=env.copyTempDouble;var af=env.copyTempFloat;var ag=env.min;var ah=env.invoke_viiiii;var ai=env.invoke_vif;var aj=env.invoke_viiiiiii;var ak=env.invoke_i;var al=env.invoke_vi;var am=env.invoke_vii;var an=env.invoke_viff;var ao=env.invoke_ii;var ap=env.invoke_viii;var aq=env.invoke_viiiiiiii;var ar=env.invoke_v;var as=env.invoke_viiiiiiiii;var at=env.invoke_vifff;var au=env.invoke_viiiiii;var av=env.invoke_iii;var aw=env.invoke_viffff;var ax=env.invoke_viiii;var ay=env._llvm_lifetime_end;var az=env._glMultTransposeMatrixf;var aA=env._glFlush;var aB=env._glGetRenderbufferParameteriv;var aC=env._glColor4ub;var aD=env._sysconf;var aE=env._glStencilMaskSeparate;var aF=env._glColor4ui;var aG=env._glGetVertexAttribPointerv;var aH=env._glMultTransposeMatrixd;var aI=env._glColor4us;var aJ=env._glLinkProgram;var aK=env._glBindTexture;var aL=env._glVertex2fv;var aM=env._glClearColor;var aN=env._glFramebufferRenderbuffer;var aO=env._glGetString;var aP=env._glDisable;var aQ=env._fwrite;var aR=env._gluUnProject;var aS=env._glScaled;var aT=env._glGetTexLevelParameteriv;var aU=env._fputs;var aV=env._glLineWidth;var aW=env._glUniform2fv;var aX=env._emscripten_get_now;var aY=env._glLoadMatrixf;var aZ=env._exit;var a_=env._glBlendFuncSeparate;var a$=env._glCompileShader;var a0=env._fstat;var a1=env._gluLookAt;var a2=env._glDeleteTextures;var a3=env._puts;var a4=env._glStencilOpSeparate;var a5=env._glMultMatrixf;var a6=env._clReleaseCommandQueue;var a7=env._glPolygonMode;var a8=env._glutInit;var a9=env._glTexCoord2i;var ba=env._glShadeModel;var bb=env._glGetObjectParameteriv;var bc=env._glFogiv;var bd=env._glVertexAttrib1f;var be=env._glClearDepthf;var bf=env._glutInitWindowPosition;var bg=env._glUniform4iv;var bh=env._glGetTexParameteriv;var bi=env._glClearStencil;var bj=env._glColor3uiv;var bk=env._glSampleCoverage;var bl=env._glFogfv;var bm=env._glLoadTransposeMatrixd;var bn=env._glColor3us;var bo=env._strstr;var bp=env._glRotated;var bq=env._glGenTextures;var br=env._glDepthFunc;var bs=env._glCompressedTexSubImage2D;var bt=env._glUniform1f;var bu=env._glGetVertexAttribfv;var bv=env._glGetTexParameterfv;var bw=env._glColor3ui;var bx=env._glCreateShader;var by=env._glIsBuffer;var bz=env._glUniform1i;var bA=env._glColor3ubv;var bB=env._glGenRenderbuffers;var bC=env._glTexEnvf;var bD=env._glCompressedTexImage2D;var bE=env._glGetUniformiv;var bF=env._glUniform2i;var bG=env._glUniform2f;var bH=env._glStencilFunc;var bI=env._glShaderSource;var bJ=env._abort;var bK=env._clReleaseContext;var bL=env._glGetProgramiv;var bM=env._glVertexAttribPointer;var bN=env._atexit;var bO=env._glBindBuffer;var bP=env._clCreateContext;var bQ=env._glTexCoord2fv;var bR=env._glVertex3fv;var bS=env._glGetUniformLocation;var bT=env._close;var bU=env._glBindFramebuffer;var bV=env._glOrtho;var bW=env._glutIdleFunc;var bX=env._glUniform4fv;var bY=env._llvm_lifetime_start;var bZ=env.___setErrNo;var b_=env._open;var b$=env._glTexGeni;var b0=env._glutFullScreen;var b1=env._glutDisplayFunc;var b2=env._glDrawArrays;var b3=env._glClientActiveTexture;var b4=env._glDeleteProgram;var b5=env._glutInitDisplayMode;var b6=env._sprintf;var b7=env._glRenderbufferStorage;var b8=env._glLoadIdentity;var b9=env._glAttachShader;var ca=env._glUniform3i;var cb=env._clGetDeviceIDs;var cc=env._glColor3f;var cd=env._glVertex3f;var ce=env._fputc;var cf=env._glShaderBinary;var cg=env._glTexImage1D;var ch=env._glCopyTexImage2D;var ci=env._glUniform3f;var cj=env._glGetBufferParameteriv;var ck=env._glBlendEquationSeparate;var cl=env._glDrawElements;var cm=env._glColorMask;var cn=env._glEnableClientState;var co=env._glUniform2iv;var cp=env._glGenVertexArrays;var cq=env._glTexCoordPointer;var cr=env._glBufferSubData;var cs=env._glUniform1iv;var ct=env._glBindAttribLocation;var cu=env._glActiveTexture;var cv=env._pread;var cw=env._glMatrixMode;var cx=env._glVertexAttrib3f;var cy=env._clFinish;var cz=env._clCreateProgramWithSource;var cA=env._glGenerateMipmap;var cB=env._glDetachShader;var cC=env._glGetShaderiv;var cD=env.__exit;var cE=env._glLightModelfv;var cF=env._glNormalPointer;var cG=env._glGetActiveAttrib;var cH=env._glPopMatrix;var cI=env._glBlendColor;var cJ=env._glColor3usv;var cK=env._glGetShaderPrecisionFormat;var cL=env._glMaterialfv;var cM=env._glDepthMask;var cN=env._clReleaseKernel;var cO=env._glDisableVertexAttribArray;var cP=env._glutSwapBuffers;var cQ=env._glFogi;var cR=env._glBegin;var cS=env._glColor3ub;var cT=env._printf;var cU=env._glBindRenderbuffer;var cV=env._glTexSubImage2D;var cW=env._clEnqueueNDRangeKernel;var cX=env._glDeleteFramebuffers;var cY=env._glFogf;var cZ=env._glTexCoord4f;var c_=env._glIsProgram;var c$=env._glCopyTexSubImage2D;var c0=env._glDepthRangef;var c1=env._glVertexAttrib1fv;var c2=env._glLightfv;var c3=env._glIsShader;var c4=env._glClear;var c5=env._glVertexAttrib4fv;var c6=env._clGetDeviceInfo;var c7=env._glReleaseShaderCompiler;var c8=env._clReleaseProgram;var c9=env._glUniform4i;var da=env._clGetKernelWorkGroupInfo;var db=env._gluProject;var dc=env._glEnableVertexAttribArray;var dd=env._glutInitWindowSize;var de=env._glUniform3fv;var df=env._glIsEnabled;var dg=env._glStencilOp;var dh=env._glReadPixels;var di=env._glDepthRange;var dj=env._glUniform4f;var dk=env._glutReshapeWindow;var dl=env._glUniformMatrix2fv;var dm=env.___errno_location;var dn=env._glBindVertexArray;var dp=env._glTranslated;var dq=env._glUniformMatrix3fv;var dr=env._glutCreateWindow;var ds=env._glBufferData;var dt=env.__formatString;var du=env._glDisableClientState;var dv=env._clEnqueueReadBuffer;var dw=env._glGetError;var dx=env._glDeleteRenderbuffers;var dy=env._glGetVertexAttribiv;var dz=env._glTexParameteriv;var dA=env._snprintf;var dB=env._glVertexAttrib3fv;var dC=env._glGetFloatv;var dD=env._glUniform3iv;var dE=env._clSetKernelArg;var dF=env._glVertexAttrib2fv;var dG=env._glAlphaFunc;var dH=env._glColor4ubv;var dI=env._glGenFramebuffers;var dJ=env._sbrk;var dK=env._glGetInfoLog;var dL=env._glTexEnvfv;var dM=env._clReleaseMemObject;var dN=env._glGetIntegerv;var dO=env._glGetAttachedShaders;var dP=env._glCheckFramebufferStatus;var dQ=env._clCreateBuffer;var dR=env._clGetProgramBuildInfo;var dS=env._glIsRenderbuffer;var dT=env._glTexParameteri;var dU=env._glDeleteVertexArrays;var dV=env._fprintf;var dW=env._glFramebufferTexture2D;var dX=env._glFrontFace;var dY=env._glColor4f;var dZ=env._glGetFramebufferAttachmentParameteriv;var d_=env._glUseProgram;var d$=env._glReadBuffer;var d0=env._glTexImage2D;var d1=env._glGetProgramInfoLog;var d2=env._glTexGenfv;var d3=env._glStencilMask;var d4=env._glBlendEquation;var d5=env._glMultMatrixd;var d6=env._glEnd;var d7=env._glGetShaderInfoLog;var d8=env._glIsTexture;var d9=env._glLoadTransposeMatrixf;var ea=env._glUniform1fv;var eb=env._glGetShaderSource;var ec=env._gluPerspective;var ed=env._glLoadMatrixd;var ee=env._rand_r;var ef=env._glDrawRangeElements;var eg=env.__reallyNegative;var eh=env._glTexParameterfv;var ei=env._glTexEnvi;var ej=env._clGetContextInfo;var ek=env._glEnable;var el=env._clBuildProgram;var em=env._glColor4fv;var en=env._glStencilFuncSeparate;var eo=env._glDeleteObject;var ep=env._glutPostRedisplay;var eq=env._clCreateCommandQueue;var er=env._write;var es=env._read;var et=env._glGenBuffers;var eu=env._glTexCoord3f;var ev=env._glFinish;var ew=env._glGetAttribLocation;var ex=env._glHint;var ey=env._glVertexAttrib4f;var ez=env._glNormal3f;var eA=env._glDeleteShader;var eB=env._glBlendFunc;var eC=env._glCreateProgram;var eD=env._glCullFace;var eE=env._stat;var eF=env._clCreateKernel;var eG=env._glIsFramebuffer;var eH=env._glViewport;var eI=env._time;var eJ=env._glVertexAttrib2f;var eK=env._glGetPointerv;var eL=env._glGetUniformfv;var eM=env._glColor3fv;var eN=env._gluOrtho2D;var eO=env._glUniformMatrix4fv;var eP=env._glClearDepth;var eQ=env._glFrustum;var eR=env._glGetActiveUniform;var eS=env._pwrite;var eT=env._glTexParameterf;var eU=env._glColorPointer;var eV=env._glDrawBuffer;var eW=env._glPushMatrix;var eX=env._glutReshapeFunc;var eY=env._glDeleteBuffers;var eZ=env._glScissor;var e_=env._glGetBooleanv;var e$=env._glPixelStorei;var e0=env._glutMainLoop;var e1=env._glValidateProgram;var e2=env._glPolygonOffset;var e3=env._glVertexPointer;var e4=env._glBindProgram;var e5=env._glutKeyboardFunc;
 // EMSCRIPTEN_START_FUNCS
-function fn(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function fo(){return i|0}function fp(a){a=a|0;i=a}function fq(a,b){a=a|0;b=b|0;if((q|0)==0){q=a;r=b}}function fr(a){a=a|0;D=a}function fs(a){a=a|0;E=a}function ft(a){a=a|0;F=a}function fu(a){a=a|0;G=a}function fv(a){a=a|0;H=a}function fw(a){a=a|0;I=a}function fx(a){a=a|0;J=a}function fy(a){a=a|0;K=a}function fz(a){a=a|0;L=a}function fA(a){a=a|0;M=a}function fB(){ep();return}function fC(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,g=0,h=0,j=0,k=0;d=i;i=i+8|0;e=d|0;c[e>>2]=a;L2:do{if((a|0)<1|(b|0)==0){f=1}else{g=0;h=1;while(1){j=c[b+(g<<2)>>2]|0;do{if((j|0)==0){k=h}else{if((bo(j|0,816)|0)!=0){k=0;break}k=(bo(j|0,720)|0)==0?h:1}}while(0);j=g+1|0;if((j|0)<(a|0)){g=j;h=k}else{f=k;break L2}}}}while(0);a8(e|0,b|0);b5(18);dd(c[514]|0,c[564]|0);bf(100,100);dr(c[b>>2]|0);if((fE(f)|0)!=0){i=d;return 0}b1(8);bW(6);eX(2);e5(18);bN(10);a3(376);e0();i=d;return 0}function fD(b,d,e){b=b|0;d=d|0;e=e|0;var f=0.0,j=0.0,k=0.0,l=0.0;e=i;d=b&255;if((d|0)==43|(d|0)==61){f=+g[568];if(f<.0020000000949949026){j=f}else{k=f*.9523810148239136;g[568]=k;j=k}cT(1016,(u=i,i=i+8|0,h[u>>3]=j,u)|0);c[544]=1}else if((d|0)==45){j=+g[568];if(j<.009999999776482582){k=j*1.0499999523162842;g[568]=k;l=k}else{l=j}cT(1016,(u=i,i=i+8|0,h[u>>3]=l,u)|0);c[544]=1}else if((d|0)==119){g[548]=+g[548]+.05000000074505806}else if((d|0)==120){g[548]=+g[548]+-.05000000074505806}else if((d|0)==113){g[549]=+g[549]+.05000000074505806}else if((d|0)==122){g[549]=+g[549]+-.05000000074505806}else if((d|0)==97){g[550]=+g[550]+.05000000074505806}else if((d|0)==100){g[550]=+g[550]+-.05000000074505806}else if((d|0)==101){g[551]=+g[551]+.05000000074505806}else if((d|0)==99){g[551]=+g[551]+-.05000000074505806}else if((d|0)==27){aZ(0)}else if((d|0)==32){b=(c[598]|0)==0;c[598]=b&1;cT(1552,(u=i,i=i+8|0,c[u>>2]=b?1544:1232,u)|0);c[544]=1}else if((d|0)==105){c[544]=(c[544]|0)==0&1}else if((d|0)==115){c[542]=(c[542]|0)==0&1}else if((d|0)==102){b0()}a[2096]=0;ep();i=e;return}function fE(a){a=a|0;var b=0,d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,v=0.0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0;b=i;i=i+4312|0;d=b|0;e=b+8|0;f=b+16|0;h=b+24|0;j=b+96|0;k=b+104|0;l=b+112|0;m=b+120|0;n=b+2168|0;o=b+2176|0;p=b+2184|0;q=b+2248|0;r=b+4304|0;s=c[514]|0;t=c[564]|0;if((c[530]|0)!=0){a2(1,2120)}c[530]=0;cT(728,(u=i,i=i+16|0,c[u>>2]=s,c[u+8>>2]=t,u)|0);c[528]=s;c[532]=t;bq(1,2120);aK(3553,c[530]|0);dT(3553,10240,9728);dT(3553,10241,9728);d0(3553,0,6408,c[528]|0,c[532]|0,0,6408,5121,0);aK(3553,0);aM(0.0,0.0,0.0,0.0);aP(2929);cu(33984);eH(0,0,c[514]|0,c[564]|0);cw(5888);b8();cw(5889);b8();g[540]=0.0;g[541]=0.0;v=+(c[514]|0);g[538]=v;g[539]=0.0;g[536]=v;v=+(c[564]|0);g[537]=v;g[534]=0.0;g[535]=v;cn(32884);cn(32888);e3(2,5126,0,2064);b3(33984);cq(2,5126,0,2136);t=p;s=q;w=b+2256|0;x=b+3280|0;y=(a|0)!=0;a=y?4:2;z=y?0:0;c[576]=a;c[577]=z;y=cb(0,a|0,z|0,1,2312,0)|0;c[n>>2]=y;do{if((y|0)==0){z=bP(0,1,2312,0,0,n|0)|0;c[580]=z;if((z|0)==0){a3(616);A=1;break}a=ej(z|0,4225,64,t|0,o|0)|0;c[n>>2]=a;if((a|0)!=0){a3(224);A=1;break}a=(c[o>>2]|0)>>>2;z=0;while(1){if(z>>>0>=a>>>0){B=45;break}C=p+(z<<2)|0;c6(c[C>>2]|0,4096,8,s|0,0);if((c[q>>2]|0)==(c[576]|0)&(c[q+4>>2]|0)==(c[577]|0)){break}else{z=z+1|0}}if((B|0)==45){a3(184);A=1;break}z=c[C>>2]|0;c[578]=z;a=eq(c[580]|0,z|0,0,0,n|0)|0;c[582]=a;if((a|0)==0){a3(136);A=1;break}fO(w|0,0,1024);fO(x|0,0,1024);c[n>>2]=c6(c[578]|0,4140,1024,w|0,o|0)|0;a=c6(c[578]|0,4139,1024,x|0,o|0)|0;z=c[n>>2]|a;c[n>>2]=z;if((z|0)==0){a3(304);cT(760,(u=i,i=i+16|0,c[u>>2]=w,c[u+8>>2]=x,u)|0);A=0;break}else{a3(96);A=1;break}}else{a3(184);A=1}}while(0);if((A|0)!=0){cT(1352,(u=i,i=i+8|0,c[u>>2]=A,u)|0);aZ(A|0);return 0}A=c6(c[578]|0,4118,4,r|0,0)|0;if((A|0)!=0){cT(1304,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0);aZ(A|0);return 0}if((c[r>>2]|0)==0){cT(1240,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0);D=-10;i=b;return D|0}r=m|0;c[j>>2]=0;m=c[574]|0;if((m|0)!=0){cN(m|0)}c[574]=0;m=c[572]|0;if((m|0)!=0){c8(m|0)}c[572]=0;a3(304);cT(1088,(u=i,i=i+8|0,c[u>>2]=1064,u)|0);m=b_(1064,0,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0)|0;do{if((m|0)==-1){cT(864,(u=i,i=i+8|0,c[u>>2]=1064,u)|0);B=66;break}else{if((a0(m|0,h|0)|0)!=0){cT(824,(u=i,i=i+8|0,c[u>>2]=1064,u)|0);B=66;break}A=c[h+28>>2]|0;x=fL(A+1|0,1)|0;if((es(m|0,x|0,A|0)|0)==0){cT(784,(u=i,i=i+8|0,c[u>>2]=1064,u)|0);B=66;break}bT(m|0);c[j>>2]=0;if((x|0)==0){B=68;break}A=fJ((fN(x|0)|0)+1024|0)|0;c[k>>2]=A;w=c[514]|0;n=c[564]|0;b6(A|0,992,(u=i,i=i+40|0,c[u>>2]=1048,c[u+8>>2]=w,c[u+16>>2]=1032,c[u+24>>2]=n,c[u+32>>2]=x,u)|0);n=cz(c[580]|0,1,k|0,0,j|0)|0;c[572]=n;if(!((n|0)!=0&(c[j>>2]|0)==0)){a3(8);E=1;break}fK(x);fK(c[k>>2]|0);x=el(c[572]|0,0,0,0,0,0)|0;c[j>>2]=x;if((x|0)!=0){a3(568);x=c[572]|0;n=c[578]|0;dR(x|0,n|0,4483,2048,r|0,l|0);a3(r|0);E=1;break}cT(960,(u=i,i=i+8|0,c[u>>2]=944,u)|0);n=eF(c[572]|0,944,j|0)|0;c[574]=n;if(!((n|0)!=0&(c[j>>2]|0)==0)){a3(528);E=1;break}x=da(n|0,c[578]|0,4528,4,2240,0)|0;c[j>>2]=x;if((x|0)==0){n=c[560]|0;w=n>>>0>1?n>>>5:n;c[512]=w;c[510]=(n>>>0)/(w>>>0)>>>0;a3(304);E=0;break}else{cT(888,(u=i,i=i+8|0,c[u>>2]=x,u)|0);aZ(1);return 0}}}while(0);do{if((B|0)==66){c[j>>2]=-1;B=68;break}}while(0);if((B|0)==68){a3(56);E=1}if((E|0)!=0){cT(1184,(u=i,i=i+8|0,c[u>>2]=E,u)|0);aZ(E|0);return 0}E=c[562]|0;if((E|0)!=0){fK(E)}a3(472);E=fJ($(c[528]<<2,c[532]|0))|0;c[562]=E;if((E|0)==0){a3(432);F=cT(1136,(u=i,i=i+8|0,c[u>>2]=-1,u)|0)|0;aZ(-1|0);return 0}fO(E|0,0,$(c[528]<<2,c[532]|0)|0);E=c[570]|0;if((E|0)!=0){dM(E|0)}c[570]=0;E=c[580]|0;B=dQ(E|0,2,0,$(c[528]<<2,c[532]|0)|0,0,0)|0;c[570]=B;if((B|0)==0){a3(400);F=cT(1136,(u=i,i=i+8|0,c[u>>2]=-1,u)|0)|0;aZ(-1|0);return 0}else{c[f>>2]=(aX()|0)*1e6&-1;g[594]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[595]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[596]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[597]=1.0;c[e>>2]=(aX()|0)*1e6&-1;g[590]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[591]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[592]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[593]=1.0;c[d>>2]=(aX()|0)*1e6&-1;g[586]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[587]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[588]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[589]=1.0;D=0;i=b;return D|0}return 0}function fF(){cy(c[582]|0);cN(c[574]|0);c8(c[572]|0);a6(c[582]|0);dM(c[570]|0);dM(0);bK(c[580]|0);c[582]=0;c[574]=0;c[572]=0;c[570]=0;c[580]=0;return}function fG(){var b=0,d=0,e=0,f=0,j=0,k=0,l=0,m=0,n=0.0,o=0.0,p=0.0,q=0.0,r=0.0,s=0.0,t=0,v=0,w=0,x=0,y=0;b=i;i=i+32|0;d=b|0;e=b+8|0;f=b+16|0;j=b+24|0;c[566]=(c[566]|0)+1|0;k=(aX()|0)*1e6&-1;l=k;m=(k|0)<0?-1:0;aM(0.0,0.0,0.0,0.0);c4(16384);if((c[598]|0)!=0){g[546]=+g[546]+.009999999776482582;c[j>>2]=(aX()|0)*1e6&-1;n=+g[546];if(n<1.0){o=n;p=+g[555]}else{g[546]=0.0;g[556]=+g[552];g[557]=+g[553];g[558]=+g[554];g[559]=+g[555];g[552]=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;g[553]=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;g[554]=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;n=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;g[555]=n;o=+g[546];p=n}n=1.0-o;g[548]=n*+g[556]+o*+g[552];g[549]=n*+g[557]+o*+g[553];g[550]=n*+g[558]+o*+g[554];g[551]=n*+g[559]+o*p;p=+g[584]+.009999999776482582;g[584]=p;if(p<1.0){q=p;r=+g[592];s=+g[593]}else{g[584]=0.0;g[594]=+g[590];g[595]=+g[591];g[596]=+g[592];g[597]=+g[593];c[f>>2]=(aX()|0)*1e6&-1;g[590]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[591]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;p=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[592]=p;g[593]=1.0;q=+g[584];r=p;s=1.0}p=1.0-q;g[586]=p*+g[594]+q*+g[590];g[587]=p*+g[595]+q*+g[591];g[588]=p*+g[596]+q*r;g[589]=p*+g[597]+q*s}f=c[574]|0;do{if((f|0)!=0&(c[570]|0)!=0){do{if((c[598]|0)!=0|a[2096]^1){a[2096]=1;j=dE(f|0,0,4,2280)|0;k=dE(c[574]|0,1,16,2192)|j;j=k|dE(c[574]|0,2,16,2344);if((j|dE(c[574]|0,3,4,2272)|0)==0){t=c[574]|0;break}else{v=-10;w=cT(688,(u=i,i=i+8|0,c[u>>2]=v,u)|0)|0;aZ(1)}}else{t=f}}while(0);j=c[512]|0;k=c[510]|0;x=c[528]|0;y=d|0;c[y>>2]=$((((x|0)%(j|0)|0)!=0&1)+((x|0)/(j|0)&-1)|0,j);x=c[532]|0;c[d+4>>2]=$((((x|0)%(k|0)|0)!=0&1)+((x|0)/(k|0)&-1)|0,k);x=e|0;c[x>>2]=j;c[e+4>>2]=k;k=cW(c[582]|0,t|0,2,0,y|0,x|0,0,0,0)|0;if((k|0)!=0){cT(1432,(u=i,i=i+8|0,c[u>>2]=k,u)|0);v=k;w=cT(688,(u=i,i=i+8|0,c[u>>2]=v,u)|0)|0;aZ(1)}k=c[582]|0;x=c[570]|0;y=$(c[514]<<2,c[564]|0);j=dv(k|0,x|0,1,0,y|0,c[562]|0,0,0,0)|0;if((j|0)==0){break}cT(1400,(u=i,i=i+8|0,c[u>>2]=j,u)|0);v=1;w=cT(688,(u=i,i=i+8|0,c[u>>2]=v,u)|0)|0;aZ(1)}}while(0);v=c[562]|0;aP(2896);eH(0,0,c[514]|0,c[564]|0);cw(5889);b8();eN(-1.0,1.0,-1.0,1.0);cw(5888);b8();cw(5890);b8();ek(3553);aK(3553,c[530]|0);if((v|0)!=0){cV(3553,0,0,0,c[528]|0,c[532]|0,6408,5121,v|0)}du(32888);du(32884);cR(7);cc(1.0,1.0,1.0);a9(0.0,0.0);cd(-1.0,-1.0,0.0);cc(1.0,1.0,1.0);a9(0.0,1.0);cd(-1.0,1.0,0.0);cc(1.0,1.0,1.0);a9(1.0,1.0);cd(1.0,1.0,0.0);cc(1.0,1.0,1.0);a9(1.0,0.0);cd(1.0,-1.0,0.0);d6();aK(3553,0);aP(3553);v=c[544]|0;if((v|0)!=0){c[544]=v>>>0>200?0:v+1|0}ev();v=(aX()|0)*1e6&-1;w=fR(v,(v|0)<0?-1:0,l,m)|0;s=+h[263]+(+(w>>>0)+ +(D>>>0)*4294967296.0)*1.0e-9;h[263]=s;w=c[566]|0;if(!(s!=0.0&(w|0)!=0&w>>>0>30)){i=b;return}q=s*1.0e3/+(w|0);cT(1488,(u=i,i=i+32|0,c[u>>2]=(c[576]|0)==4&(c[577]|0)==0?1480:1472,h[u+8>>3]=q,h[u+16>>3]=1.0/(q/1.0e3),c[u+24>>2]=1464,u)|0);c[566]=0;h[263]=0.0;i=b;return}function fH(a,b){a=a|0;b=b|0;eH(0,0,a|0,b|0);cw(5888);b8();cw(5889);b8();c4(16384);do{if((c[514]<<1|0)>=(a|0)){if((c[564]<<1|0)<(b|0)){break}c[514]=a;c[564]=b;return}}while(0);c[514]=a;c[564]=b;cy(c[582]|0);cN(c[574]|0);c8(c[572]|0);a6(c[582]|0);dM(c[570]|0);dM(0);bK(c[580]|0);c[582]=0;c[574]=0;c[572]=0;c[570]=0;c[580]=0;if((fE((c[576]|0)==4&(c[577]|0)==0&1)|0)==0){c[514]=a;c[564]=b;return}else{fI()}}function fI(){a3(304);a3(280);fF();aZ(0)}function fJ(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,ai=0,aj=0,ak=0,al=0,am=0,an=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aA=0,aB=0,aC=0,aE=0,aF=0,aG=0,aH=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[392]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=1608+(h<<2)|0;j=1608+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[392]=e&(1<<g^-1)}else{if(l>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{bJ();return 0;return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[394]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=1608+(p<<2)|0;m=1608+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[392]=e&(1<<r^-1)}else{if(l>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{bJ();return 0;return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[394]|0;if((l|0)!=0){q=c[397]|0;d=l>>>3;l=d<<1;f=1608+(l<<2)|0;k=c[392]|0;h=1<<d;do{if((k&h|0)==0){c[392]=k|h;s=f;t=1608+(l+2<<2)|0}else{d=1608+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[396]|0)>>>0){s=g;t=d;break}bJ();return 0;return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[394]=m;c[397]=e;n=i;return n|0}l=c[393]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[1872+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[396]|0;if(r>>>0<i>>>0){bJ();return 0;return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){bJ();return 0;return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;L351:do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;do{if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break L351}else{w=l;x=k;break}}else{w=g;x=q}}while(0);while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){bJ();return 0;return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){bJ();return 0;return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){bJ();return 0;return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{bJ();return 0;return 0}}}while(0);L373:do{if((e|0)!=0){f=d+28|0;i=1872+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[393]=c[393]&(1<<c[f>>2]^-1);break L373}else{if(e>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L373}}}while(0);if(v>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4|0)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b|0)>>2]=p;f=c[394]|0;if((f|0)!=0){e=c[397]|0;i=f>>>3;f=i<<1;q=1608+(f<<2)|0;k=c[392]|0;g=1<<i;do{if((k&g|0)==0){c[392]=k|g;y=q;z=1608+(f+2<<2)|0}else{i=1608+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[396]|0)>>>0){y=l;z=i;break}bJ();return 0;return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[394]=p;c[397]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[393]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=(14-(h|f|l)|0)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[1872+(A<<2)>>2]|0;L181:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L181}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break L181}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[1872+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}L196:do{if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break L196}else{p=r;m=i;q=e}}}}while(0);if((K|0)==0){o=g;break}if(J>>>0>=((c[394]|0)-g|0)>>>0){o=g;break}k=K;q=c[396]|0;if(k>>>0<q>>>0){bJ();return 0;return 0}m=k+g|0;p=m;if(k>>>0>=m>>>0){bJ();return 0;return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;L209:do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;do{if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break L209}else{M=B;N=j;break}}else{M=d;N=r}}while(0);while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<q>>>0){bJ();return 0;return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<q>>>0){bJ();return 0;return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){bJ();return 0;return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{bJ();return 0;return 0}}}while(0);L231:do{if((e|0)!=0){i=K+28|0;q=1872+(c[i>>2]<<2)|0;do{if((K|0)==(c[q>>2]|0)){c[q>>2]=L;if((L|0)!=0){break}c[393]=c[393]&(1<<c[i>>2]^-1);break L231}else{if(e>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L231}}}while(0);if(L>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=k+(e+4|0)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[k+(g|4)>>2]=J|1;c[k+(J+g|0)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;q=1608+(e<<2)|0;r=c[392]|0;j=1<<i;do{if((r&j|0)==0){c[392]=r|j;O=q;P=1608+(e+2<<2)|0}else{i=1608+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[396]|0)>>>0){O=d;P=i;break}bJ();return 0;return 0}}while(0);c[P>>2]=p;c[O+12>>2]=p;c[k+(g+8|0)>>2]=O;c[k+(g+12|0)>>2]=q;break}e=m;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=(14-(d|r|i)|0)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=1872+(Q<<2)|0;c[k+(g+28|0)>>2]=Q;c[k+(g+20|0)>>2]=0;c[k+(g+16|0)>>2]=0;q=c[393]|0;l=1<<Q;if((q&l|0)==0){c[393]=q|l;c[j>>2]=e;c[k+(g+24|0)>>2]=j;c[k+(g+12|0)>>2]=e;c[k+(g+8|0)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;q=c[j>>2]|0;while(1){if((c[q+4>>2]&-8|0)==(J|0)){break}S=q+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=283;break}else{l=l<<1;q=j}}if((T|0)==283){if(S>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[S>>2]=e;c[k+(g+24|0)>>2]=q;c[k+(g+12|0)>>2]=e;c[k+(g+8|0)>>2]=e;break}}l=q+8|0;j=c[l>>2]|0;i=c[396]|0;if(q>>>0<i>>>0){bJ();return 0;return 0}if(j>>>0<i>>>0){bJ();return 0;return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[k+(g+8|0)>>2]=j;c[k+(g+12|0)>>2]=q;c[k+(g+24|0)>>2]=0;break}}}while(0);k=K+8|0;if((k|0)==0){o=g;break}else{n=k}return n|0}}while(0);K=c[394]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[397]|0;if(S>>>0>15){R=J;c[397]=R+o|0;c[394]=S;c[R+(o+4|0)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[394]=0;c[397]=0;c[J+4>>2]=K|3;S=J+(K+4|0)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[395]|0;if(o>>>0<J>>>0){S=J-o|0;c[395]=S;J=c[398]|0;K=J;c[398]=K+o|0;c[K+(o+4|0)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[166]|0)==0){J=aD(8)|0;if((J-1&J|0)==0){c[168]=J;c[167]=J;c[169]=-1;c[170]=2097152;c[171]=0;c[503]=0;c[166]=eI(0)&-16^1431655768;break}else{bJ();return 0;return 0}}}while(0);J=o+48|0;S=c[168]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[502]|0;do{if((O|0)!=0){P=c[500]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L440:do{if((c[503]&4|0)==0){O=c[398]|0;L442:do{if((O|0)==0){T=313}else{L=O;P=2016;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=313;break L442}else{P=M}}if((P|0)==0){T=313;break}L=R-(c[395]|0)&Q;if(L>>>0>=2147483647){W=0;break}q=dJ(L|0)|0;e=(q|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?q:-1;Y=e?L:0;Z=q;_=L;T=322;break}}while(0);do{if((T|0)==313){O=dJ(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[167]|0;q=L-1|0;if((q&g|0)==0){$=S}else{$=(S-g|0)+(q+g&-L)|0}L=c[500]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}q=c[502]|0;if((q|0)!=0){if(g>>>0<=L>>>0|g>>>0>q>>>0){W=0;break}}q=dJ($|0)|0;g=(q|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=q;_=$;T=322;break}}while(0);L462:do{if((T|0)==322){q=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=333;break L440}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[168]|0;O=(K-_|0)+g&-g;if(O>>>0>=2147483647){ac=_;break}if((dJ(O|0)|0)==-1){dJ(q|0);W=Y;break L462}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=333;break L440}}}while(0);c[503]=c[503]|4;ad=W;T=330;break}else{ad=0;T=330}}while(0);do{if((T|0)==330){if(S>>>0>=2147483647){break}W=dJ(S|0)|0;Z=dJ(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)==-1){break}else{aa=Z?ac:ad;ab=Y;T=333;break}}}while(0);do{if((T|0)==333){ad=(c[500]|0)+aa|0;c[500]=ad;if(ad>>>0>(c[501]|0)>>>0){c[501]=ad}ad=c[398]|0;L482:do{if((ad|0)==0){S=c[396]|0;if((S|0)==0|ab>>>0<S>>>0){c[396]=ab}c[504]=ab;c[505]=aa;c[507]=0;c[401]=c[166]|0;c[400]=-1;S=0;while(1){Y=S<<1;ac=1608+(Y<<2)|0;c[1608+(Y+3<<2)>>2]=ac;c[1608+(Y+2<<2)>>2]=ac;ac=S+1|0;if(ac>>>0<32){S=ac}else{break}}S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=(aa-40|0)-ae|0;c[398]=ab+ae|0;c[395]=S;c[ab+(ae+4|0)>>2]=S|1;c[ab+(aa-36|0)>>2]=40;c[399]=c[170]|0}else{S=2016;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=345;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==345){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa|0;ac=c[398]|0;Y=(c[395]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){ai=0}else{ai=-W&7}W=Y-ai|0;c[398]=Z+ai|0;c[395]=W;c[Z+(ai+4|0)>>2]=W|1;c[Z+(Y+4|0)>>2]=40;c[399]=c[170]|0;break L482}}while(0);if(ab>>>0<(c[396]|0)>>>0){c[396]=ab}S=ab+aa|0;Y=2016;while(1){aj=Y|0;if((c[aj>>2]|0)==(S|0)){T=355;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==355){if((c[Y+12>>2]&8|0)!=0){break}c[aj>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa|0;S=ab+8|0;if((S&7|0)==0){ak=0}else{ak=-S&7}S=ab+(aa+8|0)|0;if((S&7|0)==0){al=0}else{al=-S&7}S=ab+(al+aa|0)|0;Z=S;W=ak+o|0;ac=ab+W|0;_=ac;K=(S-(ab+ak|0)|0)-o|0;c[ab+(ak+4|0)>>2]=o|3;do{if((Z|0)==(c[398]|0)){J=(c[395]|0)+K|0;c[395]=J;c[398]=_;c[ab+(W+4|0)>>2]=J|1}else{if((Z|0)==(c[397]|0)){J=(c[394]|0)+K|0;c[394]=J;c[397]=_;c[ab+(W+4|0)>>2]=J|1;c[ab+(J+W|0)>>2]=J;break}J=aa+4|0;X=c[ab+(J+al|0)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L527:do{if(X>>>0<256){U=c[ab+((al|8)+aa|0)>>2]|0;Q=c[ab+((aa+12|0)+al|0)>>2]|0;R=1608+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}if((c[U+12>>2]|0)==(Z|0)){break}bJ();return 0;return 0}}while(0);if((Q|0)==(U|0)){c[392]=c[392]&(1<<V^-1);break}do{if((Q|0)==(R|0)){am=Q+8|0}else{if(Q>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}q=Q+8|0;if((c[q>>2]|0)==(Z|0)){am=q;break}bJ();return 0;return 0}}while(0);c[U+12>>2]=Q;c[am>>2]=U}else{R=S;q=c[ab+((al|24)+aa|0)>>2]|0;P=c[ab+((aa+12|0)+al|0)>>2]|0;L548:do{if((P|0)==(R|0)){O=al|16;g=ab+(J+O|0)|0;L=c[g>>2]|0;do{if((L|0)==0){e=ab+(O+aa|0)|0;M=c[e>>2]|0;if((M|0)==0){an=0;break L548}else{ao=M;ap=e;break}}else{ao=L;ap=g}}while(0);while(1){g=ao+20|0;L=c[g>>2]|0;if((L|0)!=0){ao=L;ap=g;continue}g=ao+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ao=L;ap=g}}if(ap>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[ap>>2]=0;an=ao;break}}else{g=c[ab+((al|8)+aa|0)>>2]|0;if(g>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){bJ();return 0;return 0}O=P+8|0;if((c[O>>2]|0)==(R|0)){c[L>>2]=P;c[O>>2]=g;an=P;break}else{bJ();return 0;return 0}}}while(0);if((q|0)==0){break}P=ab+((aa+28|0)+al|0)|0;U=1872+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=an;if((an|0)!=0){break}c[393]=c[393]&(1<<c[P>>2]^-1);break L527}else{if(q>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}Q=q+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=an}else{c[q+20>>2]=an}if((an|0)==0){break L527}}}while(0);if(an>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}c[an+24>>2]=q;R=al|16;P=c[ab+(R+aa|0)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[an+16>>2]=P;c[P+24>>2]=an;break}}}while(0);P=c[ab+(J+R|0)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[an+20>>2]=P;c[P+24>>2]=an;break}}}while(0);aq=ab+(($|al)+aa|0)|0;ar=$+K|0}else{aq=Z;ar=K}J=aq+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4|0)>>2]=ar|1;c[ab+(ar+W|0)>>2]=ar;J=ar>>>3;if(ar>>>0<256){V=J<<1;X=1608+(V<<2)|0;P=c[392]|0;q=1<<J;do{if((P&q|0)==0){c[392]=P|q;as=X;at=1608+(V+2<<2)|0}else{J=1608+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[396]|0)>>>0){as=U;at=J;break}bJ();return 0;return 0}}while(0);c[at>>2]=_;c[as+12>>2]=_;c[ab+(W+8|0)>>2]=as;c[ab+(W+12|0)>>2]=X;break}V=ac;q=ar>>>8;do{if((q|0)==0){au=0}else{if(ar>>>0>16777215){au=31;break}P=(q+1048320|0)>>>16&8;$=q<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=(14-(J|P|$)|0)+(U<<$>>>15)|0;au=ar>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);q=1872+(au<<2)|0;c[ab+(W+28|0)>>2]=au;c[ab+(W+20|0)>>2]=0;c[ab+(W+16|0)>>2]=0;X=c[393]|0;Q=1<<au;if((X&Q|0)==0){c[393]=X|Q;c[q>>2]=V;c[ab+(W+24|0)>>2]=q;c[ab+(W+12|0)>>2]=V;c[ab+(W+8|0)>>2]=V;break}if((au|0)==31){av=0}else{av=25-(au>>>1)|0}Q=ar<<av;X=c[q>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(ar|0)){break}aw=X+16+(Q>>>31<<2)|0;q=c[aw>>2]|0;if((q|0)==0){T=428;break}else{Q=Q<<1;X=q}}if((T|0)==428){if(aw>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[aw>>2]=V;c[ab+(W+24|0)>>2]=X;c[ab+(W+12|0)>>2]=V;c[ab+(W+8|0)>>2]=V;break}}Q=X+8|0;q=c[Q>>2]|0;$=c[396]|0;if(X>>>0<$>>>0){bJ();return 0;return 0}if(q>>>0<$>>>0){bJ();return 0;return 0}else{c[q+12>>2]=V;c[Q>>2]=V;c[ab+(W+8|0)>>2]=q;c[ab+(W+12|0)>>2]=X;c[ab+(W+24|0)>>2]=0;break}}}while(0);n=ab+(ak|8)|0;return n|0}}while(0);Y=ad;W=2016;while(1){ax=c[W>>2]|0;if(ax>>>0<=Y>>>0){ay=c[W+4>>2]|0;az=ax+ay|0;if(az>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=ax+(ay-39|0)|0;if((W&7|0)==0){aA=0}else{aA=-W&7}W=ax+((ay-47|0)+aA|0)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aB=0}else{aB=-_&7}_=(aa-40|0)-aB|0;c[398]=ab+aB|0;c[395]=_;c[ab+(aB+4|0)>>2]=_|1;c[ab+(aa-36|0)>>2]=40;c[399]=c[170]|0;c[ac+4>>2]=27;c[W>>2]=c[504]|0;c[W+4>>2]=c[2020>>2]|0;c[W+8>>2]=c[2024>>2]|0;c[W+12>>2]=c[2028>>2]|0;c[504]=ab;c[505]=aa;c[507]=0;c[506]=W;W=ac+28|0;c[W>>2]=7;L646:do{if((ac+32|0)>>>0<az>>>0){_=W;while(1){K=_+4|0;c[K>>2]=7;if((_+8|0)>>>0<az>>>0){_=K}else{break L646}}}}while(0);if((ac|0)==(Y|0)){break}W=ac-ad|0;_=Y+(W+4|0)|0;c[_>>2]=c[_>>2]&-2;c[ad+4>>2]=W|1;c[Y+W>>2]=W;_=W>>>3;if(W>>>0<256){K=_<<1;Z=1608+(K<<2)|0;S=c[392]|0;q=1<<_;do{if((S&q|0)==0){c[392]=S|q;aC=Z;aE=1608+(K+2<<2)|0}else{_=1608+(K+2<<2)|0;Q=c[_>>2]|0;if(Q>>>0>=(c[396]|0)>>>0){aC=Q;aE=_;break}bJ();return 0;return 0}}while(0);c[aE>>2]=ad;c[aC+12>>2]=ad;c[ad+8>>2]=aC;c[ad+12>>2]=Z;break}K=ad;q=W>>>8;do{if((q|0)==0){aF=0}else{if(W>>>0>16777215){aF=31;break}S=(q+1048320|0)>>>16&8;Y=q<<S;ac=(Y+520192|0)>>>16&4;_=Y<<ac;Y=(_+245760|0)>>>16&2;Q=(14-(ac|S|Y)|0)+(_<<Y>>>15)|0;aF=W>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);q=1872+(aF<<2)|0;c[ad+28>>2]=aF;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[393]|0;Q=1<<aF;if((Z&Q|0)==0){c[393]=Z|Q;c[q>>2]=K;c[ad+24>>2]=q;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aF|0)==31){aG=0}else{aG=25-(aF>>>1)|0}Q=W<<aG;Z=c[q>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(W|0)){break}aH=Z+16+(Q>>>31<<2)|0;q=c[aH>>2]|0;if((q|0)==0){T=463;break}else{Q=Q<<1;Z=q}}if((T|0)==463){if(aH>>>0<(c[396]|0)>>>0){bJ();return 0;return 0}else{c[aH>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;W=c[Q>>2]|0;q=c[396]|0;if(Z>>>0<q>>>0){bJ();return 0;return 0}if(W>>>0<q>>>0){bJ();return 0;return 0}else{c[W+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=W;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[395]|0;if(ad>>>0<=o>>>0){break}W=ad-o|0;c[395]=W;ad=c[398]|0;Q=ad;c[398]=Q+o|0;c[Q+(o+4|0)>>2]=W|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[dm()>>2]=12;n=0;return n|0}function fK(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[396]|0;if(b>>>0<e>>>0){bJ()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){bJ()}h=f&-8;i=a+(h-8|0)|0;j=i;L699:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){bJ()}if((n|0)==(c[397]|0)){p=a+(h-4|0)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[394]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4|0)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8|0)>>2]|0;s=c[a+(l+12|0)>>2]|0;t=1608+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){bJ()}if((c[k+12>>2]|0)==(n|0)){break}bJ()}}while(0);if((s|0)==(k|0)){c[392]=c[392]&(1<<p^-1);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){bJ()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}bJ()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24|0)>>2]|0;v=c[a+(l+12|0)>>2]|0;L733:do{if((v|0)==(t|0)){w=a+(l+20|0)|0;x=c[w>>2]|0;do{if((x|0)==0){y=a+(l+16|0)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break L733}else{B=z;C=y;break}}else{B=x;C=w}}while(0);while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){bJ()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8|0)>>2]|0;if(w>>>0<e>>>0){bJ()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){bJ()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{bJ()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28|0)|0;m=1872+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[393]=c[393]&(1<<c[v>>2]^-1);q=n;r=o;break L699}else{if(p>>>0<(c[396]|0)>>>0){bJ()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L699}}}while(0);if(A>>>0<(c[396]|0)>>>0){bJ()}c[A+24>>2]=p;t=c[a+(l+16|0)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[396]|0)>>>0){bJ()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20|0)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[396]|0)>>>0){bJ()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){bJ()}A=a+(h-4|0)|0;e=c[A>>2]|0;if((e&1|0)==0){bJ()}do{if((e&2|0)==0){if((j|0)==(c[398]|0)){B=(c[395]|0)+r|0;c[395]=B;c[398]=q;c[q+4>>2]=B|1;if((q|0)==(c[397]|0)){c[397]=0;c[394]=0}if(B>>>0<=(c[399]|0)>>>0){return}fM(0);return}if((j|0)==(c[397]|0)){B=(c[394]|0)+r|0;c[394]=B;c[397]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L805:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=1608+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[396]|0)>>>0){bJ()}if((c[u+12>>2]|0)==(j|0)){break}bJ()}}while(0);if((g|0)==(u|0)){c[392]=c[392]&(1<<C^-1);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[396]|0)>>>0){bJ()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}bJ()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16|0)>>2]|0;t=c[a+(h|4)>>2]|0;L807:do{if((t|0)==(b|0)){p=a+(h+12|0)|0;v=c[p>>2]|0;do{if((v|0)==0){m=a+(h+8|0)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break L807}else{F=k;G=m;break}}else{F=v;G=p}}while(0);while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[396]|0)>>>0){bJ()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[396]|0)>>>0){bJ()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){bJ()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{bJ()}}}while(0);if((f|0)==0){break}t=a+(h+20|0)|0;u=1872+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[393]=c[393]&(1<<c[t>>2]^-1);break L805}else{if(f>>>0<(c[396]|0)>>>0){bJ()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L805}}}while(0);if(E>>>0<(c[396]|0)>>>0){bJ()}c[E+24>>2]=f;b=c[a+(h+8|0)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[396]|0)>>>0){bJ()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12|0)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[396]|0)>>>0){bJ()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[397]|0)){H=B;break}c[394]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=1608+(d<<2)|0;A=c[392]|0;E=1<<r;do{if((A&E|0)==0){c[392]=A|E;I=e;J=1608+(d+2<<2)|0}else{r=1608+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[396]|0)>>>0){I=h;J=r;break}bJ()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=(14-(E|J|d)|0)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=1872+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[393]|0;d=1<<K;do{if((r&d|0)==0){c[393]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=642;break}else{A=A<<1;J=E}}if((N|0)==642){if(M>>>0<(c[396]|0)>>>0){bJ()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[396]|0;if(J>>>0<E>>>0){bJ()}if(B>>>0<E>>>0){bJ()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[400]|0)-1|0;c[400]=q;if((q|0)==0){O=2024}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[400]=-1;return}function fL(a,b){a=a|0;b=b|0;var d=0,e=0;do{if((a|0)==0){d=0}else{e=$(b,a);if((b|a)>>>0<=65535){d=e;break}d=((e>>>0)/(a>>>0)>>>0|0)==(b|0)?e:-1}}while(0);b=fJ(d)|0;if((b|0)==0){return b|0}if((c[b-4>>2]&3|0)==0){return b|0}fO(b|0,0,d|0);return b|0}function fM(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0;do{if((c[166]|0)==0){b=aD(8)|0;if((b-1&b|0)==0){c[168]=b;c[167]=b;c[169]=-1;c[170]=2097152;c[171]=0;c[503]=0;c[166]=eI(0)&-16^1431655768;break}else{bJ();return 0;return 0}}}while(0);if(a>>>0>=4294967232){d=0;return d|0}b=c[398]|0;if((b|0)==0){d=0;return d|0}e=c[395]|0;do{if(e>>>0>(a+40|0)>>>0){f=c[168]|0;g=$(((((((-40-a|0)-1|0)+e|0)+f|0)>>>0)/(f>>>0)>>>0)-1|0,f);h=b;i=2016;while(1){j=c[i>>2]|0;if(j>>>0<=h>>>0){if((j+(c[i+4>>2]|0)|0)>>>0>h>>>0){k=i;break}}j=c[i+8>>2]|0;if((j|0)==0){k=0;break}else{i=j}}if((c[k+12>>2]&8|0)!=0){break}i=dJ(0)|0;h=k+4|0;if((i|0)!=((c[k>>2]|0)+(c[h>>2]|0)|0)){break}j=dJ(-(g>>>0>2147483646?-2147483648-f|0:g)|0)|0;l=dJ(0)|0;if(!((j|0)!=-1&l>>>0<i>>>0)){break}j=i-l|0;if((i|0)==(l|0)){break}c[h>>2]=(c[h>>2]|0)-j|0;c[500]=(c[500]|0)-j|0;h=c[398]|0;m=(c[395]|0)-j|0;j=h;n=h+8|0;if((n&7|0)==0){o=0}else{o=-n&7}n=m-o|0;c[398]=j+o|0;c[395]=n;c[j+(o+4|0)>>2]=n|1;c[j+(m+4|0)>>2]=40;c[399]=c[170]|0;d=(i|0)!=(l|0)&1;return d|0}}while(0);if((c[395]|0)>>>0<=(c[399]|0)>>>0){d=0;return d|0}c[399]=-1;d=0;return d|0}function fN(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function fO(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function fP(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function fQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=a+c>>>0;return(D=b+d+(e>>>0<a>>>0|0)>>>0,e|0)|0}function fR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=b-d>>>0;e=b-d-(c>>>0>a>>>0|0)>>>0;return(D=e,a-c>>>0|0)|0}function fS(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b<<c|(a&(1<<c)-1<<32-c)>>>32-c;return a<<c}D=a<<c-32;return 0}function fT(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b>>>c;return a>>>c|(b&(1<<c)-1)<<32-c}D=0;return b>>>c-32|0}function fU(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b>>c;return a>>>c|(b&(1<<c)-1)<<32-c}D=(b|0)<0?-1:0;return b>>c-32|0}function fV(b){b=b|0;var c=0;c=a[n+(b>>>24)|0]|0;if((c|0)<8)return c|0;c=a[n+(b>>16&255)|0]|0;if((c|0)<8)return c+8|0;c=a[n+(b>>8&255)|0]|0;if((c|0)<8)return c+16|0;return(a[n+(b&255)|0]|0)+24|0}function fW(b){b=b|0;var c=0;c=a[m+(b&255)|0]|0;if((c|0)<8)return c|0;c=a[m+(b>>8&255)|0]|0;if((c|0)<8)return c+8|0;c=a[m+(b>>16&255)|0]|0;if((c|0)<8)return c+16|0;return(a[m+(b>>>24)|0]|0)+24|0}function fX(a,b){a=a|0;b=b|0;var c=0,d=0,e=0,f=0;c=a&65535;d=b&65535;e=$(d,c);f=a>>>16;a=(e>>>16)+$(d,f)|0;d=b>>>16;b=$(d,c);return(D=((a>>>16)+$(d,f)|0)+(((a&65535)+b|0)>>>16)|0,0|(a+b<<16|e&65535))|0}function fY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0,f=0,g=0,h=0,i=0;e=b>>31|((b|0)<0?-1:0)<<1;f=((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1;g=d>>31|((d|0)<0?-1:0)<<1;h=((d|0)<0?-1:0)>>31|((d|0)<0?-1:0)<<1;i=fR(e^a,f^b,e,f)|0;b=D;a=g^e;e=h^f;f=fR(f1(i,b,fR(g^c,h^d,g,h)|0,D,0)^a,D^e,a,e)|0;return(D=D,f)|0}function fZ(a,b,d,e){a=a|0;b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0,j=0,k=0,l=0,m=0;f=i;i=i+8|0;g=f|0;h=b>>31|((b|0)<0?-1:0)<<1;j=((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1;k=e>>31|((e|0)<0?-1:0)<<1;l=((e|0)<0?-1:0)>>31|((e|0)<0?-1:0)<<1;m=fR(h^a,j^b,h,j)|0;b=D;f1(m,b,fR(k^d,l^e,k,l)|0,D,g);l=fR(c[g>>2]^h,c[g+4>>2]^j,h,j)|0;j=D;i=f;return(D=j,l)|0}function f_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0,f=0;e=a;a=c;c=fX(e,a)|0;f=D;return(D=($(b,a)+$(d,e)|0)+f|f&0,0|c&-1)|0}function f$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=f1(a,b,c,d,0)|0;return(D=D,e)|0}function f0(a,b,d,e){a=a|0;b=b|0;d=d|0;e=e|0;var f=0,g=0;f=i;i=i+8|0;g=f|0;f1(a,b,d,e,g);i=f;return(D=c[g+4>>2]|0,c[g>>2]|0)|0}function f1(a,b,d,e,f){a=a|0;b=b|0;d=d|0;e=e|0;f=f|0;var g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0;g=a;h=b;i=h;j=d;k=e;l=k;if((i|0)==0){m=(f|0)!=0;if((l|0)==0){if(m){c[f>>2]=(g>>>0)%(j>>>0);c[f+4>>2]=0}n=0;o=(g>>>0)/(j>>>0)>>>0;return(D=n,o)|0}else{if(!m){n=0;o=0;return(D=n,o)|0}c[f>>2]=a&-1;c[f+4>>2]=b&0;n=0;o=0;return(D=n,o)|0}}m=(l|0)==0;do{if((j|0)==0){if(m){if((f|0)!=0){c[f>>2]=(i>>>0)%(j>>>0);c[f+4>>2]=0}n=0;o=(i>>>0)/(j>>>0)>>>0;return(D=n,o)|0}if((g|0)==0){if((f|0)!=0){c[f>>2]=0;c[f+4>>2]=(i>>>0)%(l>>>0)}n=0;o=(i>>>0)/(l>>>0)>>>0;return(D=n,o)|0}p=l-1|0;if((p&l|0)==0){if((f|0)!=0){c[f>>2]=0|a&-1;c[f+4>>2]=p&i|b&0}n=0;o=i>>>((fW(l|0)|0)>>>0);return(D=n,o)|0}p=(fV(l|0)|0)-(fV(i|0)|0)|0;if(p>>>0<=30){q=p+1|0;r=31-p|0;s=q;t=i<<r|g>>>(q>>>0);u=i>>>(q>>>0);v=0;w=g<<r;break}if((f|0)==0){n=0;o=0;return(D=n,o)|0}c[f>>2]=0|a&-1;c[f+4>>2]=h|b&0;n=0;o=0;return(D=n,o)|0}else{if(!m){r=(fV(l|0)|0)-(fV(i|0)|0)|0;if(r>>>0<=31){q=r+1|0;p=31-r|0;x=r-31>>31;s=q;t=g>>>(q>>>0)&x|i<<p;u=i>>>(q>>>0)&x;v=0;w=g<<p;break}if((f|0)==0){n=0;o=0;return(D=n,o)|0}c[f>>2]=0|a&-1;c[f+4>>2]=h|b&0;n=0;o=0;return(D=n,o)|0}p=j-1|0;if((p&j|0)!=0){x=((fV(j|0)|0)+33|0)-(fV(i|0)|0)|0;q=64-x|0;r=32-x|0;y=r>>31;z=x-32|0;A=z>>31;s=x;t=r-1>>31&i>>>(z>>>0)|(i<<r|g>>>(x>>>0))&A;u=A&i>>>(x>>>0);v=g<<q&y;w=(i<<q|g>>>(z>>>0))&y|g<<r&x-33>>31;break}if((f|0)!=0){c[f>>2]=p&g;c[f+4>>2]=0}if((j|0)==1){n=h|b&0;o=0|a&-1;return(D=n,o)|0}else{p=fW(j|0)|0;n=0|i>>>(p>>>0);o=i<<32-p|g>>>(p>>>0)|0;return(D=n,o)|0}}}while(0);if((s|0)==0){B=w;C=v;E=u;F=t;G=0;H=0}else{g=0|d&-1;d=k|e&0;e=fQ(g,d,-1,-1)|0;k=D;i=w;w=v;v=u;u=t;t=s;s=0;while(1){I=w>>>31|i<<1;J=s|w<<1;j=0|(u<<1|i>>>31);a=u>>>31|v<<1|0;fR(e,k,j,a);b=D;h=b>>31|((b|0)<0?-1:0)<<1;K=h&1;L=fR(j,a,h&g,(((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1)&d)|0;M=D;b=t-1|0;if((b|0)==0){break}else{i=I;w=J;v=M;u=L;t=b;s=K}}B=I;C=J;E=M;F=L;G=0;H=K}K=C;C=0;if((f|0)!=0){c[f>>2]=0|F;c[f+4>>2]=E|0}n=(0|K)>>>31|(B|C)<<1|(C<<1|K>>>31)&0|G;o=(K<<1|0>>>31)&-2|H;return(D=n,o)|0}function f2(a){a=a|0;return bx(a|0)|0}function f3(a){a=a|0;return by(a|0)|0}function f4(a){a=a|0;return c3(a|0)|0}function f5(a){a=a|0;return d8(a|0)|0}function f6(a){a=a|0;return aO(a|0)|0}function f7(a){a=a|0;return c_(a|0)|0}function f8(a){a=a|0;return dP(a|0)|0}function f9(a){a=a|0;return dS(a|0)|0}function ga(a){a=a|0;return df(a|0)|0}function gb(a){a=a|0;return eG(a|0)|0}function gc(a){a=a|0;d_(a|0)}function gd(a){a=a|0;bi(a|0)}function ge(a){a=a|0;aV(a|0)}function gf(a){a=a|0;b4(a|0)}function gg(a){a=a|0;d4(a|0)}function gh(a){a=a|0;cO(a|0)}function gi(a){a=a|0;e1(a|0)}function gj(a){a=a|0;cA(a|0)}function gk(a){a=a|0;cM(a|0)}function gl(a){a=a|0;br(a|0)}function gm(a){a=a|0;eo(a|0)}function gn(a){a=a|0;eD(a|0)}function go(a){a=a|0;be(a|0)}function gp(a){a=a|0;cu(a|0)}function gq(a){a=a|0;dX(a|0)}function gr(a){a=a|0;a$(a|0)}function gs(a){a=a|0;dc(a|0)}function gt(a){a=a|0;dn(a|0)}function gu(a){a=a|0;bk(a|0)}function gv(a){a=a|0;eA(a|0)}function gw(a){a=a|0;aJ(a|0)}function gx(a){a=a|0;c4(a|0)}function gy(a){a=a|0;ek(a|0)}function gz(a){a=a|0;b3(a|0)}function gA(a){a=a|0;aP(a|0)}function gB(a){a=a|0;d3(a|0)}function gC(a,b){a=a|0;b=b|0;return bS(a|0,b|0)|0}function gD(){cf()}function gE(){cK()}function gF(){ev()}function gG(){aA()}function gH(){c7()}function gI(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dq(a|0,b|0,c|0,d|0)}function gJ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dl(a|0,b|0,c|0,d|0)}function gK(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eO(a|0,b|0,c|0,d|0)}function gL(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d7(a|0,b|0,c|0,d|0)}function gM(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dK(a|0,b|0,c|0,d|0)}function gN(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;bI(a|0,b|0,c|0,d|0)}function gO(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aN(a|0,b|0,c|0,d|0)}function gP(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cx(a|0,b|0,c|0,d|0)}function gQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;b7(a|0,b|0,c|0,d|0)}function gR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d1(a|0,b|0,c|0,d|0)}function gS(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cl(a|0,b|0,c|0,d|0)}function gT(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cr(a|0,b|0,c|0,d|0)}function gU(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eH(a|0,b|0,c|0,d|0)}function gV(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a4(a|0,b|0,c|0,d|0)}function gW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ca(a|0,b|0,c|0,d|0)}function gX(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dZ(a|0,b|0,c|0,d|0)}function gY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a_(a|0,b|0,c|0,d|0)}function gZ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aM(a|0,b|0,c|0,d|0)}function g_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eb(a|0,b|0,c|0,d|0)}function g$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ds(a|0,b|0,c|0,d|0)}function g0(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eZ(a|0,b|0,c|0,d|0)}function g1(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dO(a|0,b|0,c|0,d|0)}function g2(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cm(a|0,b|0,c|0,d|0)}function g3(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cI(a|0,b|0,c|0,d|0)}function g4(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;en(a|0,b|0,c|0,d|0)}function g5(a,b,c){a=a|0;b=b|0;c=c|0;bH(a|0,b|0,c|0)}function g6(a,b,c){a=a|0;b=b|0;c=c|0;dz(a|0,b|0,c|0)}function g7(a,b,c){a=a|0;b=b|0;c=c|0;aW(a|0,b|0,c|0)}function g8(a,b,c){a=a|0;b=b|0;c=c|0;ea(a|0,b|0,c|0)}function g9(a,b,c){a=a|0;b=b|0;c=c|0;dg(a|0,b|0,c|0)}function ha(a,b,c){a=a|0;b=b|0;c=c|0;bu(a|0,b|0,c|0)}function hb(a,b,c){a=a|0;b=b|0;c=c|0;dy(a|0,b|0,c|0)}function hc(a,b,c){a=a|0;b=b|0;c=c|0;eh(a|0,b|0,c|0)}function hd(a,b,c){a=a|0;b=b|0;c=c|0;dD(a|0,b|0,c|0)}function he(a,b,c){a=a|0;b=b|0;c=c|0;cs(a|0,b|0,c|0)}function hf(a,b,c){a=a|0;b=b|0;c=c|0;bF(a|0,b|0,c|0)}function hg(a,b,c){a=a|0;b=b|0;c=c|0;bv(a|0,b|0,c|0)}function hh(a,b,c){a=a|0;b=b|0;c=c|0;cj(a|0,b|0,c|0)}function hi(a,b,c){a=a|0;b=b|0;c=c|0;eL(a|0,b|0,c|0)}function hj(a,b,c){a=a|0;b=b|0;c=c|0;de(a|0,b|0,c|0)}function hk(a,b,c){a=a|0;b=b|0;c=c|0;bb(a|0,b|0,c|0)}function hl(a,b,c){a=a|0;b=b|0;c=c|0;bh(a|0,b|0,c|0)}function hm(a,b,c){a=a|0;b=b|0;c=c|0;b2(a|0,b|0,c|0)}function hn(a,b,c){a=a|0;b=b|0;c=c|0;aB(a|0,b|0,c|0)}function ho(a,b,c){a=a|0;b=b|0;c=c|0;co(a|0,b|0,c|0)}function hp(a,b,c){a=a|0;b=b|0;c=c|0;bE(a|0,b|0,c|0)}function hq(a,b,c){a=a|0;b=b|0;c=c|0;bL(a|0,b|0,c|0)}function hr(a,b,c){a=a|0;b=b|0;c=c|0;aG(a|0,b|0,c|0)}function hs(a,b,c){a=a|0;b=b|0;c=c|0;cC(a|0,b|0,c|0)}function ht(a,b,c){a=a|0;b=b|0;c=c|0;bX(a|0,b|0,c|0)}function hu(a,b,c){a=a|0;b=b|0;c=c|0;eJ(a|0,b|0,c|0)}function hv(a,b,c){a=a|0;b=b|0;c=c|0;ct(a|0,b|0,c|0)}function hw(a,b,c){a=a|0;b=b|0;c=c|0;bg(a|0,b|0,c|0)}function hx(a,b,c){a=a|0;b=b|0;c=c|0;dT(a|0,b|0,c|0)}function hy(a,b,c){a=a|0;b=b|0;c=c|0;eT(a|0,b|0,c|0)}function hz(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;dh(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hA(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;cG(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hB(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;eR(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hC(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;ey(a|0,b|0,c|0,d|0,e|0)}function hD(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;c9(a|0,b|0,c|0,d|0,e|0)}function hE(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dW(a|0,b|0,c|0,d|0,e|0)}function hF(a,b){a=a|0;b=b|0;bB(a|0,b|0)}function hG(a,b){a=a|0;b=b|0;bO(a|0,b|0)}function hH(a,b){a=a|0;b=b|0;eB(a|0,b|0)}function hI(a,b){a=a|0;b=b|0;ew(a|0,b|0)}function hJ(a,b){a=a|0;b=b|0;e2(a|0,b|0)}function hK(a,b){a=a|0;b=b|0;et(a|0,b|0)}function hL(a,b){a=a|0;b=b|0;e_(a|0,b|0)}function hM(a,b){a=a|0;b=b|0;ex(a|0,b|0)}function hN(a,b){a=a|0;b=b|0;dF(a|0,b|0)}function hO(a,b){a=a|0;b=b|0;cU(a|0,b|0)}function hP(a,b){a=a|0;b=b|0;dU(a|0,b|0)}function hQ(a,b){a=a|0;b=b|0;a2(a|0,b|0)}function hR(a,b){a=a|0;b=b|0;bq(a|0,b|0)}function hS(a,b){a=a|0;b=b|0;dN(a|0,b|0)}function hT(a,b){a=a|0;b=b|0;aE(a|0,b|0)}function hU(a,b){a=a|0;b=b|0;b9(a|0,b|0)}function hV(a,b){a=a|0;b=b|0;bU(a|0,b|0)}function hW(a,b){a=a|0;b=b|0;cB(a|0,b|0)}function hX(a,b){a=a|0;b=b|0;dI(a|0,b|0)}function hY(a,b){a=a|0;b=b|0;cX(a|0,b|0)}function hZ(a,b){a=a|0;b=b|0;e4(a|0,b|0)}function h_(a,b){a=a|0;b=b|0;aK(a|0,b|0)}function h$(a,b){a=a|0;b=b|0;dC(a|0,b|0)}function h0(a,b){a=a|0;b=b|0;bz(a|0,b|0)}function h1(a,b){a=a|0;b=b|0;dB(a|0,b|0)}function h2(a,b){a=a|0;b=b|0;c1(a|0,b|0)}function h3(a,b){a=a|0;b=b|0;c5(a|0,b|0)}function h4(a,b){a=a|0;b=b|0;eY(a|0,b|0)}function h5(a,b){a=a|0;b=b|0;cp(a|0,b|0)}function h6(a,b){a=a|0;b=b|0;dx(a|0,b|0)}function h7(a,b){a=a|0;b=b|0;c0(a|0,b|0)}function h8(a,b){a=a|0;b=b|0;e$(a|0,b|0)}function h9(a,b){a=a|0;b=b|0;bd(a|0,b|0)}function ia(a,b){a=a|0;b=b|0;ck(a|0,b|0)}function ib(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;dj(a|0,+b,+c,+d,+e)}function ic(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;bM(a|0,b|0,c|0,d|0,e|0,f|0)}function id(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;ef(a|0,b|0,c|0,d|0,e|0,f|0)}function ie(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;ci(a|0,+b,+c,+d)}function ig(){return eC()|0}function ih(){return dw()|0}function ii(a,b,c){a=a|0;b=+b;c=+c;bG(a|0,+b,+c)}function ij(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;bD(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ik(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;ch(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function il(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;c$(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function im(a,b){a=a|0;b=+b;bt(a|0,+b)}function io(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;d0(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ip(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bs(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iq(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;cV(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ir(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;e6[a&7](b|0,c|0,d|0,e|0,f|0)}function is(a,b,c){a=a|0;b=b|0;c=+c;e7[a&3](b|0,+c)}function it(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;e8[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function iu(a){a=a|0;return e9[a&7]()|0}function iv(a,b){a=a|0;b=b|0;fa[a&63](b|0)}function iw(a,b,c){a=a|0;b=b|0;c=c|0;fb[a&127](b|0,c|0)}function ix(a,b,c,d){a=a|0;b=b|0;c=+c;d=+d;fc[a&3](b|0,+c,+d)}function iy(a,b){a=a|0;b=b|0;return fd[a&31](b|0)|0}function iz(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;fe[a&63](b|0,c|0,d|0)}function iA(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;ff[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iB(a){a=a|0;fg[a&31]()}function iC(a,b,c,d,e,f,g,h,i,j){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;j=j|0;fh[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0,j|0)}function iD(a,b,c,d,e){a=a|0;b=b|0;c=+c;d=+d;e=+e;fi[a&3](b|0,+c,+d,+e)}function iE(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;fj[a&7](b|0,c|0,d|0,e|0,f|0,g|0)}function iF(a,b,c){a=a|0;b=b|0;c=c|0;return fk[a&3](b|0,c|0)|0}function iG(a,b,c,d,e,f){a=a|0;b=b|0;c=+c;d=+d;e=+e;f=+f;fl[a&3](b|0,+c,+d,+e,+f)}function iH(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;fm[a&63](b|0,c|0,d|0,e|0)}function iI(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;aa(0)}function iJ(a,b){a=a|0;b=+b;aa(1)}function iK(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;aa(2)}function iL(){aa(3);return 0}function iM(a){a=a|0;aa(4)}function iN(a,b){a=a|0;b=b|0;aa(5)}function iO(a,b,c){a=a|0;b=+b;c=+c;aa(6)}function iP(a){a=a|0;aa(7);return 0}function iQ(a,b,c){a=a|0;b=b|0;c=c|0;aa(8)}function iR(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;aa(9)}function iS(){aa(10)}function iT(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;aa(11)}function iU(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;aa(12)}function iV(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;aa(13)}function iW(a,b){a=a|0;b=b|0;aa(14);return 0}function iX(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;aa(15)}function iY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aa(16)}
+function fn(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function fo(){return i|0}function fp(a){a=a|0;i=a}function fq(a,b){a=a|0;b=b|0;if((q|0)==0){q=a;r=b}}function fr(a){a=a|0;D=a}function fs(a){a=a|0;E=a}function ft(a){a=a|0;F=a}function fu(a){a=a|0;G=a}function fv(a){a=a|0;H=a}function fw(a){a=a|0;I=a}function fx(a){a=a|0;J=a}function fy(a){a=a|0;K=a}function fz(a){a=a|0;L=a}function fA(a){a=a|0;M=a}function fB(){ep();return}function fC(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,g=0,h=0,j=0,k=0;d=i;i=i+8|0;e=d|0;c[e>>2]=a;L2:do{if((a|0)<1|(b|0)==0){f=1}else{g=0;h=1;while(1){j=c[b+(g<<2)>>2]|0;do{if((j|0)==0){k=h}else{if((bo(j|0,800)|0)!=0){k=0;break}k=(bo(j|0,736)|0)==0?h:1}}while(0);j=g+1|0;if((j|0)<(a|0)){g=j;h=k}else{f=k;break L2}}}}while(0);a8(e|0,b|0);b5(18);dd(c[508]|0,c[558]|0);bf(100,100);dr(c[b>>2]|0);if((fE(f)|0)!=0){i=d;return 0}b1(8);bW(6);eX(2);e5(18);bN(10);a3(384);e0();i=d;return 0}function fD(b,d,e){b=b|0;d=d|0;e=e|0;var f=0.0,j=0.0,k=0.0,l=0.0;e=i;d=b&255;if((d|0)==43|(d|0)==61){f=+g[562];if(f<.0020000000949949026){j=f}else{k=f*.9523810148239136;g[562]=k;j=k}k=j;cT(1008,(u=i,i=i+8|0,h[u>>3]=k,u)|0);c[538]=1}else if((d|0)==45){k=+g[562];if(k<.009999999776482582){j=k*1.0499999523162842;g[562]=j;l=j}else{l=k}cT(1008,(u=i,i=i+8|0,h[u>>3]=l,u)|0);c[538]=1}else if((d|0)==119){g[542]=+g[542]+.05000000074505806}else if((d|0)==120){g[542]=+g[542]+-.05000000074505806}else if((d|0)==113){g[543]=+g[543]+.05000000074505806}else if((d|0)==122){g[543]=+g[543]+-.05000000074505806}else if((d|0)==97){g[544]=+g[544]+.05000000074505806}else if((d|0)==100){g[544]=+g[544]+-.05000000074505806}else if((d|0)==101){g[545]=+g[545]+.05000000074505806}else if((d|0)==99){g[545]=+g[545]+-.05000000074505806}else if((d|0)==27){aZ(0)}else if((d|0)==32){b=(c[592]|0)==0;c[592]=b&1;cT(1528,(u=i,i=i+8|0,c[u>>2]=b?1520:1152,u)|0);c[538]=1}else if((d|0)==105){c[538]=(c[538]|0)==0&1}else if((d|0)==115){c[536]=(c[536]|0)==0&1}else if((d|0)==102){b0()}a[2072]=0;ep();i=e;return}function fE(a){a=a|0;var b=0,d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,v=0.0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0;b=i;i=i+4312|0;d=b|0;e=b+8|0;f=b+16|0;h=b+24|0;j=b+96|0;k=b+104|0;l=b+112|0;m=b+120|0;n=b+2168|0;o=b+2176|0;p=b+2184|0;q=b+2248|0;r=b+4304|0;s=c[508]|0;t=c[558]|0;if((c[524]|0)!=0){a2(1,2096)}c[524]=0;cT(744,(u=i,i=i+16|0,c[u>>2]=s,c[u+8>>2]=t,u)|0);c[522]=s;c[526]=t;cu(33985);bq(1,2096);aK(3553,c[524]|0);dT(3553,10240,9728);dT(3553,10241,9728);d0(3553,0,6408,c[522]|0,c[526]|0,0,6408,5121,0);aK(3553,0);aM(0.0,0.0,0.0,0.0);aP(2929);cu(33984);eH(0,0,c[508]|0,c[558]|0);cw(5888);b8();cw(5889);b8();g[534]=0.0;g[535]=0.0;v=+(c[508]|0);g[532]=v;g[533]=0.0;g[530]=v;v=+(c[558]|0);g[531]=v;g[528]=0.0;g[529]=v;cn(32884);cn(32888);e3(2,5126,0,2040);b3(33984);cq(2,5126,0,2112);t=p;s=q;w=b+2256|0;x=b+3280|0;y=(a|0)!=0;a=y?4:2;z=y?0:0;c[570]=a;c[571]=z;y=cb(0,a|0,z|0,1,2288,0)|0;c[n>>2]=y;do{if((y|0)==0){z=bP(0,1,2288,0,0,n|0)|0;c[574]=z;if((z|0)==0){a3(624);A=1;break}a=ej(z|0,4225,64,t|0,o|0)|0;c[n>>2]=a;if((a|0)!=0){a3(224);A=1;break}a=(c[o>>2]|0)>>>2;z=0;while(1){if(z>>>0>=a>>>0){B=45;break}C=p+(z<<2)|0;c6(c[C>>2]|0,4096,8,s|0,0);if((c[q>>2]|0)==(c[570]|0)&(c[q+4>>2]|0)==(c[571]|0)){break}else{z=z+1|0}}if((B|0)==45){a3(184);A=1;break}z=c[C>>2]|0;c[572]=z;a=eq(c[574]|0,z|0,0,0,n|0)|0;c[576]=a;if((a|0)==0){a3(136);A=1;break}fO(w|0,0,1024);fO(x|0,0,1024);c[n>>2]=c6(c[572]|0,4140,1024,w|0,o|0)|0;a=c6(c[572]|0,4139,1024,x|0,o|0)|0;z=c[n>>2]|a;c[n>>2]=z;if((z|0)==0){a3(304);cT(776,(u=i,i=i+16|0,c[u>>2]=w,c[u+8>>2]=x,u)|0);A=0;break}else{a3(96);A=1;break}}else{a3(184);A=1}}while(0);if((A|0)!=0){cT(1368,(u=i,i=i+8|0,c[u>>2]=A,u)|0);aZ(A|0);return 0}A=c6(c[572]|0,4118,4,r|0,0)|0;if((A|0)!=0){cT(1320,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0);aZ(A|0);return 0}if((c[r>>2]|0)==0){cT(1256,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0);D=-10;i=b;return D|0}r=m|0;c[j>>2]=0;m=c[568]|0;if((m|0)!=0){cN(m|0)}c[568]=0;m=c[566]|0;if((m|0)!=0){c8(m|0)}c[566]=0;a3(304);cT(1104,(u=i,i=i+8|0,c[u>>2]=1080,u)|0);m=b_(1080,0,(u=i,i=i+1|0,i=i+7>>3<<3,c[u>>2]=0,u)|0)|0;do{if((m|0)==-1){cT(880,(u=i,i=i+8|0,c[u>>2]=1080,u)|0);B=66;break}else{if((a0(m|0,h|0)|0)!=0){cT(840,(u=i,i=i+8|0,c[u>>2]=1080,u)|0);B=66;break}A=c[h+28>>2]|0;x=fL(A+1|0,1)|0;if((es(m|0,x|0,A|0)|0)==0){cT(808,(u=i,i=i+8|0,c[u>>2]=1080,u)|0);B=66;break}bT(m|0);c[j>>2]=0;if((x|0)==0){B=68;break}A=fJ((fN(x|0)|0)+1024|0)|0;c[k>>2]=A;w=c[508]|0;n=c[558]|0;b6(A|0,1024,(u=i,i=i+40|0,c[u>>2]=1064,c[u+8>>2]=w,c[u+16>>2]=1048,c[u+24>>2]=n,c[u+32>>2]=x,u)|0);n=cz(c[574]|0,1,k|0,0,j|0)|0;c[566]=n;if(!((n|0)!=0&(c[j>>2]|0)==0)){a3(8);E=1;break}fK(x);fK(c[k>>2]|0);x=el(c[566]|0,0,0,0,0,0)|0;c[j>>2]=x;if((x|0)!=0){a3(576);x=c[566]|0;n=c[572]|0;dR(x|0,n|0,4483,2048,r|0,l|0);a3(r|0);E=1;break}cT(976,(u=i,i=i+8|0,c[u>>2]=960,u)|0);n=eF(c[566]|0,960,j|0)|0;c[568]=n;if(!((n|0)!=0&(c[j>>2]|0)==0)){a3(536);E=1;break}x=da(n|0,c[572]|0,4528,4,2216,0)|0;c[j>>2]=x;if((x|0)==0){n=c[554]|0;w=n>>>0>1?n>>>5:n;c[506]=w;c[504]=(n>>>0)/(w>>>0)>>>0;a3(304);E=0;break}else{cT(904,(u=i,i=i+8|0,c[u>>2]=x,u)|0);aZ(1);return 0}}}while(0);do{if((B|0)==66){c[j>>2]=-1;B=68;break}}while(0);if((B|0)==68){a3(56);E=1}if((E|0)!=0){cT(1208,(u=i,i=i+8|0,c[u>>2]=E,u)|0);aZ(E|0);return 0}E=c[556]|0;if((E|0)!=0){fK(E)}a3(480);E=fJ($(c[522]<<2,c[526]|0))|0;c[556]=E;if((E|0)==0){a3(440);F=cT(1160,(u=i,i=i+8|0,c[u>>2]=-1,u)|0)|0;aZ(-1|0);return 0}fO(E|0,0,$(c[522]<<2,c[526]|0)|0);E=c[564]|0;if((E|0)!=0){dM(E|0)}c[564]=0;E=c[574]|0;B=dQ(E|0,2,0,$(c[522]<<2,c[526]|0)|0,0,0)|0;c[564]=B;if((B|0)==0){a3(408);F=cT(1160,(u=i,i=i+8|0,c[u>>2]=-1,u)|0)|0;aZ(-1|0);return 0}else{c[f>>2]=(aX()|0)*1e6&-1;g[588]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[589]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[590]=+(ee(f|0)|0)*2.0*4.656612873077393e-10+-1.0;g[591]=1.0;c[e>>2]=(aX()|0)*1e6&-1;g[584]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[585]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[586]=+(ee(e|0)|0)*2.0*4.656612873077393e-10+-1.0;g[587]=1.0;c[d>>2]=(aX()|0)*1e6&-1;g[580]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[581]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[582]=+(ee(d|0)|0)*2.0*4.656612873077393e-10+-1.0;g[583]=1.0;D=0;i=b;return D|0}return 0}function fF(){cy(c[576]|0);cN(c[568]|0);c8(c[566]|0);a6(c[576]|0);dM(c[564]|0);dM(0);bK(c[574]|0);c[576]=0;c[568]=0;c[566]=0;c[564]=0;c[574]=0;return}function fG(){var b=0,e=0,f=0,j=0,k=0,l=0,m=0,n=0,o=0.0,p=0.0,q=0.0,r=0.0,s=0.0,t=0.0,v=0,w=0,x=0,y=0,z=0;b=i;i=i+32|0;e=b|0;f=b+8|0;j=b+16|0;k=b+24|0;c[560]=(c[560]|0)+1|0;l=(aX()|0)*1e6&-1;m=l;n=(l|0)<0?-1:0;aM(0.0,0.0,0.0,0.0);c4(16384);if((c[592]|0)!=0){g[540]=+g[540]+.009999999776482582;c[k>>2]=(aX()|0)*1e6&-1;o=+g[540];if(o<1.0){p=o;q=+g[549]}else{g[540]=0.0;g[550]=+g[546];g[551]=+g[547];g[552]=+g[548];g[553]=+g[549];g[546]=+(ee(k|0)|0)*2.0*4.656612873077393e-10+-1.0;g[547]=+(ee(k|0)|0)*2.0*4.656612873077393e-10+-1.0;g[548]=+(ee(k|0)|0)*2.0*4.656612873077393e-10+-1.0;o=+(ee(k|0)|0)*2.0*4.656612873077393e-10+-1.0;g[549]=o;p=+g[540];q=o}o=1.0-p;g[542]=o*+g[550]+p*+g[546];g[543]=o*+g[551]+p*+g[547];g[544]=o*+g[552]+p*+g[548];g[545]=o*+g[553]+p*q;q=+g[578]+.009999999776482582;g[578]=q;if(q<1.0){r=q;s=+g[586];t=+g[587]}else{g[578]=0.0;g[588]=+g[584];g[589]=+g[585];g[590]=+g[586];g[591]=+g[587];c[j>>2]=(aX()|0)*1e6&-1;g[584]=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;g[585]=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;q=+(ee(j|0)|0)*2.0*4.656612873077393e-10+-1.0;g[586]=q;g[587]=1.0;r=+g[578];s=q;t=1.0}q=1.0-r;g[580]=q*+g[588]+r*+g[584];g[581]=q*+g[589]+r*+g[585];g[582]=q*+g[590]+r*s;g[583]=q*+g[591]+r*t}j=c[568]|0;do{if((j|0)!=0&(c[564]|0)!=0){do{if((c[592]|0)!=0|a[2072]^1){a[2072]=1;k=dE(j|0,0,4,2256)|0;l=dE(c[568]|0,1,16,2168)|k;k=l|dE(c[568]|0,2,16,2320);if((k|dE(c[568]|0,3,4,2248)|0)==0){v=c[568]|0;break}else{w=-10;x=cT(704,(u=i,i=i+8|0,c[u>>2]=w,u)|0)|0;aZ(1)}}else{v=j}}while(0);k=c[506]|0;l=c[504]|0;y=c[522]|0;z=e|0;c[z>>2]=$((((y|0)%(k|0)|0)!=0&1)+((y|0)/(k|0)&-1)|0,k);y=c[526]|0;c[e+4>>2]=$((((y|0)%(l|0)|0)!=0&1)+((y|0)/(l|0)&-1)|0,l);y=f|0;c[y>>2]=k;c[f+4>>2]=l;l=cW(c[576]|0,v|0,2,0,z|0,y|0,0,0,0)|0;if((l|0)!=0){cT(1448,(u=i,i=i+8|0,c[u>>2]=l,u)|0);w=l;x=cT(704,(u=i,i=i+8|0,c[u>>2]=w,u)|0)|0;aZ(1)}l=c[576]|0;y=c[564]|0;z=$(c[508]<<2,c[558]|0);k=dv(l|0,y|0,1,0,z|0,c[556]|0,0,0,0)|0;if((k|0)==0){break}cT(1416,(u=i,i=i+8|0,c[u>>2]=k,u)|0);w=1;x=cT(704,(u=i,i=i+8|0,c[u>>2]=w,u)|0)|0;aZ(1)}}while(0);w=c[556]|0;aP(2896);eH(0,0,c[508]|0,c[558]|0);cw(5889);b8();eN(-1.0,1.0,-1.0,1.0);cw(5888);b8();cw(5890);b8();ek(3553);aK(3553,c[524]|0);do{if((w|0)!=0){cV(3553,0,0,0,c[522]|0,c[526]|0,6408,5121,w|0);if((c[174]|0)<=0){break}L156:do{if(($(c[522]<<2,c[526]|0)|0)!=0){x=0;while(1){v=d[w+(x|1)|0]|0;f=d[w+(x|2)|0]|0;e=d[w+(x|3)|0]|0;cT(1480,(u=i,i=i+32|0,c[u>>2]=d[w+x|0]|0,c[u+8>>2]=v,c[u+16>>2]=f,c[u+24>>2]=e,u)|0);e=x+4|0;if(e>>>0<$(c[522]<<2,c[526]|0)>>>0){x=e}else{break L156}}}}while(0);a3(376);c[174]=(c[174]|0)-1|0}}while(0);du(32888);du(32884);cR(7);cc(1.0,0.0,0.0);a9(0.0,0.0);cd(-1.0,-1.0,0.0);cc(0.0,1.0,0.0);a9(0.0,1.0);cd(-1.0,1.0,0.0);cc(0.0,0.0,1.0);a9(1.0,1.0);cd(1.0,1.0,0.0);cc(1.0,0.0,0.0);a9(1.0,0.0);cd(1.0,-1.0,0.0);d6();aK(3553,0);aP(3553);w=c[538]|0;if((w|0)!=0){c[538]=w>>>0>200?0:w+1|0}ev();w=(aX()|0)*1e6&-1;x=fR(w,(w|0)<0?-1:0,m,n)|0;t=+h[260]+(+(x>>>0)+ +(D>>>0)*4294967296.0)*1.0e-9;h[260]=t;x=c[560]|0;if(!(t!=0.0&(x|0)!=0&x>>>0>30)){i=b;return}c[560]=0;h[260]=0.0;i=b;return}function fH(a,b){a=a|0;b=b|0;eH(0,0,a|0,b|0);cw(5888);b8();cw(5889);b8();c4(16384);do{if((c[508]<<1|0)>=(a|0)){if((c[558]<<1|0)<(b|0)){break}c[508]=a;c[558]=b;return}}while(0);c[508]=a;c[558]=b;cy(c[576]|0);cN(c[568]|0);c8(c[566]|0);a6(c[576]|0);dM(c[564]|0);dM(0);bK(c[574]|0);c[576]=0;c[568]=0;c[566]=0;c[564]=0;c[574]=0;if((fE((c[570]|0)==4&(c[571]|0)==0&1)|0)==0){c[508]=a;c[558]=b;return}else{fI()}}function fI(){a3(304);a3(280);fF();aZ(0)}function fJ(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,ai=0,aj=0,ak=0,al=0,am=0,an=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aA=0,aB=0,aC=0,aE=0,aF=0,aG=0,aH=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[386]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=1584+(h<<2)|0;j=1584+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[386]=e&(1<<g^-1)}else{if(l>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{bJ();return 0;return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[388]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=1584+(p<<2)|0;m=1584+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[386]=e&(1<<r^-1)}else{if(l>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{bJ();return 0;return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[388]|0;if((l|0)!=0){q=c[391]|0;d=l>>>3;l=d<<1;f=1584+(l<<2)|0;k=c[386]|0;h=1<<d;do{if((k&h|0)==0){c[386]=k|h;s=f;t=1584+(l+2<<2)|0}else{d=1584+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[390]|0)>>>0){s=g;t=d;break}bJ();return 0;return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[388]=m;c[391]=e;n=i;return n|0}l=c[387]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[1848+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[390]|0;if(r>>>0<i>>>0){bJ();return 0;return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){bJ();return 0;return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;L233:do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;do{if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break L233}else{w=l;x=k;break}}else{w=g;x=q}}while(0);while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){bJ();return 0;return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){bJ();return 0;return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){bJ();return 0;return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{bJ();return 0;return 0}}}while(0);L255:do{if((e|0)!=0){f=d+28|0;i=1848+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[387]=c[387]&(1<<c[f>>2]^-1);break L255}else{if(e>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L255}}}while(0);if(v>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4|0)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b|0)>>2]=p;f=c[388]|0;if((f|0)!=0){e=c[391]|0;i=f>>>3;f=i<<1;q=1584+(f<<2)|0;k=c[386]|0;g=1<<i;do{if((k&g|0)==0){c[386]=k|g;y=q;z=1584+(f+2<<2)|0}else{i=1584+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[390]|0)>>>0){y=l;z=i;break}bJ();return 0;return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[388]=p;c[391]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[387]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=(14-(h|f|l)|0)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[1848+(A<<2)>>2]|0;L303:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L303}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break L303}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[1848+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}L318:do{if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break L318}else{p=r;m=i;q=e}}}}while(0);if((K|0)==0){o=g;break}if(J>>>0>=((c[388]|0)-g|0)>>>0){o=g;break}k=K;q=c[390]|0;if(k>>>0<q>>>0){bJ();return 0;return 0}m=k+g|0;p=m;if(k>>>0>=m>>>0){bJ();return 0;return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;L331:do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;do{if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break L331}else{M=B;N=j;break}}else{M=d;N=r}}while(0);while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<q>>>0){bJ();return 0;return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<q>>>0){bJ();return 0;return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){bJ();return 0;return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{bJ();return 0;return 0}}}while(0);L353:do{if((e|0)!=0){i=K+28|0;q=1848+(c[i>>2]<<2)|0;do{if((K|0)==(c[q>>2]|0)){c[q>>2]=L;if((L|0)!=0){break}c[387]=c[387]&(1<<c[i>>2]^-1);break L353}else{if(e>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L353}}}while(0);if(L>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=k+(e+4|0)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[k+(g|4)>>2]=J|1;c[k+(J+g|0)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;q=1584+(e<<2)|0;r=c[386]|0;j=1<<i;do{if((r&j|0)==0){c[386]=r|j;O=q;P=1584+(e+2<<2)|0}else{i=1584+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[390]|0)>>>0){O=d;P=i;break}bJ();return 0;return 0}}while(0);c[P>>2]=p;c[O+12>>2]=p;c[k+(g+8|0)>>2]=O;c[k+(g+12|0)>>2]=q;break}e=m;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=(14-(d|r|i)|0)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=1848+(Q<<2)|0;c[k+(g+28|0)>>2]=Q;c[k+(g+20|0)>>2]=0;c[k+(g+16|0)>>2]=0;q=c[387]|0;l=1<<Q;if((q&l|0)==0){c[387]=q|l;c[j>>2]=e;c[k+(g+24|0)>>2]=j;c[k+(g+12|0)>>2]=e;c[k+(g+8|0)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;q=c[j>>2]|0;while(1){if((c[q+4>>2]&-8|0)==(J|0)){break}S=q+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=286;break}else{l=l<<1;q=j}}if((T|0)==286){if(S>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[S>>2]=e;c[k+(g+24|0)>>2]=q;c[k+(g+12|0)>>2]=e;c[k+(g+8|0)>>2]=e;break}}l=q+8|0;j=c[l>>2]|0;i=c[390]|0;if(q>>>0<i>>>0){bJ();return 0;return 0}if(j>>>0<i>>>0){bJ();return 0;return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[k+(g+8|0)>>2]=j;c[k+(g+12|0)>>2]=q;c[k+(g+24|0)>>2]=0;break}}}while(0);k=K+8|0;if((k|0)==0){o=g;break}else{n=k}return n|0}}while(0);K=c[388]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[391]|0;if(S>>>0>15){R=J;c[391]=R+o|0;c[388]=S;c[R+(o+4|0)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[388]=0;c[391]=0;c[J+4>>2]=K|3;S=J+(K+4|0)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[389]|0;if(o>>>0<J>>>0){S=J-o|0;c[389]=S;J=c[392]|0;K=J;c[392]=K+o|0;c[K+(o+4|0)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[168]|0)==0){J=aD(8)|0;if((J-1&J|0)==0){c[170]=J;c[169]=J;c[171]=-1;c[172]=2097152;c[173]=0;c[497]=0;c[168]=eI(0)&-16^1431655768;break}else{bJ();return 0;return 0}}}while(0);J=o+48|0;S=c[170]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[496]|0;do{if((O|0)!=0){P=c[494]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L445:do{if((c[497]&4|0)==0){O=c[392]|0;L447:do{if((O|0)==0){T=316}else{L=O;P=1992;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=316;break L447}else{P=M}}if((P|0)==0){T=316;break}L=R-(c[389]|0)&Q;if(L>>>0>=2147483647){W=0;break}q=dJ(L|0)|0;e=(q|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?q:-1;Y=e?L:0;Z=q;_=L;T=325;break}}while(0);do{if((T|0)==316){O=dJ(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[169]|0;q=L-1|0;if((q&g|0)==0){$=S}else{$=(S-g|0)+(q+g&-L)|0}L=c[494]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}q=c[496]|0;if((q|0)!=0){if(g>>>0<=L>>>0|g>>>0>q>>>0){W=0;break}}q=dJ($|0)|0;g=(q|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=q;_=$;T=325;break}}while(0);L467:do{if((T|0)==325){q=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=336;break L445}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[170]|0;O=(K-_|0)+g&-g;if(O>>>0>=2147483647){ac=_;break}if((dJ(O|0)|0)==-1){dJ(q|0);W=Y;break L467}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=336;break L445}}}while(0);c[497]=c[497]|4;ad=W;T=333;break}else{ad=0;T=333}}while(0);do{if((T|0)==333){if(S>>>0>=2147483647){break}W=dJ(S|0)|0;Z=dJ(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)==-1){break}else{aa=Z?ac:ad;ab=Y;T=336;break}}}while(0);do{if((T|0)==336){ad=(c[494]|0)+aa|0;c[494]=ad;if(ad>>>0>(c[495]|0)>>>0){c[495]=ad}ad=c[392]|0;L487:do{if((ad|0)==0){S=c[390]|0;if((S|0)==0|ab>>>0<S>>>0){c[390]=ab}c[498]=ab;c[499]=aa;c[501]=0;c[395]=c[168]|0;c[394]=-1;S=0;while(1){Y=S<<1;ac=1584+(Y<<2)|0;c[1584+(Y+3<<2)>>2]=ac;c[1584+(Y+2<<2)>>2]=ac;ac=S+1|0;if(ac>>>0<32){S=ac}else{break}}S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=(aa-40|0)-ae|0;c[392]=ab+ae|0;c[389]=S;c[ab+(ae+4|0)>>2]=S|1;c[ab+(aa-36|0)>>2]=40;c[393]=c[172]|0}else{S=1992;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=348;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==348){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa|0;ac=c[392]|0;Y=(c[389]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){ai=0}else{ai=-W&7}W=Y-ai|0;c[392]=Z+ai|0;c[389]=W;c[Z+(ai+4|0)>>2]=W|1;c[Z+(Y+4|0)>>2]=40;c[393]=c[172]|0;break L487}}while(0);if(ab>>>0<(c[390]|0)>>>0){c[390]=ab}S=ab+aa|0;Y=1992;while(1){aj=Y|0;if((c[aj>>2]|0)==(S|0)){T=358;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==358){if((c[Y+12>>2]&8|0)!=0){break}c[aj>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa|0;S=ab+8|0;if((S&7|0)==0){ak=0}else{ak=-S&7}S=ab+(aa+8|0)|0;if((S&7|0)==0){al=0}else{al=-S&7}S=ab+(al+aa|0)|0;Z=S;W=ak+o|0;ac=ab+W|0;_=ac;K=(S-(ab+ak|0)|0)-o|0;c[ab+(ak+4|0)>>2]=o|3;do{if((Z|0)==(c[392]|0)){J=(c[389]|0)+K|0;c[389]=J;c[392]=_;c[ab+(W+4|0)>>2]=J|1}else{if((Z|0)==(c[391]|0)){J=(c[388]|0)+K|0;c[388]=J;c[391]=_;c[ab+(W+4|0)>>2]=J|1;c[ab+(J+W|0)>>2]=J;break}J=aa+4|0;X=c[ab+(J+al|0)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L532:do{if(X>>>0<256){U=c[ab+((al|8)+aa|0)>>2]|0;Q=c[ab+((aa+12|0)+al|0)>>2]|0;R=1584+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}if((c[U+12>>2]|0)==(Z|0)){break}bJ();return 0;return 0}}while(0);if((Q|0)==(U|0)){c[386]=c[386]&(1<<V^-1);break}do{if((Q|0)==(R|0)){am=Q+8|0}else{if(Q>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}q=Q+8|0;if((c[q>>2]|0)==(Z|0)){am=q;break}bJ();return 0;return 0}}while(0);c[U+12>>2]=Q;c[am>>2]=U}else{R=S;q=c[ab+((al|24)+aa|0)>>2]|0;P=c[ab+((aa+12|0)+al|0)>>2]|0;L553:do{if((P|0)==(R|0)){O=al|16;g=ab+(J+O|0)|0;L=c[g>>2]|0;do{if((L|0)==0){e=ab+(O+aa|0)|0;M=c[e>>2]|0;if((M|0)==0){an=0;break L553}else{ao=M;ap=e;break}}else{ao=L;ap=g}}while(0);while(1){g=ao+20|0;L=c[g>>2]|0;if((L|0)!=0){ao=L;ap=g;continue}g=ao+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ao=L;ap=g}}if(ap>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[ap>>2]=0;an=ao;break}}else{g=c[ab+((al|8)+aa|0)>>2]|0;if(g>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){bJ();return 0;return 0}O=P+8|0;if((c[O>>2]|0)==(R|0)){c[L>>2]=P;c[O>>2]=g;an=P;break}else{bJ();return 0;return 0}}}while(0);if((q|0)==0){break}P=ab+((aa+28|0)+al|0)|0;U=1848+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=an;if((an|0)!=0){break}c[387]=c[387]&(1<<c[P>>2]^-1);break L532}else{if(q>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}Q=q+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=an}else{c[q+20>>2]=an}if((an|0)==0){break L532}}}while(0);if(an>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}c[an+24>>2]=q;R=al|16;P=c[ab+(R+aa|0)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[an+16>>2]=P;c[P+24>>2]=an;break}}}while(0);P=c[ab+(J+R|0)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[an+20>>2]=P;c[P+24>>2]=an;break}}}while(0);aq=ab+(($|al)+aa|0)|0;ar=$+K|0}else{aq=Z;ar=K}J=aq+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4|0)>>2]=ar|1;c[ab+(ar+W|0)>>2]=ar;J=ar>>>3;if(ar>>>0<256){V=J<<1;X=1584+(V<<2)|0;P=c[386]|0;q=1<<J;do{if((P&q|0)==0){c[386]=P|q;as=X;at=1584+(V+2<<2)|0}else{J=1584+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[390]|0)>>>0){as=U;at=J;break}bJ();return 0;return 0}}while(0);c[at>>2]=_;c[as+12>>2]=_;c[ab+(W+8|0)>>2]=as;c[ab+(W+12|0)>>2]=X;break}V=ac;q=ar>>>8;do{if((q|0)==0){au=0}else{if(ar>>>0>16777215){au=31;break}P=(q+1048320|0)>>>16&8;$=q<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=(14-(J|P|$)|0)+(U<<$>>>15)|0;au=ar>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);q=1848+(au<<2)|0;c[ab+(W+28|0)>>2]=au;c[ab+(W+20|0)>>2]=0;c[ab+(W+16|0)>>2]=0;X=c[387]|0;Q=1<<au;if((X&Q|0)==0){c[387]=X|Q;c[q>>2]=V;c[ab+(W+24|0)>>2]=q;c[ab+(W+12|0)>>2]=V;c[ab+(W+8|0)>>2]=V;break}if((au|0)==31){av=0}else{av=25-(au>>>1)|0}Q=ar<<av;X=c[q>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(ar|0)){break}aw=X+16+(Q>>>31<<2)|0;q=c[aw>>2]|0;if((q|0)==0){T=431;break}else{Q=Q<<1;X=q}}if((T|0)==431){if(aw>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[aw>>2]=V;c[ab+(W+24|0)>>2]=X;c[ab+(W+12|0)>>2]=V;c[ab+(W+8|0)>>2]=V;break}}Q=X+8|0;q=c[Q>>2]|0;$=c[390]|0;if(X>>>0<$>>>0){bJ();return 0;return 0}if(q>>>0<$>>>0){bJ();return 0;return 0}else{c[q+12>>2]=V;c[Q>>2]=V;c[ab+(W+8|0)>>2]=q;c[ab+(W+12|0)>>2]=X;c[ab+(W+24|0)>>2]=0;break}}}while(0);n=ab+(ak|8)|0;return n|0}}while(0);Y=ad;W=1992;while(1){ax=c[W>>2]|0;if(ax>>>0<=Y>>>0){ay=c[W+4>>2]|0;az=ax+ay|0;if(az>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=ax+(ay-39|0)|0;if((W&7|0)==0){aA=0}else{aA=-W&7}W=ax+((ay-47|0)+aA|0)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aB=0}else{aB=-_&7}_=(aa-40|0)-aB|0;c[392]=ab+aB|0;c[389]=_;c[ab+(aB+4|0)>>2]=_|1;c[ab+(aa-36|0)>>2]=40;c[393]=c[172]|0;c[ac+4>>2]=27;c[W>>2]=c[498]|0;c[W+4>>2]=c[1996>>2]|0;c[W+8>>2]=c[2e3>>2]|0;c[W+12>>2]=c[2004>>2]|0;c[498]=ab;c[499]=aa;c[501]=0;c[500]=W;W=ac+28|0;c[W>>2]=7;L651:do{if((ac+32|0)>>>0<az>>>0){_=W;while(1){K=_+4|0;c[K>>2]=7;if((_+8|0)>>>0<az>>>0){_=K}else{break L651}}}}while(0);if((ac|0)==(Y|0)){break}W=ac-ad|0;_=Y+(W+4|0)|0;c[_>>2]=c[_>>2]&-2;c[ad+4>>2]=W|1;c[Y+W>>2]=W;_=W>>>3;if(W>>>0<256){K=_<<1;Z=1584+(K<<2)|0;S=c[386]|0;q=1<<_;do{if((S&q|0)==0){c[386]=S|q;aC=Z;aE=1584+(K+2<<2)|0}else{_=1584+(K+2<<2)|0;Q=c[_>>2]|0;if(Q>>>0>=(c[390]|0)>>>0){aC=Q;aE=_;break}bJ();return 0;return 0}}while(0);c[aE>>2]=ad;c[aC+12>>2]=ad;c[ad+8>>2]=aC;c[ad+12>>2]=Z;break}K=ad;q=W>>>8;do{if((q|0)==0){aF=0}else{if(W>>>0>16777215){aF=31;break}S=(q+1048320|0)>>>16&8;Y=q<<S;ac=(Y+520192|0)>>>16&4;_=Y<<ac;Y=(_+245760|0)>>>16&2;Q=(14-(ac|S|Y)|0)+(_<<Y>>>15)|0;aF=W>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);q=1848+(aF<<2)|0;c[ad+28>>2]=aF;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[387]|0;Q=1<<aF;if((Z&Q|0)==0){c[387]=Z|Q;c[q>>2]=K;c[ad+24>>2]=q;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aF|0)==31){aG=0}else{aG=25-(aF>>>1)|0}Q=W<<aG;Z=c[q>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(W|0)){break}aH=Z+16+(Q>>>31<<2)|0;q=c[aH>>2]|0;if((q|0)==0){T=466;break}else{Q=Q<<1;Z=q}}if((T|0)==466){if(aH>>>0<(c[390]|0)>>>0){bJ();return 0;return 0}else{c[aH>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;W=c[Q>>2]|0;q=c[390]|0;if(Z>>>0<q>>>0){bJ();return 0;return 0}if(W>>>0<q>>>0){bJ();return 0;return 0}else{c[W+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=W;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[389]|0;if(ad>>>0<=o>>>0){break}W=ad-o|0;c[389]=W;ad=c[392]|0;Q=ad;c[392]=Q+o|0;c[Q+(o+4|0)>>2]=W|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[dm()>>2]=12;n=0;return n|0}function fK(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[390]|0;if(b>>>0<e>>>0){bJ()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){bJ()}h=f&-8;i=a+(h-8|0)|0;j=i;L704:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){bJ()}if((n|0)==(c[391]|0)){p=a+(h-4|0)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[388]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4|0)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8|0)>>2]|0;s=c[a+(l+12|0)>>2]|0;t=1584+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){bJ()}if((c[k+12>>2]|0)==(n|0)){break}bJ()}}while(0);if((s|0)==(k|0)){c[386]=c[386]&(1<<p^-1);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){bJ()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}bJ()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24|0)>>2]|0;v=c[a+(l+12|0)>>2]|0;L738:do{if((v|0)==(t|0)){w=a+(l+20|0)|0;x=c[w>>2]|0;do{if((x|0)==0){y=a+(l+16|0)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break L738}else{B=z;C=y;break}}else{B=x;C=w}}while(0);while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){bJ()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8|0)>>2]|0;if(w>>>0<e>>>0){bJ()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){bJ()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{bJ()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28|0)|0;m=1848+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[387]=c[387]&(1<<c[v>>2]^-1);q=n;r=o;break L704}else{if(p>>>0<(c[390]|0)>>>0){bJ()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L704}}}while(0);if(A>>>0<(c[390]|0)>>>0){bJ()}c[A+24>>2]=p;t=c[a+(l+16|0)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[390]|0)>>>0){bJ()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20|0)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[390]|0)>>>0){bJ()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){bJ()}A=a+(h-4|0)|0;e=c[A>>2]|0;if((e&1|0)==0){bJ()}do{if((e&2|0)==0){if((j|0)==(c[392]|0)){B=(c[389]|0)+r|0;c[389]=B;c[392]=q;c[q+4>>2]=B|1;if((q|0)==(c[391]|0)){c[391]=0;c[388]=0}if(B>>>0<=(c[393]|0)>>>0){return}fM(0);return}if((j|0)==(c[391]|0)){B=(c[388]|0)+r|0;c[388]=B;c[391]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L810:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=1584+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[390]|0)>>>0){bJ()}if((c[u+12>>2]|0)==(j|0)){break}bJ()}}while(0);if((g|0)==(u|0)){c[386]=c[386]&(1<<C^-1);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[390]|0)>>>0){bJ()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}bJ()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16|0)>>2]|0;t=c[a+(h|4)>>2]|0;L831:do{if((t|0)==(b|0)){p=a+(h+12|0)|0;v=c[p>>2]|0;do{if((v|0)==0){m=a+(h+8|0)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break L831}else{F=k;G=m;break}}else{F=v;G=p}}while(0);while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[390]|0)>>>0){bJ()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[390]|0)>>>0){bJ()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){bJ()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{bJ()}}}while(0);if((f|0)==0){break}t=a+(h+20|0)|0;u=1848+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[387]=c[387]&(1<<c[t>>2]^-1);break L810}else{if(f>>>0<(c[390]|0)>>>0){bJ()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L810}}}while(0);if(E>>>0<(c[390]|0)>>>0){bJ()}c[E+24>>2]=f;b=c[a+(h+8|0)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[390]|0)>>>0){bJ()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12|0)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[390]|0)>>>0){bJ()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[391]|0)){H=B;break}c[388]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=1584+(d<<2)|0;A=c[386]|0;E=1<<r;do{if((A&E|0)==0){c[386]=A|E;I=e;J=1584+(d+2<<2)|0}else{r=1584+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[390]|0)>>>0){I=h;J=r;break}bJ()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=(14-(E|J|d)|0)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=1848+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[387]|0;d=1<<K;do{if((r&d|0)==0){c[387]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=645;break}else{A=A<<1;J=E}}if((N|0)==645){if(M>>>0<(c[390]|0)>>>0){bJ()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[390]|0;if(J>>>0<E>>>0){bJ()}if(B>>>0<E>>>0){bJ()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[394]|0)-1|0;c[394]=q;if((q|0)==0){O=2e3}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[394]=-1;return}function fL(a,b){a=a|0;b=b|0;var d=0,e=0;do{if((a|0)==0){d=0}else{e=$(b,a);if((b|a)>>>0<=65535){d=e;break}d=((e>>>0)/(a>>>0)>>>0|0)==(b|0)?e:-1}}while(0);b=fJ(d)|0;if((b|0)==0){return b|0}if((c[b-4>>2]&3|0)==0){return b|0}fO(b|0,0,d|0);return b|0}function fM(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0;do{if((c[168]|0)==0){b=aD(8)|0;if((b-1&b|0)==0){c[170]=b;c[169]=b;c[171]=-1;c[172]=2097152;c[173]=0;c[497]=0;c[168]=eI(0)&-16^1431655768;break}else{bJ();return 0;return 0}}}while(0);if(a>>>0>=4294967232){d=0;return d|0}b=c[392]|0;if((b|0)==0){d=0;return d|0}e=c[389]|0;do{if(e>>>0>(a+40|0)>>>0){f=c[170]|0;g=$(((((((-40-a|0)-1|0)+e|0)+f|0)>>>0)/(f>>>0)>>>0)-1|0,f);h=b;i=1992;while(1){j=c[i>>2]|0;if(j>>>0<=h>>>0){if((j+(c[i+4>>2]|0)|0)>>>0>h>>>0){k=i;break}}j=c[i+8>>2]|0;if((j|0)==0){k=0;break}else{i=j}}if((c[k+12>>2]&8|0)!=0){break}i=dJ(0)|0;h=k+4|0;if((i|0)!=((c[k>>2]|0)+(c[h>>2]|0)|0)){break}j=dJ(-(g>>>0>2147483646?-2147483648-f|0:g)|0)|0;l=dJ(0)|0;if(!((j|0)!=-1&l>>>0<i>>>0)){break}j=i-l|0;if((i|0)==(l|0)){break}c[h>>2]=(c[h>>2]|0)-j|0;c[494]=(c[494]|0)-j|0;h=c[392]|0;m=(c[389]|0)-j|0;j=h;n=h+8|0;if((n&7|0)==0){o=0}else{o=-n&7}n=m-o|0;c[392]=j+o|0;c[389]=n;c[j+(o+4|0)>>2]=n|1;c[j+(m+4|0)>>2]=40;c[393]=c[172]|0;d=(i|0)!=(l|0)&1;return d|0}}while(0);if((c[389]|0)>>>0<=(c[393]|0)>>>0){d=0;return d|0}c[393]=-1;d=0;return d|0}function fN(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function fO(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function fP(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function fQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=a+c>>>0;return(D=b+d+(e>>>0<a>>>0|0)>>>0,e|0)|0}function fR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=b-d>>>0;e=b-d-(c>>>0>a>>>0|0)>>>0;return(D=e,a-c>>>0|0)|0}function fS(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b<<c|(a&(1<<c)-1<<32-c)>>>32-c;return a<<c}D=a<<c-32;return 0}function fT(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b>>>c;return a>>>c|(b&(1<<c)-1)<<32-c}D=0;return b>>>c-32|0}function fU(a,b,c){a=a|0;b=b|0;c=c|0;if((c|0)<32){D=b>>c;return a>>>c|(b&(1<<c)-1)<<32-c}D=(b|0)<0?-1:0;return b>>c-32|0}function fV(b){b=b|0;var c=0;c=a[n+(b>>>24)|0]|0;if((c|0)<8)return c|0;c=a[n+(b>>16&255)|0]|0;if((c|0)<8)return c+8|0;c=a[n+(b>>8&255)|0]|0;if((c|0)<8)return c+16|0;return(a[n+(b&255)|0]|0)+24|0}function fW(b){b=b|0;var c=0;c=a[m+(b&255)|0]|0;if((c|0)<8)return c|0;c=a[m+(b>>8&255)|0]|0;if((c|0)<8)return c+8|0;c=a[m+(b>>16&255)|0]|0;if((c|0)<8)return c+16|0;return(a[m+(b>>>24)|0]|0)+24|0}function fX(a,b){a=a|0;b=b|0;var c=0,d=0,e=0,f=0;c=a&65535;d=b&65535;e=$(d,c);f=a>>>16;a=(e>>>16)+$(d,f)|0;d=b>>>16;b=$(d,c);return(D=((a>>>16)+$(d,f)|0)+(((a&65535)+b|0)>>>16)|0,0|(a+b<<16|e&65535))|0}function fY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0,f=0,g=0,h=0,i=0;e=b>>31|((b|0)<0?-1:0)<<1;f=((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1;g=d>>31|((d|0)<0?-1:0)<<1;h=((d|0)<0?-1:0)>>31|((d|0)<0?-1:0)<<1;i=fR(e^a,f^b,e,f)|0;b=D;a=g^e;e=h^f;f=fR(f1(i,b,fR(g^c,h^d,g,h)|0,D,0)^a,D^e,a,e)|0;return(D=D,f)|0}function fZ(a,b,d,e){a=a|0;b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0,j=0,k=0,l=0,m=0;f=i;i=i+8|0;g=f|0;h=b>>31|((b|0)<0?-1:0)<<1;j=((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1;k=e>>31|((e|0)<0?-1:0)<<1;l=((e|0)<0?-1:0)>>31|((e|0)<0?-1:0)<<1;m=fR(h^a,j^b,h,j)|0;b=D;f1(m,b,fR(k^d,l^e,k,l)|0,D,g);l=fR(c[g>>2]^h,c[g+4>>2]^j,h,j)|0;j=D;i=f;return(D=j,l)|0}function f_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0,f=0;e=a;a=c;c=fX(e,a)|0;f=D;return(D=($(b,a)+$(d,e)|0)+f|f&0,0|c&-1)|0}function f$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;var e=0;e=f1(a,b,c,d,0)|0;return(D=D,e)|0}function f0(a,b,d,e){a=a|0;b=b|0;d=d|0;e=e|0;var f=0,g=0;f=i;i=i+8|0;g=f|0;f1(a,b,d,e,g);i=f;return(D=c[g+4>>2]|0,c[g>>2]|0)|0}function f1(a,b,d,e,f){a=a|0;b=b|0;d=d|0;e=e|0;f=f|0;var g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0;g=a;h=b;i=h;j=d;k=e;l=k;if((i|0)==0){m=(f|0)!=0;if((l|0)==0){if(m){c[f>>2]=(g>>>0)%(j>>>0);c[f+4>>2]=0}n=0;o=(g>>>0)/(j>>>0)>>>0;return(D=n,o)|0}else{if(!m){n=0;o=0;return(D=n,o)|0}c[f>>2]=a&-1;c[f+4>>2]=b&0;n=0;o=0;return(D=n,o)|0}}m=(l|0)==0;do{if((j|0)==0){if(m){if((f|0)!=0){c[f>>2]=(i>>>0)%(j>>>0);c[f+4>>2]=0}n=0;o=(i>>>0)/(j>>>0)>>>0;return(D=n,o)|0}if((g|0)==0){if((f|0)!=0){c[f>>2]=0;c[f+4>>2]=(i>>>0)%(l>>>0)}n=0;o=(i>>>0)/(l>>>0)>>>0;return(D=n,o)|0}p=l-1|0;if((p&l|0)==0){if((f|0)!=0){c[f>>2]=0|a&-1;c[f+4>>2]=p&i|b&0}n=0;o=i>>>((fW(l|0)|0)>>>0);return(D=n,o)|0}p=(fV(l|0)|0)-(fV(i|0)|0)|0;if(p>>>0<=30){q=p+1|0;r=31-p|0;s=q;t=i<<r|g>>>(q>>>0);u=i>>>(q>>>0);v=0;w=g<<r;break}if((f|0)==0){n=0;o=0;return(D=n,o)|0}c[f>>2]=0|a&-1;c[f+4>>2]=h|b&0;n=0;o=0;return(D=n,o)|0}else{if(!m){r=(fV(l|0)|0)-(fV(i|0)|0)|0;if(r>>>0<=31){q=r+1|0;p=31-r|0;x=r-31>>31;s=q;t=g>>>(q>>>0)&x|i<<p;u=i>>>(q>>>0)&x;v=0;w=g<<p;break}if((f|0)==0){n=0;o=0;return(D=n,o)|0}c[f>>2]=0|a&-1;c[f+4>>2]=h|b&0;n=0;o=0;return(D=n,o)|0}p=j-1|0;if((p&j|0)!=0){x=((fV(j|0)|0)+33|0)-(fV(i|0)|0)|0;q=64-x|0;r=32-x|0;y=r>>31;z=x-32|0;A=z>>31;s=x;t=r-1>>31&i>>>(z>>>0)|(i<<r|g>>>(x>>>0))&A;u=A&i>>>(x>>>0);v=g<<q&y;w=(i<<q|g>>>(z>>>0))&y|g<<r&x-33>>31;break}if((f|0)!=0){c[f>>2]=p&g;c[f+4>>2]=0}if((j|0)==1){n=h|b&0;o=0|a&-1;return(D=n,o)|0}else{p=fW(j|0)|0;n=0|i>>>(p>>>0);o=i<<32-p|g>>>(p>>>0)|0;return(D=n,o)|0}}}while(0);if((s|0)==0){B=w;C=v;E=u;F=t;G=0;H=0}else{g=0|d&-1;d=k|e&0;e=fQ(g,d,-1,-1)|0;k=D;i=w;w=v;v=u;u=t;t=s;s=0;while(1){I=w>>>31|i<<1;J=s|w<<1;j=0|(u<<1|i>>>31);a=u>>>31|v<<1|0;fR(e,k,j,a);b=D;h=b>>31|((b|0)<0?-1:0)<<1;K=h&1;L=fR(j,a,h&g,(((b|0)<0?-1:0)>>31|((b|0)<0?-1:0)<<1)&d)|0;M=D;b=t-1|0;if((b|0)==0){break}else{i=I;w=J;v=M;u=L;t=b;s=K}}B=I;C=J;E=M;F=L;G=0;H=K}K=C;C=0;if((f|0)!=0){c[f>>2]=0|F;c[f+4>>2]=E|0}n=(0|K)>>>31|(B|C)<<1|(C<<1|K>>>31)&0|G;o=(K<<1|0>>>31)&-2|H;return(D=n,o)|0}function f2(a){a=a|0;return bx(a|0)|0}function f3(a){a=a|0;return by(a|0)|0}function f4(a){a=a|0;return c3(a|0)|0}function f5(a){a=a|0;return d8(a|0)|0}function f6(a){a=a|0;return aO(a|0)|0}function f7(a){a=a|0;return c_(a|0)|0}function f8(a){a=a|0;return dP(a|0)|0}function f9(a){a=a|0;return dS(a|0)|0}function ga(a){a=a|0;return df(a|0)|0}function gb(a){a=a|0;return eG(a|0)|0}function gc(a){a=a|0;d_(a|0)}function gd(a){a=a|0;bi(a|0)}function ge(a){a=a|0;aV(a|0)}function gf(a){a=a|0;b4(a|0)}function gg(a){a=a|0;d4(a|0)}function gh(a){a=a|0;cO(a|0)}function gi(a){a=a|0;e1(a|0)}function gj(a){a=a|0;cA(a|0)}function gk(a){a=a|0;cM(a|0)}function gl(a){a=a|0;br(a|0)}function gm(a){a=a|0;eo(a|0)}function gn(a){a=a|0;eD(a|0)}function go(a){a=a|0;be(a|0)}function gp(a){a=a|0;cu(a|0)}function gq(a){a=a|0;dX(a|0)}function gr(a){a=a|0;a$(a|0)}function gs(a){a=a|0;dc(a|0)}function gt(a){a=a|0;dn(a|0)}function gu(a){a=a|0;bk(a|0)}function gv(a){a=a|0;eA(a|0)}function gw(a){a=a|0;aJ(a|0)}function gx(a){a=a|0;c4(a|0)}function gy(a){a=a|0;ek(a|0)}function gz(a){a=a|0;b3(a|0)}function gA(a){a=a|0;aP(a|0)}function gB(a){a=a|0;d3(a|0)}function gC(a,b){a=a|0;b=b|0;return bS(a|0,b|0)|0}function gD(){cf()}function gE(){cK()}function gF(){ev()}function gG(){aA()}function gH(){c7()}function gI(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dq(a|0,b|0,c|0,d|0)}function gJ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dl(a|0,b|0,c|0,d|0)}function gK(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eO(a|0,b|0,c|0,d|0)}function gL(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d7(a|0,b|0,c|0,d|0)}function gM(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dK(a|0,b|0,c|0,d|0)}function gN(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;bI(a|0,b|0,c|0,d|0)}function gO(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aN(a|0,b|0,c|0,d|0)}function gP(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cx(a|0,b|0,c|0,d|0)}function gQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;b7(a|0,b|0,c|0,d|0)}function gR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d1(a|0,b|0,c|0,d|0)}function gS(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cl(a|0,b|0,c|0,d|0)}function gT(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cr(a|0,b|0,c|0,d|0)}function gU(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eH(a|0,b|0,c|0,d|0)}function gV(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a4(a|0,b|0,c|0,d|0)}function gW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ca(a|0,b|0,c|0,d|0)}function gX(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dZ(a|0,b|0,c|0,d|0)}function gY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a_(a|0,b|0,c|0,d|0)}function gZ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aM(a|0,b|0,c|0,d|0)}function g_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eb(a|0,b|0,c|0,d|0)}function g$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ds(a|0,b|0,c|0,d|0)}function g0(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eZ(a|0,b|0,c|0,d|0)}function g1(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dO(a|0,b|0,c|0,d|0)}function g2(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cm(a|0,b|0,c|0,d|0)}function g3(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cI(a|0,b|0,c|0,d|0)}function g4(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;en(a|0,b|0,c|0,d|0)}function g5(a,b,c){a=a|0;b=b|0;c=c|0;bH(a|0,b|0,c|0)}function g6(a,b,c){a=a|0;b=b|0;c=c|0;dz(a|0,b|0,c|0)}function g7(a,b,c){a=a|0;b=b|0;c=c|0;aW(a|0,b|0,c|0)}function g8(a,b,c){a=a|0;b=b|0;c=c|0;ea(a|0,b|0,c|0)}function g9(a,b,c){a=a|0;b=b|0;c=c|0;dg(a|0,b|0,c|0)}function ha(a,b,c){a=a|0;b=b|0;c=c|0;bu(a|0,b|0,c|0)}function hb(a,b,c){a=a|0;b=b|0;c=c|0;dy(a|0,b|0,c|0)}function hc(a,b,c){a=a|0;b=b|0;c=c|0;eh(a|0,b|0,c|0)}function hd(a,b,c){a=a|0;b=b|0;c=c|0;dD(a|0,b|0,c|0)}function he(a,b,c){a=a|0;b=b|0;c=c|0;cs(a|0,b|0,c|0)}function hf(a,b,c){a=a|0;b=b|0;c=c|0;bF(a|0,b|0,c|0)}function hg(a,b,c){a=a|0;b=b|0;c=c|0;bv(a|0,b|0,c|0)}function hh(a,b,c){a=a|0;b=b|0;c=c|0;cj(a|0,b|0,c|0)}function hi(a,b,c){a=a|0;b=b|0;c=c|0;eL(a|0,b|0,c|0)}function hj(a,b,c){a=a|0;b=b|0;c=c|0;de(a|0,b|0,c|0)}function hk(a,b,c){a=a|0;b=b|0;c=c|0;bb(a|0,b|0,c|0)}function hl(a,b,c){a=a|0;b=b|0;c=c|0;bh(a|0,b|0,c|0)}function hm(a,b,c){a=a|0;b=b|0;c=c|0;b2(a|0,b|0,c|0)}function hn(a,b,c){a=a|0;b=b|0;c=c|0;aB(a|0,b|0,c|0)}function ho(a,b,c){a=a|0;b=b|0;c=c|0;co(a|0,b|0,c|0)}function hp(a,b,c){a=a|0;b=b|0;c=c|0;bE(a|0,b|0,c|0)}function hq(a,b,c){a=a|0;b=b|0;c=c|0;bL(a|0,b|0,c|0)}function hr(a,b,c){a=a|0;b=b|0;c=c|0;aG(a|0,b|0,c|0)}function hs(a,b,c){a=a|0;b=b|0;c=c|0;cC(a|0,b|0,c|0)}function ht(a,b,c){a=a|0;b=b|0;c=c|0;bX(a|0,b|0,c|0)}function hu(a,b,c){a=a|0;b=b|0;c=c|0;eJ(a|0,b|0,c|0)}function hv(a,b,c){a=a|0;b=b|0;c=c|0;ct(a|0,b|0,c|0)}function hw(a,b,c){a=a|0;b=b|0;c=c|0;bg(a|0,b|0,c|0)}function hx(a,b,c){a=a|0;b=b|0;c=c|0;dT(a|0,b|0,c|0)}function hy(a,b,c){a=a|0;b=b|0;c=c|0;eT(a|0,b|0,c|0)}function hz(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;dh(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hA(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;cG(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hB(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;eR(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function hC(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;ey(a|0,b|0,c|0,d|0,e|0)}function hD(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;c9(a|0,b|0,c|0,d|0,e|0)}function hE(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dW(a|0,b|0,c|0,d|0,e|0)}function hF(a,b){a=a|0;b=b|0;bB(a|0,b|0)}function hG(a,b){a=a|0;b=b|0;bO(a|0,b|0)}function hH(a,b){a=a|0;b=b|0;eB(a|0,b|0)}function hI(a,b){a=a|0;b=b|0;ew(a|0,b|0)}function hJ(a,b){a=a|0;b=b|0;e2(a|0,b|0)}function hK(a,b){a=a|0;b=b|0;et(a|0,b|0)}function hL(a,b){a=a|0;b=b|0;e_(a|0,b|0)}function hM(a,b){a=a|0;b=b|0;ex(a|0,b|0)}function hN(a,b){a=a|0;b=b|0;dF(a|0,b|0)}function hO(a,b){a=a|0;b=b|0;cU(a|0,b|0)}function hP(a,b){a=a|0;b=b|0;dU(a|0,b|0)}function hQ(a,b){a=a|0;b=b|0;a2(a|0,b|0)}function hR(a,b){a=a|0;b=b|0;bq(a|0,b|0)}function hS(a,b){a=a|0;b=b|0;dN(a|0,b|0)}function hT(a,b){a=a|0;b=b|0;aE(a|0,b|0)}function hU(a,b){a=a|0;b=b|0;b9(a|0,b|0)}function hV(a,b){a=a|0;b=b|0;bU(a|0,b|0)}function hW(a,b){a=a|0;b=b|0;cB(a|0,b|0)}function hX(a,b){a=a|0;b=b|0;dI(a|0,b|0)}function hY(a,b){a=a|0;b=b|0;cX(a|0,b|0)}function hZ(a,b){a=a|0;b=b|0;e4(a|0,b|0)}function h_(a,b){a=a|0;b=b|0;aK(a|0,b|0)}function h$(a,b){a=a|0;b=b|0;dC(a|0,b|0)}function h0(a,b){a=a|0;b=b|0;bz(a|0,b|0)}function h1(a,b){a=a|0;b=b|0;dB(a|0,b|0)}function h2(a,b){a=a|0;b=b|0;c1(a|0,b|0)}function h3(a,b){a=a|0;b=b|0;c5(a|0,b|0)}function h4(a,b){a=a|0;b=b|0;eY(a|0,b|0)}function h5(a,b){a=a|0;b=b|0;cp(a|0,b|0)}function h6(a,b){a=a|0;b=b|0;dx(a|0,b|0)}function h7(a,b){a=a|0;b=b|0;c0(a|0,b|0)}function h8(a,b){a=a|0;b=b|0;e$(a|0,b|0)}function h9(a,b){a=a|0;b=b|0;bd(a|0,b|0)}function ia(a,b){a=a|0;b=b|0;ck(a|0,b|0)}function ib(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;dj(a|0,+b,+c,+d,+e)}function ic(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;bM(a|0,b|0,c|0,d|0,e|0,f|0)}function id(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;ef(a|0,b|0,c|0,d|0,e|0,f|0)}function ie(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;ci(a|0,+b,+c,+d)}function ig(){return eC()|0}function ih(){return dw()|0}function ii(a,b,c){a=a|0;b=+b;c=+c;bG(a|0,+b,+c)}function ij(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;bD(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ik(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;ch(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function il(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;c$(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function im(a,b){a=a|0;b=+b;bt(a|0,+b)}function io(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;d0(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ip(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bs(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iq(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;cV(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ir(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;e6[a&7](b|0,c|0,d|0,e|0,f|0)}function is(a,b,c){a=a|0;b=b|0;c=+c;e7[a&3](b|0,+c)}function it(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;e8[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function iu(a){a=a|0;return e9[a&7]()|0}function iv(a,b){a=a|0;b=b|0;fa[a&63](b|0)}function iw(a,b,c){a=a|0;b=b|0;c=c|0;fb[a&127](b|0,c|0)}function ix(a,b,c,d){a=a|0;b=b|0;c=+c;d=+d;fc[a&3](b|0,+c,+d)}function iy(a,b){a=a|0;b=b|0;return fd[a&31](b|0)|0}function iz(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;fe[a&63](b|0,c|0,d|0)}function iA(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;ff[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iB(a){a=a|0;fg[a&31]()}function iC(a,b,c,d,e,f,g,h,i,j){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;j=j|0;fh[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0,j|0)}function iD(a,b,c,d,e){a=a|0;b=b|0;c=+c;d=+d;e=+e;fi[a&3](b|0,+c,+d,+e)}function iE(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;fj[a&7](b|0,c|0,d|0,e|0,f|0,g|0)}function iF(a,b,c){a=a|0;b=b|0;c=c|0;return fk[a&3](b|0,c|0)|0}function iG(a,b,c,d,e,f){a=a|0;b=b|0;c=+c;d=+d;e=+e;f=+f;fl[a&3](b|0,+c,+d,+e,+f)}function iH(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;fm[a&63](b|0,c|0,d|0,e|0)}function iI(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;aa(0)}function iJ(a,b){a=a|0;b=+b;aa(1)}function iK(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;aa(2)}function iL(){aa(3);return 0}function iM(a){a=a|0;aa(4)}function iN(a,b){a=a|0;b=b|0;aa(5)}function iO(a,b,c){a=a|0;b=+b;c=+c;aa(6)}function iP(a){a=a|0;aa(7);return 0}function iQ(a,b,c){a=a|0;b=b|0;c=c|0;aa(8)}function iR(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;aa(9)}function iS(){aa(10)}function iT(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;aa(11)}function iU(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;aa(12)}function iV(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;aa(13)}function iW(a,b){a=a|0;b=b|0;aa(14);return 0}function iX(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;aa(15)}function iY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aa(16)}
 // EMSCRIPTEN_END_FUNCS
 var e6=[iI,iI,hC,iI,hD,iI,hE,iI];var e7=[iJ,iJ,im,iJ];var e8=[iK,iK,hz,iK,hA,iK,hB,iK];var e9=[iL,iL,ig,iL,ih,iL,iL,iL];var fa=[iM,iM,gc,iM,gd,iM,ge,iM,gf,iM,gg,iM,gh,iM,gi,iM,gj,iM,gk,iM,gl,iM,gm,iM,gn,iM,go,iM,gp,iM,gq,iM,gr,iM,gs,iM,gt,iM,gu,iM,gv,iM,gw,iM,gx,iM,gy,iM,gz,iM,gA,iM,gB,iM,iM,iM,iM,iM,iM,iM,iM,iM,iM,iM];var fb=[iN,iN,fH,iN,hF,iN,hG,iN,hH,iN,hI,iN,hJ,iN,hK,iN,hL,iN,hM,iN,hN,iN,hO,iN,hP,iN,hQ,iN,hR,iN,hS,iN,hT,iN,hU,iN,hV,iN,hW,iN,hX,iN,hY,iN,hZ,iN,h_,iN,h$,iN,h0,iN,h1,iN,h2,iN,h3,iN,h4,iN,h5,iN,h6,iN,h7,iN,h8,iN,h9,iN,ia,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN];var fc=[iO,iO,ii,iO];var fd=[iP,iP,f2,iP,f3,iP,f4,iP,f5,iP,f6,iP,f7,iP,f8,iP,f9,iP,ga,iP,gb,iP,iP,iP,iP,iP,iP,iP,iP,iP,iP,iP];var fe=[iQ,iQ,g5,iQ,g6,iQ,g7,iQ,g8,iQ,g9,iQ,ha,iQ,hb,iQ,hc,iQ,fD,iQ,hd,iQ,he,iQ,hf,iQ,hg,iQ,hh,iQ,hi,iQ,hj,iQ,hk,iQ,hl,iQ,hm,iQ,hn,iQ,ho,iQ,hp,iQ,hq,iQ,hr,iQ,hs,iQ,ht,iQ,hu,iQ,hv,iQ,hw,iQ,hx,iQ,hy,iQ];var ff=[iR,iR,ij,iR,ik,iR,il,iR];var fg=[iS,iS,gD,iS,gE,iS,fB,iS,fG,iS,fI,iS,gF,iS,gG,iS,gH,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS,iS];var fh=[iT,iT,io,iT,ip,iT,iq,iT];var fi=[iU,iU,ie,iU];var fj=[iV,iV,ic,iV,id,iV,iV,iV];var fk=[iW,iW,gC,iW];var fl=[iX,iX,ib,iX];var fm=[iY,iY,gI,iY,gJ,iY,gK,iY,gL,iY,gM,iY,gN,iY,gO,iY,gP,iY,gQ,iY,gR,iY,gS,iY,gT,iY,gU,iY,gV,iY,gW,iY,gX,iY,gY,iY,gZ,iY,g_,iY,g$,iY,g0,iY,g1,iY,g2,iY,g3,iY,g4,iY,iY,iY,iY,iY,iY,iY,iY,iY,iY,iY,iY,iY];return{_strlen:fN,_free:fK,_main:fC,_memset:fO,_malloc:fJ,_memcpy:fP,_calloc:fL,stackAlloc:fn,stackSave:fo,stackRestore:fp,setThrew:fq,setTempRet0:fr,setTempRet1:fs,setTempRet2:ft,setTempRet3:fu,setTempRet4:fv,setTempRet5:fw,setTempRet6:fx,setTempRet7:fy,setTempRet8:fz,setTempRet9:fA,dynCall_viiiii:ir,dynCall_vif:is,dynCall_viiiiiii:it,dynCall_i:iu,dynCall_vi:iv,dynCall_vii:iw,dynCall_viff:ix,dynCall_ii:iy,dynCall_viii:iz,dynCall_viiiiiiii:iA,dynCall_v:iB,dynCall_viiiiiiiii:iC,dynCall_vifff:iD,dynCall_viiiiii:iE,dynCall_iii:iF,dynCall_viffff:iG,dynCall_viiii:iH}})
 // EMSCRIPTEN_END_ASM

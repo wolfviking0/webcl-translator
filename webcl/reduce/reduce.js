@@ -2,6 +2,7 @@
 // Note: Some Emscripten settings may limit the speed of the generated code.
 try {
   this['Module'] = Module;
+  Module.test;
 } catch(e) {
   this['Module'] = Module = {};
 }
@@ -1291,42 +1292,25 @@ function copyTempDouble(ptr) {
         flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
         HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         Browser.updateResizeListeners();
-      }};var CL={ctx:[],ctx_clean:0,cmdQueue:[],enqueueFloat:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
-  // #if OPENCL_DEBUG
-  //       console.info("isFloat() check pointer : ");
-  // #endif  
+      }};var CL={ctx:[],ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],sig:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!!");
         var v_int = HEAP32[((ptr)>>2)]; 
         var v_float = HEAPF32[((ptr)>>2)]; 
         // If the value is 0
         if ( v_int == 0 ) {
-  // #if OPENCL_DEBUG
-  //         console.info("\tisFloat() value is null check is array");
-  // #endif  
           // If is an array
           if (size > 1) {
             v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)]; 
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is array, check the last element");
-  // #endif          
-          } else {
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is not array, use float by default");
-  // #endif     
+            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
+          } else { 
             // Use float by default 
             return 1;
           }                
         }
         // If we read int and is float we have a very big value 1e8
         if (Math.abs(v_int) > 100000000) {
-  // #if OPENCL_DEBUG
-  //        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
-  // #endif     
           return 1;
         }
-  // #if OPENCL_DEBUG
-  //       console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
-  // #endif     
         return 0;      
       },catchError:function (name,e) {
         var str=""+e;
@@ -2727,25 +2711,29 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
               return 0;
             }
-            var isFloat = CL.isFloat(host_ptr,size);
-            if (isFloat) {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
-              vector = new Float32Array(size / 4);
-            } else {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
-              vector = new Uint32Array(size / 4);
+            if (CL.sig.length == 0 || CL.buffers-1 > CL.sig.length) {
+              console.error("clCreateBuffer: Invalid signature : "+buff);
+              return -1; /* CL_FAILED */     
             }
-            //var str_vector = "clEnqueueWriteBuffer : vector(";
+            var isFloat = 0;
+            var vector;    
+            if (CL.sig[CL.buffers.length-1] == WebCL.types.FLOAT_V) {
+              vector = new Float32Array(size / 4);
+              isFloat = 1;
+            } else if (CL.sig[CL.buffers.length-1] == WebCL.types.UINT_V) {
+              vector = new Uint32Array(size / 4);
+            } else if (CL.sig[CL.buffers.length-1] == WebCL.types.INT_V) {
+              vector = new Int32Array(size / 4);
+            } else {
+              console.error("clCreateBuffer: Unknow ouptut type : "+CL.sig[CL.buffers.length-1]);
+            }
             for (var i = 0; i < (size / 4); i++) {
-              if (CL.enqueueFloat[CL.cmdQueue.length-1]) {
+              if (isFloat) {
                 vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
               } else {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
-              //str_vector += vector[i] + ",";
             }
-            //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-            //console.info(str_vector);
             CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
             break;
           default:
@@ -2771,26 +2759,34 @@ function copyTempDouble(ptr) {
         console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
-      var isFloat = CL.isFloat(ptr,size);
-      var vector;
-      if (isFloat) {
-        CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
-        vector = new Float32Array(size / 4);
-      } else {
-        CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
-        vector = new Uint32Array(size / 4);
+      var isFloat = 0;
+      var vector;    
+      if (CL.sig.length == 0 || buff > CL.sig.length) {
+        isFloat = CL.isFloat(ptr,size); 
+        if (isFloat) {
+          vector = new Float32Array(size / 4);
+        } else {
+          vector = new Int32Array(size / 4);
+        }
+      } else {        
+        if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+          vector = new Float32Array(size / 4);
+          isFloat = 1;
+        } else if (CL.sig[buff] == WebCL.types.UINT_V) {
+          vector = new Uint32Array(size / 4);
+        } else if (CL.sig[buff] == WebCL.types.INT_V) {
+          vector = new Int32Array(size / 4);
+        } else {
+          console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+CL.sig[buff]);
+        }
       }
-      //var str_vector = "clEnqueueWriteBuffer : vector(";
       for (var i = 0; i < (size / 4); i++) {
-        if (CL.enqueueFloat[queue]) {
+        if (isFloat) {
           vector[i] = HEAPF32[(((ptr)+(i*4))>>2)];
         } else {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
-        //str_vector += vector[i] + ",";
       }
-      //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-      //console.info(str_vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -2828,7 +2824,41 @@ function copyTempDouble(ptr) {
         return 0; // Null pointer    
       }
       var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx);       
+      var kernel = Pointer_stringify(sourceIdx); 
+      // Experimental parse of kernel for have the different type of the kernel (input and output)
+      var start_kernel = kernel.indexOf("__kernel");
+      var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
+      var start_kernel_brace = kernel_sub_part.indexOf("(");
+      var close_kernel_brace = kernel_sub_part.indexOf(")");
+      kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
+      kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
+      var kernel_sub_part_split = kernel_sub_part.split(",");
+      for (var i = 0; i < kernel_sub_part_split.length; i++) {
+        if (kernel_sub_part_split[i].contains("float4") ||
+           (kernel_sub_part_split[i].contains("float") && kernel_sub_part_split[i].contains("*"))) {
+          console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+WebCL.types.FLOAT_V+")");
+          CL.sig[i] = WebCL.types.FLOAT_V;
+        } else if (kernel_sub_part_split[i].contains("float")) {
+          console.info("Kernel Parameter "+i+" typeof is float ("+WebCL.types.FLOAT+")");
+          CL.sig[i] = WebCL.types.FLOAT;    
+        } else if (kernel_sub_part_split[i].contains("uchar4") ||
+                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("char") && kernel_sub_part_split[i].contains("*")) ||
+                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*"))) {
+          console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+WebCL.types.UINT_V+")");
+          CL.sig[i] = WebCL.types.UINT_V;
+        } else if (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int")) {
+          console.info("Kernel Parameter "+i+" typeof is unsigned int ("+WebCL.types.UINT+")");
+          CL.sig[i] = WebCL.types.UINT;        
+        } else if (kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*")) {
+          console.info("Kernel Parameter "+i+" typeof is int * ("+WebCL.types.INT_V+")");
+          CL.sig[i] = WebCL.types.INT_V;    
+        } else if (kernel_sub_part_split[i].contains("int")) {
+          console.info("Kernel Parameter "+i+" typeof is int ("+WebCL.types.INT+")");
+          CL.sig[i] = WebCL.types.INT;    
+        } else {
+          console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
+        }
+      }
       try {
         // \todo set the properties 
         CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
@@ -2926,9 +2956,14 @@ function copyTempDouble(ptr) {
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
-        var isFloat = CL.isFloat(arg_value,arg_size);
+        var isFloat = 0;
+        if (CL.sig.length > 0 && arg_index < CL.sig.length) {
+          isFloat = ( CL.sig[arg_index] == WebCL.types.FLOAT_V ) || ( CL.sig[arg_index] == WebCL.types.FLOAT ) 
+        } else {
+          console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
+          return -1; /* CL_FAILED */
+        }
         var isNull = (HEAP32[((arg_value)>>2)] == 0);
-        //console.log("clSetKernelArg : isFloat = "+isFloat);
         var value;
         if (isNull == 1) {
           CL.kernels[ker].setKernelArgLocal(arg_index,arg_size);
@@ -2940,7 +2975,6 @@ function copyTempDouble(ptr) {
             } else {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
             }
-            //console.log("clSetKernelArg : value["+i+"] = "+value[i]);       
           }
           if (isFloat == 1) {
             CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V);
@@ -2953,7 +2987,6 @@ function copyTempDouble(ptr) {
           } else {
             value = HEAP32[((arg_value)>>2)];
           }
-          //console.log("clSetKernelArg : value = "+value);   
           if (arg_index >= 0 && arg_index < CL.buffers.length) {
             CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]);
           } else {
@@ -2961,8 +2994,8 @@ function copyTempDouble(ptr) {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT);
             } else {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT);
-            }
-          }
+            }            
+          }        
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -2986,6 +3019,8 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
+      // empty “localWS” array because give some trouble on CPU mode with mac
+      value_local_work_size = [];  
       try {
         // \todo how add some event inside the array
         CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
@@ -3019,25 +3054,31 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
+        if (CL.sig.length == 0 || buff > CL.sig.length) {
+          console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
+          return -1; /* CL_FAILED */     
+        }
+        var isFloat = 0;
         var vector;    
-        if (CL.enqueueFloat[queue]) {
+        if (CL.sig[buff] == WebCL.types.FLOAT_V) {
           vector = new Float32Array(size / 4);
-        } else {
+          isFloat = 1;
+        } else if (CL.sig[buff] == WebCL.types.UINT_V) {
           vector = new Uint32Array(size / 4);
+        } else if (CL.sig[buff] == WebCL.types.INT_V) {
+          vector = new Int32Array(size / 4);
+        } else {
+          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+CL.sig[buff]);
+          return -1; /* CL_FAILED */     
         }
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        //var str_vector = "clEnqueueReadBuffer : vector(";
         for (var i = 0; i < (size / 4); i++) {
-          if (CL.enqueueFloat[queue]) {
+          if (isFloat) {
             HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAPF32[(((results)+(i*4))>>2)] + ",";
           } else {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAP32[(((results)+(i*4))>>2)] + ",";
           }         
         }
-        //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-        //console.info("clEnqueueReadBuffer: Vector "+str_vector+" - Size : "+vector.length+"");
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);
@@ -3628,7 +3669,7 @@ Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requ
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
 __ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
-___errno_state = Runtime.staticAlloc(4);
+___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 _fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
