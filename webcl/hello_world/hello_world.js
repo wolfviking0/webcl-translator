@@ -12,6 +12,9 @@ var ENVIRONMENT_IS_NODE = typeof process === 'object' && typeof require === 'fun
 var ENVIRONMENT_IS_WEB = typeof window === 'object';
 var ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
 var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
+if (typeof module === "object") {
+  module.exports = Module;
+}
 if (ENVIRONMENT_IS_NODE) {
   // Expose functionality in the same simple way that the shells work
   // Note that we pollute the global namespace here, otherwise we break in node
@@ -1142,7 +1145,7 @@ function copyTempDouble(ptr) {
         canvas.requestFullScreen = canvas['requestFullScreen'] ||
                                    canvas['mozRequestFullScreen'] ||
                                    (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
-        canvas.requestFullScreen(); 
+        canvas.requestFullScreen();
       },requestAnimationFrame:function (func) {
         if (!window.requestAnimationFrame) {
           window.requestAnimationFrame = window['requestAnimationFrame'] ||
@@ -1158,17 +1161,23 @@ function copyTempDouble(ptr) {
           if (!ABORT) return func.apply(null, arguments);
         };
       },safeRequestAnimationFrame:function (func) {
-        Browser.requestAnimationFrame(function() {
+        return Browser.requestAnimationFrame(function() {
           if (!ABORT) func();
         });
       },safeSetTimeout:function (func, timeout) {
-        setTimeout(function() {
+        return setTimeout(function() {
           if (!ABORT) func();
         }, timeout);
       },safeSetInterval:function (func, timeout) {
-        setInterval(function() {
+        return setInterval(function() {
           if (!ABORT) func();
         }, timeout);
+      },getUserMedia:function (func) {
+        if(!window.getUserMedia) {
+          window.getUserMedia = navigator['getUserMedia'] ||
+                                navigator['mozGetUserMedia'];
+        }
+        window.getUserMedia(func);
       },getMovementX:function (event) {
         return event['movementX'] ||
                event['mozMovementX'] ||
@@ -1265,25 +1274,42 @@ function copyTempDouble(ptr) {
         flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
         HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         Browser.updateResizeListeners();
-      }};var CL={ctx:[],ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],sig:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
-        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!!");
+      }};var CL={ctx:[],ctx_clean:0,cmdQueue:[],enqueueFloat:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+  // #if OPENCL_DEBUG
+  //       console.info("isFloat() check pointer : ");
+  // #endif  
         var v_int = HEAP32[((ptr)>>2)]; 
         var v_float = HEAPF32[((ptr)>>2)]; 
         // If the value is 0
         if ( v_int == 0 ) {
+  // #if OPENCL_DEBUG
+  //         console.info("\tisFloat() value is null check is array");
+  // #endif  
           // If is an array
           if (size > 1) {
             v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
-          } else { 
+            v_float = HEAPF32[(((ptr)+(size - 1))>>2)]; 
+  // #if OPENCL_DEBUG
+  //           console.info("\tisFloat() value is array, check the last element");
+  // #endif          
+          } else {
+  // #if OPENCL_DEBUG
+  //           console.info("\tisFloat() value is not array, use float by default");
+  // #endif     
             // Use float by default 
             return 1;
           }                
         }
         // If we read int and is float we have a very big value 1e8
         if (Math.abs(v_int) > 100000000) {
+  // #if OPENCL_DEBUG
+  //        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
+  // #endif     
           return 1;
         }
+  // #if OPENCL_DEBUG
+  //       console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
+  // #endif     
         return 0;      
       },catchError:function (name,e) {
         var str=""+e;
@@ -1367,7 +1393,7 @@ function copyTempDouble(ptr) {
         return CL.catchError("clGetDeviceIDs",e);
       }
     }
-  var ERRNO_CODES={E2BIG:7,EACCES:13,EADDRINUSE:98,EADDRNOTAVAIL:99,EAFNOSUPPORT:97,EAGAIN:11,EALREADY:114,EBADF:9,EBADMSG:74,EBUSY:16,ECANCELED:125,ECHILD:10,ECONNABORTED:103,ECONNREFUSED:111,ECONNRESET:104,EDEADLK:35,EDESTADDRREQ:89,EDOM:33,EDQUOT:122,EEXIST:17,EFAULT:14,EFBIG:27,EHOSTUNREACH:113,EIDRM:43,EILSEQ:84,EINPROGRESS:115,EINTR:4,EINVAL:22,EIO:5,EISCONN:106,EISDIR:21,ELOOP:40,EMFILE:24,EMLINK:31,EMSGSIZE:90,EMULTIHOP:72,ENAMETOOLONG:36,ENETDOWN:100,ENETRESET:102,ENETUNREACH:101,ENFILE:23,ENOBUFS:105,ENODATA:61,ENODEV:19,ENOENT:2,ENOEXEC:8,ENOLCK:37,ENOLINK:67,ENOMEM:12,ENOMSG:42,ENOPROTOOPT:92,ENOSPC:28,ENOSR:63,ENOSTR:60,ENOSYS:38,ENOTCONN:107,ENOTDIR:20,ENOTEMPTY:39,ENOTRECOVERABLE:131,ENOTSOCK:88,ENOTSUP:95,ENOTTY:25,ENXIO:6,EOPNOTSUPP:45,EOVERFLOW:75,EOWNERDEAD:130,EPERM:1,EPIPE:32,EPROTO:71,EPROTONOSUPPORT:93,EPROTOTYPE:91,ERANGE:34,EROFS:30,ESPIPE:29,ESRCH:3,ESTALE:116,ETIME:62,ETIMEDOUT:110,ETXTBSY:26,EWOULDBLOCK:11,EXDEV:18};
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,ELBIN:75,EDOTDOT:76,EBADMSG:77,EFTYPE:79,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENMFILE:89,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EPROCLIM:130,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,ENOSHARE:136,ECASECLASH:137,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
   var ___errno_state=0;function ___setErrNo(value) {
       // For convenient setting and returning of errno.
       HEAP32[((___errno_state)>>2)]=value
@@ -1376,7 +1402,35 @@ function copyTempDouble(ptr) {
   var _stdin=allocate(1, "i32*", ALLOC_STATIC);
   var _stdout=allocate(1, "i32*", ALLOC_STATIC);
   var _stderr=allocate(1, "i32*", ALLOC_STATIC);
-  var __impure_ptr=allocate(1, "i32*", ALLOC_STATIC);var FS={currentPath:"/",nextInode:2,streams:[null],ignorePermissions:true,joinPath:function (parts, forceRelative) {
+  var __impure_ptr=allocate(1, "i32*", ALLOC_STATIC);var FS={currentPath:"/",nextInode:2,streams:[null],ignorePermissions:true,createFileHandle:function (stream, fd) {
+        if (typeof stream === 'undefined') {
+          stream = null;
+        }
+        if (!fd) {
+          if (stream && stream.socket) {
+            for (var i = 1; i < 64; i++) {
+              if (!FS.streams[i]) {
+                fd = i;
+                break;
+              }
+            }
+            assert(fd, 'ran out of low fds for sockets');
+          } else {
+            fd = Math.max(FS.streams.length, 64);
+            for (var i = FS.streams.length; i < fd; i++) {
+              FS.streams[i] = null; // Keep dense
+            }
+          }
+        }
+        // Close WebSocket first if we are about to replace the fd (i.e. dup2)
+        if (FS.streams[fd] && FS.streams[fd].socket && FS.streams[fd].socket.close) {
+          FS.streams[fd].socket.close();
+        }
+        FS.streams[fd] = stream;
+        return fd;
+      },removeFileHandle:function (fd) {
+        FS.streams[fd] = null;
+      },joinPath:function (parts, forceRelative) {
         var ret = parts[0];
         for (var i = 1; i < parts.length; i++) {
           if (ret[ret.length-1] != '/') ret += '/';
@@ -1760,6 +1814,7 @@ function copyTempDouble(ptr) {
         var stdout = FS.createDevice(devFolder, 'stdout', null, output);
         var stderr = FS.createDevice(devFolder, 'stderr', null, error);
         FS.createDevice(devFolder, 'tty', input, output);
+        FS.createDevice(devFolder, 'null', function(){}, function(){});
         // Create default streams.
         FS.streams[1] = {
           path: '/dev/stdin',
@@ -1828,6 +1883,12 @@ function copyTempDouble(ptr) {
         }
         delete path.parentObject.contents[path.name];
       }};
+  function _send(fd, buf, len, flags) {
+      var info = FS.streams[fd];
+      if (!info) return -1;
+      info.sender(HEAPU8.subarray(buf, buf+len));
+      return len;
+    }
   function _pwrite(fildes, buf, nbyte, offset) {
       // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
@@ -1857,7 +1918,9 @@ function copyTempDouble(ptr) {
       // ssize_t write(int fildes, const void *buf, size_t nbyte);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
       var stream = FS.streams[fildes];
-      if (!stream) {
+      if (stream && ('socket' in stream)) {
+          return _send(fildes, buf, nbyte, 0);
+      } else if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
       } else if (!stream.isWrite) {
@@ -2691,38 +2754,7 @@ function copyTempDouble(ptr) {
         return 0; // Null pointer    
       }
       var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx); 
-      // Experimental parse of kernel for have the different type of the kernel (input and output)
-      var start_kernel = kernel.indexOf("__kernel");
-      var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
-      var start_kernel_brace = kernel_sub_part.indexOf("(");
-      var close_kernel_brace = kernel_sub_part.indexOf(")");
-      kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
-      kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
-      var kernel_sub_part_split = kernel_sub_part.split(",");
-      for (var i = 0; i < kernel_sub_part_split.length; i++) {
-        if (kernel_sub_part_split[i].contains("float4") ||
-           (kernel_sub_part_split[i].contains("float") && kernel_sub_part_split[i].contains("*"))) {
-          console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+WebCL.types.FLOAT_V+")");
-          CL.sig[i] = WebCL.types.FLOAT_V;
-        } else if (kernel_sub_part_split[i].contains("float")) {
-          console.info("Kernel Parameter "+i+" typeof is float ("+WebCL.types.FLOAT+")");
-          CL.sig[i] = WebCL.types.FLOAT;    
-        } else if (kernel_sub_part_split[i].contains("uchar4") ||
-                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("char") && kernel_sub_part_split[i].contains("*")) ||
-                  (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*"))) {
-          console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+WebCL.types.UINT_V+")");
-          CL.sig[i] = WebCL.types.UINT_V;
-        } else if (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int")) {
-          console.info("Kernel Parameter "+i+" typeof is unsigned int ("+WebCL.types.UINT+")");
-          CL.sig[i] = WebCL.types.UINT;        
-        } else if (kernel_sub_part_split[i].contains("int")) {
-          console.info("Kernel Parameter "+i+" typeof is int ("+WebCL.types.INT+")");
-          CL.sig[i] = WebCL.types.INT;    
-        } else {
-          console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
-        }
-      }
+      var kernel = Pointer_stringify(sourceIdx);       
       try {
         // \todo set the properties 
         CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
@@ -2874,29 +2906,25 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
               return 0;
             }
-            if (CL.sig.length == 0 || buff > CL.sig.length) {
-              console.error("clEnqueueWriteBuffer: Invalid signature : "+buff);
-              return -1; /* CL_FAILED */     
-            }
-            var isFloat = 0;
-            var vector;    
-            if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+            var isFloat = CL.isFloat(host_ptr,size);
+            if (isFloat) {
+              CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
               vector = new Float32Array(size / 4);
-              isFloat = 1;
-            } else if (CL.sig[buff] == WebCL.types.UINT_V) {
-              vector = new Uint32Array(size / 4);
-            } else if (CL.sig[buff] == WebCL.types.INT_V) {
-              vector = new Int32Array(size / 4);
             } else {
-              console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+CL.sig[buff]);
+              CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
+              vector = new Uint32Array(size / 4);
             }
+            //var str_vector = "clEnqueueWriteBuffer : vector(";
             for (var i = 0; i < (size / 4); i++) {
-              if (isFloat) {
+              if (CL.enqueueFloat[CL.cmdQueue.length-1]) {
                 vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
               } else {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
+              //str_vector += vector[i] + ",";
             }
+            //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
+            //console.info(str_vector);
             CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
             break;
           default:
@@ -2922,29 +2950,26 @@ function copyTempDouble(ptr) {
         console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
-      if (CL.sig.length == 0 || buff > CL.sig.length) {
-        console.error("clEnqueueWriteBuffer: Invalid signature : "+buff);
-        return -1; /* CL_FAILED */     
-      }
-      var isFloat = 0;
-      var vector;    
-      if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+      var isFloat = CL.isFloat(ptr,size);
+      var vector;
+      if (isFloat) {
+        CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
         vector = new Float32Array(size / 4);
-        isFloat = 1;
-      } else if (CL.sig[buff] == WebCL.types.UINT_V) {
-        vector = new Uint32Array(size / 4);
-      } else if (CL.sig[buff] == WebCL.types.INT_V) {
-        vector = new Int32Array(size / 4);
       } else {
-        console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+CL.sig[buff]);
+        CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
+        vector = new Uint32Array(size / 4);
       }
+      //var str_vector = "clEnqueueWriteBuffer : vector(";
       for (var i = 0; i < (size / 4); i++) {
-        if (isFloat) {
+        if (CL.enqueueFloat[queue]) {
           vector[i] = HEAPF32[(((ptr)+(i*4))>>2)];
         } else {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
+        //str_vector += vector[i] + ",";
       }
+      //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
+      //console.info(str_vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -2962,14 +2987,9 @@ function copyTempDouble(ptr) {
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
-        var isFloat = 0;
-        if (CL.sig.length > 0 && arg_index < CL.sig.length) {
-          isFloat = ( CL.sig[arg_index] == WebCL.types.FLOAT_V ) || ( CL.sig[arg_index] == WebCL.types.FLOAT ) 
-        } else {
-          console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
-          return -1; /* CL_FAILED */
-        }
+        var isFloat = CL.isFloat(arg_value,arg_size);
         var isNull = (HEAP32[((arg_value)>>2)] == 0);
+        //console.log("clSetKernelArg : isFloat = "+isFloat);
         var value;
         if (isNull == 1) {
           CL.kernels[ker].setKernelArgLocal(arg_index,arg_size);
@@ -2981,6 +3001,7 @@ function copyTempDouble(ptr) {
             } else {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
             }
+            //console.log("clSetKernelArg : value["+i+"] = "+value[i]);       
           }
           if (isFloat == 1) {
             CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V);
@@ -2993,6 +3014,7 @@ function copyTempDouble(ptr) {
           } else {
             value = HEAP32[((arg_value)>>2)];
           }
+          //console.log("clSetKernelArg : value = "+value);   
           if (arg_index >= 0 && arg_index < CL.buffers.length) {
             CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]);
           } else {
@@ -3000,8 +3022,8 @@ function copyTempDouble(ptr) {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT);
             } else {
               CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT);
-            }            
-          }        
+            }
+          }
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -3091,36 +3113,25 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
-        if (CL.sig.length == 0 || buff > CL.sig.length) {
-          console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
-          return -1; /* CL_FAILED */     
-        }
-        var isFloat = 0;
         var vector;    
-        if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+        if (CL.enqueueFloat[queue]) {
           vector = new Float32Array(size / 4);
-          isFloat = 1;
-        } else if (CL.sig[buff] == WebCL.types.UINT_V) {
-          vector = new Uint32Array(size / 4);
-        } else if (CL.sig[buff] == WebCL.types.INT_V) {
-          vector = new Int32Array(size / 4);
         } else {
-          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+CL.sig[buff]);
-          return -1; /* CL_FAILED */     
+          vector = new Uint32Array(size / 4);
         }
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        var str_vector = "clEnqueueReadBuffer : vector(";
+        //var str_vector = "clEnqueueReadBuffer : vector(";
         for (var i = 0; i < (size / 4); i++) {
-          if (isFloat) {
+          if (CL.enqueueFloat[queue]) {
             HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-            str_vector += HEAPF32[(((results)+(i*4))>>2)] + ",";
+            //str_vector += HEAPF32[(((results)+(i*4))>>2)] + ",";
           } else {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-            str_vector += HEAP32[(((results)+(i*4))>>2)] + ",";
+            //str_vector += HEAP32[(((results)+(i*4))>>2)] + ",";
           }         
         }
-        str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-        console.info("clEnqueueReadBuffer: Vector "+str_vector+" - Size : "+vector.length+"");
+        //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
+        //console.info("clEnqueueReadBuffer: Vector "+str_vector+" - Size : "+vector.length+"");
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);
@@ -3248,6 +3259,7 @@ Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requ
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
+  Module["getUserMedia"] = function() { Browser.getUserMedia() }
 __ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 _fputc.ret = allocate([0], "i8", ALLOC_STATIC);
@@ -3296,13 +3308,13 @@ function asmPrintFloat(x, y) {
   Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
 }
 // EMSCRIPTEN_START_ASM
-var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.copyTempDouble;var ad=env.copyTempFloat;var ae=env.min;var af=env.invoke_ii;var ag=env.invoke_v;var ah=env.invoke_iii;var ai=env.invoke_vi;var aj=env._rand;var ak=env._malloc;var al=env._clGetDeviceIDs;var am=env._clReleaseKernel;var an=env._clReleaseContext;var ao=env._fprintf;var ap=env._clCreateContext;var aq=env._printf;var ar=env.__reallyNegative;var as=env._clCreateCommandQueue;var at=env._clReleaseProgram;var au=env._puts;var av=env._clBuildProgram;var aw=env.___setErrNo;var ax=env._fwrite;var ay=env._clGetDeviceInfo;var az=env._clEnqueueNDRangeKernel;var aA=env._write;var aB=env._fputs;var aC=env._clGetKernelWorkGroupInfo;var aD=env._exit;var aE=env._clSetKernelArg;var aF=env._clCreateKernel;var aG=env._clReleaseCommandQueue;var aH=env._fputc;var aI=env._clCreateProgramWithSource;var aJ=env.__formatString;var aK=env._free;var aL=env._clEnqueueWriteBuffer;var aM=env._clGetContextInfo;var aN=env._clEnqueueReadBuffer;var aO=env._pwrite;var aP=env._clReleaseMemObject;var aQ=env._clFinish;var aR=env._clCreateBuffer;var aS=env._clGetProgramBuildInfo;var aT=env.__exit;
+var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.copyTempDouble;var ad=env.copyTempFloat;var ae=env.min;var af=env.invoke_ii;var ag=env.invoke_v;var ah=env.invoke_iii;var ai=env.invoke_vi;var aj=env._rand;var ak=env._malloc;var al=env._clGetDeviceIDs;var am=env._clReleaseKernel;var an=env._clReleaseContext;var ao=env._fprintf;var ap=env._clGetDeviceInfo;var aq=env._printf;var ar=env.__reallyNegative;var as=env._clCreateCommandQueue;var at=env._clReleaseProgram;var au=env._puts;var av=env._clBuildProgram;var aw=env.___setErrNo;var ax=env._fwrite;var ay=env._send;var az=env._clEnqueueNDRangeKernel;var aA=env._write;var aB=env._fputs;var aC=env._clGetKernelWorkGroupInfo;var aD=env._exit;var aE=env._clSetKernelArg;var aF=env._clCreateKernel;var aG=env._clReleaseCommandQueue;var aH=env._fputc;var aI=env._clCreateProgramWithSource;var aJ=env.__formatString;var aK=env._free;var aL=env._clEnqueueWriteBuffer;var aM=env._clGetContextInfo;var aN=env._clEnqueueReadBuffer;var aO=env._pwrite;var aP=env._clReleaseMemObject;var aQ=env._clFinish;var aR=env._clCreateBuffer;var aS=env._clGetProgramBuildInfo;var aT=env.__exit;var aU=env._clCreateContext;
 // EMSCRIPTEN_START_FUNCS
-function aY(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function aZ(){return i|0}function a_(a){a=a|0;i=a}function a$(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a0(a){a=a|0;B=a}function a1(a){a=a|0;C=a}function a2(a){a=a|0;D=a}function a3(a){a=a|0;E=a}function a4(a){a=a|0;F=a}function a5(a){a=a|0;G=a}function a6(a){a=a|0;H=a}function a7(a){a=a|0;I=a}function a8(a){a=a|0;J=a}function a9(a){a=a|0;K=a}function ba(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0.0;b=i;i=i+12432|0;a=b|0;d=b+8|0;e=b+4104|0;f=b+8200|0;h=b+8208|0;j=b+8216|0;k=b+8224|0;l=b+8232|0;m=b+8240|0;n=b+8248|0;o=b+8256|0;p=b+9280|0;q=b+10304|0;r=b+10312|0;t=b+10376|0;u=b+10384|0;c[m>>2]=1024;v=0;while(1){g[d+(v<<2)>>2]=+(aj()|0)*4.656612873077393e-10;w=v+1|0;x=c[m>>2]|0;if(w>>>0<x>>>0){v=w}else{break}}v=x<<2;x=al(0,1,0,1,j|0,0)|0;c[a>>2]=x;if((x|0)!=0){au(464);y=1;i=b;return y|0}x=ap(0,1,j|0,0,0,a|0)|0;if((x|0)==0){au(416);y=1;i=b;return y|0}w=o|0;bc(w|0,0,1024);o=p|0;bc(o|0,0,1024);c[a>>2]=ay(c[j>>2]|0,4140,1024,w|0,n|0)|0;p=ay(c[j>>2]|0,4139,1024,o|0,n|0)|0;c[a>>2]=c[a>>2]|p;p=ay(c[j>>2]|0,4118,1024,q|0,n|0)|0;z=c[a>>2]|p;c[a>>2]=z;if((z|0)!=0){au(336);y=1;i=b;return y|0}z=aM(x|0,4225,64,r|0,n|0)|0;c[a>>2]=z;if((z|0)!=0){au(280);y=1;i=b;return y|0}z=(c[n>>2]|0)>>>2;n=c[q>>2]|0;aq(504,(s=i,i=i+32|0,c[s>>2]=w,c[s+8>>2]=o,c[s+16>>2]=n,c[s+24>>2]=z,s)|0);z=as(x|0,c[j>>2]|0,0,0,a|0)|0;if((z|0)==0){au(232);y=1;i=b;return y|0}n=aI(x|0,1,1416,0,a|0)|0;if((n|0)==0){au(184);y=1;i=b;return y|0}o=av(n|0,0,0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(136);o=c[j>>2]|0;w=u|0;aS(n|0,o|0,4483,2048,w|0,t|0);au(w|0);aD(1);return 0}w=aF(n|0,752,a|0)|0;if(!((w|0)!=0&(c[a>>2]|0)==0)){au(96);aD(1);return 0}t=aR(x|0,4,0,v|0,0,0)|0;c[k>>2]=t;o=aR(x|0,2,0,v|0,0,0)|0;c[l>>2]=o;if((t|0)==0|(o|0)==0){au(48);aD(1);return 0}o=aL(z|0,t|0,1,0,v|0,d|0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(8);aD(1);return 0}c[a>>2]=0;c[a>>2]=aE(w|0,0,4,k|0)|0;o=aE(w|0,1,4,l|0)|0;c[a>>2]=c[a>>2]|o;o=aE(w|0,2,4,m|0)|0;v=c[a>>2]|o;c[a>>2]=v;if((v|0)!=0){aq(704,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=aC(w|0,c[j>>2]|0,4528,4,h|0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(648,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}c[f>>2]=c[m>>2]|0;v=az(z|0,w|0,1,0,f|0,h|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){au(376);y=1;i=b;return y|0}aQ(z|0);v=aN(z|0,c[l>>2]|0,1,0,c[m>>2]<<2|0,e|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(608,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=c[m>>2]|0;L53:do{if((v|0)==0){A=0;B=0}else{m=0;a=0;while(1){C=+g[d+(m<<2)>>2];h=(+g[e+(m<<2)>>2]-C*C<1.0e-7&1)+a|0;f=m+1|0;if(f>>>0<v>>>0){m=f;a=h}else{A=h;B=v;break L53}}}}while(0);aq(568,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=B,s)|0);aP(c[k>>2]|0);aP(c[l>>2]|0);at(n|0);am(w|0);aG(z|0);an(x|0);y=0;i=b;return y|0}function bb(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bc(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bd(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function be(a,b){a=a|0;b=b|0;return aU[a&1](b|0)|0}function bf(a){a=a|0;aV[a&1]()}function bg(a,b,c){a=a|0;b=b|0;c=c|0;return aW[a&1](b|0,c|0)|0}function bh(a,b){a=a|0;b=b|0;aX[a&1](b|0)}function bi(a){a=a|0;_(0);return 0}function bj(){_(1)}function bk(a,b){a=a|0;b=b|0;_(2);return 0}function bl(a){a=a|0;_(3)}
+function aZ(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function a_(){return i|0}function a$(a){a=a|0;i=a}function a0(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a1(a){a=a|0;B=a}function a2(a){a=a|0;C=a}function a3(a){a=a|0;D=a}function a4(a){a=a|0;E=a}function a5(a){a=a|0;F=a}function a6(a){a=a|0;G=a}function a7(a){a=a|0;H=a}function a8(a){a=a|0;I=a}function a9(a){a=a|0;J=a}function ba(a){a=a|0;K=a}function bb(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0.0;b=i;i=i+12432|0;a=b|0;d=b+8|0;e=b+4104|0;f=b+8200|0;h=b+8208|0;j=b+8216|0;k=b+8224|0;l=b+8232|0;m=b+8240|0;n=b+8248|0;o=b+8256|0;p=b+9280|0;q=b+10304|0;r=b+10312|0;t=b+10376|0;u=b+10384|0;c[m>>2]=1024;v=0;do{g[d+(v<<2)>>2]=+(aj()|0)*4.656612873077393e-10;v=v+1|0;w=c[m>>2]|0;}while(!(v>>>0>=w>>>0));v=w<<2;w=al(0,1,0,1,j|0,0)|0;c[a>>2]=w;if((w|0)!=0){au(464);x=1;i=b;return x|0}w=aU(0,1,j|0,0,0,a|0)|0;if((w|0)==0){au(416);x=1;i=b;return x|0}y=o|0;bd(y|0,0,1024);o=p|0;bd(o|0,0,1024);c[a>>2]=ap(c[j>>2]|0,4140,1024,y|0,n|0)|0;p=ap(c[j>>2]|0,4139,1024,o|0,n|0)|0;c[a>>2]=c[a>>2]|p;p=ap(c[j>>2]|0,4118,1024,q|0,n|0)|0;z=c[a>>2]|p;c[a>>2]=z;if((z|0)!=0){au(336);x=1;i=b;return x|0}z=aM(w|0,4225,64,r|0,n|0)|0;c[a>>2]=z;if((z|0)!=0){au(280);x=1;i=b;return x|0}z=(c[n>>2]|0)>>>2;n=c[q>>2]|0;aq(504,(s=i,i=i+32|0,c[s>>2]=y,c[s+8>>2]=o,c[s+16>>2]=n,c[s+24>>2]=z,s)|0);z=as(w|0,c[j>>2]|0,0,0,a|0)|0;if((z|0)==0){au(232);x=1;i=b;return x|0}n=aI(w|0,1,1416,0,a|0)|0;if((n|0)==0){au(184);x=1;i=b;return x|0}o=av(n|0,0,0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(136);o=c[j>>2]|0;y=u|0;aS(n|0,o|0,4483,2048,y|0,t|0);au(y|0);aD(1);return 0}y=aF(n|0,752,a|0)|0;if(!((y|0)!=0&(c[a>>2]|0)==0)){au(96);aD(1);return 0}t=aR(w|0,4,0,v|0,0,0)|0;c[k>>2]=t;o=aR(w|0,2,0,v|0,0,0)|0;c[l>>2]=o;if((t|0)==0|(o|0)==0){au(48);aD(1);return 0}o=aL(z|0,t|0,1,0,v|0,d|0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(8);aD(1);return 0}c[a>>2]=0;c[a>>2]=aE(y|0,0,4,k|0)|0;o=aE(y|0,1,4,l|0)|0;c[a>>2]=c[a>>2]|o;o=aE(y|0,2,4,m|0)|0;v=c[a>>2]|o;c[a>>2]=v;if((v|0)!=0){aq(704,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=aC(y|0,c[j>>2]|0,4528,4,h|0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(648,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}c[f>>2]=c[m>>2]|0;v=az(z|0,y|0,1,0,f|0,h|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){au(376);x=1;i=b;return x|0}aQ(z|0);v=aN(z|0,c[l>>2]|0,1,0,c[m>>2]<<2|0,e|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(608,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=c[m>>2]|0;L53:do{if((v|0)==0){A=0;B=0}else{m=0;a=0;while(1){C=+g[d+(m<<2)>>2];h=(+g[e+(m<<2)>>2]-C*C<1.0e-7&1)+a|0;f=m+1|0;if(f>>>0<v>>>0){m=f;a=h}else{A=h;B=v;break L53}}}}while(0);aq(568,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=B,s)|0);aP(c[k>>2]|0);aP(c[l>>2]|0);at(n|0);am(y|0);aG(z|0);an(w|0);x=0;i=b;return x|0}function bc(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bd(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function be(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bf(a,b){a=a|0;b=b|0;return aV[a&1](b|0)|0}function bg(a){a=a|0;aW[a&1]()}function bh(a,b,c){a=a|0;b=b|0;c=c|0;return aX[a&1](b|0,c|0)|0}function bi(a,b){a=a|0;b=b|0;aY[a&1](b|0)}function bj(a){a=a|0;_(0);return 0}function bk(){_(1)}function bl(a,b){a=a|0;b=b|0;_(2);return 0}function bm(a){a=a|0;_(3)}
 // EMSCRIPTEN_END_FUNCS
-var aU=[bi,bi];var aV=[bj,bj];var aW=[bk,bk];var aX=[bl,bl];return{_strlen:bb,_memcpy:bd,_main:ba,_memset:bc,stackAlloc:aY,stackSave:aZ,stackRestore:a_,setThrew:a$,setTempRet0:a0,setTempRet1:a1,setTempRet2:a2,setTempRet3:a3,setTempRet4:a4,setTempRet5:a5,setTempRet6:a6,setTempRet7:a7,setTempRet8:a8,setTempRet9:a9,dynCall_ii:be,dynCall_v:bf,dynCall_iii:bg,dynCall_vi:bh}})
+var aV=[bj,bj];var aW=[bk,bk];var aX=[bl,bl];var aY=[bm,bm];return{_strlen:bc,_memcpy:be,_main:bb,_memset:bd,stackAlloc:aZ,stackSave:a_,stackRestore:a$,setThrew:a0,setTempRet0:a1,setTempRet1:a2,setTempRet2:a3,setTempRet3:a4,setTempRet4:a5,setTempRet5:a6,setTempRet6:a7,setTempRet7:a8,setTempRet8:a9,setTempRet9:ba,dynCall_ii:bf,dynCall_v:bg,dynCall_iii:bh,dynCall_vi:bi}})
 // EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "copyTempDouble": copyTempDouble, "copyTempFloat": copyTempFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_rand": _rand, "_malloc": _malloc, "_clGetDeviceIDs": _clGetDeviceIDs, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "_fprintf": _fprintf, "_clCreateContext": _clCreateContext, "_printf": _printf, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_clReleaseProgram": _clReleaseProgram, "_puts": _puts, "_clBuildProgram": _clBuildProgram, "___setErrNo": ___setErrNo, "_fwrite": _fwrite, "_clGetDeviceInfo": _clGetDeviceInfo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_write": _write, "_fputs": _fputs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_exit": _exit, "_clSetKernelArg": _clSetKernelArg, "_clCreateKernel": _clCreateKernel, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_fputc": _fputc, "_clCreateProgramWithSource": _clCreateProgramWithSource, "__formatString": __formatString, "_free": _free, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetContextInfo": _clGetContextInfo, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_pwrite": _pwrite, "_clReleaseMemObject": _clReleaseMemObject, "_clFinish": _clFinish, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "__exit": __exit, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "copyTempDouble": copyTempDouble, "copyTempFloat": copyTempFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_rand": _rand, "_malloc": _malloc, "_clGetDeviceIDs": _clGetDeviceIDs, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "_fprintf": _fprintf, "_clGetDeviceInfo": _clGetDeviceInfo, "_printf": _printf, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_clReleaseProgram": _clReleaseProgram, "_puts": _puts, "_clBuildProgram": _clBuildProgram, "___setErrNo": ___setErrNo, "_fwrite": _fwrite, "_send": _send, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_write": _write, "_fputs": _fputs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_exit": _exit, "_clSetKernelArg": _clSetKernelArg, "_clCreateKernel": _clCreateKernel, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_fputc": _fputc, "_clCreateProgramWithSource": _clCreateProgramWithSource, "__formatString": __formatString, "_free": _free, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetContextInfo": _clGetContextInfo, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_pwrite": _pwrite, "_clReleaseMemObject": _clReleaseMemObject, "_clFinish": _clFinish, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "__exit": __exit, "_clCreateContext": _clCreateContext, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _main = Module["_main"] = asm["_main"];
