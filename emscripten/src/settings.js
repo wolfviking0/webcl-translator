@@ -36,6 +36,7 @@ var ASSERTIONS = 1; // Whether we should add runtime assertions, for example to
                     // exceed it's size, whether all allocations (stack and static) are
                     // of positive size, etc., whether we should throw if we encounter a bad __label__, i.e.,
                     // if code flow runs into a fault
+                    // ASSERTIONS == 2 gives even more runtime checks
 var VERBOSE = 0; // When set to 1, will generate more verbose output during compilation.
 
 var INVOKE_RUN = 1; // Whether we will run the main() function. Disable if you embed the generated
@@ -174,6 +175,7 @@ var LIBRARY_DEBUG = 0; // Print out when we enter a library call (library*.js). 
                        // want it back. A simple way to set it in C++ is
                        //   emscripten_run_script("Runtime.debug = ...;");
 var SOCKET_DEBUG = 0; // Log out socket/network data transfer.
+var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
@@ -195,7 +197,7 @@ var DISABLE_EXCEPTION_CATCHING = 0; // Disables generating code to actually catc
                                     // introduce silent failures, which is good).
                                     // DISABLE_EXCEPTION_CATCHING = 0 - generate code to actually catch exceptions
                                     // DISABLE_EXCEPTION_CATCHING = 1 - disable exception catching at all
-                                    // DISABLE_EXCEPTION_CATCHING = 2 - disable exception catching, but enables 
+                                    // DISABLE_EXCEPTION_CATCHING = 2 - disable exception catching, but enables
                                     // catching in whitelist
                                     // TODO: Make this also remove cxa_begin_catch etc., optimize relooper
                                     //       for it, etc. (perhaps do all of this as preprocessing on .ll?)

@@ -295,7 +295,7 @@ def check_node_version():
 # we re-check sanity when the settings are changed)
 # We also re-check sanity and clear the cache when the version changes
 
-EMSCRIPTEN_VERSION = '1.4.3'
+EMSCRIPTEN_VERSION = '1.4.8'
 
 def generate_sanity():
   return EMSCRIPTEN_VERSION + '|' + get_llvm_target()
@@ -727,6 +727,7 @@ class Building:
     env['HOST_CXXFLAGS'] = "-W" #if set to nothing, CXXFLAGS is used, which we don't want
     env['PKG_CONFIG_LIBDIR'] = path_from_root('system', 'local', 'lib', 'pkgconfig') + os.path.pathsep + path_from_root('system', 'lib', 'pkgconfig')
     env['PKG_CONFIG_PATH'] = os.environ.get ('EM_PKG_CONFIG_PATH') or ''
+    env['EMSCRIPTEN'] = '1'
     return env
 
   @staticmethod

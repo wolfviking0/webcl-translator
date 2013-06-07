@@ -968,6 +968,7 @@ function simplifyNotComps(ast) {
       }
     }
   });
+  return ast;
 }
 
 function simplifyExpressionsPost(ast) {
@@ -1850,10 +1851,10 @@ function eliminate(ast, memSafe) {
     if (asm) var asmData = normalizeAsm(func);
     //printErr('eliminate in ' + func[1]);
 
-
     // First, find the potentially eliminatable functions: that have one definition and one use
     var definitions = {};
     var uses = {};
+    var namings = {};
     var values = {};
     var locals = {};
     var varsToRemove = {}; // variables being removed, that we can eliminate all 'var x;' of (this refers to 'var' nodes we should remove)
@@ -1896,12 +1897,18 @@ function eliminate(ast, memSafe) {
           if (!values[name]) values[name] = node[3];
           if (node[1] === true) { // not +=, -= etc., just =
             uses[name]--; // because the name node will show up by itself in the previous case
+            if (!namings[name]) namings[name] = 0;
+            namings[name]++; // offset it here, this tracks the total times we are named
           }
         }
       } else if (type == 'switch') {
         hasSwitch = true;
       }
     });
+
+    for (var used in uses) {
+      namings[used] = (namings[used] || 0) + uses[used];
+    }
 
     // we cannot eliminate variables if there is a switch
     if (hasSwitch && !asm) return;
@@ -1972,7 +1979,7 @@ function eliminate(ast, memSafe) {
     //printErr('locals: ' + JSON.stringify(locals));
     //printErr('varsToRemove: ' + JSON.stringify(varsToRemove));
     //printErr('varsToTryToRemove: ' + JSON.stringify(varsToTryToRemove));
-    definitions = values = null;
+    values = null;
     //printErr('potentials: ' + JSON.stringify(potentials));
     // We can now proceed through the function. In each list of statements, we try to eliminate
     var tracked = {};
@@ -2213,19 +2220,12 @@ function eliminate(ast, memSafe) {
             }
 
             allowTracking = false;
-
-            var lastAbort = abort; // do not let an abort in 2 cause 3 to be skipped
             traverseInOrder(node[2]); // 2 and 3 could be 'parallel', really..
-            var midAbort = abort;
-            abort = lastAbort;
             if (node[3]) traverseInOrder(node[3]);
-            abort = midAbort || lastAbort;
-
             allowTracking = true;
 
           } else {
             tracked = {};
-            abort = true;
           }
         } else if (type == 'block') {
           var stats = node[1];
@@ -2246,7 +2246,6 @@ function eliminate(ast, memSafe) {
             traverseInOrder(node[2]);
           } else {
             tracked = {};
-            abort = true;
           }
         } else if (type == 'return') {
           if (node[1]) traverseInOrder(node[1]);
@@ -2257,19 +2256,14 @@ function eliminate(ast, memSafe) {
         } else if (type == 'switch') {
           traverseInOrder(node[1]);
           var cases = node[2];
-          var lastAbort = abort;
-          var finalAbort = abort;
           for (var i = 0; i < cases.length; i++) {
             var c = cases[i];
             assert(c[0] === null || c[0][0] == 'num' || (c[0][0] == 'unary-prefix' && c[0][2][0] == 'num'));
             var stats = c[1];
-            abort = lastAbort;
             for (var j = 0; j < stats.length; j++) {
               traverseInOrder(stats[j]);
             }
-            finalAbort = finalAbort || abort;
           }
-          abort = finalAbort;
         } else {
           if (!(type in ABORTING_ELIMINATOR_SCAN_NODES)) {
             printErr('unfamiliar eliminator scan node: ' + JSON.stringify(node));
@@ -2319,11 +2313,12 @@ function eliminate(ast, memSafe) {
       // Look for statements, including while-switch pattern
       var stats = getStatements(block) || (block[0] == 'while' && block[2][0] == 'switch' ? [block[2]] : stats);
       if (!stats) return;
+      //printErr('Stats: ' + JSON.stringify(stats).substr(0,100));
       tracked = {};
       //printErr('new StatBlock');
       for (var i = 0; i < stats.length; i++) {
         var node = stats[i];
-        //printErr('StatBlock[' + i + '] => ' + JSON.stringify(node));
+        //printErr('StatBlock[' + i + '] => ' + JSON.stringify(node).substr(0,100));
         var type = node[0];
         if (type == 'stat') {
           node = node[1];
@@ -2339,6 +2334,8 @@ function eliminate(ast, memSafe) {
       //printErr('delete StatBlock');
     });
 
+    var seenUses = {}, helperReplacements = {}; // for looper-helper optimization
+
     // clean up vars
     //printErr('cleaning up ' + JSON.stringify(varsToRemove));
     traverse(func, function(node, type) {
@@ -2348,6 +2345,87 @@ function eliminate(ast, memSafe) {
           // wipe out an empty |var;|
           node[0] = 'toplevel';
           node[1] = [];
+        }
+      }
+    }, function(node, type) {
+      if (type == 'name') {
+        var name = node[1];
+        if (name in helperReplacements) {
+          node[1] = helperReplacements[name];
+          return; // no need to track this anymore, we can't loop-optimize more than once
+        }
+        // track how many uses we saw. we need to know when a variable is no longer used (hence we run this in the post)
+        if (!(name in seenUses)) {
+          seenUses[name] = 1;
+        } else {
+          seenUses[name]++;
+        }
+      } else if (type == 'while') {
+        // try to remove loop helper variables specifically
+        var stats = node[2][1];
+        var last = stats[stats.length-1];
+        if (last[0] == 'if' && last[2][0] == 'block' && last[3] && last[3][0] == 'block') {
+          var ifTrue = last[2];
+          var ifFalse = last[3];
+          var flip = false;
+          if (ifFalse[1][0][0] == 'break') { // canonicalize break in the if
+            var temp = ifFalse;
+            ifFalse = ifTrue;
+            ifTrue = temp;
+            flip = true;
+          }
+          if (ifTrue[1][0][0] == 'break' && !ifTrue[1][1] && ifFalse[1].length == 1 && ifFalse[1][0][0] == 'stat' && ifFalse[1][0][1][0] == 'assign') {
+            var assign = ifFalse[1][0][1];
+            if (assign[1] === true && assign[2][0] == 'name' && assign[3][0] == 'name') {
+              var looper = assign[2][1];
+              var helper = assign[3][1];
+              if (definitions[helper] == 1 && seenUses[looper] == namings[looper] &&
+                  !helperReplacements[helper] && !helperReplacements[looper]) {
+                // the remaining issue is whether looper is used after the assignment to helper and before the last line (where we assign to it)
+                var found = -1;
+                for (var i = stats.length-2; i >= 0; i--) {
+                  var curr = stats[i];
+                  if (curr[0] == 'stat' && curr[1][0] == 'assign') {
+                    var currAssign = curr[1];
+                    if (currAssign[1] === true && currAssign[2][0] == 'name') {
+                      var to = currAssign[2][1];
+                      if (to == helper) {
+                        found = i;
+                        break;
+                      }
+                    }
+                  }
+                }
+                if (found >= 0) {
+                  var looperUsed = false;
+                  for (var i = found+1; i < stats.length && !looperUsed; i++) {
+                    var curr = i < stats.length-1 ? stats[i] : last[1]; // on the last line, just look in the condition
+                    traverse(curr, function(node, type) {
+                      if (type == 'name' && node[1] == looper) {
+                        looperUsed = true;
+                        return true;
+                      }
+                    });
+                  }
+                  if (!looperUsed) {
+                    // hurrah! this is safe to do
+                    varsToRemove[helper] = 2;
+                    traverse(node, function(node, type) { // replace all appearances of helper with looper
+                      if (type == 'name' && node[1] == helper) node[1] = looper;
+                    });
+                    helperReplacements[helper] = looper; // replace all future appearances of helper with looper
+                    helperReplacements[looper] = looper; // avoid any further attempts to optimize looper in this manner (seenUses is wrong anyhow, too)
+                    // simplify the if. we remove the if branch, leaving only the else
+                    if (flip) {
+                      last[1] = simplifyNotComps(['unary-prefix', '!', last[1]]);
+                      last[2] = last[3];
+                    }
+                    last.pop();
+                  }
+                }
+              }
+            }
+          }
         }
       }
     });
@@ -2468,6 +2546,26 @@ function fixDotZero(js) {
   });
 }
 
+function asmLoopOptimizer(ast) {
+  traverseGeneratedFunctions(ast, function(fun) {
+    // This is at the end of the pipeline, we can assume all other optimizations are done, and we modify loops
+    // into shapes that might confuse other passes
+    traverse(fun, function(node, type) {
+      if (type == 'while' && node[1][0] == 'num' && node[1][1] == 1 && node[2][0] == 'block') {
+        // while (1) { .. if (..) { break } } ==> do { .. } while(..)
+        var stats = node[2][1];
+        var last = stats[stats.length-1];
+        if (last[0] == 'if' && !last[3] && last[2][0] == 'block' && last[2][1][0][0] == 'break' && !last[2][1][0][1]) {
+          var conditionToBreak = last[1];
+          stats.pop();
+          node[0] = 'do';
+          node[1] = simplifyNotComps(['unary-prefix', '!', conditionToBreak]);
+        }
+      }
+    });
+  });
+}
+
 // Passes table
 
 var compress = false, printMetadata = true, asm = false, last = false;
@@ -2511,6 +2609,7 @@ arguments_.slice(1).forEach(function(arg) {
   passes[arg](ast);
 });
 if (asm && last) {
+  asmLoopOptimizer(ast);
   prepDotZero(ast);
 }
 var js = astToSrc(ast, compress), old;

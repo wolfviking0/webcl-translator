@@ -63,6 +63,36 @@ LibraryManager.library = {
     // This is set to false when the runtime is initialized, allowing you
     // to modify the filesystem freely before run() is called.
     ignorePermissions: true,
+    createFileHandle: function(stream, fd) {
+      if (typeof stream === 'undefined') {
+        stream = null;
+      }
+      if (!fd) {
+        if (stream && stream.socket) {
+          for (var i = 1; i < 64; i++) {
+            if (!FS.streams[i]) {
+              fd = i;
+              break;
+            }
+          }
+          assert(fd, 'ran out of low fds for sockets');
+        } else {
+          fd = Math.max(FS.streams.length, 64);
+          for (var i = FS.streams.length; i < fd; i++) {
+            FS.streams[i] = null; // Keep dense
+          }
+        }
+      }
+      // Close WebSocket first if we are about to replace the fd (i.e. dup2)
+      if (FS.streams[fd] && FS.streams[fd].socket && FS.streams[fd].socket.close) {
+        FS.streams[fd].socket.close();
+      }
+      FS.streams[fd] = stream;
+      return fd;
+    },
+    removeFileHandle: function(fd) {
+      FS.streams[fd] = null;
+    },
     joinPath: function(parts, forceRelative) {
       var ret = parts[0];
       for (var i = 1; i < parts.length; i++) {
@@ -326,24 +356,25 @@ LibraryManager.library = {
 #else
             var chunkSize = 1024*1024; // Chunk size in bytes
 #endif
+
             if (!hasByteServing) chunkSize = datalength;
-      
+
             // Function to get a range from the remote URL.
             var doXHR = (function(from, to) {
               if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
               if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-      
+
               // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
               var xhr = new XMLHttpRequest();
               xhr.open('GET', url, false);
               if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-      
+
               // Some hints to the browser that we want binary data.
               if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
               if (xhr.overrideMimeType) {
                 xhr.overrideMimeType('text/plain; charset=x-user-defined');
               }
-      
+
               xhr.send(null);
               if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
               if (xhr.response !== undefined) {
@@ -368,7 +399,7 @@ LibraryManager.library = {
             this._chunkSize = chunkSize;
             this.lengthKnown = true;
         }
-  
+
         var lazyArray = new LazyUint8Array();
         Object.defineProperty(lazyArray, "length", {
             get: function() {
@@ -560,6 +591,7 @@ LibraryManager.library = {
       var stdout = FS.createDevice(devFolder, 'stdout', null, output);
       var stderr = FS.createDevice(devFolder, 'stderr', null, error);
       FS.createDevice(devFolder, 'tty', input, output);
+      FS.createDevice(devFolder, 'null', function(){}, function(){});
 
       // Create default streams.
       FS.streams[1] = {
@@ -675,10 +707,9 @@ LibraryManager.library = {
       ___setErrNo(ERRNO_CODES.EACCES);
       return 0;
     }
-    var id = FS.streams.length; // Keep dense
     var contents = [];
     for (var key in target.contents) contents.push(key);
-    FS.streams[id] = {
+    var id = FS.createFileHandle({
       path: path,
       object: target,
       // An index into contents. Special values: -2 is ".", -1 is "..".
@@ -695,7 +726,7 @@ LibraryManager.library = {
       contents: contents,
       // Each stream has its own area for readdir() returns.
       currentEntry: _malloc(___dirent_struct_layout.__size__)
-    };
+    });
 #if ASSERTIONS
     FS.checkStreams();
 #endif
@@ -1213,7 +1244,7 @@ LibraryManager.library = {
       finalPath = path.parentPath + '/' + path.name;
     }
     // Actually create an open stream.
-    var id = FS.streams.length; // Keep dense
+    var id;
     if (target.isFolder) {
       var entryBuffer = 0;
       if (___dirent_struct_layout) {
@@ -1221,7 +1252,7 @@ LibraryManager.library = {
       }
       var contents = [];
       for (var key in target.contents) contents.push(key);
-      FS.streams[id] = {
+      id = FS.createFileHandle({
         path: finalPath,
         object: target,
         // An index into contents. Special values: -2 is ".", -1 is "..".
@@ -1238,9 +1269,9 @@ LibraryManager.library = {
         contents: contents,
         // Each stream has its own area for readdir() returns.
         currentEntry: entryBuffer
-      };
+      });
     } else {
-      FS.streams[id] = {
+      id = FS.createFileHandle({
         path: finalPath,
         object: target,
         position: 0,
@@ -1250,7 +1281,7 @@ LibraryManager.library = {
         error: false,
         eof: false,
         ungotten: []
-      };
+      });
     }
 #if ASSERTIONS
     FS.checkStreams();
@@ -1293,10 +1324,7 @@ LibraryManager.library = {
           newStream[member] = stream[member];
         }
         arg = dup2 ? arg : Math.max(arg, FS.streams.length); // dup2 wants exactly arg; fcntl wants a free descriptor >= arg
-        for (var i = FS.streams.length; i < arg; i++) {
-          FS.streams[i] = null; // Keep dense
-        }
-        FS.streams[arg] = newStream;
+        FS.createFileHandle(newStream, arg);
 #if ASSERTIONS
         FS.checkStreams();
 #endif
@@ -1773,12 +1801,14 @@ LibraryManager.library = {
       return bytesRead;
     }
   },
-  read__deps: ['$FS', '__setErrNo', '$ERRNO_CODES', 'pread'],
+  read__deps: ['$FS', '__setErrNo', '$ERRNO_CODES', 'recv', 'pread'],
   read: function(fildes, buf, nbyte) {
     // ssize_t read(int fildes, void *buf, size_t nbyte);
     // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
     var stream = FS.streams[fildes];
-    if (!stream) {
+    if (stream && ('socket' in stream)) {
+      return _recv(fildes, buf, nbyte, 0);
+    } else if (!stream) {
       ___setErrNo(ERRNO_CODES.EBADF);
       return -1;
     } else if (!stream.isRead) {
@@ -1802,6 +1832,10 @@ LibraryManager.library = {
               var result = stream.object.input();
             } catch (e) {
               ___setErrNo(ERRNO_CODES.EIO);
+              return -1;
+            }
+            if (result === undefined && bytesRead === 0) {
+              ___setErrNo(ERRNO_CODES.EAGAIN);
               return -1;
             }
             if (result === null || result === undefined) break;
@@ -1969,12 +2003,14 @@ LibraryManager.library = {
       return i;
     }
   },
-  write__deps: ['$FS', '__setErrNo', '$ERRNO_CODES', 'pwrite'],
+  write__deps: ['$FS', '__setErrNo', '$ERRNO_CODES', 'send', 'pwrite'],
   write: function(fildes, buf, nbyte) {
     // ssize_t write(int fildes, const void *buf, size_t nbyte);
     // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
     var stream = FS.streams[fildes];
-    if (!stream) {
+    if (stream && ('socket' in stream)) {
+        return _send(fildes, buf, nbyte, 0);
+    } else if (!stream) {
       ___setErrNo(ERRNO_CODES.EBADF);
       return -1;
     } else if (!stream.isWrite) {
@@ -2572,7 +2608,7 @@ LibraryManager.library = {
         if (format[formatIndex] == 'l') {
           long_ = true;
           formatIndex++;
-          if(format[formatIndex] == 'l') {
+          if (format[formatIndex] == 'l') {
             longLong = true;
             formatIndex++;
           }
@@ -2585,7 +2621,8 @@ LibraryManager.library = {
         var curr = 0;
         var buffer = [];
         // Read characters according to the format. floats are trickier, they may be in an unfloat state in the middle, then be a valid float later
-        if (type == 'f' || type == 'e' || type == 'g' || type == 'E') {
+        if (type == 'f' || type == 'e' || type == 'g' ||
+            type == 'F' || type == 'E' || type == 'G') {
           var last = 0;
           next = get();
           while (next > 0) {
@@ -2607,7 +2644,7 @@ LibraryManager.library = {
                 (type == 's' ||
                  ((type === 'd' || type == 'u' || type == 'i') && ((next >= {{{ charCode('0') }}} && next <= {{{ charCode('9') }}}) ||
                                                                    (first && next == {{{ charCode('-') }}}))) ||
-                 (type === 'x' && (next >= {{{ charCode('0') }}} && next <= {{{ charCode('9') }}} ||
+                 ((type === 'x' || type === 'X') && (next >= {{{ charCode('0') }}} && next <= {{{ charCode('9') }}} ||
                                    next >= {{{ charCode('a') }}} && next <= {{{ charCode('f') }}} ||
                                    next >= {{{ charCode('A') }}} && next <= {{{ charCode('F') }}}))) &&
                 (formatIndex >= format.length || next !== format[formatIndex].charCodeAt(0))) { // Stop when we read something that is coming up
@@ -2631,17 +2668,21 @@ LibraryManager.library = {
           case 'd': case 'u': case 'i':
             if (half) {
               {{{ makeSetValue('argPtr', 0, 'parseInt(text, 10)', 'i16') }}};
-            } else if(longLong) {
+            } else if (longLong) {
               {{{ makeSetValue('argPtr', 0, 'parseInt(text, 10)', 'i64') }}};
             } else {
               {{{ makeSetValue('argPtr', 0, 'parseInt(text, 10)', 'i32') }}};
             }
             break;
+          case 'X':
           case 'x':
             {{{ makeSetValue('argPtr', 0, 'parseInt(text, 16)', 'i32') }}}
             break;
+          case 'F':
           case 'f':
+          case 'E':
           case 'e':
+          case 'G':
           case 'g':
           case 'E':
             // fallthrough intended
@@ -3797,14 +3838,14 @@ LibraryManager.library = {
      * implementation (replaced by dlmalloc normally) so
      * not an issue.
      */
-#if ASSERTIONS
+#if ASSERTIONS == 2
     Runtime.warnOnce('using stub malloc (reference it from C to have the real one included)');
 #endif
     var ptr = Runtime.dynamicAlloc(bytes + 8);
     return (ptr+8) & 0xFFFFFFF8;
   },
   free: function() {
-#if ASSERTIONS
+#if ASSERTIONS == 2
     Runtime.warnOnce('using stub free (reference it from C to have the real one included)');
 #endif
 },
@@ -3918,6 +3959,13 @@ LibraryManager.library = {
           str++;
         }
       }
+    } else if (finalBase==16) {
+      if ({{{ makeGetValue('str', 0, 'i8') }}} == {{{ charCode('0') }}}) {
+        if ({{{ makeGetValue('str+1', 0, 'i8') }}} == {{{ charCode('x') }}} ||
+            {{{ makeGetValue('str+1', 0, 'i8') }}} == {{{ charCode('X') }}}) {
+          str += 2;
+        }
+      }
     }
     if (!finalBase) finalBase = 10;
 
@@ -3969,13 +4017,14 @@ LibraryManager.library = {
 #if USE_TYPED_ARRAYS == 2
   _parseInt64__deps: ['isspace', '__setErrNo', '$ERRNO_CODES', function() { Types.preciseI64MathUsed = 1 }],
   _parseInt64: function(str, endptr, base, min, max, unsign) {
-    var start = str;
+    var isNegative = false;
     // Skip space.
     while (_isspace({{{ makeGetValue('str', 0, 'i8') }}})) str++;
 
     // Check for a plus/minus sign.
     if ({{{ makeGetValue('str', 0, 'i8') }}} == {{{ charCode('-') }}}) {
       str++;
+      isNegative = true;
     } else if ({{{ makeGetValue('str', 0, 'i8') }}} == {{{ charCode('+') }}}) {
       str++;
     }
@@ -3991,12 +4040,19 @@ LibraryManager.library = {
           str += 2;
         } else {
           finalBase = 8;
-          str++;
           ok = true; // we saw an initial zero, perhaps the entire thing is just "0"
+        }
+      }
+    } else if (finalBase==16) {
+      if ({{{ makeGetValue('str', 0, 'i8') }}} == {{{ charCode('0') }}}) {
+        if ({{{ makeGetValue('str+1', 0, 'i8') }}} == {{{ charCode('x') }}} ||
+            {{{ makeGetValue('str+1', 0, 'i8') }}} == {{{ charCode('X') }}}) {
+          str += 2;
         }
       }
     }
     if (!finalBase) finalBase = 10;
+    start = str;
 
     // Get digits.
     var chr;
@@ -4009,6 +4065,7 @@ LibraryManager.library = {
         ok = true;
       }
     }
+
     if (!ok) {
       ___setErrNo(ERRNO_CODES.EINVAL);
       {{{ makeStructuralReturn(['0', '0']) }}};
@@ -4020,7 +4077,8 @@ LibraryManager.library = {
     }
 
     try {
-      i64Math.fromString(Pointer_stringify(start, str - start), finalBase, min, max, unsign);
+      var numberString = isNegative ? '-'+Pointer_stringify(start, str - start) : Pointer_stringify(start, str - start);
+      i64Math.fromString(numberString, finalBase, min, max, unsign);
     } catch(e) {
       ___setErrNo(ERRNO_CODES.ERANGE); // not quite correct
     }
@@ -4467,24 +4525,24 @@ LibraryManager.library = {
     }
     return pdest|0;
   },
-  
+
   strlwr__deps:['tolower'],
   strlwr: function(pstr){
     var i = 0;
     while(1) {
       var x = {{{ makeGetValue('pstr', 'i', 'i8') }}};
-      if(x == 0) break;
+      if (x == 0) break;
       {{{ makeSetValue('pstr', 'i', '_tolower(x)', 'i8') }}};
       i++;
     }
   },
-  
+
   strupr__deps:['toupper'],
   strupr: function(pstr){
     var i = 0;
     while(1) {
       var x = {{{ makeGetValue('pstr', 'i', 'i8') }}};
-      if(x == 0) break;
+      if (x == 0) break;
       {{{ makeSetValue('pstr', 'i', '_toupper(x)', 'i8') }}};
       i++;
     }
@@ -4660,7 +4718,7 @@ LibraryManager.library = {
     if (size < 0) {
       size = 0;
     }
-    
+
     var newStr = _malloc(size + 1);
     {{{ makeCopyValues('newStr', 'ptr', 'size', 'null', null, 1) }}};
     {{{ makeSetValue('newStr', 'size', '0', 'i8') }}};
@@ -5582,10 +5640,15 @@ LibraryManager.library = {
   frexp: function(x, exp_addr) {
     var sig = 0, exp_ = 0;
     if (x !== 0) {
+      var sign = 1;
+      if (x < 0) {
+        x = -x;
+        sign = -1;
+      }
       var raw_exp = Math.log(x)/Math.log(2);
       exp_ = Math.ceil(raw_exp);
       if (exp_ === raw_exp) exp_ += 1;
-      sig = x/Math.pow(2, exp_);
+      sig = sign*x/Math.pow(2, exp_);
     }
     {{{ makeSetValue('exp_addr', 0, 'exp_', 'i32') }}}
     return sig;
@@ -5669,7 +5732,8 @@ LibraryManager.library = {
   llround: 'round',
   llroundf: 'round',
   rint: function(x) {
-    return (x > 0) ? -Math.round(-x) : Math.round(x);
+    if (Math.abs(x % 1) !== 0.5) return Math.round(x);
+    return x + x % 2 + ((x < 0) ? 1 : -1);
   },
   rintf: 'rint',
   lrint: 'rint',
@@ -6654,172 +6718,266 @@ LibraryManager.library = {
   // ==========================================================================
 
   $ERRNO_CODES: {
-    E2BIG: 7,
-    EACCES: 13,
-    EADDRINUSE: 98,
-    EADDRNOTAVAIL: 99,
-    EAFNOSUPPORT: 97,
-    EAGAIN: 11,
-    EALREADY: 114,
-    EBADF: 9,
-    EBADMSG: 74,
-    EBUSY: 16,
-    ECANCELED: 125,
-    ECHILD: 10,
-    ECONNABORTED: 103,
-    ECONNREFUSED: 111,
-    ECONNRESET: 104,
-    EDEADLK: 35,
-    EDESTADDRREQ: 89,
-    EDOM: 33,
-    EDQUOT: 122,
-    EEXIST: 17,
-    EFAULT: 14,
-    EFBIG: 27,
-    EHOSTUNREACH: 113,
-    EIDRM: 43,
-    EILSEQ: 84,
-    EINPROGRESS: 115,
-    EINTR: 4,
-    EINVAL: 22,
-    EIO: 5,
-    EISCONN: 106,
-    EISDIR: 21,
-    ELOOP: 40,
-    EMFILE: 24,
-    EMLINK: 31,
-    EMSGSIZE: 90,
-    EMULTIHOP: 72,
-    ENAMETOOLONG: 36,
-    ENETDOWN: 100,
-    ENETRESET: 102,
-    ENETUNREACH: 101,
-    ENFILE: 23,
-    ENOBUFS: 105,
-    ENODATA: 61,
-    ENODEV: 19,
-    ENOENT: 2,
-    ENOEXEC: 8,
-    ENOLCK: 37,
-    ENOLINK: 67,
-    ENOMEM: 12,
-    ENOMSG: 42,
-    ENOPROTOOPT: 92,
-    ENOSPC: 28,
-    ENOSR: 63,
-    ENOSTR: 60,
-    ENOSYS: 38,
-    ENOTCONN: 107,
-    ENOTDIR: 20,
-    ENOTEMPTY: 39,
-    ENOTRECOVERABLE: 131,
-    ENOTSOCK: 88,
-    ENOTSUP: 95,
-    ENOTTY: 25,
-    ENXIO: 6,
-    EOPNOTSUPP: 45,
-    EOVERFLOW: 75,
-    EOWNERDEAD: 130,
     EPERM: 1,
-    EPIPE: 32,
-    EPROTO: 71,
-    EPROTONOSUPPORT: 93,
-    EPROTOTYPE: 91,
-    ERANGE: 34,
-    EROFS: 30,
-    ESPIPE: 29,
+    ENOENT: 2,
     ESRCH: 3,
-    ESTALE: 116,
-    ETIME: 62,
-    ETIMEDOUT: 110,
-    ETXTBSY: 26,
+    EINTR: 4,
+    EIO: 5,
+    ENXIO: 6,
+    E2BIG: 7,
+    ENOEXEC: 8,
+    EBADF: 9,
+    ECHILD: 10,
+    EAGAIN: 11,
     EWOULDBLOCK: 11,
+    ENOMEM: 12,
+    EACCES: 13,
+    EFAULT: 14,
+    ENOTBLK: 15,
+    EBUSY: 16,
+    EEXIST: 17,
     EXDEV: 18,
+    ENODEV: 19,
+    ENOTDIR: 20,
+    EISDIR: 21,
+    EINVAL: 22,
+    ENFILE: 23,
+    EMFILE: 24,
+    ENOTTY: 25,
+    ETXTBSY: 26,
+    EFBIG: 27,
+    ENOSPC: 28,
+    ESPIPE: 29,
+    EROFS: 30,
+    EMLINK: 31,
+    EPIPE: 32,
+    EDOM: 33,
+    ERANGE: 34,
+    ENOMSG: 35,
+    EIDRM: 36,
+    ECHRNG: 37,
+    EL2NSYNC: 38,
+    EL3HLT: 39,
+    EL3RST: 40,
+    ELNRNG: 41,
+    EUNATCH: 42,
+    ENOCSI: 43,
+    EL2HLT: 44,
+    EDEADLK: 45,
+    ENOLCK: 46,
+    EBADE: 50,
+    EBADR: 51,
+    EXFULL: 52,
+    ENOANO: 53,
+    EBADRQC: 54,
+    EBADSLT: 55,
+    EDEADLOCK: 56,
+    EBFONT: 57,
+    ENOSTR: 60,
+    ENODATA: 61,
+    ETIME: 62,
+    ENOSR: 63,
+    ENONET: 64,
+    ENOPKG: 65,
+    EREMOTE: 66,
+    ENOLINK: 67,
+    EADV: 68,
+    ESRMNT: 69,
+    ECOMM: 70,
+    EPROTO: 71,
+    EMULTIHOP: 74,
+    ELBIN: 75,
+    EDOTDOT: 76,
+    EBADMSG: 77,
+    EFTYPE: 79,
+    ENOTUNIQ: 80,
+    EBADFD: 81,
+    EREMCHG: 82,
+    ELIBACC: 83,
+    ELIBBAD: 84,
+    ELIBSCN: 85,
+    ELIBMAX: 86,
+    ELIBEXEC: 87,
+    ENOSYS: 88,
+    ENMFILE: 89,
+    ENOTEMPTY: 90,
+    ENAMETOOLONG: 91,
+    ELOOP: 92,
+    EOPNOTSUPP: 95,
+    EPFNOSUPPORT: 96,
+    ECONNRESET: 104,
+    ENOBUFS: 105,
+    EAFNOSUPPORT: 106,
+    EPROTOTYPE: 107,
+    ENOTSOCK: 108,
+    ENOPROTOOPT: 109,
+    ESHUTDOWN: 110,
+    ECONNREFUSED: 111,
+    EADDRINUSE: 112,
+    ECONNABORTED: 113,
+    ENETUNREACH: 114,
+    ENETDOWN: 115,
+    ETIMEDOUT: 116,
+    EHOSTDOWN: 117,
+    EHOSTUNREACH: 118,
+    EINPROGRESS: 119,
+    EALREADY: 120,
+    EDESTADDRREQ: 121,
+    EMSGSIZE: 122,
+    EPROTONOSUPPORT: 123,
+    ESOCKTNOSUPPORT: 124,
+    EADDRNOTAVAIL: 125,
+    ENETRESET: 126,
+    EISCONN: 127,
+    ENOTCONN: 128,
+    ETOOMANYREFS: 129,
+    EPROCLIM: 130,
+    EUSERS: 131,
+    EDQUOT: 132,
+    ESTALE: 133,
+    ENOTSUP: 134,
+    ENOMEDIUM: 135,
+    ENOSHARE: 136,
+    ECASECLASH: 137,
+    EILSEQ: 138,
+    EOVERFLOW: 139,
+    ECANCELED: 140,
+    ENOTRECOVERABLE: 141,
+    EOWNERDEAD: 142,
+    ESTRPIPE: 143
   },
   $ERRNO_MESSAGES: {
+    0: 'Success',
+    1: 'Not super-user',
     2: 'No such file or directory',
-    13: 'Permission denied',
-    98: 'Address already in use',
-    99: 'Cannot assign requested address',
-    97: 'Address family not supported by protocol',
-    11: 'Resource temporarily unavailable',
-    114: 'Operation already in progress',
-    9: 'Bad file descriptor',
-    74: 'Bad message',
-    16: 'Device or resource busy',
-    125: 'Operation canceled',
-    10: 'No child processes',
-    103: 'Software caused connection abort',
-    111: 'Connection refused',
-    104: 'Connection reset by peer',
-    35: 'Resource deadlock avoided',
-    89: 'Destination address required',
-    33: 'Numerical argument out of domain',
-    122: 'Disk quota exceeded',
-    17: 'File exists',
-    14: 'Bad address',
-    27: 'File too large',
-    113: 'No route to host',
-    43: 'Identifier removed',
-    84: 'Invalid or incomplete multibyte or wide character',
-    115: 'Operation now in progress',
-    4: 'Interrupted system call',
-    22: 'Invalid argument',
-    5: 'Input/output error',
-    106: 'Transport endpoint is already connected',
-    21: 'Is a directory',
-    40: 'Too many levels of symbolic links',
-    24: 'Too many open files',
-    31: 'Too many links',
-    90: 'Message too long',
-    72: 'Multihop attempted',
-    36: 'File name too long',
-    100: 'Network is down',
-    102: 'Network dropped connection on reset',
-    101: 'Network is unreachable',
-    23: 'Too many open files in system',
-    105: 'No buffer space available',
-    61: 'No data available',
-    19: 'No such device',
-    8: 'Exec format error',
-    37: 'No locks available',
-    67: 'Link has been severed',
-    12: 'Cannot allocate memory',
-    42: 'No message of desired type',
-    92: 'Protocol not available',
-    28: 'No space left on device',
-    63: 'Out of streams resources',
-    60: 'Device not a stream',
-    38: 'Function not implemented',
-    107: 'Transport endpoint is not connected',
-    20: 'Not a directory',
-    39: 'Directory not empty',
-    131: 'State not recoverable',
-    88: 'Socket operation on non-socket',
-    95: 'Operation not supported',
-    25: 'Inappropriate ioctl for device',
-    6: 'No such device or address',
-    45: 'Op not supported on transport endpoint',
-    75: 'Value too large for defined data type',
-    130: 'Owner died',
-    1: 'Operation not permitted',
-    32: 'Broken pipe',
-    71: 'Protocol error',
-    93: 'Protocol not supported',
-    91: 'Protocol wrong type for socket',
-    34: 'Numerical result out of range',
-    30: 'Read-only file system',
-    29: 'Illegal seek',
     3: 'No such process',
-    116: 'Stale NFS file handle',
-    62: 'Timer expired',
-    110: 'Connection timed out',
+    4: 'Interrupted system call',
+    5: 'I/O error',
+    6: 'No such device or address',
+    7: 'Arg list too long',
+    8: 'Exec format error',
+    9: 'Bad file number',
+    10: 'No children',
+    11: 'No more processes',
+    12: 'Not enough core',
+    13: 'Permission denied',
+    14: 'Bad address',
+    15: 'Block device required',
+    16: 'Mount device busy',
+    17: 'File exists',
+    18: 'Cross-device link',
+    19: 'No such device',
+    20: 'Not a directory',
+    21: 'Is a directory',
+    22: 'Invalid argument',
+    23: 'Too many open files in system',
+    24: 'Too many open files',
+    25: 'Not a typewriter',
     26: 'Text file busy',
-    18: 'Invalid cross-device link'
+    27: 'File too large',
+    28: 'No space left on device',
+    29: 'Illegal seek',
+    30: 'Read only file system',
+    31: 'Too many links',
+    32: 'Broken pipe',
+    33: 'Math arg out of domain of func',
+    34: 'Math result not representable',
+    35: 'No message of desired type',
+    36: 'Identifier removed',
+    37: 'Channel number out of range',
+    38: 'Level 2 not synchronized',
+    39: 'Level 3 halted',
+    40: 'Level 3 reset',
+    41: 'Link number out of range',
+    42: 'Protocol driver not attached',
+    43: 'No CSI structure available',
+    44: 'Level 2 halted',
+    45: 'Deadlock condition',
+    46: 'No record locks available',
+    50: 'Invalid exchange',
+    51: 'Invalid request descriptor',
+    52: 'Exchange full',
+    53: 'No anode',
+    54: 'Invalid request code',
+    55: 'Invalid slot',
+    56: 'File locking deadlock error',
+    57: 'Bad font file fmt',
+    60: 'Device not a stream',
+    61: 'No data (for no delay io)',
+    62: 'Timer expired',
+    63: 'Out of streams resources',
+    64: 'Machine is not on the network',
+    65: 'Package not installed',
+    66: 'The object is remote',
+    67: 'The link has been severed',
+    68: 'Advertise error',
+    69: 'Srmount error',
+    70: 'Communication error on send',
+    71: 'Protocol error',
+    74: 'Multihop attempted',
+    75: 'Inode is remote (not really error)',
+    76: 'Cross mount point (not really error)',
+    77: 'Trying to read unreadable message',
+    79: 'Inappropriate file type or format',
+    80: 'Given log. name not unique',
+    81: 'f.d. invalid for this operation',
+    82: 'Remote address changed',
+    83: 'Can\t access a needed shared lib',
+    84: 'Accessing a corrupted shared lib',
+    85: '.lib section in a.out corrupted',
+    86: 'Attempting to link in too many libs',
+    87: 'Attempting to exec a shared library',
+    88: 'Function not implemented',
+    89: 'No more files',
+    90: 'Directory not empty',
+    91: 'File or path name too long',
+    92: 'Too many symbolic links',
+    95: 'Operation not supported on transport endpoint',
+    96: 'Protocol family not supported',
+    104: 'Connection reset by peer',
+    105: 'No buffer space available',
+    106: 'Address family not supported by protocol family',
+    107: 'Protocol wrong type for socket',
+    108: 'Socket operation on non-socket',
+    109: 'Protocol not available',
+    110: 'Can\'t send after socket shutdown',
+    111: 'Connection refused',
+    112: 'Address already in use',
+    113: 'Connection aborted',
+    114: 'Network is unreachable',
+    115: 'Network interface is not configured',
+    116: 'Connection timed out',
+    117: 'Host is down',
+    118: 'Host is unreachable',
+    119: 'Connection already in progress',
+    120: 'Socket already connected',
+    121: 'Destination address required',
+    122: 'Message too long',
+    123: 'Unknown protocol',
+    124: 'Socket type not supported',
+    125: 'Address not available',
+    126: 'ENETRESET',
+    127: 'Socket is already connected',
+    128: 'Socket is not connected',
+    129: 'TOOMANYREFS',
+    130: 'EPROCLIM',
+    131: 'EUSERS',
+    132: 'EDQUOT',
+    133: 'ESTALE',
+    134: 'Not supported',
+    135: 'No medium (in tape drive)',
+    136: 'No such host or network path',
+    137: 'Filename exists with different case',
+    138: 'EILSEQ',
+    139: 'Value too large for defined data type',
+    140: 'Operation canceled',
+    141: 'State not recoverable',
+    142: 'Previous owner died',
+    143: 'Streams pipe error',
   },
   __errno_state: 0,
   __setErrNo__deps: ['__errno_state'],
-  __setErrNo__postset: '___errno_state = Runtime.staticAlloc(4);',
+  __setErrNo__postset: '___errno_state = Runtime.staticAlloc(4); {{{ makeSetValue("___errno_state", 0, 0, "i32") }}};',
   __setErrNo: function(value) {
     // For convenient setting and returning of errno.
     {{{ makeSetValue('___errno_state', '0', 'value', 'i32') }}}
@@ -7076,6 +7234,7 @@ LibraryManager.library = {
     ['i32', 'h_length'],
     ['i8**', 'h_addr_list'],
   ]),
+
   gethostbyname__deps: ['__hostent_struct_layout'],
   gethostbyname: function(name) {
     name = Pointer_stringify(name);
@@ -7118,17 +7277,28 @@ LibraryManager.library = {
   // sockets. Note that the implementation assumes all sockets are always
   // nonblocking
   // ==========================================================================
-
+#if SOCKET_WEBRTC
+  $Sockets__deps: ['__setErrNo', '$ERRNO_CODES',
+    function() { return 'var SocketIO = ' + read('socket.io.js') + ';\n' },
+    function() { return 'var Peer = ' + read('wrtcp.js') + ';\n' }],
+#else
   $Sockets__deps: ['__setErrNo', '$ERRNO_CODES'],
+#endif
   $Sockets: {
-    BACKEND_WEBSOCKETS: 0,
-    BACKEND_WEBRTC: 1,
     BUFFER_SIZE: 10*1024, // initial size
     MAX_BUFFER_SIZE: 10*1024*1024, // maximum size we will grow the buffer
 
-    backend: 0, // default to websockets
     nextFd: 1,
     fds: {},
+    nextport: 1,
+    maxport: 65535,
+    peer: null,
+    connections: {},
+    portmap: {},
+    localAddr: 0xfe00000a, // Local address is always 10.0.0.254
+    addrPool: [            0x0200000a, 0x0300000a, 0x0400000a, 0x0500000a,
+               0x0600000a, 0x0700000a, 0x0800000a, 0x0900000a, 0x0a00000a,
+               0x0b00000a, 0x0c00000a, 0x0d00000a, 0x0e00000a], /* 0x0100000a is reserved */
     sockaddr_in_layout: Runtime.generateStructInfo([
       ['i32', 'sin_family'],
       ['i16', 'sin_port'],
@@ -7145,135 +7315,403 @@ LibraryManager.library = {
       ['i32', 'msg_controllen'],
       ['i32', 'msg_flags'],
     ]),
-
-    backends: {
-      0: { // websockets
-        connect: function(info) {
-          console.log('opening ws://' + info.host + ':' + info.port);
-          info.socket = new WebSocket('ws://' + info.host + ':' + info.port, ['binary']);
-          info.socket.binaryType = 'arraybuffer';
-
-          var i32Temp = new Uint32Array(1);
-          var i8Temp = new Uint8Array(i32Temp.buffer);
-
-          info.inQueue = [];
-          info.hasData = function() { return info.inQueue.length > 0 }
-          if (!info.stream) {
-            var partialBuffer = null; // in datagram mode, inQueue contains full dgram messages; this buffers incomplete data. Must begin with the beginning of a message
-          }
-
-          info.socket.onmessage = function(event) {
-            assert(typeof event.data !== 'string' && event.data.byteLength); // must get binary data!
-            var data = new Uint8Array(event.data); // make a typed array view on the array buffer
-#if SOCKET_DEBUG
-            Module.print(['onmessage', data.length, '|', Array.prototype.slice.call(data)]);
-#endif
-            if (info.stream) {
-              info.inQueue.push(data);
-            } else {
-              // we added headers with message sizes, read those to find discrete messages
-              if (partialBuffer) {
-                // append to the partial buffer
-                var newBuffer = new Uint8Array(partialBuffer.length + data.length);
-                newBuffer.set(partialBuffer);
-                newBuffer.set(data, partialBuffer.length);
-                // forget the partial buffer and work on data
-                data = newBuffer;
-                partialBuffer = null;
-              }
-              var currPos = 0;
-              while (currPos+4 < data.length) {
-                i8Temp.set(data.subarray(currPos, currPos+4));
-                var currLen = i32Temp[0];
-                assert(currLen > 0);
-                if (currPos + 4 + currLen > data.length) {
-                  break; // not enough data has arrived
-                }
-                currPos += 4;
-#if SOCKET_DEBUG
-                Module.print(['onmessage message', currLen, '|', Array.prototype.slice.call(data.subarray(currPos, currPos+currLen))]);
-#endif
-                info.inQueue.push(data.subarray(currPos, currPos+currLen));
-                currPos += currLen;
-              }
-              // If data remains, buffer it
-              if (currPos < data.length) {
-                partialBuffer = data.subarray(currPos);
-              }
-            }
-          }
-          function send(data) {
-            // TODO: if browser accepts views, can optimize this
-#if SOCKET_DEBUG
-            Module.print('sender actually sending ' + Array.prototype.slice.call(data));
-#endif
-            // ok to use the underlying buffer, we created data and know that the buffer starts at the beginning
-            info.socket.send(data.buffer);
-          }
-          var outQueue = [];
-          var intervalling = false, interval;
-          function trySend() {
-            if (info.socket.readyState != info.socket.OPEN) {
-              if (!intervalling) {
-                intervalling = true;
-                console.log('waiting for socket in order to send');
-                interval = setInterval(trySend, 100);
-              }
-              return;
-            }
-            for (var i = 0; i < outQueue.length; i++) {
-              send(outQueue[i]);
-            }
-            outQueue.length = 0;
-            if (intervalling) {
-              intervalling = false;
-              clearInterval(interval);
-            }
-          }
-          info.sender = function(data) {
-            if (!info.stream) {
-              // add a header with the message size
-              var header = new Uint8Array(4);
-              i32Temp[0] = data.length;
-              header.set(i8Temp);
-              outQueue.push(header);
-            }
-            outQueue.push(new Uint8Array(data));
-            trySend();
-          };
-        }
-      },
-      1: { // webrtc
-      }
-    }
   },
 
-  emscripten_set_network_backend__deps: ['$Sockets'],
-  emscripten_set_network_backend: function(backend) {
-    Sockets.backend = backend;
-  },
+#if SOCKET_WEBRTC
+  /* WebRTC sockets supports several options on the Module object.
 
+     * Module['host']: true if this peer is hosting, false otherwise
+     * Module['webrtc']['broker']: hostname for the p2p broker that this peer should use
+     * Module['webrtc']['session']: p2p session for that this peer will join, or undefined if this peer is hosting
+     * Module['webrtc']['hostOptions']: options to pass into p2p library if this peer is hosting
+     * Module['webrtc']['onpeer']: function(peer, route), invoked when this peer is ready to connect
+     * Module['webrtc']['onconnect']: function(peer), invoked when a new peer connection is ready
+     * Module['webrtc']['ondisconnect']: function(peer), invoked when an existing connection is closed
+     * Module['webrtc']['onerror']: function(error), invoked when an error occurs
+   */
   socket__deps: ['$Sockets'],
   socket: function(family, type, protocol) {
-    var fd = Sockets.nextFd++;
+    var INCOMING_QUEUE_LENGTH = 64;
+    var fd = FS.createFileHandle({
+      addr: null,
+      port: null,
+      inQueue: new CircularBuffer(INCOMING_QUEUE_LENGTH),
+      header: new Uint16Array(2),
+      bound: false,
+      socket: true
+    });
     assert(fd < 64); // select() assumes socket fd values are in 0..63
     var stream = type == {{{ cDefine('SOCK_STREAM') }}};
     if (protocol) {
       assert(stream == (protocol == {{{ cDefine('IPPROTO_TCP') }}})); // if stream, must be tcp
     }
-    if (Sockets.backend == Sockets.BACKEND_WEBRTC) {
-      assert(!stream); // If WebRTC, we can only support datagram, not stream
+
+    // Open the peer connection if we don't have it already
+    if (null == Sockets.peer) {
+      var host = Module['host'];
+      var broker = Module['webrtc']['broker'];
+      var session = Module['webrtc']['session'];
+      var peer = new Peer(broker);
+      var listenOptions = Module['webrtc']['hostOptions'] || {};
+      peer.onconnection = function(connection) {
+        console.log('connected');
+        var addr;
+        /* If this peer is connecting to the host, assign 10.0.0.1 to the host so it can be
+           reached at a known address.
+         */
+        // Assign 10.0.0.1 to the host
+        if (session && session === connection['route']) {
+          addr = 0x0100000a; // 10.0.0.1
+        } else {
+          addr = Sockets.addrPool.shift();
+        }
+        connection['addr'] = addr;
+        Sockets.connections[addr] = connection;
+        connection.ondisconnect = function() {
+          console.log('disconnect');
+          // Don't return the host address (10.0.0.1) to the pool
+          if (!(session && session === Sockets.connections[addr]['route'])) {
+            Sockets.addrPool.push(addr);
+          }
+          delete Sockets.connections[addr];
+
+          if (Module['webrtc']['ondisconnect'] && 'function' === typeof Module['webrtc']['ondisconnect']) {
+            Module['webrtc']['ondisconnect'](peer);
+          }
+        };
+        connection.onerror = function(error) {
+          if (Module['webrtc']['onerror'] && 'function' === typeof Module['webrtc']['onerror']) {
+            Module['webrtc']['onerror'](error);
+          }
+        };
+        connection.onmessage = function(label, message) {
+          if ('unreliable' === label) {
+            handleMessage(addr, message.data);
+          }
+        }
+
+        if (Module['webrtc']['onconnect'] && 'function' === typeof Module['webrtc']['onconnect']) {
+          Module['webrtc']['onconnect'](peer);
+        }
+      };
+      peer.onpending = function(pending) {
+        console.log('pending from: ', pending['route'], '; initiated by: ', (pending['incoming']) ? 'remote' : 'local');
+      };
+      peer.onerror = function(error) {
+        console.error(error);
+      };
+      peer.onroute = function(route) {
+        if (Module['webrtc']['onpeer'] && 'function' === typeof Module['webrtc']['onpeer']) {
+          Module['webrtc']['onpeer'](peer, route);
+        }
+      };
+      function handleMessage(addr, message) {
+#if SOCKET_DEBUG
+        Module.print("received " + message.byteLength + " raw bytes");
+#endif
+        var header = new Uint16Array(message, 0, 2);
+        if (Sockets.portmap[header[1]]) {
+          Sockets.portmap[header[1]].inQueue.push([addr, message]);
+        } else {
+          console.log("unable to deliver message: ", addr, header[1], message);
+        }
+      }
+      window.onbeforeunload = function() {
+        var ids = Object.keys(Sockets.connections);
+        ids.forEach(function(id) {
+          Sockets.connections[id].close();
+        });
+      }
+      Sockets.peer = peer;
     }
-    Sockets.fds[fd] = {
-      connected: false,
-      stream: stream
+
+    function CircularBuffer(max_length) {
+      var buffer = new Array(++ max_length);
+      var head = 0;
+      var tail = 0;
+      var length = 0;
+
+      return {
+        push: function(element) {
+          buffer[tail ++] = element;
+          length = Math.min(++ length, max_length - 1);
+          tail = tail % max_length;
+          if (tail === head) {
+            head = (head + 1) % max_length;
+          }
+        },
+        shift: function(element) {
+          if (length < 1) return undefined;
+
+          var element = buffer[head];
+          -- length;
+          head = (head + 1) % max_length;
+          return element;
+        },
+        length: function() {
+          return length;
+        }
+      };
     };
+
     return fd;
   },
 
-  connect__deps: ['$Sockets', '_inet_ntop_raw', 'htons', 'gethostbyname'],
+  mkport__deps: ['$Sockets'],
+  mkport: function() {
+    for(var i = 0; i < Sockets.maxport; ++ i) {
+      var port = Sockets.nextport ++;
+      Sockets.nextport = (Sockets.nextport > Sockets.maxport) ? 1 : Sockets.nextport;
+      if (!Sockets.portmap[port]) {
+        return port;
+      }
+    }
+    assert(false, 'all available ports are in use!');
+  },
+
+  connect: function() {
+    // Stub: connection-oriented sockets are not supported yet.
+  },
+
+  bind__deps: ['$Sockets', '_inet_ntop_raw', 'ntohs', 'mkport'],
+  bind: function(fd, addr, addrlen) {
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    if (addr) {
+      info.port = _ntohs(getValue(addr + Sockets.sockaddr_in_layout.sin_port, 'i16'));
+      // info.addr = getValue(addr + Sockets.sockaddr_in_layout.sin_addr, 'i32');
+    }
+    if (!info.port) {
+      info.port = _mkport();
+    }
+    info.addr = Sockets.localAddr; // 10.0.0.254
+    info.host = __inet_ntop_raw(info.addr);
+    info.close = function() {
+      Sockets.portmap[info.port] = undefined;
+    }
+    Sockets.portmap[info.port] = info;
+    console.log("bind: ", info.host, info.port);
+    info.bound = true;
+  },
+
+  sendmsg__deps: ['$Sockets', 'bind', '_inet_ntop_raw', 'ntohs'],
+  sendmsg: function(fd, msg, flags) {
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    // if we are not connected, use the address info in the message
+    if (!info.bound) {
+      _bind(fd);
+    }
+
+    var name = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_name', '*') }}};
+    assert(name, 'sendmsg on non-connected socket, and no name/address in the message');
+    var port = _ntohs(getValue(name + Sockets.sockaddr_in_layout.sin_port, 'i16'));
+    var addr = getValue(name + Sockets.sockaddr_in_layout.sin_addr, 'i32');
+    var connection = Sockets.connections[addr];
+    // var host = __inet_ntop_raw(addr);
+
+    if (!(connection && connection.connected)) {
+      ___setErrNo(ERRNO_CODES.EWOULDBLOCK);
+      return -1;
+    }
+
+    var iov = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iov', 'i8*') }}};
+    var num = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iovlen', 'i32') }}};
+#if SOCKET_DEBUG
+    Module.print('sendmsg vecs: ' + num);
+#endif
+    var totalSize = 0;
+    for (var i = 0; i < num; i++) {
+      totalSize += {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
+    }
+    var data = new Uint8Array(totalSize);
+    var ret = 0;
+    for (var i = 0; i < num; i++) {
+      var currNum = {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
+#if SOCKET_DEBUG
+    Module.print('sendmsg curr size: ' + currNum);
+#endif
+      if (!currNum) continue;
+      var currBuf = {{{ makeGetValue('iov', '8*i', 'i8*') }}};
+      data.set(HEAPU8.subarray(currBuf, currBuf+currNum), ret);
+      ret += currNum;
+    }
+
+    info.header[0] = info.port; // src port
+    info.header[1] = port; // dst port
+#if SOCKET_DEBUG
+    Module.print('sendmsg port: ' + info.header[0] + ' -> ' + info.header[1]);
+    Module.print('sendmsg bytes: ' + data.length + ' | ' + Array.prototype.slice.call(data));
+#endif
+    var buffer = new Uint8Array(info.header.byteLength + data.byteLength);
+    buffer.set(new Uint8Array(info.header.buffer));
+    buffer.set(data, info.header.byteLength);
+
+    connection.send('unreliable', buffer.buffer);
+  },
+
+  recvmsg__deps: ['$Sockets', 'bind', '__setErrNo', '$ERRNO_CODES', 'htons'],
+  recvmsg: function(fd, msg, flags) {
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    // if we are not connected, use the address info in the message
+    if (!info.port) {
+      console.log('recvmsg on unbound socket');
+      assert(false, 'cannot receive on unbound socket');
+    }
+    if (info.inQueue.length() == 0) {
+      ___setErrNo(ERRNO_CODES.EWOULDBLOCK);
+      return -1;
+    }
+
+    var entry = info.inQueue.shift();
+    var addr = entry[0];
+    var message = entry[1];
+    var header = new Uint16Array(message, 0, info.header.length);
+    var buffer = new Uint8Array(message, info.header.byteLength);
+
+    var bytes = buffer.length;
+#if SOCKET_DEBUG
+    Module.print('recvmsg port: ' + header[1] + ' <- ' + header[0]);
+    Module.print('recvmsg bytes: ' + bytes + ' | ' + Array.prototype.slice.call(buffer));
+#endif
+    // write source
+    var name = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_name', '*') }}};
+    {{{ makeSetValue('name', 'Sockets.sockaddr_in_layout.sin_addr', 'addr', 'i32') }}};
+    {{{ makeSetValue('name', 'Sockets.sockaddr_in_layout.sin_port', '_htons(header[0])', 'i16') }}};
+    // write data
+    var ret = bytes;
+    var iov = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iov', 'i8*') }}};
+    var num = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iovlen', 'i32') }}};
+    var bufferPos = 0;
+    for (var i = 0; i < num && bytes > 0; i++) {
+      var currNum = {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
+#if SOCKET_DEBUG
+      Module.print('recvmsg loop ' + [i, num, bytes, currNum]);
+#endif
+      if (!currNum) continue;
+      currNum = Math.min(currNum, bytes); // XXX what should happen when we partially fill a buffer..?
+      bytes -= currNum;
+      var currBuf = {{{ makeGetValue('iov', '8*i', 'i8*') }}};
+#if SOCKET_DEBUG
+      Module.print('recvmsg call recv ' + currNum);
+#endif
+      HEAPU8.set(buffer.subarray(bufferPos, bufferPos + currNum), currBuf);
+      bufferPos += currNum;
+    }
+    return ret;
+  },
+
+  shutdown: function(fd, how) {
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    info.close();
+    FS.removeFileHandle(fd);
+  },
+
+  ioctl: function(fd, request, varargs) {
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    var bytes = 0;
+    if (info.hasData()) {
+      bytes = info.inQueue[0].length;
+    }
+    var dest = {{{ makeGetValue('varargs', '0', 'i32') }}};
+    {{{ makeSetValue('dest', '0', 'bytes', 'i32') }}};
+    return 0;
+  },
+
+  setsockopt: function(d, level, optname, optval, optlen) {
+    console.log('ignoring setsockopt command');
+    return 0;
+  },
+
+  accept: function(fd, addr, addrlen) {
+    // TODO: webrtc queued incoming connections, etc.
+    // For now, the model is that bind does a connect, and we "accept" that one connection,
+    // which has host:port the same as ours. We also return the same socket fd.
+    var info = FS.streams[fd];
+    if (!info) return -1;
+    if (addr) {
+      setValue(addr + Sockets.sockaddr_in_layout.sin_addr, info.addr, 'i32');
+      setValue(addr + Sockets.sockaddr_in_layout.sin_port, info.port, 'i32');
+      setValue(addrlen, Sockets.sockaddr_in_layout.__size__, 'i32');
+    }
+    return fd;
+  },
+
+  select: function(nfds, readfds, writefds, exceptfds, timeout) {
+    // readfds are supported,
+    // writefds checks socket open status
+    // exceptfds not supported
+    // timeout is always 0 - fully async
+    assert(!exceptfds);
+
+    var errorCondition = 0;
+
+    function canRead(info) {
+      return info.inQueue.length() > 0;
+    }
+
+    function canWrite(info) {
+      return true;
+    }
+
+    function checkfds(nfds, fds, can) {
+      if (!fds) return 0;
+
+      var bitsSet = 0;
+      var dstLow  = 0;
+      var dstHigh = 0;
+      var srcLow  = {{{ makeGetValue('fds', 0, 'i32') }}};
+      var srcHigh = {{{ makeGetValue('fds', 4, 'i32') }}};
+      nfds = Math.min(64, nfds); // fd sets have 64 bits
+
+      for (var fd = 0; fd < nfds; fd++) {
+        var mask = 1 << (fd % 32), int = fd < 32 ? srcLow : srcHigh;
+        if (int & mask) {
+          // index is in the set, check if it is ready for read
+          var info = FS.streams[fd];
+          if (info && can(info)) {
+            // set bit
+            fd < 32 ? (dstLow = dstLow | mask) : (dstHigh = dstHigh | mask);
+            bitsSet++;
+          }
+        }
+      }
+
+      {{{ makeSetValue('fds', 0, 'dstLow', 'i32') }}};
+      {{{ makeSetValue('fds', 4, 'dstHigh', 'i32') }}};
+      return bitsSet;
+    }
+
+    var totalHandles = checkfds(nfds, readfds, canRead) + checkfds(nfds, writefds, canWrite);
+    if (errorCondition) {
+      ___setErrNo(ERRNO_CODES.EBADF);
+      return -1;
+    } else {
+      return totalHandles;
+    }
+  },
+#else
+  socket__deps: ['$Sockets'],
+  socket: function(family, type, protocol) {
+    var stream = type == {{{ cDefine('SOCK_STREAM') }}};
+    if (protocol) {
+      assert(stream == (protocol == {{{ cDefine('IPPROTO_TCP') }}})); // if SOCK_STREAM, must be tcp
+    }
+    var fd = FS.createFileHandle({
+      connected: false,
+      stream: stream,
+      socket: true
+    });
+    assert(fd < 64); // select() assumes socket fd values are in 0..63
+    return fd;
+  },
+
+  connect__deps: ['$FS', '$Sockets', '_inet_ntop_raw', 'ntohs', 'gethostbyname'],
   connect: function(fd, addr, addrlen) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     info.connected = true;
     info.addr = getValue(addr + Sockets.sockaddr_in_layout.sin_addr, 'i32');
@@ -7288,18 +7726,110 @@ LibraryManager.library = {
       assert(info.host, 'problem translating fake ip ' + parts);
     }
     try {
-      Sockets.backends[Sockets.backend].connect(info);
+      console.log('opening ws://' + info.host + ':' + info.port);
+      info.socket = new WebSocket('ws://' + info.host + ':' + info.port, ['binary']);
+      info.socket.binaryType = 'arraybuffer';
+
+      var i32Temp = new Uint32Array(1);
+      var i8Temp = new Uint8Array(i32Temp.buffer);
+
+      info.inQueue = [];
+      info.hasData = function() { return info.inQueue.length > 0 }
+      if (!info.stream) {
+        var partialBuffer = null; // in datagram mode, inQueue contains full dgram messages; this buffers incomplete data. Must begin with the beginning of a message
+      }
+
+      info.socket.onmessage = function(event) {
+        assert(typeof event.data !== 'string' && event.data.byteLength); // must get binary data!
+        var data = new Uint8Array(event.data); // make a typed array view on the array buffer
+#if SOCKET_DEBUG
+        Module.print(['onmessage', data.length, '|', Array.prototype.slice.call(data)]);
+#endif
+        if (info.stream) {
+          info.inQueue.push(data);
+        } else {
+          // we added headers with message sizes, read those to find discrete messages
+          if (partialBuffer) {
+            // append to the partial buffer
+            var newBuffer = new Uint8Array(partialBuffer.length + data.length);
+            newBuffer.set(partialBuffer);
+            newBuffer.set(data, partialBuffer.length);
+            // forget the partial buffer and work on data
+            data = newBuffer;
+            partialBuffer = null;
+          }
+          var currPos = 0;
+          while (currPos+4 < data.length) {
+            i8Temp.set(data.subarray(currPos, currPos+4));
+            var currLen = i32Temp[0];
+            assert(currLen > 0);
+            if (currPos + 4 + currLen > data.length) {
+              break; // not enough data has arrived
+            }
+            currPos += 4;
+#if SOCKET_DEBUG
+            Module.print(['onmessage message', currLen, '|', Array.prototype.slice.call(data.subarray(currPos, currPos+currLen))]);
+#endif
+            info.inQueue.push(data.subarray(currPos, currPos+currLen));
+            currPos += currLen;
+          }
+          // If data remains, buffer it
+          if (currPos < data.length) {
+            partialBuffer = data.subarray(currPos);
+          }
+        }
+      }
+      function send(data) {
+        // TODO: if browser accepts views, can optimize this
+#if SOCKET_DEBUG
+        Module.print('sender actually sending ' + Array.prototype.slice.call(data));
+#endif
+        // ok to use the underlying buffer, we created data and know that the buffer starts at the beginning
+        info.socket.send(data.buffer);
+      }
+      var outQueue = [];
+      var intervalling = false, interval;
+      function trySend() {
+        if (info.socket.readyState != info.socket.OPEN) {
+          if (!intervalling) {
+            intervalling = true;
+            console.log('waiting for socket in order to send');
+            interval = setInterval(trySend, 100);
+          }
+          return;
+        }
+        for (var i = 0; i < outQueue.length; i++) {
+          send(outQueue[i]);
+        }
+        outQueue.length = 0;
+        if (intervalling) {
+          intervalling = false;
+          clearInterval(interval);
+        }
+      }
+      info.sender = function(data) {
+        if (!info.stream) {
+          // add a header with the message size
+          var header = new Uint8Array(4);
+          i32Temp[0] = data.length;
+          header.set(i8Temp);
+          outQueue.push(header);
+        }
+        outQueue.push(new Uint8Array(data));
+        trySend();
+      };
     } catch(e) {
       Module.printErr('Error in connect(): ' + e);
       ___setErrNo(ERRNO_CODES.EACCES);
       return -1;
     }
+
     return 0;
   },
 
-  recv__deps: ['$Sockets'],
+  recv__deps: ['$FS'],
   recv: function(fd, buf, len, flags) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     if (!info.hasData()) {
       ___setErrNo(ERRNO_CODES.EAGAIN); // no data, and all sockets are nonblocking, so this is the right behavior
@@ -7323,17 +7853,17 @@ LibraryManager.library = {
     return buffer.length;
   },
 
-  send__deps: ['$Sockets'],
+  send__deps: ['$FS'],
   send: function(fd, buf, len, flags) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     info.sender(HEAPU8.subarray(buf, buf+len));
     return len;
   },
 
-  sendmsg__deps: ['$Sockets', 'connect'],
+  sendmsg__deps: ['$FS', '$Sockets', 'connect'],
   sendmsg: function(fd, msg, flags) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     // if we are not connected, use the address info in the message
     if (!info.connected) {
@@ -7344,7 +7874,7 @@ LibraryManager.library = {
     var iov = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iov', 'i8*') }}};
     var num = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_iovlen', 'i32') }}};
 #if SOCKET_DEBUG
-      Module.print('sendmsg vecs: ' + num);
+    Module.print('sendmsg vecs: ' + num);
 #endif
     var totalSize = 0;
     for (var i = 0; i < num; i++) {
@@ -7366,14 +7896,14 @@ LibraryManager.library = {
     return ret;
   },
 
-  recvmsg__deps: ['$Sockets', 'connect', 'recv', '__setErrNo', '$ERRNO_CODES', 'htons'],
+  recvmsg__deps: ['$FS', '$Sockets', 'connect', 'recv', '__setErrNo', '$ERRNO_CODES', 'htons'],
   recvmsg: function(fd, msg, flags) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     // if we are not connected, use the address info in the message
     if (!info.connected) {
 #if SOCKET_DEBUG
-      Module.print('recvmsg connecting');
+    Module.print('recvmsg connecting');
 #endif
       var name = {{{ makeGetValue('msg', 'Sockets.msghdr_layout.msg_name', '*') }}};
       assert(name, 'sendmsg on non-connected socket, and no name/address in the message');
@@ -7424,9 +7954,9 @@ LibraryManager.library = {
     return ret;
   },
 
-  recvfrom__deps: ['$Sockets', 'connect', 'recv'],
+  recvfrom__deps: ['$FS', 'connect', 'recv'],
   recvfrom: function(fd, buf, len, flags, addr, addrlen) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     // if we are not connected, use the address info in the message
     if (!info.connected) {
@@ -7437,14 +7967,14 @@ LibraryManager.library = {
   },
 
   shutdown: function(fd, how) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     info.socket.close();
-    Sockets.fds[fd] = null;
+    FS.removeFileHandle(fd);
   },
 
   ioctl: function(fd, request, varargs) {
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     var bytes = 0;
     if (info.hasData()) {
@@ -7469,11 +7999,12 @@ LibraryManager.library = {
     return 0;
   },
 
+  accept__deps: ['$FS', '$Sockets'],
   accept: function(fd, addr, addrlen) {
     // TODO: webrtc queued incoming connections, etc.
     // For now, the model is that bind does a connect, and we "accept" that one connection,
     // which has host:port the same as ours. We also return the same socket fd.
-    var info = Sockets.fds[fd];
+    var info = FS.streams[fd];
     if (!info) return -1;
     if (addr) {
       setValue(addr + Sockets.sockaddr_in_layout.sin_addr, info.addr, 'i32');
@@ -7483,18 +8014,19 @@ LibraryManager.library = {
     return fd;
   },
 
+  select__deps: ['$FS'],
   select: function(nfds, readfds, writefds, exceptfds, timeout) {
     // readfds are supported,
     // writefds checks socket open status
     // exceptfds not supported
     // timeout is always 0 - fully async
     assert(!exceptfds);
-    
+
     var errorCondition = 0;
 
     function canRead(info) {
-      // make sure hasData exists. 
-      // we do create it when the socket is connected, 
+      // make sure hasData exists.
+      // we do create it when the socket is connected,
       // but other implementations may create it lazily
       if ((info.socket.readyState == WebSocket.CLOSING || info.socket.readyState == WebSocket.CLOSED) && info.inQueue.length == 0) {
         errorCondition = -1;
@@ -7504,8 +8036,8 @@ LibraryManager.library = {
     }
 
     function canWrite(info) {
-      // make sure socket exists. 
-      // we do create it when the socket is connected, 
+      // make sure socket exists.
+      // we do create it when the socket is connected,
       // but other implementations may create it lazily
       if ((info.socket.readyState == WebSocket.CLOSING || info.socket.readyState == WebSocket.CLOSED)) {
         errorCondition = -1;
@@ -7528,7 +8060,7 @@ LibraryManager.library = {
         var mask = 1 << (fd % 32), int = fd < 32 ? srcLow : srcHigh;
         if (int & mask) {
           // index is in the set, check if it is ready for read
-          var info = Sockets.fds[fd];
+          var info = FS.streams[fd];
           if (info && can(info)) {
             // set bit
             fd < 32 ? (dstLow = dstLow | mask) : (dstHigh = dstHigh | mask);
@@ -7550,6 +8082,7 @@ LibraryManager.library = {
       return totalHandles;
     }
   },
+#endif
 
   socketpair__deps: ['__setErrNo', '$ERRNO_CODES'],
   socketpair: function(domain, type, protocol, sv) {
@@ -7584,7 +8117,7 @@ LibraryManager.library = {
   },
 
   emscripten_run_script_int: function(ptr) {
-    return eval(Pointer_stringify(ptr));
+    return eval(Pointer_stringify(ptr))|0;
   },
 
   emscripten_run_script_string: function(ptr) {

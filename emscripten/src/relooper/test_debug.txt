@@ -28,56 +28,88 @@ int main() {
   return 0;
 }
 // Adding block 1 (ep)
-//   with branch out to 2
-//   with branch out to 4
 // Adding block 2 (LBB1)
-//   with branch out to 3
-//   with branch out to 4
 // Adding block 3 (LBB2)
-//   with branch out to 4
 // Adding block 4 (LBB3)
 // Process() called
 // Process() running
-  blocks :  1 2 3 4 
-  entries:  1 
+  blocks :  1:
+  -> 2
+  -> 4
+2:
+  -> 3
+  -> 4
+3:
+  -> 4
+4:
+  entries:  1:
+  -> 2
+  -> 4
 // creating simple block with block #1
 // Solipsizing branches into 2
-  relevant to solipsize:  1 
+  relevant to solipsize:  1:
+  -> 2
+  -> 4
 //   eliminated branch from 1
 // Solipsizing branches into 4
-  relevant to solipsize:  1 
+  relevant to solipsize:  1:
+  -> 4
 //   eliminated branch from 1
 // Process() running
-  blocks :  2 3 4 
-  entries:  2 4 
+  blocks :  2:
+  -> 3
+  -> 4
+3:
+  -> 4
+4:
+  entries:  2:
+  -> 3
+  -> 4
+4:
 // Investigated independent groups:
- group:  2 3 
+ group:  2:
+  -> 3
+  -> 4
+3:
+  -> 4
 // Independent groups: 1
 // Handleable independent groups: 1
 // creating multiple block with 1 inner groups
 //   multiple group with entry 2:
-     2 3 
+     2:
+  -> 3
+  -> 4
+3:
+  -> 4
 // Solipsizing branches into 4
-  relevant to solipsize:  2 3 
+  relevant to solipsize:  2:
+  -> 3
+  -> 4
+3:
+  -> 4
 //   eliminated branch from 2
 //   eliminated branch from 3
 // Process() called
 // Process() running
-  blocks :  2 3 
-  entries:  2 
+  blocks :  2:
+  -> 3
+3:
+  entries:  2:
+  -> 3
 // creating simple block with block #2
 // Solipsizing branches into 3
-  relevant to solipsize:  2 
+  relevant to solipsize:  2:
+  -> 3
 //   eliminated branch from 2
 // Process() running
-  blocks :  3 
-  entries:  3 
+  blocks :  3:
+  entries:  3:
 // creating simple block with block #3
 // Process() returning
-  remaining blocks after multiple: 4 
+  remaining blocks after multiple: 4:
 // Process() running
-  blocks :  4 
-  entries:  4 
+  blocks :  4:
+  entries:  4:
 // creating simple block with block #4
 // Process() returning
 // === Optimizing shapes ===

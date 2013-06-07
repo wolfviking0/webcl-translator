@@ -694,6 +694,11 @@ var LibrarySDL = {
       Module['canvas'].addEventListener(event, SDL.receiveEvent, true);
     });
     Browser.setCanvasSize(width, height, true);
+    // Free the old surface first.
+    if (SDL.screen) {
+      SDL.freeSurface(SDL.screen);
+      SDL.screen = null;
+    }
     SDL.screen = SDL.makeSurface(width, height, flags, true, 'screen');
     if (!SDL.addedResizeListener) {
       SDL.addedResizeListener = true;
@@ -863,7 +868,7 @@ var LibrarySDL = {
   },
 
   SDL_Delay: function(delay) {
-    throw 'SDL_Delay called! Potential infinite loop, quitting. ' + new Error().stack;
+    abort('SDL_Delay called! Potential infinite loop, quitting.');
   },
 
   SDL_WM_SetCaption: function(title, icon) {
@@ -931,7 +936,10 @@ var LibrarySDL = {
   },
 
   SDL_GetError: function() {
-    return allocate(intArrayFromString("unknown SDL-emscripten error"), 'i8');
+    if (!SDL.errorMessage) {
+      SDL.errorMessage = allocate(intArrayFromString("unknown SDL-emscripten error"), 'i8', ALLOC_NORMAL);
+    }
+    return SDL.errorMessage;
   },
 
   SDL_CreateRGBSurface: function(flags, width, height, depth, rmask, gmask, bmask, amask) {
@@ -1155,9 +1163,6 @@ var LibrarySDL = {
   SDL_OpenAudio: function(desired, obtained) {
     SDL.allocateChannels(32);
 
-    // FIXME: Assumes 16-bit audio
-    assert(obtained === 0, 'Cannot return obtained SDL audio params');
-
     SDL.audio = {
       freq: {{{ makeGetValue('desired', 'SDL.structs.AudioSpec.freq', 'i32', 0, 1) }}},
       format: {{{ makeGetValue('desired', 'SDL.structs.AudioSpec.format', 'i16', 0, 1) }}},
@@ -1168,6 +1173,16 @@ var LibrarySDL = {
       paused: true,
       timer: null
     };
+
+    if (obtained) {
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.freq', 'SDL.audio.freq', 'i32') }}}; // no good way for us to know if the browser can really handle this
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.format', 33040, 'i16') }}}; // float, signed, 16-bit
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.channels', 'SDL.audio.channels', 'i8') }}};
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.silence', makeGetValue('desired', 'SDL.structs.AudioSpec.silence', 'i8', 0, 1), 'i8') }}}; // unclear if browsers can provide this
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.samples', 'SDL.audio.samples', 'i16') }}};
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.callback', 'SDL.audio.callback', '*') }}};
+      {{{ makeSetValue('obtained', 'SDL.structs.AudioSpec.userdata', 'SDL.audio.userdata', '*') }}};
+    }
 
     var totalSamples = SDL.audio.samples*SDL.audio.channels;
     SDL.audio.bufferSize = totalSamples*2; // hardcoded 16-bit audio

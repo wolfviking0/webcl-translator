@@ -904,26 +904,26 @@ if 'benchmark' not in str(sys.argv) and 'sanity' not in str(sys.argv) and 'brows
 
           void interface_clock_changed()
           {
-	          UINT8 m_divshift;
-	          INT32 m_divisor;
+            UINT8 m_divshift;
+            INT32 m_divisor;
 
-	          //INT64 attos = m_attoseconds_per_cycle;
-	          INT64 attos = 279365114840;
-	          m_divshift = 0;
-	          while (attos >= (1UL << 31))
-	          {
-		          m_divshift++;
-		          printf("m_divshift is %i, on %Ld >?= %lu\n", m_divshift, attos, 1UL << 31);
-		          attos >>= 1;
-	          }
-	          m_divisor = attos;
+            //INT64 attos = m_attoseconds_per_cycle;
+            INT64 attos = 279365114840;
+            m_divshift = 0;
+            while (attos >= (1UL << 31))
+            {
+              m_divshift++;
+              printf("m_divshift is %i, on %Ld >?= %lu\n", m_divshift, attos, 1UL << 31);
+              attos >>= 1;
+            }
+            m_divisor = attos;
 
-	          printf("m_divisor is %i\n",m_divisor);
+            printf("m_divisor is %i\n",m_divisor);
           }
 
           int main() {
-	          interface_clock_changed();
-	          return 0;
+            interface_clock_changed();
+            return 0;
           }
         '''
         self.do_run(src, '''m_divshift is 1, on 279365114840 >?= 2147483648
@@ -997,8 +997,8 @@ m_divisor is 1091269979
           volatile UINT64 testu64a = 14746250828952703000U;
 
           while ((UINT64)testu32a * (UINT64)bigu32 < testu64a) {
-	          printf("testu64a is %llu\n", testu64a);
-	          testu64a /= 2;
+            printf("testu64a is %llu\n", testu64a);
+            testu64a /= 2;
           }
 
           return 0;
@@ -1456,28 +1456,28 @@ c5,de,15,8a
           quint64 v = strtoull("4433ffeeddccbb00", NULL, 16);
           printf("%lld\n", v);
 
-	        const string string64bitInt = "4433ffeeddccbb00";
-	        stringstream s(string64bitInt);
-	        quint64 int64bitInt = 0;
+          const string string64bitInt = "4433ffeeddccbb00";
+          stringstream s(string64bitInt);
+          quint64 int64bitInt = 0;
           printf("1\n");
-	        s >> hex >> int64bitInt;
+          s >> hex >> int64bitInt;
           printf("2\n");
 
-	        stringstream out;
-	        out << hex << qbswap(int64bitInt);
+          stringstream out;
+          out << hex << qbswap(int64bitInt);
 
-	        cout << out.str() << endl;
-	        cout << hex << int64bitInt << endl;
-	        cout << string64bitInt << endl;
+          cout << out.str() << endl;
+          cout << hex << int64bitInt << endl;
+          cout << string64bitInt << endl;
 
-	        if (out.str() != "bbccddeeff3344")
-	        {
-		        cout << "Failed!" << endl;
-	        }
-	        else
-	        {
-		        cout << "Succeeded!" << endl;
-	        }
+          if (out.str() != "bbccddeeff3344")
+          {
+            cout << "Failed!" << endl;
+          }
+          else
+          {
+            cout << "Succeeded!" << endl;
+          }
 
           return 0;
         }
@@ -1916,6 +1916,80 @@ Succeeded!
         expected = open(path_from_root('tests', 'hyperbolic', 'output.txt'), 'r').read()
         self.do_run(src, expected)
 
+    def test_frexp(self):
+        src = '''
+          #include <stdio.h>
+          #include <math.h>
+          #include <assert.h>
+
+          static const double tol=1e-16;
+
+          void test_value(double value)
+          {
+            int exponent;
+            double x=frexp(value, &exponent);
+            double expected=x*pow(2.0, exponent);
+
+            printf("%f=%f*2^%d\\n", value, x, exponent);
+
+            assert(fabs(expected-value)<tol);
+            assert(x==0 || (fabs(x)>=5e-1 && fabs(x)<1)); // x has a magnitude in the interval [1/2, 1)
+          }
+
+          int main()
+          {
+            test_value(0);
+            test_value(100.1);
+            test_value(-100.1);
+            test_value(.5);
+            test_value(-.5);
+            test_value(1-1e-16);
+            test_value(-(1-1e-16));
+
+            return 0;
+          }
+        '''
+        self.do_run(src, '''0.000000=0.000000*2^0
+100.100000=0.782031*2^7
+-100.100000=-0.782031*2^7
+0.500000=0.500000*2^0
+-0.500000=-0.500000*2^0
+1.000000=1.000000*2^0
+-1.000000=-1.000000*2^0''')
+
+    def test_rounding(self):
+        src = '''
+          #include <stdio.h>
+          #include <math.h>
+
+          int main()
+          {
+            printf("%.1f ", round(1.4));
+            printf("%.1f ", round(1.6));
+            printf("%.1f ", round(-1.4));
+            printf("%.1f ", round(-1.6));
+
+            printf("%.1f ", round(1.5));
+            printf("%.1f ", round(2.5));
+            printf("%.1f ", round(-1.5));
+            printf("%.1f ", round(-2.5));
+
+            printf("%ld ", lrint(1.4));
+            printf("%ld ", lrint(1.6));
+            printf("%ld ", lrint(-1.4));
+            printf("%ld ", lrint(-1.6));
+
+            printf("%ld ", lrint(1.5));
+            printf("%ld ", lrint(2.5));
+            printf("%ld ", lrint(-1.5));
+            printf("%ld ", lrint(-2.5));
+
+            return 0;
+          }
+          '''
+        self.do_run(src, "1.0 2.0 -1.0 -2.0 2.0 3.0 -2.0 -3.0 "
+                         "1 2 -1 -2 2 2 -2 -2")
+
     def test_getgep(self):
         # Generated code includes getelementptr (getelementptr, 0, 1), i.e., GEP as the first param to GEP
         src = '''
@@ -2203,8 +2277,8 @@ returned |umber one top notchfi FI FO FUM WHEN WHERE WHY HOW WHO|''', ['wowie', 
           }
           '''
         expected = '''
-          <Numerical argument out of domain>
-          <Resource temporarily unavailable>
+          <Math arg out of domain of func>
+          <No more processes>
           <34>
           <123>
           '''
@@ -3028,6 +3102,28 @@ caught 0
 setjmp exception execution path, level: 0, prev_jmp: -1
 Exiting setjmp function, level: 0, prev_jmp: -1
 ''')
+
+    def test_std_exception(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+      Settings.DISABLE_EXCEPTION_CATCHING = 0
+      self.emcc_args += ['-s', 'SAFE_HEAP=0']
+
+      src = r'''
+        #include <stdio.h>
+        #include <exception>
+
+        int main()
+        {
+            std::exception e;
+            try {
+              throw e;
+            } catch(std::exception e) {
+              printf("caught std::exception\n");
+            }
+            return 0;
+        }
+      '''
+      self.do_run(src, 'caught std::exception')
 
     def test_exit_stack(self):
       if self.emcc_args is None: return self.skip('requires emcc')
@@ -4008,15 +4104,15 @@ def process(filename):
 
           // see related things in openjpeg
           typedef struct opj_mqc_state {
-	          unsigned int qeval;
-	          int mps;
-	          struct opj_mqc_state *nmps;
-	          struct opj_mqc_state *nlps;
+            unsigned int qeval;
+            int mps;
+            struct opj_mqc_state *nmps;
+            struct opj_mqc_state *nlps;
           } opj_mqc_state_t;
 
           static opj_mqc_state_t mqc_states[2] = {
-	          {0x5600, 0, &mqc_states[2], &mqc_states[3]},
-	          {0x5602, 1, &mqc_states[3], &mqc_states[2]},
+            {0x5600, 0, &mqc_states[2], &mqc_states[3]},
+            {0x5602, 1, &mqc_states[3], &mqc_states[2]},
           };
 
           int main() {
@@ -4510,6 +4606,212 @@ The current type of b is: 9
 
         self.do_run(src, '*1*', force_c=True)
 
+    def test_strtoll_hex(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+
+      # tests strtoll for hex strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "0x4 -0x3A +0xDEADBEEF";
+          char *end_char;
+
+          // undefined base
+          long long int l1 = strtoll(STRING, &end_char, 0);
+          long long int l2 = strtoll(end_char, &end_char, 0);
+          long long int l3 = strtoll(end_char, NULL, 0);
+
+          // defined base
+          long long int l4 = strtoll(STRING, &end_char, 16);
+          long long int l5 = strtoll(end_char, &end_char, 16);
+          long long int l6 = strtoll(end_char, NULL, 16);
+ 
+          printf("%d%d%d%d%d%d\n", l1==0x4, l2==-0x3a, l3==0xdeadbeef, l4==0x4, l5==-0x3a, l6==0xdeadbeef);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+
+    def test_strtoll_dec(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+
+      # tests strtoll for decimal strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "4 -38 +4711";
+          char *end_char;
+
+          // undefined base
+          long long int l1 = strtoll(STRING, &end_char, 0);
+          long long int l2 = strtoll(end_char, &end_char, 0);
+          long long int l3 = strtoll(end_char, NULL, 0);
+
+          // defined base
+          long long int l4 = strtoll(STRING, &end_char, 10);
+          long long int l5 = strtoll(end_char, &end_char, 10);
+          long long int l6 = strtoll(end_char, NULL, 10);
+ 
+          printf("%d%d%d%d%d%d\n", l1==4, l2==-38, l3==4711, l4==4, l5==-38, l6==4711);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+
+    def test_strtoll_bin(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+
+      # tests strtoll for binary strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "1 -101 +1011";
+          char *end_char;
+
+          // defined base
+          long long int l4 = strtoll(STRING, &end_char, 2);
+          long long int l5 = strtoll(end_char, &end_char, 2);
+          long long int l6 = strtoll(end_char, NULL, 2);
+ 
+          printf("%d%d%d\n", l4==1, l5==-5, l6==11);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111')
+
+    def test_strtoll_oct(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+
+      # tests strtoll for decimal strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "0 -035 +04711";
+          char *end_char;
+
+          // undefined base
+          long long int l1 = strtoll(STRING, &end_char, 0);
+          long long int l2 = strtoll(end_char, &end_char, 0);
+          long long int l3 = strtoll(end_char, NULL, 0);
+
+          // defined base
+          long long int l4 = strtoll(STRING, &end_char, 8);
+          long long int l5 = strtoll(end_char, &end_char, 8);
+          long long int l6 = strtoll(end_char, NULL, 8);
+
+          printf("%d%d%d%d%d%d\n", l1==0, l2==-29, l3==2505, l4==0, l5==-29, l6==2505);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+    
+    def test_strtol_hex(self):
+      # tests strtoll for hex strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "0x4 -0x3A +0xDEAD";
+          char *end_char;
+
+          // undefined base
+          long l1 = strtol(STRING, &end_char, 0);
+          long l2 = strtol(end_char, &end_char, 0);
+          long l3 = strtol(end_char, NULL, 0);
+
+          // defined base
+          long l4 = strtol(STRING, &end_char, 16);
+          long l5 = strtol(end_char, &end_char, 16);
+          long l6 = strtol(end_char, NULL, 16);
+ 
+          printf("%d%d%d%d%d%d\n", l1==0x4, l2==-0x3a, l3==0xdead, l4==0x4, l5==-0x3a, l6==0xdead);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+
+    def test_strtol_dec(self):
+      # tests strtoll for decimal strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "4 -38 +4711";
+          char *end_char;
+
+          // undefined base
+          long l1 = strtol(STRING, &end_char, 0);
+          long l2 = strtol(end_char, &end_char, 0);
+          long l3 = strtol(end_char, NULL, 0);
+
+          // defined base
+          long l4 = strtol(STRING, &end_char, 10);
+          long l5 = strtol(end_char, &end_char, 10);
+          long l6 = strtol(end_char, NULL, 10);
+ 
+          printf("%d%d%d%d%d%d\n", l1==4, l2==-38, l3==4711, l4==4, l5==-38, l6==4711);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+
+    def test_strtol_bin(self):
+      # tests strtoll for binary strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "1 -101 +1011";
+          char *end_char;
+
+          // defined base
+          long l4 = strtol(STRING, &end_char, 2);
+          long l5 = strtol(end_char, &end_char, 2);
+          long l6 = strtol(end_char, NULL, 2);
+ 
+          printf("%d%d%d\n", l4==1, l5==-5, l6==11);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111')
+
+    def test_strtol_oct(self):
+      # tests strtoll for decimal strings (0x...) 
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+          const char *STRING = "0 -035 +04711";
+          char *end_char;
+
+          // undefined base
+          long l1 = strtol(STRING, &end_char, 0);
+          long l2 = strtol(end_char, &end_char, 0);
+          long l3 = strtol(end_char, NULL, 0);
+
+          // defined base
+          long l4 = strtol(STRING, &end_char, 8);
+          long l5 = strtol(end_char, &end_char, 8);
+          long l6 = strtol(end_char, NULL, 8);
+
+          printf("%d%d%d%d%d%d\n", l1==0, l2==-29, l3==2505, l4==0, l5==-29, l6==2505);
+          return 0;
+        }
+      '''
+      self.do_run(src, '111111')
+
     def test_atexit(self):
       # Confirms they are called in reverse order
       src = r'''
@@ -4587,25 +4889,25 @@ The current type of b is: 9
 
         typedef struct
         {
-	        int (*f)(void *);
-	        void *d;
-	        char s[16];
+          int (*f)(void *);
+          void *d;
+          char s[16];
         } LMEXFunctionStruct;
 
         int f(void *user)
         {
-	        return 0;
+          return 0;
         }
 
         static LMEXFunctionStruct const a[] =
         {
-	        {f, (void *)(int)'a', "aa"}
+          {f, (void *)(int)'a', "aa"}
         };
 
         int main()
         {
           printf("ok\n");
-	        return a[0].f(a[0].d);
+          return a[0].f(a[0].d);
         }
       '''
       self.do_run(src, 'ok\n')
@@ -6239,6 +6541,19 @@ Pass: 0.000012 0.000012''')
       '''
       self.do_run(src, '1\n30\n2\n1000000,-123\n')
 
+    def test_sscanf_caps(self):
+      src = r'''
+        #include "stdio.h"
+
+        int main(){
+          unsigned int a;
+          float e, f, g;
+          sscanf("a 1.1 1.1 1.1", "%X %E %F %G", &a, &e, &f, &g);
+          printf("%d %.1F %.1F %.1F\n", a, e, f, g);
+        }
+      '''
+      self.do_run(src, '10 1.1 1.1 1.1');
+
     def test_langinfo(self):
       src = open(path_from_root('tests', 'langinfo', 'test.c'), 'r').read()
       expected = open(path_from_root('tests', 'langinfo', 'output.txt'), 'r').read()
@@ -6604,7 +6919,7 @@ def process(filename):
           printf("f_blocks: %lu\n", s.f_blocks);
           printf("f_bfree: %lu\n", s.f_bfree);
           printf("f_bavail: %lu\n", s.f_bavail);
-          printf("f_files: %lu\n", s.f_files);
+          printf("f_files: %d\n", s.f_files > 5);
           printf("f_ffree: %lu\n", s.f_ffree);
           printf("f_favail: %lu\n", s.f_favail);
           printf("f_fsid: %lu\n", s.f_fsid);
@@ -6622,7 +6937,7 @@ def process(filename):
         f_blocks: 1000000
         f_bfree: 500000
         f_bavail: 500000
-        f_files: 10
+        f_files: 1
         f_ffree: 1000000
         f_favail: 1000000
         f_fsid: 42
@@ -10087,6 +10402,8 @@ f.close()
       assert not os.path.exists('a.out') and not os.path.exists('a.exe'), 'Must not leave unneeded linker stubs'
 
     def test_symlink(self):
+      if os.name == 'nt':
+        return self.skip('Windows FS does not need to be tested for symlinks support, since it does not have them.')
       open(os.path.join(self.get_dir(), 'foobar.xxx'), 'w').write('int main(){ return 0; }')
       os.symlink(os.path.join(self.get_dir(), 'foobar.xxx'), os.path.join(self.get_dir(), 'foobar.c'))
       Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'foobar.c'), '-o', os.path.join(self.get_dir(), 'foobar')], stdout=PIPE, stderr=PIPE).communicate()
@@ -10241,8 +10558,8 @@ f.close()
         #define _TESTA_H_
 
         class TestA {
-	        public:
-		        TestA();
+          public:
+            TestA();
         };
 
         #endif
@@ -10252,8 +10569,8 @@ f.close()
         #define _TESTB_H_
 
         class TestB {
-	        public:
-		        TestB();
+          public:
+            TestB();
         };
 
         #endif
@@ -10263,7 +10580,7 @@ f.close()
         #include <testa.h>
 
         TestA::TestA() {
-	        printf("TestA\n");
+          printf("TestA\n");
         }
       ''')
       open('testb.cpp', 'w').write(r'''
@@ -10273,8 +10590,8 @@ f.close()
         /*
         */
         TestB::TestB() {
-	        printf("TestB\n");
-	        TestA* testa = new TestA();
+          printf("TestB\n");
+          TestA* testa = new TestA();
         }
       ''')
       open('main.cpp', 'w').write(r'''
@@ -10285,9 +10602,9 @@ f.close()
         /*
         */
         int main(int argc, char** argv) {
-	        printf("Main\n");
-	        TestA* testa = new TestA();
-	        TestB* testb = new TestB();
+          printf("Main\n");
+          TestA* testa = new TestA();
+          TestB* testb = new TestB();
         }
       ''')
 
@@ -11494,7 +11811,9 @@ elif 'browser' in str(sys.argv):
       self.run_browser('page.html', '', '/report_result?1')
 
     def test_preload_file(self):
-      open(os.path.join(self.get_dir(), 'somefile.txt'), 'w').write('''load me right before running the code please''')
+      absolute_src_path = os.path.join(self.get_dir(), 'somefile.txt').replace('\\', '/')
+      open(absolute_src_path, 'w').write('''load me right before running the code please''')
+      
       def make_main(path):
         print path
         open(os.path.join(self.get_dir(), 'main.cpp'), 'w').write(self.with_report_result(r'''
@@ -11513,32 +11832,92 @@ elif 'browser' in str(sys.argv):
             REPORT_RESULT();
             return 0;
           }
-        ''' % path))
+          ''' % path))
 
-      make_main('somefile.txt')
-      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', 'somefile.txt', '-o', 'page.html']).communicate()
-      self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
+      test_cases = [
+       # (source preload-file string, file on target FS to load)
+        ("somefile.txt", "somefile.txt"),
+        ("./somefile.txt", "somefile.txt"),
+        ("somefile.txt@file.txt", "file.txt"),
+        ("./somefile.txt@file.txt", "file.txt"),
+        ("./somefile.txt@./file.txt", "file.txt"),
+        ("somefile.txt@/file.txt", "file.txt"),
+        ("somefile.txt@/", "somefile.txt"), 
+        (absolute_src_path + "@file.txt", "file.txt"),
+        (absolute_src_path + "@/file.txt", "file.txt"),
+        (absolute_src_path + "@/", "somefile.txt"),
+        ("somefile.txt@/directory/file.txt", "/directory/file.txt"),
+        ("somefile.txt@/directory/file.txt", "directory/file.txt"),
+        (absolute_src_path + "@/directory/file.txt", "directory/file.txt")]
+      
+      for test in test_cases:
+        (srcpath, dstpath) = test
+        make_main(dstpath)
+        print srcpath
+        Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', srcpath, '-o', 'page.html']).communicate()
+        self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
 
       # By absolute path
 
-      make_main(os.path.join(self.get_dir(), 'somefile.txt'))
-      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', os.path.join(self.get_dir(), 'somefile.txt'), '-o', 'page.html']).communicate()
+      make_main(absolute_src_path)
+      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', absolute_src_path, '-o', 'page.html']).communicate()
       self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
 
-      # By ./path
+      # Test subdirectory handling with asset packaging.
+      os.makedirs(os.path.join(self.get_dir(), 'assets/sub/asset1/').replace('\\', '/'))
+      os.makedirs(os.path.join(self.get_dir(), 'assets/sub/asset2/').replace('\\', '/'))
+      open(os.path.join(self.get_dir(), 'assets/sub/asset1/file1.txt'), 'w').write('''load me right before running the code please''')
+      open(os.path.join(self.get_dir(), 'assets/sub/asset2/file2.txt'), 'w').write('''load me right before running the code please''')
+      absolute_assets_src_path = os.path.join(self.get_dir(), 'assets').replace('\\', '/')
+      def make_main_two_files(path1, path2):
+        open(os.path.join(self.get_dir(), 'main.cpp'), 'w').write(self.with_report_result(r'''
+          #include <stdio.h>
+          #include <string.h>
+          #include <emscripten.h>
+          int main() {
+            FILE *f = fopen("%s", "r");
+            char buf[100];
+            fread(buf, 1, 20, f);
+            buf[20] = 0;
+            fclose(f);
+            printf("|%%s|\n", buf);
 
-      make_main('somefile.txt')
-      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', './somefile.txt', '-o', 'page.html']).communicate()
-      self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
+            int result = !strcmp("load me right before", buf);
+            
+            f = fopen("%s", "r");
+            if (f == NULL)
+              result = 0;
+            fclose(f);
+            REPORT_RESULT();
+            return 0;
+          }
+        ''' % (path1, path2)))
 
+      test_cases = [
+       # (source directory to embed, file1 on target FS to load, file2 on target FS to load)
+        ("assets", "assets/sub/asset1/file1.txt", "assets/sub/asset2/file2.txt"),
+        ("assets/", "assets/sub/asset1/file1.txt", "assets/sub/asset2/file2.txt"),
+        ("assets@/", "/sub/asset1/file1.txt", "/sub/asset2/file2.txt"),
+        ("assets/@/", "/sub/asset1/file1.txt", "/sub/asset2/file2.txt"),
+        ("assets@./", "/sub/asset1/file1.txt", "/sub/asset2/file2.txt"),
+        (absolute_assets_src_path + "@/", "/sub/asset1/file1.txt", "/sub/asset2/file2.txt"),
+        (absolute_assets_src_path + "@/assets", "/assets/sub/asset1/file1.txt", "/assets/sub/asset2/file2.txt")]
+
+      for test in test_cases:
+        (srcpath, dstpath1, dstpath2) = test
+        make_main_two_files(dstpath1, dstpath2)
+        print srcpath
+        Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', srcpath, '-o', 'page.html']).communicate()
+        self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
+        
       # Should still work with -o subdir/..
 
-      make_main(os.path.join(self.get_dir(), 'somefile.txt'))
+      make_main(absolute_src_path)
       try:
         os.mkdir(os.path.join(self.get_dir(), 'dirrey'))
       except:
         pass
-      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', os.path.join(self.get_dir(), 'somefile.txt'), '-o', 'dirrey/page.html']).communicate()
+      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', absolute_src_path, '-o', 'dirrey/page.html']).communicate()
       self.run_browser('dirrey/page.html', 'You should see |load me right before|.', '/report_result?1')
 
       # With FS.preloadFile
@@ -12154,6 +12533,9 @@ elif 'browser' in str(sys.argv):
           self.run_browser('something.html', 'You should see animating gears.', '/report_gl_result?true')
           assert ('var GLEmulation' in open(self.in_dir('something.html')).read()) == emulation, "emulation code should be added when asked for"
 
+    def test_fulles2_sdlproc(self):
+      self.btest('full_es2_sdlproc.c', '1', args=['-s', 'GL_TESTING=1', '-DHAVE_BUILTIN_SINCOS', '-s', 'FULL_ES2=1'])
+
     def test_glgears_deriv(self):
       self.reftest(path_from_root('tests', 'gears.png'))
       Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world_gles_deriv.c'), '-o', 'something.html', '-s', 'GL_TESTING=1',
@@ -12266,14 +12648,6 @@ elif 'browser' in str(sys.argv):
       # packed data that needs to be strided
       shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'screenshot.png'))
       self.btest('gl_ps_packed.c', reference='gl_ps.png', args=['--preload-file', 'screenshot.png'])
-
-    def test_gl_ps_workaround(self):
-      shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'screenshot.png'))
-      self.btest('gl_ps_workaround.c', reference='gl_ps.png', args=['--preload-file', 'screenshot.png'])
-
-    def test_gl_ps_workaround2(self):
-      shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'screenshot.png'))
-      self.btest('gl_ps_workaround2.c', reference='gl_ps.png', args=['--preload-file', 'screenshot.png'])
 
     def test_gl_ps_strides(self):
       shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'screenshot.png'))
@@ -12591,20 +12965,22 @@ elif 'browser' in str(sys.argv):
 
     def test_websockets_bi(self):
       for datagram in [0,1]:
-        try:
-          with self.WebsockHarness(8992, self.make_relay_server(8992, 8994)):
-            with self.WebsockHarness(8994, no_server=True):
-              Popen([PYTHON, EMCC, path_from_root('tests', 'websockets_bi_side.c'), '-o', 'side.html', '-DSOCKK=8995', '-DTEST_DGRAM=%d' % datagram]).communicate()
-              self.btest('websockets_bi.c', expected='2499', args=['-DTEST_DGRAM=%d' % datagram])
-        finally:
-          self.clean_pids()
+        for fileops in [0,1]:
+          try:
+            print >> sys.stderr, 'test_websocket_bi datagram %d, fileops %d' % (datagram, fileops)
+            with self.WebsockHarness(8992, self.make_relay_server(8992, 8994)):
+              with self.WebsockHarness(8994, no_server=True):
+                Popen([PYTHON, EMCC, path_from_root('tests', 'websockets_bi_side.c'), '-o', 'side.html', '-DSOCKK=8995', '-DTEST_DGRAM=%d' % datagram]).communicate()
+                self.btest('websockets_bi.c', expected='2499', args=['-DSOCKK=8993', '-DTEST_DGRAM=%d' % datagram, '-DTEST_FILE_OPS=%s' % fileops])
+          finally:
+            self.clean_pids()
 
     def test_websockets_bi_listen(self):
       try:
         with self.WebsockHarness(6992, self.make_relay_server(6992, 6994)):
           with self.WebsockHarness(6994, no_server=True):
             Popen([PYTHON, EMCC, path_from_root('tests', 'websockets_bi_side.c'), '-o', 'side.html', '-DSOCKK=6995']).communicate()
-            self.btest('websockets_bi_listener.c', expected='2499')
+            self.btest('websockets_bi_listener.c', expected='2499', args=['-DSOCKK=6993'])
       finally:
         self.clean_pids()
 
@@ -12620,7 +12996,7 @@ elif 'browser' in str(sys.argv):
         with self.WebsockHarness(3992, self.make_relay_server(3992, 3994)):
           with self.WebsockHarness(3994, no_server=True):
             Popen([PYTHON, EMCC, path_from_root('tests', 'websockets_bi_side_bigdata.c'), '-o', 'side.html', '-DSOCKK=3995', '-s', 'SOCKET_DEBUG=0', '-I' + path_from_root('tests')]).communicate()
-            self.btest('websockets_bi_bigdata.c', expected='0', args=['-s', 'SOCKET_DEBUG=0', '-I' + path_from_root('tests')])
+            self.btest('websockets_bi_bigdata.c', expected='0', args=['-DSOCKK=3993', '-s', 'SOCKET_DEBUG=0', '-I' + path_from_root('tests')])
       finally:
         self.clean_pids()
 
@@ -12752,7 +13128,7 @@ elif 'benchmark' in str(sys.argv):
 
   Building.COMPILER_TEST_OPTS = []
 
-  TEST_REPS = 2
+  TEST_REPS = 1
   TOTAL_TESTS = 8
 
   # standard arguments for timing:
@@ -12817,7 +13193,7 @@ elif 'benchmark' in str(sys.argv):
                       '-O2', '-s', 'DOUBLE_MODE=0', '-s', 'PRECISE_I64_MATH=0',
                       '--llvm-lto', '1', '--memory-init-file', '0',
                       '-s', 'TOTAL_MEMORY=128*1024*1024',
-                      '--closure', '1',
+                      '--closure', '1', '-g',
                       '-o', final_filename] + shared_args + emcc_args, stdout=PIPE, stderr=self.stderr_redirect).communicate()
       assert os.path.exists(final_filename), 'Failed to compile file: ' + output[0]
 
@@ -13723,7 +14099,7 @@ if __name__ == '__main__':
         which = map(lambda mode: mode+'.'+test, test_modes)
       else:
         which = [which]
-      
+
       print >> sys.stderr, ','.join(which)
       for test in which:
         print >> sys.stderr, 'will skip "%s"' % test

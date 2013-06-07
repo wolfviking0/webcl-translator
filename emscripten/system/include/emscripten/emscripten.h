@@ -1,3 +1,6 @@
+#ifndef __emscripten_h__
+#define __emscripten_h__
+
 /**
  * This file contains a few useful things for compiling C/C++ code
  * with Emscripten, an LLVM-to-JavaScript compiler.
@@ -134,6 +137,14 @@ inline void emscripten_async_call(void (*func)(void *), void *arg, int millis) {
   func(arg);
 }
 #endif
+
+/*
+ * Exits the program immediately, but leaves the runtime alive
+ * so that you can continue to run code later (so global destructors
+ * etc. are not run). This is implicitly performed when you do
+ * an asynchronous operation like emscripten_async_call.
+ */
+extern void emscripten_exit_with_live_runtime();
 
 /*
  * Hide the OS mouse cursor over the canvas. Note that SDL's
@@ -372,4 +383,6 @@ void emscripten_jcache_printf_(...); /* internal use */
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __emscripten_h__
 
