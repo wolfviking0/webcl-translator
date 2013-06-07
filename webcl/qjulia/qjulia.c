@@ -88,8 +88,8 @@
 #define COMPUTE_KERNEL_FILENAME         ("qjulia_kernel.cl")
 #define COMPUTE_KERNEL_METHOD_NAME      ("QJuliaKernel")
 #define SEPARATOR                       ("----------------------------------------------------------------------\n")
-#define WIDTH                           (8)
-#define HEIGHT                          (8)
+#define WIDTH                           (512)
+#define HEIGHT                          (512)
 
 ////////////////////////////////////////////////////////////////////////////////
 
