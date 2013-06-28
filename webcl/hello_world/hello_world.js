@@ -872,8 +872,8 @@ function loadMemoryInitializer(filename) {
 }
 // === Body ===
 STATIC_BASE = 8;
-STATICTOP = STATIC_BASE + 1416;
-/* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,100,101,118,105,99,101,32,109,101,109,111,114,121,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,100,101,118,105,99,101,32,103,114,111,117,112,33,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,32,46,46,46,32,73,109,97,103,101,32,83,117,112,112,111,114,116,32,37,100,32,58,32,68,101,118,105,99,101,115,32,99,111,117,110,116,32,37,100,10,0,0,0,0,67,111,109,112,117,116,101,100,32,39,37,100,47,37,100,39,32,99,111,114,114,101,99,116,32,118,97,108,117,101,115,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,111,117,116,112,117,116,32,97,114,114,97,121,33,32,37,100,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,32,37,100,10,0,0,0,0,0,0,115,113,117,97,114,101,0,0,10,95,95,107,101,114,110,101,108,32,118,111,105,100,32,115,113,117,97,114,101,40,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,105,110,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,111,117,116,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,99,111,110,115,116,32,117,110,115,105,103,110,101,100,32,105,110,116,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,123,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,110,116,32,105,32,61,32,103,101,116,95,103,108,111,98,97,108,95,105,100,40,48,41,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,102,40,105,32,60,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,32,32,32,32,111,117,116,112,117,116,91,105,93,32,61,32,105,110,112,117,116,91,105,93,32,42,32,105,110,112,117,116,91,105,93,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,125,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,10,0,248,2,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
+STATICTOP = STATIC_BASE + 1936;
+/* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,67,111,109,109,97,110,100,81,117,101,117,101,32,46,46,46,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,0,0,67,97,108,108,32,58,32,99,108,71,101,116,67,111,110,116,101,120,116,73,110,102,111,32,46,46,46,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,67,97,108,108,32,58,32,99,108,71,101,116,68,101,118,105,99,101,73,110,102,111,32,46,46,46,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,82,101,97,100,66,117,102,102,101,114,32,46,46,46,0,0,67,97,108,108,32,58,32,99,108,70,105,110,105,115,104,32,46,46,46,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,78,68,82,97,110,103,101,75,101,114,110,101,108,32,46,46,46,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,71,101,116,75,101,114,110,101,108,87,111,114,107,71,114,111,117,112,73,110,102,111,32,46,46,46,0,0,0,0,0,67,97,108,108,32,58,32,99,108,83,101,116,75,101,114,110,101,108,65,114,103,32,46,46,46,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,67,111,110,116,101,120,116,32,46,46,46,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,87,114,105,116,101,66,117,102,102,101,114,32,46,46,46,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,100,101,118,105,99,101,32,109,101,109,111,114,121,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,66,117,102,102,101,114,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,75,101,114,110,101,108,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,66,117,105,108,100,80,114,111,103,114,97,109,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,80,114,111,103,114,97,109,87,105,116,104,83,111,117,114,99,101,32,46,46,46,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,100,101,118,105,99,101,32,103,114,111,117,112,33,0,67,97,108,108,32,58,32,99,108,71,101,116,68,101,118,105,99,101,73,68,115,32,46,46,46,0,0,0,0,0,0,0,67,111,109,112,117,116,101,100,32,39,37,100,47,37,100,39,32,99,111,114,114,101,99,116,32,118,97,108,117,101,115,33,10,0,0,0,0,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,34,37,115,34,32,34,37,115,34,32,46,46,46,32,73,109,97,103,101,32,83,117,112,112,111,114,116,32,37,100,32,58,32,68,101,118,105,99,101,115,32,99,111,117,110,116,32,37,100,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,111,117,116,112,117,116,32,97,114,114,97,121,33,32,37,100,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,32,37,100,10,0,0,0,0,0,0,103,112,117,0,0,0,0,0,115,113,117,97,114,101,0,0,99,112,117,0,0,0,0,0,10,95,95,107,101,114,110,101,108,32,118,111,105,100,32,115,113,117,97,114,101,40,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,105,110,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,111,117,116,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,99,111,110,115,116,32,117,110,115,105,103,110,101,100,32,105,110,116,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,123,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,110,116,32,105,32,61,32,103,101,116,95,103,108,111,98,97,108,95,105,100,40,48,41,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,102,40,105,32,60,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,32,32,32,32,111,117,116,112,117,116,91,105,93,32,61,32,105,110,112,117,116,91,105,93,32,42,32,105,110,112,117,116,91,105,93,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,125,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,10,0,0,5,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
 function runPostSets() {
 }
 if (!awaitingMemoryInitializer) runPostSets();
@@ -898,500 +898,23 @@ function copyTempDouble(ptr) {
   function _rand() {
       return Math.floor(Math.random()*0x80000000);
     }
-  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
-          Browser.mainLoop.shouldPause = true;
-        },resume:function () {
-          if (Browser.mainLoop.paused) {
-            Browser.mainLoop.paused = false;
-            Browser.mainLoop.scheduler();
-          }
-          Browser.mainLoop.shouldPause = false;
-        },updateStatus:function () {
-          if (Module['setStatus']) {
-            var message = Module['statusMessage'] || 'Please wait...';
-            var remaining = Browser.mainLoop.remainingBlockers;
-            var expected = Browser.mainLoop.expectedBlockers;
-            if (remaining) {
-              if (remaining < expected) {
-                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
-              } else {
-                Module['setStatus'](message);
-              }
-            } else {
-              Module['setStatus']('');
-            }
-          }
-        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
-        if (Browser.initted) return;
-        Browser.initted = true;
-        try {
-          new Blob();
-          Browser.hasBlobConstructor = true;
-        } catch(e) {
-          Browser.hasBlobConstructor = false;
-          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
+  function _strstr(ptr1, ptr2) {
+      var check = 0, start;
+      do {
+        if (!check) {
+          start = ptr1;
+          check = ptr2;
         }
-        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
-        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : console.log("warning: cannot create object URLs");
-        // Support for plugins that can process preloaded files. You can add more of these to
-        // your app by creating and appending to Module.preloadPlugins.
-        //
-        // Each plugin is asked if it can handle a file based on the file's name. If it can,
-        // it is given the file's raw data. When it is done, it calls a callback with the file's
-        // (possibly modified) data. For example, a plugin might decompress a file, or it
-        // might create some side data structure for use later (like an Image element, etc.).
-        function getMimetype(name) {
-          return {
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'bmp': 'image/bmp',
-            'ogg': 'audio/ogg',
-            'wav': 'audio/wav',
-            'mp3': 'audio/mpeg'
-          }[name.substr(name.lastIndexOf('.')+1)];
+        var curr1 = HEAP8[((ptr1++)|0)];
+        var curr2 = HEAP8[((check++)|0)];
+        if (curr2 == 0) return start;
+        if (curr2 != curr1) {
+          // rewind to one character after start, to find ez in eeez
+          ptr1 = start + 1;
+          check = 0;
         }
-        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = [];
-        var imagePlugin = {};
-        imagePlugin['canHandle'] = function(name) {
-          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/.exec(name);
-        };
-        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var b = null;
-          if (Browser.hasBlobConstructor) {
-            try {
-              b = new Blob([byteArray], { type: getMimetype(name) });
-            } catch(e) {
-              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
-            }
-          }
-          if (!b) {
-            var bb = new Browser.BlobBuilder();
-            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
-            b = bb.getBlob();
-          }
-          var url = Browser.URLObject.createObjectURL(b);
-          var img = new Image();
-          img.onload = function() {
-            assert(img.complete, 'Image ' + name + ' could not be decoded');
-            var canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            Module["preloadedImages"][name] = canvas;
-            Browser.URLObject.revokeObjectURL(url);
-            if (onload) onload(byteArray);
-          };
-          img.onerror = function(event) {
-            console.log('Image ' + url + ' could not be decoded');
-            if (onerror) onerror();
-          };
-          img.src = url;
-        };
-        Module['preloadPlugins'].push(imagePlugin);
-        var audioPlugin = {};
-        audioPlugin['canHandle'] = function(name) {
-          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
-        };
-        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var done = false;
-          function finish(audio) {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = audio;
-            if (onload) onload(byteArray);
-          }
-          function fail() {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = new Audio(); // empty shim
-            if (onerror) onerror();
-          }
-          if (Browser.hasBlobConstructor) {
-            try {
-              var b = new Blob([byteArray], { type: getMimetype(name) });
-            } catch(e) {
-              return fail();
-            }
-            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
-            var audio = new Audio();
-            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
-            audio.onerror = function(event) {
-              if (done) return;
-              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
-              function encode64(data) {
-                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-                var PAD = '=';
-                var ret = '';
-                var leftchar = 0;
-                var leftbits = 0;
-                for (var i = 0; i < data.length; i++) {
-                  leftchar = (leftchar << 8) | data[i];
-                  leftbits += 8;
-                  while (leftbits >= 6) {
-                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
-                    leftbits -= 6;
-                    ret += BASE[curr];
-                  }
-                }
-                if (leftbits == 2) {
-                  ret += BASE[(leftchar&3) << 4];
-                  ret += PAD + PAD;
-                } else if (leftbits == 4) {
-                  ret += BASE[(leftchar&0xf) << 2];
-                  ret += PAD;
-                }
-                return ret;
-              }
-              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
-              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
-            };
-            audio.src = url;
-            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
-            Browser.safeSetTimeout(function() {
-              finish(audio); // try to use it even though it is not necessarily ready to play
-            }, 10000);
-          } else {
-            return fail();
-          }
-        };
-        Module['preloadPlugins'].push(audioPlugin);
-        // Canvas event setup
-        var canvas = Module['canvas'];
-        canvas.requestPointerLock = canvas['requestPointerLock'] ||
-                                    canvas['mozRequestPointerLock'] ||
-                                    canvas['webkitRequestPointerLock'];
-        canvas.exitPointerLock = document['exitPointerLock'] ||
-                                 document['mozExitPointerLock'] ||
-                                 document['webkitExitPointerLock'] ||
-                                 function(){}; // no-op if function does not exist
-        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
-        function pointerLockChange() {
-          Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                document['mozPointerLockElement'] === canvas ||
-                                document['webkitPointerLockElement'] === canvas;
-        }
-        document.addEventListener('pointerlockchange', pointerLockChange, false);
-        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
-        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
-        if (Module['elementPointerLock']) {
-          canvas.addEventListener("click", function(ev) {
-            if (!Browser.pointerLock && canvas.requestPointerLock) {
-              canvas.requestPointerLock();
-              ev.preventDefault();
-            }
-          }, false);
-        }
-      },createContext:function (canvas, useWebGL, setInModule) {
-        var ctx;
-        try {
-          if (useWebGL) {
-            ctx = canvas.getContext('experimental-webgl', {
-              alpha: false
-            });
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas - ' + e);
-          return null;
-        }
-        if (useWebGL) {
-          // Set the background of the WebGL canvas to black
-          canvas.style.backgroundColor = "black";
-          // Warn on context loss
-          canvas.addEventListener('webglcontextlost', function(event) {
-            alert('WebGL context lost. You will need to reload the page.');
-          }, false);
-        }
-        if (setInModule) {
-          Module.ctx = ctx;
-          Module.useWebGL = useWebGL;
-          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
-          Browser.init();
-        }
-        return ctx;
-      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
-        Browser.lockPointer = lockPointer;
-        Browser.resizeCanvas = resizeCanvas;
-        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
-        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
-        var canvas = Module['canvas'];
-        function fullScreenChange() {
-          Browser.isFullScreen = false;
-          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
-               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
-               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
-            canvas.cancelFullScreen = document['cancelFullScreen'] ||
-                                      document['mozCancelFullScreen'] ||
-                                      document['webkitCancelFullScreen'];
-            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
-            if (Browser.lockPointer) canvas.requestPointerLock();
-            Browser.isFullScreen = true;
-            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
-          } else if (Browser.resizeCanvas){
-            Browser.setWindowedCanvasSize();
-          }
-          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
-        }
-        if (!Browser.fullScreenHandlersInstalled) {
-          Browser.fullScreenHandlersInstalled = true;
-          document.addEventListener('fullscreenchange', fullScreenChange, false);
-          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
-          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
-        }
-        canvas.requestFullScreen = canvas['requestFullScreen'] ||
-                                   canvas['mozRequestFullScreen'] ||
-                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
-        canvas.requestFullScreen();
-      },requestAnimationFrame:function (func) {
-        if (!window.requestAnimationFrame) {
-          window.requestAnimationFrame = window['requestAnimationFrame'] ||
-                                         window['mozRequestAnimationFrame'] ||
-                                         window['webkitRequestAnimationFrame'] ||
-                                         window['msRequestAnimationFrame'] ||
-                                         window['oRequestAnimationFrame'] ||
-                                         window['setTimeout'];
-        }
-        window.requestAnimationFrame(func);
-      },safeCallback:function (func) {
-        return function() {
-          if (!ABORT) return func.apply(null, arguments);
-        };
-      },safeRequestAnimationFrame:function (func) {
-        return Browser.requestAnimationFrame(function() {
-          if (!ABORT) func();
-        });
-      },safeSetTimeout:function (func, timeout) {
-        return setTimeout(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },safeSetInterval:function (func, timeout) {
-        return setInterval(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },getUserMedia:function (func) {
-        if(!window.getUserMedia) {
-          window.getUserMedia = navigator['getUserMedia'] ||
-                                navigator['mozGetUserMedia'];
-        }
-        window.getUserMedia(func);
-      },getMovementX:function (event) {
-        return event['movementX'] ||
-               event['mozMovementX'] ||
-               event['webkitMovementX'] ||
-               0;
-      },getMovementY:function (event) {
-        return event['movementY'] ||
-               event['mozMovementY'] ||
-               event['webkitMovementY'] ||
-               0;
-      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
-        if (Browser.pointerLock) {
-          // When the pointer is locked, calculate the coordinates
-          // based on the movement of the mouse.
-          // Workaround for Firefox bug 764498
-          if (event.type != 'mousemove' &&
-              ('mozMovementX' in event)) {
-            Browser.mouseMovementX = Browser.mouseMovementY = 0;
-          } else {
-            Browser.mouseMovementX = Browser.getMovementX(event);
-            Browser.mouseMovementY = Browser.getMovementY(event);
-          }
-          Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
-          Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
-        } else {
-          // Otherwise, calculate the movement based on the changes
-          // in the coordinates.
-          var rect = Module["canvas"].getBoundingClientRect();
-          var x = event.pageX - (window.scrollX + rect.left);
-          var y = event.pageY - (window.scrollY + rect.top);
-          // the canvas might be CSS-scaled compared to its backbuffer;
-          // SDL-using content will want mouse coordinates in terms
-          // of backbuffer units.
-          var cw = Module["canvas"].width;
-          var ch = Module["canvas"].height;
-          x = x * (cw / rect.width);
-          y = y * (ch / rect.height);
-          Browser.mouseMovementX = x - Browser.mouseX;
-          Browser.mouseMovementY = y - Browser.mouseY;
-          Browser.mouseX = x;
-          Browser.mouseY = y;
-        }
-      },xhrLoad:function (url, onload, onerror) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = function() {
-          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
-            onload(xhr.response);
-          } else {
-            onerror();
-          }
-        };
-        xhr.onerror = onerror;
-        xhr.send(null);
-      },asyncLoad:function (url, onload, onerror, noRunDep) {
-        Browser.xhrLoad(url, function(arrayBuffer) {
-          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
-          onload(new Uint8Array(arrayBuffer));
-          if (!noRunDep) removeRunDependency('al ' + url);
-        }, function(event) {
-          if (onerror) {
-            onerror();
-          } else {
-            throw 'Loading data file "' + url + '" failed.';
-          }
-        });
-        if (!noRunDep) addRunDependency('al ' + url);
-      },resizeListeners:[],updateResizeListeners:function () {
-        var canvas = Module['canvas'];
-        Browser.resizeListeners.forEach(function(listener) {
-          listener(canvas.width, canvas.height);
-        });
-      },setCanvasSize:function (width, height, noUpdates) {
-        var canvas = Module['canvas'];
-        canvas.width = width;
-        canvas.height = height;
-        if (!noUpdates) Browser.updateResizeListeners();
-      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
-        var canvas = Module['canvas'];
-        this.windowedWidth = canvas.width;
-        this.windowedHeight = canvas.height;
-        canvas.width = screen.width;
-        canvas.height = screen.height;
-        var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
-        HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
-        Browser.updateResizeListeners();
-      },setWindowedCanvasSize:function () {
-        var canvas = Module['canvas'];
-        canvas.width = this.windowedWidth;
-        canvas.height = this.windowedHeight;
-        var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
-        HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
-        Browser.updateResizeListeners();
-      }};var CL={ctx:[],ctx_clean:0,cmdQueue:[],enqueueFloat:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
-  // #if OPENCL_DEBUG
-  //       console.info("isFloat() check pointer : ");
-  // #endif  
-        var v_int = HEAP32[((ptr)>>2)]; 
-        var v_float = HEAPF32[((ptr)>>2)]; 
-        // If the value is 0
-        if ( v_int == 0 ) {
-  // #if OPENCL_DEBUG
-  //         console.info("\tisFloat() value is null check is array");
-  // #endif  
-          // If is an array
-          if (size > 1) {
-            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)]; 
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is array, check the last element");
-  // #endif          
-          } else {
-  // #if OPENCL_DEBUG
-  //           console.info("\tisFloat() value is not array, use float by default");
-  // #endif     
-            // Use float by default 
-            return 1;
-          }                
-        }
-        // If we read int and is float we have a very big value 1e8
-        if (Math.abs(v_int) > 100000000) {
-  // #if OPENCL_DEBUG
-  //        console.info("\tisFloat() value is not an int, is float "+v_int+ " vs "+v_float);
-  // #endif     
-          return 1;
-        }
-  // #if OPENCL_DEBUG
-  //       console.info("\tisFloat() value is an int "+v_int+ " vs "+v_float);
-  // #endif     
-        return 0;      
-      },catchError:function (name,e) {
-        var str=""+e;
-        var n=str.lastIndexOf(" ");
-        var error = str.substr(n+1,str.length-n-2);
-        console.error("CATCH: "+name+": "+e);
-        return error;
-      }};function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-      if (window.WebCL == undefined) {
-        console.log(CL.errorMessage);
-        return -1;/*CL_DEVICE_NOT_FOUND*/;
-      }
-      // Assume the device type is i32 
-      assert(device_type_i64_2 == 0, 'Invalid flags i64');
-      try { 
-        // If platform is NULL, the behavior is implementation-defined
-        if (platform == 0 && CL.platforms.length == 0) {
-            var platforms = WebCL.getPlatformIDs();
-            if (platforms.length > 0) {
-              CL.platforms.push(platforms[0]);
-            } else {
-              console.error("clGetDeviceIDs: Invalid platform : "+platform);
-              return -32; /* CL_INVALID_PLATFORM */ 
-            }      
-        } else {              
-          platform -= 1;
-        }
-        var alldev = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
-        // If devices_ids is not NULL, the num_entries must be greater than zero.
-        if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
-          console.error("clGetDeviceIDs: Invalid value : "+num_entries);
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        if ( alldev.length > 0 && device_type_i64_1 == 0) {
-          console.error("clGetDeviceIDs: Invalid device type : "+device_type_i64_1);
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        var map = {};
-        var mapcount = 0;
-        for (var i = 0 ; i < alldev.length; i++ ) {
-          var type = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
-          if (type == device_type_i64_1 || device_type_i64_1 == -1) {
-             var name = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME);
-             map[name] = alldev[i];
-             mapcount ++;
-          }        
-        }
-        if (mapcount == 0) {
-          alldev = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_DEFAULT);
-          for (var i = 0 ; i < alldev.length; i++) {
-            var name = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME);
-            map[name] = alldev[i];
-            mapcount ++;
-          }       
-        }
-        if (devices_ids == 0) {
-          HEAP32[((num_devices)>>2)]=mapcount /* Num of devices */;
-          return 0;/*CL_SUCCESS*/
-        }
-        console.info("clGetDeviceIDs: Devices:");
-        for (var name in map) {
-          CL.devices.push(map[name]);
-          console.info("\t"+CL.devices.length-1+": name: " + name);
-        }
-        if (CL.devices.length == 0 ) {
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        if (num_entries > 0 && CL.devices.length > num_entries) {
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        // If devices is not null, we put the value inside
-        if (num_devices != 0) {
-          HEAP32[((num_devices)>>2)]=CL.devices.length /* Num of devices */;
-        }
-        // Add indices in array devices (+1) for don't have devices with id == 0
-        for (var i = 0; i < CL.devices.length; i++) {
-          HEAP32[(((devices_ids)+(i*4))>>2)]=i+1;
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch (e) {
-        return CL.catchError("clGetDeviceIDs",e);
-      }
+      } while (curr1);
+      return 0;
     }
   var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,ELBIN:75,EDOTDOT:76,EBADMSG:77,EFTYPE:79,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENMFILE:89,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EPROCLIM:130,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,ENOSHARE:136,ECASECLASH:137,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
   var ___errno_state=0;function ___setErrNo(value) {
@@ -2351,6 +1874,501 @@ function copyTempDouble(ptr) {
       var stdout = HEAP32[((_stdout)>>2)];
       return _fprintf(stdout, format, varargs);
     }
+  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
+          Browser.mainLoop.shouldPause = true;
+        },resume:function () {
+          if (Browser.mainLoop.paused) {
+            Browser.mainLoop.paused = false;
+            Browser.mainLoop.scheduler();
+          }
+          Browser.mainLoop.shouldPause = false;
+        },updateStatus:function () {
+          if (Module['setStatus']) {
+            var message = Module['statusMessage'] || 'Please wait...';
+            var remaining = Browser.mainLoop.remainingBlockers;
+            var expected = Browser.mainLoop.expectedBlockers;
+            if (remaining) {
+              if (remaining < expected) {
+                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
+              } else {
+                Module['setStatus'](message);
+              }
+            } else {
+              Module['setStatus']('');
+            }
+          }
+        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
+        if (Browser.initted) return;
+        Browser.initted = true;
+        try {
+          new Blob();
+          Browser.hasBlobConstructor = true;
+        } catch(e) {
+          Browser.hasBlobConstructor = false;
+          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
+        }
+        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
+        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : console.log("warning: cannot create object URLs");
+        // Support for plugins that can process preloaded files. You can add more of these to
+        // your app by creating and appending to Module.preloadPlugins.
+        //
+        // Each plugin is asked if it can handle a file based on the file's name. If it can,
+        // it is given the file's raw data. When it is done, it calls a callback with the file's
+        // (possibly modified) data. For example, a plugin might decompress a file, or it
+        // might create some side data structure for use later (like an Image element, etc.).
+        function getMimetype(name) {
+          return {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'bmp': 'image/bmp',
+            'ogg': 'audio/ogg',
+            'wav': 'audio/wav',
+            'mp3': 'audio/mpeg'
+          }[name.substr(name.lastIndexOf('.')+1)];
+        }
+        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = [];
+        var imagePlugin = {};
+        imagePlugin['canHandle'] = function(name) {
+          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/.exec(name);
+        };
+        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var b = null;
+          if (Browser.hasBlobConstructor) {
+            try {
+              b = new Blob([byteArray], { type: getMimetype(name) });
+            } catch(e) {
+              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
+            }
+          }
+          if (!b) {
+            var bb = new Browser.BlobBuilder();
+            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
+            b = bb.getBlob();
+          }
+          var url = Browser.URLObject.createObjectURL(b);
+          var img = new Image();
+          img.onload = function() {
+            assert(img.complete, 'Image ' + name + ' could not be decoded');
+            var canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            Module["preloadedImages"][name] = canvas;
+            Browser.URLObject.revokeObjectURL(url);
+            if (onload) onload(byteArray);
+          };
+          img.onerror = function(event) {
+            console.log('Image ' + url + ' could not be decoded');
+            if (onerror) onerror();
+          };
+          img.src = url;
+        };
+        Module['preloadPlugins'].push(imagePlugin);
+        var audioPlugin = {};
+        audioPlugin['canHandle'] = function(name) {
+          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
+        };
+        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var done = false;
+          function finish(audio) {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = audio;
+            if (onload) onload(byteArray);
+          }
+          function fail() {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = new Audio(); // empty shim
+            if (onerror) onerror();
+          }
+          if (Browser.hasBlobConstructor) {
+            try {
+              var b = new Blob([byteArray], { type: getMimetype(name) });
+            } catch(e) {
+              return fail();
+            }
+            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
+            var audio = new Audio();
+            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
+            audio.onerror = function(event) {
+              if (done) return;
+              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
+              function encode64(data) {
+                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+                var PAD = '=';
+                var ret = '';
+                var leftchar = 0;
+                var leftbits = 0;
+                for (var i = 0; i < data.length; i++) {
+                  leftchar = (leftchar << 8) | data[i];
+                  leftbits += 8;
+                  while (leftbits >= 6) {
+                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
+                    leftbits -= 6;
+                    ret += BASE[curr];
+                  }
+                }
+                if (leftbits == 2) {
+                  ret += BASE[(leftchar&3) << 4];
+                  ret += PAD + PAD;
+                } else if (leftbits == 4) {
+                  ret += BASE[(leftchar&0xf) << 2];
+                  ret += PAD;
+                }
+                return ret;
+              }
+              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
+              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
+            };
+            audio.src = url;
+            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
+            Browser.safeSetTimeout(function() {
+              finish(audio); // try to use it even though it is not necessarily ready to play
+            }, 10000);
+          } else {
+            return fail();
+          }
+        };
+        Module['preloadPlugins'].push(audioPlugin);
+        // Canvas event setup
+        var canvas = Module['canvas'];
+        canvas.requestPointerLock = canvas['requestPointerLock'] ||
+                                    canvas['mozRequestPointerLock'] ||
+                                    canvas['webkitRequestPointerLock'];
+        canvas.exitPointerLock = document['exitPointerLock'] ||
+                                 document['mozExitPointerLock'] ||
+                                 document['webkitExitPointerLock'] ||
+                                 function(){}; // no-op if function does not exist
+        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
+        function pointerLockChange() {
+          Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                document['mozPointerLockElement'] === canvas ||
+                                document['webkitPointerLockElement'] === canvas;
+        }
+        document.addEventListener('pointerlockchange', pointerLockChange, false);
+        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+        if (Module['elementPointerLock']) {
+          canvas.addEventListener("click", function(ev) {
+            if (!Browser.pointerLock && canvas.requestPointerLock) {
+              canvas.requestPointerLock();
+              ev.preventDefault();
+            }
+          }, false);
+        }
+      },createContext:function (canvas, useWebGL, setInModule) {
+        var ctx;
+        try {
+          if (useWebGL) {
+            ctx = canvas.getContext('experimental-webgl', {
+              alpha: false
+            });
+          } else {
+            ctx = canvas.getContext('2d');
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas - ' + e);
+          return null;
+        }
+        if (useWebGL) {
+          // Set the background of the WebGL canvas to black
+          canvas.style.backgroundColor = "black";
+          // Warn on context loss
+          canvas.addEventListener('webglcontextlost', function(event) {
+            alert('WebGL context lost. You will need to reload the page.');
+          }, false);
+        }
+        if (setInModule) {
+          Module.ctx = ctx;
+          Module.useWebGL = useWebGL;
+          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
+          Browser.init();
+        }
+        return ctx;
+      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
+        Browser.lockPointer = lockPointer;
+        Browser.resizeCanvas = resizeCanvas;
+        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
+        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
+        var canvas = Module['canvas'];
+        function fullScreenChange() {
+          Browser.isFullScreen = false;
+          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
+               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
+               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
+            canvas.cancelFullScreen = document['cancelFullScreen'] ||
+                                      document['mozCancelFullScreen'] ||
+                                      document['webkitCancelFullScreen'];
+            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
+            if (Browser.lockPointer) canvas.requestPointerLock();
+            Browser.isFullScreen = true;
+            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
+          } else if (Browser.resizeCanvas){
+            Browser.setWindowedCanvasSize();
+          }
+          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
+        }
+        if (!Browser.fullScreenHandlersInstalled) {
+          Browser.fullScreenHandlersInstalled = true;
+          document.addEventListener('fullscreenchange', fullScreenChange, false);
+          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
+          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
+        }
+        canvas.requestFullScreen = canvas['requestFullScreen'] ||
+                                   canvas['mozRequestFullScreen'] ||
+                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
+        canvas.requestFullScreen();
+      },requestAnimationFrame:function (func) {
+        if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame = window['requestAnimationFrame'] ||
+                                         window['mozRequestAnimationFrame'] ||
+                                         window['webkitRequestAnimationFrame'] ||
+                                         window['msRequestAnimationFrame'] ||
+                                         window['oRequestAnimationFrame'] ||
+                                         window['setTimeout'];
+        }
+        window.requestAnimationFrame(func);
+      },safeCallback:function (func) {
+        return function() {
+          if (!ABORT) return func.apply(null, arguments);
+        };
+      },safeRequestAnimationFrame:function (func) {
+        return Browser.requestAnimationFrame(function() {
+          if (!ABORT) func();
+        });
+      },safeSetTimeout:function (func, timeout) {
+        return setTimeout(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },safeSetInterval:function (func, timeout) {
+        return setInterval(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },getUserMedia:function (func) {
+        if(!window.getUserMedia) {
+          window.getUserMedia = navigator['getUserMedia'] ||
+                                navigator['mozGetUserMedia'];
+        }
+        window.getUserMedia(func);
+      },getMovementX:function (event) {
+        return event['movementX'] ||
+               event['mozMovementX'] ||
+               event['webkitMovementX'] ||
+               0;
+      },getMovementY:function (event) {
+        return event['movementY'] ||
+               event['mozMovementY'] ||
+               event['webkitMovementY'] ||
+               0;
+      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
+        if (Browser.pointerLock) {
+          // When the pointer is locked, calculate the coordinates
+          // based on the movement of the mouse.
+          // Workaround for Firefox bug 764498
+          if (event.type != 'mousemove' &&
+              ('mozMovementX' in event)) {
+            Browser.mouseMovementX = Browser.mouseMovementY = 0;
+          } else {
+            Browser.mouseMovementX = Browser.getMovementX(event);
+            Browser.mouseMovementY = Browser.getMovementY(event);
+          }
+          Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
+          Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
+        } else {
+          // Otherwise, calculate the movement based on the changes
+          // in the coordinates.
+          var rect = Module["canvas"].getBoundingClientRect();
+          var x = event.pageX - (window.scrollX + rect.left);
+          var y = event.pageY - (window.scrollY + rect.top);
+          // the canvas might be CSS-scaled compared to its backbuffer;
+          // SDL-using content will want mouse coordinates in terms
+          // of backbuffer units.
+          var cw = Module["canvas"].width;
+          var ch = Module["canvas"].height;
+          x = x * (cw / rect.width);
+          y = y * (ch / rect.height);
+          Browser.mouseMovementX = x - Browser.mouseX;
+          Browser.mouseMovementY = y - Browser.mouseY;
+          Browser.mouseX = x;
+          Browser.mouseY = y;
+        }
+      },xhrLoad:function (url, onload, onerror) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function() {
+          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
+            onload(xhr.response);
+          } else {
+            onerror();
+          }
+        };
+        xhr.onerror = onerror;
+        xhr.send(null);
+      },asyncLoad:function (url, onload, onerror, noRunDep) {
+        Browser.xhrLoad(url, function(arrayBuffer) {
+          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
+          onload(new Uint8Array(arrayBuffer));
+          if (!noRunDep) removeRunDependency('al ' + url);
+        }, function(event) {
+          if (onerror) {
+            onerror();
+          } else {
+            throw 'Loading data file "' + url + '" failed.';
+          }
+        });
+        if (!noRunDep) addRunDependency('al ' + url);
+      },resizeListeners:[],updateResizeListeners:function () {
+        var canvas = Module['canvas'];
+        Browser.resizeListeners.forEach(function(listener) {
+          listener(canvas.width, canvas.height);
+        });
+      },setCanvasSize:function (width, height, noUpdates) {
+        var canvas = Module['canvas'];
+        canvas.width = width;
+        canvas.height = height;
+        if (!noUpdates) Browser.updateResizeListeners();
+      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
+        var canvas = Module['canvas'];
+        this.windowedWidth = canvas.width;
+        this.windowedHeight = canvas.height;
+        canvas.width = screen.width;
+        canvas.height = screen.height;
+        var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
+        HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        Browser.updateResizeListeners();
+      },setWindowedCanvasSize:function () {
+        var canvas = Module['canvas'];
+        canvas.width = this.windowedWidth;
+        canvas.height = this.windowedHeight;
+        var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
+        HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        Browser.updateResizeListeners();
+      }};var CL={types:{FLOAT:0,FLOAT_V:1,INT:2,INT_V:3,UINT:4,UINT_V:5},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],sig:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
+        console.error("But may be the kernel source is not yet parse !!! \n");
+        var v_int = HEAP32[((ptr)>>2)]; 
+        var v_float = HEAPF32[((ptr)>>2)]; 
+        // If the value is 0
+        if ( v_int == 0 ) {
+          // If is an array
+          if (size > 1) {
+            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
+            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
+          } else { 
+            // Use float by default 
+            return 1;
+          }                
+        }
+        // If we read int and is float we have a very big value 1e8
+        if (Math.abs(v_int) > 100000000) {
+          return 1;
+        }
+        return 0;      
+      },getDeviceName:function (type) {
+        switch (type) {
+          case 2 : return "CPU_DEVICE";
+          case 4 : return "GPU_DEVICE";
+          default : return "UNKNOW_DEVICE";
+        }
+      },catchError:function (name,e) {
+        var str=""+e;
+        var n=str.lastIndexOf(" ");
+        var error = str.substr(n+1,str.length-n-2);
+        console.error("CATCH: "+name+": "+e);
+        return error;
+      }};function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
+      if (window.WebCL == undefined) {
+        if(typeof(webcl) === "undefined") {
+          console.log(CL.errorMessage);
+          return -1;/*CL_DEVICE_NOT_FOUND*/;
+        } else {
+          window.WebCL = webcl
+          CL.webcl_webkit = 1;
+        }
+      } else {
+        CL.webcl_mozilla = 1;
+      }
+      var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+      console.info("Webcl implemented for "+browser);
+      // Assume the device type is i32 
+      assert(device_type_i64_2 == 0, 'Invalid flags i64');
+      try { 
+        // If platform is NULL, the behavior is implementation-defined
+        if (platform == 0 && CL.platforms.length == 0) {
+            // Get the platform
+            var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
+            if (platforms.length > 0) {
+              CL.platforms.push(platforms[0]);
+            } else {
+              console.error("clGetDeviceIDs: Invalid platform : "+platform);
+              return -32; /* CL_INVALID_PLATFORM */ 
+            }      
+        } else {              
+          platform -= 1;
+        }
+        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+        // If devices_ids is not NULL, the num_entries must be greater than zero.
+        if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
+          console.error("clGetDeviceIDs: Invalid value : "+num_entries);
+          return -30;/*CL_INVALID_VALUE*/
+        }
+        if ( alldev.length > 0 && device_type_i64_1 == 0) {
+          console.error("clGetDeviceIDs: Invalid device type : "+device_type_i64_1);
+          return -31;/*CL_INVALID_DEVICE_TYPE*/
+        }
+        var map = {};
+        var mapcount = 0;
+        for (var i = 0 ; i < alldev.length; i++ ) {
+          var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : alldev[i].getInfo(WebCL.DEVICE_TYPE);
+          if (type == device_type_i64_1 || device_type_i64_1 == -1) { 
+             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(type);
+             map[name] = alldev[i];
+             mapcount ++;
+          }    
+        }
+        if (mapcount == 0) {
+          var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+          for (var i = 0 ; i < alldev.length; i++) {
+            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
+            map[name] = alldev[i];
+            mapcount ++;
+          }       
+        }
+        if (devices_ids == 0) {
+          HEAP32[((num_devices)>>2)]=mapcount /* Num of devices */;
+          return 0;/*CL_SUCCESS*/
+        }
+        console.info("clGetDeviceIDs: Devices:");
+        for (var name in map) {
+          CL.devices.push(map[name]);
+          console.info("\t"+CL.devices.length-1+": name: " + name);
+        }
+        if (CL.devices.length == 0 ) {
+          return -31;/*CL_INVALID_DEVICE_TYPE*/
+        }
+        if (num_entries > 0 && CL.devices.length > num_entries) {
+          return -30;/*CL_INVALID_VALUE*/
+        }
+        // If devices is not null, we put the value inside
+        if (num_devices != 0) {
+          HEAP32[((num_devices)>>2)]=CL.devices.length /* Num of devices */;
+        }
+        // Add indices in array devices (+1) for don't have devices with id == 0
+        for (var i = 0; i < CL.devices.length; i++) {
+          HEAP32[(((devices_ids)+(i*4))>>2)]=i+1;
+        }
+        return 0;/*CL_SUCCESS*/
+      } catch (e) {
+        return CL.catchError("clGetDeviceIDs",e);
+      }
+    }
   function _clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
       if (CL.platforms.length == 0) {
         console.error("clCreateContext: Invalid platform");
@@ -2401,7 +2419,11 @@ function copyTempDouble(ptr) {
           devices_tab[i] = CL.devices[i];
         } 
         // Use default platform
-        CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));
+        if (CL.webcl_mozilla == 1) {
+          CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
+        } else {
+          CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(WebCL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+        }
         // Return the pos of the context +1
         return CL.ctx.length;
       } catch (e) {    
@@ -2456,7 +2478,7 @@ function copyTempDouble(ptr) {
             size = 1;
             break;   
           case (0x1016) /* CL_DEVICE_IMAGE_SUPPORT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT); // return true or false
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT) : 0; // return true or false
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break; 
@@ -2541,7 +2563,7 @@ function copyTempDouble(ptr) {
             size = 1;
             break;              
           case (0x102B) /* CL_DEVICE_NAME */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME); // return string
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME) : "No Device Name"; // return string
             size = res.length;
             writeStringToMemory(res, param_value);
             break;
@@ -2627,7 +2649,7 @@ function copyTempDouble(ptr) {
             size = 1;
             break;       
           case (0x102C) /* CL_DEVICE_VENDOR*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR); // return string
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR) : "No Device Vendor"; // return string
             writeStringToMemory(res, param_value);
             size = res.length;
             break;
@@ -2683,7 +2705,7 @@ function copyTempDouble(ptr) {
         var size;
         switch (param_name) {
           case (0x1081) /* CL_CONTEXT_DEVICES */:
-            res = CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_DEVICES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_DEVICES) ;
             // Must verify if size of device is same as param_value°size
             if (param_value != 0) {
               for (var i = 0 ; i < res.length; i++) {
@@ -2694,7 +2716,7 @@ function copyTempDouble(ptr) {
             size = res.length * 4;
             break;
           case (0x1082) /* CL_CONTEXT_PROPERTIES */:
-            res = CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_PROPERTIES);
+            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_PROPERTIES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_PROPERTIES) ;
             // \todo add in param_value the properties list
             size = res.length * 4;          
             break;
@@ -2728,7 +2750,7 @@ function copyTempDouble(ptr) {
         var idx = devices;//HEAP32[((devices)>>2)];
         if (idx == 0) {
           // Create a command-queue on the first device available if idx == 0
-          var devices = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_DEFAULT);
+          var devices = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
           CL.devices.push(devices[0]);
         }
         idx = idx - 1;
@@ -2754,10 +2776,48 @@ function copyTempDouble(ptr) {
         return 0; // Null pointer    
       }
       var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx);       
+      var kernel = Pointer_stringify(sourceIdx); 
+      // Experimental parse of kernel for have the different type of the kernel (input and output)
+      var start_kernel = kernel.indexOf("__kernel");
+      var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
+      var start_kernel_brace = kernel_sub_part.indexOf("(");
+      var close_kernel_brace = kernel_sub_part.indexOf(")");
+      kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
+      kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
+      var kernel_sub_part_split = kernel_sub_part.split(",");
+      for (var i = 0; i < kernel_sub_part_split.length; i++) {
+        if (kernel_sub_part_split[i].indexOf("float4") > -1 ||
+           (kernel_sub_part_split[i].indexOf("float") > -1 && kernel_sub_part_split[i].indexOf("*") > -1 )) {
+          console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+CL.types.FLOAT_V+")");
+          CL.sig[i] = CL.types.FLOAT_V;
+        } else if (kernel_sub_part_split[i].indexOf("float") > -1 ) {
+          console.info("Kernel Parameter "+i+" typeof is float ("+CL.types.FLOAT+")");
+          CL.sig[i] = CL.types.FLOAT;    
+        } else if (kernel_sub_part_split[i].indexOf("uchar4") > -1  ||
+                  (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("char") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) ||
+                  (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 )) {
+          console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+CL.types.UINT_V+")");
+          CL.sig[i] = CL.types.UINT_V;
+        } else if (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1 ) {
+          console.info("Kernel Parameter "+i+" typeof is unsigned int ("+CL.types.UINT+")");
+          CL.sig[i] = CL.types.UINT;        
+        } else if (kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) {
+          console.info("Kernel Parameter "+i+" typeof is int * ("+CL.types.INT_V+")");
+          CL.sig[i] = CL.types.INT_V;    
+        } else if (kernel_sub_part_split[i].indexOf("int") > -1 ) {
+          console.info("Kernel Parameter "+i+" typeof is int ("+CL.types.INT+")");
+          CL.sig[i] = CL.types.INT;    
+        } else {
+          console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
+        }
+      }
       try {
         // \todo set the properties 
-        CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
+        if (CL.webcl_mozilla == 1) {
+          CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
+        } else {
+          CL.programs.push(CL.ctx[ctx].createProgram(kernel));
+        }
         // Return the pos of the queue +1
         return CL.programs.length;
       } catch (e) {
@@ -2786,7 +2846,11 @@ function copyTempDouble(ptr) {
           }
         }    
         var opt = "";
-        CL.programs[prog].buildProgram (devices_tab, opt);
+        if (CL.webcl_mozilla == 1) {
+          CL.programs[prog].buildProgram (devices_tab, opt);
+        } else { 
+          CL.programs[prog].build(devices_tab);
+        }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clBuildProgram",e);
@@ -2871,22 +2935,28 @@ function copyTempDouble(ptr) {
       try {
         switch (flags_i64_1) {
           case (1 << 0) /* CL_MEM_READ_WRITE */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_WRITE,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_WRITE_ONLY,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (1 << 2) /* CL_MEM_READ_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (1 << 3) /* CL_MEM_USE_HOST_PTR */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_USE_HOST_PTR,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_USE_HOST_PTR : WebCL.MEM_USE_HOST_PTR;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_ALLOC_HOST_PTR,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_ALLOC_HOST_PTR : WebCL.MEM_ALLOC_HOST_PTR;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (1 << 5) /* CL_MEM_COPY_HOST_PTR */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_COPY_HOST_PTR,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_COPY_HOST_PTR : WebCL.MEM_COPY_HOST_PTR;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
           case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
             if (host_ptr == 0) {
@@ -2894,7 +2964,8 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-37 /* CL_INVALID_HOST_PTR */;
               return 0;     
             }
-            CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));
+            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             // CL_MEM_COPY_HOST_PTR Doesn't work we pass element via enqueue buffer
             if (CL.cmdQueue.length == 0) {
               console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
@@ -2906,25 +2977,29 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
               return 0;
             }
-            var isFloat = CL.isFloat(host_ptr,size);
-            if (isFloat) {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
-              vector = new Float32Array(size / 4);
-            } else {
-              CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
-              vector = new Uint32Array(size / 4);
+            if (CL.sig.length == 0 || CL.buffers-1 > CL.sig.length) {
+              console.error("clCreateBuffer: Invalid signature : "+buff);
+              return -1; /* CL_FAILED */     
             }
-            //var str_vector = "clEnqueueWriteBuffer : vector(";
+            var isFloat = 0;
+            var vector;    
+            if (CL.sig[CL.buffers.length-1] == CL.types.FLOAT_V) {
+              vector = new Float32Array(size / 4);
+              isFloat = 1;
+            } else if (CL.sig[CL.buffers.length-1] == CL.types.UINT_V) {
+              vector = new Uint32Array(size / 4);
+            } else if (CL.sig[CL.buffers.length-1] == CL.types.INT_V) {
+              vector = new Int32Array(size / 4);
+            } else {
+              console.error("clCreateBuffer: Unknow ouptut type : "+CL.sig[CL.buffers.length-1]);
+            }
             for (var i = 0; i < (size / 4); i++) {
-              if (CL.enqueueFloat[CL.cmdQueue.length-1]) {
+              if (isFloat) {
                 vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
               } else {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
-              //str_vector += vector[i] + ",";
             }
-            //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-            //console.info(str_vector);
             CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
             break;
           default:
@@ -2950,26 +3025,35 @@ function copyTempDouble(ptr) {
         console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
-      var isFloat = CL.isFloat(ptr,size);
-      var vector;
-      if (isFloat) {
-        CL.enqueueFloat[CL.cmdQueue.length-1] = 1; // Enqueue is float type
-        vector = new Float32Array(size / 4);
-      } else {
-        CL.enqueueFloat[CL.cmdQueue.length-1] = 0; // Enqueue is int type
-        vector = new Uint32Array(size / 4);
+      var isFloat = 0;
+      var vector;    
+      if (CL.sig.length == 0 || buff > CL.sig.length) {
+        isFloat = CL.isFloat(ptr,size); 
+        if (isFloat) {
+          vector = new Float32Array(size / 4);
+        } else {
+          vector = new Int32Array(size / 4);
+        }
+      } else {        
+        if (CL.sig[buff] == CL.types.FLOAT_V) {
+          vector = new Float32Array(size / 4);
+          isFloat = 1;
+        } else if (CL.sig[buff] == CL.types.UINT_V) {
+          vector = new Uint32Array(size / 4);
+        } else if (CL.sig[buff] == CL.types.INT_V) {
+          vector = new Int32Array(size / 4);
+        } else {
+          console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+CL.sig[buff]);
+        }
       }
-      //var str_vector = "clEnqueueWriteBuffer : vector(";
       for (var i = 0; i < (size / 4); i++) {
-        if (CL.enqueueFloat[queue]) {
+        if (isFloat) {
           vector[i] = HEAPF32[(((ptr)+(i*4))>>2)];
         } else {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
-        //str_vector += vector[i] + ",";
       }
-      //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-      //console.info(str_vector);
+      console.log(vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -2987,12 +3071,17 @@ function copyTempDouble(ptr) {
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
-        var isFloat = CL.isFloat(arg_value,arg_size);
+        var isFloat = 0;
+        if (CL.sig.length > 0 && arg_index < CL.sig.length) {
+          isFloat = ( CL.sig[arg_index] == CL.types.FLOAT_V ) || ( CL.sig[arg_index] == CL.types.FLOAT ) 
+        } else {
+          console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
+          return -1; /* CL_FAILED */
+        }
         var isNull = (HEAP32[((arg_value)>>2)] == 0);
-        //console.log("clSetKernelArg : isFloat = "+isFloat);
         var value;
         if (isNull == 1) {
-          CL.kernels[ker].setKernelArgLocal(arg_index,arg_size);
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArgLocal(arg_index,arg_size);
         } else if (arg_size > 4) {
           value = [];
           for (var i = 0; i < arg_size/4; i++) {
@@ -3001,12 +3090,11 @@ function copyTempDouble(ptr) {
             } else {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
             }
-            //console.log("clSetKernelArg : value["+i+"] = "+value[i]);       
           }
           if (isFloat == 1) {
-            CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V);
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
           } else {
-            CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V);
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
           }      
         } else {     
           if (isFloat == 1) {
@@ -3014,16 +3102,15 @@ function copyTempDouble(ptr) {
           } else {
             value = HEAP32[((arg_value)>>2)];
           }
-          //console.log("clSetKernelArg : value = "+value);   
           if (arg_index >= 0 && arg_index < CL.buffers.length) {
-            CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]);
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]) : CL.kernels[ker].setArg(arg_index,CL.buffers[arg_index]);
           } else {
             if (isFloat == 1) { 
-              CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT);
+              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
             } else {
-              CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT);
-            }
-          }
+              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
+            }            
+          }        
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -3046,13 +3133,25 @@ function copyTempDouble(ptr) {
         var res;
         switch (param_name) {
           case (0x11B0) /* CL_KERNEL_WORK_GROUP_SIZE */:
-          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_WORK_GROUP_SIZE);
+            if (CL.webcl_mozilla == 1) {
+              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_WORK_GROUP_SIZE);
+            } else {
+              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_WORK_GROUP_SIZE);
+            }
           break;
         case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
-          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_COMPILE_WORK_GROUP_SIZE);
+          if (CL.webcl_mozilla == 1) {
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_COMPILE_WORK_GROUP_SIZE);
+          } else {
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_COMPILE_WORK_GROUP_SIZE);
+          }
           break;
         case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
-          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+          if (CL.webcl_mozilla == 1) {
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+          } else {
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+          }
           break;
         };
         HEAP32[((param_value)>>2)]=res
@@ -3078,11 +3177,33 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
+  //#if 0
+      var global = "";
+      var local = "";
+      for (var i = 0 ; i < work_dim; i++){
+        global += value_global_work_size[i];
+        local += value_local_work_size[i];
+        if (i != work_dim -1) {
+          global += " , ";
+          local += " , ";
+        }
+      }
+      console.info("Global [ "+ global +" ]")
+      console.info("Local [ "+ local +" ]")
+  //#endif
       // empty “localWS” array because give some trouble on CPU mode with mac
-      value_local_work_size = [];  
+      // value_local_work_size = [];  
       try {
         // \todo how add some event inside the array
-        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
+        if (CL.webcl_mozilla == 1) {
+          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
+        } else {
+          var globalWorkSize = new Int32Array(1);     // global domain size for our calculation
+          var localWorkSize = new Int32Array(1);      // local domain size for our calculation
+          globalWorkSize[0] = value_global_work_size[0];
+          localWorkSize[0] = value_local_work_size[0];
+          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], null, globalWorkSize, localWorkSize);
+        }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueNDRangeKernel",e);
@@ -3113,25 +3234,32 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
+        if (CL.sig.length == 0 || buff > CL.sig.length) {
+          console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
+          return -1; /* CL_FAILED */     
+        }
+        var isFloat = 0;
         var vector;    
-        if (CL.enqueueFloat[queue]) {
+        if (CL.sig[buff] == CL.types.FLOAT_V) {
           vector = new Float32Array(size / 4);
-        } else {
+          isFloat = 1;
+        } else if (CL.sig[buff] == CL.types.UINT_V) {
           vector = new Uint32Array(size / 4);
+        } else if (CL.sig[buff] == CL.types.INT_V) {
+          vector = new Int32Array(size / 4);
+        } else {
+          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+CL.sig[buff]);
+          return -1; /* CL_FAILED */     
         }
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        //var str_vector = "clEnqueueReadBuffer : vector(";
         for (var i = 0; i < (size / 4); i++) {
-          if (CL.enqueueFloat[queue]) {
+          if (isFloat) {
             HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAPF32[(((results)+(i*4))>>2)] + ",";
           } else {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-            //str_vector += HEAP32[(((results)+(i*4))>>2)] + ",";
           }         
         }
-        //str_vector = str_vector.substr(0,str_vector.length - 1) + ")";
-        //console.info("clEnqueueReadBuffer: Vector "+str_vector+" - Size : "+vector.length+"");
+        console.log(vector);
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);
@@ -3149,7 +3277,7 @@ function copyTempDouble(ptr) {
       } else {
         CL.buffers_clean++;
       }
-      console.message("clReleaseMemObject: Release Memory Object : "+buff);
+      console.info("clReleaseMemObject: Release Memory Object : "+buff);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseProgram(program) {
@@ -3164,7 +3292,7 @@ function copyTempDouble(ptr) {
       } else {
         CL.programs_clean++;
       }
-      console.message("clReleaseProgram: Release program : "+prog);
+      console.info("clReleaseProgram: Release program : "+prog);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseKernel(kernel) {
@@ -3179,7 +3307,7 @@ function copyTempDouble(ptr) {
       } else {
         CL.kernels_clean++;
       }    
-      console.message("clReleaseKernel: Release kernel : "+ker);
+      console.info("clReleaseKernel: Release kernel : "+ker);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseCommandQueue(command_queue) {
@@ -3194,7 +3322,7 @@ function copyTempDouble(ptr) {
       } else {
         CL.cmdQueue_clean++;
       }
-      console.message("clReleaseCommandQueue: Release command queue : "+queue);
+      console.info("clReleaseCommandQueue: Release command queue : "+queue);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseContext(context) {
@@ -3209,7 +3337,7 @@ function copyTempDouble(ptr) {
       } else {
         CL.ctx_clean++;
       }
-      console.message("clReleaseContext: Release context : "+ctx);
+      console.info("clReleaseContext: Release context : "+ctx);
       return 0;/*CL_SUCCESS*/
     }
   function _fputs(s, stream) {
@@ -3255,13 +3383,13 @@ function copyTempDouble(ptr) {
   Module["_malloc"] = _malloc;
   function _free() {
   }
+__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
+___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
-__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
-___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 _fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
@@ -3308,13 +3436,13 @@ function asmPrintFloat(x, y) {
   Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
 }
 // EMSCRIPTEN_START_ASM
-var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.copyTempDouble;var ad=env.copyTempFloat;var ae=env.min;var af=env.invoke_ii;var ag=env.invoke_v;var ah=env.invoke_iii;var ai=env.invoke_vi;var aj=env._rand;var ak=env._malloc;var al=env._clGetDeviceIDs;var am=env._clReleaseKernel;var an=env._clReleaseContext;var ao=env._fprintf;var ap=env._clGetDeviceInfo;var aq=env._printf;var ar=env.__reallyNegative;var as=env._clCreateCommandQueue;var at=env._clReleaseProgram;var au=env._puts;var av=env._clBuildProgram;var aw=env.___setErrNo;var ax=env._fwrite;var ay=env._send;var az=env._clEnqueueNDRangeKernel;var aA=env._write;var aB=env._fputs;var aC=env._clGetKernelWorkGroupInfo;var aD=env._exit;var aE=env._clSetKernelArg;var aF=env._clCreateKernel;var aG=env._clReleaseCommandQueue;var aH=env._fputc;var aI=env._clCreateProgramWithSource;var aJ=env.__formatString;var aK=env._free;var aL=env._clEnqueueWriteBuffer;var aM=env._clGetContextInfo;var aN=env._clEnqueueReadBuffer;var aO=env._pwrite;var aP=env._clReleaseMemObject;var aQ=env._clFinish;var aR=env._clCreateBuffer;var aS=env._clGetProgramBuildInfo;var aT=env.__exit;var aU=env._clCreateContext;
+var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.copyTempDouble;var ad=env.copyTempFloat;var ae=env.min;var af=env.invoke_ii;var ag=env.invoke_v;var ah=env.invoke_iii;var ai=env.invoke_vi;var aj=env._rand;var ak=env._malloc;var al=env._clGetDeviceIDs;var am=env._clReleaseKernel;var an=env._clReleaseContext;var ao=env._fprintf;var ap=env._clGetDeviceInfo;var aq=env._printf;var ar=env.__reallyNegative;var as=env._clCreateCommandQueue;var at=env._clReleaseProgram;var au=env._puts;var av=env._clBuildProgram;var aw=env.___setErrNo;var ax=env._fwrite;var ay=env._send;var az=env._clEnqueueNDRangeKernel;var aA=env._write;var aB=env._fputs;var aC=env._clGetKernelWorkGroupInfo;var aD=env._exit;var aE=env._clSetKernelArg;var aF=env._clCreateKernel;var aG=env._clReleaseCommandQueue;var aH=env._fputc;var aI=env._clCreateProgramWithSource;var aJ=env.__formatString;var aK=env._free;var aL=env._clEnqueueWriteBuffer;var aM=env._clGetContextInfo;var aN=env._clEnqueueReadBuffer;var aO=env._pwrite;var aP=env._strstr;var aQ=env._clReleaseMemObject;var aR=env._clFinish;var aS=env._clCreateBuffer;var aT=env._clGetProgramBuildInfo;var aU=env.__exit;var aV=env._clCreateContext;
 // EMSCRIPTEN_START_FUNCS
-function aZ(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function a_(){return i|0}function a$(a){a=a|0;i=a}function a0(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a1(a){a=a|0;B=a}function a2(a){a=a|0;C=a}function a3(a){a=a|0;D=a}function a4(a){a=a|0;E=a}function a5(a){a=a|0;F=a}function a6(a){a=a|0;G=a}function a7(a){a=a|0;H=a}function a8(a){a=a|0;I=a}function a9(a){a=a|0;J=a}function ba(a){a=a|0;K=a}function bb(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0.0;b=i;i=i+12432|0;a=b|0;d=b+8|0;e=b+4104|0;f=b+8200|0;h=b+8208|0;j=b+8216|0;k=b+8224|0;l=b+8232|0;m=b+8240|0;n=b+8248|0;o=b+8256|0;p=b+9280|0;q=b+10304|0;r=b+10312|0;t=b+10376|0;u=b+10384|0;c[m>>2]=1024;v=0;do{g[d+(v<<2)>>2]=+(aj()|0)*4.656612873077393e-10;v=v+1|0;w=c[m>>2]|0;}while(!(v>>>0>=w>>>0));v=w<<2;w=al(0,1,0,1,j|0,0)|0;c[a>>2]=w;if((w|0)!=0){au(464);x=1;i=b;return x|0}w=aU(0,1,j|0,0,0,a|0)|0;if((w|0)==0){au(416);x=1;i=b;return x|0}y=o|0;bd(y|0,0,1024);o=p|0;bd(o|0,0,1024);c[a>>2]=ap(c[j>>2]|0,4140,1024,y|0,n|0)|0;p=ap(c[j>>2]|0,4139,1024,o|0,n|0)|0;c[a>>2]=c[a>>2]|p;p=ap(c[j>>2]|0,4118,1024,q|0,n|0)|0;z=c[a>>2]|p;c[a>>2]=z;if((z|0)!=0){au(336);x=1;i=b;return x|0}z=aM(w|0,4225,64,r|0,n|0)|0;c[a>>2]=z;if((z|0)!=0){au(280);x=1;i=b;return x|0}z=(c[n>>2]|0)>>>2;n=c[q>>2]|0;aq(504,(s=i,i=i+32|0,c[s>>2]=y,c[s+8>>2]=o,c[s+16>>2]=n,c[s+24>>2]=z,s)|0);z=as(w|0,c[j>>2]|0,0,0,a|0)|0;if((z|0)==0){au(232);x=1;i=b;return x|0}n=aI(w|0,1,1416,0,a|0)|0;if((n|0)==0){au(184);x=1;i=b;return x|0}o=av(n|0,0,0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(136);o=c[j>>2]|0;y=u|0;aS(n|0,o|0,4483,2048,y|0,t|0);au(y|0);aD(1);return 0}y=aF(n|0,752,a|0)|0;if(!((y|0)!=0&(c[a>>2]|0)==0)){au(96);aD(1);return 0}t=aR(w|0,4,0,v|0,0,0)|0;c[k>>2]=t;o=aR(w|0,2,0,v|0,0,0)|0;c[l>>2]=o;if((t|0)==0|(o|0)==0){au(48);aD(1);return 0}o=aL(z|0,t|0,1,0,v|0,d|0,0,0,0)|0;c[a>>2]=o;if((o|0)!=0){au(8);aD(1);return 0}c[a>>2]=0;c[a>>2]=aE(y|0,0,4,k|0)|0;o=aE(y|0,1,4,l|0)|0;c[a>>2]=c[a>>2]|o;o=aE(y|0,2,4,m|0)|0;v=c[a>>2]|o;c[a>>2]=v;if((v|0)!=0){aq(704,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=aC(y|0,c[j>>2]|0,4528,4,h|0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(648,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}c[f>>2]=c[m>>2]|0;v=az(z|0,y|0,1,0,f|0,h|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){au(376);x=1;i=b;return x|0}aQ(z|0);v=aN(z|0,c[l>>2]|0,1,0,c[m>>2]<<2|0,e|0,0,0,0)|0;c[a>>2]=v;if((v|0)!=0){aq(608,(s=i,i=i+8|0,c[s>>2]=v,s)|0);aD(1);return 0}v=c[m>>2]|0;L53:do{if((v|0)==0){A=0;B=0}else{m=0;a=0;while(1){C=+g[d+(m<<2)>>2];h=(+g[e+(m<<2)>>2]-C*C<1.0e-7&1)+a|0;f=m+1|0;if(f>>>0<v>>>0){m=f;a=h}else{A=h;B=v;break L53}}}}while(0);aq(568,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=B,s)|0);aP(c[k>>2]|0);aP(c[l>>2]|0);at(n|0);am(y|0);aG(z|0);an(w|0);x=0;i=b;return x|0}function bc(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bd(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function be(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bf(a,b){a=a|0;b=b|0;return aV[a&1](b|0)|0}function bg(a){a=a|0;aW[a&1]()}function bh(a,b,c){a=a|0;b=b|0;c=c|0;return aX[a&1](b|0,c|0)|0}function bi(a,b){a=a|0;b=b|0;aY[a&1](b|0)}function bj(a){a=a|0;_(0);return 0}function bk(){_(1)}function bl(a,b){a=a|0;b=b|0;_(2);return 0}function bm(a){a=a|0;_(3)}
+function a_(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function a$(){return i|0}function a0(a){a=a|0;i=a}function a1(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a2(a){a=a|0;B=a}function a3(a){a=a|0;C=a}function a4(a){a=a|0;D=a}function a5(a){a=a|0;E=a}function a6(a){a=a|0;F=a}function a7(a){a=a|0;G=a}function a8(a){a=a|0;H=a}function a9(a){a=a|0;I=a}function ba(a){a=a|0;J=a}function bb(a){a=a|0;K=a}function bc(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0.0;d=i;i=i+12432|0;e=d|0;f=d+8|0;h=d+4104|0;j=d+8200|0;k=d+8208|0;l=d+8216|0;m=d+8224|0;n=d+8232|0;o=d+8240|0;p=d+8248|0;q=d+8256|0;r=d+9280|0;t=d+10304|0;u=d+10312|0;v=d+10376|0;w=d+10384|0;c[o>>2]=1024;x=0;do{g[f+(x<<2)>>2]=+(aj()|0)*4.656612873077393e-10;x=x+1|0;y=c[o>>2]|0;}while(!(x>>>0>=y>>>0));x=y<<2;L4:do{if((a|0)<1|(b|0)==0){z=1}else{y=0;A=1;while(1){B=c[b+(y<<2)>>2]|0;do{if((B|0)==0){C=A}else{if((aP(B|0,1272)|0)!=0){C=0;break}C=(aP(B|0,1256)|0)==0?A:1}}while(0);B=y+1|0;if((B|0)<(a|0)){y=B;A=C}else{z=C;break L4}}}}while(0);au(968);C=(z|0)!=0;z=al(0,(C?4:2)|0,(C?0:0)|0,1,l|0,0)|0;c[e>>2]=z;if((z|0)!=0){au(928);D=1;i=d;return D|0}au(504);z=aV(0,1,l|0,0,0,e|0)|0;if((z|0)==0){au(248);D=1;i=d;return D|0}C=q|0;be(C|0,0,1024);q=r|0;be(q|0,0,1024);au(216);c[e>>2]=ap(c[l>>2]|0,4140,1024,C|0,p|0)|0;r=ap(c[l>>2]|0,4139,1024,q|0,p|0)|0;c[e>>2]=c[e>>2]|r;r=ap(c[l>>2]|0,4118,1024,t|0,p|0)|0;a=c[e>>2]|r;c[e>>2]=a;if((a|0)!=0){au(176);D=1;i=d;return D|0}au(144);a=aM(z|0,4225,64,u|0,p|0)|0;c[e>>2]=a;if((a|0)!=0){au(88);D=1;i=d;return D|0}a=(c[p>>2]|0)>>>2;au(56);p=as(z|0,c[l>>2]|0,0,0,e|0)|0;if((p|0)==0){au(8);D=1;i=d;return D|0}au(888);u=aI(z|0,1,1936,0,e|0)|0;if((u|0)==0){au(840);D=1;i=d;return D|0}au(808);r=av(u|0,0,0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){au(760);r=c[l>>2]|0;b=w|0;aT(u|0,r|0,4483,2048,b|0,v|0);au(b|0);aD(1);return 0}au(728);b=aF(u|0,1264,e|0)|0;if(!((b|0)!=0&(c[e>>2]|0)==0)){au(688);aD(1);return 0}au(656);v=aS(z|0,4,0,x|0,0,0)|0;c[m>>2]=v;r=aS(z|0,2,0,x|0,0,0)|0;c[n>>2]=r;if((v|0)==0|(r|0)==0){au(608);aD(1);return 0}au(576);r=aL(p|0,v|0,1,0,x|0,f|0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){au(536);aD(1);return 0}au(472);c[e>>2]=0;c[e>>2]=aE(b|0,0,4,m|0)|0;r=aE(b|0,1,4,n|0)|0;c[e>>2]=c[e>>2]|r;r=aE(b|0,2,4,o|0)|0;x=c[e>>2]|r;c[e>>2]=x;if((x|0)!=0){aq(1208,(s=i,i=i+8|0,c[s>>2]=x,s)|0);aD(1);return 0}au(432);x=aC(b|0,c[l>>2]|0,4528,4,k|0,0)|0;c[e>>2]=x;if((x|0)!=0){aq(1152,(s=i,i=i+8|0,c[s>>2]=x,s)|0);aD(1);return 0}c[j>>2]=c[o>>2]|0;au(392);x=az(p|0,b|0,1,0,j|0,k|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){au(352);D=1;i=d;return D|0}au(328);aR(p|0);au(296);x=aN(p|0,c[n>>2]|0,1,0,c[o>>2]<<2|0,h|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){aq(1112,(s=i,i=i+8|0,c[s>>2]=x,s)|0);aD(1);return 0}x=c[o>>2]|0;L61:do{if((x|0)==0){E=0}else{e=0;k=0;while(1){F=+g[f+(e<<2)>>2];j=(+g[h+(e<<2)>>2]-F*F<1.0e-7&1)+k|0;l=e+1|0;if(l>>>0<x>>>0){e=l;k=j}else{E=j;break L61}}}}while(0);x=c[t>>2]|0;aq(1040,(s=i,i=i+32|0,c[s>>2]=C,c[s+8>>2]=q,c[s+16>>2]=x,c[s+24>>2]=a,s)|0);a=c[o>>2]|0;aq(1e3,(s=i,i=i+16|0,c[s>>2]=E,c[s+8>>2]=a,s)|0);aQ(c[m>>2]|0);aQ(c[n>>2]|0);at(u|0);am(b|0);aG(p|0);an(z|0);D=0;i=d;return D|0}function bd(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function be(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bf(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2]|0;b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bg(a,b){a=a|0;b=b|0;return aW[a&1](b|0)|0}function bh(a){a=a|0;aX[a&1]()}function bi(a,b,c){a=a|0;b=b|0;c=c|0;return aY[a&1](b|0,c|0)|0}function bj(a,b){a=a|0;b=b|0;aZ[a&1](b|0)}function bk(a){a=a|0;_(0);return 0}function bl(){_(1)}function bm(a,b){a=a|0;b=b|0;_(2);return 0}function bn(a){a=a|0;_(3)}
 // EMSCRIPTEN_END_FUNCS
-var aV=[bj,bj];var aW=[bk,bk];var aX=[bl,bl];var aY=[bm,bm];return{_strlen:bc,_memcpy:be,_main:bb,_memset:bd,stackAlloc:aZ,stackSave:a_,stackRestore:a$,setThrew:a0,setTempRet0:a1,setTempRet1:a2,setTempRet2:a3,setTempRet3:a4,setTempRet4:a5,setTempRet5:a6,setTempRet6:a7,setTempRet7:a8,setTempRet8:a9,setTempRet9:ba,dynCall_ii:bf,dynCall_v:bg,dynCall_iii:bh,dynCall_vi:bi}})
+var aW=[bk,bk];var aX=[bl,bl];var aY=[bm,bm];var aZ=[bn,bn];return{_strlen:bd,_memcpy:bf,_main:bc,_memset:be,stackAlloc:a_,stackSave:a$,stackRestore:a0,setThrew:a1,setTempRet0:a2,setTempRet1:a3,setTempRet2:a4,setTempRet3:a5,setTempRet4:a6,setTempRet5:a7,setTempRet6:a8,setTempRet7:a9,setTempRet8:ba,setTempRet9:bb,dynCall_ii:bg,dynCall_v:bh,dynCall_iii:bi,dynCall_vi:bj}})
 // EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "copyTempDouble": copyTempDouble, "copyTempFloat": copyTempFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_rand": _rand, "_malloc": _malloc, "_clGetDeviceIDs": _clGetDeviceIDs, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "_fprintf": _fprintf, "_clGetDeviceInfo": _clGetDeviceInfo, "_printf": _printf, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_clReleaseProgram": _clReleaseProgram, "_puts": _puts, "_clBuildProgram": _clBuildProgram, "___setErrNo": ___setErrNo, "_fwrite": _fwrite, "_send": _send, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_write": _write, "_fputs": _fputs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_exit": _exit, "_clSetKernelArg": _clSetKernelArg, "_clCreateKernel": _clCreateKernel, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_fputc": _fputc, "_clCreateProgramWithSource": _clCreateProgramWithSource, "__formatString": __formatString, "_free": _free, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetContextInfo": _clGetContextInfo, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_pwrite": _pwrite, "_clReleaseMemObject": _clReleaseMemObject, "_clFinish": _clFinish, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "__exit": __exit, "_clCreateContext": _clCreateContext, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "copyTempDouble": copyTempDouble, "copyTempFloat": copyTempFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_rand": _rand, "_malloc": _malloc, "_clGetDeviceIDs": _clGetDeviceIDs, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "_fprintf": _fprintf, "_clGetDeviceInfo": _clGetDeviceInfo, "_printf": _printf, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_clReleaseProgram": _clReleaseProgram, "_puts": _puts, "_clBuildProgram": _clBuildProgram, "___setErrNo": ___setErrNo, "_fwrite": _fwrite, "_send": _send, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_write": _write, "_fputs": _fputs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_exit": _exit, "_clSetKernelArg": _clSetKernelArg, "_clCreateKernel": _clCreateKernel, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_fputc": _fputc, "_clCreateProgramWithSource": _clCreateProgramWithSource, "__formatString": __formatString, "_free": _free, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetContextInfo": _clGetContextInfo, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_pwrite": _pwrite, "_strstr": _strstr, "_clReleaseMemObject": _clReleaseMemObject, "_clFinish": _clFinish, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "__exit": __exit, "_clCreateContext": _clCreateContext, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _main = Module["_main"] = asm["_main"];

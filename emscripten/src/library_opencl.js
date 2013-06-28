@@ -3,7 +3,10 @@
 var LibraryOpenCL = {
   $CL__deps: ['$Browser'],
   $CL: {
+    types: {FLOAT:0,FLOAT_V:1,INT:2,INT_V:3,UINT:4,UINT_V:5},
     ctx: [],
+    webcl_mozilla: 0,
+    webcl_webkit: 0,
     ctx_clean: 0,
     cmdQueue: [],
     cmdQueue_clean: 0,
@@ -52,6 +55,14 @@ var LibraryOpenCL = {
 
       return 0;      
     },
+    
+    getDeviceName: function(type) {
+      switch (type) {
+        case 2 : return "CPU_DEVICE";
+        case 4 : return "GPU_DEVICE";
+        default : return "UNKNOW_DEVICE";
+      }
+    },
                 
     // Log and return the value error exception
     catchError: function(name,e) {
@@ -67,14 +78,26 @@ var LibraryOpenCL = {
   
   clGetPlatformIDs: function(num_entries,platform_ids,num_platforms) {
     if (window.WebCL == undefined) {
-      console.log(CL.errorMessage);
-      return -1;/*CL_DEVICE_NOT_FOUND*/;
+      if(typeof(webcl) === "undefined") {
+        console.log(CL.errorMessage);
+        return -1;/*CL_DEVICE_NOT_FOUND*/;
+      } else {
+        window.WebCL = webcl
+        CL.webcl_webkit = 1;
+      }
+    } else {
+      CL.webcl_mozilla = 1;
     }
-    
+  
+#if OPENCL_DEBUG
+    var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+    console.info("Webcl implemented for "+browser);
+#endif
+        
     try { 
       
       // Get the platform
-      var platforms = WebCL.getPlatformIDs();
+      var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
       
       // If platforms is not NULL, the num_entries must be greater than zero.
       // If both num_platforms and platforms are NULL.
@@ -179,11 +202,24 @@ var LibraryOpenCL = {
   },
 
   clGetDeviceIDs: function(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-    if (window.WebCL == undefined) {
-      console.log(CL.errorMessage);
-      return -1;/*CL_DEVICE_NOT_FOUND*/;
-    }
 
+    if (window.WebCL == undefined) {
+      if(typeof(webcl) === "undefined") {
+        console.log(CL.errorMessage);
+        return -1;/*CL_DEVICE_NOT_FOUND*/;
+      } else {
+        window.WebCL = webcl
+        CL.webcl_webkit = 1;
+      }
+    } else {
+      CL.webcl_mozilla = 1;
+    }
+  
+#if OPENCL_DEBUG
+    var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+    console.info("Webcl implemented for "+browser);
+#endif
+    
     // Assume the device type is i32 
     assert(device_type_i64_2 == 0, 'Invalid flags i64');
 
@@ -191,8 +227,10 @@ var LibraryOpenCL = {
 
       // If platform is NULL, the behavior is implementation-defined
       if (platform == 0 && CL.platforms.length == 0) {
-          var platforms = WebCL.getPlatformIDs();
-          
+      
+          // Get the platform
+          var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
+        
           if (platforms.length > 0) {
             CL.platforms.push(platforms[0]);
             
@@ -206,8 +244,8 @@ var LibraryOpenCL = {
         platform -= 1;
       }
       
-      var alldev = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
-           
+      var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+      
       // If devices_ids is not NULL, the num_entries must be greater than zero.
       if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
 #if OPENCL_DEBUG
@@ -226,19 +264,21 @@ var LibraryOpenCL = {
       var map = {};
       var mapcount = 0;
     
+      
       for (var i = 0 ; i < alldev.length; i++ ) {
-        var type = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
-        if (type == device_type_i64_1 || device_type_i64_1 == -1) {
-           var name = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME);
+        var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : alldev[i].getInfo(WebCL.DEVICE_TYPE);
+
+        if (type == device_type_i64_1 || device_type_i64_1 == -1) { 
+           var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(type);
            map[name] = alldev[i];
            mapcount ++;
-        }        
+        }    
       }
-                  
+            
       if (mapcount == 0) {
-        alldev = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_DEFAULT);
+        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
         for (var i = 0 ; i < alldev.length; i++) {
-          var name = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME);
+          var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
           map[name] = alldev[i];
           mapcount ++;
         }       
@@ -300,7 +340,7 @@ var LibraryOpenCL = {
             
       switch (param_name) {
         case (0x1081) /* CL_CONTEXT_DEVICES */:
-          res = CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+          res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_DEVICES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_DEVICES) ;
           // Must verify if size of device is same as param_value°size
           if (param_value != 0) {
             for (var i = 0 ; i < res.length; i++) {
@@ -311,7 +351,7 @@ var LibraryOpenCL = {
           size = res.length * 4;
           break;
         case (0x1082) /* CL_CONTEXT_PROPERTIES */:
-          res = CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_PROPERTIES);
+          res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_PROPERTIES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_PROPERTIES) ;
           // \todo add in param_value the properties list
           size = res.length * 4;          
           break;
@@ -392,7 +432,7 @@ var LibraryOpenCL = {
           size = 1;
           break;   
         case (0x1016) /* CL_DEVICE_IMAGE_SUPPORT*/:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT); // return true or false
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT) : 0; // return true or false
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break; 
@@ -478,7 +518,7 @@ var LibraryOpenCL = {
           size = 1;
           break;              
         case (0x102B) /* CL_DEVICE_NAME */:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME); // return string
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME) : "No Device Name"; // return string
           size = res.length;
           writeStringToMemory(res, param_value);
           break;
@@ -564,7 +604,7 @@ var LibraryOpenCL = {
           size = 1;
           break;       
         case (0x102C) /* CL_DEVICE_VENDOR*/:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR); // return string
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR) : "No Device Vendor"; // return string
           writeStringToMemory(res, param_value);
           size = res.length;
           break;
@@ -681,7 +721,12 @@ var LibraryOpenCL = {
       } 
     
       // Use default platform
-      CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));
+      if (CL.webcl_mozilla == 1) {
+        CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
+      } else {
+        CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(WebCL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+      }
+      
 
       // Return the pos of the context +1
       return CL.ctx.length;
@@ -793,7 +838,8 @@ var LibraryOpenCL = {
     
       if (idx == 0) {
         // Create a command-queue on the first device available if idx == 0
-        var devices = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_DEFAULT);
+        var devices = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+      
         CL.devices.push(devices[0]);
       }
       
@@ -834,46 +880,49 @@ var LibraryOpenCL = {
     // Experimental parse of kernel for have the different type of the kernel (input and output)
     var start_kernel = kernel.indexOf("__kernel");
     var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
+
     var start_kernel_brace = kernel_sub_part.indexOf("(");
     var close_kernel_brace = kernel_sub_part.indexOf(")");
     kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
+
     kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
     
     var kernel_sub_part_split = kernel_sub_part.split(",");
+    
     for (var i = 0; i < kernel_sub_part_split.length; i++) {
-      
-      if (kernel_sub_part_split[i].contains("float4") ||
-         (kernel_sub_part_split[i].contains("float") && kernel_sub_part_split[i].contains("*"))) {
+
+      if (kernel_sub_part_split[i].indexOf("float4") > -1 ||
+         (kernel_sub_part_split[i].indexOf("float") > -1 && kernel_sub_part_split[i].indexOf("*") > -1 )) {
            
-        console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+WebCL.types.FLOAT_V+")");
-        CL.sig[i] = WebCL.types.FLOAT_V;
+        console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+CL.types.FLOAT_V+")");
+        CL.sig[i] = CL.types.FLOAT_V;
         
-      } else if (kernel_sub_part_split[i].contains("float")) {
+      } else if (kernel_sub_part_split[i].indexOf("float") > -1 ) {
         
-        console.info("Kernel Parameter "+i+" typeof is float ("+WebCL.types.FLOAT+")");
-        CL.sig[i] = WebCL.types.FLOAT;    
+        console.info("Kernel Parameter "+i+" typeof is float ("+CL.types.FLOAT+")");
+        CL.sig[i] = CL.types.FLOAT;    
                 
-      } else if (kernel_sub_part_split[i].contains("uchar4") ||
-                (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("char") && kernel_sub_part_split[i].contains("*")) ||
-                (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*"))) {
+      } else if (kernel_sub_part_split[i].indexOf("uchar4") > -1  ||
+                (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("char") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) ||
+                (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 )) {
                   
-        console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+WebCL.types.UINT_V+")");
-        CL.sig[i] = WebCL.types.UINT_V;
+        console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+CL.types.UINT_V+")");
+        CL.sig[i] = CL.types.UINT_V;
         
-      } else if (kernel_sub_part_split[i].contains("unsigned") && kernel_sub_part_split[i].contains("int")) {
+      } else if (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1 ) {
         
-        console.info("Kernel Parameter "+i+" typeof is unsigned int ("+WebCL.types.UINT+")");
-        CL.sig[i] = WebCL.types.UINT;        
+        console.info("Kernel Parameter "+i+" typeof is unsigned int ("+CL.types.UINT+")");
+        CL.sig[i] = CL.types.UINT;        
         
-      } else if (kernel_sub_part_split[i].contains("int") && kernel_sub_part_split[i].contains("*")) {
+      } else if (kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) {
         
-        console.info("Kernel Parameter "+i+" typeof is int * ("+WebCL.types.INT_V+")");
-        CL.sig[i] = WebCL.types.INT_V;    
+        console.info("Kernel Parameter "+i+" typeof is int * ("+CL.types.INT_V+")");
+        CL.sig[i] = CL.types.INT_V;    
         
-      } else if (kernel_sub_part_split[i].contains("int")) {
+      } else if (kernel_sub_part_split[i].indexOf("int") > -1 ) {
         
-        console.info("Kernel Parameter "+i+" typeof is int ("+WebCL.types.INT+")");
-        CL.sig[i] = WebCL.types.INT;    
+        console.info("Kernel Parameter "+i+" typeof is int ("+CL.types.INT+")");
+        CL.sig[i] = CL.types.INT;    
         
       } else {
         console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
@@ -882,8 +931,12 @@ var LibraryOpenCL = {
     
     try {
       // \todo set the properties 
-      CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
-
+      if (CL.webcl_mozilla == 1) {
+        CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
+      } else {
+        CL.programs.push(CL.ctx[ctx].createProgram(kernel));
+      }
+      
       // Return the pos of the queue +1
       return CL.programs.length;
     } catch (e) {
@@ -928,8 +981,11 @@ var LibraryOpenCL = {
 
       var opt = "";
 
-      CL.programs[prog].buildProgram (devices_tab, opt);
-
+      if (CL.webcl_mozilla == 1) {
+        CL.programs[prog].buildProgram (devices_tab, opt);
+      } else { 
+        CL.programs[prog].build(devices_tab);
+      }
       return 0;/*CL_SUCCESS*/
     } catch(e) {
       return CL.catchError("clBuildProgram",e);
@@ -1069,22 +1125,28 @@ var LibraryOpenCL = {
     try {
       switch (flags_i64_1) {
         case (1 << 0) /* CL_MEM_READ_WRITE */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_WRITE,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_WRITE_ONLY,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 2) /* CL_MEM_READ_ONLY */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 3) /* CL_MEM_USE_HOST_PTR */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_USE_HOST_PTR,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_USE_HOST_PTR : WebCL.MEM_USE_HOST_PTR;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_ALLOC_HOST_PTR,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_ALLOC_HOST_PTR : WebCL.MEM_ALLOC_HOST_PTR;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 5) /* CL_MEM_COPY_HOST_PTR */:
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_COPY_HOST_PTR,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_COPY_HOST_PTR : WebCL.MEM_COPY_HOST_PTR;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
           if (host_ptr == 0) {
@@ -1095,7 +1157,8 @@ var LibraryOpenCL = {
             return 0;     
           }
           
-          CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));
+          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           
           // CL_MEM_COPY_HOST_PTR Doesn't work we pass element via enqueue buffer
           
@@ -1125,12 +1188,12 @@ var LibraryOpenCL = {
           var isFloat = 0;
           var vector;    
              
-          if (CL.sig[CL.buffers.length-1] == WebCL.types.FLOAT_V) {
+          if (CL.sig[CL.buffers.length-1] == CL.types.FLOAT_V) {
             vector = new Float32Array(size / 4);
             isFloat = 1;
-          } else if (CL.sig[CL.buffers.length-1] == WebCL.types.UINT_V) {
+          } else if (CL.sig[CL.buffers.length-1] == CL.types.UINT_V) {
             vector = new Uint32Array(size / 4);
-          } else if (CL.sig[CL.buffers.length-1] == WebCL.types.INT_V) {
+          } else if (CL.sig[CL.buffers.length-1] == CL.types.INT_V) {
             vector = new Int32Array(size / 4);
           } else {
 #if OPENCL_DEBUG
@@ -1255,12 +1318,12 @@ var LibraryOpenCL = {
         vector = new Int32Array(size / 4);
       }
     } else {        
-      if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+      if (CL.sig[buff] == CL.types.FLOAT_V) {
         vector = new Float32Array(size / 4);
         isFloat = 1;
-      } else if (CL.sig[buff] == WebCL.types.UINT_V) {
+      } else if (CL.sig[buff] == CL.types.UINT_V) {
         vector = new Uint32Array(size / 4);
-      } else if (CL.sig[buff] == WebCL.types.INT_V) {
+      } else if (CL.sig[buff] == CL.types.INT_V) {
         vector = new Int32Array(size / 4);
       } else {
 #if OPENCL_DEBUG
@@ -1276,6 +1339,8 @@ var LibraryOpenCL = {
         vector[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
       }
     }
+    
+    console.log(vector);
     
     try {
       CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
@@ -1355,7 +1420,7 @@ var LibraryOpenCL = {
       
       var isFloat = 0;
       if (CL.sig.length > 0 && arg_index < CL.sig.length) {
-        isFloat = ( CL.sig[arg_index] == WebCL.types.FLOAT_V ) || ( CL.sig[arg_index] == WebCL.types.FLOAT ) 
+        isFloat = ( CL.sig[arg_index] == CL.types.FLOAT_V ) || ( CL.sig[arg_index] == CL.types.FLOAT ) 
       } else {
 #if OPENCL_DEBUG
         console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
@@ -1367,7 +1432,7 @@ var LibraryOpenCL = {
 
       var value;
       if (isNull == 1) {
-        CL.kernels[ker].setKernelArgLocal(arg_index,arg_size);
+        ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArgLocal(arg_index,arg_size);
       } else if (arg_size > 4) {
         value = [];
         
@@ -1380,9 +1445,9 @@ var LibraryOpenCL = {
           }
         }
         if (isFloat == 1) {
-          CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V);
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
         } else {
-          CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V);
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
         }      
       } else {     
         if (isFloat == 1) {
@@ -1392,12 +1457,12 @@ var LibraryOpenCL = {
         }
         
         if (arg_index >= 0 && arg_index < CL.buffers.length) {
-          CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]);
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]) : CL.kernels[ker].setArg(arg_index,CL.buffers[arg_index]);
         } else {
           if (isFloat == 1) { 
-            CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT);
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
           } else {
-            CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT);
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
           }            
         }        
       }
@@ -1432,13 +1497,25 @@ var LibraryOpenCL = {
       var res;
       switch (param_name) {
         case (0x11B0) /* CL_KERNEL_WORK_GROUP_SIZE */:
-        res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_WORK_GROUP_SIZE);
+          if (CL.webcl_mozilla == 1) {
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_WORK_GROUP_SIZE);
+          } else {
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_WORK_GROUP_SIZE);
+          }
         break;
       case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
-        res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_COMPILE_WORK_GROUP_SIZE);
+        if (CL.webcl_mozilla == 1) {
+          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_COMPILE_WORK_GROUP_SIZE);
+        } else {
+          res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_COMPILE_WORK_GROUP_SIZE);
+        }
         break;
       case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
-        res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+        if (CL.webcl_mozilla == 1) {
+          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+        } else {
+          res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+        }
         break;
       };
 
@@ -1506,7 +1583,7 @@ var LibraryOpenCL = {
       value_global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
     }
 
-#if 0
+//#if 0
     var global = "";
     var local = "";
     for (var i = 0 ; i < work_dim; i++){
@@ -1520,16 +1597,24 @@ var LibraryOpenCL = {
 
     console.info("Global [ "+ global +" ]")
     console.info("Local [ "+ local +" ]")
-#endif
+//#endif
   
     // empty “localWS” array because give some trouble on CPU mode with mac
-    value_local_work_size = [];  
+    // value_local_work_size = [];  
 
     try {
 
       // \todo how add some event inside the array
-      CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
+      if (CL.webcl_mozilla == 1) {
+        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
+      } else {
+        var globalWorkSize = new Int32Array(1);     // global domain size for our calculation
+        var localWorkSize = new Int32Array(1);      // local domain size for our calculation
+        globalWorkSize[0] = value_global_work_size[0];
+        localWorkSize[0] = value_local_work_size[0];
 
+        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], null, globalWorkSize, localWorkSize);
+      }
       return 0;/*CL_SUCCESS*/
     } catch(e) {
       return CL.catchError("clEnqueueNDRangeKernel",e);
@@ -1600,12 +1685,12 @@ var LibraryOpenCL = {
       var isFloat = 0;
       var vector;    
         
-      if (CL.sig[buff] == WebCL.types.FLOAT_V) {
+      if (CL.sig[buff] == CL.types.FLOAT_V) {
         vector = new Float32Array(size / 4);
         isFloat = 1;
-      } else if (CL.sig[buff] == WebCL.types.UINT_V) {
+      } else if (CL.sig[buff] == CL.types.UINT_V) {
         vector = new Uint32Array(size / 4);
-      } else if (CL.sig[buff] == WebCL.types.INT_V) {
+      } else if (CL.sig[buff] == CL.types.INT_V) {
         vector = new Int32Array(size / 4);
       } else {
 #if OPENCL_DEBUG
@@ -1623,7 +1708,8 @@ var LibraryOpenCL = {
           {{{ makeSetValue('results', 'i*4', 'vector[i]', 'i32') }}};  
         }         
       }
-
+      console.log(vector);
+      
       return 0;/*CL_SUCCESS*/
     } catch(e) {
       return CL.catchError("clEnqueueReadBuffer",e);
@@ -1649,7 +1735,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_DEBUG
-    console.message("clReleaseMemObject: Release Memory Object : "+buff);
+    console.info("clReleaseMemObject: Release Memory Object : "+buff);
 #endif
 
     return 0;/*CL_SUCCESS*/
@@ -1671,7 +1757,7 @@ var LibraryOpenCL = {
       CL.programs_clean++;
     }
 #if OPENCL_DEBUG
-    console.message("clReleaseProgram: Release program : "+prog);
+    console.info("clReleaseProgram: Release program : "+prog);
 #endif
 
     return 0;/*CL_SUCCESS*/
@@ -1694,7 +1780,7 @@ var LibraryOpenCL = {
       CL.kernels_clean++;
     }    
 #if OPENCL_DEBUG
-    console.message("clReleaseKernel: Release kernel : "+ker);
+    console.info("clReleaseKernel: Release kernel : "+ker);
 #endif
 
     return 0;/*CL_SUCCESS*/
@@ -1717,7 +1803,7 @@ var LibraryOpenCL = {
       CL.cmdQueue_clean++;
     }
 #if OPENCL_DEBUG
-    console.message("clReleaseCommandQueue: Release command queue : "+queue);
+    console.info("clReleaseCommandQueue: Release command queue : "+queue);
 #endif
 
     return 0;/*CL_SUCCESS*/
@@ -1740,7 +1826,7 @@ var LibraryOpenCL = {
       CL.ctx_clean++;
     }
 #if OPENCL_DEBUG
-    console.message("clReleaseContext: Release context : "+ctx);
+    console.info("clReleaseContext: Release context : "+ctx);
 #endif
 
     return 0;/*CL_SUCCESS*/
