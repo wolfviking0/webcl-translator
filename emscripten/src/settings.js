@@ -67,9 +67,9 @@ var RELOOP = 0; // Recreate js native loops from llvm data
 var RELOOPER = 'relooper.js'; // Loads the relooper from this path relative to compiler.js
 
 var USE_TYPED_ARRAYS = 2; // Use typed arrays for the heap. See https://github.com/kripken/emscripten/wiki/Code-Generation-Modes/
-                          // 0 means no typed arrays are used.
+                          // 0 means no typed arrays are used. This mode disallows LLVM optimizations
                           // 1 has two heaps, IHEAP (int32) and FHEAP (double),
-                          // and addresses there are a match for normal addresses. This is deprecated.
+                          // and addresses there are a match for normal addresses. This mode disallows LLVM optimizations.
                           // 2 is a single heap, accessible through views as int8, int32, etc. This is
                           //   the recommended mode both for performance and for compatibility.
 var USE_FHEAP = 1; // Relevant in USE_TYPED_ARRAYS == 1. If this is disabled, only IHEAP will be used, and FHEAP
@@ -238,6 +238,11 @@ var FS_LOG = 0; // Log all FS operations.  This is especially helpful when you'r
                 // a new project and want to see a list of file system operations happening
                 // so that you can create a virtual file system with all of the required files.
 
+var USE_BSS = 1; // https://en.wikipedia.org/wiki/.bss
+                 // When enabled, 0-initialized globals are sorted to the end of the globals list,
+                 // enabling us to not explicitly store the initialization value for each 0 byte.
+                 // This significantly lowers the memory initialization array size.
+
 var NAMED_GLOBALS = 0; // If 1, we use global variables for globals. Otherwise
                        // they are referred to by a base plus an offset (called an indexed global),
                        // saving global variables but adding runtime overhead.
@@ -247,7 +252,8 @@ var EXPORTED_FUNCTIONS = ['_main', '_malloc'];
                                     // through LLVM dead code elimination, and also made accessible outside of
                                     // the generated code even after running closure compiler (on "Module").
                                     // Note the necessary prefix of "_".
-var EXPORT_ALL = 0; // If true, we export all the symbols
+var EXPORT_ALL = 0; // If true, we export all the symbols. Note that this does *not* affect LLVM, so it can
+                    // still eliminate functions as dead. This just exports them on the Module object.
 var EXPORT_BINDINGS = 0; // Export all bindings generator functions (prefixed with emscripten_bind_). This
                          // is necessary to use the bindings generator with asm.js
 
@@ -1258,7 +1264,7 @@ var C_DEFINES = {'SI_MESGQ': '5',
    'SIGTTOU': '22',
    '_CS_POSIX_V7_LP64_OFF64_LDFLAGS': '10',
    '_SC_TTY_NAME_MAX': '41',
-   'AF_INET': '1',
+   'AF_INET': '2',
    'AF_INET6': '6',
    'FIONREAD': '1',
    'SOCK_STREAM': '200',

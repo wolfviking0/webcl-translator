@@ -1,6 +1,7 @@
 import shutil, time, os, sys, json, tempfile, copy, shlex, atexit, subprocess, hashlib, cPickle, re
 from subprocess import Popen, PIPE, STDOUT
 from tempfile import mkstemp
+from distutils.spawn import find_executable
 import jsrun, cache, tempfiles
 from response_file import create_response_file
 import logging, platform
@@ -204,25 +205,12 @@ else:
     config_file = '\n'.join(config_file)
     # autodetect some default paths
     config_file = config_file.replace('{{{ EMSCRIPTEN_ROOT }}}', __rootpath__)
-    llvm_root = '/usr/bin'
-    try:
-      llvm_root = os.path.dirname(Popen(['which', 'llvm-dis'], stdout=PIPE).communicate()[0].replace('\n', ''))
-    except:
-      pass
+    llvm_root = find_executable('llvm-dis') or '/usr/bin'
     config_file = config_file.replace('{{{ LLVM_ROOT }}}', llvm_root)
-    node = 'node'
-    try:
-      node = Popen(['which', 'node'], stdout=PIPE).communicate()[0].replace('\n', '') or \
-             Popen(['which', 'nodejs'], stdout=PIPE).communicate()[0].replace('\n', '') or node
-    except:
-      pass
+    node = find_executable('node') or find_executable('nodejs') or 'node'
     config_file = config_file.replace('{{{ NODE }}}', node)
-    python = sys.executable or 'python'
-    try:
-      python = Popen(['which', 'python2'], stdout=PIPE).communicate()[0].replace('\n', '') or \
-               Popen(['which', 'python'], stdout=PIPE).communicate()[0].replace('\n', '') or python
-    except:
-      pass
+    python = find_executable('python2') or find_executable('python') or \
+        sys.executable or 'python'
     config_file = config_file.replace('{{{ PYTHON }}}', python)    
 
     # write
@@ -273,7 +261,7 @@ def check_llvm_version():
   except Exception, e:
     logging.warning('Could not verify LLVM version: %s' % str(e))
 
-EXPECTED_NODE_VERSION = (0,6,8)
+EXPECTED_NODE_VERSION = (0,8,0)
 
 def check_node_version():
   try:
@@ -295,7 +283,7 @@ def check_node_version():
 # we re-check sanity when the settings are changed)
 # We also re-check sanity and clear the cache when the version changes
 
-EMSCRIPTEN_VERSION = '1.4.8'
+EMSCRIPTEN_VERSION = '1.5.3'
 
 def generate_sanity():
   return EMSCRIPTEN_VERSION + '|' + get_llvm_target()
@@ -324,6 +312,7 @@ def check_sanity(force=False):
     if reason:
       logging.warning('(Emscripten: %s, clearing cache)' % reason)
       Cache.erase()
+      force = False # the check actually failed, so definitely write out the sanity file, to avoid others later seeing failures too
 
     # some warning, not fatal checks - do them even if EM_IGNORE_SANITY is on
     check_llvm_version()
@@ -420,7 +409,7 @@ FILE_PACKAGER = path_from_root('tools', 'file_packager.py')
 # Temp dir. Create a random one, unless EMCC_DEBUG is set, in which case use TEMP_DIR/emscripten_temp
 
 class Configuration:
-  def __init__(self, environ):
+  def __init__(self, environ=os.environ):
     self.DEBUG = environ.get('EMCC_DEBUG')
     if self.DEBUG == "0":
       self.DEBUG = None
@@ -448,20 +437,28 @@ class Configuration:
       tmp=self.TEMP_DIR if not self.DEBUG else self.EMSCRIPTEN_TEMP_DIR,
       save_debug_files=os.environ.get('EMCC_DEBUG_SAVE'))
 
-configuration = Configuration(environ=os.environ)
-DEBUG = configuration.DEBUG
-EMSCRIPTEN_TEMP_DIR = configuration.EMSCRIPTEN_TEMP_DIR
-DEBUG_CACHE = configuration.DEBUG_CACHE
-CANONICAL_TEMP_DIR = configuration.CANONICAL_TEMP_DIR
+def apply_configuration():
+  global configuration, DEBUG, EMSCRIPTEN_TEMP_DIR, DEBUG_CACHE, CANONICAL_TEMP_DIR
+  configuration = Configuration()
+  DEBUG = configuration.DEBUG
+  EMSCRIPTEN_TEMP_DIR = configuration.EMSCRIPTEN_TEMP_DIR
+  DEBUG_CACHE = configuration.DEBUG_CACHE
+  CANONICAL_TEMP_DIR = configuration.CANONICAL_TEMP_DIR
+apply_configuration()
 
-level = logging.DEBUG if os.environ.get('EMCC_DEBUG') else logging.INFO
-logging.basicConfig(level=level, format='%(levelname)-8s %(name)s: %(message)s')
-  
+logging.basicConfig(format='%(levelname)-8s %(name)s: %(message)s')
+def set_logging():
+  logger = logging.getLogger()
+  logger.setLevel(logging.DEBUG if os.environ.get('EMCC_DEBUG') else logging.INFO)
+set_logging()
+
 if not EMSCRIPTEN_TEMP_DIR:
   EMSCRIPTEN_TEMP_DIR = tempfile.mkdtemp(prefix='emscripten_temp_', dir=configuration.TEMP_DIR)
-  def clean_temp():
-    try_delete(EMSCRIPTEN_TEMP_DIR)
-  atexit.register(clean_temp)
+  def prepare_to_clean_temp(d):
+    def clean_temp():
+      try_delete(d)
+    atexit.register(clean_temp)
+  prepare_to_clean_temp(EMSCRIPTEN_TEMP_DIR) # this global var might change later
 
 # EM_CONFIG stuff
 
@@ -936,7 +933,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
 
     # Finish link
     actual_files = unique_ordered(actual_files) # tolerate people trying to link a.so a.so etc.
-    logging.debug('emcc: llvm-linking: %s', actual_files)
+    logging.debug('emcc: llvm-linking: %s to %s', actual_files, target)
 
     # check for too-long command line
     link_cmd = [LLVM_LINK] + actual_files + ['-o', target]
@@ -1091,7 +1088,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
 
   @staticmethod
   def can_build_standalone():
-    return not Settings.BUILD_AS_SHARED_LIB and not Settings.LINKABLE
+    return not Settings.BUILD_AS_SHARED_LIB and not Settings.LINKABLE and not Settings.EXPORT_ALL
 
   @staticmethod
   def can_use_unsafe_opts():
@@ -1103,7 +1100,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
 
   @staticmethod
   def get_safe_internalize():
-    exports = ','.join(map(lambda exp: exp[1:], expand_response(Settings.EXPORTED_FUNCTIONS)))
+    exps = expand_response(Settings.EXPORTED_FUNCTIONS)
+    if '_malloc' not in exps: exps.append('_malloc') # needed internally, even if user did not add to EXPORTED_FUNCTIONS
+    exports = ','.join(map(lambda exp: exp[1:], exps))
     # internalize carefully, llvm 3.2 will remove even main if not told not to
     return ['-internalize', '-internalize-public-api-list=' + exports]
 
@@ -1210,8 +1209,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     return opts
 
   @staticmethod
-  def js_optimizer(filename, passes, jcache):
-    return js_optimizer.run(filename, passes, listify(NODE_JS), jcache)
+  def js_optimizer(filename, passes, jcache, debug):
+    return js_optimizer.run(filename, passes, listify(NODE_JS), jcache, debug)
 
   @staticmethod
   def closure_compiler(filename, pretty=True):

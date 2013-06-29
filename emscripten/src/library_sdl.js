@@ -47,6 +47,7 @@ var LibrarySDL = {
 
     startTime: null,
     buttonState: 0,
+    modState: 0,
     DOMButtons: [0, 0, 0],
 
     DOMEventToSDLEvent: {},
@@ -241,7 +242,7 @@ var LibrarySDL = {
     },
 
     translateColorToCSSRGBA: function(rgba) {
-      return 'rgba(' + ((rgba >> 24)&255) + ',' + ((rgba >> 16)&255) + ',' + ((rgba >> 8)&255) + ',' + ((rgba&255)/255) + ')';
+      return 'rgba(' + (rgba&0xff) + ',' + (rgba>>8 & 0xff) + ',' + (rgba>>16 & 0xff) + ',' + (rgba>>>24)/0xff + ')';
     },
 
     translateRGBAToCSSRGBA: function(r, g, b, a) {
@@ -249,7 +250,7 @@ var LibrarySDL = {
     },
 
     translateRGBAToColor: function(r, g, b, a) {
-      return (r << 24) + (g << 16) + (b << 8) + a;
+      return r | g << 8 | b << 16 | a << 24;
     },
 
     makeSurface: function(width, height, flags, usePageCanvas, source, rmask, gmask, bmask, amask) {
@@ -373,7 +374,8 @@ var LibrarySDL = {
             if (event['movementX'] == 0 && event['movementY'] == 0) {
               // ignore a mousemove event if it doesn't contain any movement info
               // (without pointer lock, we infer movement from pageX/pageY, so this check is unnecessary)
-              return false;
+              event.preventDefault();
+              return;
             }
           }
           // fall through
@@ -396,15 +398,20 @@ var LibrarySDL = {
           } else if (event.type == 'mousedown') {
             SDL.DOMButtons[event.button] = 1;
           } else if (event.type == 'mouseup') {
-            if (!SDL.DOMButtons[event.button]) return false; // ignore extra ups, can happen if we leave the canvas while pressing down, then return,
-                                                             // since we add a mouseup in that case
+            // ignore extra ups, can happen if we leave the canvas while pressing down, then return,
+            // since we add a mouseup in that case
+            if (!SDL.DOMButtons[event.button]) {
+              event.preventDefault();
+              return;
+            }
+
             SDL.DOMButtons[event.button] = 0;
           }
 
           if (event.type == 'keypress' && !SDL.textInput) {
             break;
           }
-
+          
           SDL.events.push(event);
           break;
         case 'mouseout':
@@ -438,7 +445,7 @@ var LibrarySDL = {
             // Force-run a main event loop, since otherwise this event will never be caught!
             Browser.mainLoop.runner();
           }
-          return true;
+          return;
         case 'resize':
           SDL.events.push(event);
           break;
@@ -447,7 +454,11 @@ var LibrarySDL = {
         Module.printErr('SDL event queue full, dropping events');
         SDL.events = SDL.events.slice(0, 10000);
       }
-      return false;
+      // manually triggered resize event doesn't have a preventDefault member
+      if (event.preventDefault) {
+        event.preventDefault();
+      }
+      return;
     },
 
     makeCEvent: function(event, ptr) {
@@ -473,15 +484,6 @@ var LibrarySDL = {
           } else {
             scan = SDL.scanCodes[key] || key;
           }
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.type', 'SDL.DOMEventToSDLEvent[event.type]', 'i32') }}}
-          //{{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.which', '1', 'i32') }}}
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.state', 'down ? 1 : 0', 'i8') }}}
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.repeat', '0', 'i8') }}} // TODO
-
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.scancode', 'scan', 'i32') }}}
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.sym', 'key', 'i32') }}}
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.mod', '0', 'i32') }}}
-          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.unicode', 'key', 'i32') }}}
 
           var code = SDL.keyCodes[event.keyCode] || event.keyCode;
           {{{ makeSetValue('SDL.keyboardState', 'code', 'down', 'i8') }}};
@@ -490,6 +492,19 @@ var LibrarySDL = {
           } else {
             delete SDL.keyboardMap[code];
           }
+
+          // TODO: lmeta, rmeta, numlock, capslock, KMOD_MODE, KMOD_RESERVED
+          SDL.modState = ({{{ makeGetValue('SDL.keyboardState', '1248', 'i8') }}} ? 0x0040 | 0x0080 : 0) | // KMOD_LCTRL & KMOD_RCTRL
+            ({{{ makeGetValue('SDL.keyboardState', '1249', 'i8') }}} ? 0x0001 | 0x0002 : 0) | // KMOD_LSHIFT & KMOD_RSHIFT
+            ({{{ makeGetValue('SDL.keyboardState', '1250', 'i8') }}} ? 0x0100 | 0x0200 : 0); // KMOD_LALT & KMOD_RALT
+
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.type', 'SDL.DOMEventToSDLEvent[event.type]', 'i32') }}}
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.state', 'down ? 1 : 0', 'i8') }}}
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.repeat', '0', 'i8') }}} // TODO
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.scancode', 'scan', 'i32') }}}
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.sym', 'key', 'i32') }}}
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.mod', 'SDL.modState', 'i32') }}}
+          {{{ makeSetValue('ptr', 'SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.unicode', 'key', 'i32') }}}
 
           break;
         }
@@ -614,13 +629,13 @@ var LibrarySDL = {
     SDL.startTime = Date.now();
     // capture all key events. we just keep down and up, but also capture press to prevent default actions
     if (!Module['doNotCaptureKeyboard']) {
-      document.onkeydown = SDL.receiveEvent;
-      document.onkeyup = SDL.receiveEvent;
-      document.onkeypress = SDL.receiveEvent;
-      document.onblur = SDL.receiveEvent;
+      document.addEventListener("keydown", SDL.receiveEvent);
+      document.addEventListener("keyup", SDL.receiveEvent);
+      document.addEventListener("keypress", SDL.receiveEvent);
+      document.addEventListener("blur", SDL.receiveEvent);
       document.addEventListener("visibilitychange", SDL.receiveEvent);
     }
-    window.onunload = SDL.receiveEvent;
+    window.addEventListener("unload", SDL.receiveEvent);
     SDL.keyboardState = _malloc(0x10000); // Our SDL needs 512, but 64K is safe for older SDLs
     _memset(SDL.keyboardState, 0, 0x10000);
     // Initialize this structure carefully for closure
@@ -804,7 +819,6 @@ var LibrarySDL = {
     if (surfData.isFlagSet(0x00200000 /* SDL_HWPALETTE */)) {
       SDL.copyIndexedColorData(surfData);
     } else if (!surfData.colors) {
-      var num = surfData.image.data.length;
       var data = surfData.image.data;
       var buffer = surfData.buffer;
 #if USE_TYPED_ARRAYS == 2
@@ -812,17 +826,14 @@ var LibrarySDL = {
       var src = buffer >> 2;
       var dst = 0;
       var isScreen = surf == SDL.screen;
+      var data32 = new Uint32Array(data.buffer);
+      var num = data32.length;
       while (dst < num) {
-        // TODO: access underlying data buffer and write in 32-bit chunks or more
-        var val = HEAP32[src]; // This is optimized. Instead, we could do {{{ makeGetValue('buffer', 'dst', 'i32') }}};
-        data[dst  ] = val & 0xff;
-        data[dst+1] = (val >> 8) & 0xff;
-        data[dst+2] = (val >> 16) & 0xff;
-        data[dst+3] = isScreen ? 0xff : ((val >> 24) & 0xff);
-        src++;
-        dst += 4;
+        // HEAP32[src++] is an optimization. Instead, we could do {{{ makeGetValue('buffer', 'dst', 'i32') }}};
+        data32[dst++] = HEAP32[src++] | (isScreen ? 0xff000000 : 0);
       }
 #else
+      var num = surfData.image.data.length;
       for (var i = 0; i < num; i++) {
         // We may need to correct signs here. Potentially you can hardcode a write of 255 to alpha, say, and
         // the compiler may decide to write -1 in the llvm bitcode...
@@ -888,12 +899,16 @@ var LibrarySDL = {
   SDL_GetKeyState: function() {
     return _SDL_GetKeyboardState();
   },
+  
+  SDL_GetKeyName: function(key) {
+    if (!SDL.keyName) {
+      SDL.keyName = allocate(intArrayFromString('unknown key'), 'i8', ALLOC_NORMAL);
+    }
+    return SDL.keyName;
+  },
 
   SDL_GetModState: function() {
-    // TODO: numlock, capslock, etc.
-    return (SDL.keyboardState[16] ? 0x0001 | 0x0002 : 0) | // KMOD_LSHIFT & KMOD_RSHIFT
-           (SDL.keyboardState[17] ? 0x0040 | 0x0080 : 0) | // KMOD_LCTRL & KMOD_RCTRL
-           (SDL.keyboardState[18] ? 0x0100 | 0x0200 : 0); // KMOD_LALT & KMOD_RALT
+    return SDL.modState;
   },
 
   SDL_GetMouseState: function(x, y) {
@@ -944,6 +959,13 @@ var LibrarySDL = {
 
   SDL_CreateRGBSurface: function(flags, width, height, depth, rmask, gmask, bmask, amask) {
     return SDL.makeSurface(width, height, flags, false, 'CreateRGBSurface', rmask, gmask, bmask, amask);
+  },
+
+  SDL_CreateRGBSurfaceFrom: function(pixels, width, height, depth, pitch, rmask, gmask, bmask, amask) {
+    // TODO: Actually fill pixel data to created surface.
+    // TODO: Take into account depth and pitch parameters.
+    console.log('TODO: Partially unimplemented SDL_CreateRGBSurfaceFrom called!');
+    return SDL.makeSurface(width, height, 0, false, 'CreateRGBSurfaceFrom', rmask, gmask, bmask, amask);
   },
 
   SDL_DisplayFormatAlpha: function(surf) {
@@ -1094,13 +1116,27 @@ var LibrarySDL = {
   },
 
   SDL_MapRGB: function(fmt, r, g, b) {
-    // Canvas screens are always RGBA
-    return 0xff+((b&0xff)<<8)+((g&0xff)<<16)+((r&0xff)<<24)
+    // Canvas screens are always RGBA. We assume the machine is little-endian.
+    return r&0xff|(g&0xff)<<8|(b&0xff)<<16|0xff000000;
   },
 
   SDL_MapRGBA: function(fmt, r, g, b, a) {
-    // Canvas screens are always RGBA
-    return (a&0xff)+((b&0xff)<<8)+((g&0xff)<<16)+((r&0xff)<<24)
+    // Canvas screens are always RGBA. We assume the machine is little-endian.
+    return r&0xff|(g&0xff)<<8|(b&0xff)<<16|(a&0xff)<<24;
+  },
+
+  SDL_GetAppState: function() {
+    var state = 0;
+
+    if (Browser.pointerLock) {
+      state |= 0x01;  // SDL_APPMOUSEFOCUS
+    }
+    if (document.hasFocus()) {
+      state |= 0x02;  // SDL_APPINPUTFOCUS
+    }
+    state |= 0x04;  // SDL_APPACTIVE
+
+    return state;
   },
 
   SDL_WM_GrabInput: function() {},
@@ -1349,26 +1385,28 @@ var LibrarySDL = {
     // If the user asks us to allocate a channel automatically, get the first
     // free one.
     if (channel == -1) {
-      channel = SDL.channelMinimumNumber;
       for (var i = SDL.channelMinimumNumber; i < SDL.numChannels; i++) {
         if (!SDL.channels[i].audio) {
           channel = i;
           break;
         }
       }
+      if (channel == -1) {
+        Module.printErr('All ' + SDL.numChannels + ' channels in use!');
+        return -1;
+      }
     }
-
     // We clone the audio node to utilize the preloaded audio buffer, since
     // the browser has already preloaded the audio file.
     var channelInfo = SDL.channels[channel];
     channelInfo.audio = audio = audio.cloneNode(true);
     audio.numChannels = info.audio.numChannels;
     audio.frequency = info.audio.frequency;
-
     // TODO: handle N loops. Behavior matches Mix_PlayMusic
     audio.loop = loops != 0; 
-    if (SDL.channelFinished) {
-      audio['onended'] = function() { // TODO: cache these
+    audio['onended'] = function() { // TODO: cache these
+      channelInfo.audio = null;
+      if (SDL.channelFinished) {
         Runtime.getFuncWrapper(SDL.channelFinished, 'vi')(channel);
       }
     }
@@ -1425,7 +1463,6 @@ var LibrarySDL = {
       audio.play();
     }
     audio.volume = channelInfo.volume;
-    audio.paused = false;
     return channel;
   },
   Mix_PlayChannelTimed: 'Mix_PlayChannel', // XXX ignore Timing
@@ -1439,6 +1476,8 @@ var LibrarySDL = {
     if (info.audio) {
       info.audio.pause();
       info.audio = null;
+    } else {
+      Module.printErr('No Audio for channel: ' + channel);
     }
     if (SDL.channelFinished) {
       Runtime.getFuncWrapper(SDL.channelFinished, 'vi')(channel);
@@ -1476,6 +1515,12 @@ var LibrarySDL = {
     }
     audio.volume = SDL.music.volume;
     audio['onended'] = _Mix_HaltMusic; // will send callback
+    if (SDL.music.audio) {
+      if (!SDL.music.audio.paused) {
+        Module.printErr('Music is already playing. ' + SDL.music.source);
+      }
+      SDL.music.audio.pause();
+    }
     SDL.music.audio = audio;
     return 0;
   },
@@ -1541,7 +1586,8 @@ var LibrarySDL = {
     var info = SDL.channels[channel];
     if (info && info.audio) {
       info.audio.pause();
-      info.audio.paused = true;
+    } else {
+      Module.printErr('Mix_Pause: no sound found for channel: ' + channel);
     }
   },
   
@@ -1755,6 +1801,10 @@ var LibrarySDL = {
     return -1;
   },
 
+  SDL_SetGammaRamp: function (redTable, greenTable, blueTable) {
+    return -1;
+  },
+
   // Misc
 
   SDL_InitSubSystem: function(flags) { return 0 },
@@ -1773,7 +1823,7 @@ var LibrarySDL = {
 
   SDL_AddTimer: function(interval, callback, param) {
     return window.setTimeout(function() {
-      Runtime.dynCall('ii', callback, [interval, param]);
+      Runtime.dynCall('iii', callback, [interval, param]);
     }, interval);
   },
   SDL_RemoveTimer: function(id) {
@@ -1792,7 +1842,7 @@ var LibrarySDL = {
   SDL_FreeRW: function() { throw 'SDL_FreeRW: TODO' },
   SDL_CondBroadcast: function() { throw 'SDL_CondBroadcast: TODO' },
   SDL_CondWaitTimeout: function() { throw 'SDL_CondWaitTimeout: TODO' },
-  SDL_WM_ToggleFullScreen: function() { throw 'SDL_WM_ToggleFullScreen: TODO' },
+  SDL_WM_IconifyWindow: function() { throw 'SDL_WM_IconifyWindow TODO' },
 
   Mix_SetPostMix: function() { throw 'Mix_SetPostMix: TODO' },
   Mix_QuerySpec: function() { throw 'Mix_QuerySpec: TODO' },
@@ -1800,8 +1850,17 @@ var LibrarySDL = {
   Mix_FadeOutChannel: function() { throw 'Mix_FadeOutChannel' },
 
   Mix_Linked_Version: function() { throw 'Mix_Linked_Version: TODO' },
-  SDL_CreateRGBSurfaceFrom: function() { throw 'SDL_CreateRGBSurfaceFrom: TODO' },
   SDL_SaveBMP_RW: function() { throw 'SDL_SaveBMP_RW: TODO' },
+
+  SDL_WM_SetIcon: function() { /* This function would set the application window icon surface, which doesn't apply for web canvases, so a no-op. */ },
+  SDL_HasRDTSC: function() { return 0; },
+  SDL_HasMMX: function() { return 0; },
+  SDL_HasMMXExt: function() { return 0; },
+  SDL_Has3DNow: function() { return 0; },
+  SDL_Has3DNowExt: function() { return 0; },
+  SDL_HasSSE: function() { return 0; },
+  SDL_HasSSE2: function() { return 0; },
+  SDL_HasAltiVec: function() { return 0; }
 };
 
 autoAddDeps(LibrarySDL, '$SDL');

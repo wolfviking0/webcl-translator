@@ -114,7 +114,8 @@ var Debugging = {
         m = metadataToParentMetadata[m];
         assert(m, 'Confused as to parent metadata for llvm #' + l + ', metadata !' + m);
       }
-      this.llvmLineToSourceFile[l] = metadataToFilename[m];
+      // Normalize Windows path slashes coming from LLVM metadata, so that forward slashes can be assumed as path delimiters.
+      this.llvmLineToSourceFile[l] = metadataToFilename[m].replace(/\\5C/g, '/');
     }
 
     this.on = true;
@@ -341,6 +342,7 @@ var Functions = {
                 call += (j > 1 ? ',' : '') + asmCoercion('a' + j, t[j] != 'i' ? 'float' : 'i32');
               }
               call += ')';
+              if (curr == '_setjmp') printErr('WARNING: setjmp used via a function pointer. If this is for libc setjmp (not something of your own with the same name), it will break things');
               tables.pre += 'function ' + curr + '__wrapper(' + args + ') { ' + arg_coercions + ' ; ' + retPre + call + retPost + ' }\n';
               wrapped[curr] = 1;
             }

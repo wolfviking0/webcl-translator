@@ -467,6 +467,18 @@ function isIndexableGlobal(ident) {
   return !data.alias && !data.external;
 }
 
+function isBSS(item) {
+  if (!USE_BSS) {
+    return false;
+  }
+
+  if (item.external) return false; // externals are typically implemented in a JS library, and must be accessed by name, explicitly
+
+  // return true if a global is uninitialized or initialized to 0
+  return (item.value && item.value.intertype === 'emptystruct') ||
+         (item.value && item.value.value !== undefined && item.value.value === '0');
+}
+
 function makeGlobalDef(ident) {
   if (!NAMED_GLOBALS && isIndexableGlobal(ident)) return '';
   return 'var ' + ident + ';';
@@ -490,7 +502,10 @@ function sortGlobals(globals) {
   ks.sort();
   var inv = invertArray(ks);
   return values(globals).sort(function(a, b) {
-    return inv[b.ident] - inv[a.ident];
+    // sort globals based on if they need to be explicitly initialized or not (moving
+    // values that don't need to be to the end of the array). if equal, sort by name.
+    return (Number(isBSS(a)) - Number(isBSS(b))) ||
+      (inv[b.ident] - inv[a.ident]);
   });
 }
 
@@ -710,9 +725,9 @@ function splitI64(value, floatConversion) {
   var lowInput = legalizedI64s ? value : 'VALUE';
   if (floatConversion && ASM_JS) lowInput = asmFloatToInt(lowInput);
   if (legalizedI64s) {
-    return [lowInput + '>>>0', 'Math.min(Math.floor((' + value + ')/' + asmEnsureFloat(4294967296, 'float') + '), ' + asmEnsureFloat(4294967295, 'float') + ')>>>0'];
+    return [lowInput + '>>>0', asmCoercion('Math.min(' + asmCoercion('Math.floor((' + value + ')/' + asmEnsureFloat(4294967296, 'float') + ')', 'double') + ', ' + asmEnsureFloat(4294967295, 'float') + ')', 'i32') + '>>>0'];
   } else {
-    return makeInlineCalculation(makeI64(lowInput + '>>>0', 'Math.min(Math.floor(VALUE/' + asmEnsureFloat(4294967296, 'float') + '), ' + asmEnsureFloat(4294967295, 'float') + ')>>>0'), value, 'tempBigIntP');
+    return makeInlineCalculation(makeI64(lowInput + '>>>0', asmCoercion('Math.min(' + asmCoercion('Math.floor(VALUE/' + asmEnsureFloat(4294967296, 'float') + ')', 'double') + ', ' + asmEnsureFloat(4294967295, 'float') + ')', 'i32') + '>>>0'), value, 'tempBigIntP');
   }
 }
 function mergeI64(value, unsigned) {
@@ -1049,7 +1064,7 @@ function getHeapOffset(offset, type, forceAsm) {
   offset = '(' + offset + ')';
   if (shifts != 0) {
     if (CHECK_HEAP_ALIGN) {
-      return '(CHECK_ALIGN_' + sz + '(' + offset + '|0)>>' + shifts + ')';
+      return '((CHECK_ALIGN_' + sz + '(' + offset + '|0)|0)>>' + shifts + ')';
     } else {
       return '(' + offset + '>>' + shifts + ')';
     }
@@ -1383,7 +1398,7 @@ function makeCopyValues(dest, src, num, type, modifier, align, sep) {
     if (!isNumber(num)) num = stripCorrections(num);
     if (!isNumber(align)) align = stripCorrections(align);
     if (!isNumber(num) || (parseInt(num)/align >= UNROLL_LOOP_MAX)) {
-      return '_memcpy(' + dest + ', ' + src + ', ' + num + ')';
+      return '(_memcpy(' + dest + ', ' + src + ', ' + num + ')|0)';
     }
     num = parseInt(num);
     if (ASM_JS) {
@@ -1465,7 +1480,7 @@ function getFastValue(a, op, b, type) {
         if ((isNumber(a) && Math.abs(a) < TWO_TWENTY) || (isNumber(b) && Math.abs(b) < TWO_TWENTY) || (bits < 32 && !ASM_JS)) {
           return '(((' + a + ')*(' + b + '))&' + ((Math.pow(2, bits)-1)|0) + ')'; // keep a non-eliminatable coercion directly on this
         }
-        return 'Math.imul(' + a + ',' + b + ')';
+        return '(Math.imul(' + a + ',' + b + ')|0)';
       }
     } else {
       if (a == '0') {
@@ -2204,7 +2219,7 @@ function processMathop(item) {
     case 'sub': return handleOverflow(getFastValue(idents[0], '-', idents[1], item.type), bits);
     case 'sdiv': case 'udiv': return makeRounding(getFastValue(idents[0], '/', idents[1], item.type), bits, op[0] === 's');
     case 'mul': return getFastValue(idents[0], '*', idents[1], item.type); // overflow handling is already done in getFastValue for '*'
-    case 'urem': case 'srem': return getFastValue(idents[0], '%', idents[1], item.type);
+    case 'urem': case 'srem': return makeRounding(getFastValue(idents[0], '%', idents[1], item.type), bits, op[0] === 's');
     case 'or': {
       if (bits > 32) {
         assert(bits === 64, 'Too many bits for or: ' + bits);

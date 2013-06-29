@@ -10,6 +10,10 @@
 
 // TODO: move all set to unorderedset
 
+template <class T, class U> bool contains(const T& container, const U& contained) {
+  return container.find(contained) != container.end();
+}
+
 #if DEBUG
 static void PrintDebug(const char *Format, ...);
 #define DebugDump(x, ...) Debugging::Dump(x, __VA_ARGS__)
@@ -17,6 +21,8 @@ static void PrintDebug(const char *Format, ...);
 #define PrintDebug(x, ...)
 #define DebugDump(x, ...)
 #endif
+
+#define INDENTATION 1
 
 struct Indenter {
   static int CurrIndent;
@@ -34,8 +40,8 @@ static int OutputBufferSize = 0;
 
 void PrintIndented(const char *Format, ...) {
   assert(OutputBuffer);
-  assert(OutputBuffer + Indenter::CurrIndent*2 - OutputBufferRoot < OutputBufferSize);
-  for (int i = 0; i < Indenter::CurrIndent*2; i++, OutputBuffer++) *OutputBuffer = ' ';
+  assert(OutputBuffer + Indenter::CurrIndent*INDENTATION - OutputBufferRoot < OutputBufferSize);
+  for (int i = 0; i < Indenter::CurrIndent*INDENTATION; i++, OutputBuffer++) *OutputBuffer = ' ';
   va_list Args;
   va_start(Args, Format);
   int left = OutputBufferSize - (OutputBuffer - OutputBufferRoot);
@@ -47,8 +53,8 @@ void PrintIndented(const char *Format, ...) {
 
 void PutIndented(const char *String) {
   assert(OutputBuffer);
-  assert(OutputBuffer + Indenter::CurrIndent*2 - OutputBufferRoot < OutputBufferSize);
-  for (int i = 0; i < Indenter::CurrIndent*2; i++, OutputBuffer++) *OutputBuffer = ' ';
+  assert(OutputBuffer + Indenter::CurrIndent*INDENTATION - OutputBufferRoot < OutputBufferSize);
+  for (int i = 0; i < Indenter::CurrIndent*INDENTATION; i++, OutputBuffer++) *OutputBuffer = ' ';
   int left = OutputBufferSize - (OutputBuffer - OutputBufferRoot);
   int needed = strlen(String)+1;
   assert(needed < left);
@@ -70,7 +76,7 @@ int Indenter::CurrIndent = 0;
 
 // Branch
 
-Branch::Branch(const char *ConditionInit, const char *CodeInit) : Ancestor(NULL), Labeled(false) {
+Branch::Branch(const char *ConditionInit, const char *CodeInit) : Ancestor(NULL), Labeled(true) {
   Condition = ConditionInit ? strdup(ConditionInit) : NULL;
   Code = CodeInit ? strdup(CodeInit) : NULL;
 }
@@ -98,7 +104,7 @@ void Branch::Render(Block *Target, bool SetLabel) {
 
 int Block::IdCounter = 1; // 0 is reserved for clearings
 
-Block::Block(const char *CodeInit) : Parent(NULL), Id(Block::IdCounter++), DefaultTarget(NULL), IsCheckedMultipleEntry(false) {
+Block::Block(const char *CodeInit) : Parent(NULL), Id(Block::IdCounter++), IsCheckedMultipleEntry(false) {
   Code = strdup(CodeInit);
 }
 
@@ -111,7 +117,7 @@ Block::~Block() {
 }
 
 void Block::AddBranchTo(Block *Target, const char *Condition, const char *Code) {
-  assert(BranchesOut.find(Target) == BranchesOut.end()); // cannot add more than one branch to the same target
+  assert(!contains(BranchesOut, Target)); // cannot add more than one branch to the same target
   BranchesOut[Target] = new Branch(Condition, Code);
 }
 
@@ -172,6 +178,8 @@ void Block::Render(bool InLoop) {
     }
   }
 
+  Block *DefaultTarget(NULL); // The block we branch to without checking the condition, if none of the other conditions held.
+
   // We must do this here, because blocks can be split and even comparing their Ids is not enough. We must check the conditions.
   for (BlockBranchMap::iterator iter = ProcessedBranchesOut.begin(); iter != ProcessedBranchesOut.end(); iter++) {
     if (!iter->second->Condition) {
@@ -179,7 +187,7 @@ void Block::Render(bool InLoop) {
       DefaultTarget = iter->first;
     }
   }
-  assert(DefaultTarget); // Must be a default
+  assert(DefaultTarget); // Since each block *must* branch somewhere, this must be set
 
   ministring RemainingConditions;
   bool First = true;
@@ -196,7 +204,7 @@ void Block::Render(bool InLoop) {
       Details = ProcessedBranchesOut[DefaultTarget];
     }
     bool SetCurrLabel = SetLabel && Target->IsCheckedMultipleEntry;
-    bool HasFusedContent = Fused && Fused->InnerMap.find(Target) != Fused->InnerMap.end();
+    bool HasFusedContent = Fused && contains(Fused->InnerMap, Target);
     bool HasContent = SetCurrLabel || Details->Type != Branch::Direct || HasFusedContent || Details->Code;
     if (iter != ProcessedBranchesOut.end()) {
       // If there is nothing to show in this branch, omit the condition
@@ -354,7 +362,7 @@ void Relooper::Calculate(Block *Entry) {
       while (ToInvestigate.size() > 0) {
         Block *Curr = ToInvestigate.front();
         ToInvestigate.pop_front();
-        if (Live.find(Curr) != Live.end()) continue;
+        if (contains(Live, Curr)) continue;
         Live.insert(Curr);
         for (BlockBranchMap::iterator iter = Curr->BranchesOut.begin(); iter != Curr->BranchesOut.end(); iter++) {
           ToInvestigate.push_back(iter->first);
@@ -378,7 +386,7 @@ void Relooper::Calculate(Block *Entry) {
       for (BlockSet::iterator iter = Live.begin(); iter != Live.end(); iter++) {
         Block *Original = *iter;
         if (Original->BranchesIn.size() <= 1 || Original->BranchesOut.size() > 0) continue; // only dead ends, for now
-        if (Original->BranchesOut.find(Original) != Original->BranchesOut.end()) continue; // cannot split a looping node
+        if (contains(Original->BranchesOut, Original)) continue; // cannot split a looping node
         if (strlen(Original->Code)*(Original->BranchesIn.size()-1) > TotalCodeSize/5) continue; // if splitting increases raw code size by a significant amount, abort
         // Split the node (for simplicity, we replace all the blocks, even though we could have reused the original)
         PrintDebug("Splitting block %d\n", Original->Id);
@@ -421,7 +429,7 @@ void Relooper::Calculate(Block *Entry) {
   // Add incoming branches from live blocks, ignoring dead code
   for (int i = 0; i < Blocks.size(); i++) {
     Block *Curr = Blocks[i];
-    if (Pre.Live.find(Curr) == Pre.Live.end()) continue;
+    if (!contains(Pre.Live, Curr)) continue;
     for (BlockBranchMap::iterator iter = Curr->BranchesOut.begin(); iter != Curr->BranchesOut.end(); iter++) {
       iter->first->BranchesIn.insert(Curr);
     }
@@ -443,7 +451,7 @@ void Relooper::Calculate(Block *Entry) {
     // will appear
     void GetBlocksOut(Block *Source, BlockSet& Entries, BlockSet *LimitTo=NULL) {
       for (BlockBranchMap::iterator iter = Source->BranchesOut.begin(); iter != Source->BranchesOut.end(); iter++) {
-        if (!LimitTo || LimitTo->find(iter->first) != LimitTo->end()) {
+        if (!LimitTo || contains(*LimitTo, iter->first)) {
           Entries.insert(iter->first);
         }
       }
@@ -455,7 +463,7 @@ void Relooper::Calculate(Block *Entry) {
       DebugDump(From, "  relevant to solipsize: ");
       for (BlockSet::iterator iter = Target->BranchesIn.begin(); iter != Target->BranchesIn.end();) {
         Block *Prior = *iter;
-        if (From.find(Prior) == From.end()) {
+        if (!contains(From, Prior)) {
           iter++;
           continue;
         }
@@ -500,7 +508,7 @@ void Relooper::Calculate(Block *Entry) {
       while (Queue.size() > 0) {
         Block *Curr = *(Queue.begin());
         Queue.erase(Queue.begin());
-        if (InnerBlocks.find(Curr) == InnerBlocks.end()) {
+        if (!contains(InnerBlocks, Curr)) {
           // This element is new, mark it as inner and remove from outer
           InnerBlocks.insert(Curr);
           Blocks.erase(Curr);
@@ -516,7 +524,7 @@ void Relooper::Calculate(Block *Entry) {
         Block *Curr = *iter;
         for (BlockBranchMap::iterator iter = Curr->BranchesOut.begin(); iter != Curr->BranchesOut.end(); iter++) {
           Block *Possible = iter->first;
-          if (InnerBlocks.find(Possible) == InnerBlocks.end()) {
+          if (!contains(InnerBlocks, Possible)) {
             NextEntries.insert(Possible);
           }
         }
@@ -613,7 +621,7 @@ void Relooper::Calculate(Block *Entry) {
             Block *Invalidatee = ToInvalidate.front();
             ToInvalidate.pop_front();
             Block *Owner = Ownership[Invalidatee];
-            if (IndependentGroups.find(Owner) != IndependentGroups.end()) { // Owner may have been invalidated, do not add to IndependentGroups!
+            if (contains(IndependentGroups, Owner)) { // Owner may have been invalidated, do not add to IndependentGroups!
               IndependentGroups[Owner].erase(Invalidatee);
             }
             if (Ownership[Invalidatee]) { // may have been seen before and invalidated already
@@ -686,7 +694,7 @@ void Relooper::Calculate(Block *Entry) {
           Block *Child = *iter;
           for (BlockSet::iterator iter = Child->BranchesIn.begin(); iter != Child->BranchesIn.end(); iter++) {
             Block *Parent = *iter;
-            if (Ignore && Ignore->find(Parent) != Ignore->end()) continue;
+            if (Ignore && contains(*Ignore, Parent)) continue;
             if (Helper.Ownership[Parent] != Helper.Ownership[Child]) {
               ToInvalidate.push_back(Child);
             }
@@ -737,7 +745,7 @@ void Relooper::Calculate(Block *Entry) {
             Block *CurrTarget = iter->first;
             BlockBranchMap::iterator Next = iter;
             Next++;
-            if (CurrBlocks.find(CurrTarget) == CurrBlocks.end()) {
+            if (!contains(CurrBlocks, CurrTarget)) {
               NextEntries.insert(CurrTarget);
               Solipsize(CurrTarget, Branch::Break, Multiple, CurrBlocks); 
             }
@@ -754,7 +762,7 @@ void Relooper::Calculate(Block *Entry) {
       // Add entries not handled as next entries, they are deferred
       for (BlockSet::iterator iter = Entries.begin(); iter != Entries.end(); iter++) {
         Block *Entry = *iter;
-        if (IndependentGroups.find(Entry) == IndependentGroups.end()) {
+        if (!contains(IndependentGroups, Entry)) {
           NextEntries.insert(Entry);
         }
       }
@@ -818,7 +826,7 @@ void Relooper::Calculate(Block *Entry) {
             BlockBlockSetMap::iterator curr = iter++; // iterate carefully, we may delete
             for (BlockSet::iterator iterBranch = Entry->BranchesIn.begin(); iterBranch != Entry->BranchesIn.end(); iterBranch++) {
               Block *Origin = *iterBranch;
-              if (Group.find(Origin) == Group.end()) {
+              if (!contains(Group, Origin)) {
                 // Reached from outside the group, so we cannot handle this
                 PrintDebug("Cannot handle group with entry %d because of incoming branch from %d\n", Entry->Id, Origin->Id);
                 IndependentGroups.erase(curr);
@@ -856,7 +864,7 @@ void Relooper::Calculate(Block *Entry) {
                 Block *Curr = *iter;
                 for (BlockBranchMap::iterator iter = Curr->BranchesOut.begin(); iter != Curr->BranchesOut.end(); iter++) {
                   Block *Target = iter->first;
-                  if (SmallGroup.find(Target) == SmallGroup.end()) {
+                  if (!contains(SmallGroup, Target)) {
                     DeadEnd = false;
                     break;
                   }
@@ -897,6 +905,7 @@ void Relooper::Calculate(Block *Entry) {
   BlockSet Entries;
   Entries.insert(Entry);
   Root = Analyzer(this).Process(AllBlocks, Entries, NULL);
+  assert(Root);
 
   // Post optimizations
 
@@ -906,13 +915,13 @@ void Relooper::Calculate(Block *Entry) {
 
     PostOptimizer(Relooper *ParentInit) : Parent(ParentInit), Closure(NULL) {}
 
-    #define RECURSE_MULTIPLE_MANUAL(func, manual) \
-      for (BlockShapeMap::iterator iter = manual->InnerMap.begin(); iter != manual->InnerMap.end(); iter++) { \
+    #define RECURSE_Multiple(shape, func) \
+      for (BlockShapeMap::iterator iter = shape->InnerMap.begin(); iter != shape->InnerMap.end(); iter++) { \
         func(iter->second); \
       }
-    #define RECURSE_MULTIPLE(func) RECURSE_MULTIPLE_MANUAL(func, Multiple);
-    #define RECURSE_LOOP(func) \
-      func(Loop->Inner);
+    #define RECURSE_Loop(shape, func) \
+      func(shape->Inner);
+    #define RECURSE(shape, func) RECURSE_##shape(shape, func);
 
     #define SHAPE_SWITCH(var, simple, multiple, loop) \
       if (SimpleShape *Simple = Shape::IsSimple(var)) { \
@@ -921,20 +930,6 @@ void Relooper::Calculate(Block *Entry) {
         multiple; \
       } else if (LoopShape *Loop = Shape::IsLoop(var)) { \
         loop; \
-      }
-
-    #define SHAPE_SWITCH_AUTO(var, simple, multiple, loop, func) \
-      if (SimpleShape *Simple = Shape::IsSimple(var)) { \
-        simple; \
-        func(Simple->Next); \
-      } else if (MultipleShape *Multiple = Shape::IsMultiple(var)) { \
-        multiple; \
-        RECURSE_MULTIPLE(func) \
-        func(Multiple->Next); \
-      } else if (LoopShape *Loop = Shape::IsLoop(var)) { \
-        loop; \
-        RECURSE_LOOP(func); \
-        func(Loop->Next); \
       }
 
     // Find the blocks that natural control flow can get us directly to, or through a multiple that we ignore
@@ -951,10 +946,28 @@ void Relooper::Calculate(Block *Entry) {
       });
     }
 
+    void FindNaturals(Shape *Root, Shape *Otherwise=NULL) {
+      if (Root->Next) {
+        Root->Natural = Root->Next;
+        FindNaturals(Root->Next, Otherwise);
+      } else {
+        Root->Natural = Otherwise;
+      }
+
+      SHAPE_SWITCH(Root, {
+      }, {
+        for (BlockShapeMap::iterator iter = Multiple->InnerMap.begin(); iter != Multiple->InnerMap.end(); iter++) {
+          FindNaturals(iter->second, Root->Natural);
+        }
+      }, {
+        FindNaturals(Loop->Inner, Loop->Inner);
+      });
+    }
+
     // Remove unneeded breaks and continues.
     // A flow operation is trivially unneeded if the shape we naturally get to by normal code
     // execution is the same as the flow forces us to.
-    void RemoveUnneededFlows(Shape *Root, Shape *Natural=NULL) {
+    void RemoveUnneededFlows(Shape *Root, Shape *Natural=NULL, LoopShape *LastLoop=NULL) {
       BlockSet NaturalBlocks;
       FollowNaturalFlow(Natural, NaturalBlocks);
       Shape *Next = Root;
@@ -971,8 +984,14 @@ void Relooper::Calculate(Block *Entry) {
             for (BlockBranchMap::iterator iter = Simple->Inner->ProcessedBranchesOut.begin(); iter != Simple->Inner->ProcessedBranchesOut.end(); iter++) {
               Block *Target = iter->first;
               Branch *Details = iter->second;
-              if (Details->Type != Branch::Direct && NaturalBlocks.find(Target) != NaturalBlocks.end()) { // note: cannot handle split blocks
+              if (Details->Type != Branch::Direct && contains(NaturalBlocks, Target)) { // note: cannot handle split blocks
                 Details->Type = Branch::Direct;
+                if (MultipleShape *Multiple = Shape::IsMultiple(Details->Ancestor)) {
+                  Multiple->NeedLoop--;
+                }
+              } else if (Details->Type == Branch::Break && LastLoop && LastLoop->Natural == Details->Ancestor->Natural) {
+                // it is important to simplify breaks, as simpler breaks enable other optimizations
+                Details->Labeled = false;
                 if (MultipleShape *Multiple = Shape::IsMultiple(Details->Ancestor)) {
                   Multiple->NeedLoop--;
                 }
@@ -981,11 +1000,11 @@ void Relooper::Calculate(Block *Entry) {
           }
         }, {
           for (BlockShapeMap::iterator iter = Multiple->InnerMap.begin(); iter != Multiple->InnerMap.end(); iter++) {
-            RemoveUnneededFlows(iter->second, Multiple->Next);
+            RemoveUnneededFlows(iter->second, Multiple->Next, Multiple->NeedLoop ? NULL : LastLoop);
           }
           Next = Multiple->Next;
         }, {
-          RemoveUnneededFlows(Loop->Inner, Loop->Inner);
+          RemoveUnneededFlows(Loop->Inner, Loop->Inner, Loop);
           Next = Loop->Next;
         });
       }
@@ -1009,14 +1028,14 @@ void Relooper::Calculate(Block *Entry) {
           // If we are fusing a Multiple with a loop into this Simple, then visit it now
           if (Fused && Fused->NeedLoop) {
             LoopStack.push(Fused);
-            RECURSE_MULTIPLE_MANUAL(FindLabeledLoops, Fused);
+            RECURSE_Multiple(Fused, FindLabeledLoops);
           }
           for (BlockBranchMap::iterator iter = Simple->Inner->ProcessedBranchesOut.begin(); iter != Simple->Inner->ProcessedBranchesOut.end(); iter++) {
             Block *Target = iter->first;
             Branch *Details = iter->second;
             if (Details->Type != Branch::Direct) {
               assert(LoopStack.size() > 0);
-              if (Details->Ancestor != LoopStack.top()) {
+              if (Details->Ancestor != LoopStack.top() && Details->Labeled) {
                 LabeledShape *Labeled = Shape::IsLabeled(Details->Ancestor);
                 Labeled->Labeled = true;
                 Details->Labeled = true;
@@ -1035,14 +1054,14 @@ void Relooper::Calculate(Block *Entry) {
           if (Multiple->NeedLoop) {
             LoopStack.push(Multiple);
           }
-          RECURSE_MULTIPLE(FindLabeledLoops);
+          RECURSE(Multiple, FindLabeledLoops);
           if (Multiple->NeedLoop) {
             LoopStack.pop();
           }
           Next = Root->Next;
         }, {
           LoopStack.push(Loop);
-          RECURSE_LOOP(FindLabeledLoops);
+          RECURSE(Loop, FindLabeledLoops);
           LoopStack.pop();
           Next = Root->Next;
         });
@@ -1054,6 +1073,7 @@ void Relooper::Calculate(Block *Entry) {
     }
 
     void Process(Shape *Root) {
+      FindNaturals(Root);
       RemoveUnneededFlows(Root);
       FindLabeledLoops(Root);
     }
@@ -1066,6 +1086,7 @@ void Relooper::Calculate(Block *Entry) {
 
 void Relooper::Render() {
   OutputBuffer = OutputBufferRoot;
+  assert(Root);
   Root->Render(false);
 }
 
@@ -1094,13 +1115,17 @@ void Debugging::Dump(BlockSet &Blocks, const char *prefix) {
     for (BlockBranchMap::iterator iter2 = Curr->BranchesOut.begin(); iter2 != Curr->BranchesOut.end(); iter2++) {
       Block *Other = iter2->first;
       printf("  -> %d\n", Other->Id);
-      assert(Other->BranchesIn.find(Curr) != Other->BranchesIn.end());
+      assert(contains(Other->BranchesIn, Curr));
     }
   }
 }
 
 void Debugging::Dump(Shape *S, const char *prefix) {
   if (prefix) printf("%s ", prefix);
+  if (!S) {
+    printf(" (null)\n");
+    return;
+  }
   printf(" %d ", S->Id);
   SHAPE_SWITCH(S, {
     printf("<< Simple with block %d\n", Simple->Inner->Id);

@@ -4399,7 +4399,7 @@ LibraryManager.library = {
         {{{ makeSetValueAsm('dest', 0, makeGetValueAsm('src', 0, 'i8'), 'i8') }}};
       }
     } else {
-      _memcpy(dest, src, num);
+      _memcpy(dest, src, num) | 0;
     }
   },
   llvm_memmove_i32: 'memmove',
@@ -4655,6 +4655,14 @@ LibraryManager.library = {
       ptr++;
     }
     return 0;
+  },
+
+  strnlen: function(ptr, num) {
+    for (var i = 0; i < num; i++) {
+      if ({{{ makeGetValue('ptr', 0, 'i8') }}} == 0) return i;
+      ptr++;
+    }
+    return num;
   },
 
   strstr: function(ptr1, ptr2) {
@@ -4991,22 +4999,19 @@ LibraryManager.library = {
     return makeSetValue(ptr, 0, 'varrp', 'void*');
 #endif
 #if TARGET_LE32
-    // 4-word structure: start, current offset
-    return makeSetValue(ptr, 0, 'varrp', 'void*') + ';' + makeSetValue(ptr, 4, 0, 'void*');
+    // 2-word structure: struct { void* start; void* currentOffset; }
+    return makeSetValue(ptr, 0, 'varrp', 'void*') + ';' + makeSetValue(ptr, Runtime.QUANTUM_SIZE, 0, 'void*');
 #endif
   },
 
   llvm_va_end: function() {},
 
   llvm_va_copy: function(ppdest, ppsrc) {
+  	// copy the list start
     {{{ makeCopyValues('ppdest', 'ppsrc', Runtime.QUANTUM_SIZE, 'null', null, 1) }}};
-    /* Alternate implementation that copies the actual DATA; it assumes the va_list is prefixed by its size
-    var psrc = IHEAP[ppsrc]-1;
-    var num = IHEAP[psrc]; // right before the data, is the number of (flattened) values
-    var pdest = _malloc(num+1);
-    _memcpy(pdest, psrc, num+1);
-    IHEAP[ppdest] = pdest+1;
-    */
+    
+    // copy the list's current offset (will be advanced with each call to va_arg)
+    {{{ makeCopyValues('(ppdest+'+Runtime.QUANTUM_SIZE+')', '(ppsrc+'+Runtime.QUANTUM_SIZE+')', Runtime.QUANTUM_SIZE, 'null', null, 1) }}};
   },
 
   llvm_bswap_i16: function(x) {
@@ -6354,7 +6359,8 @@ LibraryManager.library = {
   // Note that we need to emulate functions that use setjmp, and also to create
   // a new label we can return to. Emulation make such functions slower, this
   // can be alleviated by making a new function containing just the setjmp
-  // related functionality so the slowdown is more limited.
+  // related functionality so the slowdown is more limited - you may need
+  // to prevent inlining to keep this isolated, try __attribute__((noinline))
   // ==========================================================================
 
   saveSetjmp__asm: true,
@@ -6374,11 +6380,11 @@ LibraryManager.library = {
     setjmpId = (setjmpId+1)|0;
     {{{ makeSetValueAsm('env', '0', 'setjmpId', 'i32') }}};
     while ((i|0) < {{{ 2*MAX_SETJMPS }}}) {
-      if ({{{ makeGetValueAsm('table', 'i*4', 'i32') }}} == 0) {
-        {{{ makeSetValueAsm('table', 'i*4', 'setjmpId', 'i32') }}};
-        {{{ makeSetValueAsm('table', 'i*4+4', 'label', 'i32') }}};
+      if ({{{ makeGetValueAsm('table', '(i<<2)', 'i32') }}} == 0) {
+        {{{ makeSetValueAsm('table', '(i<<2)', 'setjmpId', 'i32') }}};
+        {{{ makeSetValueAsm('table', '(i<<2)+4', 'label', 'i32') }}};
         // prepare next slot
-        {{{ makeSetValueAsm('table', 'i*4+8', '0', 'i32') }}};
+        {{{ makeSetValueAsm('table', '(i<<2)+8', '0', 'i32') }}};
         return 0;
       }
       i = (i+2)|0;
@@ -6395,10 +6401,10 @@ LibraryManager.library = {
     table = table|0;
     var i = 0, curr = 0;
     while ((i|0) < {{{ MAX_SETJMPS }}}) {
-      curr = {{{ makeGetValueAsm('table', 'i*4', 'i32') }}};
+      curr = {{{ makeGetValueAsm('table', '(i<<2)', 'i32') }}};
       if ((curr|0) == 0) break;
       if ((curr|0) == (id|0)) {
-        return {{{ makeGetValueAsm('table', 'i*4+4', 'i32') }}};
+        return {{{ makeGetValueAsm('table', '(i<<2)+4', 'i32') }}};
       }
       i = (i+2)|0;
     }
@@ -7218,6 +7224,23 @@ LibraryManager.library = {
     return 1;
   },
 
+  // netinet/in.h
+
+  _in6addr_any:
+    'allocate([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC)',
+  _in6addr_loopback:
+    'allocate([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], "i8", ALLOC_STATIC)',
+  _in6addr_linklocal_allnodes:
+    'allocate([255,2,0,0,0,0,0,0,0,0,0,0,0,0,0,1], "i8", ALLOC_STATIC)',
+  _in6addr_linklocal_allrouters:
+    'allocate([255,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2], "i8", ALLOC_STATIC)',
+  _in6addr_interfacelocal_allnodes:
+    'allocate([255,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1], "i8", ALLOC_STATIC)',
+  _in6addr_interfacelocal_allrouters:
+    'allocate([255,1,0,0,0,0,0,0,0,0,0,0,0,0,0,2], "i8", ALLOC_STATIC)',
+  _in6addr_sitelocal_allrouters:
+    'allocate([255,5,0,0,0,0,0,0,0,0,0,0,0,0,0,2], "i8", ALLOC_STATIC)',
+
   // ==========================================================================
   // netdb.h
   // ==========================================================================
@@ -7668,8 +7691,8 @@ LibraryManager.library = {
       nfds = Math.min(64, nfds); // fd sets have 64 bits
 
       for (var fd = 0; fd < nfds; fd++) {
-        var mask = 1 << (fd % 32), int = fd < 32 ? srcLow : srcHigh;
-        if (int & mask) {
+        var mask = 1 << (fd % 32), int_ = fd < 32 ? srcLow : srcHigh;
+        if (int_ & mask) {
           // index is in the set, check if it is ready for read
           var info = FS.streams[fd];
           if (info && can(info)) {
@@ -8057,8 +8080,8 @@ LibraryManager.library = {
       nfds = Math.min(64, nfds); // fd sets have 64 bits
 
       for (var fd = 0; fd < nfds; fd++) {
-        var mask = 1 << (fd % 32), int = fd < 32 ? srcLow : srcHigh;
-        if (int & mask) {
+        var mask = 1 << (fd % 32), int_ = fd < 32 ? srcLow : srcHigh;
+        if (int_ & mask) {
           // index is in the set, check if it is ready for read
           var info = FS.streams[fd];
           if (info && can(info)) {
