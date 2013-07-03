@@ -42,15 +42,18 @@ Launch Sample :
 
 You can launch index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
 
-                 |    NOKIA PLUGIN  | SAMSUNG WEBKIT   |
+					|------------------|------------------|
+					
+					|    NOKIA PLUGIN  | SAMSUNG WEBKIT   |
           
-                 |------------------|------------------|
+    |---------------|------------------|------------------|
+                 	
+	| hello_world	|		 OK		   |	   OK		  |
 
-1) hello_world   |       OK         |       OK         |
+	| hello_world_2	|		 OK		   |	   OK		  |
 
-2) hello_world_2 |       OK         |       OK         |
+	| qjulia		| WORK IN PROGRESS | WORK IN PROGRESS |
 
-3) qjulia        | WORK IN PROGRESS | WORK IN PROGRESS |
+	| reduce		| WORK IN PROGRESS | WORK IN PROGRESS |
 
-4) reduce        | WORK IN PROGRESS | WORK IN PROGRESS |
-
+	|---------------|------------------|------------------|
