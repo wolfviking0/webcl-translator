@@ -28,23 +28,21 @@ Patch of Emscripten :
 		line 400 => var libraries = ['library.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_opencl.js'].concat(additionalLibraries);
 
 
+Build Sample :
+--------------
+
+Call makefile inside the different sample folder
+
 Launch Sample :
 ---------------
 
-You can launch index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
+Call index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
 
-					|------------------|------------------|
-					
+					|------------------|------------------|			
 					|    NOKIA PLUGIN  | SAMSUNG WEBKIT   |
-          
     |---------------|------------------|------------------|
-                 	
 	| hello_world	|		 OK		   |	   OK		  |
-
 	| hello_world_2	|		 OK		   |	   OK		  |
-
 	| qjulia		| WORK IN PROGRESS | WORK IN PROGRESS |
-
 	| reduce		| WORK IN PROGRESS | WORK IN PROGRESS |
-
 	|---------------|------------------|------------------|
