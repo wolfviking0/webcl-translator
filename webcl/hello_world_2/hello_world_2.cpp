@@ -32,7 +32,7 @@ const int ARRAY_SIZE = 1000;
 //  Create an OpenCL context on the first available platform using
 //  either a GPU or CPU depending on what is available.
 //
-cl_context CreateContext()
+cl_context CreateContext(int plat)
 {
     cl_int errNum;
     cl_uint numPlatforms;
@@ -58,12 +58,14 @@ cl_context CreateContext()
         (cl_context_properties)firstPlatformId,
         0
     };
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
+    context = clCreateContextFromType(contextProperties, plat ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU,
                                       NULL, NULL, &errNum);
     if (errNum != CL_SUCCESS)
     {
-        std::cout << "Could not create GPU context, trying CPU..." << std::endl;
-        context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_CPU,
+        std::string oldp = plat ? "GPU" : "CPU";
+        std::string newp = plat ? "CPU" : "GPU";
+        std::cout << "Could not create " << oldp << " context, trying " << newp << " ..."<< std::endl;
+        context = clCreateContextFromType(contextProperties, plat ? CL_DEVICE_TYPE_CPU : CL_DEVICE_TYPE_GPU,
                                           NULL, NULL, &errNum);
         if (errNum != CL_SUCCESS)
         {
@@ -234,8 +236,22 @@ int main(int argc, char** argv)
     cl_mem memObjects[3] = { 0, 0, 0 };
     cl_int errNum;
 
+    int use_gpu = 1;
+    int i;
+    for( i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+    
     // Create an OpenCL context on first available platform
-    context = CreateContext();
+    context = CreateContext(use_gpu);
     if (context == NULL)
     {
         std::cerr << "Failed to create OpenCL context." << std::endl;

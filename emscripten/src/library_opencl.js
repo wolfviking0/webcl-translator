@@ -123,13 +123,15 @@ var LibraryOpenCL = {
         
 #if OPENCL_DEBUG
         var plat = platforms[i];
-        var name = plat.getPlatformInfo (WebCL.CL_PLATFORM_NAME);
-        var vendor = plat.getPlatformInfo (WebCL.CL_PLATFORM_VENDOR);
-        var version = plat.getPlatformInfo (WebCL.CL_PLATFORM_VERSION);
-        var extensions = plat.getPlatformInfo (WebCL.CL_PLATFORM_EXTENSIONS);
+        var name = (CL.webcl_mozilla == 1) ? plat.getPlatformInfo (WebCL.CL_PLATFORM_NAME) : "Not Visible"/*plat.getInfo (WebCL.PLATFORM_NAME)*/;
+        var vendor = (CL.webcl_mozilla == 1) ? plat.getPlatformInfo (WebCL.CL_PLATFORM_VENDOR) : "Not Visible"/*plat.getInfo (WebCL.PLATFORM_VENDOR)*/;
+        var version = (CL.webcl_mozilla == 1) ? plat.getPlatformInfo (WebCL.CL_PLATFORM_VERSION) : plat.getInfo (WebCL.PLATFORM_VERSION);
+        var extensions = (CL.webcl_mozilla == 1) ? plat.getPlatformInfo (WebCL.CL_PLATFORM_EXTENSIONS) : "Not Visible"/*plat.getInfo (WebCL.PLATFORM_EXTENSIONS)*/;
+        var profile = (CL.webcl_mozilla == 1) ? plat.getPlatformInfo (WebCL.CL_PLATFORM_PROFILE) : plat.getInfo (WebCL.PLATFORM_PROFILE);
         console.info("\t"+i+": name: " + name);              
         console.info("\t"+i+": vendor: " + vendor);              
         console.info("\t"+i+": version: " + version);
+        console.info("\t"+i+": profile: " + profile);
         console.info("\t"+i+": extensions: " + extensions);
 #endif
 
@@ -244,7 +246,9 @@ var LibraryOpenCL = {
         platform -= 1;
       }
       
-      var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+      var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices(/*DEVICE_TYPE_ALL*/); // DEVICE_TYPE_ALL not work on webkit not normal
+      
+      console.log("Nb Devices : " + alldev.length);
       
       // If devices_ids is not NULL, the num_entries must be greater than zero.
       if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
@@ -276,7 +280,7 @@ var LibraryOpenCL = {
       }
             
       if (mapcount == 0) {
-        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) :  CL.platforms[platform].getDevices(/*DEVICE_TYPE_ALL*/); // DEVICE_TYPE_ALL not work on webkit not normal
         for (var i = 0 ; i < alldev.length; i++) {
           var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : /*alldev[i].getInfo(WebCL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
           map[name] = alldev[i];
@@ -518,7 +522,7 @@ var LibraryOpenCL = {
           size = 1;
           break;              
         case (0x102B) /* CL_DEVICE_NAME */:
-          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME) : "No Device Name"; // return string
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_NAME)*/; // return string
           size = res.length;
           writeStringToMemory(res, param_value);
           break;
@@ -601,10 +605,10 @@ var LibraryOpenCL = {
         case (0x1001) /* CL_DEVICE_VENDOR_ID*/:
           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR_ID); // return cl_uint
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
-          size = 1;
+          size = 1;make
           break;       
         case (0x102C) /* CL_DEVICE_VENDOR*/:
-          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR) : "No Device Vendor"; // return string
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR) :  "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_VENDOR)*/; // return string
           writeStringToMemory(res, param_value);
           size = res.length;
           break;
@@ -796,28 +800,37 @@ var LibraryOpenCL = {
       }
           
       // \todo en faire une function si le device n'existe pas
-      var alldev = CL.platforms[plat].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
+      var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[plat].getDevices(/*DEVICE_TYPE_ALL*/); // DEVICE_TYPE_ALL not work on webkit not normal
       var mapcount = 0;
     
       for (var i = 0 ; i < alldev.length; i++ ) {
-        var type = alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
+        var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : alldev[i].getInfo(WebCL.DEVICE_TYPE);
         if (type == device_type_i64_1 || device_type_i64_1 == -1) {
            mapcount ++;
         }        
       }
-          
-      if (mapcount >= 1) {        
-        CL.ctx.push(WebCL.createContextFromType(prop, device_type_i64_1));
-      } else {
-        // Use default platform
-        CL.ctx.push(WebCL.createContextFromType(prop, WebCL.CL_DEVICE_TYPE_DEFAULT));
-      }
 
+      if (CL.webcl_mozilla == 1) {
+        if (mapcount >= 1) {        
+          CL.ctx.push(WebCL.createContextFromType(prop, device_type_i64_1));
+        } else {
+          // Use default platform
+          CL.ctx.push(WebCL.createContextFromType(prop, WebCL.CL_DEVICE_TYPE_DEFAULT));
+        }
+      } else {
+        if (mapcount >= 1) {
+          var contextProperties = {platform: null, devices: null, deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+          CL.ctx.push(WebCL.createContext(contextProperties));
+        } else {
+          CL.ctx.push(WebCL.createContext());
+        }
+      }
+    
       // Return the pos of the context +1
       return CL.ctx.length;
       
     } catch (e) {
-      {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateContext",e)', 'i32') }}};
+      {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateContextFromType",e)', 'i32') }}};
       return 0; // Null pointer    
     }
   },
@@ -1460,10 +1473,12 @@ var LibraryOpenCL = {
             type = WebCLKernelArgumentTypes.VEC4;
         }
 
-        if (isFloat == 1) {         
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
+        if (isFloat == 1) {    
+          CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V)
+          //( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
         } else {          
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
+          CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V)
+          //( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
         } 
         
       } else {     
@@ -1569,7 +1584,7 @@ var LibraryOpenCL = {
       return 0;/*CL_SUCCESS*/
       
     } catch(e) {
-      return CL.catchError("clEnqueueNDRangeKernel",e);
+      return CL.catchError("clEnqueueMapBuffer",e);
     }    
   },
 
@@ -1591,9 +1606,19 @@ var LibraryOpenCL = {
 
       return -48; /* CL_INVALID_KERNEL */
     }
-
-    var value_local_work_size = [];
-    var value_global_work_size = [];
+    
+    var value_local_work_size;
+    var value_global_work_size;
+    
+    console.log("Work dim : "+work_dim+ " - Work offset : "+global_work_offset)
+    
+    if (CL.webcl_mozilla == 1) {
+      value_local_work_size = [];
+      value_global_work_size = [];
+    } else {
+      value_local_work_size = new Int32Array(work_dim);
+      value_global_work_size = new Int32Array(work_dim);
+    }
     
     for (var i = 0 ; i < work_dim; i++) {
       value_local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
@@ -1617,21 +1642,15 @@ var LibraryOpenCL = {
 //#endif
   
     // empty “localWS” array because give some trouble on CPU mode with mac
-    value_local_work_size = [];  
+    // value_local_work_size = [];  
 
     try {
 
       // \todo how add some event inside the array
       if (CL.webcl_mozilla == 1) {
-        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
+        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,value_local_work_size,[]);
       } else {
-        var globalWorkSize = new Int32Array(1);     // global domain size for our calculation
-        var localWorkSize = new Int32Array(1);      // local domain size for our calculation
-        //for (var i = 0; i < local.length ; i++) {
-          globalWorkSize[0] = value_global_work_size[0];
-          localWorkSize[0] = value_local_work_size[0];
-          //}
-        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], null, globalWorkSize, localWorkSize);
+        CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, value_local_work_size);
       }
       return 0;/*CL_SUCCESS*/
     } catch(e) {

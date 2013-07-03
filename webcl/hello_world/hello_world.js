@@ -2327,7 +2327,8 @@ function copyTempDouble(ptr) {
         } else {              
           platform -= 1;
         }
-        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+        var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices(/*DEVICE_TYPE_ALL*/); // DEVICE_TYPE_ALL not work on webkit not normal
+        console.log("Nb Devices : " + alldev.length);
         // If devices_ids is not NULL, the num_entries must be greater than zero.
         if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
           console.error("clGetDeviceIDs: Invalid value : "+num_entries);
@@ -2348,9 +2349,9 @@ function copyTempDouble(ptr) {
           }    
         }
         if (mapcount == 0) {
-          var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) : CL.platforms[platform].getDevices();
+          var alldev = (CL.webcl_mozilla == 1) ? CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL) :  CL.platforms[platform].getDevices(/*DEVICE_TYPE_ALL*/); // DEVICE_TYPE_ALL not work on webkit not normal
           for (var i = 0 ; i < alldev.length; i++) {
-            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
+            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : /*alldev[i].getInfo(WebCL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
             map[name] = alldev[i];
             mapcount ++;
           }       
@@ -2492,7 +2493,7 @@ function copyTempDouble(ptr) {
             size = 1;
             break;   
           case (0x1016) /* CL_DEVICE_IMAGE_SUPPORT*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT) : 0; // return true or false
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT) : CL.devices[idx].getInfo(WebCL.DEVICE_IMAGE_SUPPORT); // return true or false
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break; 
@@ -2668,7 +2669,7 @@ function copyTempDouble(ptr) {
             size = res.length;
             break;
           case (0x1000) /* CL_DEVICE_TYPE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_TYPE); // return cl_device i64
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : CL.devices[idx].getInfo(WebCL.DEVICE_TYPE) ; // return cl_device i64
             // \todo return the type with i32 is wrong ????? seems ok with result but not really sure !!!!
             HEAP32[((param_value)>>2)]=res;
             size = 1;
@@ -3095,7 +3096,7 @@ function copyTempDouble(ptr) {
         var isNull = (HEAP32[((arg_value)>>2)] == 0);
         var value;
         if (isNull == 1) {
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArgLocal(arg_index,arg_size);
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
         } else if (arg_size > 4) {
           value = [];
           for (var i = 0; i < arg_size/4; i++) {
@@ -3105,11 +3106,24 @@ function copyTempDouble(ptr) {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
             }
           }
-          if (isFloat == 1) {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
-          } else {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
-          }      
+          // console.log("Index : "+arg_index);        
+          // console.log("Float : "+isFloat);
+          // console.log("Size : "+arg_size);
+          // console.log("Value : "+value);
+          var type;
+          if ( CL.webcl_webkit == 1 ) {
+            if (arg_size/4 == 2)
+              type = WebCLKernelArgumentTypes.VEC2;
+            if (arg_size/4 == 3)
+              type = WebCLKernelArgumentTypes.VEC3;
+            if (arg_size/4 == 4)
+              type = WebCLKernelArgumentTypes.VEC4;
+          }
+          if (isFloat == 1) {         
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
+          } else {          
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
+          } 
         } else {     
           if (isFloat == 1) {
             value = HEAPF32[((arg_value)>>2)];
@@ -3185,8 +3199,16 @@ function copyTempDouble(ptr) {
         console.error("clEnqueueNDRangeKernel: Invalid kernel : "+ker);
         return -48; /* CL_INVALID_KERNEL */
       }
-      var value_local_work_size = [];
-      var value_global_work_size = [];
+      var value_local_work_size;
+      var value_global_work_size;
+      console.log("Work dim : "+work_dim)
+      if (CL.webcl_mozilla == 1) {
+        value_local_work_size = [];
+        value_global_work_size = [];
+      } else {
+        value_local_work_size = new Int32Array(work_dim);
+        value_global_work_size = new Int32Array(work_dim);
+      }
       for (var i = 0 ; i < work_dim; i++) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
@@ -3212,11 +3234,7 @@ function copyTempDouble(ptr) {
         if (CL.webcl_mozilla == 1) {
           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,[],value_global_work_size,value_local_work_size,[]);
         } else {
-          var globalWorkSize = new Int32Array(1);     // global domain size for our calculation
-          var localWorkSize = new Int32Array(1);      // local domain size for our calculation
-          globalWorkSize[0] = value_global_work_size[0];
-          localWorkSize[0] = value_local_work_size[0];
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], null, globalWorkSize, localWorkSize);
+          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], null, value_global_work_size, value_local_work_size);
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
