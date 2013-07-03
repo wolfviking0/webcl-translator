@@ -84,12 +84,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define USE_GL_ATTACHMENTS              (0)  // enable OpenGL attachments for Compute results
-#define DEBUG_INFO                      (0)     
+#define DEBUG_INFO                      (1)     
 #define COMPUTE_KERNEL_FILENAME         ("qjulia_kernel.cl")
 #define COMPUTE_KERNEL_METHOD_NAME      ("QJuliaKernel")
 #define SEPARATOR                       ("----------------------------------------------------------------------\n")
-#define WIDTH                           (512)
-#define HEIGHT                          (512)
+#define WIDTH                           (128)
+#define HEIGHT                          (128)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1184,12 +1184,17 @@ int main(int argc, char** argv)
     glutCreateWindow (argv[0]);
     if (Initialize (use_gpu) == GL_NO_ERROR)
     {
+      /*
         glutDisplayFunc(Display);
         glutIdleFunc(Idle);
         glutReshapeFunc(Reshape);
         glutKeyboardFunc(Keyboard);
 
         atexit(Shutdown);
+      */
+      Display();
+      Display();
+      Display();
         printf("Starting event loop...\n");
 
         glutMainLoop();     
