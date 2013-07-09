@@ -68,9 +68,9 @@ var LibraryOpenCL = {
       var res = [];
             
       if (platform >= CL.platforms.length || platform < 0 ) {
-  #if OPENCL_DEBUG
+#if OPENCL_DEBUG
           console.error("getAllDevices: Invalid platform : "+plat);
-  #endif
+#endif
           return res; 
       }
 
@@ -447,9 +447,10 @@ var LibraryOpenCL = {
           size = 1;
           break;   
         case (0x1030) /* CL_DEVICE_EXTENSIONS */:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS); // return string
-          size = res.length;
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_EXTENSIONS)*/; // return string
           writeStringToMemory(res, param_value);
+          size = res.length;
+          console.info("Size : "+size)
           break;
         case (0x101E) /* CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE */:
           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE); // return cl_uint
@@ -518,7 +519,7 @@ var LibraryOpenCL = {
           size = 1;
           break;     
         case (0x1004) /* CL_DEVICE_MAX_WORK_GROUP_SIZE*/:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE); // return size_t
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE) : CL.devices[idx].getInfo(WebCL.DEVICE_MAX_WORK_GROUP_SIZE) ; // return cl_device i64
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break; 
@@ -639,18 +640,13 @@ var LibraryOpenCL = {
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break;
-        case (0x1004) /* CL_DEVICE_MAX_WORK_GROUP_SIZE*/:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE); // return size_t
-          {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
-          size = 1;
-          break;
         case (0x102D) /* CL_DRIVER_VERSION*/:
           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DRIVER_VERSION); // return string
           writeStringToMemory(res, param_value);
           size = res.length;
           break;   
         case (0x102F) /* CL_DEVICE_VERSION*/:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VERSION); // return string
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VERSION) : CL.devices[idx].getInfo(WebCL.DEVICE_VERSION) ; 
           writeStringToMemory(res, param_value);
           size = res.length;
           break;   
@@ -1143,6 +1139,41 @@ var LibraryOpenCL = {
     }
   },
 
+  clCreateImage2D: function (context, flags_i64_1, flags_i64_2, image_format, image_width, image_height, image_row_pitch, host_ptr, errcode_ret) {
+    // Assume the flags is i32 
+    assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+    var ctx = context - 1;
+    if (ctx >= CL.ctx.length || ctx < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clCreateImage2D: Invalid context : "+ctx);
+#endif
+      {{{ makeSetValue('errcode_ret', '0', '-34', 'i32') }}} /* CL_INVALID_CONTEXT */;
+      return 0; // Null pointer    
+    }
+    
+    try {
+      switch (flags_i64_1) {
+          
+        default:
+#if OPENCL_DEBUG
+          console.error("clCreateImage2D: flag not yet implemented "+flags_i64_1);
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
+          return 0;
+      };
+
+      {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
+
+      return CL.buffers.length;
+    } catch(e) {
+      {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateImage2D",e)', 'i32') }}};
+      return 0;
+    }
+    
+  },
+  
+  
   clCreateBuffer: function(context, flags_i64_1, flags_i64_2, size, host_ptr, errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -1321,7 +1352,7 @@ var LibraryOpenCL = {
       return 0;
     }
   },
-    
+     
   clEnqueueWriteBuffer: function(command_queue, buffer, blocking_write, offset, size, ptr, num_events_in_wait_list, event_wait_list, event) {
     var queue = command_queue - 1;
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
@@ -1433,6 +1464,27 @@ var LibraryOpenCL = {
     } catch(e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clEnqueueMapBuffer",e)', 'i32') }}};
       return 0;
+    }
+  },
+  
+  clEnqueueMarker: function(command_queue,event) {
+
+    var queue = command_queue - 1;
+    if (queue >= CL.cmdQueue.length || queue < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clEnqueueMarker: Invalid command queue : "+queue);
+#endif
+      {{{ makeSetValue('errcode_ret', '0', '-36', 'i32') }}} /* CL_INVALID_COMMAND_QUEUE */;
+      return 0;
+    }
+    
+    try {
+      
+      CL.cmdQueue[queue].enqueueMarker();
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clEnqueueMarker",e);
     }
   },
 
@@ -1625,8 +1677,6 @@ var LibraryOpenCL = {
     
     var value_local_work_size;
     var value_global_work_size;
-    
-    console.log("Work dim : "+work_dim+ " - Work offset : "+global_work_offset)
     
     if (CL.webcl_mozilla == 1) {
       value_local_work_size = [];
