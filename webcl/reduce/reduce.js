@@ -1344,6 +1344,10 @@ function copyTempDouble(ptr) {
         }
       },getAllDevices:function (platform) {
         var res = [];
+        if (platform >= CL.platforms.length || platform < 0 ) {
+            console.error("getAllDevices: Invalid platform : "+plat);
+            return res; 
+        }
         if (CL.webcl_mozilla == 1) {
           res = res.concat(CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL));
         } else {
@@ -2441,9 +2445,10 @@ function copyTempDouble(ptr) {
             size = 1;
             break;   
           case (0x1030) /* CL_DEVICE_EXTENSIONS */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS); // return string
-            size = res.length;
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_EXTENSIONS)*/; // return string
             writeStringToMemory(res, param_value);
+            size = res.length;
+            console.info("Size : "+size)
             break;
           case (0x101E) /* CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE */:
             res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE); // return cl_uint
@@ -2511,7 +2516,7 @@ function copyTempDouble(ptr) {
             size = 1;
             break;     
           case (0x1004) /* CL_DEVICE_MAX_WORK_GROUP_SIZE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE); // return size_t
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE) : CL.devices[idx].getInfo(WebCL.DEVICE_MAX_WORK_GROUP_SIZE) ; // return cl_device i64
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break; 
@@ -2632,18 +2637,13 @@ function copyTempDouble(ptr) {
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break;
-          case (0x1004) /* CL_DEVICE_MAX_WORK_GROUP_SIZE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
           case (0x102D) /* CL_DRIVER_VERSION*/:
             res = CL.devices[idx].getDeviceInfo(WebCL.CL_DRIVER_VERSION); // return string
             writeStringToMemory(res, param_value);
             size = res.length;
             break;   
           case (0x102F) /* CL_DEVICE_VERSION*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VERSION); // return string
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VERSION) : CL.devices[idx].getInfo(WebCL.DEVICE_VERSION) ; 
             writeStringToMemory(res, param_value);
             size = res.length;
             break;   
@@ -3137,7 +3137,6 @@ function copyTempDouble(ptr) {
       }
       var value_local_work_size;
       var value_global_work_size;
-      console.log("Work dim : "+work_dim+ " - Work offset : "+global_work_offset)
       if (CL.webcl_mozilla == 1) {
         value_local_work_size = [];
         value_global_work_size = [];

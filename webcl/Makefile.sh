@@ -10,3 +10,5 @@ cd ../reduce/
 make
 cd ../convolution/
 make
+cd ../histogram/
+make

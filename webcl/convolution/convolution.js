@@ -1429,6 +1429,10 @@ function copyTempDouble(ptr) {
         }
       },getAllDevices:function (platform) {
         var res = [];
+        if (platform >= CL.platforms.length || platform < 0 ) {
+            console.error("getAllDevices: Invalid platform : "+plat);
+            return res; 
+        }
         if (CL.webcl_mozilla == 1) {
           res = res.concat(CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL));
         } else {
@@ -1994,7 +1998,6 @@ function copyTempDouble(ptr) {
       }
       var value_local_work_size;
       var value_global_work_size;
-      console.log("Work dim : "+work_dim+ " - Work offset : "+global_work_offset)
       if (CL.webcl_mozilla == 1) {
         value_local_work_size = [];
         value_global_work_size = [];
