@@ -1520,7 +1520,7 @@ var LibraryOpenCL = {
       if (isNull == 1) {
         ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
       } else if (arg_size > 4) {
-        value = [];
+        value = new Array(arg_size/4);
         
         for (var i = 0; i < arg_size/4; i++) {
         

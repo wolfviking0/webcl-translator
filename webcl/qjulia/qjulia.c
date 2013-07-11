@@ -1184,17 +1184,19 @@ int main(int argc, char** argv)
     glutCreateWindow (argv[0]);
     if (Initialize (use_gpu) == GL_NO_ERROR)
     {
-      /*
+      
         glutDisplayFunc(Display);
         glutIdleFunc(Idle);
         glutReshapeFunc(Reshape);
         glutKeyboardFunc(Keyboard);
 
         atexit(Shutdown);
-      */
-      Display();
-      Display();
-      Display();
+      
+      	/*
+      	Display();
+     	Display();
+      	Display();
+      	*/
         printf("Starting event loop...\n");
 
         glutMainLoop();     
