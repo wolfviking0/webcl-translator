@@ -1,0 +1,89 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Language" content="fr" />
+  <meta name="author" content="Anthony Liot" />
+  <title>
+      WebCL Launcher
+  </title>
+  <style>
+    .emscripten {
+      padding-right: 0;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+        
+    #glCanvas {
+      border: 1px solid black;
+    }
+        
+    textarea.emscripten {
+      font-family: monospace; width: 70%;
+    }
+        
+    div.emscripten {
+      text-align: center;
+    }
+  </style>
+
+  <script src="../settings.js"></script>
+
+<body>
+  <hr/>
+  <div class="emscripten" id="status">
+    Downloading...
+  </div>
+  <div class="emscripten">
+    <progress value="0" max="100" id="progress" hidden=1></progress>
+  </div>
+	<div class="emscripten" id="renderArea">
+    <!-- we want to create canvas inside this div, using JavaScript -->
+	</div>
+  <hr/>
+  <div class="emscripten">
+    <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(0,1)">
+  </div>
+  <hr/>
+  <textarea class="emscripten" id="output" rows="20">
+  </textarea>
+  <hr>
+  <script type='text/javascript'>
+    // Canvas
+	  var cnv;
+      
+    if (/MSIE (\d+\.\d+);/.test(navigator.userAgent)){ //test for MSIE x.x;
+      // IE use WebGLPlugin for create GLCanvas object
+	   	cnv = WebGLHelper.CreateGLCanvas( document.getElementById('renderArea'),'glCanvas', false, OnGLCanvasCreated, OnGLCanvasFailed);
+
+      // Add class attribute emscripten
+  		cnv.setAttribute('class',"emscripten");
+
+	  } else {
+      // Other browser just need add canvas elment
+			cnv = document.createElement('canvas');
+			cnv.setAttribute('oncontextmenu',"event.preventDefault()");
+			cnv.setAttribute('id',"glCanvas");
+            
+			var div = document.getElementById('renderArea');
+			div.appendChild(cnv);
+
+      // Add class attribute emscripten
+  		cnv.setAttribute('class',"emscripten");  
+	  
+      var arg = initArguments();
+      
+      // 
+      loadModule(arg);
+      
+      includeJS("displacement_kernel.js");  
+      includeJS("displacement_shadercd.js");  
+      includeJS("displacement_image.js");        
+      includeJS("displacement.js");      
+            
+    }	  
+  </script>
+
+</body>
+</html>
+
