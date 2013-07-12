@@ -66,7 +66,7 @@
     #include <GL/gl.h>
     #include <GL/glut.h>
     #include <CL/opencl.h>
-    #include <CL/.h>
+    #include <CL/opencl.h>
 #else
     #include <OpenGL/OpenGL.h>
     #include <OpenGL/gl.h>
@@ -214,7 +214,7 @@ static cl_device_type ComputeDeviceType;
 static cl_mem InputVertexBuffer;
 static cl_mem OutputVertexBuffer;
 static cl_mem OutputNormalBuffer;
-static CGLContextObj OpenGLContext;
+//static CGLContextObj OpenGLContext;
 static int MaxWorkGroupSize;
 static int GroupSize = 4;
 
@@ -1535,7 +1535,7 @@ int setup_opengl(void)
         return 1;
     }
 
-    OpenGLContext = CGLGetCurrentContext();
+    //OpenGLContext = CGLGetCurrentContext();
 
     glViewport(0, 0, Width, Height);
     glMatrixMode(GL_MODELVIEW);
@@ -2581,13 +2581,18 @@ report_stats(uint64_t start, uint64_t end)
 	{
         double fMs = (TimeElapsed * 1000.0 / (double) FrameCount);
         double fFps = 1.0 / (fMs / 1000.0);
-        
+#ifdef __EMSCRIPTEN__
+    	printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
+                (ComputeDeviceType == CL_DEVICE_TYPE_GPU) ? "GPU" : "CPU", 
+                fMs, fFps, USE_GL_ATTACHMENTS ? "attached" : "copying");
+	
+#else  
         sprintf(StatsString, "[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
                 (ComputeDeviceType == CL_DEVICE_TYPE_GPU) ? "GPU" : "CPU", 
                 fMs, fFps, USE_GL_ATTACHMENTS ? "attached" : "copying");
 		
 		glutSetWindowTitle(StatsString);
-
+#endif
 		FrameCount = 0;
         TimeElapsed = 0;
 	}    
@@ -2619,6 +2624,7 @@ display(void)
     else
         render_scene_pssm();
 
+#ifndef __EMSCRIPTEN__
     if ( ShowStats)
     {
         draw_text(20, Height - 20, SphereShader == FresnelShader, StatsString);
@@ -2629,8 +2635,10 @@ display(void)
         draw_text(Width - strlen(InfoString) * 10, Height - 20, SphereShader == FresnelShader, InfoString);
         ShowInfo = (ShowInfo > 200) ? 0 : ShowInfo + 1;
     }
+        
     draw_text(20, 30, SphereShader == FresnelShader, "Press ~ to change shaders");
-    
+#endif
+
     glutSwapBuffers();
 
     uint64_t end = current_time();
@@ -2752,151 +2760,251 @@ void keyboard(unsigned char key, int x, int y)
     {
     case '=':
         Frequency *= 1.01;
+#ifdef __EMSCRIPTEN__
+        printf("Frequency = %f\n", Frequency);
+#else        
         sprintf(InfoString,"Frequency = %f\n", Frequency);
+#endif     
         ShowInfo = 1;
         break;
 
     case '-':
         Frequency *= 0.99;
+#ifdef __EMSCRIPTEN__
+        printf("Frequency = %f\n", Frequency);
+#else        
         sprintf(InfoString,"Frequency = %f\n", Frequency);
+#endif     
         ShowInfo = 1;
         break;
 
     case '[':
         Amplitude *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("Amplitude = %f\n", Amplitude);
+#else        
         sprintf(InfoString,"Amplitude = %f\n", Amplitude);
+#endif     
         ShowInfo = 1;
         break;
 
     case ']':
         Amplitude = (Amplitude < 7.0f) ? (Amplitude * 1.05f) : Amplitude;
+#ifdef __EMSCRIPTEN__
+        printf("Amplitude = %f\n", Amplitude);
+#else        
         sprintf(InfoString,"Amplitude = %f\n", Amplitude);
+#endif     
         ShowInfo = 1;
         break;
 
     case ';':
         Lacunarity *= 1.01;
+#ifdef __EMSCRIPTEN__
+        printf("Lacunarity = %f\n", Lacunarity);
+#else        
         sprintf(InfoString,"Lacunarity = %f\n", Lacunarity);
+#endif     
         ShowInfo = 1;
         break;
 
     case '\'':
         Lacunarity *= 0.99;
+#ifdef __EMSCRIPTEN__
+        printf("Lacunarity = %f\n", Lacunarity);
+#else        
         sprintf(InfoString,"Lacunarity = %f\n", Lacunarity);
+#endif     
         ShowInfo = 1;
         break;
 
     case '.':
         Increment *= 1.05;
+#ifdef __EMSCRIPTEN__
+        printf("Increment = %f\n", Increment);
+#else        
         sprintf(InfoString,"Increment = %f\n", Increment);
+#endif     
         ShowInfo = 1;
         break;
 
     case '/':
         Increment *= 0.95;
+#ifdef __EMSCRIPTEN__
+        printf("Increment = %f\n", Increment);
+#else        
         sprintf(InfoString,"Increment = %f\n", Increment);
+#endif    
         ShowInfo = 1;
         break;
 
     case 'x':
         Octaves = (Octaves < 7.0f) ? (Octaves * 1.05f) : Octaves;
+#ifdef __EMSCRIPTEN__
+        printf("Octaves = %f\n", Octaves);
+#else        
         sprintf(InfoString,"Octaves = %f\n", Octaves);
+#endif    
         ShowInfo = 1;
         break;
 
     case 'z':
         Octaves *= 0.95;
+#ifdef __EMSCRIPTEN__
+        printf("Octaves = %f\n", Octaves);
+#else        
         sprintf(InfoString,"Octaves = %f\n", Octaves);
+#endif    
         ShowInfo = 1;
         break;
 
     case 'c':
         Roughness *= 1.05;
+#ifdef __EMSCRIPTEN__
+        printf("Roughness = %f\n", Roughness);
+#else        
         sprintf(InfoString,"Roughness = %f\n", Roughness);
+#endif    
         ShowInfo = 1;
         break;
 
     case 'v':
         Roughness *= 0.95;
+#ifdef __EMSCRIPTEN__
+        printf("Roughness = %f\n", Roughness);
+#else        
         sprintf(InfoString,"Roughness = %f\n", Roughness);
+#endif   
         ShowInfo = 1;
         break;
 
     case 'b':
         ShadowMapSoftness *= 1.05;
+#ifdef __EMSCRIPTEN__
+        printf("ShadowMapSoftness = %f\n", ShadowMapSoftness);
+#else        
         sprintf(InfoString,"ShadowMapSoftness = %f\n", ShadowMapSoftness);
+#endif   
         ShowInfo = 1;
         break;
 
     case 'n':
         ShadowMapSoftness *= 0.95;
+#ifdef __EMSCRIPTEN__
+        printf("ShadowMapSoftness = %f\n", ShadowMapSoftness);
+#else        
         sprintf(InfoString,"ShadowMapSoftness = %f\n", ShadowMapSoftness);
+#endif   
         ShowInfo = 1;
         break;
 
     case '1':
         RefractiveIndex = (RefractiveIndex > 1.0f) ? (RefractiveIndex * 0.95f) : (RefractiveIndex * 1.0f);
+#ifdef __EMSCRIPTEN__
+        printf("RefractiveIndex = %f\n", RefractiveIndex);
+#else        
         sprintf(InfoString,"RefractiveIndex = %f\n", RefractiveIndex);
+#endif   
         ShowInfo = 1;
         break;
 
     case '2':
         RefractiveIndex = (RefractiveIndex < 3.0f) ? (RefractiveIndex * 1.05f) : (RefractiveIndex * 1.0f);
+#ifdef __EMSCRIPTEN__
+        printf("RefractiveIndex = %f\n", RefractiveIndex);
+#else        
         sprintf(InfoString,"RefractiveIndex = %f\n", RefractiveIndex);
+#endif   
         ShowInfo = 1;
         break;
 
     case '3':
         ChromaticDispersion *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("ChromaticDispersion = %f\n", ChromaticDispersion);
+#else        
         sprintf(InfoString,"ChromaticDispersion = %f\n", ChromaticDispersion);
+#endif   
         ShowInfo = 1;
         break;
 
     case '4':
         ChromaticDispersion *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("ChromaticDispersion = %f\n", ChromaticDispersion);
+#else        
         sprintf(InfoString,"ChromaticDispersion = %f\n", ChromaticDispersion);
+#endif   
         ShowInfo = 1;
         break;
 
     case '5':
         FresnelBias *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelBias = %f\n", FresnelBias);
+#else        
         sprintf(InfoString,"FresnelBias = %f\n", FresnelBias);
+#endif   
         ShowInfo = 1;
         break;
 
     case '6':
         FresnelBias *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelBias = %f\n", FresnelBias);
+#else        
         sprintf(InfoString,"FresnelBias = %f\n", FresnelBias);
+#endif   
         ShowInfo = 1;
         break;
 
     case '7':
         FresnelScale *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelScale = %f\n", FresnelScale);
+#else        
         sprintf(InfoString,"FresnelScale = %f\n", FresnelScale);
+#endif   
         ShowInfo = 1;
         break;
 
     case '8':
         FresnelScale *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelScale = %f\n", FresnelScale);
+#else        
         sprintf(InfoString,"FresnelScale = %f\n", FresnelScale);
+#endif   
         ShowInfo = 1;
         break;
 
     case '9':
         FresnelPower *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelPower = %f\n", FresnelPower);
+#else        
         sprintf(InfoString,"FresnelPower = %f\n", FresnelPower);
+#endif   
         ShowInfo = 1;
         break;
 
     case '0':
         FresnelPower *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("FresnelPower = %f\n", FresnelPower);
+#else        
         sprintf(InfoString,"FresnelPower = %f\n", FresnelPower);
+#endif   
         ShowInfo = 1;
         break;
 
     case ' ':
         Animate = Animate == 1 ? 0 : 1;
+#ifdef __EMSCRIPTEN__
+        printf("Animate = %d\n", Animate);
+#else        
         sprintf(InfoString,"Animate = %d\n", Animate);
+#endif   
         ShowInfo = 1;
         break;
 
@@ -2906,24 +3014,40 @@ void keyboard(unsigned char key, int x, int y)
 
     case 't':
         PolygonOffsetScale *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("PolygonOffsetScale = %f\n", PolygonOffsetScale);
+#else        
         sprintf(InfoString,"PolygonOffsetScale = %f\n", PolygonOffsetScale);
+#endif   
         break;
 
     case 'y':
         PolygonOffsetScale *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("PolygonOffsetScale = %f\n", PolygonOffsetScale);
+#else        
         sprintf(InfoString,"PolygonOffsetScale = %f\n", PolygonOffsetScale);
+#endif   
         ShowInfo = 1;
         break;
 
     case 'u':
         PolygonOffsetBias *= 0.95f;
+#ifdef __EMSCRIPTEN__
+        printf("PolygonOffsetBias = %f\n", PolygonOffsetBias);
+#else        
         sprintf(InfoString,"PolygonOffsetBias = %f\n", PolygonOffsetBias);
+#endif   
         ShowInfo = 1;
         break;
 
     case 'i':
         PolygonOffsetBias *= 1.05f;
+#ifdef __EMSCRIPTEN__
+        printf("PolygonOffsetBias = %f\n", PolygonOffsetBias);
+#else        
         sprintf(InfoString,"PolygonOffsetBias = %f\n", PolygonOffsetBias);
+#endif   
         ShowInfo = 1;
         break;
 
