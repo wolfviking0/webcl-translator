@@ -777,16 +777,18 @@ setup_compute_devices(int gpu)
 	
 	device_count = returned_size / sizeof(cl_device_id);
   
-  printf("device_count : %d : %d : %d\n",device_count, returned_size , sizeof(cl_device_id));
-	
 	int i = 0;
 	int device_found = 0;
 	cl_device_type device_type;
 	for(i = 0; i < device_count; i++)
 	{
 		clGetDeviceInfo(device_ids[i], CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
-    printf("device_type : %d (%d)\n",device_type,ComputeDeviceType);
+
+#ifdef __EMSCRIPTEN__
+		if((int)device_type == (int)ComputeDeviceType)
+#else
 		if(device_type == ComputeDeviceType)
+#endif
 		{
 			ComputeDeviceId = device_ids[i];
 			device_found = 1;
