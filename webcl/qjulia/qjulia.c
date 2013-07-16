@@ -1194,7 +1194,7 @@ int main(int argc, char** argv)
       
       	/*
       	Display();
-     	Display();
+        Display();
       	Display();
       	*/
         printf("Starting event loop...\n");
