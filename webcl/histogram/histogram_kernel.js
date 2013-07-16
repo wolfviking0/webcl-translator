@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'histogram.data';
     var REMOTE_PACKAGE_NAME = 'histogram.data';
-    var PACKAGE_UUID = '4c6b455b-60ba-422c-8b22-93b96a2bb606';
+    var PACKAGE_UUID = 'bcdd0699-1047-456f-a338-0dcd1b415eeb';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

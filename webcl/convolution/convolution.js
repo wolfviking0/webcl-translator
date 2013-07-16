@@ -1400,7 +1400,7 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={types:{FLOAT:0,FLOAT_V:1,INT:2,INT_V:3,UINT:4,UINT_V:5},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],sig:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
         console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
         console.error("But may be the kernel source is not yet parse !!! \n");
         var v_int = HEAP32[((ptr)>>2)]; 
@@ -1421,6 +1421,69 @@ function copyTempDouble(ptr) {
           return 1;
         }
         return 0;      
+      },parseKernel:function (kernelstring) {
+        // Experimental parse of Kernel
+        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+        // Step 1 : Search __kernel
+        // Step 2 : Search kernel name (before the open brace)
+        // Step 3 : Search brace '(' and ')'
+        // Step 4 : Split all inside the brace by ',' after removing all space
+        // Step 5 : For each parameter search Adress Space and Data Type
+        //
+        // --------------------------------------------------------------------
+        //
+        // \note Work only with one kernel ....
+        var kernel_struct = [];
+        kernelstring = kernelstring.replace(/\n/g, " ");
+        kernelstring = kernelstring.replace(/\r/g, " ");
+        kernelstring = kernelstring.replace(/\t/g, " ");
+        // Search kernel function __kernel 
+        var kernel_start = kernelstring.indexOf("__kernel");
+        kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
+        var brace_start = kernelstring.indexOf("(");
+        var brace_end = kernelstring.indexOf(")");  
+        var kernels_name = "";
+        // Search kernel Name
+        for (var i = brace_start - 1; i >= 0 ; i--) {
+          var chara = kernelstring.charAt(i);
+          if (chara == ' ' && kernels_name.length > 0) {
+            break;
+          } else if (chara != ' ') {
+            kernels_name = chara + kernels_name;
+          }
+        }
+        kernelstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
+        kernelstring = kernelstring.replace(/\ /g, "");
+        var kernel_parameter = kernelstring.split(",");
+        console.info("Kernel NAME : " + kernels_name);      
+        console.info("Kernel PARAMETER NUM : "+kernel_parameter.length);
+        kernel_struct [ kernels_name ] = [];
+        for (var i = 0; i < kernel_parameter.length; i ++) {
+            var value = 0;
+            var string = kernel_parameter[i]
+            // Adress space
+            // __global, __local, __constant, __private. 
+            if (string.indexOf("__local") >= 0 ) {
+              value |= CL.address_space.LOCAL;
+            }
+            // Data Type
+            // float, uchar, unsigned char, uint, unsigned int, int. 
+            if (string.indexOf("float") >= 0 ) {
+              value |= CL.data_type.FLOAT;
+            } else if (string.indexOf("uchar") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("unsigned char") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("uint") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("unsigned int") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("int") >= 0 ) {
+              value |= CL.data_type.INT;
+            }
+            kernel_struct [ kernels_name ].push(value);
+        }
+        return kernel_struct;
       },getDeviceName:function (type) {
         switch (type) {
           case 2 : return "CPU_DEVICE";
@@ -1440,7 +1503,6 @@ function copyTempDouble(ptr) {
           res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_GPU));
           res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_CPU));  
         }    
-        console.log("getAllDevices() : "+res.length);
         return res;
       },catchError:function (name,e) {
         var str=""+e;
@@ -1668,40 +1730,7 @@ function copyTempDouble(ptr) {
       }
       var sourceIdx = HEAP32[((strings)>>2)]
       var kernel = Pointer_stringify(sourceIdx); 
-      // Experimental parse of kernel for have the different type of the kernel (input and output)
-      var start_kernel = kernel.indexOf("__kernel");
-      var kernel_sub_part = kernel.substr(start_kernel,kernel.length - start_kernel);
-      var start_kernel_brace = kernel_sub_part.indexOf("(");
-      var close_kernel_brace = kernel_sub_part.indexOf(")");
-      kernel_sub_part = kernel_sub_part.substr(start_kernel_brace + 1,close_kernel_brace - start_kernel_brace);
-      kernel_sub_part = kernel_sub_part.replace(/\n/g, "");
-      var kernel_sub_part_split = kernel_sub_part.split(",");
-      for (var i = 0; i < kernel_sub_part_split.length; i++) {
-        if (kernel_sub_part_split[i].indexOf("float4") > -1 ||
-           (kernel_sub_part_split[i].indexOf("float") > -1 && kernel_sub_part_split[i].indexOf("*") > -1 )) {
-          console.info("Kernel Parameter "+i+" typeof is float4 or float* ("+CL.types.FLOAT_V+")");
-          CL.sig[i] = CL.types.FLOAT_V;
-        } else if (kernel_sub_part_split[i].indexOf("float") > -1 ) {
-          console.info("Kernel Parameter "+i+" typeof is float ("+CL.types.FLOAT+")");
-          CL.sig[i] = CL.types.FLOAT;    
-        } else if (kernel_sub_part_split[i].indexOf("uchar4") > -1  ||
-                  (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("char") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) ||
-                  (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 )) {
-          console.info("Kernel Parameter "+i+" typeof is uchar4 or unsigned char* or unsigned int * ("+CL.types.UINT_V+")");
-          CL.sig[i] = CL.types.UINT_V;
-        } else if (kernel_sub_part_split[i].indexOf("unsigned") > -1  && kernel_sub_part_split[i].indexOf("int") > -1 ) {
-          console.info("Kernel Parameter "+i+" typeof is unsigned int ("+CL.types.UINT+")");
-          CL.sig[i] = CL.types.UINT;        
-        } else if (kernel_sub_part_split[i].indexOf("int") > -1  && kernel_sub_part_split[i].indexOf("*") > -1 ) {
-          console.info("Kernel Parameter "+i+" typeof is int * ("+CL.types.INT_V+")");
-          CL.sig[i] = CL.types.INT_V;    
-        } else if (kernel_sub_part_split[i].indexOf("int") > -1 ) {
-          console.info("Kernel Parameter "+i+" typeof is int ("+CL.types.INT+")");
-          CL.sig[i] = CL.types.INT;    
-        } else {
-          console.error("Unknow type of parameter : "+kernel_sub_part_split[i]);        
-        }
-      }
+      CL.kernels_sig = CL.parseKernel(kernel);
       try {
         // \todo set the properties 
         if (CL.webcl_mozilla == 1) {
@@ -1779,7 +1808,7 @@ function copyTempDouble(ptr) {
         return CL.catchError("clGetProgramBuildInfo",e);
       }
     }
-  function _clCreateKernel(program, kernel_name, errcode_ret) {
+  function _clCreateKernel(program, kernels_name, errcode_ret) {
       var prog = program - 1;
       if (prog >= CL.programs.length || prog < 0 ) {
         console.error("clCreateKernel: Invalid program : "+prog);
@@ -1787,9 +1816,11 @@ function copyTempDouble(ptr) {
         return 0; // Null pointer   
       }           
       try {
-        //console.log("kernel_name : "+Pointer_stringify(kernel_name));
-        var name = Pointer_stringify(kernel_name);
+        var name = Pointer_stringify(kernels_name);
         CL.kernels.push(CL.programs[prog].createKernel(name));
+        // Add the name of the kernel for search the kernel sig after...
+        CL.kernels_name.push(name);
+        console.info("Kernel '"+name+"', has "+CL.kernels_sig[name].length+ " parameters !!!!");
         // Return the pos of the queue +1
         return CL.kernels.length;
       } catch (e) {
@@ -1881,21 +1912,21 @@ function copyTempDouble(ptr) {
               HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
               return 0;
             }
-            if (CL.sig.length == 0 || CL.buffers-1 > CL.sig.length) {
-              console.error("clCreateBuffer: Invalid signature : "+buff);
-              return -1; /* CL_FAILED */     
-            }
-            var isFloat = 0;
+            // \warning experimental stuff
+            var name = CL.kernels_name[0];
+            var sig = CL.kernels_sig[name];
+            var isFloat = sig[CL.buffers.length-1] & CL.data_type.FLOAT;
+            var isUint = sig[CL.buffers.length-1] & CL.data_type.UINT;
+            var isInt = sig[CL.buffers.length-1] & CL.data_type.INT;
             var vector;    
-            if (CL.sig[CL.buffers.length-1] == CL.types.FLOAT_V) {
+            if (isFloat) {
               vector = new Float32Array(size / 4);
-              isFloat = 1;
-            } else if (CL.sig[CL.buffers.length-1] == CL.types.UINT_V) {
+            } else if (isUint) {
               vector = new Uint32Array(size / 4);
-            } else if (CL.sig[CL.buffers.length-1] == CL.types.INT_V) {
+            } else if (isInt) {
               vector = new Int32Array(size / 4);
             } else {
-              console.error("clCreateBuffer: Unknow ouptut type : "+CL.sig[CL.buffers.length-1]);
+              console.error("clCreateBuffer: Unknow ouptut type : "+sig[CL.buffers.length-1]);
             }
             for (var i = 0; i < (size / 4); i++) {
               if (isFloat) {
@@ -1925,24 +1956,26 @@ function copyTempDouble(ptr) {
         return -48; /* CL_INVALID_KERNEL */
       }
       try {  
+        var name = CL.kernels_name[ker];
+        console.info("clSetKernelArg : "+arg_index);
+        console.info("clSetKernelArg Kernel Name : "+name);
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
-        var isFloat = 0;
-        if (CL.sig.length > 0 && arg_index < CL.sig.length) {
-          isFloat = ( CL.sig[arg_index] == CL.types.FLOAT_V ) || ( CL.sig[arg_index] == CL.types.FLOAT ) 
-        } else {
-          console.error("clSetKernelArg: Invalid signature : "+CL.sig.length);
+        if (CL.kernels_sig[name].length <= 0 && arg_index > CL.kernels_sig[name].length) {
+          console.error("clSetKernelArg: Invalid signature : "+CL.kernels_sig[name].length);
           return -1; /* CL_FAILED */
         }
-        var isNull = (HEAP32[((arg_value)>>2)] == 0);
+        var isFloat = CL.kernels_sig[name][arg_index] & CL.data_type.FLOAT;
+        var isLocal = CL.kernels_sig[name][arg_index] & CL.address_space.LOCAL;
+        console.info("Parameter "+arg_index+" isFloat : "+isFloat+" - isLocal : "+isLocal);
         var value;
-        if (isNull == 1) {
+        if (isLocal) {
           ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
         } else if (arg_size > 4) {
-          value = [];
+          value = new Array(arg_size/4);
           for (var i = 0; i < arg_size/4; i++) {
-            if (isFloat == 1) {
+            if (isFloat) {
               value[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
             } else {
               value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
@@ -1957,7 +1990,7 @@ function copyTempDouble(ptr) {
             if (arg_size/4 == 4)
               type = WebCLKernelArgumentTypes.VEC4;
           }
-          if (isFloat == 1) {    
+          if (isFloat) {    
             //CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V)
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
           } else {          
@@ -1965,7 +1998,7 @@ function copyTempDouble(ptr) {
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
           } 
         } else {     
-          if (isFloat == 1) {
+          if (isFloat) {
             value = HEAPF32[((arg_value)>>2)];
           } else {
             value = HEAP32[((arg_value)>>2)];
@@ -1973,7 +2006,7 @@ function copyTempDouble(ptr) {
           if (arg_index >= 0 && arg_index < CL.buffers.length) {
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]) : CL.kernels[ker].setArg(arg_index,CL.buffers[arg_index]);
           } else {
-            if (isFloat == 1) { 
+            if (isFloat) { 
               ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
             } else {
               ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
@@ -2049,21 +2082,25 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
-        if (CL.sig.length == 0 || buff > CL.sig.length) {
+        // \warning experimental stuff
+        var name = CL.kernels_name[0];
+        var sig = CL.kernels_sig[name];
+        var isFloat = sig[buff] & CL.data_type.FLOAT;
+        var isUint = sig[buff] & CL.data_type.UINT;
+        var isInt = sig[buff] & CL.data_type.INT;
+        if (sig.length == 0 || buff > sig.length) {
           console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
           return -1; /* CL_FAILED */     
         }
-        var isFloat = 0;
         var vector;    
-        if (CL.sig[buff] == CL.types.FLOAT_V) {
+        if (isFloat) {
           vector = new Float32Array(size / 4);
-          isFloat = 1;
-        } else if (CL.sig[buff] == CL.types.UINT_V) {
+        } else if (isUint) {
           vector = new Uint32Array(size / 4);
-        } else if (CL.sig[buff] == CL.types.INT_V) {
+        } else if (isInt) {
           vector = new Int32Array(size / 4);
         } else {
-          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+CL.sig[buff]);
+          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
           return -1; /* CL_FAILED */     
         }
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
