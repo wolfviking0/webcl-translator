@@ -1192,14 +1192,14 @@ int main(int argc, char** argv)
 
         atexit(Shutdown);
       
-      	/*
+      	
       	Display();
         Display();
       	Display();
-      	*/
+      	
         printf("Starting event loop...\n");
 
-        glutMainLoop();     
+        //glutMainLoop();     
     }
 
     return 0;

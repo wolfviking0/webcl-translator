@@ -1889,7 +1889,7 @@ var LibraryOpenCL = {
     var buff = memobj - 1 - CL.buffers_clean;
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
-      console.error("clReleaseMemObject: Invalid command queue : "+buff);
+      console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
 #endif
 
       return -38; /* CL_INVALID_MEM_OBJECT */

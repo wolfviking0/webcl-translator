@@ -8705,7 +8705,7 @@ function copyTempDouble(ptr) {
   function _clReleaseMemObject(memobj) {
       var buff = memobj - 1 - CL.buffers_clean;
       if (buff >= CL.buffers.length || buff < 0 ) {
-        console.error("clReleaseMemObject: Invalid command queue : "+buff);
+        console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       CL.buffers.splice(buff, 1);
