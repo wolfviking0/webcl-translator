@@ -384,6 +384,53 @@ var Runtime = {
       return ret;
     }
   },
+  debug: true,
+  printObjectList: [],
+  prettyPrint: function (arg) {
+    if (typeof arg == 'undefined') return '!UNDEFINED!';
+    if (typeof arg == 'boolean') arg = arg + 0;
+    if (!arg) return arg;
+    var index = Runtime.printObjectList.indexOf(arg);
+    if (index >= 0) return '<' + arg + '|' + index + '>';
+    if (arg.toString() == '[object HTMLImageElement]') {
+      return arg + '\n\n';
+    }
+    if (arg.byteLength) {
+      return '{' + Array.prototype.slice.call(arg, 0, Math.min(arg.length, 400)) + '}'; // Useful for correct arrays, less so for compiled arrays, see the code below for that
+      var buf = new ArrayBuffer(32);
+      var i8buf = new Int8Array(buf);
+      var i16buf = new Int16Array(buf);
+      var f32buf = new Float32Array(buf);
+      switch(arg.toString()) {
+        case '[object Uint8Array]':
+          i8buf.set(arg.subarray(0, 32));
+          break;
+        case '[object Float32Array]':
+          f32buf.set(arg.subarray(0, 5));
+          break;
+        case '[object Uint16Array]':
+          i16buf.set(arg.subarray(0, 16));
+          break;
+        default:
+          alert('unknown array for debugging: ' + arg);
+          throw 'see alert';
+      }
+      var ret = '{' + arg.byteLength + ':\n';
+      var arr = Array.prototype.slice.call(i8buf);
+      ret += 'i8:' + arr.toString().replace(/,/g, ',') + '\n';
+      arr = Array.prototype.slice.call(f32buf, 0, 8);
+      ret += 'f32:' + arr.toString().replace(/,/g, ',') + '}';
+      return ret;
+    }
+    if (typeof arg == 'object') {
+      Runtime.printObjectList.push(arg);
+      return '<' + arg + '|' + (Runtime.printObjectList.length-1) + '>';
+    }
+    if (typeof arg == 'number') {
+      if (arg > 0) return '0x' + arg.toString(16) + ' (' + arg + ')';
+    }
+    return arg;
+  },
   stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = ((((STACKTOP)+7)>>3)<<3); return ret; },
   staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + size)|0;STATICTOP = ((((STATICTOP)+7)>>3)<<3); return ret; },
   dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + size)|0;DYNAMICTOP = ((((DYNAMICTOP)+7)>>3)<<3); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
@@ -1931,7 +1978,7 @@ function copyTempDouble(ptr) {
     }var _llvm_memcpy_p0i8_p0i8_i32=_memcpy;
   var _cos=Math.cos;
   var _sin=Math.sin;
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={debug:true,counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
       },getNewId:function (table) {
         var ret = GL.counter++;
@@ -2043,6 +2090,9 @@ function copyTempDouble(ptr) {
               GL.findToken(source, "fwidth")) {
             source = "#extension GL_OES_standard_derivatives : enable\n" + source;
             var extension = Module.ctx.getExtension("OES_standard_derivatives");
+            if (!extension) {
+              Module.printErr("Shader attempts to use the standard derivatives extension which is not available.");
+            }
           }
         }
         return source;
@@ -2334,6 +2384,43 @@ function copyTempDouble(ptr) {
           return null;
         }
         if (useWebGL) {
+          // Useful to debug native webgl apps: var Module = { printErr: function(x) { console.log(x) } };
+          var tempCtx = ctx;
+          var wrapper = {};
+          for (var prop in tempCtx) {
+            (function(prop) {
+              switch (typeof tempCtx[prop]) {
+                case 'function': {
+                  wrapper[prop] = function() {
+                    if (GL.debug) {
+                      var printArgs = Array.prototype.slice.call(arguments).map(Runtime.prettyPrint);
+                      Module.printErr('[gl_f:' + prop + ':' + printArgs + ']');
+                    }
+                    var ret = tempCtx[prop].apply(tempCtx, arguments);
+                    if (GL.debug && typeof ret != 'undefined') {
+                      Module.printErr('[     gl:' + prop + ':return:' + Runtime.prettyPrint(ret) + ']');
+                    }
+                    return ret;
+                  }
+                  break;
+                }
+                case 'number': case 'string': {
+                  wrapper.__defineGetter__(prop, function() {
+                    //Module.printErr('[gl_g:' + prop + ':' + tempCtx[prop] + ']');
+                    return tempCtx[prop];
+                  });
+                  wrapper.__defineSetter__(prop, function(value) {
+                    if (GL.debug) {
+                      Module.printErr('[gl_s:' + prop + ':' + value + ']');
+                    }
+                    tempCtx[prop] = value;
+                  });
+                  break;
+                }
+              }
+            })(prop);
+          }
+          ctx = wrapper;
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
           // Warn on context loss
@@ -3553,6 +3640,7 @@ function copyTempDouble(ptr) {
       GL.immediate.matrix.lib.mat4.set(HEAPF64.subarray((matrix)>>3,(matrix+128)>>3), GL.immediate.matrix[GL.immediate.currentMatrix]);
     }
   function _glLoadMatrixf(matrix) {
+      if (GL.debug) Module.printErr('glLoadMatrixf receiving: ' + Array.prototype.slice.call(HEAPF32.subarray(matrix >> 2, (matrix >> 2) + 16)));
       GL.immediate.matricesModified = true;
       GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
     }
@@ -3924,6 +4012,8 @@ function copyTempDouble(ptr) {
         // tandem with the rest of the program, by itself it cannot suffice.
         // Note that we need to remember shader types for this rewriting, saving sources makes it easier to debug.
         GL.shaderInfos = {};
+        GL.shaderSources = {};
+        GL.shaderOriginalSources = {};
         var glCreateShader = _glCreateShader;
         _glCreateShader = function(shaderType) {
           var id = glCreateShader(shaderType);
@@ -3936,6 +4026,8 @@ function copyTempDouble(ptr) {
         var glShaderSource = _glShaderSource;
         _glShaderSource = function(shader, count, string, length) {
           var source = GL.getSource(shader, count, string, length);
+          console.log("glShaderSource: Input: \n" + source);
+          GL.shaderOriginalSources[shader] = source;
           // XXX We add attributes and uniforms to shaders. The program can ask for the # of them, and see the
           // ones we generated, potentially confusing it? Perhaps we should hide them.
           if (GL.shaderInfos[shader].type == Module.ctx.VERTEX_SHADER) {
@@ -4034,6 +4126,8 @@ function copyTempDouble(ptr) {
             }
             source = 'precision mediump float;\n' + source;
           }
+          GL.shaderSources[shader] = source;
+          console.log("glShaderSource: Output: \n" + source);
           Module.ctx.shaderSource(GL.shaders[shader], source);
         };
         var glCompileShader = _glCompileShader;
@@ -4042,7 +4136,9 @@ function copyTempDouble(ptr) {
           if (!Module.ctx.getShaderParameter(GL.shaders[shader], Module.ctx.COMPILE_STATUS)) {
             Module.printErr('Failed to compile shader: ' + Module.ctx.getShaderInfoLog(GL.shaders[shader]));
             Module.printErr('Info: ' + JSON.stringify(GL.shaderInfos[shader]));
-            Module.printErr('Enable GL_DEBUG to see shader source');
+            Module.printErr('Original source: ' + GL.shaderOriginalSources[shader]);
+            Module.printErr('Source: ' + GL.shaderSources[shader]);
+            throw 'Shader compilation halt';
           }
         };
         GL.programShaders = {};
@@ -4065,6 +4161,15 @@ function copyTempDouble(ptr) {
         };
         var glUseProgram = _glUseProgram;
         _glUseProgram = function(program) {
+          if (GL.debug) {
+            Module.printErr('[using program with shaders]');
+            if (program) {
+              GL.programShaders[program].forEach(function(shader) {
+                Module.printErr('  shader ' + shader + ', original source: ' + GL.shaderOriginalSources[shader]);
+                Module.printErr('         Source: ' + GL.shaderSources[shader]);
+              });
+            }
+          }
           GL.currProgram = program;
           glUseProgram(program);
         }
@@ -5149,6 +5254,7 @@ function copyTempDouble(ptr) {
         }
         // If we don't already have it, create it.
         if (!keyView.get()) {
+          Module.printErr('generating renderer for ' + JSON.stringify(attributes));
           keyView.set(this.createRenderer());
         }
         return keyView.get();
