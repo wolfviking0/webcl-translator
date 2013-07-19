@@ -5,11 +5,11 @@ WebCL inside Emscripten (https://github.com/kripken/emscripten)
 
 Experimental version of emscripten for convert OpenCL c++ code to WebCL.
 
-Need Firefox 22 and WebCL plugin from Nokia research (https://github.com/SRA-SiliconValley/webkit-webcl)
+Need Firefox 22 and WebCL plugin from Nokia research (http://webcl.nokiaresearch.com)
 
 or
 
-Need webkit-webcl from Samsung research (http://webcl.nokiaresearch.com)
+Need webkit-webcl from Samsung research (https://github.com/SRA-SiliconValley/webkit-webcl)
 
 Patch of Emscripten :
 ---------------------
