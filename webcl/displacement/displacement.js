@@ -7944,26 +7944,28 @@ function copyTempDouble(ptr) {
         kernelstring = kernelstring.replace(/\t/g, " ");
         // Search kernel function __kernel 
         var kernel_start = kernelstring.indexOf("__kernel");
-        kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
-        var brace_start = kernelstring.indexOf("(");
-        var brace_end = kernelstring.indexOf(")");  
-        var kernels_name = "";
-        // Search kernel Name
-        for (var i = brace_start - 1; i >= 0 ; i--) {
-          var chara = kernelstring.charAt(i);
-          if (chara == ' ' && kernels_name.length > 0) {
-            break;
-          } else if (chara != ' ') {
-            kernels_name = chara + kernels_name;
+        while (kernel_start >= 0) {
+          kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
+          var brace_start = kernelstring.indexOf("(");
+          var brace_end = kernelstring.indexOf(")");  
+          var kernels_name = "";
+          // Search kernel Name
+          for (var i = brace_start - 1; i >= 0 ; i--) {
+            var chara = kernelstring.charAt(i);
+            if (chara == ' ' && kernels_name.length > 0) {
+              break;
+            } else if (chara != ' ') {
+              kernels_name = chara + kernels_name;
+            }
           }
-        }
-        kernelstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
-        kernelstring = kernelstring.replace(/\ /g, "");
-        var kernel_parameter = kernelstring.split(",");
-        console.info("Kernel NAME : " + kernels_name);      
-        console.info("Kernel PARAMETER NUM : "+kernel_parameter.length);
-        kernel_struct [ kernels_name ] = [];
-        for (var i = 0; i < kernel_parameter.length; i ++) {
+          kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
+          kernelsubstring = kernelsubstring.replace(/\ /g, "");
+          var kernel_parameter = kernelsubstring.split(",");
+          console.info("Kernel NAME : " + kernels_name);      
+          console.info("Kernel PARAMETER NUM : "+kernel_parameter.length);
+          kernelstring = kernelstring.substr(brace_end);
+          kernel_struct [ kernels_name ] = [];
+          for (var i = 0; i < kernel_parameter.length; i ++) {
             var value = 0;
             var string = kernel_parameter[i]
             // Adress space
@@ -7987,6 +7989,8 @@ function copyTempDouble(ptr) {
               value |= CL.data_type.INT;
             }
             kernel_struct [ kernels_name ].push(value);
+          }
+          kernel_start = kernelstring.indexOf("__kernel");
         }
         return kernel_struct;
       },getDeviceName:function (type) {
@@ -8304,7 +8308,7 @@ function copyTempDouble(ptr) {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
       }
-      console.log(vector);
+      //console.log(vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -8546,7 +8550,6 @@ function copyTempDouble(ptr) {
             res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_EXTENSIONS)*/; // return string
             writeStringToMemory(res, param_value);
             size = res.length;
-            console.info("Size : "+size)
             break;
           case (0x101E) /* CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE */:
             res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE); // return cl_uint
@@ -8876,8 +8879,6 @@ function copyTempDouble(ptr) {
       }
       try {  
         var name = CL.kernels_name[ker];
-        console.info("clSetKernelArg : "+arg_index);
-        console.info("clSetKernelArg Kernel Name : "+name);
         // \todo problem what is arg_value is buffer or just value ??? hard to say ....
         // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
         // not inside the buffers array size we take the value
@@ -8887,7 +8888,6 @@ function copyTempDouble(ptr) {
         }
         var isFloat = CL.kernels_sig[name][arg_index] & CL.data_type.FLOAT;
         var isLocal = CL.kernels_sig[name][arg_index] & CL.address_space.LOCAL;
-        console.info("Parameter "+arg_index+" isFloat : "+isFloat+" - isLocal : "+isLocal);
         var value;
         if (isLocal) {
           ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
@@ -8962,20 +8962,6 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
-  //#if 0
-      var global = "";
-      var local = "";
-      for (var i = 0 ; i < work_dim; i++){
-        global += value_global_work_size[i];
-        local += value_local_work_size[i];
-        if (i != work_dim -1) {
-          global += " , ";
-          local += " , ";
-        }
-      }
-      console.info("Global [ "+ global +" ]")
-      console.info("Local [ "+ local +" ]")
-  //#endif
       // empty “localWS” array because give some trouble on CPU mode with mac
       // value_local_work_size = [];  
       try {
@@ -9031,7 +9017,7 @@ function copyTempDouble(ptr) {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
           }         
         }
-        console.log(vector);
+        //console.log(vector);
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);

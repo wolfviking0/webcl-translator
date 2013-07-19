@@ -45,6 +45,7 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 	| hello_world_2	|		 OK		   |	   OK		  |
 	| convolution	|		 OK		   |	   OK		  |
 	| reduce		| 	 BAD RESULT	   |   BAD RESULT     |
+	| scan   		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| qjulia		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
 	| histogram		| WORK IN PROGRESS | WORK IN PROGRESS |

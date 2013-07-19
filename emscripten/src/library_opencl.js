@@ -15,7 +15,7 @@ var LibraryOpenCL = {
     programs_clean: 0,
     kernels: [],
     kernels_name: [],
-    kernels_sig: [],
+    kernels_sig: {},
     kernels_clean: 0,
     buffers: [],
     buffers_clean: 0,
@@ -72,7 +72,7 @@ var LibraryOpenCL = {
       //
       // \note Work only with one kernel ....
                   
-      var kernel_struct = [];
+      var kernel_struct = {};
     
       kernelstring = kernelstring.replace(/\n/g, " ");
       kernelstring = kernelstring.replace(/\r/g, " ");
@@ -80,36 +80,35 @@ var LibraryOpenCL = {
       
       // Search kernel function __kernel 
       var kernel_start = kernelstring.indexOf("__kernel");
-      kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
-      
-      var brace_start = kernelstring.indexOf("(");
-      var brace_end = kernelstring.indexOf(")");  
-      
-      var kernels_name = "";
-      // Search kernel Name
-      for (var i = brace_start - 1; i >= 0 ; i--) {
-        var chara = kernelstring.charAt(i);
 
-        if (chara == ' ' && kernels_name.length > 0) {
-          break;
-        } else if (chara != ' ') {
-          kernels_name = chara + kernels_name;
+      while (kernel_start >= 0) {
+
+        kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
+      
+        var brace_start = kernelstring.indexOf("(");
+        var brace_end = kernelstring.indexOf(")");  
+      
+        var kernels_name = "";
+        // Search kernel Name
+        for (var i = brace_start - 1; i >= 0 ; i--) {
+          var chara = kernelstring.charAt(i);
+
+          if (chara == ' ' && kernels_name.length > 0) {
+            break;
+          } else if (chara != ' ') {
+            kernels_name = chara + kernels_name;
+          }
         }
-      }
       
-      kernelstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
-      kernelstring = kernelstring.replace(/\ /g, "");
+        kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
+        kernelsubstring = kernelsubstring.replace(/\ /g, "");
       
-      var kernel_parameter = kernelstring.split(",");
+        var kernel_parameter = kernelsubstring.split(",");
 
-#if OPENCL_DEBUG
-      console.info("Kernel NAME : " + kernels_name);      
-      console.info("Kernel PARAMETER NUM : "+kernel_parameter.length);
-#endif
-      
-      kernel_struct [ kernels_name ] = [];
-      
-      for (var i = 0; i < kernel_parameter.length; i ++) {
+        kernelstring = kernelstring.substr(brace_end);
+        
+        var parameter = new Array(kernel_parameter.length)
+        for (var i = 0; i < kernel_parameter.length; i ++) {
 
           var value = 0;
           var string = kernel_parameter[i]
@@ -136,9 +135,21 @@ var LibraryOpenCL = {
             value |= CL.data_type.INT;
           }
           
-          kernel_struct [ kernels_name ].push(value);
-      }
+          parameter[i] = value;
+        }
         
+        kernel_struct[kernels_name] = parameter;
+        
+        kernel_start = kernelstring.indexOf("__kernel");
+      }
+      
+#if OPENCL_DEBUG
+      for (var name in kernel_struct) {
+        console.info("Kernel NAME : " + name);      
+        console.info("Kernel PARAMETER NUM : "+kernel_struct[name].length);
+      }
+#endif 
+    
       return kernel_struct;
     },
     
@@ -537,7 +548,6 @@ var LibraryOpenCL = {
           res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_EXTENSIONS)*/; // return string
           writeStringToMemory(res, param_value);
           size = res.length;
-          console.info("Size : "+size)
           break;
         case (0x101E) /* CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE */:
           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE); // return cl_uint
@@ -1172,7 +1182,7 @@ var LibraryOpenCL = {
       CL.kernels_name.push(name);
       
 #if OPENCL_DEBUG
-      console.info("Kernel '"+name+"', has "+CL.kernels_sig[name].length+ " parameters !!!!");
+      console.info("Kernel '"+name+"', has "+CL.kernels_sig[name]+" parameters !!!!");
 #endif
 
       // Return the pos of the queue +1
@@ -1288,11 +1298,24 @@ var LibraryOpenCL = {
           }
           
           // \warning experimental stuff
+          console.info("/!\\ clCreateBuffer: Need to use the good kernel name ...");
           var name = CL.kernels_name[0];
           var sig = CL.kernels_sig[name];
-          var isFloat = sig[CL.buffers.length-1] & CL.data_type.FLOAT;
-          var isUint = sig[CL.buffers.length-1] & CL.data_type.UINT;
-          var isInt = sig[CL.buffers.length-1] & CL.data_type.INT;
+          var type = sig[CL.buffers.length-1];
+          
+          var isFloat = 0;
+          var isUint = 0;
+          var isInt = 0;
+          
+          if (type & CL.data_type.FLOAT) {
+            isFloat = 1;
+          } 
+          if (type & CL.data_type.UINT) {
+            isUint = 1;
+          } 
+          if (type & CL.data_type.INT) {
+            isInt = 1;
+          }
           
           var vector;    
              
@@ -1418,16 +1441,28 @@ var LibraryOpenCL = {
     var isUint = 0;
     var isInt = 0;
     
-    // \warning experimental stuff
     if (CL.kernels_name.length > 0) {
+      // \warning experimental stuff
+      console.info("/!\\ clEnqueueWriteBuffer: Need to use the good kernel name ...");
       var name = CL.kernels_name[0];
       var sig = CL.kernels_sig[name];
+      var type = sig[buff];
     
-      isFloat = sig[buff] & CL.data_type.FLOAT;
-      isUint = sig[buff] & CL.data_type.UINT;
-      isInt = sig[buff] & CL.data_type.INT;
-    }
+      var isFloat = 0;
+      var isUint = 0;
+      var isInt = 0;
 
+      if (type & CL.data_type.FLOAT) {
+        isFloat = 1;
+      } 
+      if (type & CL.data_type.UINT) {
+        isUint = 1;
+      } 
+      if (type & CL.data_type.INT) {
+        isInt = 1;
+      }
+    }
+    
     var vector;    
     
     if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
@@ -1459,7 +1494,7 @@ var LibraryOpenCL = {
       }
     }
     
-    console.log(vector);
+    //console.log(vector);
     
     try {
       CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
@@ -1555,10 +1590,7 @@ var LibraryOpenCL = {
     try {  
                 
       var name = CL.kernels_name[ker];
-                
-      console.info("clSetKernelArg : "+arg_index);
-      console.info("clSetKernelArg Kernel Name : "+name);
-          
+            
       // \todo problem what is arg_value is buffer or just value ??? hard to say ....
       // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
       // not inside the buffers array size we take the value
@@ -1569,14 +1601,24 @@ var LibraryOpenCL = {
 #endif
         return -1; /* CL_FAILED */
       }
-
-      var isFloat = CL.kernels_sig[name][arg_index] & CL.data_type.FLOAT;
-      var isLocal = CL.kernels_sig[name][arg_index] & CL.address_space.LOCAL;
       
-#if OPENCL_DEBUG
-      console.info("Parameter "+arg_index+" isFloat : "+isFloat+" - isLocal : "+isLocal);
-#endif   
-
+      var sig = CL.kernels_sig[name];
+      var type = sig[arg_index];
+      
+      console.log(""+name+" - "+arg_index);
+      
+      // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
+      var isFloat = 0;
+      var isLocal = 0;    
+      
+      if (type&CL.data_type.FLOAT) {
+        isFloat = 1;
+      } 
+      
+      if (type&CL.address_space.LOCAL) {
+        isLocal = 1;
+      }
+      
       var value;
       if (isLocal) {
         ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
@@ -1752,7 +1794,7 @@ var LibraryOpenCL = {
       value_global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
     }
 
-//#if 0
+#if 0
     var global = "";
     var local = "";
     for (var i = 0 ; i < work_dim; i++){
@@ -1766,7 +1808,7 @@ var LibraryOpenCL = {
 
     console.info("Global [ "+ global +" ]")
     console.info("Local [ "+ local +" ]")
-//#endif
+#endif
   
     // empty “localWS” array because give some trouble on CPU mode with mac
     // value_local_work_size = [];  
@@ -1840,21 +1882,26 @@ var LibraryOpenCL = {
     try {
       
       // \warning experimental stuff
+      console.info("/!\\ clEnqueueReadBuffer: Need to use the good kernel name ...");
       var name = CL.kernels_name[0];
       var sig = CL.kernels_sig[name];
-      var isFloat = sig[buff] & CL.data_type.FLOAT;
-      var isUint = sig[buff] & CL.data_type.UINT;
-      var isInt = sig[buff] & CL.data_type.INT;
+      var type = sig[buff];
+      var isFloat = 0;
+      var isUint = 0;
+      var isInt = 0;
 
-      if (sig.length == 0 || buff > sig.length) {
-#if OPENCL_DEBUG
-        console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
-#endif
-        return -1; /* CL_FAILED */     
-      }
+      if (type & CL.data_type.FLOAT) {
+        isFloat = 1;
+      } 
+      if (type & CL.data_type.UINT) {
+        isUint = 1;
+      } 
+      if (type & CL.data_type.INT) {
+        isInt = 1;
+      } 
 
-      var vector;    
-        
+      var vector;
+      
       if (isFloat) {
         vector = new Float32Array(size / 4);
       } else if (isUint) {
@@ -1867,7 +1914,7 @@ var LibraryOpenCL = {
 #endif
         return -1; /* CL_FAILED */     
       }
-
+  
       CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
 
       for (var i = 0; i < (size / 4); i++) {
@@ -1877,7 +1924,7 @@ var LibraryOpenCL = {
           {{{ makeSetValue('results', 'i*4', 'vector[i]', 'i32') }}};  
         }         
       }
-      console.log(vector);
+      //console.log(vector);
       
       return 0;/*CL_SUCCESS*/
     } catch(e) {
@@ -1885,7 +1932,7 @@ var LibraryOpenCL = {
     }
   },
 
-  clReleaseMemObject: function(memobj) {
+  clReleaseMemObject: function(memobj) {            
     var buff = memobj - 1 - CL.buffers_clean;
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG

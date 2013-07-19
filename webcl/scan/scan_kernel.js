@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'displacement_kernel.cl', true);
+    filePreload0.open('GET', 'scan_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file displacement_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file scan_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
-      Module['FS_createPreloadedFile']('/', 'displacement_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp displacement_kernel.cl');
+      Module['FS_createPreloadedFile']('/', 'scan_kernel.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp scan_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp displacement_kernel.cl');
+    Module['addRunDependency']('fp scan_kernel.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -41,9 +41,9 @@ function assert(check, msg) {
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = 'displacement_kernel.data';
-    var REMOTE_PACKAGE_NAME = 'displacement_kernel.data';
-    var PACKAGE_UUID = '52622d5f-4ccf-4f38-84af-6436cc5fce6c';
+    var PACKAGE_NAME = 'scan_kernel.data';
+    var REMOTE_PACKAGE_NAME = 'scan_kernel.data';
+    var PACKAGE_UUID = 'a6e6644f-4a28-4f62-b39f-1ddbf6d13b1e';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,16 +90,16 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['displacement_kernel.cl'];
-        var data = byteArray.subarray(0, 11348);
-        var ptr = Module['_malloc'](11348);
+        curr = DataRequest.prototype.requests['scan_kernel.cl'];
+        var data = byteArray.subarray(0, 15054);
+        var ptr = Module['_malloc'](15054);
         Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 11348);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 15054);
         curr.onload();
-                Module['removeRunDependency']('datafile_displacement_kernel.data');
+                Module['removeRunDependency']('datafile_scan_kernel.data');
 
     };
-    Module['addRunDependency']('datafile_displacement_kernel.data');
+    Module['addRunDependency']('datafile_scan_kernel.data');
 
     function handleError(error) {
       console.error('package error:', error);

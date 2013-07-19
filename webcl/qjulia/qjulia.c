@@ -842,7 +842,9 @@ Cleanup(void)
     clReleaseProgram(ComputeProgram);
     clReleaseCommandQueue(ComputeCommands);
     clReleaseMemObject(ComputeResult);
+#if (USE_GL_ATTACHMENTS)
     clReleaseMemObject(ComputeImage);
+#endif
     clReleaseContext(ComputeContext);
     
     ComputeCommands = 0;
