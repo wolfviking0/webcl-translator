@@ -205,7 +205,7 @@ else:
     config_file = '\n'.join(config_file)
     # autodetect some default paths
     config_file = config_file.replace('{{{ EMSCRIPTEN_ROOT }}}', __rootpath__)
-    llvm_root = find_executable('llvm-dis') or '/usr/bin'
+    llvm_root = os.path.dirname(find_executable('llvm-dis') or '/usr/bin/llvm-dis')
     config_file = config_file.replace('{{{ LLVM_ROOT }}}', llvm_root)
     node = find_executable('node') or find_executable('nodejs') or 'node'
     config_file = config_file.replace('{{{ NODE }}}', node)
@@ -257,7 +257,7 @@ def check_clang_version():
 
 def check_llvm_version():
   try:
-    check_clang_version();
+    check_clang_version()
   except Exception, e:
     logging.warning('Could not verify LLVM version: %s' % str(e))
 
@@ -400,6 +400,7 @@ EMAR = path_from_root('emar')
 EMRANLIB = path_from_root('emranlib')
 EMLIBTOOL = path_from_root('emlibtool')
 EMCONFIG = path_from_root('em-config')
+EMLINK = path_from_root('emlink.py')
 EMMAKEN = path_from_root('tools', 'emmaken.py')
 AUTODEBUGGER = path_from_root('tools', 'autodebugger.py')
 BINDINGS_GENERATOR = path_from_root('tools', 'bindings_generator.py')
@@ -503,7 +504,8 @@ except:
 COMPILER_OPTS = COMPILER_OPTS + ['-m32', '-U__i386__', '-U__i386', '-Ui386',
                                  '-U__SSE__', '-U__SSE_MATH__', '-U__SSE2__', '-U__SSE2_MATH__', '-U__MMX__',
                                  '-DEMSCRIPTEN', '-D__EMSCRIPTEN__', '-U__STRICT_ANSI__',
-                                 '-D__IEEE_LITTLE_ENDIAN', '-fno-math-errno', '-fno-threadsafe-statics',
+                                 '-D__IEEE_LITTLE_ENDIAN', '-fno-math-errno',
+                                 #'-fno-threadsafe-statics', # disabled due to issue 1289
                                  '-target', LLVM_TARGET]
 
 if LLVM_TARGET == 'le32-unknown-nacl':
@@ -724,7 +726,7 @@ class Building:
     env['HOST_CXXFLAGS'] = "-W" #if set to nothing, CXXFLAGS is used, which we don't want
     env['PKG_CONFIG_LIBDIR'] = path_from_root('system', 'local', 'lib', 'pkgconfig') + os.path.pathsep + path_from_root('system', 'lib', 'pkgconfig')
     env['PKG_CONFIG_PATH'] = os.environ.get ('EM_PKG_CONFIG_PATH') or ''
-    env['EMSCRIPTEN'] = '1'
+    env['EMSCRIPTEN'] = path_from_root()
     return env
 
   @staticmethod
@@ -866,7 +868,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     return generated_libs
 
   @staticmethod
-  def link(files, target):
+  def link(files, target, force_archive_contents=False):
     actual_files = []
     unresolved_symbols = set(['main']) # tracking unresolveds is necessary for .a linking, see below. (and main is always a necessary symbol)
     resolved_symbols = set()
@@ -917,7 +919,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
                 # Link in the .o if it provides symbols, *or* this is a singleton archive (which is apparently an exception in gcc ld)
                 #print >> sys.stderr, 'need', content, '?', unresolved_symbols, 'and we can supply', new_symbols.defs
                 #print >> sys.stderr, content, 'DEF', new_symbols.defs, '\n'
-                if new_symbols.defs.intersection(unresolved_symbols) or len(files) == 1:
+                if new_symbols.defs.intersection(unresolved_symbols) or len(files) == 1 or force_archive_contents:
                   if Building.is_bitcode(content):
                     #print >> sys.stderr, '  adding object', content, '\n'
                     resolved_symbols = resolved_symbols.union(new_symbols.defs)
@@ -1100,8 +1102,10 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
 
   @staticmethod
   def get_safe_internalize():
+    if not Building.can_build_standalone(): return [] # do not internalize anything
     exps = expand_response(Settings.EXPORTED_FUNCTIONS)
     if '_malloc' not in exps: exps.append('_malloc') # needed internally, even if user did not add to EXPORTED_FUNCTIONS
+    if '_free' not in exps: exps.append('_free')
     exports = ','.join(map(lambda exp: exp[1:], exps))
     # internalize carefully, llvm 3.2 will remove even main if not told not to
     return ['-internalize', '-internalize-public-api-list=' + exports]
@@ -1192,7 +1196,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
         opts.append('-jump-threading')
         opts.append('-correlated-propagation')
         opts.append('-dse')
-        #addExtensionsToPM(EP_ScalarOptimizerLate, MPM);
+        #addExtensionsToPM(EP_ScalarOptimizerLate, MPM)
 
         opts.append('-adce')
         opts.append('-simplifycfg')
@@ -1209,8 +1213,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     return opts
 
   @staticmethod
-  def js_optimizer(filename, passes, jcache, debug):
-    return js_optimizer.run(filename, passes, listify(NODE_JS), jcache, debug)
+  def js_optimizer(filename, passes, jcache=False, debug=False, extra_info=None):
+    return js_optimizer.run(filename, passes, listify(NODE_JS), jcache, debug, extra_info)
 
   @staticmethod
   def closure_compiler(filename, pretty=True):
@@ -1296,7 +1300,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
           '-O' + str(opt_level), '--closure', '0'], raw)
         f = open(relooper, 'w')
         f.write("// Relooper, (C) 2012 Alon Zakai, MIT license, https://github.com/kripken/Relooper\n")
-        f.write("var Relooper = (function() {\n");
+        f.write("var Relooper = (function() {\n")
         f.write(open(raw).read())
         f.write('\n  return Module.Relooper;\n')
         f.write('})();\n')
@@ -1350,9 +1354,35 @@ JCache = cache.JCache(Cache)
 chunkify = cache.chunkify
 
 class JS:
+  memory_initializer_pattern = '/\* memory initializer \*/ allocate\(([\d,\.concat\(\)\[\]\\n ]+)"i8", ALLOC_NONE, ([\dRuntime\.GLOBAL_BASE+]+)\)'
+  no_memory_initializer_pattern = '/\* no memory initializer \*/'
+
+  memory_staticbump_pattern = 'STATICTOP = STATIC_BASE \+ (\d+);'
+
+  global_initializers_pattern = '/\* global initializers \*/ __ATINIT__.push\((.+)\);'
+
   @staticmethod
   def to_nice_ident(ident): # limited version of the JS function toNiceIdent
-    return ident.replace('%', '$').replace('@', '_');
+    return ident.replace('%', '$').replace('@', '_')
+
+  @staticmethod
+  def make_invoke(sig, named=True):
+    args = ','.join(['a' + str(i) for i in range(1, len(sig))])
+    args = 'index' + (',' if args else '') + args
+    # C++ exceptions are numbers, and longjmp is a string 'longjmp'
+    return '''function%s(%s) {
+  try {
+    %sModule["dynCall_%s"](%s);
+  } catch(e) {
+    if (typeof e !== 'number' && e !== 'longjmp') throw e;
+    asm["setThrew"](1, 0);
+  }
+}''' % ((' invoke_' + sig) if named else '', args, 'return ' if sig[0] != 'v' else '', sig, args)
+
+  @staticmethod
+  def align(x, by):
+    while x % by != 0: x += 1
+    return x
 
 # Compression of code and data for smaller downloads
 class Compression:
@@ -1377,6 +1407,17 @@ def execute(cmd, *args, **kw):
     if not isinstance(cmd, str):
       cmd = ' '.join(cmd)
     logging.error('Invoking Process failed: <<< ' + cmd + ' >>>')
+    raise
+
+def check_execute(cmd, *args, **kw):
+  # TODO: use in more places. execute doesn't actually check that return values
+  # are nonzero
+  try:
+    kw['stderr'] = STDOUT
+    subprocess.check_output(cmd, *args, **kw)
+    logging.debug("Successfuly executed %s" % " ".join(cmd))
+  except subprocess.CalledProcessError as e:
+    logging.error("'%s' failed with output:\n%s" % (" ".join(e.cmd), e.output))
     raise
 
 def suffix(name):

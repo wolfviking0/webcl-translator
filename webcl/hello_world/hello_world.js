@@ -12,9 +12,6 @@ var ENVIRONMENT_IS_NODE = typeof process === 'object' && typeof require === 'fun
 var ENVIRONMENT_IS_WEB = typeof window === 'object';
 var ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
 var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
-if (typeof module === "object") {
-  module.exports = Module;
-}
 if (ENVIRONMENT_IS_NODE) {
   // Expose functionality in the same simple way that the shells work
   // Note that we pollute the global namespace here, otherwise we break in node
@@ -44,6 +41,7 @@ if (ENVIRONMENT_IS_NODE) {
   if (!Module['arguments']) {
     Module['arguments'] = process['argv'].slice(2);
   }
+  module.exports = Module;
 }
 if (ENVIRONMENT_IS_SHELL) {
   Module['print'] = print;
@@ -59,6 +57,7 @@ if (ENVIRONMENT_IS_SHELL) {
       Module['arguments'] = arguments;
     }
   }
+  this['Module'] = Module;
 }
 if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
   if (!Module['print']) {
@@ -71,6 +70,7 @@ if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
       console.log(x);
     };
   }
+  this['Module'] = Module;
 }
 if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function(url) {
@@ -430,7 +430,7 @@ var globalScope = this;
 //
 // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
 // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-//                   'array' for JavaScript arrays and typed arrays).
+//                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
 // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
 //                   except that 'array' is not possible (there is no way for us to know the length of the array)
 // @param args       An array of the arguments to the function, as native JS values (as in returnType)
@@ -850,11 +850,9 @@ function addPreRun(func) {
   else if (typeof Module['preRun'] == 'function') Module['preRun'] = [Module['preRun']];
   Module['preRun'].push(func);
 }
-var awaitingMemoryInitializer = false;
 function loadMemoryInitializer(filename) {
   function applyData(data) {
     HEAPU8.set(data, STATIC_BASE);
-    runPostSets();
   }
   // always do this asynchronously, to keep shell and web as similar as possible
   addPreRun(function() {
@@ -868,15 +866,12 @@ function loadMemoryInitializer(filename) {
       });
     }
   });
-  awaitingMemoryInitializer = false;
 }
 // === Body ===
 STATIC_BASE = 8;
 STATICTOP = STATIC_BASE + 1936;
+/* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } });
 /* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,67,111,109,109,97,110,100,81,117,101,117,101,32,46,46,46,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,0,0,67,97,108,108,32,58,32,99,108,71,101,116,67,111,110,116,101,120,116,73,110,102,111,32,46,46,46,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,67,97,108,108,32,58,32,99,108,71,101,116,68,101,118,105,99,101,73,110,102,111,32,46,46,46,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,82,101,97,100,66,117,102,102,101,114,32,46,46,46,0,0,67,97,108,108,32,58,32,99,108,70,105,110,105,115,104,32,46,46,46,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,78,68,82,97,110,103,101,75,101,114,110,101,108,32,46,46,46,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,71,101,116,75,101,114,110,101,108,87,111,114,107,71,114,111,117,112,73,110,102,111,32,46,46,46,0,0,0,0,0,67,97,108,108,32,58,32,99,108,83,101,116,75,101,114,110,101,108,65,114,103,32,46,46,46,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,67,111,110,116,101,120,116,32,46,46,46,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,0,67,97,108,108,32,58,32,99,108,69,110,113,117,101,117,101,87,114,105,116,101,66,117,102,102,101,114,32,46,46,46,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,100,101,118,105,99,101,32,109,101,109,111,114,121,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,66,117,102,102,101,114,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,75,101,114,110,101,108,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,66,117,105,108,100,80,114,111,103,114,97,109,32,46,46,46,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,67,97,108,108,32,58,32,99,108,67,114,101,97,116,101,80,114,111,103,114,97,109,87,105,116,104,83,111,117,114,99,101,32,46,46,46,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,100,101,118,105,99,101,32,103,114,111,117,112,33,0,67,97,108,108,32,58,32,99,108,71,101,116,68,101,118,105,99,101,73,68,115,32,46,46,46,0,0,0,0,0,0,0,67,111,109,112,117,116,101,100,32,39,37,100,47,37,100,39,32,99,111,114,114,101,99,116,32,118,97,108,117,101,115,33,10,0,0,0,0,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,34,37,115,34,32,34,37,115,34,32,46,46,46,32,73,109,97,103,101,32,83,117,112,112,111,114,116,32,37,100,32,58,32,68,101,118,105,99,101,115,32,99,111,117,110,116,32,37,100,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,111,117,116,112,117,116,32,97,114,114,97,121,33,32,37,100,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,32,37,100,10,0,0,0,0,0,0,103,112,117,0,0,0,0,0,115,113,117,97,114,101,0,0,99,112,117,0,0,0,0,0,10,95,95,107,101,114,110,101,108,32,118,111,105,100,32,115,113,117,97,114,101,40,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,105,110,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,95,95,103,108,111,98,97,108,32,102,108,111,97,116,42,32,111,117,116,112,117,116,44,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,99,111,110,115,116,32,117,110,115,105,103,110,101,100,32,105,110,116,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,123,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,110,116,32,105,32,61,32,103,101,116,95,103,108,111,98,97,108,95,105,100,40,48,41,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,105,102,40,105,32,60,32,99,111,117,110,116,41,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,32,32,32,32,32,32,32,111,117,116,112,117,116,91,105,93,32,61,32,105,110,112,117,116,91,105,93,32,42,32,105,110,112,117,116,91,105,93,59,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,125,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,10,10,0,0,5,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
-function runPostSets() {
-}
-if (!awaitingMemoryInitializer) runPostSets();
 var tempDoublePtr = Runtime.alignMemory(allocate(12, "i8", ALLOC_STATIC), 8);
 assert(tempDoublePtr % 8 == 0);
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
@@ -1334,8 +1329,11 @@ function copyTempDouble(ptr) {
         // Create the I/O devices.
         var devFolder = FS.createFolder('/', 'dev', true, true);
         var stdin = FS.createDevice(devFolder, 'stdin', input);
+        stdin.isTerminal = !stdinOverridden;
         var stdout = FS.createDevice(devFolder, 'stdout', null, output);
+        stdout.isTerminal = !stdoutOverridden;
         var stderr = FS.createDevice(devFolder, 'stderr', null, error);
+        stderr.isTerminal = !stderrOverridden;
         FS.createDevice(devFolder, 'tty', input, output);
         FS.createDevice(devFolder, 'null', function(){}, function(){});
         // Create default streams.
@@ -1346,7 +1344,6 @@ function copyTempDouble(ptr) {
           isRead: true,
           isWrite: false,
           isAppend: false,
-          isTerminal: !stdinOverridden,
           error: false,
           eof: false,
           ungotten: []
@@ -1358,7 +1355,6 @@ function copyTempDouble(ptr) {
           isRead: false,
           isWrite: true,
           isAppend: false,
-          isTerminal: !stdoutOverridden,
           error: false,
           eof: false,
           ungotten: []
@@ -1370,7 +1366,6 @@ function copyTempDouble(ptr) {
           isRead: false,
           isWrite: true,
           isAppend: false,
-          isTerminal: !stderrOverridden,
           error: false,
           eof: false,
           ungotten: []
@@ -1930,13 +1925,17 @@ function copyTempDouble(ptr) {
         }
         var imagePlugin = {};
         imagePlugin['canHandle'] = function(name) {
-          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/.exec(name);
+          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
         };
         imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
           var b = null;
           if (Browser.hasBlobConstructor) {
             try {
               b = new Blob([byteArray], { type: getMimetype(name) });
+              if (b.size !== byteArray.length) { // Safari bug #118630
+                // Safari's Blob can only take an ArrayBuffer
+                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: getMimetype(name) });
+              }
             } catch(e) {
               Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
             }
@@ -2264,7 +2263,7 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:[],kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
         console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
         console.error("But may be the kernel source is not yet parse !!! \n");
         var v_int = HEAP32[((ptr)>>2)]; 
@@ -2297,7 +2296,7 @@ function copyTempDouble(ptr) {
         // --------------------------------------------------------------------
         //
         // \note Work only with one kernel ....
-        var kernel_struct = [];
+        var kernel_struct = {};
         kernelstring = kernelstring.replace(/\n/g, " ");
         kernelstring = kernelstring.replace(/\r/g, " ");
         kernelstring = kernelstring.replace(/\t/g, " ");
@@ -2320,10 +2319,8 @@ function copyTempDouble(ptr) {
           kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
           kernelsubstring = kernelsubstring.replace(/\ /g, "");
           var kernel_parameter = kernelsubstring.split(",");
-          console.info("Kernel NAME : " + kernels_name);      
-          console.info("Kernel PARAMETER NUM : "+kernel_parameter.length);
           kernelstring = kernelstring.substr(brace_end);
-          kernel_struct [ kernels_name ] = [];
+          var parameter = new Array(kernel_parameter.length)
           for (var i = 0; i < kernel_parameter.length; i ++) {
             var value = 0;
             var string = kernel_parameter[i]
@@ -2347,9 +2344,14 @@ function copyTempDouble(ptr) {
             } else if (string.indexOf("int") >= 0 ) {
               value |= CL.data_type.INT;
             }
-            kernel_struct [ kernels_name ].push(value);
+            parameter[i] = value;
           }
+          kernel_struct[kernels_name] = parameter;
           kernel_start = kernelstring.indexOf("__kernel");
+        }
+        for (var name in kernel_struct) {
+          console.info("Kernel NAME : " + name);      
+          console.info("Kernel PARAMETER NUM : "+kernel_struct[name].length);
         }
         return kernel_struct;
       },getDeviceName:function (type) {
@@ -2977,7 +2979,7 @@ function copyTempDouble(ptr) {
         CL.kernels.push(CL.programs[prog].createKernel(name));
         // Add the name of the kernel for search the kernel sig after...
         CL.kernels_name.push(name);
-        console.info("Kernel '"+name+"', has "+CL.kernels_sig[name].length+ " parameters !!!!");
+        console.info("Kernel '"+name+"', has "+CL.kernels_sig[name]+" parameters !!!!");
         // Return the pos of the queue +1
         return CL.kernels.length;
       } catch (e) {
@@ -3040,11 +3042,22 @@ function copyTempDouble(ptr) {
               return 0;
             }
             // \warning experimental stuff
+            console.info("/!\\ clCreateBuffer: Need to use the good kernel name ...");
             var name = CL.kernels_name[0];
             var sig = CL.kernels_sig[name];
-            var isFloat = sig[CL.buffers.length-1] & CL.data_type.FLOAT;
-            var isUint = sig[CL.buffers.length-1] & CL.data_type.UINT;
-            var isInt = sig[CL.buffers.length-1] & CL.data_type.INT;
+            var type = sig[CL.buffers.length-1];
+            var isFloat = 0;
+            var isUint = 0;
+            var isInt = 0;
+            if (type & CL.data_type.FLOAT) {
+              isFloat = 1;
+            } 
+            if (type & CL.data_type.UINT) {
+              isUint = 1;
+            } 
+            if (type & CL.data_type.INT) {
+              isInt = 1;
+            }
             var vector;    
             if (isFloat) {
               vector = new Float32Array(size / 4);
@@ -3090,13 +3103,24 @@ function copyTempDouble(ptr) {
       var isFloat = 0;
       var isUint = 0;
       var isInt = 0;
-      // \warning experimental stuff
       if (CL.kernels_name.length > 0) {
+        // \warning experimental stuff
+        console.info("/!\\ clEnqueueWriteBuffer: Need to use the good kernel name ...");
         var name = CL.kernels_name[0];
         var sig = CL.kernels_sig[name];
-        isFloat = sig[buff] & CL.data_type.FLOAT;
-        isUint = sig[buff] & CL.data_type.UINT;
-        isInt = sig[buff] & CL.data_type.INT;
+        var type = sig[buff];
+        var isFloat = 0;
+        var isUint = 0;
+        var isInt = 0;
+        if (type & CL.data_type.FLOAT) {
+          isFloat = 1;
+        } 
+        if (type & CL.data_type.UINT) {
+          isUint = 1;
+        } 
+        if (type & CL.data_type.INT) {
+          isInt = 1;
+        }
       }
       var vector;    
       if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
@@ -3147,8 +3171,18 @@ function copyTempDouble(ptr) {
           console.error("clSetKernelArg: Invalid signature : "+CL.kernels_sig[name].length);
           return -1; /* CL_FAILED */
         }
-        var isFloat = CL.kernels_sig[name][arg_index] & CL.data_type.FLOAT;
-        var isLocal = CL.kernels_sig[name][arg_index] & CL.address_space.LOCAL;
+        var sig = CL.kernels_sig[name];
+        var type = sig[arg_index];
+        console.log(""+name+" - "+arg_index);
+        // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
+        var isFloat = 0;
+        var isLocal = 0;    
+        if (type&CL.data_type.FLOAT) {
+          isFloat = 1;
+        } 
+        if (type&CL.address_space.LOCAL) {
+          isLocal = 1;
+        }
         var value;
         if (isLocal) {
           ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
@@ -3305,16 +3339,23 @@ function copyTempDouble(ptr) {
       }
       try {
         // \warning experimental stuff
+        console.info("/!\\ clEnqueueReadBuffer: Need to use the good kernel name ...");
         var name = CL.kernels_name[0];
         var sig = CL.kernels_sig[name];
-        var isFloat = sig[buff] & CL.data_type.FLOAT;
-        var isUint = sig[buff] & CL.data_type.UINT;
-        var isInt = sig[buff] & CL.data_type.INT;
-        if (sig.length == 0 || buff > sig.length) {
-          console.error("clEnqueueReadBuffer: Invalid signature : "+buff);
-          return -1; /* CL_FAILED */     
-        }
-        var vector;    
+        var type = sig[buff];
+        var isFloat = 0;
+        var isUint = 0;
+        var isInt = 0;
+        if (type & CL.data_type.FLOAT) {
+          isFloat = 1;
+        } 
+        if (type & CL.data_type.UINT) {
+          isUint = 1;
+        } 
+        if (type & CL.data_type.INT) {
+          isInt = 1;
+        } 
+        var vector;
         if (isFloat) {
           vector = new Float32Array(size / 4);
         } else if (isUint) {
@@ -3339,7 +3380,7 @@ function copyTempDouble(ptr) {
         return CL.catchError("clEnqueueReadBuffer",e);
       }
     }
-  function _clReleaseMemObject(memobj) {
+  function _clReleaseMemObject(memobj) {            
       var buff = memobj - 1 - CL.buffers_clean;
       if (buff >= CL.buffers.length || buff < 0 ) {
         console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
@@ -3457,6 +3498,7 @@ function copyTempDouble(ptr) {
   Module["_malloc"] = _malloc;
   function _free() {
   }
+  Module["_free"] = _free;
 __ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
@@ -3512,15 +3554,16 @@ function asmPrintFloat(x, y) {
 // EMSCRIPTEN_START_ASM
 var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.min;var ad=env.invoke_ii;var ae=env.invoke_v;var af=env.invoke_iii;var ag=env.invoke_vi;var ah=env._rand;var ai=env._malloc;var aj=env._clGetDeviceIDs;var ak=env._clReleaseKernel;var al=env._clReleaseContext;var am=env._fprintf;var an=env._clGetDeviceInfo;var ao=env._printf;var ap=env.__reallyNegative;var aq=env._clCreateCommandQueue;var ar=env._clReleaseProgram;var as=env._puts;var at=env._clBuildProgram;var au=env.___setErrNo;var av=env._fwrite;var aw=env._send;var ax=env._clEnqueueNDRangeKernel;var ay=env._write;var az=env._fputs;var aA=env._clGetKernelWorkGroupInfo;var aB=env._exit;var aC=env._clSetKernelArg;var aD=env._clCreateKernel;var aE=env._clReleaseCommandQueue;var aF=env._fputc;var aG=env._clCreateProgramWithSource;var aH=env.__formatString;var aI=env._free;var aJ=env._clEnqueueWriteBuffer;var aK=env._clGetContextInfo;var aL=env._clEnqueueReadBuffer;var aM=env._pwrite;var aN=env._strstr;var aO=env._clReleaseMemObject;var aP=env._clFinish;var aQ=env._clCreateBuffer;var aR=env._clGetProgramBuildInfo;var aS=env.__exit;var aT=env._clCreateContext;
 // EMSCRIPTEN_START_FUNCS
-function aY(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function aZ(){return i|0}function a_(a){a=a|0;i=a}function a$(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a0(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function a1(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function a2(a){a=a|0;B=a}function a3(a){a=a|0;C=a}function a4(a){a=a|0;D=a}function a5(a){a=a|0;E=a}function a6(a){a=a|0;F=a}function a7(a){a=a|0;G=a}function a8(a){a=a|0;H=a}function a9(a){a=a|0;I=a}function ba(a){a=a|0;J=a}function bb(a){a=a|0;K=a}function bc(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0.0;d=i;i=i+12432|0;e=d|0;f=d+8|0;h=d+4104|0;j=d+8200|0;k=d+8208|0;l=d+8216|0;m=d+8224|0;n=d+8232|0;o=d+8240|0;p=d+8248|0;q=d+8256|0;r=d+9280|0;t=d+10304|0;u=d+10312|0;v=d+10376|0;w=d+10384|0;c[o>>2]=1024;x=0;do{g[f+(x<<2)>>2]=+(ah()|0)*4.656612873077393e-10;x=x+1|0;y=c[o>>2]|0;}while(x>>>0<y>>>0);x=y<<2;if((a|0)<1|(b|0)==0){z=1}else{y=0;A=1;while(1){B=c[b+(y<<2)>>2]|0;do{if((B|0)==0){C=A}else{if((aN(B|0,1272)|0)!=0){C=0;break}C=(aN(B|0,1256)|0)==0?A:1}}while(0);B=y+1|0;if((B|0)<(a|0)){y=B;A=C}else{z=C;break}}}as(968)|0;C=(z|0)!=0;z=aj(0,(C?4:2)|0,(C?0:0)|0,1,l|0,0)|0;c[e>>2]=z;if((z|0)!=0){as(928)|0;D=1;i=d;return D|0}as(504)|0;z=aT(0,1,l|0,0,0,e|0)|0;if((z|0)==0){as(248)|0;D=1;i=d;return D|0}C=q|0;be(C|0,0,1024);q=r|0;be(q|0,0,1024);as(216)|0;c[e>>2]=an(c[l>>2]|0,4140,1024,C|0,p|0)|0;r=an(c[l>>2]|0,4139,1024,q|0,p|0)|0;c[e>>2]=c[e>>2]|r;r=an(c[l>>2]|0,4118,1024,t|0,p|0)|0;A=c[e>>2]|r;c[e>>2]=A;if((A|0)!=0){as(176)|0;D=1;i=d;return D|0}as(144)|0;A=aK(z|0,4225,64,u|0,p|0)|0;c[e>>2]=A;if((A|0)!=0){as(88)|0;D=1;i=d;return D|0}A=(c[p>>2]|0)>>>2;as(56)|0;p=aq(z|0,c[l>>2]|0,0,0,e|0)|0;if((p|0)==0){as(8)|0;D=1;i=d;return D|0}as(888)|0;u=aG(z|0,1,1936,0,e|0)|0;if((u|0)==0){as(840)|0;D=1;i=d;return D|0}as(808)|0;r=at(u|0,0,0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){as(760)|0;r=c[l>>2]|0;y=w|0;aR(u|0,r|0,4483,2048,y|0,v|0)|0;as(y|0)|0;aB(1);return 0}as(728)|0;y=aD(u|0,1264,e|0)|0;if(!((y|0)!=0&(c[e>>2]|0)==0)){as(688)|0;aB(1);return 0}as(656)|0;v=aQ(z|0,4,0,x|0,0,0)|0;c[m>>2]=v;r=aQ(z|0,2,0,x|0,0,0)|0;c[n>>2]=r;if((v|0)==0|(r|0)==0){as(608)|0;aB(1);return 0}as(576)|0;r=aJ(p|0,v|0,1,0,x|0,f|0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){as(536)|0;aB(1);return 0}as(472)|0;c[e>>2]=0;c[e>>2]=aC(y|0,0,4,m|0)|0;r=aC(y|0,1,4,n|0)|0;c[e>>2]=c[e>>2]|r;r=aC(y|0,2,4,o|0)|0;x=c[e>>2]|r;c[e>>2]=x;if((x|0)!=0){ao(1208,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}as(432)|0;x=aA(y|0,c[l>>2]|0,4528,4,k|0,0)|0;c[e>>2]=x;if((x|0)!=0){ao(1152,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}c[j>>2]=c[o>>2];as(392)|0;x=ax(p|0,y|0,1,0,j|0,k|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){as(352)|0;D=1;i=d;return D|0}as(328)|0;aP(p|0)|0;as(296)|0;x=aL(p|0,c[n>>2]|0,1,0,c[o>>2]<<2|0,h|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){ao(1112,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}x=c[o>>2]|0;if((x|0)==0){E=0}else{e=0;k=0;while(1){F=+g[f+(e<<2)>>2];j=(+g[h+(e<<2)>>2]-F*F<1.0e-7&1)+k|0;l=e+1|0;if(l>>>0<x>>>0){e=l;k=j}else{E=j;break}}}k=c[t>>2]|0;ao(1040,(s=i,i=i+32|0,c[s>>2]=C,c[s+8>>2]=q,c[s+16>>2]=k,c[s+24>>2]=A,s)|0)|0;A=c[o>>2]|0;ao(1e3,(s=i,i=i+16|0,c[s>>2]=E,c[s+8>>2]=A,s)|0)|0;aO(c[m>>2]|0)|0;aO(c[n>>2]|0)|0;ar(u|0)|0;ak(y|0)|0;aE(p|0)|0;al(z|0)|0;D=0;i=d;return D|0}function bd(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function be(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bf(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bg(a,b){a=a|0;b=b|0;return aU[a&1](b|0)|0}function bh(a){a=a|0;aV[a&1]()}function bi(a,b,c){a=a|0;b=b|0;c=c|0;return aW[a&1](b|0,c|0)|0}function bj(a,b){a=a|0;b=b|0;aX[a&1](b|0)}function bk(a){a=a|0;_(0);return 0}function bl(){_(1)}function bm(a,b){a=a|0;b=b|0;_(2);return 0}function bn(a){a=a|0;_(3)}
+function aY(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function aZ(){return i|0}function a_(a){a=a|0;i=a}function a$(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a0(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function a1(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function a2(a){a=a|0;B=a}function a3(a){a=a|0;C=a}function a4(a){a=a|0;D=a}function a5(a){a=a|0;E=a}function a6(a){a=a|0;F=a}function a7(a){a=a|0;G=a}function a8(a){a=a|0;H=a}function a9(a){a=a|0;I=a}function ba(a){a=a|0;J=a}function bb(a){a=a|0;K=a}function bc(){}function bd(a,b){a=a|0;b=b|0;var d=0,e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0.0;d=i;i=i+12432|0;e=d|0;f=d+8|0;h=d+4104|0;j=d+8200|0;k=d+8208|0;l=d+8216|0;m=d+8224|0;n=d+8232|0;o=d+8240|0;p=d+8248|0;q=d+8256|0;r=d+9280|0;t=d+10304|0;u=d+10312|0;v=d+10376|0;w=d+10384|0;c[o>>2]=1024;x=0;do{g[f+(x<<2)>>2]=+(ah()|0)*4.656612873077393e-10;x=x+1|0;y=c[o>>2]|0;}while(x>>>0<y>>>0);x=y<<2;if((a|0)<1|(b|0)==0){z=1}else{y=0;A=1;while(1){B=c[b+(y<<2)>>2]|0;do{if((B|0)==0){C=A}else{if((aN(B|0,1272)|0)!=0){C=0;break}C=(aN(B|0,1256)|0)==0?A:1}}while(0);B=y+1|0;if((B|0)<(a|0)){y=B;A=C}else{z=C;break}}}as(968)|0;C=(z|0)!=0;z=aj(0,(C?4:2)|0,(C?0:0)|0,1,l|0,0)|0;c[e>>2]=z;if((z|0)!=0){as(928)|0;D=1;i=d;return D|0}as(504)|0;z=aT(0,1,l|0,0,0,e|0)|0;if((z|0)==0){as(248)|0;D=1;i=d;return D|0}C=q|0;bf(C|0,0,1024);q=r|0;bf(q|0,0,1024);as(216)|0;c[e>>2]=an(c[l>>2]|0,4140,1024,C|0,p|0)|0;r=an(c[l>>2]|0,4139,1024,q|0,p|0)|0;c[e>>2]=c[e>>2]|r;r=an(c[l>>2]|0,4118,1024,t|0,p|0)|0;A=c[e>>2]|r;c[e>>2]=A;if((A|0)!=0){as(176)|0;D=1;i=d;return D|0}as(144)|0;A=aK(z|0,4225,64,u|0,p|0)|0;c[e>>2]=A;if((A|0)!=0){as(88)|0;D=1;i=d;return D|0}A=(c[p>>2]|0)>>>2;as(56)|0;p=aq(z|0,c[l>>2]|0,0,0,e|0)|0;if((p|0)==0){as(8)|0;D=1;i=d;return D|0}as(888)|0;u=aG(z|0,1,1936,0,e|0)|0;if((u|0)==0){as(840)|0;D=1;i=d;return D|0}as(808)|0;r=at(u|0,0,0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){as(760)|0;r=c[l>>2]|0;y=w|0;aR(u|0,r|0,4483,2048,y|0,v|0)|0;as(y|0)|0;aB(1);return 0}as(728)|0;y=aD(u|0,1264,e|0)|0;if(!((y|0)!=0&(c[e>>2]|0)==0)){as(688)|0;aB(1);return 0}as(656)|0;v=aQ(z|0,4,0,x|0,0,0)|0;c[m>>2]=v;r=aQ(z|0,2,0,x|0,0,0)|0;c[n>>2]=r;if((v|0)==0|(r|0)==0){as(608)|0;aB(1);return 0}as(576)|0;r=aJ(p|0,v|0,1,0,x|0,f|0,0,0,0)|0;c[e>>2]=r;if((r|0)!=0){as(536)|0;aB(1);return 0}as(472)|0;c[e>>2]=0;c[e>>2]=aC(y|0,0,4,m|0)|0;r=aC(y|0,1,4,n|0)|0;c[e>>2]=c[e>>2]|r;r=aC(y|0,2,4,o|0)|0;x=c[e>>2]|r;c[e>>2]=x;if((x|0)!=0){ao(1208,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}as(432)|0;x=aA(y|0,c[l>>2]|0,4528,4,k|0,0)|0;c[e>>2]=x;if((x|0)!=0){ao(1152,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}c[j>>2]=c[o>>2];as(392)|0;x=ax(p|0,y|0,1,0,j|0,k|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){as(352)|0;D=1;i=d;return D|0}as(328)|0;aP(p|0)|0;as(296)|0;x=aL(p|0,c[n>>2]|0,1,0,c[o>>2]<<2|0,h|0,0,0,0)|0;c[e>>2]=x;if((x|0)!=0){ao(1112,(s=i,i=i+8|0,c[s>>2]=x,s)|0)|0;aB(1);return 0}x=c[o>>2]|0;if((x|0)==0){E=0}else{e=0;k=0;while(1){F=+g[f+(e<<2)>>2];j=(+g[h+(e<<2)>>2]-F*F<1.0e-7)+k|0;l=e+1|0;if(l>>>0<x>>>0){e=l;k=j}else{E=j;break}}}k=c[t>>2]|0;ao(1040,(s=i,i=i+32|0,c[s>>2]=C,c[s+8>>2]=q,c[s+16>>2]=k,c[s+24>>2]=A,s)|0)|0;A=c[o>>2]|0;ao(1e3,(s=i,i=i+16|0,c[s>>2]=E,c[s+8>>2]=A,s)|0)|0;aO(c[m>>2]|0)|0;aO(c[n>>2]|0)|0;ar(u|0)|0;ak(y|0)|0;aE(p|0)|0;al(z|0)|0;D=0;i=d;return D|0}function be(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bf(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bg(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bh(a,b){a=a|0;b=b|0;return aU[a&1](b|0)|0}function bi(a){a=a|0;aV[a&1]()}function bj(a,b,c){a=a|0;b=b|0;c=c|0;return aW[a&1](b|0,c|0)|0}function bk(a,b){a=a|0;b=b|0;aX[a&1](b|0)}function bl(a){a=a|0;_(0);return 0}function bm(){_(1)}function bn(a,b){a=a|0;b=b|0;_(2);return 0}function bo(a){a=a|0;_(3)}
 // EMSCRIPTEN_END_FUNCS
-var aU=[bk,bk];var aV=[bl,bl];var aW=[bm,bm];var aX=[bn,bn];return{_strlen:bd,_memcpy:bf,_main:bc,_memset:be,stackAlloc:aY,stackSave:aZ,stackRestore:a_,setThrew:a$,setTempRet0:a2,setTempRet1:a3,setTempRet2:a4,setTempRet3:a5,setTempRet4:a6,setTempRet5:a7,setTempRet6:a8,setTempRet7:a9,setTempRet8:ba,setTempRet9:bb,dynCall_ii:bg,dynCall_v:bh,dynCall_iii:bi,dynCall_vi:bj}})
+var aU=[bl,bl];var aV=[bm,bm];var aW=[bn,bn];var aX=[bo,bo];return{_strlen:be,_memcpy:bg,_main:bd,_memset:bf,runPostSets:bc,stackAlloc:aY,stackSave:aZ,stackRestore:a_,setThrew:a$,setTempRet0:a2,setTempRet1:a3,setTempRet2:a4,setTempRet3:a5,setTempRet4:a6,setTempRet5:a7,setTempRet6:a8,setTempRet7:a9,setTempRet8:ba,setTempRet9:bb,dynCall_ii:bh,dynCall_v:bi,dynCall_iii:bj,dynCall_vi:bk}})
 // EMSCRIPTEN_END_ASM
 ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_rand": _rand, "_malloc": _malloc, "_clGetDeviceIDs": _clGetDeviceIDs, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "_fprintf": _fprintf, "_clGetDeviceInfo": _clGetDeviceInfo, "_printf": _printf, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_clReleaseProgram": _clReleaseProgram, "_puts": _puts, "_clBuildProgram": _clBuildProgram, "___setErrNo": ___setErrNo, "_fwrite": _fwrite, "_send": _send, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_write": _write, "_fputs": _fputs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_exit": _exit, "_clSetKernelArg": _clSetKernelArg, "_clCreateKernel": _clCreateKernel, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_fputc": _fputc, "_clCreateProgramWithSource": _clCreateProgramWithSource, "__formatString": __formatString, "_free": _free, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetContextInfo": _clGetContextInfo, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_pwrite": _pwrite, "_strstr": _strstr, "_clReleaseMemObject": _clReleaseMemObject, "_clFinish": _clFinish, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "__exit": __exit, "_clCreateContext": _clCreateContext, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _main = Module["_main"] = asm["_main"];
 var _memset = Module["_memset"] = asm["_memset"];
+var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var dynCall_ii = Module["dynCall_ii"] = asm["dynCall_ii"];
 var dynCall_v = Module["dynCall_v"] = asm["dynCall_v"];
 var dynCall_iii = Module["dynCall_iii"] = asm["dynCall_iii"];

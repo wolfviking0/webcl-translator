@@ -125,6 +125,11 @@ var INLINING_LIMIT = 0;  // A limit on inlining. If 0, we will inline normally i
                          // we will prevent inlining of functions of this size or larger
                          // in closure. 50 is a reasonable setting if you do not want
                          // inlining
+var OUTLINING_LIMIT = 0; // A function size above which we try to automatically break up
+                         // functions into smaller ones, to avoid the downsides of very
+                         // large functions (JS engines often compile them very slowly,
+                         // compile them with lower optimizations, or do not optimize them
+                         // at all). If 0, we do not perform outlining at all.
 
 // Generated code debugging options
 var SAFE_HEAP = 0; // Check each write to the heap, for example, this will give a clear
@@ -188,6 +193,8 @@ var GL_MAX_TEMP_BUFFER_SIZE = 2097152; // How large GL emulation temp buffers ar
 var GL_UNSAFE_OPTS = 1; // Enables some potentially-unsafe optimizations in GL emulation code
 var FULL_ES2 = 0; // Forces support for all GLES2 features, not just the WebGL-friendly subset.
 var FORCE_GL_EMULATION = 0; // Forces inclusion of full GL emulation code.
+var DISABLE_GL_EMULATION = 0; // Disable inclusion of full GL emulation code. Useful when you don't want emulation
+                              // but do need INCLUDE_FULL_LIBRARY or MAIN_MODULE.
 
 var DISABLE_EXCEPTION_CATCHING = 0; // Disables generating code to actually catch exceptions. If the code you
                                     // are compiling does not actually rely on catching exceptions (but the
@@ -298,6 +305,10 @@ var SHOW_LABELS = 0; // Show labels in the generated code
 
 var PRINT_SPLIT_FILE_MARKER = 0; // Prints markers in Javascript generation to split the file later on. See emcc --split option.
 
+var MAIN_MODULE = 0; // A main module is a file compiled in a way that allows us to link it to
+                     // a side module using emlink.py.
+var SIDE_MODULE = 0; // Corresponds to MAIN_MODULE
+
 var BUILD_AS_SHARED_LIB = 0; // Whether to build the code as a shared library
                              // 0 here means this is not a shared lib: It is a main file.
                              // All shared library options (1 and 2) are currently deprecated XXX
@@ -322,6 +333,10 @@ var LINKABLE = 0; // If set to 1, this file can be linked with others, either as
                   // the library it will open will then access through an extern.
                   // LINKABLE of 0 is very useful in that we can reduce the size of the
                   // generated code very significantly, by removing everything not actually used.
+
+var DLOPEN_SUPPORT = 0; // Whether to support dlopen(NULL, ...) which enables dynamic access to the
+                        // module's functions and globals. Implies LINKABLE=1, because we do not want
+                        // dead code elimination.
 
 var RUNTIME_TYPE_INFO = 0; // Whether to expose type info to the script at run time. This
                            // increases the size of the generated script, but allows you
@@ -382,6 +397,9 @@ var NECESSARY_BLOCKADDRS = []; // List of (function, block) for all block addres
 var EMIT_GENERATED_FUNCTIONS = 0; // whether to emit the list of generated functions, needed for external JS optimization passes
 
 var JS_CHUNK_SIZE = 10240; // Used as a maximum size before breaking up expressions and lines into smaller pieces
+
+var EXPORT_NAME = 'Module'; // Global variable to export the module as for environments without a standardized module
+                            // loading system (e.g. the browser and SM shell).
 
 // Compiler debugging options
 var DEBUG_TAGS_SHOWING = [];
@@ -1266,8 +1284,12 @@ var C_DEFINES = {'SI_MESGQ': '5',
    '_SC_TTY_NAME_MAX': '41',
    'AF_INET': '2',
    'AF_INET6': '6',
+   'PF_INET': '2',
+   'PF_INET6': '6',
    'FIONREAD': '1',
    'SOCK_STREAM': '200',
-   'IPPROTO_TCP': 1
+   'SOCK_DGRAM': '20',
+   'IPPROTO_TCP': '1',
+   'IPPROTO_UDP': '2'
 };
 

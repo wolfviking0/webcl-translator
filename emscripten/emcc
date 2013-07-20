@@ -522,14 +522,14 @@ if CONFIGURE_CONFIG or CMAKE_CONFIG:
       open(tempout, 'w').write('//\n')
 
   src = None
-  for i in range(len(sys.argv)):
-    if sys.argv[i].endswith('.c'):
+  for arg in sys.argv:
+    if arg.endswith('.c'):
       try:
-        src = open(sys.argv[i]).read()
-        if debug_configure: open(tempout, 'a').write('============= ' + sys.argv[i] + '\n' + src + '\n=============\n\n')
+        src = open(arg).read()
+        if debug_configure: open(tempout, 'a').write('============= ' + arg + '\n' + src + '\n=============\n\n')
       except:
         pass
-    if sys.argv[i].endswith('.s'):
+    if arg.endswith('.s'):
       if debug_configure: open(tempout, 'a').write('(compiling .s assembly, must use clang\n')
       use_js = 0
 
@@ -826,7 +826,7 @@ try:
       newargs[i] = ''
       newargs[i+1] = ''
     elif newargs[i].startswith('--use-preload-cache'):
-      use_preload_cache = True;
+      use_preload_cache = True
       newargs[i] = ''
     elif newargs[i] == '--ignore-dynamic-linking':
       ignore_dynamic_linking = True
@@ -952,7 +952,7 @@ try:
               if not prefix: continue
               if l.startswith(prefix):
                 l = l[len(prefix):]
-                break;
+                break
             libs.append(l)
             newargs[i] = ''
           else:
@@ -1066,6 +1066,20 @@ try:
     logging.warning('disabling LLVM optimizations, need typed arrays mode 2 for them')
     llvm_opts = 0
 
+  if shared.Settings.MAIN_MODULE:
+    assert not shared.Settings.SIDE_MODULE
+    shared.Settings.INCLUDE_FULL_LIBRARY = 1
+  elif shared.Settings.SIDE_MODULE:
+    assert not shared.Settings.MAIN_MODULE
+
+  if shared.Settings.MAIN_MODULE or shared.Settings.SIDE_MODULE:
+    assert not memory_init_file, 'memory init file is not supported with module linking'
+    shared.Settings.LINKABLE = 1 # TODO: add FORCE_DCE option for the brave people that do want to dce here and in side modules
+    debug_level = max(debug_level, 2)
+
+  if shared.Settings.DLOPEN_SUPPORT:
+    shared.Settings.LINKABLE = 1
+
   ## Compile source code to bitcode
 
   logging.debug('compiling to bitcode')
@@ -1110,9 +1124,8 @@ try:
 
     # Optimize source files
     if llvm_opts > 0:
-      for i in range(len(input_files)):
-        input_file = input_files[i]
-        if input_files[i].endswith(SOURCE_SUFFIXES):
+      for i, input_file in enumerate(input_files):
+        if input_file.endswith(SOURCE_SUFFIXES):
           temp_file = temp_files[i]
           logging.debug('optimizing %s with -O%d' % (input_file, llvm_opts))
           shared.Building.llvm_opt(temp_file, llvm_opts)
@@ -1140,7 +1153,9 @@ try:
   extra_files_to_link = []
 
   if not LEAVE_INPUTS_RAW and not AUTODEBUG and \
-     not shared.Settings.BUILD_AS_SHARED_LIB == 2: # shared lib 2 use the library in the parent
+     not shared.Settings.BUILD_AS_SHARED_LIB == 2 and \
+     not shared.Settings.SIDE_MODULE: # shared libraries/side modules link no C libraries, need them in parent
+
     # Check if we need to include some libraries that we compile. (We implement libc ourselves in js, but
     # compile a malloc implementation and stdlibc++.)
 
@@ -1201,7 +1216,7 @@ try:
         os.path.join('libc', 'gen', 'vwarn.c'),
         os.path.join('libc', 'gen', 'vwarnx.c'),
         os.path.join('libc', 'stdlib', 'strtod.c'),
-      ];
+      ]
       return build_libc('libc.bc', libc_files)
 
     def apply_libc(need):
@@ -1352,7 +1367,9 @@ try:
       return 'SDL_Init' in all_needed and ('malloc' not in all_needed or 'free' not in all_needed)
 
     # Settings this in the environment will avoid checking dependencies and make building big projects a little faster
+    # 1 means include everything; otherwise it can be the name of a lib (libcxx, etc.)
     force = os.environ.get('EMCC_FORCE_STDLIBS')
+    force_all = force == '1'
 
     # Scan symbols
     all_needed = set()
@@ -1370,7 +1387,8 @@ try:
                                                   ('libcxxabi', create_libcxxabi, apply_libcxxabi, libcxxabi_symbols),
                                                   ('sdl',       create_sdl,       apply_sdl,       sdl_symbols),
                                                   ('libc',      create_libc,      apply_libc,      libc_symbols)]:
-      if not force:
+      force_this = force_all or force == name
+      if not force_this:
         need = set()
         has = set()
         for symbols in symbolses:
@@ -1383,12 +1401,13 @@ try:
           if haz in need:
             need.remove(haz)
         if shared.Settings.VERBOSE: logging.debug('considering %s: we need %s and have %s' % (name, str(need), str(has)))
-      if (force or len(need) > 0) and apply_(need):
-        # We need to build and link the library in
-        logging.debug('including %s' % name)
-        libfile = shared.Cache.get(name, create)
-        extra_files_to_link.append(libfile)
-        force = True
+      if force_this or len(need) > 0:
+        force_all = True
+        if apply_(need):
+          # We need to build and link the library in
+          logging.debug('including %s' % name)
+          libfile = shared.Cache.get(name, create)
+          extra_files_to_link.append(libfile)
 
   # First, combine the bitcode files if there are several. We must also link if we have a singleton .a
   if len(input_files) + len(extra_files_to_link) > 1 or \
@@ -1396,7 +1415,7 @@ try:
     linker_inputs = temp_files + extra_files_to_link
     logging.debug('linking: ' + str(linker_inputs))
     t0 = time.time()
-    shared.Building.link(linker_inputs, in_temp(target_basename + '.bc'))
+    shared.Building.link(linker_inputs, in_temp(target_basename + '.bc'), force_archive_contents = len(filter(lambda temp: not temp.endswith(STATICLIB_SUFFIXES), temp_files)) == 0)
     t1 = time.time()
     logging.debug('    linking took %.2f seconds' % (t1 - t0))
     final = in_temp(target_basename + '.bc')
@@ -1433,17 +1452,16 @@ try:
       shared.Building.llvm_opt(in_temp(target_basename + '.bc'), ['-O3'])
       if DEBUG: save_intermediate('opt', 'bc')
 
-    if shared.Building.can_build_standalone():
-      # If we can LTO, do it before dce, since it opens up dce opportunities
-      if llvm_lto and llvm_lto != 2 and shared.Building.can_use_unsafe_opts():
-        if not shared.Building.can_inline(): link_opts.append('-disable-inlining')
-        # do not internalize in std-link-opts - it ignores internalize-public-api-list - and add a manual internalize
-        link_opts += ['-disable-internalize'] + shared.Building.get_safe_internalize() + ['-std-link-opts']
-      else:
-        # At minimum remove dead functions etc., this potentially saves a lot in the size of the generated code (and the time to compile it)
-        link_opts += shared.Building.get_safe_internalize() + ['-globaldce']
-      shared.Building.llvm_opt(in_temp(target_basename + '.bc'), link_opts)
-      if DEBUG: save_intermediate('linktime', 'bc')
+    # If we can LTO, do it before dce, since it opens up dce opportunities
+    if shared.Building.can_build_standalone() and llvm_lto and llvm_lto != 2 and shared.Building.can_use_unsafe_opts():
+      if not shared.Building.can_inline(): link_opts.append('-disable-inlining')
+      # do not internalize in std-link-opts - it ignores internalize-public-api-list - and add a manual internalize
+      link_opts += ['-disable-internalize'] + shared.Building.get_safe_internalize() + ['-std-link-opts']
+    else:
+      # At minimum remove dead functions etc., this potentially saves a lot in the size of the generated code (and the time to compile it)
+      link_opts += shared.Building.get_safe_internalize() + ['-globaldce']
+    shared.Building.llvm_opt(in_temp(target_basename + '.bc'), link_opts)
+    if DEBUG: save_intermediate('linktime', 'bc')
 
   if save_bc:
     shutil.copyfile(final, save_bc)
@@ -1520,14 +1538,17 @@ try:
 
   # It is useful to run several js optimizer passes together, to save on unneeded unparsing/reparsing
   js_optimizer_queue = []
+  js_optimizer_extra_info = {}
   def flush_js_optimizer_queue():
-    global final, js_optimizer_queue
+    global final, js_optimizer_queue, js_optimizer_extra_info
+    if len(js_optimizer_extra_info) == 0:
+      js_optimizer_extra_info = None
     if len(js_optimizer_queue) > 0 and not(len(js_optimizer_queue) == 1 and js_optimizer_queue[0] == 'last'):
       if DEBUG != '2':
         if shared.Settings.ASM_JS:
           js_optimizer_queue = ['asm'] + js_optimizer_queue
         logging.debug('applying js optimization passes: %s', js_optimizer_queue)
-        final = shared.Building.js_optimizer(final, js_optimizer_queue, jcache, debug_level >= 4)
+        final = shared.Building.js_optimizer(final, js_optimizer_queue, jcache, debug_level >= 4, js_optimizer_extra_info)
         js_transform_tempfiles.append(final)
         if DEBUG: save_intermediate('js_opts')
       else:
@@ -1536,10 +1557,11 @@ try:
           if shared.Settings.ASM_JS:
             passes = ['asm'] + passes
           logging.debug('applying js optimization pass: %s', passes)
-          final = shared.Building.js_optimizer(final, passes, jcache, debug_level >= 4)
+          final = shared.Building.js_optimizer(final, passes, jcache, debug_level >= 4, js_optimizer_extra_info)
           js_transform_tempfiles.append(final)
           save_intermediate(name)
       js_optimizer_queue = []
+    js_optimizer_extra_info = {}
 
   if opt_level >= 1:
     logging.debug('running pre-closure post-opts')
@@ -1556,7 +1578,7 @@ try:
       else:
         return 'eliminate'
 
-    js_optimizer_queue += [get_eliminate(), 'simplifyExpressionsPre']
+    js_optimizer_queue += [get_eliminate(), 'simplifyExpressions']
 
     if shared.Settings.RELOOP and not shared.Settings.ASM_JS:
       js_optimizer_queue += ['optimizeShiftsAggressive', get_eliminate()] # aggressive shifts optimization requires loops, it breaks on switches
@@ -1570,9 +1592,9 @@ try:
     final = shared.Building.closure_compiler(final)
     if DEBUG: save_intermediate('closure')
 
-  if opt_level >= 1:
-    logging.debug('running post-closure post-opts')
-    js_optimizer_queue += ['simplifyExpressionsPost']
+  if shared.Settings.OUTLINING_LIMIT > 0:
+    js_optimizer_queue += ['outline']
+    js_optimizer_extra_info['sizeToOutline'] = shared.Settings.OUTLINING_LIMIT
 
   if (not closure or shared.Settings.ASM_JS) and shared.Settings.RELOOP and debug_level < 3:
     js_optimizer_queue += ['registerize']
@@ -1584,7 +1606,7 @@ try:
   if closure and shared.Settings.ASM_JS: 
     js_optimizer_queue += ['closure']
 
-  js_optimizer_queue += ['last']
+  if not shared.Settings.SIDE_MODULE: js_optimizer_queue += ['last'] # side modules are not finalized until after relocation
 
   flush_js_optimizer_queue()
 
@@ -1611,7 +1633,7 @@ try:
           if os.path.abspath(memfile) != os.path.abspath(memfile):
             shutil.copyfile(memfile, temp_memfile)
         return 'loadMemoryInitializer("%s");' % os.path.basename(memfile)
-      src = re.sub('/\* memory initializer \*/ allocate\(([\d,\.concat\(\)\[\]\\n ]+)"i8", ALLOC_NONE, Runtime\.GLOBAL_BASE\)', repl, src, count=1)
+      src = re.sub(shared.JS.memory_initializer_pattern, repl, src, count=1)
       open(final + '.mem.js', 'w').write(src)
       final += '.mem.js'
       js_transform_tempfiles[-1] = final # simple text substitution preserves comment line number mappings

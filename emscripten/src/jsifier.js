@@ -44,7 +44,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       // things out as they are ready.
 
       var shellParts = read(shellFile).split('{{BODY}}');
-      print(shellParts[0]);
+      print(processMacros(preprocess(shellParts[0])));
       var preFile = BUILD_AS_SHARED_LIB ? 'preamble_sharedlib.js' : 'preamble.js';
       var pre = processMacros(preprocess(read(preFile).replace('{{RUNTIME}}', getRuntime())));
       print(pre);
@@ -264,9 +264,9 @@ function JSify(data, functionsOnly, givenFunctions) {
       assert(!item.lines); // FIXME remove this, after we are sure it isn't needed
       var ret = [item];
       if (item.ident == '_llvm_global_ctors') {
-        item.JS = '\n__ATINIT__ = __ATINIT__.concat([\n' +
-                    item.ctors.map(function(ctor) { return '  { func: function() { ' + ctor + '() } }' }).join(',\n') +
-                  '\n]);\n';
+        item.JS = '\n/* global initializers */ __ATINIT__.push(' +
+                    item.ctors.map(function(ctor) { return '{ func: function() { ' + ctor + '() } }' }).join(',') +
+                  ');\n';
         return ret;
       }
 
@@ -284,6 +284,13 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (!NAMED_GLOBALS && isIndexableGlobal(item.ident)) {
         index = makeGlobalUse(item.ident); // index !== null indicates we are indexing this
         allocator = 'ALLOC_NONE';
+      }
+
+      Variables.globals[item.ident].named = item.named;
+
+      if (ASM_JS && (MAIN_MODULE || SIDE_MODULE) && !item.private_ && !NAMED_GLOBALS && isIndexableGlobal(item.ident)) {
+        // We need this to be named (and it normally would not be), so that it can be linked to and used from other modules
+        Variables.globals[item.ident].linkable = 1;
       }
 
       if (isBSS(item)) {
@@ -374,22 +381,11 @@ function JSify(data, functionsOnly, givenFunctions) {
       // Set the actual value in a postset, since it may be a global variable. We also order by dependencies there
       Variables.globals[item.ident].targetIdent = item.value.ident;
       var value = Variables.globals[item.ident].resolvedAlias = finalizeLLVMParameter(item.value);
-      var fix = '';
-      if (BUILD_AS_SHARED_LIB == 2 && !item.private_) {
-        var target = item.ident;
-        if (isFunctionType(item.type)) {
-          target = item.value.ident; // the other side does not know this is an alias/function table index. So make it the alias target.
-          var varData = Variables.globals[target];
-          assert(!varData, 'multi-level aliasing does not work yet in shared lib 2 exports');
-        }
-        fix = '\nif (globalScope) { assert(!globalScope["' + item.ident + '"]); globalScope["' + item.ident + '"] = ' + target + ' }'
+      if ((MAIN_MODULE || SIDE_MODULE) && isFunctionType(item.type)) {
+        var target = item.value.ident;
+        if (!Functions.aliases[target]) Functions.aliases[target] = [];
+        Functions.aliases[target].push(item.ident);
       }
-      ret.push({
-        intertype: 'GlobalVariablePostSet',
-        ident: item.ident,
-        dependencies: set([value]),
-        JS: item.ident + ' = ' + value + ';' + fix
-      });
       return ret;
     }
   });
@@ -608,6 +604,8 @@ function JSify(data, functionsOnly, givenFunctions) {
           var associatedSourceFile = "NO_SOURCE";
       }
       
+      if (DLOPEN_SUPPORT) Functions.getIndex(func.ident);
+
       func.JS += 'function ' + func.ident + '(' + paramIdents.join(', ') + ') {\n';
 
       if (PGO) {
@@ -847,6 +845,19 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
 
       func.JS = func.JS.replace(/\n *;/g, '\n'); // remove unneeded lines
+
+      if (MAIN_MODULE || SIDE_MODULE) {
+        // Clone the function for each of its aliases. We do not know which name it will be used by in another module,
+        // and we do not have a heavyweight metadata system to resolve aliases during linking
+        var aliases = Functions.aliases[func.ident];
+        if (aliases) {
+          var body = func.JS.substr(func.JS.indexOf('('));
+          aliases.forEach(function(alias) {
+            func.JS += '\n' + 'function ' + alias + body;
+          });
+        }
+      }
+
       return func;
     }
   });
@@ -1254,7 +1265,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       case 'xchg': return '(tempValue=' + makeGetValue(param1, 0, type) + ',' + makeSetValue(param1, 0, param2, type, null, null, null, null, ',') + ',tempValue)';
       case 'cmpxchg': {
         var param3 = finalizeLLVMParameter(item.params[2]);
-        return '(tempValue=' + makeGetValue(param1, 0, type) + ',(' + makeGetValue(param1, 0, type) + '==(' + param2 + '|0) ? ' + makeSetValue(param1, 0, param3, type, null, null, null, null, ',') + ' : 0),tempValue)';
+        return '(tempValue=' + makeGetValue(param1, 0, type) + ',(' + makeGetValue(param1, 0, type) + '==(' + param2 + '|0) ? ' + asmCoercion(makeSetValue(param1, 0, param3, type, null, null, null, null, ','), 'i32') + ' : 0),tempValue)';
       }
       default: throw 'unhandled atomic op: ' + item.op;
     }
@@ -1328,7 +1339,7 @@ function JSify(data, functionsOnly, givenFunctions) {
   makeFuncLineActor('alloca', function(item) {
     if (typeof item.allocatedIndex === 'number') {
       if (item.allocatedSize === 0) return ''; // This will not actually be shown - it's nativized
-      return asmCoercion(getFastValue('__stackBase__', '+', item.allocatedIndex.toString()), 'i32');
+      return asmCoercion(getFastValue('sp', '+', item.allocatedIndex.toString()), 'i32');
     } else {
       return RuntimeGenerator.stackAlloc(getFastValue(calcAllocatedSize(item.allocatedType), '*', item.allocatedNum));
     }
@@ -1463,7 +1474,6 @@ function JSify(data, functionsOnly, givenFunctions) {
     }
 
     args = args.concat(varargs);
-    var argsText = args.join(', ');
 
     // Inline if either we inline whenever we can (and we can), or if there is no noninlined version
     var inline = LibraryManager.library[simpleIdent + '__inline'];
@@ -1472,8 +1482,8 @@ function JSify(data, functionsOnly, givenFunctions) {
       return inline.apply(null, args); // Warning: inlining does not prevent recalculation of the arguments. They should be simple identifiers
     }
 
-    if (ASM_JS) {
-      // remove unneeded arguments, which the asm sig can show us. this lets us alias memset with llvm.memset, we just
+    if (ASM_JS && ident.indexOf('llvm_') >= 0) {
+      // remove unneeded arguments in llvm intrinsic functions, which the asm sig can show us. this lets us alias memset with llvm.memset, we just
       // drop the final 2 args so things validate properly in asm
       var libsig = LibraryManager.library[simpleIdent + '__sig'];
       if (libsig) {
@@ -1485,9 +1495,27 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
     }
 
+    if (callIdent in Functions.implementedFunctions) {
+      // LLVM sometimes bitcasts for no reason. We must call using the exact same type as the actual function is generated as.
+      var numArgs = Functions.implementedFunctions[callIdent].length - 1;
+      if (numArgs !== args.length) {
+        if (VERBOSE) warnOnce('Fixing function call arguments based on signature, on ' + [callIdent, args.length, numArgs]);
+        while (args.length > numArgs) { args.pop(); argsTypes.pop() }
+        while (args.length < numArgs) { args.push('0'); argsTypes.push('i32') }
+      }
+    }
+
     var returnType = 'void';
     if ((byPointer || ASM_JS) && hasReturn) {
       returnType = getReturnType(type);
+      if (callIdent in Functions.implementedFunctions) {
+        // LLVM sometimes bitcasts for no reason. We must call using the exact same type as the actual function is generated as
+        var trueType = Functions.getSignatureReturnType(Functions.implementedFunctions[callIdent]);
+        if (trueType !== returnType && !isIdenticallyImplemented(trueType, returnType)) {
+          if (VERBOSE) warnOnce('Fixing function call based on return type from signature, on ' + [callIdent, returnType, trueType]);
+          returnType = trueType;
+        }
+      }
     }
 
     if (byPointer) {
@@ -1502,7 +1530,7 @@ function JSify(data, functionsOnly, givenFunctions) {
           // This is a call through an invoke_*, either a forced one, or a setjmp-required one
           // note: no need to update argsTypes at this point
           if (byPointerForced) Functions.unimplementedFunctions[callIdent] = sig;
-          args.unshift(byPointerForced ? Functions.getIndex(callIdent) : asmCoercion(callIdent, 'i32'));
+          args.unshift(byPointerForced ? Functions.getIndex(callIdent, undefined, sig) : asmCoercion(callIdent, 'i32'));
           callIdent = 'invoke_' + sig;
         }
       } else if (SAFE_DYNCALLS) {
@@ -1582,6 +1610,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (phase == 'pre' && !Variables.generatedGlobalBase) {
         Variables.generatedGlobalBase = true;
         // Globals are done, here is the rest of static memory
+        assert((TARGET_LE32 && Runtime.GLOBAL_BASE == 8) || (TARGET_X86 && Runtime.GLOBAL_BASE == 4)); // this is assumed in e.g. relocations for linkable modules
         print('STATIC_BASE = ' + Runtime.GLOBAL_BASE + ';\n');
         print('STATICTOP = STATIC_BASE + ' + Runtime.alignMemory(Variables.nextIndexedOffset) + ';\n');
       }
@@ -1615,11 +1644,11 @@ function JSify(data, functionsOnly, givenFunctions) {
           print('/* no memory initializer */'); // test purposes
         }
 
-        // Run postsets right before main, and after the memory initializer has been set up
+        // Define postsets. These will be run in ATINIT, right before global initializers (which might need the postsets). We cannot
+        // run them now because the memory initializer might not have been applied yet.
         print('function runPostSets() {\n');
         print(itemsDict.GlobalVariablePostSet.map(function(item) { return item.JS }).join('\n'));
         print('}\n');
-        print('if (!awaitingMemoryInitializer) runPostSets();\n'); // if we load the memory initializer, this is done later
 
         if (USE_TYPED_ARRAYS == 2) {
           print('var tempDoublePtr = Runtime.alignMemory(allocate(12, "i8", ALLOC_STATIC), 8);\n');
@@ -1729,8 +1758,8 @@ function JSify(data, functionsOnly, givenFunctions) {
             }
           }
         });
-        print(read('fastLong.js'));
       }
+      print(read('fastLong.js'));
       print('// EMSCRIPTEN_END_FUNCS\n');
       print(read('long.js'));
     } else {
@@ -1767,7 +1796,7 @@ function JSify(data, functionsOnly, givenFunctions) {
     print(postParts[1]);
 
     var shellParts = read(shellFile).split('{{BODY}}');
-    print(shellParts[1]);
+    print(processMacros(preprocess(shellParts[1])));
     // Print out some useful metadata
     if (EMIT_GENERATED_FUNCTIONS || PGO) {
       var generatedFunctions = JSON.stringify(keys(Functions.implementedFunctions).filter(function(func) {
@@ -1792,6 +1821,21 @@ function JSify(data, functionsOnly, givenFunctions) {
     substrate.addItems(data.functionStubs, 'FunctionStub');
     assert(data.functions.length == 0);
   } else {
+    if (phase == 'pre') {
+      // ensure there is a global ctors, for runPostSets
+      if ('_llvm_global_ctors' in data.globalVariables) {
+        data.globalVariables._llvm_global_ctors.ctors.unshift('runPostSets'); // run postsets right before global initializers
+        hasCtors = true;
+      } else {
+        substrate.addItems([{
+          intertype: 'GlobalVariableStub',
+          ident: '_llvm_global_ctors',
+          type: '[1 x { i32, void ()* }]',
+          ctors: ["runPostSets"],
+        }], 'GlobalVariable');
+      }
+    }
+
     substrate.addItems(sortGlobals(data.globalVariables), 'GlobalVariable');
     substrate.addItems(data.aliass, 'Alias');
     substrate.addItems(data.functions, 'FunctionSplitter');

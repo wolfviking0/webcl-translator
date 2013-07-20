@@ -20,6 +20,7 @@ WINDOWS = sys.platform.startswith('win')
 DEBUG = os.environ.get('EMCC_DEBUG')
 
 func_sig = re.compile('( *)function ([_\w$]+)\(')
+import_sig = re.compile('var ([_\w$]+) *=[^;]+;')
 
 class Minifier:
   '''
@@ -95,19 +96,28 @@ class Minifier:
       'globals': self.globs
     })
 
-def run_on_chunk(command):
-  filename = command[2] # XXX hackish
-  #print >> sys.stderr, 'running js optimizer command', ' '.join(command), '""""', open(filename).read()
-  output = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0]
-  assert len(output) > 0 and not output.startswith('Assertion failed'), 'Error in js optimizer: ' + output
-  filename = temp_files.get(os.path.basename(filename) + '.jo.js').name
-  f = open(filename, 'w')
-  f.write(output)
-  f.close()
-  if DEBUG and not shared.WINDOWS: print >> sys.stderr, '.' # Skip debug progress indicator on Windows, since it doesn't buffer well with multiple threads printing to console.
-  return filename
+start_funcs_marker = '// EMSCRIPTEN_START_FUNCS\n'
+end_funcs_marker = '// EMSCRIPTEN_END_FUNCS\n'
+start_asm_marker = '// EMSCRIPTEN_START_ASM\n'
+end_asm_marker = '// EMSCRIPTEN_END_ASM\n'
 
-def run_on_js(filename, passes, js_engine, jcache, source_map=False):
+def run_on_chunk(command):
+  try:
+    filename = command[2] # XXX hackish
+    #print >> sys.stderr, 'running js optimizer command', ' '.join(command), '""""', open(filename).read()
+    output = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0]
+    assert len(output) > 0 and not output.startswith('Assertion failed'), 'Error in js optimizer: ' + output
+    filename = temp_files.get(os.path.basename(filename) + '.jo.js').name
+    f = open(filename, 'w')
+    f.write(output)
+    f.close()
+    if DEBUG and not shared.WINDOWS: print >> sys.stderr, '.' # Skip debug progress indicator on Windows, since it doesn't buffer well with multiple threads printing to console.
+    return filename
+  except KeyboardInterrupt:
+    # avoid throwing keyboard interrupts from a child process
+    raise Exception()
+
+def run_on_js(filename, passes, js_engine, jcache, source_map=False, extra_info=None):
   if isinstance(jcache, bool) and jcache: jcache = shared.JCache
   if jcache: shared.JCache.ensure()
 
@@ -129,17 +139,14 @@ def run_on_js(filename, passes, js_engine, jcache, source_map=False):
     generated = set(eval(suffix[len(suffix_marker)+1:]))
 
   # Find markers
-  start_funcs_marker = '// EMSCRIPTEN_START_FUNCS\n'
-  end_funcs_marker = '// EMSCRIPTEN_END_FUNCS\n'
   start_funcs = js.find(start_funcs_marker)
   end_funcs = js.rfind(end_funcs_marker)
-  #assert (start_funcs >= 0) == (end_funcs >= 0) == (not not suffix)
+
+  know_generated = suffix or start_funcs >= 0
 
   minify_globals = 'registerizeAndMinify' in passes and 'asm' in passes
   if minify_globals:
     passes = map(lambda p: p if p != 'registerizeAndMinify' else 'registerize', passes)
-    start_asm_marker = '// EMSCRIPTEN_START_ASM\n'
-    end_asm_marker = '// EMSCRIPTEN_END_ASM\n'
     start_asm = js.find(start_asm_marker)
     end_asm = js.rfind(end_asm_marker)
     assert (start_asm >= 0) == (end_asm >= 0)
@@ -148,14 +155,14 @@ def run_on_js(filename, passes, js_engine, jcache, source_map=False):
   if closure:
     passes = filter(lambda p: p != 'closure', passes) # we will do it manually
 
-  if not suffix and jcache:
+  if not know_generated and jcache:
     # JCache cannot be used without metadata, since it might reorder stuff, and that's dangerous since only generated can be reordered
     # This means jcache does not work after closure compiler runs, for example. But you won't get much benefit from jcache with closure
     # anyhow (since closure is likely the longest part of the build).
     if DEBUG: print >>sys.stderr, 'js optimizer: no metadata, so disabling jcache'
     jcache = False
 
-  if suffix:
+  if know_generated:
     if not minify_globals:
       pre = js[:start_funcs + len(start_funcs_marker)]
       post = js[end_funcs + len(end_funcs_marker):]
@@ -189,7 +196,7 @@ EMSCRIPTEN_FUNCS();
       minify_info = minifier.serialize()
       #if DEBUG: print >> sys.stderr, 'minify info:', minify_info
     # remove suffix if no longer needed
-    if 'last' in passes:
+    if suffix and 'last' in passes:
       suffix_start = post.find(suffix_marker)
       suffix_end = post.find('\n', suffix_start)
       post = post[:suffix_start] + post[suffix_end:]
@@ -209,7 +216,7 @@ EMSCRIPTEN_FUNCS();
     if m:
       ident = m.group(2)
     else:
-      if suffix: continue # ignore whitespace
+      if know_generated: continue # ignore whitespace
       ident = 'anon_%d' % i
     assert ident
     funcs.append((ident, func))
@@ -249,8 +256,12 @@ EMSCRIPTEN_FUNCS();
       f.write(chunk)
       f.write(suffix_marker)
       if minify_globals:
+        assert not extra_info
         f.write('\n')
         f.write('// EXTRA_INFO:' + minify_info)
+      elif extra_info:
+        f.write('\n')
+        f.write('// EXTRA_INFO:' + json.dumps(extra_info))
       f.close()
       return temp_file
     filenames = [write_chunk(chunks[i], i) for i in range(len(chunks))]
@@ -329,6 +340,6 @@ EMSCRIPTEN_FUNCS();
 
   return filename
 
-def run(filename, passes, js_engine, jcache, source_map=False):
-  return temp_files.run_and_clean(lambda: run_on_js(filename, passes, js_engine, jcache, source_map))
+def run(filename, passes, js_engine, jcache, source_map=False, extra_info=None):
+  return temp_files.run_and_clean(lambda: run_on_js(filename, passes, js_engine, jcache, source_map, extra_info))
 

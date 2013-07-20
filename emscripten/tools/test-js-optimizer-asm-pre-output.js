@@ -63,6 +63,10 @@ function b($this, $__n) {
   HEAP32[($this + 4 & 16777215) >> 2] = $40;
  }
  HEAP8[$38 + $40 & 16777215] = 0;
+ HEAP32[$4] = ~HEAP32[$5];
+ HEAP32[$4] = ~HEAP32[$5];
+ HEAP32[$4] = ~HEAP32[$5];
+ h(~~g ^ -1);
  return;
 }
 function rett() {
@@ -119,6 +123,17 @@ function sign_extension_simplification() {
   print(5);
  }
 }
+function compare_result_simplification() {
+ HEAP32[$4] = HEAP32[$5] < HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] > HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] <= HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] <= HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] == HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] === HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] != HEAP32[$6];
+ HEAP32[$4] = HEAP32[$5] !== HEAP32[$6];
+ var x = HEAP32[$5] != HEAP32[$6] | 0;
+}
 function tempDoublePtr($45, $14, $28, $42) {
  $45 = $45 | 0;
  $14 = $14 | 0;
@@ -142,6 +157,8 @@ function tempDoublePtr($45, $14, $28, $42) {
  unelim2 = 127 + $14 | 0;
  func();
  HEAP32[4] = unelim2;
+ barrier();
+ $f163 = (HEAP32[tempDoublePtr >> 2] = HEAP32[$f165 >> 2], HEAP32[tempDoublePtr + 4 >> 2] = HEAP32[$f165 + 4 >> 2], +HEAPF64[tempDoublePtr >> 3]);
 }
 function boxx($this, $aabb, $xf, $childIndex) {
  $this = $this | 0;
@@ -237,7 +254,7 @@ function _main($argc, $argv) {
  $j_08_i_i = 0;
  $i_09_i_i = 1;
  while (1) {
-  if (!(($j_08_i_i | 0) < 14)) {
+  if (($j_08_i_i | 0) >= 14) {
    label = 49;
    break;
   }
@@ -344,7 +361,7 @@ function _main($argc, $argv) {
  $118 = $world + 102952 | 0;
  HEAP32[$116 + 96 >> 2] = HEAP32[$118 >> 2];
  $121 = HEAP32[$118 >> 2] | 0;
- if (!(($121 | 0) == 0)) {
+ if (($121 | 0) != 0) {
   HEAP32[$121 + 92 >> 2] = $116;
  }
  HEAP32[$118 >> 2] = $116;
@@ -434,7 +451,7 @@ function _main($argc, $argv) {
    $y_sroa_0_0_insert_insert$1 = +$y_sroa_1_4_load293550;
    HEAPF32[$185 >> 2] = $y_sroa_0_0_load283451;
    HEAPF32[$185 + 4 >> 2] = $y_sroa_0_0_insert_insert$1;
-   if (!((HEAP32[$98 >> 2] & 2 | 0) == 0)) {
+   if ((HEAP32[$98 >> 2] & 2 | 0) != 0) {
     label = 65;
     break L82;
    }
@@ -449,7 +466,7 @@ function _main($argc, $argv) {
    HEAP32[$209 + 92 >> 2] = 0;
    HEAP32[$209 + 96 >> 2] = HEAP32[$118 >> 2];
    $213 = HEAP32[$118 >> 2] | 0;
-   if (!(($213 | 0) == 0)) {
+   if (($213 | 0) != 0) {
     HEAP32[$213 + 92 >> 2] = $209;
    }
    HEAP32[$118 >> 2] = $209;
