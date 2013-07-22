@@ -66,20 +66,26 @@
 //#define USE_LIST
 
 #ifdef __EMSCRIPTEN__
-#include <GL/gl.h>
-#include <GL/glut.h>
-#ifdef USE_OPENCL
-#include <CL/opencl.h>
-#include <CL/opencl.h>
-#endif
+    #include <GL/gl.h>
+    #include <GL/glut.h>
+    #ifdef USE_OPENCL
+        #include <CL/opencl.h>
+        #include <CL/opencl.h>
+    #endif
 #else
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/CGLDevice.h>
-#include <GLUT/glut.h>
-#ifdef USE_OPENCL
-#include <OpenCL/opencl.h>
-#endif
+    #ifdef __APPLE__
+        #include <OpenGL/OpenGL.h>
+        #include <OpenGL/gl.h>
+        #include <OpenGL/CGLDevice.h>
+        #include <GLUT/glut.h>
+        #ifdef USE_OPENCL
+            #include <OpenCL/opencl.h>
+        #endif
+    #else 
+        #include <GL/gl.h>
+        #include <GL/glu.h>
+        #include <GL/glut.h>
+    #endif
 #endif
 
 #ifdef __APPLE__
@@ -259,8 +265,10 @@ current_time()
 {
 #ifdef __EMSCRIPTEN__
     return (emscripten_get_now() * 1000000);
-#else
+#elif __APPLE__
     return mach_absolute_time();
+#else 
+    return 0;
 #endif
     
 }
@@ -270,7 +278,7 @@ subtract_time( uint64_t uiEndTime, uint64_t uiStartTime )
 {
 #ifdef __EMSCRIPTEN__
     return 1e-9 * (uiEndTime - uiStartTime);
-#else
+#elif __APPLE__
     static double s_dConversion = 0.0;
     uint64_t uiDifference = uiEndTime - uiStartTime;
     if( 0.0 == s_dConversion )
@@ -282,6 +290,8 @@ subtract_time( uint64_t uiEndTime, uint64_t uiStartTime )
     }
     
     return s_dConversion * (double) uiDifference;
+#else
+    return 0;
 #endif
     
 }
@@ -1683,7 +1693,7 @@ int setup_opengl(void)
     
     create_shadow_fbo();
     create_jitter_texture(JitterTextureSize, JitterTextureSamples, JitterTextureSamples);
-    create_light_probe_texture("stpeters_probe.pfm");
+    //create_light_probe_texture("stpeters_probe.pfm");
     
     create_quad();
     create_skybox();
