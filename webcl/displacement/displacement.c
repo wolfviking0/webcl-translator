@@ -62,23 +62,29 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+//#define USE_OPENCL
+//#define USE_LIST
+
 #ifdef __EMSCRIPTEN__
 #include <GL/gl.h>
 #include <GL/glut.h>
+#ifdef USE_OPENCL
 #include <CL/opencl.h>
 #include <CL/opencl.h>
+#endif
 #else
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/CGLDevice.h>
 #include <GLUT/glut.h>
+#ifdef USE_OPENCL
 #include <OpenCL/opencl.h>
+#endif
 #endif
 
 #ifdef __APPLE__
 #include <mach/mach_time.h>
 #endif
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -154,16 +160,16 @@ static unsigned int DisableTexUnit              = GL_TEXTURE0_ARB;
 static unsigned int ShadowMapTexUnit            = GL_TEXTURE1_ARB;
 static unsigned int ShadowMapTextureId          = 0;
 static unsigned int ShadowMapFrameBufferId      = 0;
-static unsigned int ShadowMapTextureWidth       = 0;
-static unsigned int ShadowMapTextureHeight      = 0;
+static unsigned int ShadowMapTextureWidth       = 512;
+static unsigned int ShadowMapTextureHeight      = 512;
 static float ShadowMapSoftness                  = 1.0f / 8.0f;
-/*
- static unsigned int JitterTexUnit               = GL_TEXTURE2_ARB;
- static unsigned int JitterTextureId             = 0;
- static unsigned int JitterTextureBytes          = 0;
- static unsigned int JitterTextureSize           = 16;
- static unsigned int JitterTextureSamples        = 8;
- */
+
+static unsigned int JitterTexUnit               = GL_TEXTURE2_ARB;
+static unsigned int JitterTextureId             = 0;
+static unsigned int JitterTextureBytes          = 0;
+static unsigned int JitterTextureSize           = 16;
+static unsigned int JitterTextureSamples        = 8;
+
 static unsigned int LightProbeTexUnit           = GL_TEXTURE3_ARB;
 static unsigned int LightProbeTextureId         = 0;
 static unsigned int LightProbeWidth             = 0;
@@ -209,6 +215,8 @@ static unsigned int ActualDimY                  = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef USE_OPENCL
+
 static cl_context ComputeContext;
 static cl_kernel ComputeKernel;
 static cl_program ComputeProgram;
@@ -218,9 +226,11 @@ static cl_device_type ComputeDeviceType;
 static cl_mem InputVertexBuffer;
 static cl_mem OutputVertexBuffer;
 static cl_mem OutputNormalBuffer;
-//static CGLContextObj OpenGLContext;
+static CGLContextObj OpenGLContext;
 static int MaxWorkGroupSize;
 static int GroupSize = 4;
+
+#endif
 
 static GLhandleARB FresnelShader;
 static GLhandleARB PhongShader;
@@ -572,14 +582,12 @@ void create_skybox()
 #endif
     glPushMatrix();
     glTranslatef(0.0f, 0.0f, 0.0f);
-    
-    // \todo
     //glutSolidSphere(10.0f, 200, 200);
-    
     glPopMatrix();
 #ifdef USE_LIST
     glEndList();
 #endif
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -587,6 +595,7 @@ void create_skybox()
 static int
 recompute(void)
 {
+#ifdef USE_OPENCL
     int err = 0;
     unsigned int a;
     
@@ -704,7 +713,7 @@ recompute(void)
         return -19;
     
 #endif
-    
+#endif
     return 0;
 }
 
@@ -713,6 +722,7 @@ recompute(void)
 static int
 setup_compute_devices(int gpu)
 {
+#ifdef USE_OPENCL
     int err;
 	size_t returned_size;
     ComputeDeviceType = gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU;
@@ -776,24 +786,23 @@ setup_compute_devices(int gpu)
 	}
 	
 	device_count = returned_size / sizeof(cl_device_id);
-  
+	
 	int i = 0;
 	int device_found = 0;
 	cl_device_type device_type;
 	for(i = 0; i < device_count; i++)
 	{
 		clGetDeviceInfo(device_ids[i], CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
-
 #ifdef __EMSCRIPTEN__
 		if((int)device_type == (int)ComputeDeviceType)
 #else
-		if(device_type == ComputeDeviceType)
+            if(device_type == ComputeDeviceType)
 #endif
-		{
-			ComputeDeviceId = device_ids[i];
-			device_found = 1;
-			break;
-		}
+            {
+                ComputeDeviceId = device_ids[i];
+                device_found = 1;
+                break;
+            }
 	}
 	
 	if(!device_found)
@@ -827,11 +836,15 @@ setup_compute_devices(int gpu)
     printf("Connecting to %s %s...\n", vendor_name, device_name);
     
     return CL_SUCCESS;
+#else
+    return 0;
+#endif
 }
 
 static int
 setup_compute_memory()
 {
+#ifdef USE_OPENCL
     int err;
     
     size_t bytes = sizeof(float) * VertexComponents * VertexElements;
@@ -888,11 +901,15 @@ setup_compute_memory()
     }
     
     return CL_SUCCESS;
+#else
+    return 0;
+#endif
 }
 
 static int
 setup_compute_kernels(void)
 {
+#ifdef USE_OPENCL
     int err = 0;
     char *source = 0;
     size_t length = 0;
@@ -955,11 +972,15 @@ setup_compute_kernels(void)
     printf("Maximum Workgroup Size '%d'\n", MaxWorkGroupSize);
     
     return CL_SUCCESS;
+#else
+    return 0;
+#endif
 }
 
 static int
 setup_opencl(int use_gpu)
 {
+#ifdef USE_OPENCL
     printf(SEPARATOR);
     printf("Setting up Compute...\n");
     
@@ -977,12 +998,16 @@ setup_opencl(int use_gpu)
         return err;
     
     return CL_SUCCESS;
+#else
+    return 0;
+#endif
 }
 
 
 static void
 shutdown_opencl(void)
 {
+#ifdef USE_OPENCL
     clFinish(ComputeCommands);
     
     clReleaseMemObject(InputVertexBuffer);
@@ -998,6 +1023,7 @@ shutdown_opencl(void)
     
     if(NormalBuffer)
         free(NormalBuffer);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1005,6 +1031,7 @@ shutdown_opencl(void)
 GLboolean
 check_opengl(void)
 {
+    
 #ifndef __EMSCRIPTEN__
     const GLubyte* extensions = glGetString(GL_EXTENSIONS);
     
@@ -1020,6 +1047,7 @@ check_opengl(void)
     // \todo gluCheckExtension not exist in emscripten, could be add easily
     // \todo but all this extension are implemented in Emscripten
 #endif
+    
     return GL_TRUE;
 }
 
@@ -1080,83 +1108,79 @@ create_light_probe_texture(const char *filename)
 void
 create_jitter_texture(unsigned int size, unsigned int du, unsigned int dv)
 {
-    /*
-     int i, j, k;
-     unsigned char *data = 0;
-     static const float twopi = 2.0 * M_PI;
-     
-     printf("Creating Jitter Texture...\n");
-     
-     JitterTextureSize = size;
-     
-     glActiveTexture(JitterTexUnit);
-     glGenTextures(1, &JitterTextureId);
-     glBindTexture(GL_TEXTURE_3D, JitterTextureId);
-     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-     
-     int tw = size;
-     int th = size;
-     int td = du * dv * 0.5f;
-     
-     JitterTextureBytes = 4 * tw * th * td * sizeof(unsigned char);
-     data = (unsigned char *) malloc(JitterTextureBytes);
-     
-     for (i = 0; i < tw; i++)
-     {
-     for (j = 0; j < th; j++)
-     {
-     for (k = 0; k < td; k++)
-     {
-     int x, y;
-     float d[4];
-     float v[4];
-     
-     x = k % (du / 2);
-     y = (dv - 1) - k / (du / 2);
-     
-     v[0] = (float)(x * 2 + 0.5f) / du;
-     v[1] = (float)(y + 0.5f) / dv;
-     v[2] = (float)(x * 2 + 1 + 0.5f) / du;
-     v[3] = v[1];
-     
-     v[0] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / du);
-     v[1] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / dv);
-     v[2] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / du);
-     v[3] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / dv);
-     
-     d[0] = sqrtf(v[1]) * cosf(twopi * v[0]);
-     d[1] = sqrtf(v[1]) * sinf(twopi * v[0]);
-     d[2] = sqrtf(v[3]) * cosf(twopi * v[2]);
-     d[3] = sqrtf(v[3]) * sinf(twopi * v[2]);
-     
-     unsigned int index = (k * tw * th + j * tw + i) * 4;
-     data[index + 0] = (1.0f + d[0]) * 127;
-     data[index + 1] = (1.0f + d[1]) * 127;
-     data[index + 2] = (1.0f + d[2]) * 127;
-     data[index + 3] = (1.0f + d[3]) * 127;
-     }
-     }
-     }
-     
-     glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA4, tw, th, td, 0,
-     GL_RGBA, GL_UNSIGNED_BYTE, data);
-     
-     free(data);
-     
-     GLenum err = glGetError();
-     if (err != GL_NO_ERROR)
-     printf("Error: OpenGL Error Code Creating Jitter Texture: %d\n", err);
-     */
+    int i, j, k;
+    unsigned char *data = 0;
+    static const float twopi = 2.0 * M_PI;
+    
+    printf("Creating Jitter Texture...\n");
+    
+    JitterTextureSize = size;
+    
+    glActiveTexture(JitterTexUnit);
+    glGenTextures(1, &JitterTextureId);
+    glBindTexture(GL_TEXTURE_3D, JitterTextureId);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    
+    int tw = size;
+    int th = size;
+    int td = du * dv * 0.5f;
+    
+    JitterTextureBytes = 4 * tw * th * td * sizeof(unsigned char);
+    data = (unsigned char *) malloc(JitterTextureBytes);
+    
+    for (i = 0; i < tw; i++)
+    {
+        for (j = 0; j < th; j++)
+        {
+            for (k = 0; k < td; k++)
+            {
+                int x, y;
+                float d[4];
+                float v[4];
+                
+                x = k % (du / 2);
+                y = (dv - 1) - k / (du / 2);
+                
+                v[0] = (float)(x * 2 + 0.5f) / du;
+                v[1] = (float)(y + 0.5f) / dv;
+                v[2] = (float)(x * 2 + 1 + 0.5f) / du;
+                v[3] = v[1];
+                
+                v[0] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / du);
+                v[1] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / dv);
+                v[2] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / du);
+                v[3] += ((float)rand() * 2 / RAND_MAX - 1) * (0.5f / dv);
+                
+                d[0] = sqrtf(v[1]) * cosf(twopi * v[0]);
+                d[1] = sqrtf(v[1]) * sinf(twopi * v[0]);
+                d[2] = sqrtf(v[3]) * cosf(twopi * v[2]);
+                d[3] = sqrtf(v[3]) * sinf(twopi * v[2]);
+                
+                unsigned int index = (k * tw * th + j * tw + i) * 4;
+                data[index + 0] = (1.0f + d[0]) * 127;
+                data[index + 1] = (1.0f + d[1]) * 127;
+                data[index + 2] = (1.0f + d[2]) * 127;
+                data[index + 3] = (1.0f + d[3]) * 127;
+            }
+        }
+    }
+    
+    //glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA4, tw, th, td, 0,GL_RGBA, GL_UNSIGNED_BYTE, data);
+    
+    free(data);
+    
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+        printf("Error: OpenGL Error Code Creating Jitter Texture: %d\n", err);
 }
 
 int
 create_shadow_fbo(void)
 {
-    /*
     GLint depth;
     GLint format;
     GLenum status;
@@ -1181,20 +1205,19 @@ create_shadow_fbo(void)
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #ifndef __EMSCRIPTEN__
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
 #endif
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
     glGenFramebuffers(1, &ShadowMapFrameBufferId);
     glBindFramebuffer(GL_FRAMEBUFFER_EXT, ShadowMapFrameBufferId);
     glFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
                            GL_TEXTURE_2D, ShadowMapTextureId, 0);
     
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
+    //glDrawBuffer(GL_NONE);
+    //glReadBuffer(GL_NONE);
     
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER_EXT);
     switch (status)
@@ -1231,8 +1254,8 @@ create_shadow_fbo(void)
     GLenum err = glGetError();
     if (err != GL_NO_ERROR)
         printf("Error: OpenGL Error Code Creating FBO: %d\n", err);
-    */
-    return CL_SUCCESS;
+    
+    return 0;
 }
 
 void
@@ -1270,20 +1293,21 @@ set_quad_material(void)
 void
 setup_lights(void)
 {
-    /*
-     GLfloat ambient[4]  = {0.1f, 0.1f, 0.1f, 1.0f};
-     GLfloat diffuse[4]  = {1.0f, 1.0f, 1.0f, 1.0f};
-     GLfloat specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-     GLfloat attenuation[] = { 0.1f };
-     glLightfv(GL_LIGHT0, GL_POSITION, LightPosition);
-     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-     glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION , attenuation );
-     glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
-     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-     glEnable(GL_LIGHT0);
-     */
+#ifndef __EMSCRIPTEN__
+    GLfloat ambient[4]  = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat diffuse[4]  = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat attenuation[] = { 0.1f };
+    
+    glLightfv(GL_LIGHT0, GL_POSITION, LightPosition);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION , attenuation );
+    glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+    glEnable(GL_LIGHT0);
+#endif
 }
 
 GLenum
@@ -1314,6 +1338,7 @@ link_shader(GLhandleARB shader)
     {
         GLint actual;
         GLcharARB *log = malloc(length + 128);
+        
 #ifdef __EMSCRIPTEN__
         glGetInfoLog(shader, length, &actual, log);
 #else
@@ -1369,6 +1394,7 @@ compile_shader(GLenum target, const GLcharARB* sourcecode)
             printf("Error Code Returned Compiling Shader: %d\n", err);
             exit(err);
         }
+        
 #ifdef __EMSCRIPTEN__
         glGetObjectParameteriv(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
         glGetObjectParameteriv(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
@@ -1482,10 +1508,10 @@ void bind_sphere_shader()
     
     glActiveTexture(ShadowMapTexUnit);
     glBindTexture( GL_TEXTURE_2D, ShadowMapTextureId );
-    /*
-     glActiveTexture(JitterTexUnit);
-     glBindTexture( GL_TEXTURE_3D, JitterTextureId );
-     */
+    
+    glActiveTexture(JitterTexUnit);
+    glBindTexture( GL_TEXTURE_3D, JitterTextureId );
+    
     glActiveTexture(LightProbeTexUnit);
     glBindTexture( GL_TEXTURE_2D, LightProbeTextureId );
     
@@ -1494,10 +1520,8 @@ void bind_sphere_shader()
 #else
     glUseProgramObjectARB(SphereShader);
 #endif
-    /*
-     glUniform1i(get_uniform_location(SphereShader, "JitterTable"), JitterTexUnit - GL_TEXTURE0);
-     glUniform1i(get_uniform_location(SphereShader, "JitterTableSize"), JitterTextureSize);
-     */
+    glUniform1i(get_uniform_location(SphereShader, "JitterTable"), JitterTexUnit - GL_TEXTURE0);
+    glUniform1i(get_uniform_location(SphereShader, "JitterTableSize"), JitterTextureSize);
     glUniform1f(get_uniform_location(SphereShader, "ShadowMapSize"), ShadowMapTextureWidth);
     glUniform1f(get_uniform_location(SphereShader, "ShadowMapSoftness"), ShadowMapSoftness);
     glUniform1i(get_uniform_location(SphereShader, "ShadowMap"), ShadowMapTexUnit - GL_TEXTURE0);
@@ -1533,10 +1557,10 @@ void unbind_sphere_shader()
     
     glActiveTexture(ShadowMapTexUnit);
     glBindTexture( GL_TEXTURE_2D, 0 );
-    /*
-     glActiveTexture(JitterTexUnit);
-     glBindTexture( GL_TEXTURE_3D, 0 );
-     */
+    
+    glActiveTexture(JitterTexUnit);
+    glBindTexture( GL_TEXTURE_3D, 0 );
+    
     glActiveTexture(LightProbeTexUnit);
     glBindTexture( GL_TEXTURE_2D, 0 );
     
@@ -1555,19 +1579,17 @@ void bind_quad_shader()
     
     glActiveTexture(ShadowMapTexUnit);
     glBindTexture( GL_TEXTURE_2D, ShadowMapTextureId );
-    /*
-     glActiveTexture(JitterTexUnit);
-     glBindTexture( GL_TEXTURE_3D, JitterTextureId );
-     */
+    
+    glActiveTexture(JitterTexUnit);
+    glBindTexture( GL_TEXTURE_3D, JitterTextureId );
+    
 #ifdef __EMSCRIPTEN__
     glUseProgram(EnvShader);
 #else
     glUseProgramObjectARB(EnvShader);
 #endif
-    /*
-     glUniform1i(get_uniform_location(EnvShader, "JitterTable"), JitterTexUnit - GL_TEXTURE0);
-     glUniform1i(get_uniform_location(EnvShader, "JitterTableSize"), JitterTextureSize);
-     */
+    glUniform1i(get_uniform_location(EnvShader, "JitterTable"), JitterTexUnit - GL_TEXTURE0);
+    glUniform1i(get_uniform_location(EnvShader, "JitterTableSize"), JitterTextureSize);
     glUniform1f(get_uniform_location(EnvShader, "ShadowMapSize"), ShadowMapTextureWidth);
     glUniform1f(get_uniform_location(EnvShader, "ShadowMapSoftness"), ShadowMapSoftness);
     glUniform1i(get_uniform_location(EnvShader, "ShadowMap"), ShadowMapTexUnit - GL_TEXTURE0);
@@ -1584,10 +1606,10 @@ void unbind_quad_shader()
 {
     glActiveTexture(ShadowMapTexUnit);
     glBindTexture( GL_TEXTURE_2D, 0 );
-    /*
-     glActiveTexture(JitterTexUnit);
-     glBindTexture( GL_TEXTURE_3D, 0 );
-     */
+    
+    glActiveTexture(JitterTexUnit);
+    glBindTexture( GL_TEXTURE_3D, 0 );
+    
     glActiveTexture(LightProbeTexUnit);
     glBindTexture( GL_TEXTURE_2D, 0 );
     
@@ -1597,8 +1619,6 @@ void unbind_quad_shader()
 #else
     glUseProgramObjectARB(0);
 #endif
-    
-    
 }
 
 void bind_skybox_shader()
@@ -1611,7 +1631,6 @@ void bind_skybox_shader()
 #else
     glUseProgramObjectARB(SkyBoxShader);
 #endif
-    
     glUniform1i(get_uniform_location(SkyBoxShader, "LightProbeMap"), LightProbeTexUnit - GL_TEXTURE0);
     glUniform3f(get_uniform_location(EnvShader, "EyePosition"),
                 CameraPosition[0], CameraPosition[1], CameraPosition[2]);
@@ -1661,14 +1680,15 @@ int setup_opengl(void)
     glClearColor(0.85f, 0.85f, 0.85f, 0.0f);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     
+    
     create_shadow_fbo();
-    //create_jitter_texture(JitterTextureSize, JitterTextureSamples, JitterTextureSamples);
+    create_jitter_texture(JitterTextureSize, JitterTextureSamples, JitterTextureSamples);
     create_light_probe_texture("stpeters_probe.pfm");
     
     create_quad();
     create_skybox();
     create_sphere();
-    setup_lights();
+    //setup_lights();
     
     FresnelShader = create_shader("fresnel.vert", "fresnel.frag");
     PhongShader = create_shader("phong.vert", "phong.frag");
@@ -1752,13 +1772,11 @@ void render_skybox()
     glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    
 #ifdef USE_LIST
     glCallList(SkyBoxDisplayListId);
 #else
     create_skybox();
 #endif
-    
     glPopMatrix();
     glEnable(GL_DEPTH_TEST);
 }
@@ -2622,7 +2640,7 @@ void draw_string(float x, float y, float color[4], char *buffer)
 void draw_text(float x, float y, int light, char *format, ...)
 {
     va_list args;
-    char buffer[512];
+    char buffer[256];
     GLint iVP[4];
     GLint iMatrixMode;
     
@@ -2697,6 +2715,7 @@ report_stats(uint64_t start, uint64_t end)
 	{
         double fMs = (TimeElapsed * 1000.0 / (double) FrameCount);
         double fFps = 1.0 / (fMs / 1000.0);
+#ifdef USE_OPENCL
 #ifdef __EMSCRIPTEN__
     	printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
                (ComputeDeviceType == CL_DEVICE_TYPE_GPU) ? "GPU" : "CPU",
@@ -2709,6 +2728,7 @@ report_stats(uint64_t start, uint64_t end)
 		
 		glutSetWindowTitle(StatsString);
 #endif
+#endif
 		FrameCount = 0;
         TimeElapsed = 0;
 	}
@@ -2720,6 +2740,7 @@ display(void)
     FrameCount++;
     
     uint64_t start = current_time();
+#ifdef USE_OPENCL
     int err = recompute();
     if (err != 0)
     {
@@ -2727,6 +2748,7 @@ display(void)
         shutdown_opencl();
         exit(1);
     }
+#endif
     
     int c = 0;
     for (c = 0; c < 3; ++c)
@@ -2754,7 +2776,6 @@ display(void)
     
     draw_text(20, 30, SphereShader == FresnelShader, "Press ~ to change shaders");
 #endif
-    
     glutSwapBuffers();
     
     uint64_t end = current_time();
@@ -3191,34 +3212,34 @@ int init(int gpu)
         exit (err);
     }
     
+#ifdef USE_OPENCL
     err = setup_opencl(gpu);
     if (err != GL_NO_ERROR)
     {
         printf ("Failed to setup OpenCL state! Error %d\n", err);
         exit (err);
     }
+#endif
     
-    return CL_SUCCESS;
+    return 0;
 }
 
 int main(int argc, char** argv)
 {
-  // Parse command line options
-  //
-  int i;
-  int use_gpu = 1;
-  for( i = 0; i < argc && argv; i++)
-  {
-      if(!argv[i])
-          continue;
-          
-      if(strstr(argv[i], "cpu"))
-          use_gpu = 0;        
-
-      else if(strstr(argv[i], "gpu"))
-          use_gpu = 1;
-  }
-
+    int i;
+    int use_gpu = 1;
+    for( i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+        
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;
+        
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+    
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize (Width, Height);
@@ -3241,3 +3262,4 @@ int main(int argc, char** argv)
     }
     return 0;
 }
+
