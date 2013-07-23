@@ -409,7 +409,7 @@ int main(int argc, char **argv)
     int *integer_data = (int*)malloc(count * channels * sizeof(int));
     for (i = 0; i < count * channels; i++)
     {
-        float_data[i] = 2.0f;//(((float) rand() / (float) RAND_MAX);
+        float_data[i] = ((float) rand() / (float) RAND_MAX);
         integer_data[i] = (int) (255.0f * float_data[i]);
     }
 

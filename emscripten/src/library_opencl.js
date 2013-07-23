@@ -1605,8 +1605,6 @@ var LibraryOpenCL = {
       var sig = CL.kernels_sig[name];
       var type = sig[arg_index];
       
-      console.log(""+name+" - "+arg_index);
-      
       // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
       var isFloat = 0;
       var isLocal = 0;    
