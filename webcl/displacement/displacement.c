@@ -70,7 +70,6 @@
     #include <GL/glut.h>
     #ifdef USE_OPENCL
         #include <CL/opencl.h>
-        #include <CL/opencl.h>
     #endif
 #else
     #ifdef __APPLE__

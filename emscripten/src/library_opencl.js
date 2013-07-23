@@ -585,12 +585,12 @@ var LibraryOpenCL = {
           size = 1;
           break;         
         case (0x100C) /* CL_DEVICE_MAX_CLOCK_FREQUENCY */:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY); // return cl_uint
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY) : 0 /*Not Visible*/ ; // return cl_uint
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break;
         case (0x1002) /* CL_DEVICE_MAX_COMPUTE_UNITS */:
-          res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS); // return cl_uint
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS) : 0 /*Not Visible*/ ; // return cl_uint          
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break;   
