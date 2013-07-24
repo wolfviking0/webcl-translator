@@ -48,5 +48,5 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 	| scan   		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| qjulia		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
-	| histogram		| WORK IN PROGRESS | WORK IN PROGRESS |
+	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
 	|---------------|------------------|------------------|

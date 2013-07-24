@@ -14,5 +14,5 @@ cd ../convolution/
 make
 cd ../displacement/
 make
-cd ../histogram/
+cd ../smallpt/
 make
