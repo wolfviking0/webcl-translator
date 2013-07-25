@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'hello_world_2.data';
     var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = '0b3ae4c6-1f0a-4d3b-9552-96f09208c8d6';
+    var PACKAGE_UUID = 'd56db586-c7d8-484f-b934-e642d9655587';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -91,10 +91,10 @@ function assert(check, msg) {
       var curr;
       
         curr = DataRequest.prototype.requests['hello_world_2.cl'];
-        var data = byteArray.subarray(0, 186);
-        var ptr = Module['_malloc'](186);
+        var data = byteArray.subarray(0, 180);
+        var ptr = Module['_malloc'](180);
         Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 186);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 180);
         curr.onload();
                 Module['removeRunDependency']('datafile_hello_world_2.data');
 

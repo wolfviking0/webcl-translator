@@ -180,14 +180,14 @@ cl_program CreateProgram(cl_context context, cl_device_id device, const char* fi
 //  and b (input)
 //
 bool CreateMemObjects(cl_context context, cl_mem memObjects[3],
-                      float *a, float *b)
+                      int *a, int *b)
 {
     memObjects[0] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                   sizeof(float) * ARRAY_SIZE, a, NULL);
+                                   sizeof(int) * ARRAY_SIZE, a, NULL);
     memObjects[1] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                   sizeof(float) * ARRAY_SIZE, b, NULL);
+                                   sizeof(int) * ARRAY_SIZE, b, NULL);
     memObjects[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                   sizeof(float) * ARRAY_SIZE, NULL, NULL);
+                                   sizeof(int) * ARRAY_SIZE, NULL, NULL);
 
     if (memObjects[0] == NULL || memObjects[1] == NULL || memObjects[2] == NULL)
     {
@@ -288,13 +288,13 @@ int main(int argc, char** argv)
     // Create memory objects that will be used as arguments to
     // kernel.  First create host memory arrays that will be
     // used to store the arguments to the kernel
-    float result[ARRAY_SIZE];
-    float a[ARRAY_SIZE];
-    float b[ARRAY_SIZE];
+    int result[ARRAY_SIZE];
+    int a[ARRAY_SIZE];
+    int b[ARRAY_SIZE];
     for (int i = 0; i < ARRAY_SIZE; i++)
     {
-        a[i] = (float)i;
-        b[i] = (float)(i * 2);
+        a[i] = (int)i;
+        b[i] = (int)(i * 2);
         
     }
 
@@ -331,7 +331,7 @@ int main(int argc, char** argv)
 
     // Read the output buffer back to the Host
     errNum = clEnqueueReadBuffer(commandQueue, memObjects[2], CL_TRUE,
-                                 0, ARRAY_SIZE * sizeof(float), result,
+                                 0, ARRAY_SIZE * sizeof(int), result,
                                  0, NULL, NULL);
     if (errNum != CL_SUCCESS)
     {

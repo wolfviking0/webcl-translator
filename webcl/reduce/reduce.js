@@ -1462,12 +1462,13 @@ function copyTempDouble(ptr) {
             return res; 
         }
         if (CL.webcl_mozilla == 1) {
-          res = res.concat(CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL));
+          res = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
         } else {
-          //platforms[platform].getDevices(DEVICE_TYPE_ALL); // DEVICE_TYPE_ALL not work on webkit not normal
+          //res = CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_ALL);
           res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_GPU));
           res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_CPU));  
         }    
+        console.info("CL.getAllDevices: : "+res.length);
         return res;
       },catchError:function (name,e) {
         var str=""+e;
@@ -1479,7 +1480,7 @@ function copyTempDouble(ptr) {
       if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
         if (window.WebCL == undefined) {
           if(typeof(webcl) === "undefined") {
-            console.log(CL.errorMessage);
+            console.error(CL.errorMessage);
             return -1;/*CL_DEVICE_NOT_FOUND*/;
           } else {
             window.WebCL = webcl
@@ -2605,12 +2606,12 @@ function copyTempDouble(ptr) {
             size = 1;
             break;         
           case (0x100C) /* CL_DEVICE_MAX_CLOCK_FREQUENCY */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY); // return cl_uint
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY) : 1 /*Not Visible*/ ; // return cl_uint
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break;
           case (0x1002) /* CL_DEVICE_MAX_COMPUTE_UNITS */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS); // return cl_uint
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS) : 1 /*Not Visible*/ ; // return cl_uint          
             HEAP32[((param_value)>>2)]=res;
             size = 1;
             break;   
@@ -2901,64 +2902,63 @@ function copyTempDouble(ptr) {
             var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
             CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
             break;
-          case (1 << 3) /* CL_MEM_USE_HOST_PTR */:
-            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_USE_HOST_PTR : WebCL.MEM_USE_HOST_PTR;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-            break;
-          case (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */:
-            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_ALLOC_HOST_PTR : WebCL.MEM_ALLOC_HOST_PTR;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-            break;
-          case (1 << 5) /* CL_MEM_COPY_HOST_PTR */:
-            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_COPY_HOST_PTR : WebCL.MEM_COPY_HOST_PTR;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-            break;
           case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
             if (host_ptr == 0) {
               console.error("clCreateBuffer: CL_MEM_COPY_HOST_PTR can't be use with null host_ptr parameter");
               HEAP32[((errcode_ret)>>2)]=-37 /* CL_INVALID_HOST_PTR */;
               return 0;     
             }
-            var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-            // CL_MEM_COPY_HOST_PTR Doesn't work we pass element via enqueue buffer
-            if (CL.cmdQueue.length == 0) {
-              console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
-              HEAP32[((errcode_ret)>>2)]=-36 /* CL_INVALID_COMMAND_QUEUE */;
-              return 0;
-            }
-            if (CL.buffers.length == 0) {
-              console.error("clCreateBuffer: Invalid buffers : "+CL.buffers.length);
-              HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
-              return 0;
-            }
-            // \warning experimental stuff
-            console.info("/!\\ clCreateBuffer: Need to use the good kernel name ...");
-            var name = CL.kernels_name[0];
-            var sig = CL.kernels_sig[name];
-            var type = sig[CL.buffers.length-1];
+            var vector;
             var isFloat = 0;
             var isUint = 0;
             var isInt = 0;
-            if (type & CL.data_type.FLOAT) {
-              isFloat = 1;
-            } 
-            if (type & CL.data_type.UINT) {
-              isUint = 1;
-            } 
-            if (type & CL.data_type.INT) {
-              isInt = 1;
+            var buff = CL.buffers.length;
+            if (CL.kernels_name.length > 0) {
+              // \warning experimental stuff
+              console.info("/!\\ clCreateBuffer: Need to find how detect the array type");
+              var name = CL.kernels_name[0];
+              console.info("/!\\ clCreateBuffer: use '"+name+"' kernel name ...");
+              var sig = CL.kernels_sig[name];
+              var type = sig[buff];
+              if (type & CL.data_type.FLOAT) {
+                isFloat = 1;
+              } 
+              if (type & CL.data_type.UINT) {
+                isUint = 1;
+              } 
+              if (type & CL.data_type.INT) {
+                isInt = 1;
+              }
             }
-            var vector;    
-            if (isFloat) {
-              vector = new Float32Array(size / 4);
-            } else if (isUint) {
-              vector = new Uint32Array(size / 4);
-            } else if (isInt) {
-              vector = new Int32Array(size / 4);
+            if (CL.webcl_webkit == -1) {
+              vector = new ArrayBuffer(size / 4);
             } else {
-              console.error("clCreateBuffer: Unknow ouptut type : "+sig[CL.buffers.length-1]);
+              if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
+                isFloat = CL.isFloat(host_ptr,size); 
+                if (isFloat) {
+                  vector = new Float32Array(size / 4);
+                } else {
+                  vector = new Int32Array(size / 4);
+                }
+              } else {        
+                if (isFloat) {
+                  vector = new Float32Array(size / 4);
+                } else if (isUint) {
+                  vector = new Uint32Array(size / 4);
+                } else if (isInt) {
+                  vector = new Int32Array(size / 4);
+                } else {
+                  console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
+                }
+              }
             }
+            if (isFloat) {
+              console.info("/!\\ clCreateBuffer: use FLOAT output type ...");
+            } else if (isUint) {
+              console.info("/!\\ clCreateBuffer: use UINT output type ...");
+            } else if (isInt) {
+              console.info("/!\\ clCreateBuffer: use INT output type ...");
+            } 
             for (var i = 0; i < (size / 4); i++) {
               if (isFloat) {
                 vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
@@ -2966,7 +2966,27 @@ function copyTempDouble(ptr) {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
             }
-            CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
+            console.info(vector);
+            if (CL.webcl_webkit == -1) {
+                CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY | WebCL.MEM_COPY_HOST_PTR, size, vector));
+            } else {
+              if (CL.webcl_webkit == 1) {
+                CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY,size));
+              } else{
+                CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));              
+              }
+              if (CL.cmdQueue.length == 0) {
+                console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
+                HEAP32[((errcode_ret)>>2)]=-36 /* CL_INVALID_COMMAND_QUEUE */;
+                return 0;
+              }
+              if (CL.buffers.length == 0) {
+                console.error("clCreateBuffer: Invalid buffers : "+CL.buffers.length);
+                HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
+                return 0;
+              }    
+              CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
+            }
             break;
           default:
             console.error("clCreateBuffer: flag not yet implemented "+flags_i64_1);
@@ -2991,18 +3011,17 @@ function copyTempDouble(ptr) {
         console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
+      var vector;
       var isFloat = 0;
       var isUint = 0;
       var isInt = 0;
       if (CL.kernels_name.length > 0) {
         // \warning experimental stuff
-        console.info("/!\\ clEnqueueWriteBuffer: Need to use the good kernel name ...");
+        console.info("/!\\ clEnqueueWriteBuffer: Need to find how detect the array type");
         var name = CL.kernels_name[0];
+        console.info("/!\\ clEnqueueWriteBuffer: use '"+name+"' kernel name ...");
         var sig = CL.kernels_sig[name];
         var type = sig[buff];
-        var isFloat = 0;
-        var isUint = 0;
-        var isInt = 0;
         if (type & CL.data_type.FLOAT) {
           isFloat = 1;
         } 
@@ -3013,21 +3032,25 @@ function copyTempDouble(ptr) {
           isInt = 1;
         }
       }
-      var vector;    
       if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
         isFloat = CL.isFloat(ptr,size); 
         if (isFloat) {
           vector = new Float32Array(size / 4);
+          console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
         } else {
           vector = new Int32Array(size / 4);
+          console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
         }
       } else {        
         if (isFloat) {
           vector = new Float32Array(size / 4);
+          console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
         } else if (isUint) {
           vector = new Uint32Array(size / 4);
+          console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
         } else if (isInt) {
           vector = new Int32Array(size / 4);
+          console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
         } else {
           console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+sig[buff]);
         }
@@ -3039,7 +3062,7 @@ function copyTempDouble(ptr) {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
       }
-      //console.log(vector);
+      console.info(vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -3193,7 +3216,6 @@ function copyTempDouble(ptr) {
         }
         var sig = CL.kernels_sig[name];
         var type = sig[arg_index];
-        console.log(""+name+" - "+arg_index);
         // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
         var isFloat = 0;
         var isLocal = 0;    
@@ -3205,6 +3227,7 @@ function copyTempDouble(ptr) {
         }
         var value;
         if (isLocal) {
+          console.info("clSetKernelArg 'local': "+arg_index+" - size : "+arg_size);
           ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
         } else if (arg_size > 4) {
           value = new Array(arg_size/4);
@@ -3315,34 +3338,40 @@ function copyTempDouble(ptr) {
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
       try {
-        // \warning experimental stuff
-        console.info("/!\\ clEnqueueReadBuffer: Need to use the good kernel name ...");
-        var name = CL.kernels_name[0];
-        var sig = CL.kernels_sig[name];
-        var type = sig[buff];
+        var vector;
         var isFloat = 0;
         var isUint = 0;
         var isInt = 0;
-        if (type & CL.data_type.FLOAT) {
-          isFloat = 1;
-        } 
-        if (type & CL.data_type.UINT) {
-          isUint = 1;
-        } 
-        if (type & CL.data_type.INT) {
-          isInt = 1;
-        } 
-        var vector;
+        if (CL.kernels_name.length > 0) {
+          // \warning experimental stuff
+          console.info("/!\\ clEnqueueReadBuffer: Need to find how detect the array type");
+          var name = CL.kernels_name[0];
+          console.info("/!\\ clEnqueueReadBuffer: use '"+name+"' kernel name ...");
+          var sig = CL.kernels_sig[name];
+          var type = sig[buff];
+          if (type & CL.data_type.FLOAT) {
+            isFloat = 1;
+          } 
+          if (type & CL.data_type.UINT) {
+            isUint = 1;
+          } 
+          if (type & CL.data_type.INT) {
+            isInt = 1;
+          }
+        }
         if (isFloat) {
           vector = new Float32Array(size / 4);
+          console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
         } else if (isUint) {
           vector = new Uint32Array(size / 4);
+          console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
         } else if (isInt) {
           vector = new Int32Array(size / 4);
+          console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
         } else {
           console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
-          return -1; /* CL_FAILED */     
         }
+        console.info("clEnqueueReadBuffer - Pos : "+buff);
         CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
         for (var i = 0; i < (size / 4); i++) {
           if (isFloat) {
@@ -3351,7 +3380,7 @@ function copyTempDouble(ptr) {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
           }         
         }
-        //console.log(vector);
+        console.info(vector);
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);

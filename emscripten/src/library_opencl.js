@@ -172,13 +172,17 @@ var LibraryOpenCL = {
       }
 
       if (CL.webcl_mozilla == 1) {
-        res = res.concat(CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL));
+        res = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
       } else {
-        //platforms[platform].getDevices(DEVICE_TYPE_ALL); // DEVICE_TYPE_ALL not work on webkit not normal
+        //res = CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_ALL);
         res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_GPU));
         res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_CPU));  
       }    
 
+#if OPENCL_DEBUG
+      console.info("CL.getAllDevices: : "+res.length);
+#endif
+  
       return res;
     },
                 
@@ -198,7 +202,7 @@ var LibraryOpenCL = {
     if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
       if (window.WebCL == undefined) {
         if(typeof(webcl) === "undefined") {
-          console.log(CL.errorMessage);
+          console.error(CL.errorMessage);
           return -1;/*CL_DEVICE_NOT_FOUND*/;
         } else {
           window.WebCL = webcl
@@ -326,7 +330,7 @@ var LibraryOpenCL = {
     if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
       if (window.WebCL == undefined) {
         if(typeof(webcl) === "undefined") {
-          console.log(CL.errorMessage);
+          console.error(CL.errorMessage);
           return -1;/*CL_DEVICE_NOT_FOUND*/;
         } else {
           window.WebCL = webcl
@@ -585,12 +589,12 @@ var LibraryOpenCL = {
           size = 1;
           break;         
         case (0x100C) /* CL_DEVICE_MAX_CLOCK_FREQUENCY */:
-          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY) : 0 /*Not Visible*/ ; // return cl_uint
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY) : 1 /*Not Visible*/ ; // return cl_uint
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break;
         case (0x1002) /* CL_DEVICE_MAX_COMPUTE_UNITS */:
-          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS) : 0 /*Not Visible*/ ; // return cl_uint          
+          res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS) : 1 /*Not Visible*/ ; // return cl_uint          
           {{{ makeSetValue('param_value', '0', 'res', 'i32') }}};
           size = 1;
           break;   
@@ -1255,18 +1259,6 @@ var LibraryOpenCL = {
           var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
           CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
-        case (1 << 3) /* CL_MEM_USE_HOST_PTR */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_USE_HOST_PTR : WebCL.MEM_USE_HOST_PTR;
-          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-          break;
-        case (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_ALLOC_HOST_PTR : WebCL.MEM_ALLOC_HOST_PTR;
-          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-          break;
-        case (1 << 5) /* CL_MEM_COPY_HOST_PTR */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_COPY_HOST_PTR : WebCL.MEM_COPY_HOST_PTR;
-          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-          break;
         case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
           if (host_ptr == 0) {
 #if OPENCL_DEBUG
@@ -1276,61 +1268,67 @@ var LibraryOpenCL = {
             return 0;     
           }
           
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
-          CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
-          
-          // CL_MEM_COPY_HOST_PTR Doesn't work we pass element via enqueue buffer
-          
-          if (CL.cmdQueue.length == 0) {
-#if OPENCL_DEBUG
-            console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
-#endif
-            {{{ makeSetValue('errcode_ret', '0', '-36', 'i32') }}} /* CL_INVALID_COMMAND_QUEUE */;
-            return 0;
-          }
-
-          if (CL.buffers.length == 0) {
-#if OPENCL_DEBUG
-            console.error("clCreateBuffer: Invalid buffers : "+CL.buffers.length);
-#endif
-            {{{ makeSetValue('errcode_ret', '0', '-38', 'i32') }}} /* CL_INVALID_MEM_OBJECT */;
-            return 0;
-          }
-          
-          // \warning experimental stuff
-          console.info("/!\\ clCreateBuffer: Need to use the good kernel name ...");
-          var name = CL.kernels_name[0];
-          var sig = CL.kernels_sig[name];
-          var type = sig[CL.buffers.length-1];
-          
+          var vector;
           var isFloat = 0;
           var isUint = 0;
           var isInt = 0;
+          var buff = CL.buffers.length;
           
-          if (type & CL.data_type.FLOAT) {
-            isFloat = 1;
-          } 
-          if (type & CL.data_type.UINT) {
-            isUint = 1;
-          } 
-          if (type & CL.data_type.INT) {
-            isInt = 1;
+          if (CL.kernels_name.length > 0) {
+            // \warning experimental stuff
+          
+            console.info("/!\\ clCreateBuffer: Need to find how detect the array type");
+            var name = CL.kernels_name[0];
+            console.info("/!\\ clCreateBuffer: use '"+name+"' kernel name ...");
+            var sig = CL.kernels_sig[name];
+            var type = sig[buff];
+    
+            if (type & CL.data_type.FLOAT) {
+              isFloat = 1;
+            } 
+            if (type & CL.data_type.UINT) {
+              isUint = 1;
+            } 
+            if (type & CL.data_type.INT) {
+              isInt = 1;
+            }
           }
-          
-          var vector;    
-             
-          if (isFloat) {
-            vector = new Float32Array(size / 4);
-          } else if (isUint) {
-            vector = new Uint32Array(size / 4);
-          } else if (isInt) {
-            vector = new Int32Array(size / 4);
+
+          if (CL.webcl_webkit == -1) {
+            vector = new ArrayBuffer(size / 4);
           } else {
+            if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
+              isFloat = CL.isFloat(host_ptr,size); 
+              if (isFloat) {
+                vector = new Float32Array(size / 4);
+              } else {
+                vector = new Int32Array(size / 4);
+              }
+            } else {        
+              if (isFloat) {
+                vector = new Float32Array(size / 4);
+              } else if (isUint) {
+                vector = new Uint32Array(size / 4);
+              } else if (isInt) {
+                vector = new Int32Array(size / 4);
+              } else {
 #if OPENCL_DEBUG
-            console.error("clCreateBuffer: Unknow ouptut type : "+sig[CL.buffers.length-1]);
+                console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
 #endif
+              }
+            }
           }
-  
+          
+#if OPENCL_DEBUG          
+          if (isFloat) {
+            console.info("/!\\ clCreateBuffer: use FLOAT output type ...");
+          } else if (isUint) {
+            console.info("/!\\ clCreateBuffer: use UINT output type ...");
+          } else if (isInt) {
+            console.info("/!\\ clCreateBuffer: use INT output type ...");
+          } 
+#endif
+          
           for (var i = 0; i < (size / 4); i++) {
             if (isFloat) {
               vector[i] = {{{ makeGetValue('host_ptr', 'i*4', 'float') }}};
@@ -1338,9 +1336,39 @@ var LibraryOpenCL = {
               vector[i] = {{{ makeGetValue('host_ptr', 'i*4', 'i32') }}};
             }
           }
-    
-          CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
+        
+#if OPENCL_DEBUG         
+          console.info(vector);
+#endif
+          
+          if (CL.webcl_webkit == -1) {
+              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY | WebCL.MEM_COPY_HOST_PTR, size, vector));
+          } else {
+            if (CL.webcl_webkit == 1) {
+              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY,size));
+            } else{
+              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));              
+            }
+            
+            if (CL.cmdQueue.length == 0) {
+#if OPENCL_DEBUG
+              console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
+#endif
+              {{{ makeSetValue('errcode_ret', '0', '-36', 'i32') }}} /* CL_INVALID_COMMAND_QUEUE */;
+              return 0;
+            }
 
+            if (CL.buffers.length == 0) {
+#if OPENCL_DEBUG
+              console.error("clCreateBuffer: Invalid buffers : "+CL.buffers.length);
+#endif
+              {{{ makeSetValue('errcode_ret', '0', '-38', 'i32') }}} /* CL_INVALID_MEM_OBJECT */;
+              return 0;
+            }    
+          
+            CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
+          }
+ 
           break;
         default:
 #if OPENCL_DEBUG
@@ -1402,7 +1430,7 @@ var LibraryOpenCL = {
           break;
         default:
 #if OPENCL_DEBUG
-          console.error("clCreateBuffer: flag not yet implemented "+flags_i64_1);
+          console.error("clCreateSubBuffer: flag not yet implemented "+flags_i64_1);
 #endif
           {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
           return 0;
@@ -1436,21 +1464,20 @@ var LibraryOpenCL = {
 
       return -38; /* CL_INVALID_MEM_OBJECT */
     }
-
+    
+    var vector;
     var isFloat = 0;
     var isUint = 0;
     var isInt = 0;
-    
+
     if (CL.kernels_name.length > 0) {
       // \warning experimental stuff
-      console.info("/!\\ clEnqueueWriteBuffer: Need to use the good kernel name ...");
+    
+      console.info("/!\\ clEnqueueWriteBuffer: Need to find how detect the array type");
       var name = CL.kernels_name[0];
+      console.info("/!\\ clEnqueueWriteBuffer: use '"+name+"' kernel name ...");
       var sig = CL.kernels_sig[name];
       var type = sig[buff];
-    
-      var isFloat = 0;
-      var isUint = 0;
-      var isInt = 0;
 
       if (type & CL.data_type.FLOAT) {
         isFloat = 1;
@@ -1462,30 +1489,33 @@ var LibraryOpenCL = {
         isInt = 1;
       }
     }
-    
-    var vector;    
-    
+
     if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
       isFloat = CL.isFloat(ptr,size); 
       if (isFloat) {
         vector = new Float32Array(size / 4);
+        console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
       } else {
         vector = new Int32Array(size / 4);
+        console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
       }
     } else {        
       if (isFloat) {
         vector = new Float32Array(size / 4);
+        console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
       } else if (isUint) {
         vector = new Uint32Array(size / 4);
+        console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
       } else if (isInt) {
         vector = new Int32Array(size / 4);
+        console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
       } else {
 #if OPENCL_DEBUG
         console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+sig[buff]);
 #endif
       }
     }
-  
+
     for (var i = 0; i < (size / 4); i++) {
       if (isFloat) {
         vector[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
@@ -1493,8 +1523,10 @@ var LibraryOpenCL = {
         vector[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
       }
     }
-    
-    //console.log(vector);
+ 
+#if OPENCL_DEBUG         
+    console.info(vector);
+#endif
     
     try {
       CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
@@ -1619,6 +1651,9 @@ var LibraryOpenCL = {
       
       var value;
       if (isLocal) {
+#if OPENCL_DEBUG
+        console.info("clSetKernelArg 'local': "+arg_index+" - size : "+arg_size);
+#endif        
         ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
       } else if (arg_size > 4) {
         value = new Array(arg_size/4);
@@ -1879,40 +1914,48 @@ var LibraryOpenCL = {
 
     try {
       
-      // \warning experimental stuff
-      console.info("/!\\ clEnqueueReadBuffer: Need to use the good kernel name ...");
-      var name = CL.kernels_name[0];
-      var sig = CL.kernels_sig[name];
-      var type = sig[buff];
+      var vector;
       var isFloat = 0;
       var isUint = 0;
       var isInt = 0;
 
-      if (type & CL.data_type.FLOAT) {
-        isFloat = 1;
-      } 
-      if (type & CL.data_type.UINT) {
-        isUint = 1;
-      } 
-      if (type & CL.data_type.INT) {
-        isInt = 1;
-      } 
-
-      var vector;
+      if (CL.kernels_name.length > 0) {
+        // \warning experimental stuff
       
+        console.info("/!\\ clEnqueueReadBuffer: Need to find how detect the array type");
+        var name = CL.kernels_name[0];
+        console.info("/!\\ clEnqueueReadBuffer: use '"+name+"' kernel name ...");
+        var sig = CL.kernels_sig[name];
+        var type = sig[buff];
+
+        if (type & CL.data_type.FLOAT) {
+          isFloat = 1;
+        } 
+        if (type & CL.data_type.UINT) {
+          isUint = 1;
+        } 
+        if (type & CL.data_type.INT) {
+          isInt = 1;
+        }
+      }
+
       if (isFloat) {
         vector = new Float32Array(size / 4);
+        console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
       } else if (isUint) {
         vector = new Uint32Array(size / 4);
+        console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
       } else if (isInt) {
         vector = new Int32Array(size / 4);
+        console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
       } else {
 #if OPENCL_DEBUG
         console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
 #endif
-        return -1; /* CL_FAILED */     
       }
-  
+       
+      console.info("clEnqueueReadBuffer - Pos : "+buff);
+        
       CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
 
       for (var i = 0; i < (size / 4); i++) {
@@ -1922,7 +1965,10 @@ var LibraryOpenCL = {
           {{{ makeSetValue('results', 'i*4', 'vector[i]', 'i32') }}};  
         }         
       }
-      //console.log(vector);
+    
+#if OPENCL_DEBUG
+      console.info(vector);
+#endif
       
       return 0;/*CL_SUCCESS*/
     } catch(e) {
