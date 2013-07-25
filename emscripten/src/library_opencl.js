@@ -25,6 +25,44 @@ var LibraryOpenCL = {
                     "Make sure that you have both the OpenCL driver " +
                     "and the WebCL browser extension installed.",
       
+    checkWebCL: function() {
+      // If we already check is not useful to do this again
+      if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
+        return 0;
+      }
+              
+      // Look is the browser is comaptible
+      var isWebkit = 'webkitRequestAnimationFrame' in window;
+      var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+      
+      if (!isWebkit && !isFirefox) {
+        console.error("This current browser is not compatible with WebCL implementation !!! \n");
+        console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+        return -1;
+      }
+      
+      // Look is the browser have WebCL implementation
+      if (window.WebCL == undefined) {
+        if (typeof(webcl) === "undefined") {
+          console.error("This browser has not WebCL implementation !!! \n");
+          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+          return -1;
+        } else {
+          window.WebCL = webcl
+        }
+      }
+      
+      CL.webcl_webkit = isWebkit == true ? 1 : 0;
+      CL.webcl_mozilla = isFirefox == true ? 1 : 0;
+  
+#if OPENCL_DEBUG
+      var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+      console.info("Webcl implemented for "+browser);
+#endif
+      
+      return 0;
+    },
+    
     // Check if the data inside ptr are float or int, it's dirty and need to find something more clean but
     // clCreateBuffer need Float32Array or Uint32Array
     // clEnqueueWriteBuffer need Float32Array or Uint32Array
@@ -199,23 +237,11 @@ var LibraryOpenCL = {
   },
   
   clGetPlatformIDs: function(num_entries,platform_ids,num_platforms) {
-    if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
-      if (window.WebCL == undefined) {
-        if(typeof(webcl) === "undefined") {
-          console.error(CL.errorMessage);
-          return -1;/*CL_DEVICE_NOT_FOUND*/;
-        } else {
-          window.WebCL = webcl
-          CL.webcl_webkit = 1;
-        }
-      } else {
-        CL.webcl_mozilla = 1;
-      }
+    
+    if (CL.checkWebCL() < 0) {
+      console.error(CL.errorMessage);
+      return -1;/*WEBCL_NOT_FOUND*/;
     }
-#if OPENCL_DEBUG
-    var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-    console.info("Webcl implemented for "+browser);
-#endif
         
     try { 
       
@@ -327,24 +353,11 @@ var LibraryOpenCL = {
   },
 
   clGetDeviceIDs: function(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-    if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
-      if (window.WebCL == undefined) {
-        if(typeof(webcl) === "undefined") {
-          console.error(CL.errorMessage);
-          return -1;/*CL_DEVICE_NOT_FOUND*/;
-        } else {
-          window.WebCL = webcl
-          CL.webcl_webkit = 1;
-        }
-      } else {
-        CL.webcl_mozilla = 1;
-      }
-    }
     
-#if OPENCL_DEBUG
-    var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-    console.info("Webcl implemented for "+browser);
-#endif
+    if (CL.checkWebCL() < 0) {
+      console.error(CL.errorMessage);
+      return -1;/*WEBCL_NOT_FOUND*/;
+    }
     
     // Assume the device type is i32 
     assert(device_type_i64_2 == 0, 'Invalid flags i64');
