@@ -1308,22 +1308,22 @@ var LibraryOpenCL = {
           }
 
           if (CL.webcl_webkit == -1) {
-            vector = new ArrayBuffer(size / 4);
+            vector = new ArrayBuffer(size / ArrayBuffer.BYTES_PER_ELEMENT);
           } else {
             if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
               isFloat = CL.isFloat(host_ptr,size); 
               if (isFloat) {
-                vector = new Float32Array(size / 4);
+                vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
               } else {
-                vector = new Int32Array(size / 4);
+                vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
               }
             } else {        
               if (isFloat) {
-                vector = new Float32Array(size / 4);
+                vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
               } else if (isUint) {
-                vector = new Uint32Array(size / 4);
+                vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
               } else if (isInt) {
-                vector = new Int32Array(size / 4);
+                vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
               } else {
 #if OPENCL_DEBUG
                 console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
@@ -1506,21 +1506,21 @@ var LibraryOpenCL = {
     if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
       isFloat = CL.isFloat(ptr,size); 
       if (isFloat) {
-        vector = new Float32Array(size / 4);
+        vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
       } else {
-        vector = new Int32Array(size / 4);
+        vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
       }
     } else {        
       if (isFloat) {
-        vector = new Float32Array(size / 4);
+        vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
       } else if (isUint) {
-        vector = new Uint32Array(size / 4);
+        vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
       } else if (isInt) {
-        vector = new Int32Array(size / 4);
+        vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
       } else {
 #if OPENCL_DEBUG
@@ -1953,13 +1953,13 @@ var LibraryOpenCL = {
       }
 
       if (isFloat) {
-        vector = new Float32Array(size / 4);
+        vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
       } else if (isUint) {
-        vector = new Uint32Array(size / 4);
+        vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
       } else if (isInt) {
-        vector = new Int32Array(size / 4);
+        vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
         console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
       } else {
 #if OPENCL_DEBUG
