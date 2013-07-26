@@ -42,7 +42,7 @@ var LibraryOpenCL = {
       }
       
       // Look is the browser have WebCL implementation
-      if (window.WebCL == undefined || isWebKit) {
+      if (window.WebCL == undefined || isWebkit) {
         if (typeof(webcl) === "undefined") {
           console.error("This browser has not WebCL implementation !!! \n");
           console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
