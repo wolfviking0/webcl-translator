@@ -1053,7 +1053,7 @@ var LibraryOpenCL = {
 #endif
       return -44; /* CL_INVALID_PROGRAM */
     }
-
+    
     try {
       if (num_devices > CL.devices.length || CL.devices.length == 0) {
 #if OPENCL_DEBUG
@@ -1067,18 +1067,18 @@ var LibraryOpenCL = {
       if (num_devices == 0 || device_list == 0) {
         devices_tab[0] = CL.devices[0];
       } else {
-        // \todo will be better to use the devices list in parameter ...
         for (var i = 0; i < num_devices; i++) {
-          devices_tab[i] = CL.devices[i];
+          var idx = {{{ makeGetValue('device_list', 'i*4', 'i32') }}} - 1;
+          devices_tab[i] = CL.devices[idx];
         }
       }    
 
-      var opt = "";
+      var opt = Pointer_stringify(options);
 
       if (CL.webcl_mozilla == 1) {
         CL.programs[prog].buildProgram (devices_tab, opt);
       } else { 
-        CL.programs[prog].build(devices_tab);
+        CL.programs[prog].build(devices_tab, opt);
       }
       return 0;/*CL_SUCCESS*/
     } catch(e) {
@@ -1093,11 +1093,12 @@ var LibraryOpenCL = {
       console.error("clGetProgramBuildInfo: Invalid program : "+prog);
 #endif
       return -44; /* CL_INVALID_PROGRAM */
-    }           
+    }          
 
     // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-    var idx = {{{ makeGetValue('device', '0', 'i32') }}} - 1;
-
+    // var idx = {{{ makeGetValue('device', '0', 'i32') }}} - 1;
+    var idx = device - 1;
+    
     if (idx >= CL.devices.length || idx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clGetProgramBuildInfo: Invalid device : "+idx);

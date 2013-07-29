@@ -1372,7 +1372,7 @@ function copyTempDouble(ptr) {
           return -1;
         }
         // Look is the browser have WebCL implementation
-        if (window.WebCL == undefined) {
+        if (window.WebCL == undefined || isWebkit) {
           if (typeof(webcl) === "undefined") {
             console.error("This browser has not WebCL implementation !!! \n");
             console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
@@ -3316,6 +3316,20 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
+  //#if 0
+      var global = "";
+      var local = "";
+      for (var i = 0 ; i < work_dim; i++){
+        global += value_global_work_size[i];
+        local += value_local_work_size[i];
+        if (i != work_dim -1) {
+          global += " , ";
+          local += " , ";
+        }
+      }
+      console.info("Global [ "+ global +" ]")
+      console.info("Local [ "+ local +" ]")
+  //#endif
       // empty “localWS” array because give some trouble on CPU mode with mac
       // value_local_work_size = [];  
       try {

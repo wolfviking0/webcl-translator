@@ -7,6 +7,11 @@ EMCONFIGURE = $(EMSCRIPTEN)/emconfigure
 EMMAKE = $(EMSCRIPTEN)/emmake
 
 KERNELS = \
+	camera.h \
+	geomfunc.h \
+	simplernd.h \
+	geom.h \
+	vec.h \
 	preprocessed_rendering_kernel_dl.cl\
 	preprocessed_rendering_kernel.cl\
 	rendering_kernel_dl.cl\
