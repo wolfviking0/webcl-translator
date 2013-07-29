@@ -1305,7 +1305,50 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
+        // If we already check is not useful to do this again
+        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
+          return 0;
+        }
+        // Look is the browser is comaptible
+        var isWebkit = 'webkitRequestAnimationFrame' in window;
+        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        if (!isWebkit && !isFirefox) {
+          console.error("This current browser is not compatible with WebCL implementation !!! \n");
+          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+          return -1;
+        }
+        // Look is the browser have WebCL implementation
+        if (window.WebCL == undefined || isWebkit) {
+          if (typeof(webcl) === "undefined") {
+            console.error("This browser has not WebCL implementation !!! \n");
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+            return -1;
+          } else {
+            window.WebCL = webcl
+          }
+        }
+        // Init Device info
+        CL.device_infos = {
+          0x1000:[WebCL.CL_DEVICE_TYPE,WebCL.DEVICE_TYPE],
+          0x1001:[WebCL.CL_DEVICE_VENDOR_ID,WebCL.DEVICE_VENDOR_ID],
+          0x1002:[WebCL.CL_DEVICE_MAX_COMPUTE_UNITS,WebCL.DEVICE_MAX_COMPUTE_UNITS],
+          0x1003:[WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,WebCL.DEVICE_MAX_WORK_ITEM_DIMENSIONS],      
+          0x1004:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_MAX_WORK_GROUP_SIZE],
+          0x1016:[WebCL.CL_DEVICE_IMAGE_SUPPORT,WebCL.DEVICE_IMAGE_SUPPORT],
+          0x1030:[WebCL.CL_DEVICE_EXTENSIONS,WebCL.DEVICE_EXTENSIONS],
+          0x102B:[WebCL.CL_DEVICE_NAME,WebCL.DEVICE_NAME],
+          0x102C:[WebCL.CL_DEVICE_VENDOR,WebCL.DEVICE_VENDOR],
+          0x102D:[WebCL.CL_DRIVER_VERSION,WebCL.DRIVER_VERSION],
+          0x102E:[WebCL.CL_DEVICE_PROFILE,WebCL.DEVICE_PROFILE],
+          0x102F:[WebCL.CL_DEVICE_VERSION,WebCL.DEVICE_VERSION]            
+        };
+        CL.webcl_webkit = isWebkit == true ? 1 : 0;
+        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
+        var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+        console.info("Webcl implemented for "+browser);
+        return 0;
+      },isFloat:function (ptr,size) {
         console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
         console.error("But may be the kernel source is not yet parse !!! \n");
         var v_int = HEAP32[((ptr)>>2)]; 
@@ -1424,21 +1467,10 @@ function copyTempDouble(ptr) {
         console.error("CATCH: "+name+": "+e);
         return error;
       }};function _clGetPlatformIDs(num_entries,platform_ids,num_platforms) {
-      if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
-        if (window.WebCL == undefined) {
-          if(typeof(webcl) === "undefined") {
-            console.error(CL.errorMessage);
-            return -1;/*CL_DEVICE_NOT_FOUND*/;
-          } else {
-            window.WebCL = webcl
-            CL.webcl_webkit = 1;
-          }
-        } else {
-          CL.webcl_mozilla = 1;
-        }
+      if (CL.checkWebCL() < 0) {
+        console.error(CL.errorMessage);
+        return -1;/*WEBCL_NOT_FOUND*/;
       }
-      var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-      console.info("Webcl implemented for "+browser);
       try { 
         // Get the platform
         var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
@@ -1692,16 +1724,16 @@ function copyTempDouble(ptr) {
         if (num_devices == 0 || device_list == 0) {
           devices_tab[0] = CL.devices[0];
         } else {
-          // \todo will be better to use the devices list in parameter ...
           for (var i = 0; i < num_devices; i++) {
-            devices_tab[i] = CL.devices[i];
+            var idx = HEAP32[(((device_list)+(i*4))>>2)] - 1;
+            devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = "";
+        var opt = "";//Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 
-          CL.programs[prog].build(devices_tab);
+          CL.programs[prog].build(devices_tab, opt);
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -1713,9 +1745,10 @@ function copyTempDouble(ptr) {
       if (prog >= CL.programs.length || prog < 0 ) {
         console.error("clGetProgramBuildInfo: Invalid program : "+prog);
         return -44; /* CL_INVALID_PROGRAM */
-      }           
+      }          
       // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-      var idx = HEAP32[((device)>>2)] - 1;
+      // var idx = HEAP32[((device)>>2)] - 1;
+      var idx = device - 1;
       if (idx >= CL.devices.length || idx < 0 ) {
         console.error("clGetProgramBuildInfo: Invalid device : "+idx);
         return -33; /* CL_INVALID_DEVICE */  
@@ -1807,22 +1840,22 @@ function copyTempDouble(ptr) {
               }
             }
             if (CL.webcl_webkit == -1) {
-              vector = new ArrayBuffer(size / 4);
+              vector = new ArrayBuffer(size / ArrayBuffer.BYTES_PER_ELEMENT);
             } else {
               if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
                 isFloat = CL.isFloat(host_ptr,size); 
                 if (isFloat) {
-                  vector = new Float32Array(size / 4);
+                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
                 } else {
-                  vector = new Int32Array(size / 4);
+                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
                 }
               } else {        
                 if (isFloat) {
-                  vector = new Float32Array(size / 4);
+                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
                 } else if (isUint) {
-                  vector = new Uint32Array(size / 4);
+                  vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
                 } else if (isInt) {
-                  vector = new Int32Array(size / 4);
+                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
                 } else {
                   console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
                 }
@@ -2124,13 +2157,13 @@ function copyTempDouble(ptr) {
           }
         }
         if (isFloat) {
-          vector = new Float32Array(size / 4);
+          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
         } else if (isUint) {
-          vector = new Uint32Array(size / 4);
+          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
         } else if (isInt) {
-          vector = new Int32Array(size / 4);
+          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
         } else {
           console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
