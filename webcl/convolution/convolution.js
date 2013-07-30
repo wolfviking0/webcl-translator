@@ -1987,15 +1987,12 @@ function copyTempDouble(ptr) {
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
           } 
         } else {     
-          if (isFloat) {
-            value = HEAPF32[((arg_value)>>2)];
-          } else {
-            value = HEAP32[((arg_value)>>2)];
-          }
-          if (arg_index >= 0 && arg_index < CL.buffers.length) {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]) : CL.kernels[ker].setArg(arg_index,CL.buffers[arg_index]);
+          value = HEAP32[((arg_value)>>2)];
+          if (value-1 >= 0 && value-1 < CL.buffers.length) {
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[value-1]) : CL.kernels[ker].setArg(arg_index,CL.buffers[value-1]);
           } else {
             if (isFloat) { 
+              value = HEAPF32[((arg_value)>>2)];
               ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
             } else {
               ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
