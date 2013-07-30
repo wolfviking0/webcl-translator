@@ -5,7 +5,8 @@ var LibraryOpenCL = {
   $CL: {
     address_space: {GENERAL:0, GLOBAL:1, LOCAL:2, CONSTANT:4, PRIVATE:8},
     data_type: {FLOAT:16,INT:32,UINT:64},
-    device_infos : {},
+    device_infos: {},
+    index_object: 0,
     ctx: [],
     webcl_mozilla: 0,
     webcl_webkit: 0,
@@ -74,7 +75,8 @@ var LibraryOpenCL = {
       
       CL.webcl_webkit = isWebkit == true ? 1 : 0;
       CL.webcl_mozilla = isFirefox == true ? 1 : 0;
-  
+      CL.index_object = 2147483647;
+
 #if OPENCL_DEBUG
       var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
       console.info("Webcl implemented for "+browser);
@@ -211,6 +213,14 @@ var LibraryOpenCL = {
       return kernel_struct;
     },
     
+    getNewId: function(id) {
+      return CL.index_object - (id + 1);
+    },
+    
+    getArrayId: function(id) {
+      return CL.index_object - id - 1;
+    },
+    
     getDeviceName: function(type) {
       switch (type) {
         case 2 : return "CPU_DEVICE";
@@ -324,7 +334,7 @@ var LibraryOpenCL = {
       
       // Add indices in array platforms (+1) for don't have platforms with id == 0
       for (var i = 0; i < CL.platforms.length; i++) {
-        {{{ makeSetValue('platform_ids', 'i*4', 'i+1', 'i32') }}};
+        {{{ makeSetValue('platform_ids', 'i*4', 'CL.getNewId(i)', 'i32') }}};
       }
       
       return 0;/*CL_SUCCESS*/
@@ -335,7 +345,7 @@ var LibraryOpenCL = {
   },
 
   clGetPlatformInfo: function(platform, param, param_value_size, param_value, param_value_size_ret) {
-    var plat = platform - 1;
+    var plat = CL.getArrayId(platform);
     if (plat >= CL.platforms.length || plat < 0 ) {
 #if OPENCL_DEBUG
         console.error("clGetPlatformInfo: Invalid platform : "+plat);
@@ -394,7 +404,8 @@ var LibraryOpenCL = {
     assert(device_type_i64_2 == 0, 'Invalid flags i64');
 
     try { 
-
+      var plat = 0;
+      
       // If platform is NULL, the behavior is implementation-defined
       if (platform == 0 && CL.platforms.length == 0) {
       
@@ -403,18 +414,18 @@ var LibraryOpenCL = {
         
           if (platforms.length > 0) {
             CL.platforms.push(platforms[0]);
-            
+            plat = CL.platforms.length - 1;
           } else {
 #if OPENCL_DEBUG
             console.error("clGetDeviceIDs: Invalid platform : "+platform);
 #endif
             return -32; /* CL_INVALID_PLATFORM */ 
           }      
-      } else {              
-        platform -= 1;
+      } else {
+        plat = CL.getArrayId(platform);
       }
       
-      var alldev = CL.getAllDevices(platform);
+      var alldev = CL.getAllDevices(plat);
       
       // If devices_ids is not NULL, the num_entries must be greater than zero.
       if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
@@ -446,7 +457,7 @@ var LibraryOpenCL = {
       }
             
       if (mapcount == 0) {
-        var alldev = CL.getAllDevices(platform);
+        var alldev = CL.getAllDevices(plat);
         for (var i = 0 ; i < alldev.length; i++) {
           var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : /*alldev[i].getInfo(WebCL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
           map[name] = alldev[i];
@@ -486,7 +497,7 @@ var LibraryOpenCL = {
 
       // Add indices in array devices (+1) for don't have devices with id == 0
       for (var i = 0; i < CL.devices.length; i++) {
-        {{{ makeSetValue('devices_ids', 'i*4', 'i+1', 'i32') }}};
+        {{{ makeSetValue('devices_ids', 'i*4', 'CL.getNewId(i)', 'i32') }}};
       }
                     
       return 0;/*CL_SUCCESS*/
@@ -496,7 +507,7 @@ var LibraryOpenCL = {
   },
   
   clGetContextInfo: function(context, param_name, param_value_size, param_value, param_value_size_ret) {
-    var ctx = context - 1;
+    var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
         console.error("clGetContextInfo: Invalid context : "+ctx);
@@ -515,8 +526,8 @@ var LibraryOpenCL = {
           // Must verify if size of device is same as param_value°size
           if (param_value != 0) {
             for (var i = 0 ; i < res.length; i++) {
+              {{{ makeSetValue('param_value', 'i*4', 'CL.getNewId(CL.devices.length)', 'i32') }}};
               CL.devices.push(res[i]);
-              {{{ makeSetValue('param_value', 'i*4', 'CL.devices.length', 'i32') }}};
             }
           }
           size = res.length * 4;
@@ -554,7 +565,7 @@ var LibraryOpenCL = {
   },
   
   clGetDeviceInfo: function(device, param_name, param_value_size, param_value, param_value_size_ret) {
-    var idx = device - 1;
+    var idx = CL.getArrayId(device);
 
     if (idx >= CL.devices.length || idx < 0 ) {
 #if OPENCL_DEBUG
@@ -636,7 +647,7 @@ var LibraryOpenCL = {
               prop.push(WebCL.CL_CONTEXT_PLATFORM);
               i++;
               // get platform id
-              readprop = {{{ makeGetValue('properties', 'i*4', 'i32') }}} - 1;
+              readprop = CL.getArrayId({{{ makeGetValue('properties', 'i*4', 'i32') }}});
               if (readprop >= CL.platforms.length || readprop < 0 ) {
 #if OPENCL_DEBUG
                 console.error("clCreateContext: Invalid context : "+ctx);
@@ -684,9 +695,7 @@ var LibraryOpenCL = {
         CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(WebCL.DEVICE_TYPE), shareGroup: 1, hint: null}));
       }
       
-
-      // Return the pos of the context +1
-      return CL.ctx.length;
+      return CL.getNewId(CL.ctx.length-1);
     } catch (e) {    
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateContext",e)', 'i32') }}};
       return 0; // Null pointer    
@@ -723,7 +732,7 @@ var LibraryOpenCL = {
               prop.push(WebCL.CL_CONTEXT_PLATFORM);
               i++;
               // get platform id
-              readprop = {{{ makeGetValue('properties', 'i*4', 'i32') }}} - 1;
+              readprop = CL.getArrayId({{{ makeGetValue('properties', 'i*4', 'i32') }}});
               if (readprop >= CL.platforms.length || readprop < 0 ) {
 #if OPENCL_DEBUG
                 console.error("clCreateContextFromType: Invalid context : "+ctx);
@@ -779,8 +788,7 @@ var LibraryOpenCL = {
         }
       }
     
-      // Return the pos of the context +1
-      return CL.ctx.length;
+      return CL.getNewId(CL.ctx.length-1);
       
     } catch (e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateContextFromType",e)', 'i32') }}};
@@ -789,7 +797,7 @@ var LibraryOpenCL = {
   },
   
   clCreateCommandQueue: function(context, devices, properties, errcode_ret) {
-    var ctx = context - 1;
+    var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
         console.error("clCreateCommandQueue: Invalid context : "+ctx);
@@ -800,18 +808,16 @@ var LibraryOpenCL = {
       
     try {
           
-      var idx = devices;//{{{ makeGetValue('devices', '0', 'i32') }}};
+      var idx = CL.getArrayId(devices);//{{{ makeGetValue('devices', '0', 'i32') }}};
     
-      if (idx == 0) {
+      if (idx < 0) {
         // Create a command-queue on the first device available if idx == 0
         console.error("\\todo clCreateCommandQueue() : idx = 0 : Need work on that ")
         var devices = CL.getAllDevices(0);
         CL.devices.push(devices[0]);
       }
-      
-      idx = idx - 1;
     
-      if (idx >= CL.devices.length || idx < 0 ) {
+      if (idx >= CL.devices.length) {
 #if OPENCL_DEBUG
         console.error("clCreateCommandQueue: Invalid device : "+idx);
 #endif
@@ -822,8 +828,7 @@ var LibraryOpenCL = {
       // \todo set the properties 
       CL.cmdQueue.push(CL.ctx[ctx].createCommandQueue(CL.devices[idx], 0));
 
-      // Return the pos of the queue +1
-      return CL.cmdQueue.length;
+      return CL.getNewId(CL.cmdQueue.length-1);
     } catch (e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateCommandQueue",e)', 'i32') }}};
       return 0; // Null pointer    
@@ -831,7 +836,7 @@ var LibraryOpenCL = {
   },
 
   clCreateProgramWithSource: function(context, count, strings, lengths, errcode_ret) {
-    var ctx = context - 1;
+    var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clCreateProgramWithSource: Invalid context : "+ctx);
@@ -853,8 +858,7 @@ var LibraryOpenCL = {
         CL.programs.push(CL.ctx[ctx].createProgram(kernel));
       }
       
-      // Return the pos of the queue +1
-      return CL.programs.length;
+      return CL.getNewId(CL.programs.length-1);
     } catch (e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateProgramWithSource",e)', 'i32') }}};
       return 0; // Null pointer
@@ -868,7 +872,7 @@ var LibraryOpenCL = {
   },
   
   clBuildProgram: function(program, num_devices, device_list, options, pfn_notify, user_data) {
-    var prog = program - 1;
+    var prog = CL.getArrayId(program);
     if (prog >= CL.programs.length || prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clBuildProgram: Invalid program : "+prog);
@@ -890,7 +894,7 @@ var LibraryOpenCL = {
         devices_tab[0] = CL.devices[0];
       } else {
         for (var i = 0; i < num_devices; i++) {
-          var idx = {{{ makeGetValue('device_list', 'i*4', 'i32') }}} - 1;
+          var idx = CL.getArrayId({{{ makeGetValue('device_list', 'i*4', 'i32') }}});
           devices_tab[i] = CL.devices[idx];
         }
       }    
@@ -909,7 +913,7 @@ var LibraryOpenCL = {
   },
 
   clGetProgramBuildInfo: function(program, device, param_name, param_value_size, param_value, param_value_size_ret) {
-    var prog = program - 1;
+    var prog = CL.getArrayId(program);
     if (prog >= CL.programs.length || prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clGetProgramBuildInfo: Invalid program : "+prog);
@@ -919,7 +923,7 @@ var LibraryOpenCL = {
 
     // \todo the type is a number but why i except have a Array ??? Will must be an array ???
     // var idx = {{{ makeGetValue('device', '0', 'i32') }}} - 1;
-    var idx = device - 1;
+    var idx = CL.getArrayId(device);
     
     if (idx >= CL.devices.length || idx < 0 ) {
 #if OPENCL_DEBUG
@@ -952,7 +956,7 @@ var LibraryOpenCL = {
   },
   
   clGetProgramInfo: function(program, param_name, param_value_size, param_value, param_value_size_ret) {
-    var prog = program - 1;
+    var prog = CL.getArrayId(program);
     if (prog >= CL.programs.length || prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clGetProgramInfo: Invalid program : "+prog);
@@ -985,7 +989,7 @@ var LibraryOpenCL = {
           {{{ makeSetValue('param_value_size_ret', '0', 'res.length', 'i32') }}};
           for (var i = 0; i <res.length; i++) {
             CL.devices.push(res[i]);
-            {{{ makeSetValue('param_value', 'i*4', 'CL.devices.length', 'i32') }}};
+            {{{ makeSetValue('param_value', 'i*4', 'CL.getNewId(CL.devices.length-1)', 'i32') }}};
           }
           
           break;
@@ -1004,7 +1008,7 @@ var LibraryOpenCL = {
   },
 
   clCreateKernel: function(program, kernels_name, errcode_ret) {
-    var prog = program - 1;
+    var prog = CL.getArrayId(program);
     if (prog >= CL.programs.length || prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clCreateKernel: Invalid program : "+prog);
@@ -1025,8 +1029,7 @@ var LibraryOpenCL = {
       console.info("Kernel '"+name+"', has "+CL.kernels_sig[name]+" parameters !!!!");
 #endif
 
-      // Return the pos of the queue +1
-      return CL.kernels.length;
+      return CL.getNewId(CL.kernels.length-1);
     } catch (e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateKernel",e)', 'i32') }}};
       return 0; // Null pointer    
@@ -1037,7 +1040,7 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
 
-    var ctx = context - 1;
+    var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clCreateImage2D: Invalid context : "+ctx);
@@ -1059,7 +1062,7 @@ var LibraryOpenCL = {
 
       {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
 
-      return CL.buffers.length;
+      return CL.getNewId(CL.buffers.length-1);
     } catch(e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateImage2D",e)', 'i32') }}};
       return 0;
@@ -1072,7 +1075,7 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
 
-    var ctx = context - 1;
+    var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clCreateBuffer: Invalid context : "+ctx);
@@ -1216,7 +1219,7 @@ var LibraryOpenCL = {
 
       {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
 
-      return CL.buffers.length;
+      return CL.getNewId(CL.buffers.length-1);
     } catch(e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateBuffer",e)', 'i32') }}};
       return 0;
@@ -1227,7 +1230,7 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
 
-    var buff = buffer - 1;
+    var buff = CL.getArrayId(buffer);
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clCreateSubBuffer: Invalid buffer : "+buff);
@@ -1274,8 +1277,7 @@ var LibraryOpenCL = {
       
       {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
 
-      return CL.buffers.length;
-      
+      return CL.getNewId(CL.buffers.length-1);
     } catch(e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateSubBuffer",e)', 'i32') }}};
       return 0;
@@ -1283,7 +1285,7 @@ var LibraryOpenCL = {
   },
      
   clEnqueueWriteBuffer: function(command_queue, buffer, blocking_write, offset, size, ptr, num_events_in_wait_list, event_wait_list, event) {
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueWriteBuffer: Invalid command queue : "+queue);
@@ -1292,7 +1294,7 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
 
-    var buff = buffer - 1;
+    var buff = CL.getArrayId(buffer);
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
@@ -1377,7 +1379,7 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(map_flags_2 == 0, 'Invalid flags i64');
     
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueMapBuffer: Invalid command queue : "+queue);
@@ -1386,7 +1388,7 @@ var LibraryOpenCL = {
       return 0;
     }
 
-    var buff = buffer - 1;
+    var buff = CL.getArrayId(buffer);
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueMapBuffer: Invalid buffer mem : "+buff);
@@ -1426,7 +1428,7 @@ var LibraryOpenCL = {
   
   clEnqueueMarker: function(command_queue,event) {
 
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueMarker: Invalid command queue : "+queue);
@@ -1445,7 +1447,7 @@ var LibraryOpenCL = {
     }
   },
   clSetKernelArg: function(kernel, arg_index, arg_size, arg_value) {
-    var ker = kernel - 1;
+    var ker = CL.getArrayId(kernel);
     if (ker >= CL.kernels.length || ker < 0 ) {
 #if OPENCL_DEBUG
       console.error("clSetKernelArg: Invalid kernel : "+ker);
@@ -1485,10 +1487,7 @@ var LibraryOpenCL = {
       }
       
       var value;
-      if (isLocal) {
-#if OPENCL_DEBUG
-        console.info("clSetKernelArg 'local': "+arg_index+" - size : "+arg_size);
-#endif        
+      if (isLocal) {     
         ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
       } else if (arg_size > 4) {
         value = new Array(arg_size/4);
@@ -1521,15 +1520,15 @@ var LibraryOpenCL = {
         } 
         
       } else {     
-         value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
-        
-        if (value-1 >= 0 && value-1 < CL.buffers.length) {
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[value-1]) : CL.kernels[ker].setArg(arg_index,CL.buffers[value-1]);
+        var idx = CL.getArrayId({{{ makeGetValue('arg_value', '0', 'i32') }}});
+        if (idx >= 0 && idx < CL.buffers.length) {
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[idx]) : CL.kernels[ker].setArg(arg_index,CL.buffers[idx]);
         } else {
           if (isFloat) { 
             value = {{{ makeGetValue('arg_value', '0', 'float') }}};
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
           } else {
+            value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
           }            
         }        
@@ -1542,7 +1541,7 @@ var LibraryOpenCL = {
   },
 
   clGetKernelWorkGroupInfo: function(kernel, devices, param_name, param_value_size, param_value, param_value_size_ret) {
-    var ker = kernel - 1;
+    var ker = CL.getArrayId(kernel);
     if (ker >= CL.kernels.length || ker < 0 ) {
 #if OPENCL_DEBUG
       console.error("clGetKernelWorkGroupInfo: Invalid kernel : "+ker);
@@ -1552,7 +1551,7 @@ var LibraryOpenCL = {
     }
 
     // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-    var idx = 0;//{{{ makeGetValue('devices', '0', 'i32') }}} - 1;
+    var idx = CL.getArrayId(devices);
 
     if (idx >= CL.devices.length || idx < 0 ) {
 #if OPENCL_DEBUG
@@ -1596,7 +1595,7 @@ var LibraryOpenCL = {
   },
   
   clEnqueueUnmapMemObject: function(command_queue, buffer, ptr, num_events_in_wait_list, event_wait_list, event) {
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueUnmapMemObject: Invalid command queue : "+queue);
@@ -1605,7 +1604,7 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
     
-    var buff = buffer - 1;
+    var buff = CL.getArrayId(buffer);
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueMapBuffer: Invalid buffer mem : "+buff);
@@ -1625,7 +1624,7 @@ var LibraryOpenCL = {
   },
 
   clEnqueueNDRangeKernel: function(command_queue, kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event) {
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueNDRangeKernel: Invalid command queue : "+queue);
@@ -1634,7 +1633,7 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
 
-    var ker = kernel - 1;
+    var ker = CL.getArrayId(kernel);
     if (ker >= CL.kernels.length || ker < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueNDRangeKernel: Invalid kernel : "+ker);
@@ -1708,7 +1707,7 @@ var LibraryOpenCL = {
   },
 
   clFinish: function(command_queue) {
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clFinish: Invalid command queue : "+queue);
@@ -1727,7 +1726,7 @@ var LibraryOpenCL = {
   },
 
   clEnqueueReadBuffer: function(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
-    var queue = command_queue - 1;
+    var queue = CL.getArrayId(command_queue);
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueReadBuffer: Invalid command queue : "+queue);
@@ -1736,7 +1735,7 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
 
-    var buff = buffer - 1;
+    var buff = CL.getArrayId(buffer);
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clEnqueueReadBuffer: Invalid buffer : "+buff);
@@ -1785,8 +1784,6 @@ var LibraryOpenCL = {
         console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
 #endif
       }
-       
-      console.info("clEnqueueReadBuffer - Pos : "+buff);
         
       CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
 
@@ -1808,8 +1805,9 @@ var LibraryOpenCL = {
     }
   },
 
-  clReleaseMemObject: function(memobj) {            
-    var buff = memobj - 1 - CL.buffers_clean;
+  clReleaseMemObject: function(memobj) { 
+    var buff = CL.getArrayId(memobj);  
+    
     if (buff >= CL.buffers.length || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
@@ -1818,14 +1816,14 @@ var LibraryOpenCL = {
       return -38; /* CL_INVALID_MEM_OBJECT */
     }
 
-    CL.buffers.splice(buff, 1);
-
-    if (CL.buffers.length == 0) {
-      CL.buffers_clean = 0;
-    } else {
-      CL.buffers_clean++;
-    }
-
+    // CL.buffers.splice(buff, 1);
+    // 
+    // if (CL.buffers.length == 0) {
+    //   CL.buffers_clean = 0;
+    // } else {
+    //   CL.buffers_clean++;
+    // }
+    
 #if OPENCL_DEBUG
     console.info("clReleaseMemObject: Release Memory Object : "+buff);
 #endif
@@ -1834,7 +1832,7 @@ var LibraryOpenCL = {
   },
 
   clReleaseProgram: function(program) {
-    var prog = program - 1 - CL.programs_clean;
+    var prog = CL.getArrayId(program);  
     if (prog >= CL.programs.length || prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseProgram: Invalid program : "+prog);
@@ -1842,12 +1840,13 @@ var LibraryOpenCL = {
       return -44; /* CL_INVALID_PROGRAM */
     }           
 
-    CL.programs.splice(prog, 1);
-    if (CL.programs.length == 0) {
-      CL.programs_clean = 0;
-    } else {
-      CL.programs_clean++;
-    }
+    // CL.programs.splice(prog, 1);
+    // if (CL.programs.length == 0) {
+    //   CL.programs_clean = 0;
+    // } else {
+    //   CL.programs_clean++;
+    // }
+    
 #if OPENCL_DEBUG
     console.info("clReleaseProgram: Release program : "+prog);
 #endif
@@ -1856,7 +1855,7 @@ var LibraryOpenCL = {
   },
 
   clReleaseKernel: function(kernel) {
-    var ker = kernel - 1 - CL.kernels_clean;
+    var ker = CL.getArrayId(kernel);  
     if (ker >= CL.kernels.length || ker < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseKernel: Invalid kernel : "+ker);
@@ -1865,12 +1864,13 @@ var LibraryOpenCL = {
       return -48; /* CL_INVALID_KERNEL */
     }
 
-    CL.kernels.splice(ker, 1);
-    if (CL.kernels.length == 0) {
-      CL.kernels_clean = 0;
-    } else {
-      CL.kernels_clean++;
-    }    
+    // CL.kernels.splice(ker, 1);
+    // if (CL.kernels.length == 0) {
+    //   CL.kernels_clean = 0;
+    // } else {
+    //   CL.kernels_clean++;
+    // }    
+    
 #if OPENCL_DEBUG
     console.info("clReleaseKernel: Release kernel : "+ker);
 #endif
@@ -1879,7 +1879,7 @@ var LibraryOpenCL = {
   },
 
   clReleaseCommandQueue: function(command_queue) {
-    var queue = command_queue - 1 - CL.cmdQueue_clean;
+    var queue = CL.getArrayId(command_queue);  
     if (queue >= CL.cmdQueue.length || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseCommandQueue: Invalid command queue : "+queue);
@@ -1888,12 +1888,13 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
 
-    CL.cmdQueue.splice(queue, 1);
-    if (CL.cmdQueue.length == 0) {
-      CL.cmdQueue_clean = 0;
-    } else {
-      CL.cmdQueue_clean++;
-    }
+    // CL.cmdQueue.splice(queue, 1);
+    // if (CL.cmdQueue.length == 0) {
+    //   CL.cmdQueue_clean = 0;
+    // } else {
+    //   CL.cmdQueue_clean++;
+    // }
+    
 #if OPENCL_DEBUG
     console.info("clReleaseCommandQueue: Release command queue : "+queue);
 #endif
@@ -1902,7 +1903,8 @@ var LibraryOpenCL = {
   },
 
   clReleaseContext: function(context) {
-    var ctx = context - 1 - CL.ctx_clean;
+    var ctx = CL.getArrayId(context);  
+    
     if (ctx >= CL.ctx.length || ctx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseContext: Invalid context : "+ctx);
@@ -1911,12 +1913,13 @@ var LibraryOpenCL = {
       return -34; /* CL_INVALID_CONTEXT */
     }        
 
-    CL.ctx.splice(ctx, 1);
-    if (CL.ctx.length == 0) {
-      CL.ctx_clean = 0;
-    } else {
-      CL.ctx_clean++;
-    }
+    // CL.ctx.splice(ctx, 1);
+    // if (CL.ctx.length == 0) {
+    //   CL.ctx_clean = 0;
+    // } else {
+    //   CL.ctx_clean++;
+    // }
+    
 #if OPENCL_DEBUG
     console.info("clReleaseContext: Release context : "+ctx);
 #endif

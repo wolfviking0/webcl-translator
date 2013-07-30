@@ -146,7 +146,7 @@ int main(int argc, char** argv)
         printf("Error: Failed to create a device group!\n");
         return EXIT_FAILURE;
     }
-  
+
     // Create a compute context 
     //
     printf("Call : clCreateContext ...\n");    
