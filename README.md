@@ -1,6 +1,9 @@
 webcl-emscripten
 ================
 
+Requires Python2.7, ie sudo ln -s /usr/bin/python2.7 /usr/bin/python2
+
+
 WebCL inside Emscripten (https://github.com/kripken/emscripten)
 
 Experimental version of emscripten for convert OpenCL c++ code to WebCL.
