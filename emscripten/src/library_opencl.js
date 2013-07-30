@@ -1621,7 +1621,6 @@ var LibraryOpenCL = {
       return CL.catchError("clEnqueueMarker",e);
     }
   },
-
   clSetKernelArg: function(kernel, arg_index, arg_size, arg_value) {
     var ker = kernel - 1;
     if (ker >= CL.kernels.length || ker < 0 ) {
@@ -1705,8 +1704,8 @@ var LibraryOpenCL = {
           value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
         }
         
-        if (arg_index >= 0 && arg_index < CL.buffers.length) {
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[arg_index]) : CL.kernels[ker].setArg(arg_index,CL.buffers[arg_index]);
+        if (value-1 >= 0 && value-1 < CL.buffers.length) {
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[value-1]) : CL.kernels[ker].setArg(arg_index,CL.buffers[value-1]);
         } else {
           if (isFloat) { 
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
