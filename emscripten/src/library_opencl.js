@@ -1507,16 +1507,13 @@ var LibraryOpenCL = {
         } 
         
       } else {     
-        if (isFloat) {
-          value = {{{ makeGetValue('arg_value', '0', 'float') }}};
-        } else {
-          value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
-        }
+         value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
         
         if (value-1 >= 0 && value-1 < CL.buffers.length) {
           ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[value-1]) : CL.kernels[ker].setArg(arg_index,CL.buffers[value-1]);
         } else {
           if (isFloat) { 
+            value = {{{ makeGetValue('arg_value', '0', 'float') }}};
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
           } else {
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
