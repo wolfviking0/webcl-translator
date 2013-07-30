@@ -483,6 +483,8 @@ int main(int argc, char **argv)
         printf("Error: Failed to create a compute context!\n");
         return EXIT_FAILURE;
     }
+    
+    printf("clCreateContext : Context %d\n",(int)context);
 
     // Create a command queue
     //
@@ -493,6 +495,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    printf("clCreateCommandQueue : Commands %d\n",(int)commands);
+    
     // Create the input buffer on the device
     //
     size_t buffer_size = typesize * count * channels;
@@ -503,6 +507,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    printf("clCreateBuffer : Input Buffer %d\n",(int)input_buffer);
+    
     // Fill the input buffer with the host allocated random data
     //
     void *input_data = (integer) ? (void*)integer_data : (void*)float_data;
@@ -521,6 +527,8 @@ int main(int argc, char **argv)
         printf("Error: Failed to allocate partial sum buffer on device!\n");
         return EXIT_FAILURE;
     }
+    
+    printf("clCreateBuffer : Partial Buffer %d\n",(int)partials_buffer);
 
     // Create the output buffer on the device
     //
@@ -531,6 +539,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    printf("clCreateBuffer : Output Buffer %d\n",(int)output_buffer);
+    
     // Determine the reduction pass configuration for each level in the pyramid
     //
     create_reduction_pass_counts(
@@ -547,6 +557,10 @@ int main(int argc, char **argv)
 
     cl_kernel *kernels = (cl_kernel*)malloc(pass_count * sizeof(cl_kernel));
     memset(kernels, 0, pass_count * sizeof(cl_kernel));
+
+    printf("malloc programs : %d\n",(int)pass_count * sizeof(cl_program));
+    printf("malloc kernels : %d\n",(int)pass_count * sizeof(cl_kernel));
+    printf("pass count : %d\n",(int)pass_count);	
 
     for(i = 0; i < pass_count; i++)
     {
@@ -573,6 +587,8 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
     
+        printf("clCreateProgramWithSource : programs[%d] %d\n",i,(int)programs[i]);
+        
         // Build the program executable
         //
         err = clBuildProgram(programs[i], 0, NULL, NULL, NULL, NULL);
@@ -595,6 +611,8 @@ int main(int argc, char **argv)
             printf("Error: Failed to create compute kernel!\n");
             return EXIT_FAILURE;
         }
+        
+        printf("clCreateKernel : kernels[%d] %d\n",i,(int)kernels[i]);
 
         free(block_source);
     }
@@ -604,9 +622,13 @@ int main(int argc, char **argv)
     cl_mem pass_swap;
     cl_mem pass_input = output_buffer;
     cl_mem pass_output = input_buffer;
+    
+    printf("cl_mem pass_swap : %d / cl_mem pass_input : %d / cl_mem pass_output : %d\n",(int)pass_swap,(int)pass_input,(int)pass_output);
 
     for(i = 0; i < pass_count; i++)
     {
+	    printf("\n");
+        printf(SEPARATOR);
         size_t global = group_counts[i] * work_item_counts[i];        
         size_t local = work_item_counts[i];
         unsigned int operations = operation_counts[i];
@@ -622,14 +644,16 @@ int main(int argc, char **argv)
         pass_input = pass_output;
         pass_output = pass_swap;
         
+        printf("pass %d : cl_mem pass_swap : %d / cl_mem pass_input : %d / cl_mem pass_output : %d\n",i,(int)pass_swap,(int)pass_input,(int)pass_output);
+            
         err = CL_SUCCESS;
-        //printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  0, sizeof(cl_mem), &pass_output,pass_output);
+        printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  0, sizeof(cl_mem), &pass_output,pass_output);
         err |= clSetKernelArg(kernels[i],  0, sizeof(cl_mem), &pass_output);  
-        //printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  1, sizeof(cl_mem), &pass_input,pass_input);
+        printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  1, sizeof(cl_mem), &pass_input,pass_input);
         err |= clSetKernelArg(kernels[i],  1, sizeof(cl_mem), &pass_input);
-        //printf("Set Kernel : %d, %d, %d, %d\n",kernels[i],  2, shared_size,    NULL);
+        printf("Set Kernel : %d, %d, %d, %d\n",kernels[i],  2, shared_size,    NULL);
         err |= clSetKernelArg(kernels[i],  2, shared_size,    NULL);
-        //printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  3, sizeof(int),    &entries ,entries);
+        printf("Set Kernel : %d, %d, %d, %d - %d\n",kernels[i],  3, sizeof(int),    &entries ,entries);
         err |= clSetKernelArg(kernels[i],  3, sizeof(int),    &entries);
         if (err != CL_SUCCESS)
         {
@@ -642,6 +666,10 @@ int main(int argc, char **argv)
         if(pass_input == input_buffer)
             pass_input = partials_buffer;
             
+        printf("use the partial %d : cl_mem pass_swap : %d / cl_mem pass_input : %d / cl_mem pass_output : %d\n",i,(int)pass_swap,(int)pass_input,(int)pass_output);
+            
+        printf("clEnqueueNDRangeKernel %d : commands = %d / kernels[%d] = %d / global = %d / local = %d\n",i,(int)commands,i,(int)kernels[i],global,local);
+
         err = CL_SUCCESS;
         err |= clEnqueueNDRangeKernel(commands, kernels[i], 1, NULL, &global, &local, 0, NULL, NULL);
         if (err != CL_SUCCESS)
@@ -649,7 +677,10 @@ int main(int argc, char **argv)
             printf("Error: Failed to execute kernel!\n");
             return EXIT_FAILURE;
         }
+
+        printf(SEPARATOR);
     }
+    printf("\n");
     
     err = clFinish(commands);
     if (err != CL_SUCCESS)

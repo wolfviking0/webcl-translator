@@ -2263,7 +2263,50 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",isFloat:function (ptr,size) {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
+        // If we already check is not useful to do this again
+        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
+          return 0;
+        }
+        // Look is the browser is comaptible
+        var isWebkit = 'webkitRequestAnimationFrame' in window;
+        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        if (!isWebkit && !isFirefox) {
+          console.error("This current browser is not compatible with WebCL implementation !!! \n");
+          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+          return -1;
+        }
+        // Look is the browser have WebCL implementation
+        if (window.WebCL == undefined || isWebkit) {
+          if (typeof(webcl) === "undefined") {
+            console.error("This browser has not WebCL implementation !!! \n");
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+            return -1;
+          } else {
+            window.WebCL = webcl
+          }
+        }
+        // Init Device info
+        CL.device_infos = {
+          0x1000:[WebCL.CL_DEVICE_TYPE,WebCL.DEVICE_TYPE],
+          0x1001:[WebCL.CL_DEVICE_VENDOR_ID,WebCL.DEVICE_VENDOR_ID],
+          0x1002:[WebCL.CL_DEVICE_MAX_COMPUTE_UNITS,WebCL.DEVICE_MAX_COMPUTE_UNITS],
+          0x1003:[WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,WebCL.DEVICE_MAX_WORK_ITEM_DIMENSIONS],      
+          0x1004:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_MAX_WORK_GROUP_SIZE],
+          0x1016:[WebCL.CL_DEVICE_IMAGE_SUPPORT,WebCL.DEVICE_IMAGE_SUPPORT],
+          0x1030:[WebCL.CL_DEVICE_EXTENSIONS,WebCL.DEVICE_EXTENSIONS],
+          0x102B:[WebCL.CL_DEVICE_NAME,WebCL.DEVICE_NAME],
+          0x102C:[WebCL.CL_DEVICE_VENDOR,WebCL.DEVICE_VENDOR],
+          0x102D:[WebCL.CL_DRIVER_VERSION,WebCL.DRIVER_VERSION],
+          0x102E:[WebCL.CL_DEVICE_PROFILE,WebCL.DEVICE_PROFILE],
+          0x102F:[WebCL.CL_DEVICE_VERSION,WebCL.DEVICE_VERSION]            
+        };
+        CL.webcl_webkit = isWebkit == true ? 1 : 0;
+        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
+        var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+        console.info("Webcl implemented for "+browser);
+        return 0;
+      },isFloat:function (ptr,size) {
         console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
         console.error("But may be the kernel source is not yet parse !!! \n");
         var v_int = HEAP32[((ptr)>>2)]; 
@@ -2382,21 +2425,10 @@ function copyTempDouble(ptr) {
         console.error("CATCH: "+name+": "+e);
         return error;
       }};function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-      if (CL.webcl_webkit == 0 && CL.webcl_mozilla == 0) {
-        if (window.WebCL == undefined) {
-          if(typeof(webcl) === "undefined") {
-            console.error(CL.errorMessage);
-            return -1;/*CL_DEVICE_NOT_FOUND*/;
-          } else {
-            window.WebCL = webcl
-            CL.webcl_webkit = 1;
-          }
-        } else {
-          CL.webcl_mozilla = 1;
-        }
+      if (CL.checkWebCL() < 0) {
+        console.error(CL.errorMessage);
+        return -1;/*WEBCL_NOT_FOUND*/;
       }
-      var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-      console.info("Webcl implemented for "+browser);
       // Assume the device type is i32 
       assert(device_type_i64_2 == 0, 'Invalid flags i64');
       try { 
@@ -2538,256 +2570,46 @@ function copyTempDouble(ptr) {
         console.error("clGetDeviceInfo: Invalid device : "+idx);
         return -33; /* CL_INVALID_DEVICE */  
       }    
-      try {
-        var res;
-        var size;
-        switch (param_name) {
-          case (0x100D) /* CL_DEVICE_ADDRESS_BITS */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_ADDRESS_BITS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x1028) /* CL_DEVICE_COMPILER_AVAILABLE */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_COMPILER_AVAILABLE); // return cl_bool
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x1027) /* CL_DEVICE_AVAILABLE */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_AVAILABLE); // return cl_bool
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x1026) /* CL_DEVICE_ENDIAN_LITTLE */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_ENDIAN_LITTLE); // return cl_bool
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x1024) /* CL_DEVICE_ERROR_CORRECTION_SUPPORT */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_ERROR_CORRECTION_SUPPORT); // return cl_bool
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1030) /* CL_DEVICE_EXTENSIONS */:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_EXTENSIONS) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_EXTENSIONS)*/; // return string
-            writeStringToMemory(res, param_value);
-            size = res.length;
-            break;
-          case (0x101E) /* CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1016) /* CL_DEVICE_IMAGE_SUPPORT*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE_SUPPORT) : CL.devices[idx].getInfo(WebCL.DEVICE_IMAGE_SUPPORT); // return true or false
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break; 
-          case (0x1011) /* CL_DEVICE_IMAGE2D_MAX_WIDTH*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE2D_MAX_WIDTH); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1012) /* CL_DEVICE_IMAGE2D_MAX_HEIGHT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE2D_MAX_HEIGHT); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1013) /* CL_DEVICE_IMAGE3D_MAX_WIDTH*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE3D_MAX_WIDTH); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1014) /* CL_DEVICE_IMAGE3D_MAX_HEIGHT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE3D_MAX_HEIGHT); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;    
-          case (0x1015) /* CL_DEVICE_IMAGE3D_MAX_DEPTH*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_IMAGE3D_MAX_DEPTH); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;         
-          case (0x100C) /* CL_DEVICE_MAX_CLOCK_FREQUENCY */:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY) : 1 /*Not Visible*/ ; // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x1002) /* CL_DEVICE_MAX_COMPUTE_UNITS */:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_COMPUTE_UNITS) : 1 /*Not Visible*/ ; // return cl_uint          
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;   
-          case (0x1021) /* CL_DEVICE_MAX_CONSTANT_ARGS */:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_CONSTANT_ARGS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1017) /* CL_DEVICE_MAX_PARAMETER_SIZE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_PARAMETER_SIZE); // return size_t
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break; 
-          case (0x100E) /* CL_DEVICE_MAX_READ_IMAGE_ARGS*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_READ_IMAGE_ARGS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break; 
-          case (0x1018) /* CL_DEVICE_MAX_SAMPLERS*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_SAMPLERS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1004) /* CL_DEVICE_MAX_WORK_GROUP_SIZE*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE) : CL.devices[idx].getInfo(WebCL.DEVICE_MAX_WORK_GROUP_SIZE) ; // return cl_device i64
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break; 
-          case (0x1003) /* CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;    
-          case (0x100F) /* CL_DEVICE_MAX_WRITE_IMAGE_ARGS*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_WRITE_IMAGE_ARGS); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;    
-          case (0x1019) /* CL_DEVICE_MEM_BASE_ADDR_ALIGN*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MEM_BASE_ADDR_ALIGN); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;                  
-          case (0x101A) /* CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;              
-          case (0x102B) /* CL_DEVICE_NAME */:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NAME) : "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_NAME)*/; // return string
-            size = res.length;
-            writeStringToMemory(res, param_value);
-            break;
-          case (0x1031) /* CL_DEVICE_PLATFORM*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PLATFORM); // return cl_platform_id 
-            // \todo how return the good platform inside the tab ?????
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1006) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1007) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1008) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x1009) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x100A) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;     
-          case (0x100B) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break; 
-  //          case (0x1034) /* CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;         
-  //         case (0x1036) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;     
-  //         case (0x1037) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;     
-  //         case (0x1038) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_INT*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_INT); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;     
-  //         case (0x1039) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;     
-  //         case (0x103A) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;     
-  //         case (0x103B) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;    
-  //         case (0x103C) /* CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF*/:
-  //           res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF); // return cl_uint
-  //           HEAP32[((param_value)>>2)]=res;
-  //           size = 1;
-  //           break;             
-          case (0x1001) /* CL_DEVICE_VENDOR_ID*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR_ID); // return cl_uint
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;make
-            break;       
-          case (0x102C) /* CL_DEVICE_VENDOR*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VENDOR) :  "Not Visible" /*CL.devices[idx].getInfo(WebCL.DEVICE_VENDOR)*/; // return string
-            writeStringToMemory(res, param_value);
-            size = res.length;
-            break;
-          case (0x1000) /* CL_DEVICE_TYPE*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : CL.devices[idx].getInfo(WebCL.DEVICE_TYPE) ; // return cl_device i64
-            // \todo return the type with i32 is wrong ????? seems ok with result but not really sure !!!!
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          case (0x102D) /* CL_DRIVER_VERSION*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DRIVER_VERSION); // return string
-            writeStringToMemory(res, param_value);
-            size = res.length;
-            break;   
-          case (0x102F) /* CL_DEVICE_VERSION*/:
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_VERSION) : CL.devices[idx].getInfo(WebCL.DEVICE_VERSION) ; 
-            writeStringToMemory(res, param_value);
-            size = res.length;
-            break;   
-          case (0x102E) /* CL_DEVICE_PROFILE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_PROFILE); // return string
-            writeStringToMemory(res, param_value);
-            size = res.length;
-            break;  
-          case (0x1010) /* CL_DEVICE_MAX_MEM_ALLOC_SIZE*/:
-            res = CL.devices[idx].getDeviceInfo(WebCL.CL_DEVICE_MAX_MEM_ALLOC_SIZE); // return cl_ulong
-            HEAP32[((param_value)>>2)]=res;
-            size = 1;
-            break;
-          default:
-            console.error("clGetDeviceInfo : Param not yet implemented or unknow : "+param_name);
-            return -30; /* CL_INVALID_VALUE */ 
-        };
-        HEAP32[((param_value_size_ret)>>2)]=size;
-        return 0;/*CL_SUCCESS*/
-      } catch (e) {
-        return CL.catchError("clGetDeviceInfo",e);
-      }    
+      var res;
+      var size = 0;
+      var info = CL.device_infos[param_name];
+      if (info != undefined) {
+        // Return string
+        if (
+          (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS */
+          (param_name == 0x102B) || /* CL_DEVICE_NAME       */
+          (param_name == 0x102C) || /* CL_DEVICE_VENDOR     */
+          (param_name == 0x102D) || /* CL_DRIVER_VERSION    */
+          (param_name == 0x102F) || /* CL_DEVICE_VERSION    */
+          (param_name == 0x102E)    /* CL_DEVICE_PROFILE    */
+        ) {
+          try {
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+          } catch (e) {
+            CL.catchError("clGetContextInfo",e);
+            res = "Not Visible";
+          }    
+          writeStringToMemory(res, param_value);
+          size = res.length;
+        } 
+        // Return int
+        else {
+          try {
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+          } catch (e) {
+            CL.catchError("clGetContextInfo",e);
+            res = O;
+          }   
+          HEAP32[((param_value)>>2)]=res;
+          size = 1;
+        }
+      } else {
+        console.error("clGetContextInfo: Unknow param info : "+param_name);
+        HEAP32[((param_value)>>2)]=res;
+        size = 1;
+      }
+      HEAP32[((param_value_size_ret)>>2)]=size;
+      return 0;/*CL_SUCCESS*/  
     }
   function _clGetContextInfo(context, param_name, param_value_size, param_value, param_value_size_ret) {
       var ctx = context - 1;
@@ -2903,16 +2725,16 @@ function copyTempDouble(ptr) {
         if (num_devices == 0 || device_list == 0) {
           devices_tab[0] = CL.devices[0];
         } else {
-          // \todo will be better to use the devices list in parameter ...
           for (var i = 0; i < num_devices; i++) {
-            devices_tab[i] = CL.devices[i];
+            var idx = HEAP32[(((device_list)+(i*4))>>2)] - 1;
+            devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = "";
+        var opt = "";//Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 
-          CL.programs[prog].build(devices_tab);
+          CL.programs[prog].build(devices_tab, opt);
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
@@ -2924,9 +2746,10 @@ function copyTempDouble(ptr) {
       if (prog >= CL.programs.length || prog < 0 ) {
         console.error("clGetProgramBuildInfo: Invalid program : "+prog);
         return -44; /* CL_INVALID_PROGRAM */
-      }           
+      }          
       // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-      var idx = HEAP32[((device)>>2)] - 1;
+      // var idx = HEAP32[((device)>>2)] - 1;
+      var idx = device - 1;
       if (idx >= CL.devices.length || idx < 0 ) {
         console.error("clGetProgramBuildInfo: Invalid device : "+idx);
         return -33; /* CL_INVALID_DEVICE */  
@@ -3040,22 +2863,22 @@ function copyTempDouble(ptr) {
               }
             }
             if (CL.webcl_webkit == -1) {
-              vector = new ArrayBuffer(size / 4);
+              vector = new ArrayBuffer(size / ArrayBuffer.BYTES_PER_ELEMENT);
             } else {
               if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
                 isFloat = CL.isFloat(host_ptr,size); 
                 if (isFloat) {
-                  vector = new Float32Array(size / 4);
+                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
                 } else {
-                  vector = new Int32Array(size / 4);
+                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
                 }
               } else {        
                 if (isFloat) {
-                  vector = new Float32Array(size / 4);
+                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
                 } else if (isUint) {
-                  vector = new Uint32Array(size / 4);
+                  vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
                 } else if (isInt) {
-                  vector = new Int32Array(size / 4);
+                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
                 } else {
                   console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
                 }
@@ -3144,21 +2967,21 @@ function copyTempDouble(ptr) {
       if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
         isFloat = CL.isFloat(ptr,size); 
         if (isFloat) {
-          vector = new Float32Array(size / 4);
+          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
         } else {
-          vector = new Int32Array(size / 4);
+          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
         }
       } else {        
         if (isFloat) {
-          vector = new Float32Array(size / 4);
+          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
         } else if (isUint) {
-          vector = new Uint32Array(size / 4);
+          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
         } else if (isInt) {
-          vector = new Int32Array(size / 4);
+          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
         } else {
           console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+sig[buff]);
@@ -3383,13 +3206,13 @@ function copyTempDouble(ptr) {
           }
         }
         if (isFloat) {
-          vector = new Float32Array(size / 4);
+          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
         } else if (isUint) {
-          vector = new Uint32Array(size / 4);
+          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
         } else if (isInt) {
-          vector = new Int32Array(size / 4);
+          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
           console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
         } else {
           console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);

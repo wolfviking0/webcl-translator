@@ -548,7 +548,7 @@ static void SetUpOpenCL() {
 	status = clBuildProgram(program, 1, devices, "-I. ", NULL, NULL);
 #endif
 	if (status != CL_SUCCESS) {
-		printf("Failed to build OpenCL kernel: %d\n", status);
+		printf("Failed to build OpenCL kernel: %d - %d\n", status,(int)devices[0]);
 
         size_t retValSize;
 		status = clGetProgramBuildInfo(

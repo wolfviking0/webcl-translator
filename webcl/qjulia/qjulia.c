@@ -1193,15 +1193,10 @@ int main(int argc, char** argv)
         glutKeyboardFunc(Keyboard);
 
         atexit(Shutdown);
-      
-      	
-      	Display();
-        Display();
-      	Display();
       	
         printf("Starting event loop...\n");
 
-        //glutMainLoop();     
+        glutMainLoop();     
     }
 
     return 0;
