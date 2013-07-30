@@ -124,7 +124,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'smallpt_scenes.data';
     var REMOTE_PACKAGE_NAME = 'smallpt_scenes.data';
-    var PACKAGE_UUID = '3dfb8571-2d97-4b14-9180-c465661e5ea8';
+    var PACKAGE_UUID = '14632a38-74a4-4884-a718-52d8e119cfca';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

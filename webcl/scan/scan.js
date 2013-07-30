@@ -1356,7 +1356,7 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
         // If we already check is not useful to do this again
         if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
           return 0;
@@ -1645,17 +1645,21 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseMemObject(memobj) { 
       var buff = CL.getArrayId(memobj);  
-      if (buff >= CL.buffers.length || buff < 0 ) {
+      if (buff >= (CL.buffers.length + CL.buffers_clean.length) || buff < 0 ) {
         console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
-      // CL.buffers.splice(buff, 1);
-      // 
-      // if (CL.buffers.length == 0) {
-      //   CL.buffers_clean = 0;
-      // } else {
-      //   CL.buffers_clean++;
-      // }
+      var offset = 0;
+      for (var i = 0; i < CL.buffers_clean.length; i++) {
+        if (CL.buffers_clean[i] < buff) {
+          offset++;
+        }
+      }
+      CL.buffers.splice(buff - offset, 1);
+      CL.buffers_clean.push(buff);
+      if (CL.buffers.length == 0) {
+        CL.buffers_clean = [];
+      }
       console.info("clReleaseMemObject: Release Memory Object : "+buff);
       return 0;/*CL_SUCCESS*/
     }
@@ -3265,61 +3269,81 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseKernel(kernel) {
       var ker = CL.getArrayId(kernel);  
-      if (ker >= CL.kernels.length || ker < 0 ) {
+      if (ker >= (CL.kernels.length +  CL.kernels_clean.length) || ker < 0 ) {
         console.error("clReleaseKernel: Invalid kernel : "+ker);
         return -48; /* CL_INVALID_KERNEL */
       }
-      // CL.kernels.splice(ker, 1);
-      // if (CL.kernels.length == 0) {
-      //   CL.kernels_clean = 0;
-      // } else {
-      //   CL.kernels_clean++;
-      // }    
+      var offset = 0;
+      for (var i = 0; i < CL.kernels_clean.length; i++) {
+        if (CL.kernels_clean[i] < ker) {
+          offset++;
+        }
+      }
+      CL.kernels.splice(ker - offset, 1);
+      CL.kernels_clean.push(ker);
+      if (CL.kernels.length == 0) {
+        CL.kernels_clean = [];
+      }
       console.info("clReleaseKernel: Release kernel : "+ker);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseProgram(program) {
       var prog = CL.getArrayId(program);  
-      if (prog >= CL.programs.length || prog < 0 ) {
+      if (prog >= (CL.programs.length + CL.programs_clean.length)|| prog < 0 ) {
         console.error("clReleaseProgram: Invalid program : "+prog);
         return -44; /* CL_INVALID_PROGRAM */
       }           
-      // CL.programs.splice(prog, 1);
-      // if (CL.programs.length == 0) {
-      //   CL.programs_clean = 0;
-      // } else {
-      //   CL.programs_clean++;
-      // }
+      var offset = 0;
+      for (var i = 0; i < CL.programs_clean.length; i++) {
+        if (CL.programs_clean[i] < prog) {
+          offset++;
+        }
+      }
+      CL.programs.splice(prog - offset, 1);
+      CL.programs_clean.push(prog);
+      if (CL.programs.length == 0) {
+        CL.programs_clean = [];
+      }
       console.info("clReleaseProgram: Release program : "+prog);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseCommandQueue(command_queue) {
       var queue = CL.getArrayId(command_queue);  
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
+      if (queue >= (CL.cmdQueue.length + CL.cmdQueue_clean.length) || queue < 0 ) {
         console.error("clReleaseCommandQueue: Invalid command queue : "+queue);
         return -36; /* CL_INVALID_COMMAND_QUEUE */
       }
-      // CL.cmdQueue.splice(queue, 1);
-      // if (CL.cmdQueue.length == 0) {
-      //   CL.cmdQueue_clean = 0;
-      // } else {
-      //   CL.cmdQueue_clean++;
-      // }
+      var offset = 0;
+      for (var i = 0; i < CL.cmdQueue_clean.length; i++) {
+        if (CL.cmdQueue_clean[i] < queue) {
+          offset++;
+        }
+      }
+      CL.cmdQueue.splice(queue - offset, 1);
+      CL.cmdQueue_clean.push(queue);
+      if (CL.cmdQueue.length == 0) {
+        CL.cmdQueue_clean = [];
+      }
       console.info("clReleaseCommandQueue: Release command queue : "+queue);
       return 0;/*CL_SUCCESS*/
     }
   function _clReleaseContext(context) {
       var ctx = CL.getArrayId(context);  
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
+      if (ctx >= (CL.ctx.length + CL.ctx_clean.length) || ctx < 0 ) {
         console.error("clReleaseContext: Invalid context : "+ctx);
         return -34; /* CL_INVALID_CONTEXT */
       }        
-      // CL.ctx.splice(ctx, 1);
-      // if (CL.ctx.length == 0) {
-      //   CL.ctx_clean = 0;
-      // } else {
-      //   CL.ctx_clean++;
-      // }
+      var offset = 0;
+      for (var i = 0; i < CL.ctx_clean.length; i++) {
+        if (CL.ctx_clean[i] < ctx) {
+          offset++;
+        }
+      }
+      CL.ctx.splice(ctx - offset, 1);
+      CL.ctx_clean.push(ctx);
+      if (CL.ctx.length == 0) {
+        CL.ctx_clean = [];
+      }
       console.info("clReleaseContext: Release context : "+ctx);
       return 0;/*CL_SUCCESS*/
     }

@@ -10,17 +10,17 @@ var LibraryOpenCL = {
     ctx: [],
     webcl_mozilla: 0,
     webcl_webkit: 0,
-    ctx_clean: 0,
+    ctx_clean: [],
     cmdQueue: [],
-    cmdQueue_clean: 0,
+    cmdQueue_clean: [],
     programs: [],
-    programs_clean: 0,
+    programs_clean: [],
     kernels: [],
     kernels_name: [],
     kernels_sig: {},
-    kernels_clean: 0,
+    kernels_clean: [],
     buffers: [],
-    buffers_clean: 0,
+    buffers_clean: [],
     platforms: [],
     devices: [],
 #if OPENCL_STACK_TRACE    
@@ -1808,21 +1808,27 @@ var LibraryOpenCL = {
   clReleaseMemObject: function(memobj) { 
     var buff = CL.getArrayId(memobj);  
     
-    if (buff >= CL.buffers.length || buff < 0 ) {
+    if (buff >= (CL.buffers.length + CL.buffers_clean.length) || buff < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
 #endif
 
       return -38; /* CL_INVALID_MEM_OBJECT */
     }
-
-    // CL.buffers.splice(buff, 1);
-    // 
-    // if (CL.buffers.length == 0) {
-    //   CL.buffers_clean = 0;
-    // } else {
-    //   CL.buffers_clean++;
-    // }
+    
+    var offset = 0;
+    for (var i = 0; i < CL.buffers_clean.length; i++) {
+      if (CL.buffers_clean[i] < buff) {
+        offset++;
+      }
+    }
+    
+    CL.buffers.splice(buff - offset, 1);
+    CL.buffers_clean.push(buff);
+        
+    if (CL.buffers.length == 0) {
+      CL.buffers_clean = [];
+    }
     
 #if OPENCL_DEBUG
     console.info("clReleaseMemObject: Release Memory Object : "+buff);
@@ -1833,19 +1839,26 @@ var LibraryOpenCL = {
 
   clReleaseProgram: function(program) {
     var prog = CL.getArrayId(program);  
-    if (prog >= CL.programs.length || prog < 0 ) {
+    if (prog >= (CL.programs.length + CL.programs_clean.length)|| prog < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseProgram: Invalid program : "+prog);
 #endif
       return -44; /* CL_INVALID_PROGRAM */
     }           
 
-    // CL.programs.splice(prog, 1);
-    // if (CL.programs.length == 0) {
-    //   CL.programs_clean = 0;
-    // } else {
-    //   CL.programs_clean++;
-    // }
+    var offset = 0;
+    for (var i = 0; i < CL.programs_clean.length; i++) {
+      if (CL.programs_clean[i] < prog) {
+        offset++;
+      }
+    }
+    
+    CL.programs.splice(prog - offset, 1);
+    CL.programs_clean.push(prog);
+        
+    if (CL.programs.length == 0) {
+      CL.programs_clean = [];
+    }
     
 #if OPENCL_DEBUG
     console.info("clReleaseProgram: Release program : "+prog);
@@ -1856,20 +1869,27 @@ var LibraryOpenCL = {
 
   clReleaseKernel: function(kernel) {
     var ker = CL.getArrayId(kernel);  
-    if (ker >= CL.kernels.length || ker < 0 ) {
+    if (ker >= (CL.kernels.length +  CL.kernels_clean.length) || ker < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseKernel: Invalid kernel : "+ker);
 #endif
 
       return -48; /* CL_INVALID_KERNEL */
     }
-
-    // CL.kernels.splice(ker, 1);
-    // if (CL.kernels.length == 0) {
-    //   CL.kernels_clean = 0;
-    // } else {
-    //   CL.kernels_clean++;
-    // }    
+    
+    var offset = 0;
+    for (var i = 0; i < CL.kernels_clean.length; i++) {
+      if (CL.kernels_clean[i] < ker) {
+        offset++;
+      }
+    }
+    
+    CL.kernels.splice(ker - offset, 1);
+    CL.kernels_clean.push(ker);
+        
+    if (CL.kernels.length == 0) {
+      CL.kernels_clean = [];
+    }
     
 #if OPENCL_DEBUG
     console.info("clReleaseKernel: Release kernel : "+ker);
@@ -1880,7 +1900,7 @@ var LibraryOpenCL = {
 
   clReleaseCommandQueue: function(command_queue) {
     var queue = CL.getArrayId(command_queue);  
-    if (queue >= CL.cmdQueue.length || queue < 0 ) {
+    if (queue >= (CL.cmdQueue.length + CL.cmdQueue_clean.length) || queue < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseCommandQueue: Invalid command queue : "+queue);
 #endif
@@ -1888,12 +1908,19 @@ var LibraryOpenCL = {
       return -36; /* CL_INVALID_COMMAND_QUEUE */
     }
 
-    // CL.cmdQueue.splice(queue, 1);
-    // if (CL.cmdQueue.length == 0) {
-    //   CL.cmdQueue_clean = 0;
-    // } else {
-    //   CL.cmdQueue_clean++;
-    // }
+    var offset = 0;
+    for (var i = 0; i < CL.cmdQueue_clean.length; i++) {
+      if (CL.cmdQueue_clean[i] < queue) {
+        offset++;
+      }
+    }
+    
+    CL.cmdQueue.splice(queue - offset, 1);
+    CL.cmdQueue_clean.push(queue);
+        
+    if (CL.cmdQueue.length == 0) {
+      CL.cmdQueue_clean = [];
+    }
     
 #if OPENCL_DEBUG
     console.info("clReleaseCommandQueue: Release command queue : "+queue);
@@ -1905,7 +1932,7 @@ var LibraryOpenCL = {
   clReleaseContext: function(context) {
     var ctx = CL.getArrayId(context);  
     
-    if (ctx >= CL.ctx.length || ctx < 0 ) {
+    if (ctx >= (CL.ctx.length + CL.ctx_clean.length) || ctx < 0 ) {
 #if OPENCL_DEBUG
       console.error("clReleaseContext: Invalid context : "+ctx);
 #endif
@@ -1913,13 +1940,20 @@ var LibraryOpenCL = {
       return -34; /* CL_INVALID_CONTEXT */
     }        
 
-    // CL.ctx.splice(ctx, 1);
-    // if (CL.ctx.length == 0) {
-    //   CL.ctx_clean = 0;
-    // } else {
-    //   CL.ctx_clean++;
-    // }
+    var offset = 0;
+    for (var i = 0; i < CL.ctx_clean.length; i++) {
+      if (CL.ctx_clean[i] < ctx) {
+        offset++;
+      }
+    }
     
+    CL.ctx.splice(ctx - offset, 1);
+    CL.ctx_clean.push(ctx);
+        
+    if (CL.ctx.length == 0) {
+      CL.ctx_clean = [];
+    }
+
 #if OPENCL_DEBUG
     console.info("clReleaseContext: Release context : "+ctx);
 #endif

@@ -1302,7 +1302,7 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:0,cmdQueue:[],cmdQueue_clean:0,programs:[],programs_clean:0,kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:0,buffers:[],buffers_clean:0,platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
         // If we already check is not useful to do this again
         if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
           return 0;
@@ -3852,17 +3852,21 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseMemObject(memobj) { 
       var buff = CL.getArrayId(memobj);  
-      if (buff >= CL.buffers.length || buff < 0 ) {
+      if (buff >= (CL.buffers.length + CL.buffers_clean.length) || buff < 0 ) {
         console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
         return -38; /* CL_INVALID_MEM_OBJECT */
       }
-      // CL.buffers.splice(buff, 1);
-      // 
-      // if (CL.buffers.length == 0) {
-      //   CL.buffers_clean = 0;
-      // } else {
-      //   CL.buffers_clean++;
-      // }
+      var offset = 0;
+      for (var i = 0; i < CL.buffers_clean.length; i++) {
+        if (CL.buffers_clean[i] < buff) {
+          offset++;
+        }
+      }
+      CL.buffers.splice(buff - offset, 1);
+      CL.buffers_clean.push(buff);
+      if (CL.buffers.length == 0) {
+        CL.buffers_clean = [];
+      }
       console.info("clReleaseMemObject: Release Memory Object : "+buff);
       return 0;/*CL_SUCCESS*/
     }
