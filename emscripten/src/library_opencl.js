@@ -22,6 +22,9 @@ var LibraryOpenCL = {
     buffers_clean: 0,
     platforms: [],
     devices: [],
+#if OPENCL_STACK_TRACE    
+    stack_trace: "// Javascript webcl Stack Trace\n",
+#endif
     errorMessage: "Unfortunately your system does not support WebCL. " +
                     "Make sure that you have both the OpenCL driver " +
                     "and the WebCL browser extension installed.",
@@ -252,6 +255,17 @@ var LibraryOpenCL = {
       return error;
     },
   },
+  
+#if OPENCL_STACK_TRACE
+  webclPrintStackTrace: function(stack_string, stack_size) {
+    var size = {{{ makeGetValue('stack_size', '0', 'i32') }}} ;
+    if (size == 0) {
+      {{{ makeSetValue('stack_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Num of devices */;
+    } else {
+      writeStringToMemory(CL.stack_trace, stack_string);
+    }
+  },
+#endif
   
   clGetPlatformIDs: function(num_entries,platform_ids,num_platforms) {
     

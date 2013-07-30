@@ -88,6 +88,9 @@ const char *KernelSource = "\n" \
 "\n";
 
 ////////////////////////////////////////////////////////////////////////////////
+#ifdef __EMSCRIPTEN__
+extern void webclPrintStackTrace(const char * stack, int size);
+#endif
 
 int main(int argc, char** argv)
 {
@@ -327,6 +330,19 @@ int main(int argc, char** argv)
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
 
+#ifdef __EMSCRIPTEN__
+    printf("\n___________________________________\n");
+    int size = 0;
+    webclPrintStackTrace(0,size);
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,size);
+    printf("%s\n",webcl_stack);
+    printf("___________________________________\n");
+    free(webcl_stack);
+#endif
+    
     return 0;
 }
 
