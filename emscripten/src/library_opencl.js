@@ -118,35 +118,6 @@ var LibraryOpenCL = {
       return 0;      
     },
 
-    parseKernelStruct: function(kernelstring) {
-      // Search typdef struct
-      var typdef_struct = kernelstring.indexOf("typedef struct");
-      
-      while (typdef_struct >= 0) {
-        
-        var brace_end = kernelstring.indexOf("}");
-        var semicolon = kernelstring.indexOf(";");  
-      
-        var struct_name = "";
-        // Search kernel Name
-        for (var i = semicolon - 1; i >= brace_end; i--) {
-          var chara = kernelstring.charAt(i);
-
-          if (chara == '}' && struct_name.length > 0) {
-            break;
-          } else if (chara != ' ') {
-            struct_name = chara + struct_name;
-          }
-        }
-        
-        console.info("Struct Name : "+struct_name);
-        
-        kernelstring = kernelstring.substr(semicolon);
-         
-        typdef_struct = kernelstring.indexOf("typedef struct");         
-      }
-    },
-      
     parseKernel: function(kernelstring) {
       
       // Experimental parse of Kernel
@@ -166,8 +137,6 @@ var LibraryOpenCL = {
       kernelstring = kernelstring.replace(/\n/g, " ");
       kernelstring = kernelstring.replace(/\r/g, " ");
       kernelstring = kernelstring.replace(/\t/g, " ");
-      
-      //CL.parseKernelStruct(kernelstring);
       
       // Search kernel function __kernel 
       var kernel_start = kernelstring.indexOf("__kernel");
@@ -226,7 +195,7 @@ var LibraryOpenCL = {
             value |= CL.data_type.INT;
           } else {
 #if OPENCL_DEBUG   
-            console.error("Unknow parameter type use float");   
+            console.error("Unknow parameter type use float by default ...");   
 #endif        
             value |= CL.data_type.FLOAT;
           }
