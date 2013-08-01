@@ -832,7 +832,7 @@ int main(int argc, char *argv[]) {
 
 	useGPU = 1;
 	forceWorkSize = 0;
-	kernelFileName = "rendering_kernel.cl";
+	kernelFileName = "rendering_kernel_custom.cl";
 	width = 512;
 	height = 512;
 	ReadScene("scenes/caustic.scn");

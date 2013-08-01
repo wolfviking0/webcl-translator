@@ -70,21 +70,24 @@ double WallClockTime() {
 #elif defined (WIN32)
 	return GetTickCount() / 1000.0;
 #elif defined (__EMSCRIPTEN__)
-	return (emscripten_get_now() * 1000000);
+	return (emscripten_get_now() / 1000.0);
 #else
 	Unsupported Platform !!!
 #endif
 }
 
 static void PrintString(void *font, const char *string) {
+#ifndef __EMSCRIPTEN__
 	int len, i;
 
 	len = (int)strlen(string);
 	for (i = 0; i < len; i++)
 		glutBitmapCharacter(font, string[i]);
+#endif
 }
 
 static void PrintHelp() {
+#ifndef __EMSCRIPTEN__
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.f, 0.f, 0.5f, 0.5f);
@@ -112,6 +115,7 @@ static void PrintHelp() {
 	PrintString(GLUT_BITMAP_HELVETICA_18, "2, 3, 4, 5, 6, 8, 9 - to move selected object");
 
 	glDisable(GL_BLEND);
+#endif
 }
 
 void ReadScene(char *fileName) {
@@ -193,15 +197,17 @@ void UpdateCamera() {
 
 void idleFunc(void) {
 	UpdateRendering();
-
+	
 	glutPostRedisplay();
 }
 
 void displayFunc(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
-	glRasterPos2i(0, 0);
-	glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	
+	//glRasterPos2i(0, 0);
+	//glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
+#ifndef __EMSCRIPTEN__
 	// Title
 	glColor3f(1.f, 1.f, 1.f);
 	glRasterPos2i(4, height - 16);
@@ -224,7 +230,7 @@ void displayFunc(void) {
 
 		glPopMatrix();
 	}
-
+#endif
 	glutSwapBuffers();
 }
 

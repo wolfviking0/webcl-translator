@@ -162,6 +162,22 @@ function assert(check, msg) {
     Module['addRunDependency']('fp rendering_kernel.cl');
     filePreload8.send(null);
 
+    var filePreload9 = new DataRequest();
+    filePreload9.open('GET', 'rendering_kernel_custom.cl', true);
+    filePreload9.responseType = 'arraybuffer';
+    filePreload9.onload = function() {
+      var arrayBuffer = filePreload9.response;
+      assert(arrayBuffer, 'Loading file rendering_kernel_custom.cl failed.');
+      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
+      
+      Module['FS_createPreloadedFile']('/', 'rendering_kernel_custom.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp rendering_kernel_custom.cl');
+
+      });
+    };
+    Module['addRunDependency']('fp rendering_kernel_custom.cl');
+    filePreload9.send(null);
+
     if (!Module.expectedDataFileDownloads) {
       Module.expectedDataFileDownloads = 0;
       Module.finishedDataFileDownloads = 0;
@@ -171,7 +187,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'smallpt_kernel.data';
     var REMOTE_PACKAGE_NAME = 'smallpt_kernel.data';
-    var PACKAGE_UUID = '1e8b269c-c487-4d69-8f65-e404d0dc3eda';
+    var PACKAGE_UUID = '02bb270c-0ae5-4874-b772-13d91aab8d4f';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -279,6 +295,13 @@ function assert(check, msg) {
         var ptr = Module['_malloc'](3216);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 3216);
+        curr.onload();
+      
+        curr = DataRequest.prototype.requests['rendering_kernel_custom.cl'];
+        var data = byteArray.subarray(74943, 91190);
+        var ptr = Module['_malloc'](16247);
+        Module['HEAPU8'].set(data, ptr);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 16247);
         curr.onload();
                 Module['removeRunDependency']('datafile_smallpt_kernel.data');
 

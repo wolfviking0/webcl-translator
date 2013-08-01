@@ -15,7 +15,8 @@ KERNELS = \
 	preprocessed_rendering_kernel_dl.cl\
 	preprocessed_rendering_kernel.cl\
 	rendering_kernel_dl.cl\
-	rendering_kernel.cl
+	rendering_kernel.cl\
+	rendering_kernel_custom.cl
 
 SCENES = \
 	scenes/caustic.scn\
