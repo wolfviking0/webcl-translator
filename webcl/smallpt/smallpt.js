@@ -1366,6 +1366,26 @@ function copyTempDouble(ptr) {
           return 1;
         }
         return 0;      
+      },parseKernelStruct:function (kernelstring) {
+        // Search typdef struct
+        var typdef_struct = kernelstring.indexOf("typedef struct");
+        while (typdef_struct >= 0) {
+          var brace_end = kernelstring.indexOf("}");
+          var semicolon = kernelstring.indexOf(";");  
+          var struct_name = "";
+          // Search kernel Name
+          for (var i = semicolon - 1; i >= brace_end; i--) {
+            var chara = kernelstring.charAt(i);
+            if (chara == '}' && struct_name.length > 0) {
+              break;
+            } else if (chara != ' ') {
+              struct_name = chara + struct_name;
+            }
+          }
+          console.info("Struct Name : "+struct_name);
+          kernelstring = kernelstring.substr(semicolon);
+          typdef_struct = kernelstring.indexOf("typedef struct");         
+        }
       },parseKernel:function (kernelstring) {
         // Experimental parse of Kernel
         // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
@@ -1382,6 +1402,7 @@ function copyTempDouble(ptr) {
         kernelstring = kernelstring.replace(/\n/g, " ");
         kernelstring = kernelstring.replace(/\r/g, " ");
         kernelstring = kernelstring.replace(/\t/g, " ");
+        //CL.parseKernelStruct(kernelstring);
         // Search kernel function __kernel 
         var kernel_start = kernelstring.indexOf("__kernel");
         while (kernel_start >= 0) {
@@ -1425,6 +1446,9 @@ function copyTempDouble(ptr) {
               value |= CL.data_type.UINT;
             } else if (string.indexOf("int") >= 0 ) {
               value |= CL.data_type.INT;
+            } else {
+              console.error("Unknow parameter type use float");   
+              value |= CL.data_type.FLOAT;
             }
             parameter[i] = value;
           }
@@ -2589,7 +2613,7 @@ function copyTempDouble(ptr) {
             HEAP32[(((results)+(i*4))>>2)]=vector[i];  
           }         
         }
-        console.info(vector);
+        //console.info(vector);
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         return CL.catchError("clEnqueueReadBuffer",e);
@@ -2657,7 +2681,7 @@ function copyTempDouble(ptr) {
           vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
         }
       }
-      console.info(vector);
+      //console.info(vector);
       try {
         CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
         return 0;/*CL_SUCCESS*/
@@ -3070,7 +3094,7 @@ function copyTempDouble(ptr) {
           try {
             res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
           } catch (e) {
-            CL.catchError("clGetContextInfo",e);
+            CL.catchError("clGetDeviceInfo",e);
             res = "Not Visible";
           }    
           writeStringToMemory(res, param_value);
@@ -3080,16 +3104,16 @@ function copyTempDouble(ptr) {
         else {
           try {
             res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+            HEAP32[((param_value)>>2)]=res;
           } catch (e) {
-            CL.catchError("clGetContextInfo",e);
-            res = O;
+            CL.catchError("clGetDeviceInfo",e);
+            HEAP32[((param_value)>>2)]=0;
           }   
-          HEAP32[((param_value)>>2)]=res;
           size = 1;
         }
       } else {
-        console.error("clGetContextInfo: Unknow param info : "+param_name);
-        HEAP32[((param_value)>>2)]=res;
+        console.error("clGetDeviceInfo: Unknow param info : "+param_name);
+        HEAP32[((param_value)>>2)]=0;
         size = 1;
       }
       HEAP32[((param_value_size_ret)>>2)]=size;
@@ -3316,7 +3340,7 @@ function copyTempDouble(ptr) {
                 vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
               }
             }
-            console.info(vector);
+            //console.info(vector);
             if (CL.webcl_webkit == -1) {
                 CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY | WebCL.MEM_COPY_HOST_PTR, size, vector));
             } else {
