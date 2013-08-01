@@ -84,12 +84,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define USE_GL_ATTACHMENTS              (0)  // enable OpenGL attachments for Compute results
-#define DEBUG_INFO                      (1)     
+#define DEBUG_INFO                      (0)     
 #define COMPUTE_KERNEL_FILENAME         ("qjulia_kernel.cl")
 #define COMPUTE_KERNEL_METHOD_NAME      ("QJuliaKernel")
 #define SEPARATOR                       ("----------------------------------------------------------------------\n")
-#define WIDTH                           (128)
-#define HEIGHT                          (128)
+#define WIDTH                           (512)
+#define HEIGHT                          (512)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -987,9 +987,9 @@ ReportStats(
         double fMs = (TimeElapsed * 1000.0 / (double) FrameCount);
         double fFps = 1.0 / (fMs / 1000.0);
 #ifdef __EMSCRIPTEN__
-        /*printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
+        printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
                 (ComputeDeviceType == CL_DEVICE_TYPE_GPU) ? "GPU" : "CPU",
-                fMs, fFps, USE_GL_ATTACHMENTS ? "attached" : "copying");*/
+                fMs, fFps, USE_GL_ATTACHMENTS ? "attached" : "copying");
 #else
         sprintf(StatsString, "[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
                 (ComputeDeviceType == CL_DEVICE_TYPE_GPU) ? "GPU" : "CPU", 

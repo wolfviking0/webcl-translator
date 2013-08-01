@@ -49,7 +49,7 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 	| convolution	|		 OK		   |	   OK		  |
 	| reduce		|		 OK		   |	   OK		  |
 	| scan   		|		 OK		   |	   OK		  |
-	| qjulia		| WORK IN PROGRESS | 	BAD RESULT	  |
+	| qjulia		|OK(sharath_setArg)| 	BAD RESULT	  |
 	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
 	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
 	|---------------|------------------|------------------|
