@@ -41,15 +41,15 @@ Launch Sample :
 
 Call index.html for try some sample, by default use GPU mode, you can change parameter using index.html?mode=cpu or index.html?mode=gpu
 
-		|------------------|------------------|			
-		|    NOKIA PLUGIN  | SAMSUNG WEBKIT   |
-|---------------|------------------|------------------|
-| hello_world	|	 OK	   |	   OK	      |
-| hello_world_2	|	 OK	   |	   OK	      |
-| convolution	|	 OK	   |	   OK	      |
-| reduce	|	 OK	   |	   OK	      |
-| scan   	|	 OK	   |	   OK	      |
-| qjulia	|    BAD RESULT    |OK(sharath_setArg)|
-| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
-| smallpt  	| WORK IN PROGRESS | WORK IN PROGRESS |
-|---------------|------------------|------------------|
+					|------------------|------------------|			
+					|    NOKIA PLUGIN  | SAMSUNG WEBKIT   |
+    |---------------|------------------|------------------|
+	| hello_world	|		 OK		   |	   OK		  |
+	| hello_world_2	|		 OK		   |	   OK		  |
+	| convolution	|		 OK		   |	   OK		  |
+	| reduce		|		 OK		   |	   OK		  |
+	| scan   		|		 OK		   |	   OK		  |
+	| qjulia		| BAD RESULT     |OK(sharath_setArg)	  |
+	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
+	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
+	|---------------|------------------|------------------|
