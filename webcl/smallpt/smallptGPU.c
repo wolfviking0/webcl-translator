@@ -426,7 +426,7 @@ static void SetUpOpenCL() {
 		}
 
 		printf("[SELECTED] OpenCL Device %d: Name = %s\n", i, buf);
-
+#ifdef __EMSCRIPTEN__
 		cl_uint units = 0;
 		status = clGetDeviceInfo(devices[i],
 				CL_DEVICE_MAX_COMPUTE_UNITS,
@@ -439,7 +439,7 @@ static void SetUpOpenCL() {
 		}
 
 		printf("[SELECTED] OpenCL Device %d: Compute units = %u\n", i, units);
-
+#endif
 		size_t gsize = 0;
 		status = clGetDeviceInfo(devices[i],
 				CL_DEVICE_MAX_WORK_GROUP_SIZE,

@@ -2942,19 +2942,19 @@ function copyTempDouble(ptr) {
         var value;
         switch (param) {
           case(0x0900)/*CL_PLATFORM_PROFILE*/:
-            value = CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_PROFILE);  
+            value = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_PROFILE) : CL.platforms[plat].getInfo(WebCL.PLATFORM_PROFILE);
             break;
           case(0x0901)/*CL_PLATFORM_VERSION*/:
-            value = CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_VERSION);  
+            value = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_VERSION) : CL.platforms[plat].getInfo(WebCL.PLATFORM_VERSION);  
             break;
           case(0x0902)/*CL_PLATFORM_NAME*/:
-            value = CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_NAME);  
+            value = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_NAME) : "Not Visible";  
             break;
           case(0x0903)/*CL_PLATFORM_VENDOR*/:
-            value = CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_VENDOR);  
+            value = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_VENDOR) : "Not Visible";  
             break;
           case(0x0904)/*CL_PLATFORM_EXTENSIONS*/:
-            value = CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_EXTENSIONS); 
+            value = (CL.webcl_mozilla == 1) ? CL.platforms[plat].getPlatformInfo(WebCL.CL_PLATFORM_EXTENSIONS) : "Not Visible"; 
             break;
           default:
             console.error("clGetPlatformInfo : Param not yet implemented or unknow : "+param);
