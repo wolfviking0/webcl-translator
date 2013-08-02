@@ -1090,20 +1090,28 @@ var LibraryOpenCL = {
     }
 
     try {
+      var macro;
+      
       switch (flags_i64_1) {
         case (1 << 0) /* CL_MEM_READ_WRITE */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
           CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
           CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
         case (1 << 2) /* CL_MEM_READ_ONLY */:
-          var macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
           CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
           break;
+        case (((1 << 0)|(1 << 5))) /* CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR */:
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
+        case (((1 << 1)|(1 << 5))) /* CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR */:
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
         case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
+          macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+        
           if (host_ptr == 0) {
 #if OPENCL_DEBUG
             console.error("clCreateBuffer: CL_MEM_COPY_HOST_PTR can't be use with null host_ptr parameter");
@@ -1186,13 +1194,9 @@ var LibraryOpenCL = {
 #endif
           
           if (CL.webcl_webkit == -1) {
-              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY | WebCL.MEM_COPY_HOST_PTR, size, vector));
+              CL.buffers.push(CL.ctx[ctx].createBuffer(macro | WebCL.MEM_COPY_HOST_PTR, size, vector));
           } else {
-            if (CL.webcl_webkit == 1) {
-              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.MEM_READ_ONLY,size));
-            } else{
-              CL.buffers.push(CL.ctx[ctx].createBuffer(WebCL.CL_MEM_READ_ONLY,size));              
-            }
+            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));              
             
             if (CL.cmdQueue.length == 0) {
 #if OPENCL_DEBUG
