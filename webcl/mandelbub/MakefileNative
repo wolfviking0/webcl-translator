@@ -1,0 +1,33 @@
+#
+# mandelbulbGPU Makefile
+#
+
+ATISTREAMSDKROOT=/home/david/src/ati-stream-sdk-v2.0-lnx64
+
+CC=gcc
+#CCFLAGS=-O3 -msse2 -mfpmath=sse -ftree-vectorize -funroll-loops -Wall \
+#	-I$(ATISTREAMSDKROOT)/include -L$(ATISTREAMSDKROOT)/lib/x86_64 -lglut -lglut -lOpenCL
+# Jens's patch for MacOS, comment the 2 lines above and un-comment the lines below
+CCFLAGS=-O3 -ftree-vectorize -msse -msse2 -msse3 -mssse3 -fvariable-expansion-in-unroller \
+	-cl-fast-relaxed-math -cl-mad-enable -Wall -framework OpenCL -framework OpenGl -framework Glut
+
+default: all
+
+all: mandelbulbGPU preprocessed_kernels
+
+mandelbulbGPU: mandelbulbGPU.c displayfunc.c Makefile displayfunc.h camera.h vec.h renderconfig.h
+	$(CC) $(CCFLAGS) -o mandelbulbGPU mandelbulbGPU.c displayfunc.c
+
+clean:
+	rm -rf mandelbulbGPU image.ppm mandelbulbGPU-v1.0 mandelbulbgpu-v1.0.tgz
+
+preprocessed_kernels:
+	cpp <mandelbulb_kernel.cl >preprocessed_rendering_kernel.cl
+
+tgz: clean all
+	mkdir mandelbulbGPU-v1.0
+	cp -r mandelbulbGPU mandelbulbGPU.exe camera.h displayfunc.c displayfunc.h renderconfig.h LICENSE.txt Makefile \
+		README.txt mandelbulbGPU.c vec.h mandelbulb_kernel.cl preprocessed_rendering_kernel.cl \
+		glut32.dll mandelbulbGPU-v1.0
+	tar zcvf mandelbulbgpu-v1.0.tgz mandelbulbGPU-v1.0
+	rm -rf mandelbulbGPU-v1.0
