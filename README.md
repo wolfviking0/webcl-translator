@@ -59,23 +59,23 @@ Sources Sample :
 -----------------
 
 
-hello_world		| http://developer.apple.com/library/mac/#samplecode/OpenCL_Hello_World_Example/
+http://developer.apple.com/library/mac/#samplecode/OpenCL_Hello_World_Example/
 
-hello_world_2	| https://code.google.com/p/opencl-book-samples/								
+https://code.google.com/p/opencl-book-samples/								
 
-convolution		| https://developer.apple.com/library/mac/#samplecode/OpenCL_Matrix_Transpose_Example/
+https://developer.apple.com/library/mac/#samplecode/OpenCL_Matrix_Transpose_Example/
 
-reduce			| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Reduction_Example/
+https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Reduction_Example/
 
-scan   			| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Prefix_Sum_Example/
+https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Prefix_Sum_Example/
 
-mandelbulb		| http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html
+http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html
 
-qjulia			| https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_Julia-Set_Example/
+https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_Julia-Set_Example/
 
-displacement	| http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/
+http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/
 
-smallpt  		| http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
+http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
 
 	
 Videos :
