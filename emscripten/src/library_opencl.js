@@ -1128,10 +1128,13 @@ var LibraryOpenCL = {
           
           if (CL.kernels_name.length > 0) {
             // \warning experimental stuff
-          
+#if OPENCL_DEBUG          
             console.info("/!\\ clCreateBuffer: Need to find how detect the array type");
+#endif
             var name = CL.kernels_name[0];
+#if OPENCL_DEBUG
             console.info("/!\\ clCreateBuffer: use '"+name+"' kernel name ...");
+#endif
             var sig = CL.kernels_sig[name];
             var type = sig[buff];
     
@@ -1319,10 +1322,13 @@ var LibraryOpenCL = {
 
     if (CL.kernels_name.length > 0) {
       // \warning experimental stuff
-    
+#if OPENCL_DEBUG    
       console.info("/!\\ clEnqueueWriteBuffer: Need to find how detect the array type");
+#endif
       var name = CL.kernels_name[0];
+#if OPENCL_DEBUG
       console.info("/!\\ clEnqueueWriteBuffer: use '"+name+"' kernel name ...");
+#endif
       var sig = CL.kernels_sig[name];
       var type = sig[buff];
 
@@ -1341,21 +1347,31 @@ var LibraryOpenCL = {
       isFloat = CL.isFloat(ptr,size); 
       if (isFloat) {
         vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
+#endif
       } else {
         vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
+#endif
       }
     } else {        
       if (isFloat) {
         vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
+#endif
       } else if (isUint) {
         vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
+#endif
       } else if (isInt) {
         vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
+#endif
       } else {
 #if OPENCL_DEBUG
         console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+sig[buff]);
@@ -1761,10 +1777,13 @@ var LibraryOpenCL = {
 
       if (CL.kernels_name.length > 0) {
         // \warning experimental stuff
-      
+#if OPENCL_DEBUG      
         console.info("/!\\ clEnqueueReadBuffer: Need to find how detect the array type");
+#endif
         var name = CL.kernels_name[0];
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueReadBuffer: use '"+name+"' kernel name ...");
+#endif
         var sig = CL.kernels_sig[name];
         var type = sig[buff];
 
@@ -1781,13 +1800,19 @@ var LibraryOpenCL = {
 
       if (isFloat) {
         vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
+#endif
       } else if (isUint) {
         vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
+#endif
       } else if (isInt) {
         vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
+#if OPENCL_DEBUG
         console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
+#endif
       } else {
 #if OPENCL_DEBUG
         console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);

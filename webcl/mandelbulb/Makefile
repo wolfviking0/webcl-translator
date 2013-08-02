@@ -13,7 +13,7 @@ EMMAKE = $(EMSCRIPTEN)/emmake
 #----------------------------------------------------------------------------------------#		
 all:
 	python $(EMSCRIPTEN)/tools/file_packager.py mandelbulb_kernel.data --preload mandelbulb_kernel.cl --pre-run > mandelbulb_kernel.js
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O2 -s OPENCL_DEBUG=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o mandelbulb.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O3 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o mandelbulb.js
 					
 clean:
 	$(CXX) --clear-cache
