@@ -1,10 +1,32 @@
 // Note: For maximum-speed code, see "Optimizing Code" on the Emscripten wiki, https://github.com/kripken/emscripten/wiki/Optimizing-Code
 // Note: Some Emscripten settings may limit the speed of the generated code.
-try {
-  this['Module'] = Module;
-  Module.test;
-} catch(e) {
-  this['Module'] = Module = {};
+// The Module object: Our interface to the outside world. We import
+// and export values on it, and do the work to get that through
+// closure compiler if necessary. There are various ways Module can be used:
+// 1. Not defined. We create it here
+// 2. A function parameter, function(Module) { ..generated code.. }
+// 3. pre-run appended it, var Module = {}; ..generated code..
+// 4. External script tag defines var Module.
+// We need to do an eval in order to handle the closure compiler
+// case, where this code here is minified but Module was defined
+// elsewhere (e.g. case 4 above). We also need to check if Module
+// already exists (e.g. case 3 above).
+// Note that if you want to run closure, and also to use Module
+// after the generated code, you will need to define   var Module = {};
+// before the code. Then that object will be used in the code, and you
+// can continue to use Module afterwards as well.
+var Module;
+if (!Module) Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+// Sometimes an existing Module object exists with properties
+// meant to overwrite the default module functionality. Here
+// we collect those properties and reapply _after_ we configure
+// the current environment's defaults to avoid having to be so
+// defensive during initialization.
+var moduleOverrides = {};
+for (var key in Module) {
+  if (Module.hasOwnProperty(key)) {
+    moduleOverrides[key] = Module[key];
+  }
 }
 // The environment setup code below is customized to use Module.
 // *** Environment setup code ***
@@ -38,9 +60,7 @@ if (ENVIRONMENT_IS_NODE) {
   Module['load'] = function(f) {
     globalEval(read(f));
   };
-  if (!Module['arguments']) {
-    Module['arguments'] = process['argv'].slice(2);
-  }
+  Module['arguments'] = process['argv'].slice(2);
   module.exports = Module;
 }
 if (ENVIRONMENT_IS_SHELL) {
@@ -50,26 +70,20 @@ if (ENVIRONMENT_IS_SHELL) {
   Module['readBinary'] = function(f) {
     return read(f, 'binary');
   };
-  if (!Module['arguments']) {
-    if (typeof scriptArgs != 'undefined') {
-      Module['arguments'] = scriptArgs;
-    } else if (typeof arguments != 'undefined') {
-      Module['arguments'] = arguments;
-    }
+  if (typeof scriptArgs != 'undefined') {
+    Module['arguments'] = scriptArgs;
+  } else if (typeof arguments != 'undefined') {
+    Module['arguments'] = arguments;
   }
   this['Module'] = Module;
 }
 if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
-  if (!Module['print']) {
-    Module['print'] = function(x) {
-      console.log(x);
-    };
-  }
-  if (!Module['printErr']) {
-    Module['printErr'] = function(x) {
-      console.log(x);
-    };
-  }
+  Module['print'] = function(x) {
+    console.log(x);
+  };
+  Module['printErr'] = function(x) {
+    console.log(x);
+  };
   this['Module'] = Module;
 }
 if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
@@ -79,22 +93,18 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
     xhr.send(null);
     return xhr.responseText;
   };
-  if (!Module['arguments']) {
-    if (typeof arguments != 'undefined') {
-      Module['arguments'] = arguments;
-    }
+  if (typeof arguments != 'undefined') {
+    Module['arguments'] = arguments;
   }
 }
 if (ENVIRONMENT_IS_WORKER) {
   // We can do very little here...
   var TRY_USE_DUMP = false;
-  if (!Module['print']) {
-    Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
-      dump(x);
-    }) : (function(x) {
-      // self.postMessage(x); // enable this if you want stdout to be sent as messages
-    }));
-  }
+  Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
+    dump(x);
+  }) : (function(x) {
+    // self.postMessage(x); // enable this if you want stdout to be sent as messages
+  }));
   Module['load'] = importScripts;
 }
 if (!ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_SHELL) {
@@ -123,8 +133,14 @@ if (!Module['arguments']) {
 Module.print = Module['print'];
 Module.printErr = Module['printErr'];
 // Callbacks
-if (!Module['preRun']) Module['preRun'] = [];
-if (!Module['postRun']) Module['postRun'] = [];
+Module['preRun'] = [];
+Module['postRun'] = [];
+// Merge back in the overrides
+for (var key in moduleOverrides) {
+  if (moduleOverrides.hasOwnProperty(key)) {
+    Module[key] = moduleOverrides[key];
+  }
+}
 // === Auto-generated preamble library stuff ===
 //========================================
 // Runtime code shared with compiler
@@ -238,14 +254,24 @@ var Runtime = {
     type.alignSize = 0;
     var diffs = [];
     var prev = -1;
+    var index = 0;
     type.flatIndexes = type.fields.map(function(field) {
+      index++;
       var size, alignSize;
       if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
         size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
         alignSize = Runtime.getAlignSize(field, size);
       } else if (Runtime.isStructType(field)) {
-        size = Types.types[field].flatSize;
-        alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+        if (field[1] === '0') {
+          // this is [0 x something]. When inside another structure like here, it must be at the end,
+          // and it adds no size
+          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
+          size = 0;
+          alignSize = type.alignSize || QUANTUM_SIZE;
+        } else {
+          size = Types.types[field].flatSize;
+          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+        }
       } else if (field[0] == 'b') {
         // bN, large number field, like a [N x i8]
         size = field.substr(1)|0;
@@ -408,11 +434,6 @@ var undef = 0;
 var tempValue, tempInt, tempBigInt, tempInt2, tempBigInt2, tempPair, tempBigIntI, tempBigIntR, tempBigIntS, tempBigIntP, tempBigIntD;
 var tempI64, tempI64b;
 var tempRet0, tempRet1, tempRet2, tempRet3, tempRet4, tempRet5, tempRet6, tempRet7, tempRet8, tempRet9;
-function abort(text) {
-  Module.print(text + ':\n' + (new Error).stack);
-  ABORT = true;
-  throw "Assertion: " + text;
-}
 function assert(condition, text) {
   if (!condition) {
     abort('Assertion failed: ' + text);
@@ -443,7 +464,7 @@ Module["ccall"] = ccall;
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {
   try {
-    var func = globalScope['Module']['_' + ident]; // closure exported function
+    var func = Module['_' + ident]; // closure exported function
     if (!func) func = eval('_' + ident); // explicit lookup
   } catch(e) {
   }
@@ -713,10 +734,22 @@ function callRuntimeCallbacks(callbacks) {
     }
   }
 }
-var __ATINIT__ = []; // functions called during startup
-var __ATMAIN__ = []; // functions called when main() is to be run
-var __ATEXIT__ = []; // functions called during shutdown
+var __ATPRERUN__  = []; // functions called before the runtime is initialized
+var __ATINIT__    = []; // functions called during startup
+var __ATMAIN__    = []; // functions called when main() is to be run
+var __ATEXIT__    = []; // functions called during shutdown
+var __ATPOSTRUN__ = []; // functions called after the runtime has exited
 var runtimeInitialized = false;
+function preRun() {
+  // compatibility - merge in anything from Module['preRun'] at this time
+  if (Module['preRun']) {
+    if (typeof Module['preRun'] == 'function') Module['preRun'] = [Module['preRun']];
+    while (Module['preRun'].length) {
+      addOnPreRun(Module['preRun'].shift());
+    }
+  }
+  callRuntimeCallbacks(__ATPRERUN__);
+}
 function ensureInitRuntime() {
   if (runtimeInitialized) return;
   runtimeInitialized = true;
@@ -728,6 +761,36 @@ function preMain() {
 function exitRuntime() {
   callRuntimeCallbacks(__ATEXIT__);
 }
+function postRun() {
+  // compatibility - merge in anything from Module['postRun'] at this time
+  if (Module['postRun']) {
+    if (typeof Module['postRun'] == 'function') Module['postRun'] = [Module['postRun']];
+    while (Module['postRun'].length) {
+      addOnPostRun(Module['postRun'].shift());
+    }
+  }
+  callRuntimeCallbacks(__ATPOSTRUN__);
+}
+function addOnPreRun(cb) {
+  __ATPRERUN__.unshift(cb);
+}
+Module['addOnPreRun'] = Module.addOnPreRun = addOnPreRun;
+function addOnInit(cb) {
+  __ATINIT__.unshift(cb);
+}
+Module['addOnInit'] = Module.addOnInit = addOnInit;
+function addOnPreMain(cb) {
+  __ATMAIN__.unshift(cb);
+}
+Module['addOnPreMain'] = Module.addOnPreMain = addOnPreMain;
+function addOnExit(cb) {
+  __ATEXIT__.unshift(cb);
+}
+Module['addOnExit'] = Module.addOnExit = addOnExit;
+function addOnPostRun(cb) {
+  __ATPOSTRUN__.unshift(cb);
+}
+Module['addOnPostRun'] = Module.addOnPostRun = addOnPostRun;
 // Tools
 // This processes a JS string into a C-line array of numbers, 0-terminated.
 // For LLVM-originating strings, see parser.js:parseLLVMString function
@@ -798,6 +861,7 @@ if (!Math['imul']) Math['imul'] = function(a, b) {
   var bl = b & 0xffff;
   return (al*bl + ((ah*bl + al*bh) << 16))|0;
 };
+Math.imul = Math['imul'];
 // A counter of dependencies for calling run(). If we need to
 // do asynchronous work before running, increment this and
 // decrement it. Incrementing must happen in a place like
@@ -845,17 +909,12 @@ function removeRunDependency(id) {
 Module['removeRunDependency'] = removeRunDependency;
 Module["preloadedImages"] = {}; // maps url to image data
 Module["preloadedAudios"] = {}; // maps url to audio data
-function addPreRun(func) {
-  if (!Module['preRun']) Module['preRun'] = [];
-  else if (typeof Module['preRun'] == 'function') Module['preRun'] = [Module['preRun']];
-  Module['preRun'].push(func);
-}
 function loadMemoryInitializer(filename) {
   function applyData(data) {
     HEAPU8.set(data, STATIC_BASE);
   }
   // always do this asynchronously, to keep shell and web as similar as possible
-  addPreRun(function() {
+  addOnPreRun(function() {
     if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
       applyData(Module['readBinary'](filename));
     } else {
@@ -935,17 +994,6 @@ function copyTempDouble(ptr) {
         // it is given the file's raw data. When it is done, it calls a callback with the file's
         // (possibly modified) data. For example, a plugin might decompress a file, or it
         // might create some side data structure for use later (like an Image element, etc.).
-        function getMimetype(name) {
-          return {
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'bmp': 'image/bmp',
-            'ogg': 'audio/ogg',
-            'wav': 'audio/wav',
-            'mp3': 'audio/mpeg'
-          }[name.substr(name.lastIndexOf('.')+1)];
-        }
         var imagePlugin = {};
         imagePlugin['canHandle'] = function(name) {
           return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
@@ -954,10 +1002,10 @@ function copyTempDouble(ptr) {
           var b = null;
           if (Browser.hasBlobConstructor) {
             try {
-              b = new Blob([byteArray], { type: getMimetype(name) });
+              b = new Blob([byteArray], { type: Browser.getMimetype(name) });
               if (b.size !== byteArray.length) { // Safari bug #118630
                 // Safari's Blob can only take an ArrayBuffer
-                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: getMimetype(name) });
+                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: Browser.getMimetype(name) });
               }
             } catch(e) {
               Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
@@ -1008,7 +1056,7 @@ function copyTempDouble(ptr) {
           }
           if (Browser.hasBlobConstructor) {
             try {
-              var b = new Blob([byteArray], { type: getMimetype(name) });
+              var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
             } catch(e) {
               return fail();
             }
@@ -1170,6 +1218,16 @@ function copyTempDouble(ptr) {
         return setInterval(function() {
           if (!ABORT) func();
         }, timeout);
+      },getMimetype:function (name) {
+        return {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'bmp': 'image/bmp',
+          'ogg': 'audio/ogg',
+          'wav': 'audio/wav',
+          'mp3': 'audio/mpeg'
+        }[name.substr(name.lastIndexOf('.')+1)];
       },getUserMedia:function (func) {
         if(!window.getUserMedia) {
           window.getUserMedia = navigator['getUserMedia'] ||
@@ -1919,25 +1977,28 @@ function copyTempDouble(ptr) {
           };
         }
         var utf8 = new Runtime.UTF8Processor();
-        function simpleOutput(val) {
-          if (val === null || val === 10) {
-            output.printer(output.buffer.join(''));
-            output.buffer = [];
-          } else {
-            output.buffer.push(utf8.processCChar(val));
-          }
+        function createSimpleOutput() {
+          var fn = function (val) {
+            if (val === null || val === 10) {
+              fn.printer(fn.buffer.join(''));
+              fn.buffer = [];
+            } else {
+              fn.buffer.push(utf8.processCChar(val));
+            }
+          };
+          return fn;
         }
         if (!output) {
           stdoutOverridden = false;
-          output = simpleOutput;
+          output = createSimpleOutput();
         }
         if (!output.printer) output.printer = Module['print'];
         if (!output.buffer) output.buffer = [];
         if (!error) {
           stderrOverridden = false;
-          error = simpleOutput;
+          error = createSimpleOutput();
         }
-        if (!error.printer) error.printer = Module['print'];
+        if (!error.printer) error.printer = Module['printErr'];
         if (!error.buffer) error.buffer = [];
         // Create the temporary folder, if not already created
         try {
@@ -2484,17 +2545,7 @@ function copyTempDouble(ptr) {
   function __exit(status) {
       // void _exit(int status);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
-      function ExitStatus() {
-        this.name = "ExitStatus";
-        this.message = "Program terminated with exit(" + status + ")";
-        this.status = status;
-        Module.print('Exit Status: ' + status);
-      };
-      ExitStatus.prototype = new Error();
-      ExitStatus.prototype.constructor = ExitStatus;
-      exitRuntime();
-      ABORT = true;
-      throw new ExitStatus();
+      Module['exit'](status);
     }function _exit(status) {
       __exit(status);
     }
@@ -3533,15 +3584,13 @@ function copyTempDouble(ptr) {
       } else if (nbyte < 0 || offset < 0) {
         ___setErrNo(ERRNO_CODES.EINVAL);
         return -1;
+      } else if (offset >= stream.object.contents.length) {
+        return 0;
       } else {
         var bytesRead = 0;
-        while (stream.ungotten.length && nbyte > 0) {
-          HEAP8[((buf++)|0)]=stream.ungotten.pop()
-          nbyte--;
-          bytesRead++;
-        }
         var contents = stream.object.contents;
         var size = Math.min(contents.length - offset, nbyte);
+        assert(size >= 0);
         if (contents.subarray) { // typed array
           HEAPU8.set(contents.subarray(offset, offset+size), buf);
         } else
@@ -3577,11 +3626,6 @@ function copyTempDouble(ptr) {
         if (stream.object.isDevice) {
           if (stream.object.input) {
             bytesRead = 0;
-            while (stream.ungotten.length && nbyte > 0) {
-              HEAP8[((buf++)|0)]=stream.ungotten.pop()
-              nbyte--;
-              bytesRead++;
-            }
             for (var i = 0; i < nbyte; i++) {
               try {
                 var result = stream.object.input();
@@ -3603,10 +3647,10 @@ function copyTempDouble(ptr) {
             return -1;
           }
         } else {
-          var ungotSize = stream.ungotten.length;
           bytesRead = _pread(fildes, buf, nbyte, stream.position);
+          assert(bytesRead >= -1);
           if (bytesRead != -1) {
-            stream.position += (stream.ungotten.length - ungotSize) + bytesRead;
+            stream.position += bytesRead;
           }
           return bytesRead;
         }
@@ -3615,16 +3659,24 @@ function copyTempDouble(ptr) {
       // size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fread.html
       var bytesToRead = nitems * size;
-      if (bytesToRead == 0) return 0;
-      var bytesRead = _read(stream, ptr, bytesToRead);
+      if (bytesToRead == 0) {
+        return 0;
+      }
+      var bytesRead = 0;
       var streamObj = FS.streams[stream];
-      if (bytesRead == -1) {
+      while (streamObj.ungotten.length && bytesToRead > 0) {
+        HEAP8[((ptr++)|0)]=streamObj.ungotten.pop()
+        bytesToRead--;
+        bytesRead++;
+      }
+      var err = _read(stream, ptr, bytesToRead);
+      if (err == -1) {
         if (streamObj) streamObj.error = true;
         return 0;
-      } else {
-        if (bytesRead < bytesToRead) streamObj.eof = true;
-        return Math.floor(bytesRead / size);
       }
+      bytesRead += err;
+      if (bytesRead < bytesToRead) streamObj.eof = true;
+      return Math.floor(bytesRead / size);
     }
   function _close(fildes) {
       // int close(int fildes);
@@ -4099,6 +4151,12 @@ function copyTempDouble(ptr) {
           return;
         case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
           HEAP32[((p)>>2)]=0;
+          return;
+        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+          // so implement it ourselves to allow C++ GLES2 code get the length.
+          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+          HEAP32[((p)>>2)]=formats.length;
           return;
       }
       var result = Module.ctx.getParameter(name_);
@@ -4658,7 +4716,9 @@ function copyTempDouble(ptr) {
       }
       HEAP32[((count)>>2)]=len;
       for (var i = 0; i < len; ++i) {
-        HEAP32[(((shaders)+(i*4))>>2)]=GL.shaders[result[i]];
+        var id = GL.shaders.indexOf(result[i]);
+        assert(id !== -1, 'shader not bound to local id');
+        HEAP32[(((shaders)+(i*4))>>2)]=id;
       }
     }
   function _glShaderSource(shader, count, string, length) {
@@ -9090,8 +9150,7 @@ function copyTempDouble(ptr) {
   var _cos=Math.cos;
   var _sin=Math.sin;
   function _abort() {
-      ABORT = true;
-      throw 'abort() at ' + (new Error().stack);
+      Module['abort']();
     }
   function ___errno_location() {
       return ___errno_state;
@@ -9457,9 +9516,11 @@ Runtime.stackRestore = function(top) { asm['stackRestore'](top) };
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
-Module['callMain'] = function callMain(args) {
+var initialStackTop;
+var inMain;
+Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
-  assert(!Module['preRun'] || Module['preRun'].length == 0, 'cannot call main when preRun functions remain to be called');
+  assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
   args = args || [];
   ensureInitRuntime();
   var argc = args.length+1;
@@ -9476,60 +9537,51 @@ Module['callMain'] = function callMain(args) {
   }
   argv.push(0);
   argv = allocate(argv, 'i32', ALLOC_NORMAL);
+  initialStackTop = STACKTOP;
+  inMain = true;
   var ret;
-  var initialStackTop = STACKTOP;
   try {
     ret = Module['_main'](argc, argv, 0);
   }
   catch(e) {
-    if (e.name == 'ExitStatus') {
-      return e.status;
+    if (e && typeof e == 'object' && e.type == 'ExitStatus') {
+      // exit() throws this once it's done to make sure execution
+      // has been stopped completely
+      Module.print('Exit Status: ' + e.value);
+      return e.value;
     } else if (e == 'SimulateInfiniteLoop') {
+      // running an evented main loop, don't immediately exit
       Module['noExitRuntime'] = true;
     } else {
       throw e;
     }
   } finally {
-    STACKTOP = initialStackTop;
+    inMain = false;
   }
-  return ret;
+  // if we're not running an evented main loop, it's time to exit
+  if (!Module['noExitRuntime']) {
+    exit(ret);
+  }
 }
 function run(args) {
   args = args || Module['arguments'];
   if (runDependencies > 0) {
     Module.printErr('run() called, but dependencies remain, so not running');
-    return 0;
+    return;
   }
-  if (Module['preRun']) {
-    if (typeof Module['preRun'] == 'function') Module['preRun'] = [Module['preRun']];
-    var toRun = Module['preRun'];
-    Module['preRun'] = [];
-    for (var i = toRun.length-1; i >= 0; i--) {
-      toRun[i]();
-    }
-    if (runDependencies > 0) {
-      // a preRun added a dependency, run will be called later
-      return 0;
-    }
+  preRun();
+  if (runDependencies > 0) {
+    // a preRun added a dependency, run will be called later
+    return;
   }
   function doRun() {
     ensureInitRuntime();
     preMain();
-    var ret = 0;
     calledRun = true;
     if (Module['_main'] && shouldRunNow) {
-      ret = Module['callMain'](args);
-      if (!Module['noExitRuntime']) {
-        exitRuntime();
-      }
+      Module['callMain'](args);
     }
-    if (Module['postRun']) {
-      if (typeof Module['postRun'] == 'function') Module['postRun'] = [Module['postRun']];
-      while (Module['postRun'].length > 0) {
-        Module['postRun'].pop()();
-      }
-    }
-    return ret;
+    postRun();
   }
   if (Module['setStatus']) {
     Module['setStatus']('Running...');
@@ -9539,12 +9591,35 @@ function run(args) {
       }, 1);
       if (!ABORT) doRun();
     }, 1);
-    return 0;
   } else {
-    return doRun();
+    doRun();
   }
 }
 Module['run'] = Module.run = run;
+function exit(status) {
+  ABORT = true;
+  STACKTOP = initialStackTop;
+  // TODO call externally added 'exit' callbacks with the status code.
+  // It'd be nice to provide the same interface for all Module events (e.g.
+  // prerun, premain, postmain). Perhaps an EventEmitter so we can do:
+  // Module.on('exit', function (status) {});
+  // exit the runtime
+  exitRuntime();
+  if (inMain) {
+    // if we're still inside the callMain's try/catch, we need to throw an
+    // exception in order to immediately terminate execution.
+    throw { type: 'ExitStatus', value: status };
+  }
+}
+Module['exit'] = Module.exit = exit;
+function abort(text) {
+  if (text) {
+    Module.print(text);
+  }
+  ABORT = true;
+  throw 'abort() at ' + (new Error().stack);
+}
+Module['abort'] = Module.abort = abort;
 // {{PRE_RUN_ADDITIONS}}
 if (Module['preInit']) {
   if (typeof Module['preInit'] == 'function') Module['preInit'] = [Module['preInit']];
@@ -9559,4 +9634,4 @@ if (Module['noInitialRun']) {
 }
 run();
 // {{POST_RUN_ADDITIONS}}
-  // {{MODULE_ADDITIONS}}
+// {{MODULE_ADDITIONS}}
