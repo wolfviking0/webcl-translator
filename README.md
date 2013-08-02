@@ -58,21 +58,31 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 Sources Sample :
 -----------------
 
-|-----------------------------------------------------------------------------------------------------------------------|
-| hello_world	| http://developer.apple.com/library/mac/#samplecode/OpenCL_Hello_World_Example/ 						|
-| hello_world_2	| https://code.google.com/p/opencl-book-samples/														|
-| convolution	| https://developer.apple.com/library/mac/#samplecode/OpenCL_Matrix_Transpose_Example/					|
-| reduce		| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Reduction_Example/				|
-| scan   		| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Prefix_Sum_Example/				|
-| mandelbulb	| http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html									|
-| qjulia		| https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_Julia-Set_Example/ 	|
-| displacement	| http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/  |
-| smallpt  		| http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html											|
-|-----------------------------------------------------------------------------------------------------------------------|
+
+hello_world		| http://developer.apple.com/library/mac/#samplecode/OpenCL_Hello_World_Example/
+
+hello_world_2	| https://code.google.com/p/opencl-book-samples/								
+
+convolution		| https://developer.apple.com/library/mac/#samplecode/OpenCL_Matrix_Transpose_Example/
+
+reduce			| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Reduction_Example/
+
+scan   			| https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Prefix_Sum_Example/
+
+mandelbulb		| http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html
+
+qjulia			| https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_Julia-Set_Example/
+
+displacement	| http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/
+
+smallpt  		| http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
+
 	
 Videos :
 --------
 
-http://www.youtube.com/watch?v=KSQmXV3RHLQ\n
-http://www.youtube.com/watch?v=bIzmZmEc32Y\n
-http://www.youtube.com/watch?v=bIzmZmEc32Y\n
+http://www.youtube.com/watch?v=KSQmXV3RHLQ
+
+http://www.youtube.com/watch?v=bIzmZmEc32Y
+
+http://www.youtube.com/watch?v=bIzmZmEc32Y
