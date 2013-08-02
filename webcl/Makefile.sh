@@ -16,3 +16,5 @@ cd ../displacement/
 make
 cd ../smallpt/
 make
+cd ../mandelbulb/
+make
