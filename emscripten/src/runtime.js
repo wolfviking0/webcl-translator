@@ -201,14 +201,24 @@ var Runtime = {
     type.alignSize = 0;
     var diffs = [];
     var prev = -1;
+    var index = 0;
     type.flatIndexes = type.fields.map(function(field) {
+      index++;
       var size, alignSize;
       if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
         size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
         alignSize = Runtime.getAlignSize(field, size);
       } else if (Runtime.isStructType(field)) {
-        size = Types.types[field].flatSize;
-        alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+        if (field[1] === '0') {
+          // this is [0 x something]. When inside another structure like here, it must be at the end,
+          // and it adds no size
+          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
+          size = 0;
+          alignSize = type.alignSize || QUANTUM_SIZE;
+        } else {
+          size = Types.types[field].flatSize;
+          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+        }
       } else if (field[0] == 'b') {
         // bN, large number field, like a [N x i8]
         size = field.substr(1)|0;

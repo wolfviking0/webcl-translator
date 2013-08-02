@@ -27,6 +27,7 @@ Running the main part of the test suite. Don't forget to run the other parts!
   benchmark - run before and after each set of changes before pushing to
               master, verify no regressions
   browser - runs pages in a web browser
+  browser audio - runs audio tests in a web browser (requires human verification)
 
 To run one of those parts, do something like
 
@@ -270,6 +271,8 @@ process(sys.argv[1])
       print >> sys.stderr, "[was asm.js'ified]"
     elif 'asm.js' in err: # if no asm.js error, then not an odin build
       raise Exception("did NOT asm.js'ify")
+    err = '\n'.join(filter(lambda line: 'successfully compiled asm.js code' not in line, err.split('\n')))
+    return err
 
   def run_generated_code(self, engine, filename, args=[], check_timeout=True, output_nicerizer=None):
     stdout = os.path.join(self.get_dir(), 'stdout') # use files, as PIPE can get too full and hang us
@@ -285,7 +288,7 @@ process(sys.argv[1])
     out = open(stdout, 'r').read()
     err = open(stderr, 'r').read()
     if engine == SPIDERMONKEY_ENGINE and Settings.ASM_JS:
-      self.validate_asmjs(err)
+      err = self.validate_asmjs(err)
     if output_nicerizer:
       ret = output_nicerizer(out, err)
     else:
@@ -2966,6 +2969,37 @@ back
           self.emcc_args.pop() ; self.emcc_args.pop() # disable closure to work around a closure bug
         self.do_run(src, 'Throw...Construct...Catched...Destruct...Throw...Construct...Copy...Catched...Destruct...Destruct...')
 
+    def test_exception_2(self):
+      if self.emcc_args is None: return self.skip('need emcc to add in libcxx properly')
+      Settings.DISABLE_EXCEPTION_CATCHING = 0
+      src = r'''
+        #include <stdexcept>
+        #include <stdio.h>
+
+        typedef void (*FuncPtr)();
+
+        void ThrowException()
+        {
+	        throw std::runtime_error("catch me!");
+        }
+
+        FuncPtr ptr = ThrowException;
+
+        int main()
+        {
+	        try
+	        {
+		        ptr();
+	        }
+	        catch(...)
+	        {
+		        printf("Exception caught successfully!\n");
+	        }
+	        return 0;
+        }
+      '''
+      self.do_run(src, 'Exception caught successfully!')
+
     def test_white_list_exception(self):
       Settings.DISABLE_EXCEPTION_CATCHING = 2
       Settings.EXCEPTION_CATCHING_WHITELIST = ["__Z12somefunctionv"]
@@ -4028,6 +4062,11 @@ def process(filename):
         Settings.EXPORTED_FUNCTIONS = ['_main', '_save_me_aimee']
         self.do_run(src, 'hello world!\n*100*\n*fivesix*\nmann\n', post_build=check)
 
+        # test EXPORT_ALL
+        Settings.EXPORTED_FUNCTIONS = []
+        Settings.EXPORT_ALL = 1
+        self.do_run(src, 'hello world!\n*100*\n*fivesix*\nmann\n', post_build=check)
+
     def test_inlinejs(self):
         if Settings.ASM_JS: return self.skip('asm does not support random code, TODO: something that works in asm')
         src = r'''
@@ -4521,6 +4560,22 @@ The current address of a is: 0x12345678
 The current type of b is: 9
 ''')
 
+    def test_functionpointer_libfunc_varargs(self):
+      src = r'''
+        #include <stdio.h>
+        #include <fcntl.h>
+        typedef int (*fp_t)(int, int, ...);
+        int main(int argc, char **argv) {
+          fp_t fp = &fcntl;
+          if (argc == 1337) fp = (fp_t)&main;
+          (*fp)(0, 10);
+          (*fp)(0, 10, 5);
+          printf("waka\n");
+          return 0;
+        }
+      '''
+      self.do_run(src, '''waka''')
+
     def test_structbyval(self):
         Settings.INLINING_LIMIT = 50
 
@@ -4970,6 +5025,36 @@ The current type of b is: 9
       '''
       self.do_run(src, 'time: ') # compilation check, mainly
 
+    def test_gmtime(self):
+      src = r'''
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <time.h>
+        #include <assert.h>
+
+        int main(void)
+        {
+            time_t t=time(NULL);
+            struct tm *ptm=gmtime(&t);
+            struct tm tmCurrent=*ptm;
+            int hour=tmCurrent.tm_hour;
+
+            t-=hour*3600; // back to midnight
+            int yday = -1;
+            for(hour=0;hour<24;hour++)
+            {
+                ptm=gmtime(&t);
+                // tm_yday must be constant all day...
+                printf("yday: %d, hour: %d\n", ptm->tm_yday, hour);
+                if (yday == -1) yday = ptm->tm_yday;
+                else assert(yday == ptm->tm_yday);
+                t+=3600; // add one hour
+            }
+            printf("ok!\n");
+            return(0);
+        }
+      '''
+      self.do_run(src, '''ok!''')
 
     def test_strptime_tm(self):
       src=r'''
@@ -5094,6 +5179,162 @@ The current type of b is: 9
       '''
       self.do_run(src, 'OK')
 
+    def test_strftime(self):
+      src=r'''
+        #include <time.h>
+        #include <stdio.h>
+        #include <string.h>
+        #include <stdlib.h>
+
+        void test(int result, const char* comment, const char* parsed = "") {
+          printf("%d",result);
+          if (!result) {
+            printf("\nERROR: %s (\"%s\")\n", comment, parsed);
+          }
+        }
+
+        int cmp(const char *s1, const char *s2) {
+          for ( ; *s1 == *s2 ; s1++,s2++ ) {
+            if ( *s1 == '\0' )
+              break;
+          } 
+
+          return (*s1 - *s2);
+        }
+
+        int main() {
+            struct tm tm;
+            char s[1000];
+            size_t size;
+            
+            tm.tm_sec = 4;
+            tm.tm_min = 23;
+            tm.tm_hour = 20;
+            tm.tm_mday = 21;
+            tm.tm_mon = 1;
+            tm.tm_year = 74;
+            tm.tm_wday = 4;
+            tm.tm_yday = 51;
+            tm.tm_isdst = 0;
+            
+            size = strftime(s, 1000, "", &tm);
+            test((size==0) && (*s=='\0'), "strftime test #1", s);
+
+            size = strftime(s, 1000, "%a", &tm);
+            test((size==3) && !cmp(s, "Thu"), "strftime test #2", s);
+
+            size = strftime(s, 1000, "%A", &tm);
+            test((size==8) && !cmp(s, "Thursday"), "strftime test #3", s);
+
+            size = strftime(s, 1000, "%b", &tm);
+            test((size==3) && !cmp(s, "Feb"), "strftime test #4", s);
+
+            size = strftime(s, 1000, "%B", &tm);
+            test((size==8) && !cmp(s, "February"),
+                               "strftime test #5", s);
+
+            size = strftime(s, 1000, "%d", &tm);
+            test((size==2) && !cmp(s, "21"),
+                               "strftime test #6", s);
+
+            size = strftime(s, 1000, "%H", &tm);
+            test((size==2) && !cmp(s, "20"),
+                               "strftime test #7", s);
+
+            size = strftime(s, 1000, "%I", &tm);
+            test((size==2) && !cmp(s, "08"),
+                               "strftime test #8", s);
+
+            size = strftime(s, 1000, "%j", &tm);
+            test((size==3) && !cmp(s, "052"),
+                               "strftime test #9", s);
+
+            size = strftime(s, 1000, "%m", &tm);
+            test((size==2) && !cmp(s, "02"),
+                               "strftime test #10", s);
+
+            size = strftime(s, 1000, "%M", &tm);
+            test((size==2) && !cmp(s, "23"),
+                               "strftime test #11", s);
+
+            size = strftime(s, 1000, "%p", &tm);
+            test((size==2) && !cmp(s, "PM"),
+                               "strftime test #12", s);
+
+            size = strftime(s, 1000, "%S", &tm);
+            test((size==2) && !cmp(s, "04"),
+                               "strftime test #13", s);
+
+            size = strftime(s, 1000, "%U", &tm);
+            test((size==2) && !cmp(s, "07"),
+                               "strftime test #14", s);
+
+            size = strftime(s, 1000, "%w", &tm);
+            test((size==1) && !cmp(s, "4"),
+                               "strftime test #15", s);
+
+            size = strftime(s, 1000, "%W", &tm);
+            test((size==2) && !cmp(s, "07"),
+                               "strftime test #16", s);
+
+            size = strftime(s, 1000, "%y", &tm);
+            test((size==2) && !cmp(s, "74"),
+                               "strftime test #17", s);
+
+            size = strftime(s, 1000, "%Y", &tm);
+            test((size==4) && !cmp(s, "1974"),
+                               "strftime test #18", s);
+
+            size = strftime(s, 1000, "%%", &tm);
+            test((size==1) && !cmp(s, "%"),
+                               "strftime test #19", s);
+
+            size = strftime(s, 5, "%Y", &tm);
+            test((size==4) && !cmp(s, "1974"),
+                               "strftime test #20", s);
+
+            size = strftime(s, 4, "%Y", &tm);
+            test((size==0), "strftime test #21", s);
+
+            tm.tm_mon = 0;
+            tm.tm_mday = 1;
+            size = strftime(s, 10, "%U", &tm);
+            test((size==2) && !cmp(s, "00"), "strftime test #22", s);
+
+            size = strftime(s, 10, "%W", &tm);
+            test((size==2) && !cmp(s, "00"), "strftime test #23", s);
+
+            // 1/1/1973 was a Sunday and is in CW 1
+            tm.tm_year = 73;
+            size = strftime(s, 10, "%W", &tm);
+            test((size==2) && !cmp(s, "01"), "strftime test #24", s);
+
+            // 1/1/1978 was a Monday and is in CW 1
+            tm.tm_year = 78;
+            size = strftime(s, 10, "%U", &tm);
+            test((size==2) && !cmp(s, "01"), "strftime test #25", s);
+
+            // 2/1/1999
+            tm.tm_year = 99;
+            tm.tm_yday = 1;
+            size = strftime(s, 10, "%G (%V)", &tm);
+            test((size==9) && !cmp(s, "1998 (53)"), "strftime test #26", s);
+
+            size = strftime(s, 10, "%g", &tm);
+            test((size==2) && !cmp(s, "98"), "strftime test #27", s);
+
+            // 30/12/1997
+            tm.tm_year = 97;
+            tm.tm_yday = 363;
+            size = strftime(s, 10, "%G (%V)", &tm);
+            test((size==9) && !cmp(s, "1998 (01)"), "strftime test #28", s);
+
+            size = strftime(s, 10, "%g", &tm);
+            test((size==2) && !cmp(s, "98"), "strftime test #29", s);
+        } 
+      '''
+      self.do_run(src, '11111111111111111111111111111')
+
     def test_intentional_fault(self):
       # Some programs intentionally segfault themselves, we should compile that into a throw
       src = r'''
@@ -5102,7 +5343,7 @@ The current type of b is: 9
           return 0;
         }
         '''
-      self.do_run(src, 'fault on write to 0' if not Settings.ASM_JS else 'Assertion: 0')
+      self.do_run(src, 'fault on write to 0' if not Settings.ASM_JS else 'abort()')
 
     def test_trickystring(self):
       src = r'''
@@ -6788,11 +7029,12 @@ Pass: 0.000012 0.000012''')
     def test_sscanf_6(self):
       src = r'''
         #include <stdio.h>
-
+        #include <string.h>
         int main()
         {
           char *date = "18.07.2013w";
           char c[10];
+          memset(c, 0, 10);
           int y, m, d, i;
           i = sscanf(date, "%d.%d.%4d%c", &d, &m, &y, c);
           printf("date: %s; day %2d, month %2d, year %4d, extra: %c, %d\n", date, d, m, y, c[0], i);
@@ -6872,7 +7114,7 @@ def process(filename):
       other.close()
 
       src = open(path_from_root('tests', 'files.cpp'), 'r').read()
-      self.do_run(src, 'size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\ntexte\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\nok.\n',
+      self.do_run(src, 'size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\nok.\ntexte\n',
                    post_build=post, extra_emscripten_args=['-H', 'libc/fcntl.h'])
 
     def test_files_m(self):
@@ -6904,7 +7146,7 @@ def process(filename):
           return 0;
         }
         '''
-      self.do_run(src, 'isatty? 0,0,1\ngot: 35\ngot: 45\ngot: 25\ngot: 15\n', post_build=post)
+      self.do_run(src, 'got: 35\ngot: 45\ngot: 25\ngot: 15\nisatty? 0,0,1\n', post_build=post)
 
     def test_fwrite_0(self):
       src = r'''
@@ -6929,6 +7171,10 @@ def process(filename):
         }
         '''
       self.do_run(src, 'written=0')
+
+    def test_fgetc_ungetc(self):
+      src = open(path_from_root('tests', 'stdio', 'test_fgetc_ungetc.c'), 'r').read()
+      self.do_run(src, 'success', force_c=True)
 
     def test_fgetc_unsigned(self):
       if self.emcc_args is None: return self.skip('requires emcc')
@@ -6998,23 +7244,19 @@ def process(filename):
       self.do_run(src, 'success', force_c=True)
 
     def test_stat(self):
-      add_pre_run = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    \'\'\'
-      var f1 = FS.createFolder('/', 'test', true, true);
-      var f2 = FS.createDataFile(f1, 'file', 'abcdef', true, true);
-      var f3 = FS.createLink(f1, 'link', 'file', true, true);
-      var f4 = FS.createDevice(f1, 'device', function(){}, function(){});
-      f1.timestamp = f2.timestamp = f3.timestamp = f4.timestamp = new Date(1200000000000);
-    \'\'\'
-  )
-  open(filename, 'w').write(src)
-'''
-      src = open(path_from_root('tests', 'stat', 'src.c'), 'r').read()
-      expected = open(path_from_root('tests', 'stat', 'output.txt'), 'r').read()
-      self.do_run(src, expected, post_build=add_pre_run, extra_emscripten_args=['-H', 'libc/fcntl.h'])
+      Building.COMPILER_TEST_OPTS += ['-DUSE_OLD_FS='+str(Settings.USE_OLD_FS)]
+      src = open(path_from_root('tests', 'stat', 'test_stat.c'), 'r').read()
+      self.do_run(src, 'success', force_c=True)
+
+    def test_stat_chmod(self):
+      Building.COMPILER_TEST_OPTS += ['-DUSE_OLD_FS='+str(Settings.USE_OLD_FS)]
+      src = open(path_from_root('tests', 'stat', 'test_chmod.c'), 'r').read()
+      self.do_run(src, 'success', force_c=True)
+
+    def test_stat_mknod(self):
+      Building.COMPILER_TEST_OPTS += ['-DUSE_OLD_FS='+str(Settings.USE_OLD_FS)]
+      src = open(path_from_root('tests', 'stat', 'test_mknod.c'), 'r').read()
+      self.do_run(src, 'success', force_c=True)
 
     def test_fcntl(self):
       add_pre_run = '''
@@ -8848,6 +9090,7 @@ def process(filename):
 
       src = r'''
         #include <stdio.h>
+        #include <stdlib.h>
 
         extern "C" {
           int get_int() { return 5; }
@@ -8870,42 +9113,44 @@ def process(filename):
           if (argc == 15) print_string(argv[0]);
           if (argc == 16) pointer((int*)argv[0]);
           if (argc % 17 == 12) return multi(argc, float(argc)/2, argc+1, argv[0]);
-          return 0;
+          // return 0;
+          exit(0);
         }
       '''
 
       post = '''
 def process(filename):
   src = \'\'\'
-    var Module = {
-      'postRun': function() {
-        Module.print('*');
-        var ret;
-        ret = Module['ccall']('get_int', 'number'); Module.print([typeof ret, ret]);
-        ret = ccall('get_float', 'number'); Module.print([typeof ret, ret.toFixed(2)]);
-        ret = ccall('get_string', 'string'); Module.print([typeof ret, ret]);
-        ret = ccall('print_int', null, ['number'], [12]); Module.print(typeof ret);
-        ret = ccall('print_float', null, ['number'], [14.56]); Module.print(typeof ret);
-        ret = ccall('print_string', null, ['string'], ["cheez"]); Module.print(typeof ret);
-        ret = ccall('print_string', null, ['array'], [[97, 114, 114, 45, 97, 121, 0]]); Module.print(typeof ret);
-        ret = ccall('multi', 'number', ['number', 'number', 'number', 'string'], [2, 1.4, 3, 'more']); Module.print([typeof ret, ret]);
-        var p = ccall('malloc', 'pointer', ['number'], [4]);
-        setValue(p, 650, 'i32');
-        ret = ccall('pointer', 'pointer', ['pointer'], [p]); Module.print([typeof ret, getValue(ret, 'i32')]);
-        Module.print('*');
-        // part 2: cwrap
-        var multi = Module['cwrap']('multi', 'number', ['number', 'number', 'number', 'string']);
-        Module.print(multi(2, 1.4, 3, 'atr'));
-        Module.print(multi(8, 5.4, 4, 'bret'));
-        Module.print('*');
-        // part 3: avoid stack explosion
-        for (var i = 0; i < TOTAL_STACK/60; i++) {
-          ccall('multi', 'number', ['number', 'number', 'number', 'string'], [0, 0, 0, '123456789012345678901234567890123456789012345678901234567890']);
-        }
-        Module.print('stack is ok.');
+    var Module = { noInitialRun: true };
+    \'\'\' + open(filename, 'r').read() + \'\'\'
+    Module.addOnExit(function () {
+      Module.print('*');
+      var ret;
+      ret = Module['ccall']('get_int', 'number'); Module.print([typeof ret, ret]);
+      ret = ccall('get_float', 'number'); Module.print([typeof ret, ret.toFixed(2)]);
+      ret = ccall('get_string', 'string'); Module.print([typeof ret, ret]);
+      ret = ccall('print_int', null, ['number'], [12]); Module.print(typeof ret);
+      ret = ccall('print_float', null, ['number'], [14.56]); Module.print(typeof ret);
+      ret = ccall('print_string', null, ['string'], ["cheez"]); Module.print(typeof ret);
+      ret = ccall('print_string', null, ['array'], [[97, 114, 114, 45, 97, 121, 0]]); Module.print(typeof ret);
+      ret = ccall('multi', 'number', ['number', 'number', 'number', 'string'], [2, 1.4, 3, 'more']); Module.print([typeof ret, ret]);
+      var p = ccall('malloc', 'pointer', ['number'], [4]);
+      setValue(p, 650, 'i32');
+      ret = ccall('pointer', 'pointer', ['pointer'], [p]); Module.print([typeof ret, getValue(ret, 'i32')]);
+      Module.print('*');
+      // part 2: cwrap
+      var multi = Module['cwrap']('multi', 'number', ['number', 'number', 'number', 'string']);
+      Module.print(multi(2, 1.4, 3, 'atr'));
+      Module.print(multi(8, 5.4, 4, 'bret'));
+      Module.print('*');
+      // part 3: avoid stack explosion
+      for (var i = 0; i < TOTAL_STACK/60; i++) {
+        ccall('multi', 'number', ['number', 'number', 'number', 'string'], [0, 0, 0, '123456789012345678901234567890123456789012345678901234567890']);
       }
-    };
-  \'\'\' + open(filename, 'r').read()
+      Module.print('stack is ok.');
+    });
+    Module.callMain();
+  \'\'\'
   open(filename, 'w').write(src)
 '''
 
@@ -9117,6 +9362,26 @@ def process(filename):
       '''
       self.do_run(src, 'abs(-10): 10\nabs(-11): 11');
 
+    def test_embind_2(self):
+      if self.emcc_args is None: return self.skip('requires emcc')
+      Building.COMPILER_TEST_OPTS += ['--bind', '--post-js', 'post.js']
+      open('post.js', 'w').write('''
+        Module.print('lerp ' + Module.lerp(1, 2, 0.66) + '.');
+      ''')
+      src = r'''
+        #include <stdio.h>
+        #include <SDL/SDL.h>
+        #include <emscripten/bind.h>
+        using namespace emscripten;
+        float lerp(float a, float b, float t) {
+            return (1 - t) * a + t * b;
+        }
+        EMSCRIPTEN_BINDINGS(my_module) {
+            function("lerp", &lerp);
+        }
+      '''
+      self.do_run(src, 'lerp 1.66');
+
     def test_scriptaclass(self):
         if self.emcc_args is None: return self.skip('requires emcc')
 
@@ -9316,7 +9581,10 @@ def process(filename):
             c2.virtualFunc2();
             Module.print('*ok*');
           '''
-          src = open(filename, 'a')
+          code = open(filename).read()
+          src = open(filename, 'w')
+          src.write('var Module = {};\n') # name Module
+          src.write(code)
           src.write(script_src_2 + '\n')
           src.close()
 
@@ -10299,11 +10567,11 @@ Options that are modified or new in %s include:
           assert 'SAFE_HEAP' not in generated, 'safe heap should not be used by default'
           assert ': while(' not in generated, 'when relooping we also js-optimize, so there should be no labelled whiles'
           if closure:
-            if opt_level == 0: assert 'Module._main =' in generated, 'closure compiler should have been run'
-            elif opt_level >= 1: assert 'Module._main=' in generated, 'closure compiler should have been run (and output should be minified)'
+            if opt_level == 0: assert '._main =' in generated, 'closure compiler should have been run'
+            elif opt_level >= 1: assert '._main=' in generated, 'closure compiler should have been run (and output should be minified)'
           else:
             # closure has not been run, we can do some additional checks. TODO: figure out how to do these even with closure
-            assert 'Module._main = ' not in generated, 'closure compiler should not have been run'
+            assert '._main = ' not in generated, 'closure compiler should not have been run'
             if keep_debug:
               assert ('(label)' in generated or '(label | 0)' in generated) == (opt_level <= 1), 'relooping should be in opt >= 2'
               assert ('assert(STACKTOP < STACK_MAX' in generated) == (opt_level == 0), 'assertions should be in opt == 0'
@@ -10464,6 +10732,27 @@ f.close()
           finally:
             os.chdir(path_from_root('tests')) # Move away from the directory we are about to remove.
             shutil.rmtree(tempdirname)
+
+    def test_nostdincxx(self):
+      try:
+        old = os.environ.get('EMCC_LLVM_TARGET') or ''
+        for compiler in [EMCC, EMXX]:
+          for target in ['i386-pc-linux-gnu', 'le32-unknown-nacl']:
+            print compiler, target
+            os.environ['EMCC_LLVM_TARGET'] = target
+            out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v'], stdout=PIPE, stderr=PIPE).communicate()
+            out2, err2 = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v', '-nostdinc++'], stdout=PIPE, stderr=PIPE).communicate()
+            assert out == out2
+            def focus(e):
+              assert 'search starts here:' in e, e
+              assert e.count('End of search list.') == 1, e
+              return e[e.index('search starts here:'):e.index('End of search list.')+20]
+            err = focus(err)
+            err2 = focus(err2)
+            assert err == err2, err + '\n\n\n\n' + err2
+      finally:
+        if old:
+          os.environ['EMCC_LLVM_TARGET'] = old
 
     def test_failure_error_code(self):
       for compiler in [EMCC, EMXX]:
@@ -10819,6 +11108,23 @@ f.close()
         std::string side() { return "and hello from side"; }
       ''', ['hello from main and hello from side\n'])
 
+      # followup to iostream test: a second linking
+      print 'second linking of a linking output'
+      open('moar.cpp', 'w').write(r'''
+        #include <iostream>
+        struct Moar {
+          Moar() { std::cout << "moar!" << std::endl; }
+        };
+        Moar m;
+      ''')
+      Popen([PYTHON, EMCC, 'moar.cpp', '-o', 'moar.js', '-s', 'SIDE_MODULE=1', '-O2']).communicate()
+      Popen([PYTHON, EMLINK, 'together.js', 'moar.js', 'triple.js'], stdout=PIPE).communicate()
+      assert os.path.exists('triple.js')
+      for engine in JS_ENGINES:
+        out = run_js('triple.js', engine=engine, stderr=PIPE, full_output=True)
+        self.assertContained('moar!\nhello from main and hello from side\n', out)
+        if engine == SPIDERMONKEY_ENGINE: self.validate_asmjs(out)
+
       # zlib compression library. tests function pointers in initializers and many other things
       test('zlib', '', open(path_from_root('tests', 'zlib', 'example.c'), 'r').read(), 
                        self.get_library('zlib', os.path.join('libz.a'), make_args=['libz.a']),
@@ -10843,35 +11149,54 @@ f.close()
         def measure_funcs(filename):
           i = 0
           start = -1
-          curr = '?'
+          curr = None
           ret = {}
           for line in open(filename):
             i += 1
             if line.startswith('function '):
               start = i
               curr = line
-            elif line.startswith('}'):
+            elif line.startswith('}') and curr:
               size = i - start
-              if size > 100: ret[curr] = size
+              ret[curr] = size
+              curr = None
           return ret
 
-        for outlining_limit in [5000, 0]:
-          Popen([PYTHON, EMCC, src] + libs + ['-o', 'test.js', '-O2', '-g3', '-s', 'OUTLINING_LIMIT=%d' % outlining_limit] + args).communicate()
-          assert os.path.exists('test.js')
-          for engine in JS_ENGINES:
-            out = run_js('test.js', engine=engine, stderr=PIPE, full_output=True)
-            self.assertContained(expected, out)
-            if engine == SPIDERMONKEY_ENGINE: self.validate_asmjs(out)
-          low = expected_ranges[outlining_limit][0]
-          seen = max(measure_funcs('test.js').values())
-          high = expected_ranges[outlining_limit][1]
-          print '   ', low, '<=', seen, '<=', high
-          assert low <= seen <= high
+        for debug, outlining_limits in [
+          ([], (1000,)),
+          (['-g1'], (1000,)),
+          (['-g2'], (1000,)),
+          (['-g'], (100, 250, 500, 1000, 2000, 5000, 0))
+        ]:
+          for outlining_limit in outlining_limits:
+            print '\n', debug, outlining_limit, '\n'
+            # TODO: test without -g3, tell all sorts
+            Popen([PYTHON, EMCC, src] + libs + ['-o', 'test.js', '-O2'] + debug + ['-s', 'OUTLINING_LIMIT=%d' % outlining_limit] + args).communicate()
+            assert os.path.exists('test.js')
+            shutil.copyfile('test.js', '%d_test.js' % outlining_limit)
+            for engine in JS_ENGINES:
+              out = run_js('test.js', engine=engine, stderr=PIPE, full_output=True)
+              self.assertContained(expected, out)
+              if engine == SPIDERMONKEY_ENGINE: self.validate_asmjs(out)
+            if debug == ['-g']:
+              low = expected_ranges[outlining_limit][0]
+              seen = max(measure_funcs('test.js').values())
+              high = expected_ranges[outlining_limit][1]
+              print outlining_limit, '   ', low, '<=', seen, '<=', high
+              assert low <= seen <= high
 
       test('zlib', path_from_root('tests', 'zlib', 'example.c'), 
                    self.get_library('zlib', os.path.join('libz.a'), make_args=['libz.a']),
                    open(path_from_root('tests', 'zlib', 'ref.txt'), 'r').read(),
-                   { 5000: (800, 1100), 0: (1500, 1800) },
+                   {
+                     100: (190, 250),
+                     250: (300, 330),
+                     500: (250, 310),
+                    1000: (230, 300),
+                    2000: (380, 450),
+                    5000: (800, 1100),
+                       0: (1500, 1800)
+                   },
                    args=['-I' + path_from_root('tests', 'zlib')], suffix='c')
 
     def test_symlink(self):
@@ -10995,6 +11320,45 @@ f.close()
       Building.emcc(lib_name, ['-s', 'EXPORT_ALL=1', '--post-js', 'main.js'], output_filename='a.out.js')
 
       self.assertContained('libf1\nlibf2\n', run_js(os.path.join(self.get_dir(), 'a.out.js')))
+
+    def test_stdin(self):
+      open('main.cpp', 'w').write(r'''
+#include <stdio.h>
+int main(int argc, char const *argv[])
+{
+    char str[10] = {0};
+    scanf("%10s", str);
+    printf("%s\n", str);
+    return 0;
+}
+''')
+      Building.emcc('main.cpp', output_filename='a.out.js')
+      open('in.txt', 'w').write('abc')
+      # node's stdin support is broken
+      self.assertContained('abc', Popen(listify(SPIDERMONKEY_ENGINE) + ['a.out.js'], stdin=open('in.txt'), stdout=PIPE, stderr=PIPE).communicate()[0])
+
+    def test_ungetc_fscanf(self):
+      open('main.cpp', 'w').write(r'''
+        #include <stdio.h>
+        int main(int argc, char const *argv[])
+        {
+            char str[4] = {0};
+            FILE* f = fopen("my_test.input", "r");
+            if (f == NULL) {
+                printf("cannot open file\n");
+                return -1;
+            }
+            ungetc('x', f);
+            ungetc('y', f);
+            ungetc('z', f);
+            fscanf(f, "%3s", str);
+            printf("%s\n", str);
+            return 0;
+        }
+      ''')
+      open('my_test.input', 'w').write('abc')
+      Building.emcc('main.cpp', ['--embed-file', 'my_test.input'], output_filename='a.out.js')
+      self.assertContained('zyx', Popen(listify(JS_ENGINES[0]) + ['a.out.js'], stdout=PIPE, stderr=PIPE).communicate()[0])
 
     def test_abspaths(self):
       # Includes with absolute paths are generally dangerous, things like -I/usr/.. will get to system local headers, not our portable ones.
@@ -11628,6 +11992,8 @@ f.close()
          ['asm', 'outline']),
         (path_from_root('tools', 'test-js-optimizer-asm-outline2.js'), open(path_from_root('tools', 'test-js-optimizer-asm-outline2-output.js')).read(),
          ['asm', 'outline']),
+        (path_from_root('tools', 'test-js-optimizer-asm-outline3.js'), open(path_from_root('tools', 'test-js-optimizer-asm-outline3-output.js')).read(),
+         ['asm', 'outline']),
       ]:
         print input
         output = Popen(listify(NODE_JS) + [path_from_root('tools', 'js-optimizer.js'), input] + passes, stdin=PIPE, stdout=PIPE).communicate()[0]
@@ -11699,7 +12065,9 @@ f.close()
         ([], True), # without --bind, we fail
         (['--bind'], False),
         (['--bind', '-O1'], False),
-        (['--bind', '-O2'], False)
+        (['--bind', '-O2'], False),
+        (['--bind', '-O1', '-s', 'ASM_JS=0'], False),
+        (['--bind', '-O2', '-s', 'ASM_JS=0'], False)
       ]:
         print args, fail
         self.clear()
@@ -11818,6 +12186,36 @@ seeked= file.
       self.assertNotContained('emcc: warning: treating -s as linker option', output[1])
       assert os.path.exists('conftest')
 
+    def test_file_packager(self):
+      try:
+        os.mkdir('subdir')
+      except:
+        pass
+      open('data1.txt', 'w').write('data1')
+      os.chdir('subdir')
+      open('data2.txt', 'w').write('data2')
+      # relative path to below the current dir is invalid
+      out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE).communicate()
+      assert len(out) == 0
+      assert 'below the current directory' in err
+      # relative path that ends up under us is cool
+      out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE).communicate()
+      assert len(out) > 0
+      assert 'below the current directory' not in err
+      # direct path leads to the same code being generated - relative path does not make us do anything different
+      out2, err2 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE).communicate()
+      assert len(out2) > 0
+      assert 'below the current directory' not in err2
+      def clean(txt):
+        return filter(lambda line: 'PACKAGE_UUID' not in line, txt.split('\n'))
+      out = clean(out)
+      out2 = clean(out2)
+      assert out == out2
+      # sanity check that we do generate different code for different inputs
+      out3, err3 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt', 'data2.txt@waka.txt'], stdout=PIPE, stderr=PIPE).communicate()
+      out3 = clean(out3)
+      assert out != out3
+
     def test_crunch(self):
       # crunch should not be run if a .crn exists that is more recent than the .dds
       shutil.copyfile(path_from_root('tests', 'ship.dds'), 'ship.dds')
@@ -11863,6 +12261,25 @@ elif 'browser' in str(sys.argv):
   print
   print 'Running the browser tests. Make sure the browser allows popups from localhost.'
   print
+
+  if 'audio' in sys.argv:
+    print
+    print 'Running the browser audio tests. Make sure to listen to hear the correct results!'
+    print
+
+    i = sys.argv.index('audio')
+    sys.argv = sys.argv[:i] + sys.argv[i+1:]
+    i = sys.argv.index('browser')
+    sys.argv = sys.argv[:i] + sys.argv[i+1:]
+    sys.argv += [
+      'browser.test_sdl_audio',
+      'browser.test_sdl_audio_mix_channels',
+      'browser.test_sdl_audio_mix',
+      'browser.test_sdl_audio_quickload',
+      'browser.test_openal_playback',
+      'browser.test_openal_buffers',
+      'browser.test_freealut'
+    ]
 
   # Run a server and a web page. When a test runs, we tell the server about it,
   # which tells the web page, which then opens a window with the test. Doing
@@ -11926,7 +12343,7 @@ elif 'browser' in str(sys.argv):
     @classmethod
     def tearDownClass(cls):
       if not hasattr(browser, 'harness_server'): return
-
+      
       browser.harness_server.terminate()
       delattr(browser, 'harness_server')
       print '[Browser harness server terminated]'
@@ -11981,6 +12398,7 @@ elif 'browser' in str(sys.argv):
       basename = os.path.basename(expected)
       shutil.copyfile(expected, os.path.join(self.get_dir(), basename))
       open(os.path.join(self.get_dir(), 'reftest.js'), 'w').write('''
+        var Module = eval('Module');
         function doReftest() {
           if (doReftest.done) return;
           doReftest.done = true;
@@ -12597,6 +13015,16 @@ Press any key to continue.'''
       shutil.copyfile(path_from_root('tests', 'screenshot.jpg'), os.path.join(self.get_dir(), 'screenshot.not'))
       self.btest('sdl_image_prepare_data.c', reference='screenshot.jpg', args=['--preload-file', 'screenshot.not'])
 
+    def test_sdl_stb_image(self):
+      # load an image file, get pixel data.
+      shutil.copyfile(path_from_root('tests', 'screenshot.jpg'), os.path.join(self.get_dir(), 'screenshot.not'))
+      self.btest('sdl_stb_image.c', reference='screenshot.jpg', args=['-s', 'STB_IMAGE=1', '--preload-file', 'screenshot.not'])
+
+    def test_sdl_stb_image_data(self):
+      # load an image file, get pixel data.
+      shutil.copyfile(path_from_root('tests', 'screenshot.jpg'), os.path.join(self.get_dir(), 'screenshot.not'))
+      self.btest('sdl_stb_image_data.c', reference='screenshot.jpg', args=['-s', 'STB_IMAGE=1', '--preload-file', 'screenshot.not'])
+
     def test_sdl_canvas(self):
       open(os.path.join(self.get_dir(), 'sdl_canvas.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_canvas.c')).read()))
 
@@ -12770,11 +13198,13 @@ Press any key to continue.'''
     def test_sdl_audio(self):
       shutil.copyfile(path_from_root('tests', 'sounds', 'alarmvictory_1.ogg'), os.path.join(self.get_dir(), 'sound.ogg'))
       shutil.copyfile(path_from_root('tests', 'sounds', 'alarmcreatemiltaryfoot_1.wav'), os.path.join(self.get_dir(), 'sound2.wav'))
+      shutil.copyfile(path_from_root('tests', 'sounds', 'noise.ogg'), os.path.join(self.get_dir(), 'noise.ogg'))
+      shutil.copyfile(path_from_root('tests', 'sounds', 'the_entertainer.ogg'), os.path.join(self.get_dir(), 'the_entertainer.ogg'))
       open(os.path.join(self.get_dir(), 'bad.ogg'), 'w').write('I claim to be audio, but am lying')
       open(os.path.join(self.get_dir(), 'sdl_audio.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_audio.c')).read()))
 
       # use closure to check for a possible bug with closure minifying away newer Audio() attributes
-      Popen([PYTHON, EMCC, '-O2', '--closure', '1', '--minify', '0', os.path.join(self.get_dir(), 'sdl_audio.c'), '--preload-file', 'sound.ogg', '--preload-file', 'sound2.wav', '--preload-file', 'bad.ogg', '-o', 'page.html', '-s', 'EXPORTED_FUNCTIONS=["_main", "_play", "_play2"]']).communicate()
+      Popen([PYTHON, EMCC, '-O2', '--closure', '1', '--minify', '0', os.path.join(self.get_dir(), 'sdl_audio.c'), '--preload-file', 'sound.ogg', '--preload-file', 'sound2.wav', '--embed-file', 'the_entertainer.ogg', '--preload-file', 'noise.ogg', '--preload-file', 'bad.ogg', '-o', 'page.html', '-s', 'EXPORTED_FUNCTIONS=["_main", "_play", "_play2"]']).communicate()
       self.run_browser('page.html', '', '/report_result?1')
 
     def test_sdl_audio_mix_channels(self):
@@ -12860,6 +13290,10 @@ Press any key to continue.'''
 
       Popen([PYTHON, EMCC, '-O2', os.path.join(self.get_dir(), 'openal_playback.cpp'), '--preload-file', 'audio.wav', '-o', 'page.html']).communicate()
       self.run_browser('page.html', '', '/report_result?1')
+
+    def test_openal_buffers(self):
+      shutil.copyfile(path_from_root('tests', 'sounds', 'the_entertainer.wav'), os.path.join(self.get_dir(), 'the_entertainer.wav'))
+      self.btest('openal_buffers.c', '0', args=['--preload-file', 'the_entertainer.wav'],)
 
     def test_glfw(self):
       open(os.path.join(self.get_dir(), 'glfw.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'glfw.c')).read()))
@@ -13140,6 +13574,9 @@ Press any key to continue.'''
     def test_glshaderinfo(self):
       self.btest('glshaderinfo.cpp', '1')
 
+    def test_glgetattachedshaders(self):
+      self.btest('glgetattachedshaders.c', '1')
+
     def test_sdlglshader(self):
       self.btest('sdlglshader.c', reference='sdlglshader.png', args=['-O2', '--closure', '1'])
 
@@ -13270,6 +13707,9 @@ Press any key to continue.'''
 
     def test_sdl_alloctext(self):
       self.btest('sdl_alloctext.c', expected='1', args=['-O2', '-s', 'TOTAL_MEMORY=' + str(1024*1024*8)])
+
+    def test_sdl_surface_refcount(self):
+      self.btest('sdl_surface_refcount.c', expected='1')
 
     def test_glbegin_points(self):
       shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'screenshot.png'))

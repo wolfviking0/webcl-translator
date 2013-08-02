@@ -28,6 +28,7 @@ var LibrarySDL = {
 
     // The currently preloaded audio elements ready to be played
     audios: [null],
+    rwops: [null],
     // The currently playing audio element.  There's only one music track.
     music: {
       audio: null,
@@ -275,6 +276,8 @@ var LibrarySDL = {
       {{{ makeSetValue('surf+Runtime.QUANTUM_SIZE*5', '0', 'buffer', 'void*') }}}      // SDL_Surface.pixels
       {{{ makeSetValue('surf+Runtime.QUANTUM_SIZE*6', '0', '0', 'i32*') }}}      // SDL_Surface.offset
 
+      {{{ makeSetValue('surf+Runtime.QUANTUM_SIZE*14', '0', '1', 'i32') }}}
+
       {{{ makeSetValue('pixelFormat + SDL.structs.PixelFormat.format', '0', '-2042224636', 'i32') }}} // SDL_PIXELFORMAT_RGBA8888
       {{{ makeSetValue('pixelFormat + SDL.structs.PixelFormat.palette', '0', '0', 'i32') }}} // TODO
       {{{ makeSetValue('pixelFormat + SDL.structs.PixelFormat.BitsPerPixel', '0', 'bpp * 8', 'i8') }}}
@@ -361,6 +364,13 @@ var LibrarySDL = {
     },
 
     freeSurface: function(surf) {
+      var refcountPointer = surf + Runtime.QUANTUM_SIZE * 14;
+      var refcount = {{{ makeGetValue('refcountPointer', '0', 'i32') }}};
+      if (refcount > 1) {
+        {{{ makeSetValue('refcountPointer', '0', 'refcount - 1', 'i32') }}};
+        return;
+      }
+
       var info = SDL.surfaces[surf];
       if (!info.usePageCanvas && info.canvas) SDL.canvasPool.push(info.canvas);
       _free(info.buffer);
@@ -1228,42 +1238,135 @@ var LibrarySDL = {
     return flags; // We support JPG, PNG, TIF because browsers do
   },
 
-  IMG_Load__deps: ['SDL_LockSurface'],
-  IMG_Load: function(filename) {
-    filename = FS.standardizePath(Pointer_stringify(filename));
-    if (filename[0] == '/') {
-      // Convert the path to relative
-      filename = filename.substr(1);
+  IMG_Load_RW__deps: ['SDL_LockSurface', 'SDL_FreeRW'],
+  IMG_Load_RW: function(rwopsID, freeSrc) {
+    try {
+      // stb_image integration support
+      var cleanup = function() {
+        if (rwops && freeSrc) _SDL_FreeRW(rwopsID);
+      };
+      function addCleanup(func) {
+        var old = cleanup;
+        cleanup = function() {
+          old();
+          func();
+        }
+      }
+      function callStbImage(func, params) {
+        var x = Module['_malloc']({{{ QUANTUM_SIZE }}});
+        var y = Module['_malloc']({{{ QUANTUM_SIZE }}});
+        var comp = Module['_malloc']({{{ QUANTUM_SIZE }}});
+        addCleanup(function() {
+          Module['_free'](x);
+          Module['_free'](y);
+          Module['_free'](comp);
+          if (data) Module['_stbi_image_free'](data);
+        });
+        var data = Module['_' + func].apply(null, params.concat([x, y, comp, 0]));
+        if (!data) return null;
+        return {
+          rawData: true,
+          data: data,
+          width: {{{ makeGetValue('x', 0, 'i32') }}},
+          height: {{{ makeGetValue('y', 0, 'i32') }}},
+          size: {{{ makeGetValue('x', 0, 'i32') }}} * {{{ makeGetValue('y', 0, 'i32') }}} * {{{ makeGetValue('comp', 0, 'i32') }}},
+          bpp: {{{ makeGetValue('comp', 0, 'i32') }}}
+        };
+      }
+
+      var rwops = SDL.rwops[rwopsID];
+      if (rwops === undefined) {
+        return 0;
+      }
+
+      var filename = rwops.filename;
+      if (filename === undefined) {
+#if STB_IMAGE
+        var raw = callStbImage('stbi_load_from_memory', [rwops.bytes, rwops.count]);
+        if (!raw) return 0;
+#else
+        Runtime.warnOnce('Only file names that have been preloaded are supported for IMG_Load_RW. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.js)');
+        return 0;
+#endif
+      }
+
+      if (!raw) {
+        filename = FS.standardizePath(filename);
+        if (filename[0] == '/') {
+          // Convert the path to relative
+          filename = filename.substr(1);
+        }
+        var raw = Module["preloadedImages"][filename];
+        if (!raw) {
+          if (raw === null) Module.printErr('Trying to reuse preloaded image, but freePreloadedMediaOnUse is set!');
+#if STB_IMAGE
+          var name = Module['_malloc'](filename.length+1);
+          writeStringToMemory(filename, name);
+          addCleanup(function() {
+            Module['_free'](name);
+          });
+          var raw = callStbImage('stbi_load', [name]);
+          if (!raw) return 0;
+#else
+          Runtime.warnOnce('Cannot find preloaded image ' + filename);
+          Runtime.warnOnce('Cannot find preloaded image ' + filename + '. Consider using STB_IMAGE=1 if you want synchronous image decoding (see settings.js)');
+          return 0;
+#endif
+        } else if (Module['freePreloadedMediaOnUse']) {
+          Module["preloadedImages"][filename] = null;
+        }
+      }
+
+      var surf = SDL.makeSurface(raw.width, raw.height, 0, false, 'load:' + filename);
+      var surfData = SDL.surfaces[surf];
+      surfData.ctx.globalCompositeOperation = "copy";
+      if (!raw.rawData) {
+        surfData.ctx.drawImage(raw, 0, 0, raw.width, raw.height, 0, 0, raw.width, raw.height);
+      } else {
+        var imageData = surfData.ctx.getImageData(0, 0, surfData.width, surfData.height);
+        if (raw.bpp == 4) {
+          imageData.data.set({{{ makeHEAPView('U8', 'raw.data', 'raw.data+raw.size') }}});
+        } else if (raw.bpp == 3) {
+          var pixels = raw.size/3;
+          var data = imageData.data;
+          var sourcePtr = raw.data;
+          var destPtr = 0;
+          for (var i = 0; i < pixels; i++) {
+            data[destPtr++] = {{{ makeGetValue('sourcePtr++', 0, 'i8', null, 1) }}};
+            data[destPtr++] = {{{ makeGetValue('sourcePtr++', 0, 'i8', null, 1) }}};
+            data[destPtr++] = {{{ makeGetValue('sourcePtr++', 0, 'i8', null, 1) }}};
+            data[destPtr++] = 255;
+          }
+        } else {
+          Module.printErr('cannot handle bpp ' + raw.bpp);
+          return 0;
+        }
+        surfData.ctx.putImageData(imageData, 0, 0);
+      }
+      surfData.ctx.globalCompositeOperation = "source-over";
+      // XXX SDL does not specify that loaded images must have available pixel data, in fact
+      //     there are cases where you just want to blit them, so you just need the hardware
+      //     accelerated version. However, code everywhere seems to assume that the pixels
+      //     are in fact available, so we retrieve it here. This does add overhead though.
+      _SDL_LockSurface(surf);
+      surfData.locked--; // The surface is not actually locked in this hack
+      if (SDL.GL) {
+        // After getting the pixel data, we can free the canvas and context if we do not need to do 2D canvas blitting
+        surfData.canvas = surfData.ctx = null;
+      }
+      return surf;
+    } finally {
+      cleanup();
     }
-    var raw = Module["preloadedImages"][filename];
-    if (!raw) {
-      if (raw === null) Module.printErr('Trying to reuse preloaded image, but freePreloadedMediaOnUse is set!');
-      Runtime.warnOnce('Cannot find preloaded image ' + filename);
-      return 0;
-    }
-    if (Module['freePreloadedMediaOnUse']) {
-      Module["preloadedImages"][filename] = null;
-    }
-    var surf = SDL.makeSurface(raw.width, raw.height, 0, false, 'load:' + filename);
-    var surfData = SDL.surfaces[surf];
-    surfData.ctx.globalCompositeOperation = "copy";
-    surfData.ctx.drawImage(raw, 0, 0, raw.width, raw.height, 0, 0, raw.width, raw.height);
-    surfData.ctx.globalCompositeOperation = "source-over";
-    // XXX SDL does not specify that loaded images must have available pixel data, in fact
-    //     there are cases where you just want to blit them, so you just need the hardware
-    //     accelerated version. However, code everywhere seems to assume that the pixels
-    //     are in fact available, so we retrieve it here. This does add overhead though.
-    _SDL_LockSurface(surf);
-    surfData.locked--; // The surface is not actually locked in this hack
-    if (SDL.GL) {
-      // After getting the pixel data, we can free the canvas and context if we do not need to do 2D canvas blitting
-      surfData.canvas = surfData.ctx = null;
-    }
-    return surf;
   },
   SDL_LoadBMP: 'IMG_Load',
-  SDL_LoadBMP_RW: 'IMG_Load',
-  IMG_Load_RW: 'IMG_Load',
+  SDL_LoadBMP_RW: 'IMG_Load_RW',
+  IMG_Load__deps: ['IMG_Load_RW', 'SDL_RWFromFile'],
+  IMG_Load: function(filename){
+    var rwops = _SDL_RWFromFile(filename);
+    var result = _IMG_Load_RW(rwops, 1);
+    return result;
+  },
 
   // SDL_Audio
 
@@ -1399,22 +1502,62 @@ var LibrarySDL = {
     return 0; // error
   },
 
-  Mix_LoadWAV_RW: function(filename, freesrc) {
-    filename = FS.standardizePath(Pointer_stringify(filename));
-    var raw = Module["preloadedAudios"][filename];
-    if (!raw) {
-      if (raw === null) Module.printErr('Trying to reuse preloaded audio, but freePreloadedMediaOnUse is set!');
-      Runtime.warnOnce('Cannot find preloaded audio ' + filename);
+  Mix_LoadWAV_RW: function(rwopsID, freesrc) {
+    var rwops = SDL.rwops[rwopsID];
+
+    if (rwops === undefined)
+      return 0;
+
+    var filename = '';
+    var audio;
+    var bytes;
+    
+    if (rwops.filename !== undefined) {
+      filename = rwops.filename;
+      filename = FS.standardizePath(filename);
+      var raw = Module["preloadedAudios"][filename];
+      if (!raw) {
+        if (raw === null) Module.printErr('Trying to reuse preloaded audio, but freePreloadedMediaOnUse is set!');
+        Runtime.warnOnce('Cannot find preloaded audio ' + filename);
+        
+        // see if we can read the file-contents from the in-memory FS
+        var fileObject = FS.findObject(filename);
+        
+        if (fileObject === null) Module.printErr('Couldn\'t find file for: ' + filename);
+        
+        // We found the file. Load the contents
+        if (fileObject && !fileObject.isFolder && fileObject.read) {
+          bytes = fileObject.contents
+        } else {
+          return 0;
+        }
+      }
+      if (Module['freePreloadedMediaOnUse']) {
+        Module["preloadedAudios"][filename] = null;
+      }
+      audio = raw;
+    }
+    else if (rwops.bytes !== undefined) {
+      bytes = HEAPU8.subarray(rwops.bytes, rwops.bytes + rwops.count);
+    }
+    else {
       return 0;
     }
-    if (Module['freePreloadedMediaOnUse']) {
-      Module["preloadedAudios"][filename] = null;
+    
+    // Here, we didn't find a preloaded audio but we either were passed a filepath for
+    // which we loaded bytes, or we were passed some bytes
+    if (audio === undefined && bytes) {
+      var blob = new Blob([new Uint8Array(bytes)], {type: rwops.mimetype});
+      var url = URL.createObjectURL(blob);
+      audio = new Audio();
+      audio.src = url;
     }
+    
     var id = SDL.audios.length;
     // Keep the loaded audio in the audio arrays, ready for playback
     SDL.audios.push({
       source: filename,
-      audio: raw
+      audio: audio
     });
     return id;
   },
@@ -1574,8 +1717,14 @@ var LibrarySDL = {
     return SDL.setGetVolume(SDL.music, volume);
   },
 
-  Mix_LoadMUS: 'Mix_LoadWAV_RW',
   Mix_LoadMUS_RW: 'Mix_LoadWAV_RW',
+  Mix_LoadMUS__deps: ['Mix_LoadMUS_RW', 'SDL_RWFromFile', 'SDL_FreeRW'],
+  Mix_LoadMUS: function(filename) {
+    var rwops = _SDL_RWFromFile(filename);
+    var result = _Mix_LoadMUS_RW(rwops);
+    _SDL_FreeRW(rwops);
+    return result;
+  },
 
   Mix_FreeMusic: 'Mix_FreeChunk',
 
@@ -1979,8 +2128,25 @@ var LibrarySDL = {
 
   SDL_InitSubSystem: function(flags) { return 0 },
 
-  SDL_RWFromFile: function(filename, mode) {
-    return filename; // XXX We just forward the filename
+  SDL_RWFromConstMem: function(mem, size) {
+    var id = SDL.rwops.length; // TODO: recycle ids when they are null
+    SDL.rwops.push({ bytes: mem, count: size });
+    return id;
+  },
+  SDL_RWFromMem: 'SDL_RWFromConstMem',
+
+  SDL_RWFromFile: function(_name, mode) {
+    var id = SDL.rwops.length; // TODO: recycle ids when they are null
+    var name = Pointer_stringify(_name)
+    SDL.rwops.push({ filename: name, mimetype: Browser.getMimetype(name) });
+    return id;
+  },
+  
+  SDL_FreeRW: function(rwopsID) {
+    SDL.rwops[rwopsID] = null;
+    while (SDL.rwops.length > 0 && SDL.rwops[SDL.rwops.length-1] === null) {
+      SDL.rwops.pop();
+    }
   },
 
   SDL_EnableUNICODE: function(on) {
@@ -2007,7 +2173,6 @@ var LibrarySDL = {
   SDL_GetThreadID: function() { throw 'SDL_GetThreadID' },
   SDL_ThreadID: function() { throw 'SDL_ThreadID' },
   SDL_AllocRW: function() { throw 'SDL_AllocRW: TODO' },
-  SDL_FreeRW: function() { throw 'SDL_FreeRW: TODO' },
   SDL_CondBroadcast: function() { throw 'SDL_CondBroadcast: TODO' },
   SDL_CondWaitTimeout: function() { throw 'SDL_CondWaitTimeout: TODO' },
   SDL_WM_IconifyWindow: function() { throw 'SDL_WM_IconifyWindow TODO' },

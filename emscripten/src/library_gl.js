@@ -372,6 +372,12 @@ var LibraryGL = {
       case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
         {{{ makeSetValue('p', '0', '0', 'i32') }}};
         return;
+      case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+        // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+        // so implement it ourselves to allow C++ GLES2 code get the length.
+        var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+        {{{ makeSetValue('p', '0', 'formats.length', 'i32') }}};
+        return;
     }
     var result = Module.ctx.getParameter(name_);
     switch (typeof(result)) {
@@ -1076,7 +1082,9 @@ var LibraryGL = {
     }
     {{{ makeSetValue('count', '0', 'len', 'i32') }}};
     for (var i = 0; i < len; ++i) {
-      {{{ makeSetValue('shaders', 'i*4', 'GL.shaders[result[i]]', 'i32') }}};
+      var id = GL.shaders.indexOf(result[i]);
+      assert(id !== -1, 'shader not bound to local id');
+      {{{ makeSetValue('shaders', 'i*4', 'id', 'i32') }}};
     }
   },
 
