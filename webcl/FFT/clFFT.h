@@ -53,7 +53,11 @@
 extern "C" {
 #endif
 
-#include <OpenCL/opencl.h>
+#ifdef __EMSCRIPTEN__
+	#include <CL/opencl.h>
+#else
+	#include <OpenCL/opencl.h>
+#endif
 #include <stdio.h>
 
 // XForm type

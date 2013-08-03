@@ -50,9 +50,15 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <OpenCL/opencl.h>
+#ifdef __EMSCRIPTEN__
+	#include <CL/opencl.h>
+#else
+	#include <OpenCL/opencl.h>
+#endif
 #include "clFFT.h"
-#include <mach/mach_time.h>
+#ifdef __APPLE__
+	#include <mach/mach_time.h>
+#endif
 #include <Accelerate/Accelerate.h>
 #include "procs.h"
 #include <sys/types.h>
@@ -89,21 +95,23 @@ typedef unsigned long long ulong;
 
 double subtractTimes( uint64_t endTime, uint64_t startTime )
 {
-    uint64_t difference = endTime - startTime;
-    static double conversion = 0.0;
-    
-    if( conversion == 0.0 )
-    {
-        mach_timebase_info_data_t info;
-        kern_return_t err = mach_timebase_info( &info );
-        
-		//Convert the timebase into seconds
-        if( err == 0  )
-			conversion = 1e-9 * (double) info.numer / (double) info.denom;
-    }
-    
-    return conversion * (double) difference;
+    #ifdef __EMSCRIPTEN__
+        return 1e-9 * (uiEndTime - uiStartTime);
+    #else
+        static double s_dConversion = 0.0;
+        uint64_t uiDifference = uiEndTime - uiStartTime;
+        if( 0.0 == s_dConversion )
+        {
+            mach_timebase_info_data_t kTimebase;
+            kern_return_t kError = mach_timebase_info( &kTimebase );
+            if( kError == 0  )
+                s_dConversion = 1e-9 * (double) kTimebase.numer / (double) kTimebase.denom;
+        }
+            
+        return s_dConversion * (double) uiDifference; 
+    #endif
 }
+
 
 void computeReferenceF(clFFT_SplitComplex *out, clFFT_Dim3 n, 
 					  unsigned int batchSize, clFFT_Dimension dim, clFFT_Direction dir)
@@ -551,7 +559,12 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
 		goto cleanup;	
 	}
 	
-	t1 = mach_absolute_time(); 
+	#ifdef __EMSCRIPTEN__
+        t1 = (emscripten_get_now() * 1000000);
+    #else
+        t1 = mach_absolute_time();
+    #endif
+     
 	t = subtractTimes(t1, t0);
 	char temp[100];
 	sprintf(temp, "GFlops achieved for n = (%d, %d, %d), batchsize = %d", n.x, n.y, n.z, batchSize);

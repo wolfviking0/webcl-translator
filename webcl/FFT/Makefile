@@ -12,8 +12,7 @@ EMMAKE = $(EMSCRIPTEN)/emmake
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#		
 all:
-	python $(EMSCRIPTEN)/tools/file_packager.py qjulia_kernel.data --preload qjulia_kernel.cl --pre-run > qjulia_kernel.js
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o qjulia.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) fft_execute.cpp fft_kernelstring.cpp fft_setup.cpp main.cpp -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o FFT.js
 					
 clean:
 	$(CXX) --clear-cache
