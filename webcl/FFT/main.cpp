@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef __EMSCRIPTEN__
+	#include <emscripten/emscripten.h>
 	#include <CL/opencl.h>
 #else
 	#include <OpenCL/opencl.h>
@@ -58,8 +59,11 @@
 #include "clFFT.h"
 #ifdef __APPLE__
 	#include <mach/mach_time.h>
+	#include <Accelerate/Accelerate.h>
+#else
+
 #endif
-#include <Accelerate/Accelerate.h>
+
 #include "procs.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -93,7 +97,7 @@ cl_command_queue queue;
 
 typedef unsigned long long ulong;
 
-double subtractTimes( uint64_t endTime, uint64_t startTime )
+double subtractTimes( uint64_t uiEndTime, uint64_t uiStartTime )
 {
     #ifdef __EMSCRIPTEN__
         return 1e-9 * (uiEndTime - uiStartTime);
@@ -539,7 +543,12 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
 			
 	err = CL_SUCCESS;
 	
-	t0 = mach_absolute_time();
+	#ifdef __EMSCRIPTEN__
+        t0 = (emscripten_get_now() * 1000000);
+    #else
+        t0 = mach_absolute_time();
+    #endif
+    
 	if(dataFormat == clFFT_SplitComplexFormat)
 	{
 		for(iter = 0; iter < numIter; iter++)
