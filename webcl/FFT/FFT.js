@@ -2372,7 +2372,18 @@ function copyTempDouble(ptr) {
   function _atexit(func, arg) {
       __ATEXIT__.unshift({ func: func, arg: arg });
     }var ___cxa_atexit=_atexit;
-;
+  function _clRetainContext(context) {
+      var ctx = CL.getArrayId(context);
+      if (ctx >= CL.ctx.length || ctx < 0 ) {
+          console.error("clRetainContext: Invalid context : "+ctx);
+          return -34; /* CL_INVALID_CONTEXT */ 
+      }
+      try {
+        return 0;/*CL_SUCCESS*/
+      } catch (e) {
+        return CL.catchError("clRetainContext",e);    
+      }
+    }
   function _memcpy(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
       var ret = 0;

@@ -802,6 +802,24 @@ var LibraryOpenCL = {
     }
   },
   
+  clRetainContext: function(context) {
+    var ctx = CL.getArrayId(context);
+    if (ctx >= CL.ctx.length || ctx < 0 ) {
+#if OPENCL_DEBUG
+        console.error("clRetainContext: Invalid context : "+ctx);
+#endif
+
+        return -34; /* CL_INVALID_CONTEXT */ 
+    }
+      
+    try {
+      console.error("/!\\ clRetainContext not yet implemented");
+      return 0;/*CL_SUCCESS*/
+    } catch (e) {
+      return CL.catchError("clRetainContext",e);    
+    }
+  },
+  
   clCreateCommandQueue: function(context, devices, properties, errcode_ret) {
     var ctx = CL.getArrayId(context);
     if (ctx >= CL.ctx.length || ctx < 0 ) {
