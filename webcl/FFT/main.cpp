@@ -434,6 +434,7 @@ checkMemRequirements(clFFT_Dim3 n, int batchSize, clFFT_TestType testType, cl_ul
 	cl_ulong memReq = (testType == clFFT_OUT_OF_PLACE) ? 3 : 2;
 	memReq *= n.x*n.y*n.z*sizeof(clFFT_Complex)*batchSize;
 	memReq = memReq/1024/1024;
+    printf("checkMemRequirements : %lld >= %lld\n",memReq , gMemSize);
 	if(memReq >= gMemSize)
 		return -1;
 	return 0;
@@ -574,6 +575,7 @@ int main (int argc, char * const argv[]) {
 				param = strtok(NULL, delim);
 			}
 			
+            printf("checkMemRequirements : %dx%dx%d - %d - %d - %lld\n",n.x, n.y, n.z, batchSize, testType, gMemSize);
 			if(checkMemRequirements(n, batchSize, testType, gMemSize)) {
 				log_info("This test cannot run because memory requirements canot be met by the available device\n");
 				continue;
