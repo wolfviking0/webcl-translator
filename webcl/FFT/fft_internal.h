@@ -67,10 +67,9 @@ typedef struct kernel_info_t
 {
 	cl_kernel kernel;
 	char *kernel_name;
-	unsigned lmem_size;
-	unsigned num_workgroups;
-    unsigned num_xforms_per_workgroup;
-	unsigned num_workitems_per_workgroup;
+	size_t lmem_size;
+	size_t num_workgroups;
+	size_t num_workitems_per_workgroup;
 	cl_fft_kernel_dir dir;
 	int in_place_possible;
 	kernel_info_t *next;
@@ -124,7 +123,7 @@ typedef struct
 	// batch size different than the first call. last_batch_size caches the last
 	// batch size with which this plan is used so that we dont keep allocating/deallocating
 	// temp buffer if same batch size is used again and again.
-	unsigned                  last_batch_size;
+	size_t                  last_batch_size;
 	
 	// temporary buffer for interleaved plan
 	cl_mem   				tempmemobj;
@@ -137,25 +136,25 @@ typedef struct
 	// Maximum size of signal for which local memory transposed based
 	// fft is sufficient i.e. no global mem transpose (communication)
 	// is needed
-	unsigned					max_localmem_fft_size;
+	size_t					max_localmem_fft_size;
 	
 	// Maximum work items per work group allowed. This, along with max_radix below controls 
 	// maximum local memory being used by fft kernels of this plan. Set to 256 by default
-	unsigned                  max_work_item_per_workgroup;
+	size_t                  max_work_item_per_workgroup;
 	
 	// Maximum base radix for local memory fft ... this controls the maximum register 
 	// space used by work items. Currently defaults to 16
-	unsigned                  max_radix;
+	size_t                  max_radix;
 	
 	// Device depended parameter that tells how many work-items need to be read consecutive
 	// values to make sure global memory access by work-items of a work-group result in 
 	// coalesced memory access to utilize full bandwidth e.g. on NVidia tesla, this is 16
-	unsigned                  min_mem_coalesce_width;
+	size_t                  min_mem_coalesce_width;
 	
 	// Number of local memory banks. This is used to geneate kernel with local memory 
 	// transposes with appropriate padding to avoid bank conflicts to local memory
 	// e.g. on NVidia it is 16.
-	unsigned                  num_local_mem_banks;
+	size_t                  num_local_mem_banks;
 }cl_fft_plan;
 
 void FFT1D(cl_fft_plan *plan, cl_fft_kernel_dir dir);

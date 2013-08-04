@@ -48,6 +48,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <iostream>
 #include <sstream>
@@ -582,7 +583,7 @@ static void
 insertTwiddleKernel(string &kernelString, int Nr, int numIter, int Nprev, int len, int numWorkItemsPerXForm)
 {
 	int z, k;
-	int logNPrev = (int)log2(Nprev);
+	int logNPrev = log2(Nprev);
 	
 	for(z = 0; z < numIter; z++) 
 	{
@@ -688,8 +689,8 @@ static void
 insertLocalLoadIndexArithmatic(string &kernelString, int Nprev, int Nr, int numWorkItemsReq, int numWorkItemsPerXForm, int numXFormsPerWG, int offset, int midPad)
 {	
 	int Ncurr = Nprev * Nr;
-	int logNcurr = (int)log2(Ncurr);
-	int logNprev = (int)log2(Nprev);
+	int logNcurr = log2(Ncurr);
+	int logNprev = log2(Nprev);
 	int incr = (numWorkItemsReq + offset) * Nr + midPad;
 	
 	if(Ncurr < numWorkItemsPerXForm) 
@@ -795,8 +796,7 @@ createLocalMemfftKernelString(cl_fft_plan *plan)
 	unsigned int numWorkItemsPerWG = numWorkItemsPerXForm <= 64 ? 64 : numWorkItemsPerXForm; 
 	assert(numWorkItemsPerWG <= plan->max_work_item_per_workgroup);
 	int numXFormsPerWG = numWorkItemsPerWG / numWorkItemsPerXForm;
-	(*kInfo)->num_workgroups = 1;
-    (*kInfo)->num_xforms_per_workgroup = numXFormsPerWG;
+	(*kInfo)->num_workgroups = numXFormsPerWG;
 	(*kInfo)->num_workitems_per_workgroup = numWorkItemsPerWG;
 	
 	unsigned int *N = radixArray;
@@ -914,9 +914,7 @@ static void
 createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir dir, int vertBS)
 {		
 	int i, j, k, t;
-	int radixArr[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    int R1Arr[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    int R2Arr[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	int radixArr[10], R1Arr[10], R2Arr[10];
 	int radix, R1, R2;
 	int numRadices;
 	
@@ -981,7 +979,7 @@ createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir 
 		int gInInc = threadsPerBlock / batchSize;
 		
 		
-		int lgStrideO = (int)log2(strideO);
+		int lgStrideO = log2(strideO);
 		int numBlocksPerXForm = strideI / batchSize;
 		int numBlocks = numBlocksPerXForm;
 		if(!vertical)
@@ -1002,7 +1000,6 @@ createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir 
 			    (*kInfo)->lmem_size = threadsPerBlock*R1;
 		}
 		(*kInfo)->num_workgroups = numBlocks;
-        (*kInfo)->num_xforms_per_workgroup = 1;
 		(*kInfo)->num_workitems_per_workgroup = threadsPerBlock;
 		(*kInfo)->dir = dir;
 		if( (passNum == (numPasses - 1)) && (numPasses & 1) )
@@ -1031,7 +1028,7 @@ createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir 
 		}
 		else 
 		{
-			int lgNumBlocksPerXForm = (int)log2(numBlocksPerXForm);
+			int lgNumBlocksPerXForm = log2(numBlocksPerXForm);
 			localString += string("bNum = groupId & ") + num2str(numBlocksPerXForm - 1) + string(";\n");
 			localString += string("xNum = groupId >> ") + num2str(lgNumBlocksPerXForm) + string(";\n");
 			localString += string("indexIn = mul24(bNum, ") + num2str(batchSize) + string(");\n");
@@ -1047,7 +1044,7 @@ createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir 
 		}
 		
 		// Load Data
-		int lgBatchSize = (int)log2(batchSize);
+		int lgBatchSize = log2(batchSize);
 		localString += string("tid = lId;\n");
 		localString += string("i = tid & ") + num2str(batchSize - 1) + string(";\n");
 		localString += string("j = tid >> ") + num2str(lgBatchSize) + string(";\n"); 
@@ -1126,42 +1123,20 @@ createGlobalFFTKernelString(cl_fft_plan *plan, int n, int BS, cl_fft_kernel_dir 
 			localString += string("lMemStore = sMem + mad24(i, ") + num2str(radix + 1) + string(", j << ") + num2str((int)log2(R1/R2)) + string(");\n");
 			localString += string("lMemLoad = sMem + mad24(tid >> ") + num2str((int)log2(radix)) + string(", ") + num2str(radix+1) + string(", tid & ") + num2str(radix-1) + string(");\n");
 			
-			for(i = 0; i < R1/R2; i++)
-				for(j = 0; j < R2; j++)
+			for(int i = 0; i < R1/R2; i++)
+				for(int j = 0; j < R2; j++)
 					localString += string("lMemStore[ ") + num2str(i + j*R1) + string("] = a[") + num2str(i*R2+j) + string("].x;\n");
 			localString += string("barrier(CLK_LOCAL_MEM_FENCE);\n");
-			if(threadsPerBlock >= radix)
-            {
-                for(i = 0; i < R1; i++)
-                localString += string("a[") + num2str(i) + string("].x = lMemLoad[") + num2str(i*(radix+1)*(threadsPerBlock/radix)) + string("];\n");
-            }
-            else
-            {
-                int innerIter = radix/threadsPerBlock;
-                int outerIter = R1/innerIter;
-                for(i = 0; i < outerIter; i++)
-                    for(j = 0; j < innerIter; j++)
-                        localString += string("a[") + num2str(i*innerIter+j) + string("].x = lMemLoad[") + num2str(j*threadsPerBlock + i*(radix+1)) + string("];\n");
-            }
+			for(int i = 0; i < R1; i++)
+				localString += string("a[") + num2str(i) + string("].x = lMemLoad[") + num2str(i*(radix+1)*(threadsPerBlock/radix)) + string("];\n");
 			localString += string("barrier(CLK_LOCAL_MEM_FENCE);\n");
 			
-			for(i = 0; i < R1/R2; i++)
-				for(j = 0; j < R2; j++)
+			for(int i = 0; i < R1/R2; i++)
+				for(int j = 0; j < R2; j++)
 					localString += string("lMemStore[ ") + num2str(i + j*R1) + string("] = a[") + num2str(i*R2+j) + string("].y;\n");
 			localString += string("barrier(CLK_LOCAL_MEM_FENCE);\n");
-			if(threadsPerBlock >= radix)
-            {
-                for(i = 0; i < R1; i++)
-                    localString += string("a[") + num2str(i) + string("].y = lMemLoad[") + num2str(i*(radix+1)*(threadsPerBlock/radix)) + string("];\n");
-            }
-            else
-            {
-                int innerIter = radix/threadsPerBlock;
-                int outerIter = R1/innerIter;
-                for(i = 0; i < outerIter; i++)
-                    for(j = 0; j < innerIter; j++)
-                        localString += string("a[") + num2str(i*innerIter+j) + string("].y = lMemLoad[") + num2str(j*threadsPerBlock + i*(radix+1)) + string("];\n");
-            }
+			for(int i = 0; i < R1; i++)
+				localString += string("a[") + num2str(i) + string("].y = lMemLoad[") + num2str(i*(radix+1)*(threadsPerBlock/radix)) + string("];\n");
 			localString += string("barrier(CLK_LOCAL_MEM_FENCE);\n");
 			
 			localString += string("indexOut += tid;\n");

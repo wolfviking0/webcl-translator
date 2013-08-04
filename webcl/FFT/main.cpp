@@ -50,23 +50,16 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __EMSCRIPTEN__
-	#include <emscripten/emscripten.h>
-	#include <CL/opencl.h>
+#if defined(__APPLE__) || defined(__MACOSX)
+#include <OpenCL/opencl.h>
 #else
-	#include <OpenCL/opencl.h>
+#include <CL/cl.h>
 #endif
 #include "clFFT.h"
-#ifdef __APPLE__
-	#include <mach/mach_time.h>
-	#include <Accelerate/Accelerate.h>
-#else
-
-#endif
-
 #include "procs.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <float.h>
 
@@ -95,247 +88,14 @@ cl_device_id     device_id;
 cl_context       context;
 cl_command_queue queue;
 
-typedef unsigned long long ulong;
-
-double subtractTimes( uint64_t uiEndTime, uint64_t uiStartTime )
+double subtractTimes( struct timeval *endTime, struct timeval *startTime )
 {
-    #ifdef __EMSCRIPTEN__
-        return 1e-9 * (uiEndTime - uiStartTime);
-    #else
-        static double s_dConversion = 0.0;
-        uint64_t uiDifference = uiEndTime - uiStartTime;
-        if( 0.0 == s_dConversion )
-        {
-            mach_timebase_info_data_t kTimebase;
-            kern_return_t kError = mach_timebase_info( &kTimebase );
-            if( kError == 0  )
-                s_dConversion = 1e-9 * (double) kTimebase.numer / (double) kTimebase.denom;
-        }
-            
-        return s_dConversion * (double) uiDifference; 
-    #endif
+  long long int difference = (endTime->tv_usec + 1000000 * endTime->tv_sec) - (startTime->tv_usec + 1000000 * startTime->tv_sec);
+  static double conversion = 1./1000000.0;
+    
+  return conversion * (double) difference;
 }
 
-
-void computeReferenceF(clFFT_SplitComplex *out, clFFT_Dim3 n, 
-					  unsigned int batchSize, clFFT_Dimension dim, clFFT_Direction dir)
-{
-	FFTSetup plan_vdsp;
-	DSPSplitComplex out_vdsp;
-	FFTDirection dir_vdsp = dir == clFFT_Forward ? FFT_FORWARD : FFT_INVERSE;
-	
-	unsigned int i, j, k;
-	unsigned int stride;
-	unsigned int log2Nx = (unsigned int) log2(n.x);
-	unsigned int log2Ny = (unsigned int) log2(n.y);
-	unsigned int log2Nz = (unsigned int) log2(n.z);
-	unsigned int log2N;
-	
-	log2N = log2Nx;
-	log2N = log2N > log2Ny ? log2N : log2Ny;
-	log2N = log2N > log2Nz ? log2N : log2Nz;
-	
-	plan_vdsp = vDSP_create_fftsetup(log2N, 2);
-	
-	switch(dim)
-	{
-		case clFFT_1D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				stride = i * n.x;
-				out_vdsp.realp  = out->real  + stride;
-				out_vdsp.imagp  = out->imag  + stride;
-				
-			    vDSP_fft_zip(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-			}
-			break;
-			
-		case clFFT_2D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.y; j++)
-				{
-					stride = j * n.x + i * n.x * n.y;
-					out_vdsp.realp = out->real + stride;
-					out_vdsp.imagp = out->imag + stride;
-					
-					vDSP_fft_zip(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.x; j++)
-				{
-					stride = j + i * n.x  * n.y;
-					out_vdsp.realp = out->real + stride;
-					out_vdsp.imagp = out->imag + stride;
-					
-					vDSP_fft_zip(plan_vdsp, &out_vdsp, n.x, log2Ny, dir_vdsp);
-				}
-			}
-			break;
-			
-		case clFFT_3D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.z; j++)
-				{
-					for(k = 0; k < n.y; k++)
-					{
-						stride = k * n.x + j * n.x * n.y + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zip(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-					}
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.z; j++)
-				{
-					for(k = 0; k < n.x; k++)
-					{
-						stride = k + j * n.x * n.y + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zip(plan_vdsp, &out_vdsp, n.x, log2Ny, dir_vdsp);
-					}
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.y; j++)
-				{
-					for(k = 0; k < n.x; k++)
-					{
-						stride = k + j * n.x + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zip(plan_vdsp, &out_vdsp, n.x*n.y, log2Nz, dir_vdsp);
-					}
-				}
-			}
-			break;
-	}
-	
-	vDSP_destroy_fftsetup(plan_vdsp);
-}
-
-void computeReferenceD(clFFT_SplitComplexDouble *out, clFFT_Dim3 n, 
-					  unsigned int batchSize, clFFT_Dimension dim, clFFT_Direction dir)
-{
-	FFTSetupD plan_vdsp;
-	DSPDoubleSplitComplex out_vdsp;
-	FFTDirection dir_vdsp = dir == clFFT_Forward ? FFT_FORWARD : FFT_INVERSE;
-	
-	unsigned int i, j, k;
-	unsigned int stride;
-	unsigned int log2Nx = (int) log2(n.x);
-	unsigned int log2Ny = (int) log2(n.y);
-	unsigned int log2Nz = (int) log2(n.z);
-	unsigned int log2N;
-	
-	log2N = log2Nx;
-	log2N = log2N > log2Ny ? log2N : log2Ny;
-	log2N = log2N > log2Nz ? log2N : log2Nz;
-	
-	plan_vdsp = vDSP_create_fftsetupD(log2N, 2);
-	
-	switch(dim)
-	{
-		case clFFT_1D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				stride = i * n.x;
-				out_vdsp.realp  = out->real  + stride;
-				out_vdsp.imagp  = out->imag  + stride;
-				
-			    vDSP_fft_zipD(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-			}
-			break;
-			
-		case clFFT_2D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.y; j++)
-				{
-					stride = j * n.x + i * n.x * n.y;
-					out_vdsp.realp = out->real + stride;
-					out_vdsp.imagp = out->imag + stride;
-					
-					vDSP_fft_zipD(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.x; j++)
-				{
-					stride = j + i * n.x  * n.y;
-					out_vdsp.realp = out->real + stride;
-					out_vdsp.imagp = out->imag + stride;
-					
-					vDSP_fft_zipD(plan_vdsp, &out_vdsp, n.x, log2Ny, dir_vdsp);
-				}
-			}
-			break;
-			
-		case clFFT_3D:
-			
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.z; j++)
-				{
-					for(k = 0; k < n.y; k++)
-					{
-						stride = k * n.x + j * n.x * n.y + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zipD(plan_vdsp, &out_vdsp, 1, log2Nx, dir_vdsp);
-					}
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.z; j++)
-				{
-					for(k = 0; k < n.x; k++)
-					{
-						stride = k + j * n.x * n.y + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zipD(plan_vdsp, &out_vdsp, n.x, log2Ny, dir_vdsp);
-					}
-				}
-			}
-			for(i = 0; i < batchSize; i++)
-			{
-				for(j = 0; j < n.y; j++)
-				{
-					for(k = 0; k < n.x; k++)
-					{
-						stride = k + j * n.x + i * n.x * n.y * n.z;
-						out_vdsp.realp = out->real + stride;
-						out_vdsp.imagp = out->imag + stride;
-						
-						vDSP_fft_zipD(plan_vdsp, &out_vdsp, n.x*n.y, log2Nz, dir_vdsp);
-					}
-				}
-			}
-			break;
-	}
-	
-	vDSP_destroy_fftsetupD(plan_vdsp);
-}
 
 double complexNormSq(clFFT_ComplexDouble a)
 {
@@ -386,10 +146,9 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
 	int iter;
 	double t;
 	
-	uint64_t t0, t1;
-	int mx = (int)log2(n.x);
-	int my = (int)log2(n.y);
-	int mz = (int)log2(n.z);
+	int mx = log2(n.x);
+	int my = log2(n.y);
+	int mz = log2(n.z);
 
 	int length = n.x * n.y * n.z * batchSize;
 		
@@ -543,12 +302,8 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
 			
 	err = CL_SUCCESS;
 	
-	#ifdef __EMSCRIPTEN__
-        t0 = (emscripten_get_now() * 1000000);
-    #else
-        t0 = mach_absolute_time();
-    #endif
-    
+	struct timeval t0;
+	gettimeofday( &t0, NULL);
 	if(dataFormat == clFFT_SplitComplexFormat)
 	{
 		for(iter = 0; iter < numIter; iter++)
@@ -568,13 +323,9 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
 		goto cleanup;	
 	}
 	
-	#ifdef __EMSCRIPTEN__
-        t1 = (emscripten_get_now() * 1000000);
-    #else
-        t1 = mach_absolute_time();
-    #endif
-     
-	t = subtractTimes(t1, t0);
+	struct timeval t1;
+	gettimeofday( &t1, NULL );
+	t = subtractTimes( &t1, &t0);
 	char temp[100];
 	sprintf(temp, "GFlops achieved for n = (%d, %d, %d), batchsize = %d", n.x, n.y, n.z, batchSize);
 	log_perf(gflops / (float) t, 1, "GFlops/s", "%s", temp);
@@ -595,30 +346,6 @@ int runTest(clFFT_Dim3 n, int batchSize, clFFT_Direction dir, clFFT_Dimension di
         goto cleanup;
 	}	
 
-	computeReferenceD(&data_oref, n, batchSize, dim, dir);
-	
-	double diff_avg, diff_max, diff_min;
-	if(dataFormat == clFFT_SplitComplexFormat) {
-		diff_avg = computeL2Error(&data_cl_split, &data_oref, n.x*n.y*n.z, batchSize, &diff_max, &diff_min);
-		if(diff_avg > eps_avg)
-			log_error("Test failed (n=(%d, %d, %d), batchsize=%d): %s Test: rel. L2-error = %f eps (max=%f eps, min=%f eps)\n", n.x, n.y, n.z, batchSize, (testType == clFFT_OUT_OF_PLACE) ? "out-of-place" : "in-place", diff_avg, diff_max, diff_min);
-		else
-			log_info("Test passed (n=(%d, %d, %d), batchsize=%d): %s Test: rel. L2-error = %f eps (max=%f eps, min=%f eps)\n", n.x, n.y, n.z, batchSize, (testType == clFFT_OUT_OF_PLACE) ? "out-of-place" : "in-place", diff_avg, diff_max, diff_min);			
-	}
-	else {
-		clFFT_SplitComplex result_split;
-		result_split.real = (float *) malloc(length*sizeof(float));
-		result_split.imag = (float *) malloc(length*sizeof(float));
-		convertInterleavedToSplit(&result_split, data_cl, length);
-		diff_avg = computeL2Error(&result_split, &data_oref, n.x*n.y*n.z, batchSize, &diff_max, &diff_min);
-		
-		if(diff_avg > eps_avg)
-			log_error("Test failed (n=(%d, %d, %d), batchsize=%d): %s Test: rel. L2-error = %f eps (max=%f eps, min=%f eps)\n", n.x, n.y, n.z, batchSize, (testType == clFFT_OUT_OF_PLACE) ? "out-of-place" : "in-place", diff_avg, diff_max, diff_min);
-		else
-			log_info("Test passed (n=(%d, %d, %d), batchsize=%d): %s Test: rel. L2-error = %f eps (max=%f eps, min=%f eps)\n", n.x, n.y, n.z, batchSize, (testType == clFFT_OUT_OF_PLACE) ? "out-of-place" : "in-place", diff_avg, diff_max, diff_min);	
-		free(result_split.real);
-		free(result_split.imag);
-	}
 	
 cleanup:
 	clFFT_DestroyPlan(plan);	
@@ -724,7 +451,6 @@ int main (int argc, char * const argv[]) {
 	clFFT_DataFormat dataFormat = clFFT_SplitComplexFormat;
 	clFFT_Dimension dim = clFFT_1D;
 	clFFT_TestType testType = clFFT_OUT_OF_PLACE;
-	cl_device_id device_ids[16];
 	
 	FILE *paramFile;
 			
@@ -739,7 +465,7 @@ int main (int argc, char * const argv[]) {
 		exit(0);
 	}
 	
-	err = clGetDeviceIDs(NULL, device_type, sizeof(device_ids), device_ids, &num_devices);
+	err = clGetDeviceIDs(NULL, device_type, 1, &device_id, &num_devices);
 	if(err) 
 	{		
 		log_error("clGetComputeDevice failed\n");
@@ -747,46 +473,7 @@ int main (int argc, char * const argv[]) {
 		return -1;
 	}
 	
-	device_id = NULL;
-	
-	unsigned int i;
-	for(i = 0; i < num_devices; i++)
-	{
-	    cl_bool available;
-	    err = clGetDeviceInfo(device_ids[i], CL_DEVICE_AVAILABLE, sizeof(cl_bool), &available, NULL);
-	    if(err)
-	    {
-	         log_error("Cannot check device availability of device # %d\n", i);
-	    }
-	    
-	    if(available)
-	    {
-	        device_id = device_ids[i];
-	        break;
-	    }
-	    else
-	    {
-	        char name[200];
-	        err = clGetDeviceInfo(device_ids[i], CL_DEVICE_NAME, sizeof(name), name, NULL);
-	        if(err == CL_SUCCESS)
-	        {
-	             log_info("Device %s not available for compute\n", name);
-	        }
-	        else
-	        {
-	             log_info("Device # %d not available for compute\n", i);
-	        }
-	    }
-	}
-	
-	if(!device_id)
-	{
-	    log_error("None of the devices available for compute ... aborting test\n");
-	    test_finish();
-	    return -1;
-	}
-	
-	context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+	context = clCreateContext(0, 1, &device_id, notify_callback, NULL, &err);
 	if(!context || err) 
 	{
 		log_error("clCreateContext failed\n");
@@ -797,7 +484,7 @@ int main (int argc, char * const argv[]) {
     queue = clCreateCommandQueue(context, device_id, 0, &err);
     if(!queue || err)
 	{
-        log_error("clCreateCommandQueue() failed.\n");
+        log_error("clCreateQueue() failed.\n");
 		clReleaseContext(context);
         test_finish();
         return -1;
@@ -820,6 +507,7 @@ int main (int argc, char * const argv[]) {
 	char line[200];
 	char *param, *val;	
 	int total_errors = 0;
+    /*
 	if(argc == 1) {
 		log_error("Need file name with list of parameters to run the test\n");
 		test_finish();
@@ -827,7 +515,8 @@ int main (int argc, char * const argv[]) {
 	}
 	
 	if(argc == 2) {	// arguments are supplied in a file with arguments for a single run are all on the same line
-		paramFile = fopen(argv[1], "r");
+    */
+		paramFile = fopen("param.txt"/*argv[1]*/, "r");
 		if(!paramFile) {
 			log_error("Cannot open the parameter file\n");
 			clReleaseContext(context);
@@ -894,7 +583,7 @@ int main (int argc, char * const argv[]) {
 			if (err)
 				total_errors++;
 		}
-	}
+	//}
 	
 	clReleaseContext(context);
 	clReleaseCommandQueue(queue);

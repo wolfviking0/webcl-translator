@@ -57,7 +57,11 @@ static string baseKernels = string(
                           "#ifndef M_PI\n"
 						  "#define M_PI 0x1.921fb54442d18p+1\n"
 						  "#endif\n"
-						  "#define complexMul(a,b) ((float2)(mad(-(a).y, (b).y, (a).x * (b).x), mad((a).y, (b).x, (a).x * (b).y)))\n"
+//#if USE_OPENCL_NV
+						  "float2 complexMul(float2 a,float2 B) { return (float2)(mad(-(a).y, (B).y, (a).x * (B).x), mad((a).y, (B).x, (a).x * (B).y));}\n"
+//#else
+						  //"#define complexMul(a,b) ((float2)(mad(-(a).y, (b).y, (a).x * (b).x), mad((a).y, (b).x, (a).x * (b).y)))\n"
+//#endif
 						  "#define conj(a) ((float2)((a).x, -(a).y))\n"
 						  "#define conjTransp(a) ((float2)(-(a).y, (a).x))\n"		   
 						  "\n"

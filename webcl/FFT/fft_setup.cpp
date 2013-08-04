@@ -48,6 +48,7 @@
 
 #include "fft_internal.h"
 #include "fft_base_kernels.h"
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -192,7 +193,7 @@ int getMaxKernelWorkGroupSize(cl_fft_plan *plan, unsigned int *max_wg_size, unsi
     int reg_needed = 0;
     *max_wg_size = INT_MAX;
     int err;
-    unsigned wg_size;
+    size_t wg_size;
     
     unsigned int i;
     for(i = 0; i < num_devices; i++)
@@ -293,7 +294,7 @@ patch_kernel_source:
 	err = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(devices), devices, &ret_size);
 	ERR_MACRO(err);
 	
-	num_devices = (int)(ret_size / sizeof(cl_device_id));
+	num_devices = ret_size / sizeof(cl_device_id);
 	
 	for(i = 0; i < num_devices; i++)
 	{

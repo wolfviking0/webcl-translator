@@ -98,16 +98,24 @@ allocateTemporaryBufferPlannar(cl_fft_plan *plan, cl_uint batchSize)
 void
 getKernelWorkDimensions(cl_fft_plan *plan, cl_fft_kernel_info *kernelInfo, cl_int *batchSize, size_t *gWorkItems, size_t *lWorkItems)
 {
+	unsigned int maxLocalMemFFTSize;
 	*lWorkItems = kernelInfo->num_workitems_per_workgroup;
 	int numWorkGroups = kernelInfo->num_workgroups;
-    int numXFormsPerWG = kernelInfo->num_xforms_per_workgroup;
 	
 	switch(kernelInfo->dir)
 	{
 		case cl_fft_kernel_x:
-            *batchSize *= (plan->n.y * plan->n.z);
-            numWorkGroups = (*batchSize % numXFormsPerWG) ? (*batchSize/numXFormsPerWG + 1) : (*batchSize/numXFormsPerWG);
-            numWorkGroups *= kernelInfo->num_workgroups;
+			maxLocalMemFFTSize = plan->max_localmem_fft_size;
+			if(plan->n.x <= maxLocalMemFFTSize)
+			{
+			    *batchSize = plan->n.y * plan->n.z * *batchSize;
+			    numWorkGroups = *batchSize % numWorkGroups ? *batchSize / numWorkGroups + 1 : *batchSize / numWorkGroups;
+			}
+			else
+			{
+				*batchSize *= (plan->n.y * plan->n.z);
+				numWorkGroups *= *batchSize;
+			}	
 			break;
 		case cl_fft_kernel_y:
 			*batchSize *= plan->n.z;
@@ -326,7 +334,7 @@ clFFT_ExecutePlannar( cl_command_queue queue, clFFT_Plan Plan, cl_int batchSize,
 
 cl_int 
 clFFT_1DTwistInterleaved(clFFT_Plan Plan, cl_command_queue queue, cl_mem array, 
-						 unsigned numRows, unsigned numCols, unsigned startRow, unsigned rowsToProcess, clFFT_Direction dir)
+						 size_t numRows, size_t numCols, size_t startRow, size_t rowsToProcess, clFFT_Direction dir)
 {
 	cl_fft_plan *plan = (cl_fft_plan *) Plan;
 	
@@ -365,7 +373,7 @@ clFFT_1DTwistInterleaved(clFFT_Plan Plan, cl_command_queue queue, cl_mem array,
 
 cl_int 
 clFFT_1DTwistPlannar(clFFT_Plan Plan, cl_command_queue queue, cl_mem array_real, cl_mem array_imag, 
-					 unsigned numRows, unsigned numCols, unsigned startRow, unsigned rowsToProcess, clFFT_Direction dir)
+					 size_t numRows, size_t numCols, size_t startRow, size_t rowsToProcess, clFFT_Direction dir)
 {
 	cl_fft_plan *plan = (cl_fft_plan *) Plan;
 	
