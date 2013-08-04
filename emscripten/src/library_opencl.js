@@ -811,7 +811,7 @@ var LibraryOpenCL = {
 
         return -34; /* CL_INVALID_CONTEXT */ 
     }
-      
+    
     try {
       console.error("/!\\ clRetainContext not yet implemented");
       return 0;/*CL_SUCCESS*/
