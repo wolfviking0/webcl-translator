@@ -1,67 +1,43 @@
 /*
- * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
+ * NVIDIA Corporation and its licensors retain all intellectual property and 
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
  *
+ * Please refer to the applicable NVIDIA end user license agreement (EULA) 
+ * associated with this source code for terms and conditions that govern 
+ * your use of this NVIDIA software.
+ * 
  */
  
 #ifndef OCL_UTILS_H
 #define OCL_UTILS_H
 
-// *********************************************************************
-// Utilities specific to OpenCL samples in NVIDIA GPU Computing SDK 
-// *********************************************************************
-
 // Common headers:  Cross-API utililties and OpenCL header
 #include <shrUtils.h>
+#include <CL/cl.h>
+#include <CL/clext.h>
 
-// All OpenCL headers
-#if defined (__APPLE__) || defined(MACOSX)
-    #include <OpenCL/opencl.h>
-#else
-    #include <CL/opencl.h>
-#endif 
-
-// Includes
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-// For systems with CL_EXT that are not updated with these extensions, we copied these
-// extensions from <CL/cl_ext.h>
-#ifndef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
-  /* cl_nv_device_attribute_query extension - no extension #define since it has no functions */
-  #define CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV       0x4000
-  #define CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV       0x4001
-  #define CL_DEVICE_REGISTERS_PER_BLOCK_NV            0x4002
-  #define CL_DEVICE_WARP_SIZE_NV                      0x4003
-  #define CL_DEVICE_GPU_OVERLAP_NV                    0x4004
-  #define CL_DEVICE_KERNEL_EXEC_TIMEOUT_NV            0x4005
-  #define CL_DEVICE_INTEGRATED_MEMORY_NV              0x4006
-#endif
-
-// reminders for build output window and log
+// reminders for output window and build log
 #ifdef _WIN32
     #pragma message ("Note: including shrUtils.h")
-    #pragma message ("Note: including opencl.h")
+    #pragma message ("Note: including cl.h")
 #endif
 
-// SDK Revision #
-#define OCL_SDKREVISION "7027912"
+// SDK Version 
+#define oclSDKVERSION "4788711"
 
-// Error and Exit Handling Macros... 
+// Un-comment the following #define to enable profiling code in SDK apps
+//#define GPU_PROFILING
+
+// Short version of shrCheckErrorEX(), specific to OpenCL error checking
+// Checks input code against CL_SUCCESS and performs error handling if no match.  
+// Note:  Use shrCheckError() if input AND reference need to be specified as args 
 // *********************************************************************
-// Full error handling macro with Cleanup() callback (if supplied)... 
-// (Companion Inline Function lower on page)
-#define oclCheckErrorEX(a, b, c) __oclCheckErrorEX(a, b, c, __FILE__ , __LINE__) 
-
-// Short version without Cleanup() callback pointer
-// Both Input (a) and Reference (b) are specified as args
-#define oclCheckError(a, b) oclCheckErrorEX(a, b, 0) 
+#define oclCheckError(ciErrNum) shrCheckError(ciErrNum, CL_SUCCESS) 
 
 //////////////////////////////////////////////////////////////////////////////
 //! Gets the platform ID for NVIDIA if available, otherwise default to platform 0
@@ -78,14 +54,6 @@ extern "C" cl_int oclGetPlatformID(cl_platform_id* clSelectedPlatformID);
 //! @param device         OpenCL id of the device
 //////////////////////////////////////////////////////////////////////////////
 extern "C" void oclPrintDevInfo(int iLogMode, cl_device_id device);
-
-//////////////////////////////////////////////////////////////////////////////
-//! Get and return device capability
-//!
-//! @return the 2 digit integer representation of device Cap (major minor). return -1 if NA 
-//! @param device         OpenCL id of the device
-//////////////////////////////////////////////////////////////////////////////
-extern "C" int oclGetDevCap(cl_device_id device);
 
 //////////////////////////////////////////////////////////////////////////////
 //! Print the device name
@@ -161,39 +129,4 @@ extern "C" void oclLogBuildInfo(cl_program cpProgram, cl_device_id cdDevice);
 // *********************************************************************
 extern "C" void oclDeleteMemObjs(cl_mem* cmMemObjs, int iNumObjs);
 
-// Helper function to get OpenCL error string from constant
-// *********************************************************************
-extern "C" const char* oclErrorString(cl_int error);
-
-// Helper function to get OpenCL image format string (channel order and type) from constant
-// *********************************************************************
-extern "C" const char* oclImageFormatString(cl_uint uiImageFormat);
-
-// companion inline function for error checking and exit on error WITH Cleanup Callback (if supplied)
-// *********************************************************************
-inline void __oclCheckErrorEX(cl_int iSample, cl_int iReference, void (*pCleanup)(int), const char* cFile, const int iLine)
-{
-    // An error condition is defined by the sample/test value not equal to the reference
-    if (iReference != iSample)
-    {
-        // If the sample/test value isn't equal to the ref, it's an error by defnition, so override 0 sample/test value
-        iSample = (iSample == 0) ? -9999 : iSample; 
-
-        // Log the error info
-        shrLog("\n !!! Error # %i (%s) at line %i , in file %s !!!\n\n", iSample, oclErrorString(iSample), iLine, cFile);
-
-        // Cleanup and exit, or just exit if no cleanup function pointer provided.  Use iSample (error code in this case) as process exit code.
-        if (pCleanup != NULL)
-        {
-            pCleanup(iSample);
-        }
-        else 
-        {
-            shrLogEx(LOGBOTH | CLOSELOG, 0, "Exiting...\n");
-            exit(iSample);
-        }
-    }
-}
-
 #endif
-

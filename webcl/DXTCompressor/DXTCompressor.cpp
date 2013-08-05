@@ -1,28 +1,31 @@
 /*
- * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
+ * NVIDIA Corporation and its licensors retain all intellectual property and 
+ * proprietary rights in and to this software and related documentation. 
+ * Any use, reproduction, disclosure, or distribution of this software 
+ * and related documentation without an express license agreement from
+ * NVIDIA Corporation is strictly prohibited.
  *
+ * Please refer to the applicable NVIDIA end user license agreement (EULA) 
+ * associated with this source code for terms and conditions that govern 
+ * your use of this NVIDIA software.
+ * 
  */
 
 // *********************************************************************
 // Demo application for realtime DXT1 compression using OpenCL
-// Based on the CUDA-C DXTC sample
+// Based on the C for CUDA DXTC sample
 // *********************************************************************
 
 // standard utilities and systems includes
 #include <oclUtils.h>
-#include <shrQATest.h>
 
 #include "dds.h"
 #include "permutations.h"
 #include "block.h"
 
-const char *image_filename = "lena_std.ppm";
+const char *image_filename = "lena.ppm";
 const char *refimage_filename = "lena_ref.dds";
 
 unsigned int width, height;
@@ -32,51 +35,37 @@ cl_uint* h_img = NULL;
 
 #define NUM_THREADS   64      // Number of threads per work group.
 
-// constants for this demo
-const cl_float alphaTable4[4] = {9.0f, 0.0f, 6.0f, 3.0f};
-const cl_float alphaTable3[4] = {4.0f, 0.0f, 2.0f, 2.0f};
-const cl_int prods4[4] = {0x090000, 0x000900, 0x040102, 0x010402};
-const cl_int prods3[4] = {0x040000, 0x000400, 0x040101, 0x010401};
-
 // Main function
 // *********************************************************************
-int main(int argc, char** argv) 
+int main(const int argc, const char** argv) 
 {
-    shrQAStart(argc, argv);
-
     // start logs
     shrSetLogFileName ("oclDXTCompression.txt");
-    shrLog("%s Starting...\n\n", argv[0]); 
+    shrLog(LOGBOTH, 0, "%s Starting...\n\n", argv[0]); 
 
-    cl_platform_id cpPlatform = NULL;
-    cl_uint uiNumDevices = 0;
-    cl_device_id *cdDevices = NULL;
     cl_context cxGPUContext;
     cl_command_queue cqCommandQueue;
     cl_program cpProgram;
     cl_kernel ckKernel;
     cl_mem cmMemObjs[3];
-    cl_mem cmAlphaTable4, cmProds4;
-    cl_mem cmAlphaTable3, cmProds3;
     size_t szGlobalWorkSize[1];
     size_t szLocalWorkSize[1];
     cl_int ciErrNum;
 
     // Get the path of the filename
     char *filename;
-    if (shrGetCmdLineArgumentstr(argc, (const char **)argv, "image", &filename)) {
+    if (shrGetCmdLineArgumentstr(argc, argv, "image", &filename)) {
         image_filename = filename;
     }
     // load image
     const char* image_path = shrFindFilePath(image_filename, argv[0]);
-    oclCheckError(image_path != NULL, shrTRUE);
+    shrCheckError(image_path != NULL, shrTRUE);
     shrLoadPPM4ub(image_path, (unsigned char **)&h_img, &width, &height);
-    oclCheckError(h_img != NULL, shrTRUE);
-    shrLog("Loaded '%s', %d x %d pixels\n\n", image_path, width, height);
+    shrCheckError(h_img != NULL, shrTRUE);
+    shrLog(LOGBOTH, 0, "Loaded '%s', %d x %d pixels\n", image_path, width, height);
 
     // Convert linear image to block linear. 
-    const uint memSize = width * height * sizeof(cl_uint);
-    uint* block_image = (uint*)malloc(memSize);
+    uint * block_image = (uint *) malloc(width * height * 4);
 
     // Convert linear image to block linear. 
     for(uint by = 0; by < height/4; by++) {
@@ -90,54 +79,26 @@ int main(int argc, char** argv)
         }
     }
 
-    // Get the NVIDIA platform
-    ciErrNum = oclGetPlatformID(&cpPlatform);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-
-    // Get the platform's GPU devices
-    ciErrNum = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &uiNumDevices);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-    cdDevices = (cl_device_id *)malloc(uiNumDevices * sizeof(cl_device_id) );
-    ciErrNum = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, uiNumDevices, cdDevices, NULL);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-
-    // Create the context
-    cxGPUContext = clCreateContext(0, uiNumDevices, cdDevices, NULL, NULL, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    // create the OpenCL context on a GPU device
+    cxGPUContext = clCreateContextFromType(0, CL_DEVICE_TYPE_GPU, NULL, NULL, &ciErrNum);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // get and log device
     cl_device_id device;
-    if( shrCheckCmdLineFlag(argc, (const char **)argv, "device") ) {
+    if( shrCheckCmdLineFlag(argc, argv, "device") ) {
       int device_nr = 0;
-      shrGetCmdLineArgumenti(argc, (const char **)argv, "device", &device_nr);
+      shrGetCmdLineArgumenti(argc, argv, "device", &device_nr);
       device = oclGetDev(cxGPUContext, device_nr);
-      if( device == (cl_device_id)-1 ) {
-          shrLog(" Invalid GPU Device: devID=%d.  %d valid GPU devices detected\n\n", device_nr, uiNumDevices);
-		  shrLog(" exiting...\n");
-          return -1;
-      }
     } else {
       device = oclGetMaxFlopsDev(cxGPUContext);
     }
-
-    oclPrintDevName(LOGBOTH, device);
-    shrLog("\n");
+    oclPrintDevInfo(LOGBOTH, device);
 
     // create a command-queue
     cqCommandQueue = clCreateCommandQueue(cxGPUContext, device, 0, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // Memory Setup
-
-    // Constants
-    cmAlphaTable4 = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 4 * sizeof(cl_float), (void*)&alphaTable4[0], &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-    cmProds4 = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 4 * sizeof(cl_int), (void*)&prods4[0], &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-    cmAlphaTable3 = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 4 * sizeof(cl_float), (void*)&alphaTable3[0], &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
-    cmProds3 = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 4 * sizeof(cl_int), (void*)&prods3[0], &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
 
     // Compute permutations.
     cl_uint permutations[1024];
@@ -146,77 +107,72 @@ int main(int argc, char** argv)
     // Upload permutations.
     cmMemObjs[0] = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                   sizeof(cl_uint) * 1024, permutations, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // Image
-    cmMemObjs[1] = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY, memSize, NULL, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    cmMemObjs[1] = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY ,
+                                  sizeof(cl_uint) * width * height, NULL, &ciErrNum);
+    shrCheckError(ciErrNum, CL_SUCCESS);
     
     // Result
     const uint compressedSize = (width / 4) * (height / 4) * 8;
-    cmMemObjs[2] = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY, compressedSize, NULL , &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+
+    cmMemObjs[2] = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY,
+                                  compressedSize, NULL , &ciErrNum);
+    shrCheckError(ciErrNum, CL_SUCCESS);
     
-    unsigned int * h_result = (uint*)malloc(compressedSize);
+    unsigned int * h_result = (uint *)malloc(compressedSize);
 
     // Program Setup
     size_t program_length;
     const char* source_path = shrFindFilePath("DXTCompression.cl", argv[0]);
-    oclCheckError(source_path != NULL, shrTRUE);
+    shrCheckError(source_path != NULL, shrTRUE);
     char *source = oclLoadProgSource(source_path, "", &program_length);
-    oclCheckError(source != NULL, shrTRUE);
+    shrCheckError(source != NULL, shrTRUE);
 
     // create the program
     cpProgram = clCreateProgramWithSource(cxGPUContext, 1,
         (const char **) &source, &program_length, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // build the program
-    ciErrNum = clBuildProgram(cpProgram, 0, NULL, "-cl-fast-relaxed-math", NULL, NULL);
+    ciErrNum = clBuildProgram(cpProgram, 0, NULL, "-cl-mad-enable", NULL, NULL);
     if (ciErrNum != CL_SUCCESS)
     {
         // write out standard error, Build Log and PTX, then cleanup and exit
-        shrLogEx(LOGBOTH | ERRORMSG, ciErrNum, STDERROR);
+        shrLog(LOGBOTH | ERRORMSG, ciErrNum, STDERROR);
         oclLogBuildInfo(cpProgram, oclGetFirstDev(cxGPUContext));
         oclLogPtx(cpProgram, oclGetFirstDev(cxGPUContext), "oclDXTCompression.ptx");
-        oclCheckError(ciErrNum, CL_SUCCESS); 
+        shrCheckError(ciErrNum, CL_SUCCESS); 
     }
 
     // create the kernel
     ckKernel = clCreateKernel(cpProgram, "compress", &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // set the args values
     ciErrNum  = clSetKernelArg(ckKernel, 0, sizeof(cl_mem), (void *) &cmMemObjs[0]);
     ciErrNum |= clSetKernelArg(ckKernel, 1, sizeof(cl_mem), (void *) &cmMemObjs[1]);
     ciErrNum |= clSetKernelArg(ckKernel, 2, sizeof(cl_mem), (void *) &cmMemObjs[2]);
-    ciErrNum |= clSetKernelArg(ckKernel, 3, sizeof(cl_mem), (void*)&cmAlphaTable4);
-    ciErrNum |= clSetKernelArg(ckKernel, 4, sizeof(cl_mem), (void*)&cmProds4);
-    ciErrNum |= clSetKernelArg(ckKernel, 5, sizeof(cl_mem), (void*)&cmAlphaTable3);
-    ciErrNum |= clSetKernelArg(ckKernel, 6, sizeof(cl_mem), (void*)&cmProds3);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    ciErrNum |= clSetKernelArg(ckKernel, 3, sizeof(float) * 4 * 16, NULL);
+    ciErrNum |= clSetKernelArg(ckKernel, 4, sizeof(float) * 4 * 16, NULL);
+    ciErrNum |= clSetKernelArg(ckKernel, 5, sizeof(int) * 64, NULL);
+    ciErrNum |= clSetKernelArg(ckKernel, 6, sizeof(float) * 16 * 6, NULL);
+    ciErrNum |= clSetKernelArg(ckKernel, 7, sizeof(unsigned int) * 160, NULL);
+    ciErrNum |= clSetKernelArg(ckKernel, 8, sizeof(int) * 16, NULL);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
-    // Copy input data host to device
+    shrLog(LOGBOTH, 0, "Running DXT Compression on %u x %u image...\n\n", width, height);
+
+    // Upload the image
     clEnqueueWriteBuffer(cqCommandQueue, cmMemObjs[1], CL_FALSE, 0, sizeof(cl_uint) * width * height, block_image, 0,0,0);
 
-    // Determine launch configuration and run timed computation numIterations times
-	int blocks = ((width + 3) / 4) * ((height + 3) / 4); // rounds up by 1 block in each dim if %4 != 0
-
-	// Restrict the numbers of blocks to launch on low end GPUs to avoid kernel timeout
-	cl_uint compute_units;
-    clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(compute_units), &compute_units, NULL);
-	int blocksPerLaunch = MIN(blocks, 768 * (int)compute_units);
-
     // set work-item dimensions
-    szGlobalWorkSize[0] = blocksPerLaunch * NUM_THREADS;
+    szGlobalWorkSize[0] = width * height * (NUM_THREADS/16);
     szLocalWorkSize[0]= NUM_THREADS;
-
+    
 #ifdef GPU_PROFILING
-    shrLog("\nRunning DXT Compression on %u x %u image...\n", width, height);
-    shrLog("\n%u Workgroups, %u Work Items per Workgroup, %u Work Items in NDRange...\n\n", 
-           blocks, NUM_THREADS, blocks * NUM_THREADS);
-
-    int numIterations = 50;
+    int numIterations = 100;
     for (int i = -1; i < numIterations; ++i) {
         if (i == 0) { // start timing only after the first warmup iteration
             clFinish(cqCommandQueue); // flush command queue
@@ -224,27 +180,23 @@ int main(int argc, char** argv)
         }
 #endif
         // execute kernel
-		for( int j=0; j<blocks; j+= blocksPerLaunch ) {
-			clSetKernelArg(ckKernel, 7, sizeof(int), &j);
-			szGlobalWorkSize[0] = MIN( blocksPerLaunch, blocks-j ) * NUM_THREADS;
-			ciErrNum = clEnqueueNDRangeKernel(cqCommandQueue, ckKernel, 1, NULL,
-				                              szGlobalWorkSize, szLocalWorkSize, 
-					                          0, NULL, NULL);
-			oclCheckError(ciErrNum, CL_SUCCESS);
-		}
-
+        ciErrNum = clEnqueueNDRangeKernel(cqCommandQueue, ckKernel, 1, NULL,
+                                          szGlobalWorkSize, szLocalWorkSize, 
+                                          0, NULL, NULL);
+        shrCheckError(ciErrNum, CL_SUCCESS);
 #ifdef GPU_PROFILING
     }
     clFinish(cqCommandQueue);
     double dAvgTime = shrDeltaT(0) / (double)numIterations;
-    shrLogEx(LOGBOTH | MASTER, 0, "oclDXTCompression, Throughput = %.4f MPixels/s, Time = %.5f s, Size = %u Pixels, NumDevsUsed = %i, Workgroup = %d\n", 
-           (1.0e-6 * (double)(width * height)/ dAvgTime), dAvgTime, (width * height), 1, szLocalWorkSize[0]); 
+    shrLog(LOGBOTH | MASTER, 0, "oclDXTCompression, Throughput = %.4f, Time = %.5f, Size = %u, NumDevsUsed = %i\n", 
+        (1.0e-6 * (double)(width * height)/ dAvgTime), dAvgTime, (width * height), 1); 
+
 #endif
 
     // blocking read output
     ciErrNum = clEnqueueReadBuffer(cqCommandQueue, cmMemObjs[2], CL_TRUE, 0,
                                    compressedSize, h_result, 0, NULL, NULL);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    shrCheckError(ciErrNum, CL_SUCCESS);
 
     // Write DDS file.
     FILE* fp = NULL;
@@ -258,7 +210,7 @@ int main(int argc, char** argv)
         strcpy(output_filename + strlen(image_path) - 3, "dds");
         fp = fopen(output_filename, "wb");
     #endif
-    oclCheckError(fp != NULL, shrTRUE);
+    shrCheckError(fp != NULL, shrTRUE);
 
     DDSHeader header;
     header.fourcc = FOURCC_DDS;
@@ -290,9 +242,9 @@ int main(int argc, char** argv)
     fclose(fp);
 
     // Make sure the generated image matches the reference image (regression check)
-    shrLog("\nComparing against Host/C++ computation...\n");     
+    shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation...\n");     
     const char* reference_image_path = shrFindFilePath(refimage_filename, argv[0]);
-    oclCheckError(reference_image_path != NULL, shrTRUE);
+    shrCheckError(reference_image_path != NULL, shrTRUE);
 
     // read in the reference image from file
     #ifdef WIN32
@@ -300,7 +252,7 @@ int main(int argc, char** argv)
     #else
         fp = fopen(reference_image_path, "rb");
     #endif
-    oclCheckError(fp != NULL, shrTRUE);
+    shrCheckError(fp != NULL, shrTRUE);
     fseek(fp, sizeof(DDSHeader), SEEK_SET);
     uint referenceSize = (width / 4) * (height / 4) * 8;
     uint * reference = (uint *)malloc(referenceSize);
@@ -322,20 +274,17 @@ int main(int argc, char** argv)
             if (cmp != 0.0f) 
             {
                 compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
-                shrLog("Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
+                shrLog(LOGBOTH, 0, "Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
             }
             rms += cmp;
         }
     }
     rms /= width * height * 3;
-    shrLog("RMS(reference, result) = %f\n\n", rms);
+    shrLog(LOGBOTH, 0, "RMS(reference, result) = %f\n\n", rms);
+    shrLog(LOGBOTH, 0, "TEST %s\n\n", (rms <= ERROR_THRESHOLD) ? "PASSED" : "FAILED !!!");
 
     // Free OpenCL resources
     oclDeleteMemObjs(cmMemObjs, 3);
-    clReleaseMemObject(cmAlphaTable4);
-    clReleaseMemObject(cmProds4);
-    clReleaseMemObject(cmAlphaTable3);
-    clReleaseMemObject(cmProds3);
     clReleaseKernel(ckKernel);
     clReleaseProgram(cpProgram);
     clReleaseCommandQueue(cqCommandQueue);
@@ -346,5 +295,5 @@ int main(int argc, char** argv)
     free(h_img);
 
     // finish
-    shrQAFinishExit(argc, (const char **)argv, (rms <= ERROR_THRESHOLD) ? QA_PASSED : QA_FAILED);
+    shrEXIT(argc, argv);
 }

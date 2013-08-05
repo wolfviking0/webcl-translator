@@ -8,6 +8,7 @@
 function assert(check, msg) {
   if (!check) throw msg + new Error().stack;
 }
+Module['FS_createPath']('/', 'data', true, true);
 
     function DataRequest() {}
     DataRequest.prototype = {
@@ -18,6 +19,38 @@ function assert(check, msg) {
       send: function() {}
     };
   
+    var filePreload0 = new DataRequest();
+    filePreload0.open('GET', 'data/lena_ref.dds', true);
+    filePreload0.responseType = 'arraybuffer';
+    filePreload0.onload = function() {
+      var arrayBuffer = filePreload0.response;
+      assert(arrayBuffer, 'Loading file data/lena_ref.dds failed.');
+      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
+      
+      Module['FS_createPreloadedFile']('/data', 'lena_ref.dds', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp data/lena_ref.dds');
+
+      });
+    };
+    Module['addRunDependency']('fp data/lena_ref.dds');
+    filePreload0.send(null);
+
+    var filePreload1 = new DataRequest();
+    filePreload1.open('GET', 'data/lena.ppm', true);
+    filePreload1.responseType = 'arraybuffer';
+    filePreload1.onload = function() {
+      var arrayBuffer = filePreload1.response;
+      assert(arrayBuffer, 'Loading file data/lena.ppm failed.');
+      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
+      
+      Module['FS_createPreloadedFile']('/data', 'lena.ppm', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp data/lena.ppm');
+
+      });
+    };
+    Module['addRunDependency']('fp data/lena.ppm');
+    filePreload1.send(null);
+
     if (!Module.expectedDataFileDownloads) {
       Module.expectedDataFileDownloads = 0;
       Module.finishedDataFileDownloads = 0;
@@ -25,9 +58,9 @@ function assert(check, msg) {
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = 'DXTCompressor_kernel.data';
-    var REMOTE_PACKAGE_NAME = 'DXTCompressor_kernel.data';
-    var PACKAGE_UUID = '4308a97f-7889-4e66-a62c-17d0c426b6d8';
+    var PACKAGE_NAME = 'DXTCompressor_images.data';
+    var REMOTE_PACKAGE_NAME = 'DXTCompressor_images.data';
+    var PACKAGE_UUID = 'ff5d8585-bba8-4b7f-91cb-5c3615029684';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -73,10 +106,24 @@ function assert(check, msg) {
       assert(arrayBuffer, 'Loading data file failed.');
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
-                Module['removeRunDependency']('datafile_DXTCompressor_kernel.data');
+      
+        curr = DataRequest.prototype.requests['data/lena_ref.dds'];
+        var data = byteArray.subarray(0, 131200);
+        var ptr = Module['_malloc'](131200);
+        Module['HEAPU8'].set(data, ptr);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 131200);
+        curr.onload();
+      
+        curr = DataRequest.prototype.requests['data/lena.ppm'];
+        var data = byteArray.subarray(131200, 917647);
+        var ptr = Module['_malloc'](786447);
+        Module['HEAPU8'].set(data, ptr);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 786447);
+        curr.onload();
+                Module['removeRunDependency']('datafile_DXTCompressor_images.data');
 
     };
-    Module['addRunDependency']('datafile_DXTCompressor_kernel.data');
+    Module['addRunDependency']('datafile_DXTCompressor_images.data');
 
     function handleError(error) {
       console.error('package error:', error);

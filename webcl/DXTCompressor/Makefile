@@ -13,7 +13,8 @@ EMMAKE = $(EMSCRIPTEN)/emmake
 #----------------------------------------------------------------------------------------#		
 all:
 	python $(EMSCRIPTEN)/tools/file_packager.py DXTCompressor_kernel.data --preload DXTCompressor_kernel.cl --pre-run > DXTCompressor_kernel.js
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) DXTCompressor.cpp -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o DXTCompressor.js
+	python $(EMSCRIPTEN)/tools/file_packager.py DXTCompressor_images.data --preload data/lena_ref.dds data/lena.ppm --pre-run > DXTCompressor_images.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp DXTCompressor.cpp -I./common/inc -I./shared/inc -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o DXTCompressor.js
 					
 clean:
 	$(CXX) --clear-cache
