@@ -53,6 +53,8 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 	| qjulia		| 	BAD RESULT     |OK(sharath_setArg)|
 	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
 	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
+	| FFT			| WORK IN PROGRESS | WORK IN PROGRESS |
+	| DXTCompressor | WORK IN PROGRESS | WORK IN PROGRESS |
 	|---------------|------------------|------------------|
 	
 Sources Sample :
@@ -76,6 +78,10 @@ https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_
 http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/
 
 http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
+
+http://developer.apple.com/library/mac/#samplecode/OpenCL_FFT/
+
+https://code.google.com/p/simulation-opencl/
 
 	
 Videos :

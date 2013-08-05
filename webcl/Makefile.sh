@@ -18,3 +18,7 @@ cd ../smallpt/
 make
 cd ../mandelbulb/
 make
+cd ../DXTCompressor/
+make
+cd ../FFT/
+make
