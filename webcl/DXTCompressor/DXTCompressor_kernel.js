@@ -18,6 +18,22 @@ function assert(check, msg) {
       send: function() {}
     };
   
+    var filePreload0 = new DataRequest();
+    filePreload0.open('GET', 'DXTCompressor_kernel.cl', true);
+    filePreload0.responseType = 'arraybuffer';
+    filePreload0.onload = function() {
+      var arrayBuffer = filePreload0.response;
+      assert(arrayBuffer, 'Loading file DXTCompressor_kernel.cl failed.');
+      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
+      
+      Module['FS_createPreloadedFile']('/', 'DXTCompressor_kernel.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp DXTCompressor_kernel.cl');
+
+      });
+    };
+    Module['addRunDependency']('fp DXTCompressor_kernel.cl');
+    filePreload0.send(null);
+
     if (!Module.expectedDataFileDownloads) {
       Module.expectedDataFileDownloads = 0;
       Module.finishedDataFileDownloads = 0;
@@ -27,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'DXTCompressor_kernel.data';
     var REMOTE_PACKAGE_NAME = 'DXTCompressor_kernel.data';
-    var PACKAGE_UUID = 'fc20febc-3b40-471d-84fd-73be192c4360';
+    var PACKAGE_UUID = '54832a96-22a4-4670-84b0-fda1f341b857';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -73,6 +89,13 @@ function assert(check, msg) {
       assert(arrayBuffer, 'Loading data file failed.');
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
+      
+        curr = DataRequest.prototype.requests['DXTCompressor_kernel.cl'];
+        var data = byteArray.subarray(0, 13232);
+        var ptr = Module['_malloc'](13232);
+        Module['HEAPU8'].set(data, ptr);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 13232);
+        curr.onload();
                 Module['removeRunDependency']('datafile_DXTCompressor_kernel.data');
 
     };

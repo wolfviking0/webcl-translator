@@ -710,22 +710,34 @@ var LibraryOpenCL = {
 
   clCreateContextFromType: function(properties, device_type_i64_1, device_type_i64_2, pfn_notify, private_info, cb, user_data, user_data, errcode_ret) {
     
-    if (CL.platforms.length == 0) {
-#if OPENCL_DEBUG
-      console.error("clCreateContextFromType: Invalid platform");
-#endif
-      {{{ makeSetValue('errcode_ret', '0', '-32', 'i32') }}} /* CL_INVALID_PLATFORM */;
-      return 0; // Null pointer    
+    if (CL.checkWebCL() < 0) {
+      console.error(CL.errorMessage);
+      return -1;/*WEBCL_NOT_FOUND*/;
     }
-    
+
     // Assume the device type is i32 
     assert(device_type_i64_2 == 0, 'Invalid flags i64');
     
+    var prop = [];
+    var plat = 0;
+     
     try {
       
-      var prop = [];
-      var plat = -1;
+      if (CL.platforms.length == 0) {
       
+          var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
+      
+          if (platforms.length > 0) {
+            CL.platforms.push(platforms[0]);
+            plat = CL.platforms.length - 1;
+          } else {
+#if OPENCL_DEBUG
+            console.error("clCreateContextFromType: Invalid platform");
+#endif
+            return -32; /* CL_INVALID_PLATFORM */ 
+          }    
+      }     
+
       if (properties != 0) {
         var i = 0;
         while(1) {
@@ -761,7 +773,7 @@ var LibraryOpenCL = {
           i++;  
         }        
       }
-      
+
       if (prop.length == 0) {
         prop = [WebCL.CL_CONTEXT_PLATFORM, CL.platforms[0]];
         plat = 0;   
@@ -770,7 +782,7 @@ var LibraryOpenCL = {
       // \todo en faire une function si le device n'existe pas
       var alldev = CL.getAllDevices(plat);
       var mapcount = 0;
-    
+
       for (var i = 0 ; i < alldev.length; i++ ) {
         var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : alldev[i].getInfo(WebCL.DEVICE_TYPE);
         if (type == device_type_i64_1 || device_type_i64_1 == -1) {
@@ -793,9 +805,8 @@ var LibraryOpenCL = {
           CL.ctx.push(WebCL.createContext());
         }
       }
-    
+
       return CL.getNewId(CL.ctx.length-1);
-      
     } catch (e) {
       {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateContextFromType",e)', 'i32') }}};
       return 0; // Null pointer    

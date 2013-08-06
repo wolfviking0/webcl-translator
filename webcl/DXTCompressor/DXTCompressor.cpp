@@ -50,7 +50,7 @@ int main(const int argc, const char** argv)
     cl_mem cmMemObjs[3];
     size_t szGlobalWorkSize[1];
     size_t szLocalWorkSize[1];
-    cl_int ciErrNum;
+    cl_int ciErrNum = CL_SUCCESS;
 
     // Get the path of the filename
     char *filename;
@@ -81,6 +81,7 @@ int main(const int argc, const char** argv)
 
     // create the OpenCL context on a GPU device
     cxGPUContext = clCreateContextFromType(0, CL_DEVICE_TYPE_GPU, NULL, NULL, &ciErrNum);
+    printf("Err : %d\n",ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
 
     // get and log device
@@ -125,7 +126,7 @@ int main(const int argc, const char** argv)
 
     // Program Setup
     size_t program_length;
-    const char* source_path = shrFindFilePath("DXTCompression.cl", argv[0]);
+    const char* source_path = "DXTCompressor_kernel.cl";//shrFindFilePath("DXTCompression_kernel.cl", argv[0]);
     shrCheckError(source_path != NULL, shrTRUE);
     char *source = oclLoadProgSource(source_path, "", &program_length);
     shrCheckError(source != NULL, shrTRUE);

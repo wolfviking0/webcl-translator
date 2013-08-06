@@ -96,6 +96,8 @@ function loadModule(argv) {
   };
   
   Module['setStatus']('Downloading...');
+  Module['noImageDecoding'] = true;
+  Module['noAudioDecoding'] = true;
   Module['arguments'] = argv;
      
 }
