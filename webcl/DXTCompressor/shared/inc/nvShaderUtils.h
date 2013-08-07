@@ -27,7 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <GL/glew.h>
+#if defined(__APPLE__) || defined(MACOSX)
+
+#else
+	#include <GL/glew.h>
+#endif
 
 namespace nv
 {

@@ -1515,7 +1515,6 @@ function copyTempDouble(ptr) {
           0x1002:[WebCL.CL_DEVICE_MAX_COMPUTE_UNITS,WebCL.DEVICE_MAX_COMPUTE_UNITS],
           0x1003:[WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,WebCL.DEVICE_MAX_WORK_ITEM_DIMENSIONS],      
           0x1004:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_MAX_WORK_GROUP_SIZE],
-          0x1005:[WebCL.CL_DEVICE_MAX_WORK_ITEM_SIZES,WebCL.DEVICE_MAX_WORK_ITEM_SIZES],
           0x1006:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR],
           0x1007:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT],
           0x1008:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_INT],
@@ -1702,22 +1701,6 @@ function copyTempDouble(ptr) {
           }    
           writeStringToMemory(res, param_value);
           size = res.length;
-        }
-        // Return array of 3 int
-        else if (param_name == 0x1005) /* CL_DEVICE_MAX_WORK_ITEM_SIZES */
-        {
-          try {
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
-            console.info("---->"+res.length);
-            size = res.length/4;
-            for (var i = 0; i < size; i++ ) {
-              HEAP32[(((param_value)+(i*4))>>2)]=res[i];
-            }
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            HEAP32[((param_value)>>2)]=0; 
-            size = 1;
-          }  
         }
         // Return int
         else {

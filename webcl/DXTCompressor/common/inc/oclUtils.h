@@ -18,8 +18,14 @@
 
 // Common headers:  Cross-API utililties and OpenCL header
 #include <shrUtils.h>
-#include <CL/cl.h>
-#include <CL/clext.h>
+
+#ifdef __APPLE__
+	#include <OpenCL/OpenCL.h>
+	#include <OpenCL/clext.h> // Not official
+#else
+	#include <CL/cl.h>
+	#include <CL/clext.h>
+#endif
 
 // reminders for output window and build log
 #ifdef _WIN32
