@@ -31,9 +31,136 @@ const char *refimage_filename = "lena_ref.dds";
 unsigned int width, height;
 cl_uint* h_img = NULL;
 
+#define GPU_PROFILING
+
 #define ERROR_THRESHOLD 0.02f
 
 #define NUM_THREADS   64      // Number of threads per work group.
+
+#ifdef __EMSCRIPTEN__
+
+#include "SDL/SDL.h"
+#include "SDL/SDL_image.h"
+#include "SDL/SDL_opengl.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+int hasext(const char *exts, const char *ext) // from cube2, zlib licensed
+{
+    int len = strlen(ext);
+    if(len) for(const char *cur = exts; (cur = strstr(cur, ext)); cur += len)
+    {
+        if((cur == exts || cur[-1] == ' ') && (cur[len] == ' ' || !cur[len])) return 1;
+    }
+    return 0;
+}
+
+void showtexture(const char * texture_name,int header_size)
+{
+    SDL_Surface *screen;
+
+    // Slightly different SDL initialization
+    if ( SDL_Init(SDL_INIT_VIDEO) != 0 ) {
+        printf("Unable to initialize SDL: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 ); // *new*
+
+    screen = SDL_SetVideoMode( 512, 512, 16, SDL_OPENGL ); // *changed*
+    if ( !screen ) {
+        printf("Unable to set video mode: %s\n", SDL_GetError());
+        return;
+    }
+
+    // Check extensions
+
+    const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+    assert(hasext(exts, "GL_ARB_texture_compression"));
+    assert(hasext(exts, "GL_EXT_texture_compression_s3tc"));
+
+    // Set the OpenGL state after creating the context with SDL_SetVideoMode
+
+    glClearColor( 0, 0, 0, 0 );
+
+    glEnable( GL_TEXTURE_2D ); // Needed when we're using the fixed-function pipeline.
+
+    glViewport( 0, 0, 512, 512 );
+
+    glMatrixMode( GL_PROJECTION );
+    GLfloat matrixData[] = { 2.0/512,        0,  0,  0,
+                                   0, -2.0/512,  0,  0,
+                                   0,        0, -1,  0,
+                                  -1,        1,  0,  1 };
+    glLoadMatrixf(matrixData); // test loadmatrix
+
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+
+
+    // Load the OpenGL texture
+
+    GLuint texture;
+
+    FILE *dds = fopen(/*"./data/lena_ref.dds"*/texture_name, "rb");
+    
+    fseek(dds, 0, SEEK_END); // seek to end of file
+    int dds_size = ftell(dds); // get current file pointer
+    fseek(dds, 0, SEEK_SET); // seek back to beginning of file
+   
+    printf("Read %s : Size %d : Header %d\n",texture_name,dds_size,header_size);
+    
+    char *ddsdata = (char*)malloc(dds_size);//DDS_SIZE);
+    assert(fread(ddsdata, 1, dds_size, dds) == dds_size);
+    fclose(dds);
+
+    glGenTextures( 1, &texture );
+    glBindTexture( GL_TEXTURE_2D, texture );
+
+    //assert(!glGetError());
+    printf("glGetError = %d\n",glGetError());
+    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, 512, 512, 0, dds_size-header_size, ddsdata+header_size);
+    printf("glGetError = %d\n",glGetError());
+
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+
+    // Prepare and Render
+
+    // Clear the screen before drawing
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    // Bind the texture to which subsequent calls refer to
+    glBindTexture( GL_TEXTURE_2D, texture );
+
+    // Use clientside vertex pointers to render two items
+    GLfloat vertexData[] = { 0, 0, 0, 0, // texture2, position2
+                             1, 0, 512, 0,
+                             1, 1, 512, 512,
+                             0, 1, 0, 512};
+
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glTexCoordPointer(2, GL_FLOAT, 4*4, &vertexData[0]);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 4*4, &vertexData[2]);
+
+    glDrawArrays(GL_QUADS, 0, 4);
+
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    SDL_GL_SwapBuffers();
+
+    // Now we can delete the OpenGL texture and close down SDL
+    glDeleteTextures( 1, &texture );
+    
+    // return 0;
+}
+
+#endif
 
 // Main function
 // *********************************************************************
@@ -241,6 +368,13 @@ int main(const int argc, const char** argv)
     fwrite(h_result, compressedSize, 1, fp);
 
     fclose(fp);
+    
+#ifdef __EMSCRIPTEN__
+    
+    // Print DXT Image generated
+    showtexture(output_filename,sizeof(DDSHeader));
+    
+#endif
 
     // Make sure the generated image matches the reference image (regression check)
     shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation...\n");     
