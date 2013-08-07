@@ -37,9 +37,23 @@
   <div class="emscripten">
     <progress value="0" max="100" id="progress" hidden=1></progress>
   </div>
-	<div class="emscripten" id="renderArea">
-    <!-- we want to create canvas inside this div, using JavaScript -->
-	</div>
+  	<center>
+  	<table class="emscripten">
+  	<tr>
+  	<td colspan=3>
+	  	<div class="emscripten" id="renderArea">
+	    <!-- we want to create canvas inside this div, using JavaScript -->
+		</div>
+  	</td>
+	
+	</tr>
+	<tr>
+	<th>ORIGINAL LENA PPM</td>	
+	<th>ORIGINAL LENA DXT</td>	
+	<th>GENERATED LENA DXT</td>
+	</tr>
+	</table>
+	</center>
   <hr/>
   <div class="emscripten">
     <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(0,1)">

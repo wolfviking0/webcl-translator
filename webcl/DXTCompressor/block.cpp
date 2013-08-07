@@ -71,6 +71,9 @@ int compareColors(const Color32 * b0, const Color32 * b1)
         int b = (b0[i].b - b1[i].b);
         sum += r*r + g*g + b*b;
     }
+        
+    //printf("compareColors --> %d \n",sum);
+        
     return sum;
 }
 
@@ -78,6 +81,8 @@ int compareBlock(const BlockDXT1 * b0, const BlockDXT1 * b1)
 {
     Color32 colors0[16];
     Color32 colors1[16];
+    
+    //printf("compareBlock --> %d \n",memcmp(b0, b1, sizeof(BlockDXT1)));
 
     if (memcmp(b0, b1, sizeof(BlockDXT1)) == 0)
     {

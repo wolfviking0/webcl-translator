@@ -60,7 +60,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'DXTCompressor_images.data';
     var REMOTE_PACKAGE_NAME = 'DXTCompressor_images.data';
-    var PACKAGE_UUID = '2e9ce75c-5082-4719-b103-119b4a38a28f';
+    var PACKAGE_UUID = '0eaae38e-2566-4a9a-a329-d761ad0ea08c';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
