@@ -1,5 +1,6 @@
 // MODE
 var MODE = "gpu";
+var PARAM = "";
 
 // Global Module
 var Module = {};
@@ -14,9 +15,11 @@ var urlParts = pageParams.split('&');
 
 // set new value with the parameter of url
 for (var i = 0; i < urlParts.length; i++) {
-	var eltParts = urlParts[i].split('=');
+  var eltParts = urlParts[i].split('=');
   if (eltParts[0].toLowerCase() == "mode") {
 	  MODE = eltParts[1];
+  } else if (eltParts[0].toLowerCase() == "param") {
+	  PARAM = eltParts[1];
   } 
 
 }
@@ -32,7 +35,13 @@ function includeJS(jsFile) {
 
 function initArguments() {
   var argv = [];
-  argv[0] = MODE;        
+  argv[0] = MODE;
+          
+  var paramParts = PARAM.split(' ');
+  for (var i = 0; i < paramParts.length; i++) {
+	  argv[i+1] = paramParts[i];
+  }
+
   return argv;
 }
 

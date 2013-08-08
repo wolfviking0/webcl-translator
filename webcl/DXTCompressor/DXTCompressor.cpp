@@ -39,6 +39,10 @@ cl_uint* h_img = NULL;
 
 #ifdef __EMSCRIPTEN__
 
+int check_worker;
+
+#include <emscripten/emscripten.h>
+#include "check.h"
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_opengl.h"
@@ -46,6 +50,13 @@ cl_uint* h_img = NULL;
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+
+void check_callback_worker(char *data, int size, void *arg) {
+
+  	float rms = ((CheckData*)data)->result;
+    shrLog(LOGBOTH, 0, "RMS(reference, result) = %f\n\n", rms);
+    shrLog(LOGBOTH, 0, "TEST %s\n\n", (rms <= ERROR_THRESHOLD) ? "PASSED" : "FAILED !!!");
+}
 
 int hasext(const char *exts, const char *ext) // from cube2, zlib licensed
 {
@@ -207,6 +218,9 @@ int main(const int argc, const char** argv)
     if (shrGetCmdLineArgumentstr(argc, argv, "image", &filename)) {
         image_filename = filename;
     }
+    
+    int use_worker = 1;
+   
     // load image
     const char* image_path = shrFindFilePath(image_filename, argv[0]);
     shrCheckError(image_path != NULL, shrTRUE);
@@ -231,7 +245,6 @@ int main(const int argc, const char** argv)
 
     // create the OpenCL context on a GPU device
     cxGPUContext = clCreateContextFromType(0, CL_DEVICE_TYPE_GPU, NULL, NULL, &ciErrNum);
-    printf("Err : %d\n",ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
 
     // get and log device
@@ -392,67 +405,135 @@ int main(const int argc, const char** argv)
 
     fclose(fp);
     
-#ifdef __EMSCRIPTEN__
-    
-    // Print DXT Image generated
-    showtexture(sizeof(DDSHeader));
-    
-#endif
-
-    // Make sure the generated image matches the reference image (regression check)
-    shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation...\n");     
-    const char* reference_image_path = shrFindFilePath(refimage_filename, argv[0]);
-    shrCheckError(reference_image_path != NULL, shrTRUE);
-
-    // read in the reference image from file
-    #ifdef WIN32
-        fopen_s(&fp, reference_image_path, "rb");
-    #else
-        fp = fopen(reference_image_path, "rb");
-    #endif
-    shrCheckError(fp != NULL, shrTRUE);
-    fseek(fp, sizeof(DDSHeader), SEEK_SET);
-    uint referenceSize = (width / 4) * (height / 4) * 8;
-    uint * reference = (uint *)malloc(referenceSize);
-    fread(reference, referenceSize, 1, fp);
-    fclose(fp);
-
-    // compare the reference image data to the sample/generated image
-    float rms = 0;
-    for (uint y = 0; y < height; y += 4)
-    {
-        for (uint x = 0; x < width; x += 4)
-        {
-            // binary comparison of data
-            uint referenceBlockIdx = ((y/4) * (width/4) + (x/4));
-            uint resultBlockIdx = ((y/4) * (width/4) + (x/4));        
-            
-            int cmp = compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
-        
-            // log deviations, if any
-            if (cmp != 0.0f) 
-            {
-                compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
-                shrLog(LOGBOTH, 0, "Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
-            }
-            rms += cmp;
-        }
-    }
-    rms /= width * height * 3;
-    shrLog(LOGBOTH, 0, "RMS(reference, result) = %f\n\n", rms);
-    shrLog(LOGBOTH, 0, "TEST %s\n\n", (rms <= ERROR_THRESHOLD) ? "PASSED" : "FAILED !!!");
-
     // Free OpenCL resources
     oclDeleteMemObjs(cmMemObjs, 3);
     clReleaseKernel(ckKernel);
     clReleaseProgram(cpProgram);
     clReleaseCommandQueue(cqCommandQueue);
     clReleaseContext(cxGPUContext);
+    
+    if (use_worker) {
+      #ifdef __EMSCRIPTEN__ 
+    
+        // Print DXT Image generated
+        showtexture(sizeof(DDSHeader));
+    
+        CheckData check_data;
+        check_data.dxtheader = sizeof(DDSHeader);
+        check_data.width = width;
+        check_data.height = height;
+      
+        fp = NULL;	
+			
+        // read in the reference image from file
+        #ifdef WIN32
+          fopen_s(&fp, "./data/lena_ref.dds", "rb");
+        #else
+          fp = fopen("./data/lena_ref.dds", "rb");
+        #endif
+      
+        uint referenceSize = 0;
+        uint * reference = 0;
 
-    // Free host memory
-    free(source);
-    free(h_img);
+        if (fp != NULL) {
+          fseek(fp, sizeof(DDSHeader), SEEK_SET);
+          referenceSize = (width / 4) * (height / 4) * 8;
+          fread(check_data.ref, referenceSize, 1, fp);
+          fclose(fp);
+        }
 
-    // finish
+        fp = NULL;	
+
+        // read in the generated image from file
+        #ifdef WIN32
+          fopen_s(&fp, "./data/lena.dds", "rb");
+        #else
+          fp = fopen("./data/lena.dds", "rb");
+        #endif
+  
+        uint generatedSize = 0;
+        uint * generated = 0;
+
+        if (fp != NULL) {
+          fseek(fp, sizeof(DDSHeader), SEEK_SET);
+          generatedSize = (width / 4) * (height / 4) * 8;
+          fread(check_data.gen, generatedSize, 1, fp);
+          fclose(fp);
+        }
+
+        check_data.refSize = referenceSize;
+        check_data.genSize = generatedSize;
+      
+        check_worker = emscripten_create_worker("check.js");
+   
+        // Make sure the generated image matches the reference image (regression check)
+        shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation by worker...\n");     
+
+        emscripten_call_worker(check_worker, "checkResult", (char*)&check_data, sizeof(check_data), check_callback_worker, 0);
+  
+        return 0;  
+    #endif 
+  }
+  
+  #ifdef __EMSCRIPTEN__ 
+    // Print DXT Image generated
+    showtexture(sizeof(DDSHeader));
+  #endif
+
+  // Make sure the generated image matches the reference image (regression check)
+  shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation...\n");     
+  
+  const char* reference_image_path = shrFindFilePath(refimage_filename, argv[0]);
+  shrCheckError(reference_image_path != NULL, shrTRUE);
+
+  // read in the reference image from file
+  #ifdef WIN32
+      fopen_s(&fp, reference_image_path, "rb");
+  #else
+      fp = fopen(reference_image_path, "rb");
+  #endif
+  shrCheckError(fp != NULL, shrTRUE);
+  fseek(fp, sizeof(DDSHeader), SEEK_SET);
+  uint referenceSize = (width / 4) * (height / 4) * 8;
+  uint * reference = (uint *)malloc(referenceSize);
+  fread(reference, referenceSize, 1, fp);
+  fclose(fp);
+  
+  printf("Reference : %d\n",referenceSize);
+
+  // compare the reference image data to the sample/generated image
+  float rms = 0;
+  for (uint y = 0; y < height; y += 4)
+  {
+      for (uint x = 0; x < width; x += 4)
+      {
+          // binary comparison of data
+          uint referenceBlockIdx = ((y/4) * (width/4) + (x/4));
+          uint resultBlockIdx = ((y/4) * (width/4) + (x/4));        
+          
+          int cmp = compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
+      
+          // log deviations, if any
+          if (cmp != 0.0f) 
+          {
+              compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
+              shrLog(LOGBOTH, 0, "Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
+          }
+          rms += cmp;
+      }
+  }
+  rms /= width * height * 3;
+  shrLog(LOGBOTH, 0, "RMS(reference, result) = %f\n\n", rms);
+  shrLog(LOGBOTH, 0, "TEST %s\n\n", (rms <= ERROR_THRESHOLD) ? "PASSED" : "FAILED !!!");
+
+  // Free host memory
+  free(source);
+  free(h_img);
+
+  // finish
+  #ifdef __EMSCRIPTEN__ 
+    return 0;
+  #else
     shrEXIT(argc, argv);
+  #endif  
 }
