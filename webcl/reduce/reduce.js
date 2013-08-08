@@ -1446,8 +1446,31 @@ function copyTempDouble(ptr) {
           0x1002:[WebCL.CL_DEVICE_MAX_COMPUTE_UNITS,WebCL.DEVICE_MAX_COMPUTE_UNITS],
           0x1003:[WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,WebCL.DEVICE_MAX_WORK_ITEM_DIMENSIONS],      
           0x1004:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_MAX_WORK_GROUP_SIZE],
+          0x1005:[WebCL.CL_DEVICE_MAX_WORK_ITEM_SIZES,WebCL.DEVICE_MAX_WORK_ITEM_SIZES],
+          0x1006:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR],
+          0x1007:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT],
+          0x1008:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_INT],
+          0x1009:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG],
+          0x100A:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT],
+          0x100B:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE],      
+          0x100C:[WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY,WebCL.DEVICE_MAX_CLOCK_FREQUENCY],
+          0x100D:[WebCL.CL_DEVICE_ADDRESS_BITS,WebCL.DEVICE_ADDRESS_BITS],    
+          0x100E:[WebCL.CL_DEVICE_MAX_READ_IMAGE_ARGS,WebCL.DEVICE_MAX_READ_IMAGE_ARGS],    
+          0x100F:[WebCL.CL_DEVICE_MAX_WRITE_IMAGE_ARGS,WebCL.DEVICE_MAX_WRITE_IMAGE_ARGS],    
+          0x1010:[WebCL.CL_DEVICE_MAX_MEM_ALLOC_SIZE,WebCL.DEVICE_MAX_MEM_ALLOC_SIZE],
+          0x1011:[WebCL.CL_DEVICE_IMAGE2D_MAX_WIDTH,WebCL.DEVICE_IMAGE2D_MAX_WIDTH],
+          0x1012:[WebCL.CL_DEVICE_IMAGE2D_MAX_HEIGHT,WebCL.DEVICE_IMAGE2D_MAX_HEIGHT],
+          0x1013:[WebCL.CL_DEVICE_IMAGE3D_MAX_WIDTH,WebCL.DEVICE_IMAGE3D_MAX_WIDTH],
+          0x1014:[WebCL.CL_DEVICE_IMAGE3D_MAX_HEIGHT,WebCL.DEVICE_IMAGE3D_MAX_HEIGHT],
+          0x1015:[WebCL.CL_DEVICE_IMAGE3D_MAX_DEPTH,WebCL.DEVICE_IMAGE3D_MAX_DEPTH],
           0x1016:[WebCL.CL_DEVICE_IMAGE_SUPPORT,WebCL.DEVICE_IMAGE_SUPPORT],
+          0x101F:[WebCL.CL_DEVICE_GLOBAL_MEM_SIZE,WebCL.DEVICE_GLOBAL_MEM_SIZE],
+          0x1020:[WebCL.CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,WebCL.DEVICE_MAX_CONSTANT_BUFFER_SIZE],
+          0x1022:[WebCL.CL_DEVICE_LOCAL_MEM_TYPE,WebCL.DEVICE_LOCAL_MEM_TYPE],
+          0x1023:[WebCL.CL_DEVICE_LOCAL_MEM_SIZE,WebCL.DEVICE_LOCAL_MEM_SIZE],
+          0x1024:[WebCL.CL_DEVICE_ERROR_CORRECTION_SUPPORT,WebCL.DEVICE_ERROR_CORRECTION_SUPPORT],
           0x1030:[WebCL.CL_DEVICE_EXTENSIONS,WebCL.DEVICE_EXTENSIONS],
+          0x102A:[WebCL.CL_DEVICE_QUEUE_PROPERTIES,WebCL.DEVICE_QUEUE_PROPERTIES],
           0x102B:[WebCL.CL_DEVICE_NAME,WebCL.DEVICE_NAME],
           0x102C:[WebCL.CL_DEVICE_VENDOR,WebCL.DEVICE_VENDOR],
           0x102D:[WebCL.CL_DRIVER_VERSION,WebCL.DRIVER_VERSION],
@@ -2645,12 +2668,12 @@ function copyTempDouble(ptr) {
       if (info != undefined) {
         // Return string
         if (
-          (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS */
-          (param_name == 0x102B) || /* CL_DEVICE_NAME       */
-          (param_name == 0x102C) || /* CL_DEVICE_VENDOR     */
-          (param_name == 0x102D) || /* CL_DRIVER_VERSION    */
-          (param_name == 0x102F) || /* CL_DEVICE_VERSION    */
-          (param_name == 0x102E)    /* CL_DEVICE_PROFILE    */
+          (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS               */
+          (param_name == 0x102B) || /* CL_DEVICE_NAME                     */
+          (param_name == 0x102C) || /* CL_DEVICE_VENDOR                   */
+          (param_name == 0x102D) || /* CL_DRIVER_VERSION                  */
+          (param_name == 0x102F) || /* CL_DEVICE_VERSION                  */
+          (param_name == 0x102E)    /* CL_DEVICE_PROFILE                  */
         ) {
           try {
             res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
@@ -2660,7 +2683,21 @@ function copyTempDouble(ptr) {
           }    
           writeStringToMemory(res, param_value);
           size = res.length;
-        } 
+        }
+        // Return array
+        else if (
+          (param_name == 0x1005) /* CL_DEVICE_MAX_WORK_ITEM_SIZES */
+        ) {
+          try {
+            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+          } catch (e) {
+            CL.catchError("clGetDeviceInfo",e);
+            for (var i = 0 ; i < 3; i++) {
+              HEAP32[(((param_value)+(i*4))>>2)]=1; // minimum value is (1, 1, 1).
+            }
+            size = 3;
+          }         
+        }
         // Return int
         else {
           try {
