@@ -2324,7 +2324,19 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],stack_trace:"// Javascript webcl Stack Trace\n",errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",checkWebCL:function () {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],stack_trace:"// Javascript webcl Stack Trace\n",errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
+        // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
+        // Remove on Mozilla CL_ prefix on the EnumName
+      	for (var legacyEnumName in WebCL) {
+  			  if (typeof WebCL[legacyEnumName] === 'number') {
+            var newEnumName = legacyEnumName;
+            if (CL.webcl_mozilla) {
+              newEnumName = legacyEnumName.slice(3);
+            }
+            CL[newEnumName] = WebCL[legacyEnumName];
+          }
+        }
+      },checkWebCL:function () {
         // If we already check is not useful to do this again
         if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
           return 0;
@@ -2347,47 +2359,48 @@ function copyTempDouble(ptr) {
             window.WebCL = webcl
           }
         }
-        // Init Device info
-        CL.device_infos = {
-          0x1000:[WebCL.CL_DEVICE_TYPE,WebCL.DEVICE_TYPE],
-          0x1001:[WebCL.CL_DEVICE_VENDOR_ID,WebCL.DEVICE_VENDOR_ID],
-          0x1002:[WebCL.CL_DEVICE_MAX_COMPUTE_UNITS,WebCL.DEVICE_MAX_COMPUTE_UNITS],
-          0x1003:[WebCL.CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,WebCL.DEVICE_MAX_WORK_ITEM_DIMENSIONS],      
-          0x1004:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_MAX_WORK_GROUP_SIZE],
-          0x1005:[WebCL.CL_DEVICE_MAX_WORK_ITEM_SIZES,WebCL.DEVICE_MAX_WORK_ITEM_SIZES],
-          0x1006:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR],
-          0x1007:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT],
-          0x1008:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_INT],
-          0x1009:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG],
-          0x100A:[WebCL.CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT],
-          0x100B:[WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE,WebCL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE],      
-          0x100C:[WebCL.CL_DEVICE_MAX_CLOCK_FREQUENCY,WebCL.DEVICE_MAX_CLOCK_FREQUENCY],
-          0x100D:[WebCL.CL_DEVICE_ADDRESS_BITS,WebCL.DEVICE_ADDRESS_BITS],    
-          0x100E:[WebCL.CL_DEVICE_MAX_READ_IMAGE_ARGS,WebCL.DEVICE_MAX_READ_IMAGE_ARGS],    
-          0x100F:[WebCL.CL_DEVICE_MAX_WRITE_IMAGE_ARGS,WebCL.DEVICE_MAX_WRITE_IMAGE_ARGS],    
-          0x1010:[WebCL.CL_DEVICE_MAX_MEM_ALLOC_SIZE,WebCL.DEVICE_MAX_MEM_ALLOC_SIZE],
-          0x1011:[WebCL.CL_DEVICE_IMAGE2D_MAX_WIDTH,WebCL.DEVICE_IMAGE2D_MAX_WIDTH],
-          0x1012:[WebCL.CL_DEVICE_IMAGE2D_MAX_HEIGHT,WebCL.DEVICE_IMAGE2D_MAX_HEIGHT],
-          0x1013:[WebCL.CL_DEVICE_IMAGE3D_MAX_WIDTH,WebCL.DEVICE_IMAGE3D_MAX_WIDTH],
-          0x1014:[WebCL.CL_DEVICE_IMAGE3D_MAX_HEIGHT,WebCL.DEVICE_IMAGE3D_MAX_HEIGHT],
-          0x1015:[WebCL.CL_DEVICE_IMAGE3D_MAX_DEPTH,WebCL.DEVICE_IMAGE3D_MAX_DEPTH],
-          0x1016:[WebCL.CL_DEVICE_IMAGE_SUPPORT,WebCL.DEVICE_IMAGE_SUPPORT],
-          0x101F:[WebCL.CL_DEVICE_GLOBAL_MEM_SIZE,WebCL.DEVICE_GLOBAL_MEM_SIZE],
-          0x1020:[WebCL.CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,WebCL.DEVICE_MAX_CONSTANT_BUFFER_SIZE],
-          0x1022:[WebCL.CL_DEVICE_LOCAL_MEM_TYPE,WebCL.DEVICE_LOCAL_MEM_TYPE],
-          0x1023:[WebCL.CL_DEVICE_LOCAL_MEM_SIZE,WebCL.DEVICE_LOCAL_MEM_SIZE],
-          0x1024:[WebCL.CL_DEVICE_ERROR_CORRECTION_SUPPORT,WebCL.DEVICE_ERROR_CORRECTION_SUPPORT],
-          0x1030:[WebCL.CL_DEVICE_EXTENSIONS,WebCL.DEVICE_EXTENSIONS],
-          0x102A:[WebCL.CL_DEVICE_QUEUE_PROPERTIES,WebCL.DEVICE_QUEUE_PROPERTIES],
-          0x102B:[WebCL.CL_DEVICE_NAME,WebCL.DEVICE_NAME],
-          0x102C:[WebCL.CL_DEVICE_VENDOR,WebCL.DEVICE_VENDOR],
-          0x102D:[WebCL.CL_DRIVER_VERSION,WebCL.DRIVER_VERSION],
-          0x102E:[WebCL.CL_DEVICE_PROFILE,WebCL.DEVICE_PROFILE],
-          0x102F:[WebCL.CL_DEVICE_VERSION,WebCL.DEVICE_VERSION]            
-        };
         CL.webcl_webkit = isWebkit == true ? 1 : 0;
         CL.webcl_mozilla = isFirefox == true ? 1 : 0;
         CL.index_object = 2147483647;
+        CL.setupWebCLEnums();
+        // Init Device info
+        CL.device_infos = {
+          0x1000:CL.DEVICE_TYPE,
+          0x1001:CL.DEVICE_VENDOR_ID,
+          0x1002:CL.DEVICE_MAX_COMPUTE_UNITS,
+          0x1003:CL.DEVICE_MAX_WORK_ITEM_DIMENSIONS,      
+          0x1004:CL.DEVICE_MAX_WORK_GROUP_SIZE,
+          0x1005:CL.DEVICE_MAX_WORK_ITEM_SIZES,
+          0x1006:CL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
+          0x1007:CL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
+          0x1008:CL.DEVICE_PREFERRED_VECTOR_WIDTH_INT,
+          0x1009:CL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
+          0x100A:CL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
+          0x100B:CL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,      
+          0x100C:CL.DEVICE_MAX_CLOCK_FREQUENCY,
+          0x100D:CL.DEVICE_ADDRESS_BITS,    
+          0x100E:CL.DEVICE_MAX_READ_IMAGE_ARGS,    
+          0x100F:CL.DEVICE_MAX_WRITE_IMAGE_ARGS,    
+          0x1010:CL.DEVICE_MAX_MEM_ALLOC_SIZE,
+          0x1011:CL.DEVICE_IMAGE2D_MAX_WIDTH,
+          0x1012:CL.DEVICE_IMAGE2D_MAX_HEIGHT,
+          0x1013:CL.DEVICE_IMAGE3D_MAX_WIDTH,
+          0x1014:CL.DEVICE_IMAGE3D_MAX_HEIGHT,
+          0x1015:CL.DEVICE_IMAGE3D_MAX_DEPTH,
+          0x1016:CL.DEVICE_IMAGE_SUPPORT,
+          0x101F:CL.DEVICE_GLOBAL_MEM_SIZE,
+          0x1020:CL.DEVICE_MAX_CONSTANT_BUFFER_SIZE,
+          0x1022:CL.DEVICE_LOCAL_MEM_TYPE,
+          0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
+          0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
+          0x1030:CL.DEVICE_EXTENSIONS,
+          0x102A:CL.DEVICE_QUEUE_PROPERTIES,
+          0x102B:CL.DEVICE_NAME,
+          0x102C:CL.DEVICE_VENDOR,
+          0x102D:CL.DRIVER_VERSION,
+          0x102E:CL.DEVICE_PROFILE,
+          0x102F:CL.DEVICE_VERSION            
+        };
         var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
         console.info("Webcl implemented for "+browser);
         return 0;
@@ -2502,11 +2515,11 @@ function copyTempDouble(ptr) {
             return res; 
         }
         if (CL.webcl_mozilla == 1) {
-          res = CL.platforms[platform].getDeviceIDs(WebCL.CL_DEVICE_TYPE_ALL);
+          res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
         } else {
-          //res = CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_ALL);
-          res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_GPU));
-          res = res.concat(CL.platforms[platform].getDevices(WebCL.DEVICE_TYPE_CPU));  
+          //res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
+          res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));
+          res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
         }    
         console.info("CL.getAllDevices: : "+res.length);
         return res;
@@ -2528,7 +2541,7 @@ function copyTempDouble(ptr) {
         // If platform is NULL, the behavior is implementation-defined
         if (platform == 0 && CL.platforms.length == 0) {
             // Get the platform
-            var platforms = (CL.webcl_mozilla == 1) ? WebCL.getPlatformIDs() : WebCL.getPlatforms();
+            var platforms = WebCL.getPlatforms();
             if (platforms.length > 0) {
               CL.platforms.push(platforms[0]);
               plat = CL.platforms.length - 1;
@@ -2552,9 +2565,9 @@ function copyTempDouble(ptr) {
         var map = {};
         var mapcount = 0;
         for (var i = 0 ; i < alldev.length; i++ ) {
-          var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_TYPE) : alldev[i].getInfo(WebCL.DEVICE_TYPE);
+          var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_TYPE) : alldev[i].getInfo(CL.DEVICE_TYPE);
           if (type == device_type_i64_1 || device_type_i64_1 == -1) { 
-             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : CL.getDeviceName(type);
+             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : CL.getDeviceName(type);
              map[name] = alldev[i];
              mapcount ++;
           }    
@@ -2562,7 +2575,7 @@ function copyTempDouble(ptr) {
         if (mapcount == 0) {
           var alldev = CL.getAllDevices(plat);
           for (var i = 0 ; i < alldev.length; i++) {
-            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(WebCL.CL_DEVICE_NAME) : /*alldev[i].getInfo(WebCL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(WebCL.DEVICE_TYPE));
+            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
             map[name] = alldev[i];
             mapcount ++;
           }       
@@ -2611,7 +2624,7 @@ function copyTempDouble(ptr) {
             switch(readprop) {
               case (4228) /*CL_CONTEXT_PLATFORM*/ :
                 // property platform
-                prop.push(WebCL.CL_CONTEXT_PLATFORM);
+                prop.push(CL.CONTEXT_PLATFORM);
                 i++;
                 // get platform id
                 readprop = CL.getArrayId(HEAP32[(((properties)+(i*4))>>2)]);
@@ -2632,7 +2645,7 @@ function copyTempDouble(ptr) {
           }        
         }
         if (prop.length == 0) {
-          prop = [WebCL.CL_CONTEXT_PLATFORM, CL.platforms[0]];     
+          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]];     
         }
         if (num_devices > CL.devices.length || CL.devices.length == 0) {
           console.error("clCreateContext: Invalid num devices : "+num_devices);
@@ -2648,7 +2661,7 @@ function copyTempDouble(ptr) {
         if (CL.webcl_mozilla == 1) {
           CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
         } else {
-          CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(WebCL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+          CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: 1, hint: null}));
         }
         return CL.getNewId(CL.ctx.length-1);
       } catch (e) {    
@@ -2666,7 +2679,7 @@ function copyTempDouble(ptr) {
       var res;
       var size = 0;
       var info = CL.device_infos[param_name];
-      if (info != undefined) {
+      if (param_name in CL.device_infos) {
         // Return string
         if (
           (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS               */
@@ -2677,7 +2690,11 @@ function copyTempDouble(ptr) {
           (param_name == 0x102E)    /* CL_DEVICE_PROFILE                  */
         ) {
           try {
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+            if (info != undefined) {
+              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
+            } else {
+              res = "Not Visible";
+            }
           } catch (e) {
             CL.catchError("clGetDeviceInfo",e);
             res = "Not Visible";
@@ -2690,11 +2707,19 @@ function copyTempDouble(ptr) {
           (param_name == 0x1005) /* CL_DEVICE_MAX_WORK_ITEM_SIZES */
         ) {
           try {
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+            if (info != undefined) {
+              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
+            } else {
+              res = [1,1,1]; // minimum value is (1, 1, 1).
+            }
+            for (var i = 0 ; i < 3; i++) {
+              HEAP32[(((param_value)+(i*4))>>2)]=res[i]; 
+            }
+            size = 3;            
           } catch (e) {
             CL.catchError("clGetDeviceInfo",e);
             for (var i = 0 ; i < 3; i++) {
-              HEAP32[(((param_value)+(i*4))>>2)]=1; // minimum value is (1, 1, 1).
+              HEAP32[(((param_value)+(i*4))>>2)]=1;
             }
             size = 3;
           }         
@@ -2702,7 +2727,11 @@ function copyTempDouble(ptr) {
         // Return int
         else {
           try {
-            res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info[0]) : CL.devices[idx].getInfo(info[1]);
+            if (info != undefined) {
+              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
+            } else {
+              res = 0;
+            }
             HEAP32[((param_value)>>2)]=res;
           } catch (e) {
             CL.catchError("clGetDeviceInfo",e);
@@ -2729,7 +2758,7 @@ function copyTempDouble(ptr) {
         var size;
         switch (param_name) {
           case (0x1081) /* CL_CONTEXT_DEVICES */:
-            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_DEVICES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_DEVICES) ;
+            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(CL.CONTEXT_DEVICES) : CL.ctx[ctx].getInfo(CL.CONTEXT_DEVICES) ;
             // Must verify if size of device is same as param_value°size
             if (param_value != 0) {
               for (var i = 0 ; i < res.length; i++) {
@@ -2740,12 +2769,12 @@ function copyTempDouble(ptr) {
             size = res.length * 4;
             break;
           case (0x1082) /* CL_CONTEXT_PROPERTIES */:
-            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_PROPERTIES) : CL.ctx[ctx].getInfo(WebCL.CONTEXT_PROPERTIES) ;
+            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(CL.CONTEXT_PROPERTIES) : CL.ctx[ctx].getInfo(CL.CONTEXT_PROPERTIES) ;
             // \todo add in param_value the properties list
             size = res.length * 4;          
             break;
           case (0x1080) /* CL_CONTEXT_REFERENCE_COUNT */:
-            res = CL.ctx[ctx].getContextInfo(WebCL.CL_CONTEXT_REFERENCE_COUNT); // return cl_uint
+            res = CL.ctx[ctx].getContextInfo(CL.CONTEXT_REFERENCE_COUNT); // return cl_uint
             size = 1;
             HEAP32[((param_value)>>2)]=res;
             break;
@@ -2862,13 +2891,13 @@ function copyTempDouble(ptr) {
         var res = "";
         switch (param_name) {
           case 0x1181 /*CL_PROGRAM_BUILD_STATUS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], WebCL.CL_PROGRAM_BUILD_STATUS);
+          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_STATUS);
           break;
         case 0x1182 /*CL_PROGRAM_BUILD_OPTIONS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], WebCL.CL_PROGRAM_BUILD_OPTIONS);
+          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_OPTIONS);
           break;
         case 0x1183 /*CL_PROGRAM_BUILD_LOG*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], WebCL.CL_PROGRAM_BUILD_LOG);
+          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_LOG);
           break;
         };
         HEAP32[((param_value_size_ret)>>2)]=res.length;
@@ -2917,23 +2946,20 @@ function copyTempDouble(ptr) {
         var macro;
         switch (flags_i64_1) {
           case (1 << 0) /* CL_MEM_READ_WRITE */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
+            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_WRITE,size));
             break;
           case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
+            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_WRITE_ONLY,size));
             break;
           case (1 << 2) /* CL_MEM_READ_ONLY */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
-            CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));
+            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_ONLY,size));
             break;
           case (((1 << 0)|(1 << 5))) /* CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_WRITE : WebCL.MEM_READ_WRITE;
+            macro = CL.MEM_READ_WRITE;
           case (((1 << 1)|(1 << 5))) /* CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_WRITE_ONLY : WebCL.MEM_WRITE_ONLY;
+            macro = CL.MEM_WRITE_ONLY;
           case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = (CL.webcl_mozilla == 1) ? WebCL.CL_MEM_READ_ONLY : WebCL.MEM_READ_ONLY;
+            macro = CL.MEM_READ_ONLY;
             if (host_ptr == 0) {
               console.error("clCreateBuffer: CL_MEM_COPY_HOST_PTR can't be use with null host_ptr parameter");
               HEAP32[((errcode_ret)>>2)]=-37 /* CL_INVALID_HOST_PTR */;
@@ -2999,7 +3025,7 @@ function copyTempDouble(ptr) {
             }
             //console.info(vector);
             if (CL.webcl_webkit == -1) {
-                CL.buffers.push(CL.ctx[ctx].createBuffer(macro | WebCL.MEM_COPY_HOST_PTR, size, vector));
+                CL.buffers.push(CL.ctx[ctx].createBuffer(macro | CL.MEM_COPY_HOST_PTR, size, vector));
             } else {
               CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));              
               if (CL.cmdQueue.length == 0) {
@@ -3145,10 +3171,10 @@ function copyTempDouble(ptr) {
               type = WebCLKernelArgumentTypes.VEC4;
           }
           if (isFloat) {    
-            //CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V)
+            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.FLOAT_V)
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
           } else {          
-            //CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V)
+            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.INT_V)
             ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
           } 
         } else {     
@@ -3187,23 +3213,23 @@ function copyTempDouble(ptr) {
         switch (param_name) {
           case (0x11B0) /* CL_KERNEL_WORK_GROUP_SIZE */:
             if (CL.webcl_mozilla == 1) {
-              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_WORK_GROUP_SIZE);
+              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_WORK_GROUP_SIZE);
             } else {
-              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_WORK_GROUP_SIZE);
+              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_WORK_GROUP_SIZE);
             }
           break;
         case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
           if (CL.webcl_mozilla == 1) {
-            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_COMPILE_WORK_GROUP_SIZE);
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
           } else {
-            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.KERNEL_COMPILE_WORK_GROUP_SIZE);
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
           }
           break;
         case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
           if (CL.webcl_mozilla == 1) {
-            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
           } else {
-            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],WebCL.CL_KERNEL_LOCAL_MEM_SIZE);
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
           }
           break;
         };
