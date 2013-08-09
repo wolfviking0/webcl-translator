@@ -22,3 +22,5 @@ cd ../DXTCompressor/
 make
 cd ../FFT/
 make
+cd ../OVDecodeRender/
+make

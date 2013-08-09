@@ -55,6 +55,7 @@ Call index.html for try some sample, by default use GPU mode, you can change par
 	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| FFT			| WORK IN PROGRESS | WORK IN PROGRESS |
 	| DXTCompressor | WORK IN PROGRESS | WORK IN PROGRESS |
+	| OVDecodeRender| WORK IN PROGRESS | WORK IN PROGRESS |
 	|---------------|------------------|------------------|
 	
 Sources Sample :
@@ -82,6 +83,8 @@ http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
 http://developer.apple.com/library/mac/#samplecode/OpenCL_FFT/
 
 https://code.google.com/p/simulation-opencl/
+
+http://developer.amd.com/tools-and-sdks/heterogeneous-computing/amd-accelerated-parallel-processing-app-sdk/samples-demos/
 
 	
 Videos :
