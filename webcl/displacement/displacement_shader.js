@@ -123,7 +123,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'displacement_shader.data';
     var REMOTE_PACKAGE_NAME = 'displacement_shader.data';
-    var PACKAGE_UUID = '12c3252e-21fe-4ede-be5c-18f8382f81a5';
+    var PACKAGE_UUID = '26c5555a-6a4c-4a2f-a2c5-a8cd04437374';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

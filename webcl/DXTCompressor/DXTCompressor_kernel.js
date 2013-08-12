@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'DXTCompressor_kernel.data';
     var REMOTE_PACKAGE_NAME = 'DXTCompressor_kernel.data';
-    var PACKAGE_UUID = '89f32fed-7857-4a26-9e7a-25bf4f839848';
+    var PACKAGE_UUID = '00f94d11-aa3f-4506-a887-d6de16541b63';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

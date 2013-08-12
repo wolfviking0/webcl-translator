@@ -1417,8 +1417,8 @@ function copyTempDouble(ptr) {
       }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
         // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
         // Remove on Mozilla CL_ prefix on the EnumName
-      	for (var legacyEnumName in WebCL) {
-  			  if (typeof WebCL[legacyEnumName] === 'number') {
+        for (var legacyEnumName in WebCL) {
+          if (typeof WebCL[legacyEnumName] === 'number') {
             var newEnumName = legacyEnumName;
             if (CL.webcl_mozilla) {
               newEnumName = legacyEnumName.slice(3);
@@ -1599,6 +1599,7 @@ function copyTempDouble(ptr) {
           default : return "UNKNOW_DEVICE";
         }
       },getAllDevices:function (platform) {
+        console.info("getAllDevices");
         var res = [];
         if (platform >= CL.platforms.length || platform < 0 ) {
             console.error("getAllDevices: Invalid platform : "+plat);
@@ -1607,11 +1608,27 @@ function copyTempDouble(ptr) {
         if (CL.webcl_mozilla == 1) {
           res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
         } else {
-          //res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
-          res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));
-          res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
+          // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
+          try {
+            res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
+          } catch (e) {
+            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_ALL");
+            try {
+              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
+            } catch (e) {
+              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_CPU");
+            }
+            try {
+              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
+            } catch (e) {
+              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_GPU");
+            }
+          }
         }    
-        console.info("CL.getAllDevices: : "+res.length);
+        console.info("CL.getAllDevices: "+res.length);
+        if (res.length == 0) {
+          console.error("getAllDevices: Num of all devices can't be null");
+        }
         return res;
       },catchError:function (name,e) {
         var str=""+e;
@@ -2826,7 +2843,11 @@ function copyTempDouble(ptr) {
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
       // empty “localWS” array because give some trouble on CPU mode with mac
-      // value_local_work_size = [];  
+      if (CL.webcl_mozilla == 1) {
+        value_local_work_size = [];
+      } else {
+        value_local_work_size = null;
+      }
       try {
         // \todo how add some event inside the array
         if (CL.webcl_mozilla == 1) {

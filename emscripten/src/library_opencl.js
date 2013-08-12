@@ -29,12 +29,12 @@ var LibraryOpenCL = {
     errorMessage: "Unfortunately your system does not support WebCL. " +
                     "Make sure that you have both the OpenCL driver " +
                     "and the WebCL browser extension installed.",
-      
-	  setupWebCLEnums: function() {
+
+    setupWebCLEnums: function() {
       // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
       // Remove on Mozilla CL_ prefix on the EnumName
-    	for (var legacyEnumName in WebCL) {
-			  if (typeof WebCL[legacyEnumName] === 'number') {
+      for (var legacyEnumName in WebCL) {
+        if (typeof WebCL[legacyEnumName] === 'number') {
           var newEnumName = legacyEnumName;
           if (CL.webcl_mozilla) {
             newEnumName = legacyEnumName.slice(3);
@@ -273,6 +273,7 @@ var LibraryOpenCL = {
     },
     
     getAllDevices: function(platform) {
+      console.info("getAllDevices");
       var res = [];
             
       if (platform >= CL.platforms.length || platform < 0 ) {
@@ -285,14 +286,39 @@ var LibraryOpenCL = {
       if (CL.webcl_mozilla == 1) {
         res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
       } else {
-        //res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
-        res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));
-        res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
+        // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
+        
+        try {
+          res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
+        } catch (e) {
+#if OPENCL_DEBUG
+          console.error("getAllDevices: Exception WebKit DEVICE_TYPE_ALL");
+#endif        
+          try {
+            res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
+          } catch (e) {
+#if OPENCL_DEBUG
+            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_CPU");
+#endif                  
+          }
+          
+          try {
+            res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
+          } catch (e) {
+#if OPENCL_DEBUG
+            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_GPU");
+#endif                  
+          }
+        }
       }    
 
 #if OPENCL_DEBUG
-      console.info("CL.getAllDevices: : "+res.length);
+      console.info("CL.getAllDevices: "+res.length);
 #endif
+  
+      if (res.length == 0) {
+        console.error("getAllDevices: Num of all devices can't be null");
+      }
   
       return res;
     },
@@ -1795,8 +1821,14 @@ var LibraryOpenCL = {
 #endif
   
     // empty “localWS” array because give some trouble on CPU mode with mac
-    // value_local_work_size = [];  
-
+    /*
+    if (CL.webcl_mozilla == 1) {
+      value_local_work_size = [];
+    } else {
+      value_local_work_size = null;
+    }
+    */
+    
     try {
 
       // \todo how add some event inside the array

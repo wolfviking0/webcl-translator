@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'OVDecodeRender_kernel.data';
     var REMOTE_PACKAGE_NAME = 'OVDecodeRender_kernel.data';
-    var PACKAGE_UUID = '115f1dd2-bfc6-4dd1-abee-6b58381ee295';
+    var PACKAGE_UUID = '85b92076-e0f1-4696-aaf7-93a580b22715';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
