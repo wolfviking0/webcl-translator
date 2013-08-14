@@ -42,27 +42,44 @@
           <h3>
           <a name="demo-webcl" class="anchor" href="#demo-webcl"><span class="octicon octicon-link"></span></a>Demos WebCL</h3>
           <!-- BEGIN DEMO SAMPLE TABLE -->
-          <table >
+          <table>
+            <!-- 1 -->
             <tr>
-              <th style="width: 500px;">Hello World</th>
+              <th style="width: 125px;">Hello World</th>
               <td>&nbsp;</td>
-              <th style="width: 500px;">Hello World 2</th>
+              <th style="width: 125px;">Hello World 2</th>
+              <td>&nbsp;</td>
+              <th style="width: 125px;">Scan</th>
+              <td>&nbsp;</td>
+              <th style="width: 125px;">Reduce</th>
             </tr>
             <tr>
               <th>
-                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Hello World&folder=hello_world&files=hello_world.js','MyWindow',width=512,height=512); return false;">
-                  <img src="images/demo.jpg" alt="Hello World Image" width="250" height="250">
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Hello World&files=hello_world.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Hello World Image" width="125" height="125">
                 </a>
               </th>
               <td>&nbsp;</td>
               <th>
-                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Hello World 2&folder=hello_world_2&files=hello_world_2_kernel.js,hello_world_2.js','MyWindow',width=512,height=512); return false;">
-                  <img src="images/demo.jpg" alt="Hello World 2 Image" width="250" height="250">
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Hello World 2&files=hello_world_2_kernel.js,hello_world_2.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Hello World 2 Image" width="125" height="125">
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <th>
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Scan&files=scan_kernel.js,scan.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Scan Image" width="125" height="125">
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <th>
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Reduce&files=reduce_kernel.js,reduce.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Reduce Image" width="125" height="125">
                 </a>
               </th>
             </tr>
             <tr>
-              <th>
+              <th style="width: 125px;">
                 <div class="switch candy blue">
                 <input id="gpu-device1" name="hello_world" type="radio" checked>
                 <label for="gpu-device1" onclick="">GPU</label>
@@ -74,7 +91,7 @@
                 </div>
               </th>
               <td>&nbsp;</td>
-              <th>
+              <th style="width: 125px;">
                 <div class="switch candy blue">
                 <input id="gpu-device2" name="hello_world_2" type="radio" checked>
                 <label for="gpu-device2" onclick="">GPU</label>
@@ -85,7 +102,33 @@
                 <span class="slide-button"></span>
                 </div>
               </th>
+              <td>&nbsp;</td>
+              <th>
+                <div class="switch candy blue">
+                <input id="gpu-device3" name="scan" type="radio" checked>
+                <label for="gpu-device3" onclick="">GPU</label>
+                
+                <input id="cpu-device3" name="scan" type="radio">  
+                <label for="cpu-device3" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
+              <td>&nbsp;</td>
+              <th>
+                <div class="switch candy blue">
+                <input id="gpu-device4" name="reduce" type="radio" checked>
+                <label for="gpu-device4" onclick="">GPU</label>
+                
+                <input id="cpu-device4" name="reduce" type="radio">  
+                <label for="cpu-device4" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
             </tr>
+
+
           </table>
           <!-- END DEMO SAMPLE TABLE -->
           <!-- 

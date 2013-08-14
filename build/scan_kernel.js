@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'hello_world_2.cl', true);
+    filePreload0.open('GET', 'scan_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file hello_world_2.cl failed.');
+      assert(arrayBuffer, 'Loading file scan_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
-      Module['FS_createPreloadedFile']('/', 'hello_world_2.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp hello_world_2.cl');
+      Module['FS_createPreloadedFile']('/', 'scan_kernel.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp scan_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp hello_world_2.cl');
+    Module['addRunDependency']('fp scan_kernel.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -41,9 +41,9 @@ function assert(check, msg) {
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = '../build/hello_world_2.data';
-    var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = '91dcb276-c87d-43ff-a45d-e61813efdfcc';
+    var PACKAGE_NAME = '../build/scan_kernel.data';
+    var REMOTE_PACKAGE_NAME = 'scan_kernel.data';
+    var PACKAGE_UUID = 'aed34616-281e-4d3e-a2be-cb13f09fd323';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,16 +90,16 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['hello_world_2.cl'];
-        var data = byteArray.subarray(0, 180);
-        var ptr = Module['_malloc'](180);
+        curr = DataRequest.prototype.requests['scan_kernel.cl'];
+        var data = byteArray.subarray(0, 15054);
+        var ptr = Module['_malloc'](15054);
         Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 180);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 15054);
         curr.onload();
-                Module['removeRunDependency']('datafile_../build/hello_world_2.data');
+                Module['removeRunDependency']('datafile_../build/scan_kernel.data');
 
     };
-    Module['addRunDependency']('datafile_../build/hello_world_2.data');
+    Module['addRunDependency']('datafile_../build/scan_kernel.data');
 
     function handleError(error) {
       console.error('package error:', error);
