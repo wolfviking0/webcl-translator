@@ -43,7 +43,7 @@ Module['FS_createPath']('/', 'hello_world_2', true, true);
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = 'build/hello_world_2.data';
-    var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
+    var REMOTE_PACKAGE_NAME = 'build/hello_world_2.data';
     var PACKAGE_UUID = 'a5f2bd39-c368-4545-8c27-b15ad4785179';
   
     function fetchRemotePackage(packageName, callback, errback) {
