@@ -27,8 +27,8 @@ var LibraryOpenCL = {
     stack_trace: "// Javascript webcl Stack Trace\n",
 #endif
     errorMessage: "Unfortunately your system does not support WebCL. " +
-                    "Make sure that you have both the OpenCL driver " +
-                    "and the WebCL browser extension installed.",
+                  "Make sure that you have both the OpenCL driver " +
+                  "and the WebCL browser extension installed.",
 
     setupWebCLEnums: function() {
       // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
@@ -328,9 +328,8 @@ var LibraryOpenCL = {
       var str=""+e;
       var n=str.lastIndexOf(" ");
       var error = str.substr(n+1,str.length-n-2);
-#if OPENCL_DEBUG
       console.error("CATCH: "+name+": "+e);
-#endif
+      Module.print("/!\\"+name+": "+e);
       return error;
     },
   },
@@ -350,6 +349,7 @@ var LibraryOpenCL = {
     
     if (CL.checkWebCL() < 0) {
       console.error(CL.errorMessage);
+      Module.print("/!\\"+CL.errorMessage);
       return -1;/*WEBCL_NOT_FOUND*/;
     }
         
@@ -466,6 +466,7 @@ var LibraryOpenCL = {
     
     if (CL.checkWebCL() < 0) {
       console.error(CL.errorMessage);
+      Module.print("/!\\"+CL.errorMessage);
       return -1;/*WEBCL_NOT_FOUND*/;
     }
     
@@ -806,6 +807,7 @@ var LibraryOpenCL = {
     
     if (CL.checkWebCL() < 0) {
       console.error(CL.errorMessage);
+      Module.print("/!\\"+CL.errorMessage);
       return -1;/*WEBCL_NOT_FOUND*/;
     }
 
@@ -1715,21 +1717,21 @@ var LibraryOpenCL = {
           } else {
             res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_WORK_GROUP_SIZE);
           }
-        break;
-      case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
-        if (CL.webcl_mozilla == 1) {
-          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
-        } else {
-          res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
-        }
-        break;
-      case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
-        if (CL.webcl_mozilla == 1) {
-          res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
-        } else {
-          res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
-        }
-        break;
+          break;
+        case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
+          if (CL.webcl_mozilla == 1) {
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
+          } else {
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
+          }
+          break;
+        case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
+          if (CL.webcl_mozilla == 1) {
+            res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
+          } else {
+            res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
+          }
+          break;
       };
 
       {{{ makeSetValue('param_value', '0', 'res', 'i32') }}}
@@ -1819,15 +1821,6 @@ var LibraryOpenCL = {
     console.info("Global [ "+ global +" ]")
     console.info("Local [ "+ local +" ]")
 #endif
-  
-    // empty “localWS” array because give some trouble on CPU mode with mac
-    /*
-    if (CL.webcl_mozilla == 1) {
-      value_local_work_size = [];
-    } else {
-      value_local_work_size = null;
-    }
-    */
     
     try {
 
@@ -1838,8 +1831,21 @@ var LibraryOpenCL = {
         CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, value_local_work_size);
       }
       return 0;/*CL_SUCCESS*/
+
     } catch(e) {
-      return CL.catchError("clEnqueueNDRangeKernel",e);
+      try {
+        // empty “localWS” sometime solve
+        // \todo how add some event inside the array
+        if (CL.webcl_mozilla == 1) {
+          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+        } else {
+          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+        }
+        return 0;/*CL_SUCCESS*/
+
+      } catch(e) {
+        return CL.catchError("clEnqueueNDRangeKernel",e);
+      }
     }
   },
   

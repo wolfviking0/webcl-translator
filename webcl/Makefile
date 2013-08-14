@@ -103,9 +103,10 @@ video_sample:
 		
 
 clean:
-	rm -f build/*.data
-	rm -f build/*.js
 	$(CXX) --clear-cache
+	$(call chdir,build/)
+	find *.* | grep -v "settings.js" | grep -v "index.html" | xargs rm
+	
 
 	
 	
