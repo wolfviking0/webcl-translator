@@ -95,3 +95,8 @@ http://www.youtube.com/watch?v=KSQmXV3RHLQ
 
 http://www.youtube.com/watch?v=bIzmZmEc32Y
 
+License :
+--------
+
+WebCL-Emscripten is MIT licensed, see LICENSE.txt.
+
