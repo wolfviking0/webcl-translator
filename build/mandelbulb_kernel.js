@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'hello_world_2.cl', true);
+    filePreload0.open('GET', 'mandelbulb_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file hello_world_2.cl failed.');
+      assert(arrayBuffer, 'Loading file mandelbulb_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
-      Module['FS_createPreloadedFile']('/', 'hello_world_2.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp hello_world_2.cl');
+      Module['FS_createPreloadedFile']('/', 'mandelbulb_kernel.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp mandelbulb_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp hello_world_2.cl');
+    Module['addRunDependency']('fp mandelbulb_kernel.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -41,9 +41,9 @@ function assert(check, msg) {
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = '../build/hello_world_2.data';
-    var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = 'a802a0a8-1276-48ac-979e-2ca7c0133b9d';
+    var PACKAGE_NAME = '../build/mandelbulb_kernel.data';
+    var REMOTE_PACKAGE_NAME = 'mandelbulb_kernel.data';
+    var PACKAGE_UUID = '01190d0c-4362-47e2-95e2-5bfb0b3ec124';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,16 +90,16 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['hello_world_2.cl'];
-        var data = byteArray.subarray(0, 180);
-        var ptr = Module['_malloc'](180);
+        curr = DataRequest.prototype.requests['mandelbulb_kernel.cl'];
+        var data = byteArray.subarray(0, 11928);
+        var ptr = Module['_malloc'](11928);
         Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 180);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 11928);
         curr.onload();
-                Module['removeRunDependency']('datafile_../build/hello_world_2.data');
+                Module['removeRunDependency']('datafile_../build/mandelbulb_kernel.data');
 
     };
-    Module['addRunDependency']('datafile_../build/hello_world_2.data');
+    Module['addRunDependency']('datafile_../build/mandelbulb_kernel.data');
 
     function handleError(error) {
       console.error('package error:', error);
