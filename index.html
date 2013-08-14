@@ -67,7 +67,11 @@
                 </a>
               </th>
               <td>&nbsp;</td>
-              <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device3','off','title=Convolution&files=convolution_kernel.js,convolution.js'); return false;">
+                Convolution
+                </a>
+              </th>
             </tr>
             <tr>
               <th style="width: 100px;">
@@ -94,29 +98,6 @@
                 </div>
               </th>
               <td>&nbsp;</td>
-              <td>&nbsp;</td>
-            </tr>
-            <!-- 2 -->
-            <tr>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device3','off','title=Convolution&files=convolution_kernel.js,convolution.js'); return false;">
-                Convolution
-                </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device4','off','title=Scan&files=scan_kernel.js,scan.js'); return false;">
-                  Scan
-                </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device5','off','title=Reduce&files=reduce_kernel.js,reduce.js'); return false;">
-                  Reduce
-                </a>
-              </th>
-            </tr>
-            <tr>
               <th style="width: 100px;">
                 <div class="switch candy blue">
                 <input id="gpu-device3" name="convolution" type="radio" checked>
@@ -128,7 +109,28 @@
                 <span class="slide-button"></span>
                 </div>
               </th>
+            </tr>
+            <!-- 2 -->
+            <tr>
+              <th style="width: 100px;">
+                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device4','off','title=Scan&files=scan_kernel.js,scan.js'); return false;">
+                  Scan
+                </a>
+              </th>
               <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device5','off','title=Reduce&files=reduce_kernel.js,reduce.js'); return false;">
+                  Reduce
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device6','on','title=Displacement&files=displacement_kernel.js,displacement.js'); return false;">
+                  Displacement
+                </a>
+              </th>
+            </tr>
+            <tr>
               <th style="width: 100px;">
                 <div class="switch candy blue">
                 <input id="gpu-device4" name="scan" type="radio" checked>
@@ -152,23 +154,36 @@
                 <span class="slide-button"></span>
                 </div>
               </th>
+              <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <div class="switch candy blue">
+                <input id="gpu-device6" name="displacement" type="radio" checked>
+                <label for="gpu-device6" onclick="">GPU</label>
+                
+                <input id="cpu-device6" name="displacement" type="radio">  
+                <label for="cpu-device6" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
+              
             </tr>
             <!-- 3 -->
             <tr>
               <th style="width: 100px;">
-                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device6','on','title=QJulia&files=qjulia_kernel.js,qjulia.js'); return false;">
+                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device7','on','title=QJulia&files=qjulia_kernel.js,qjulia.js'); return false;">
                   QJulia
                 </a>
               </th>
               <td>&nbsp;</td>
               <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device7','on','title=Mandelbulb&files=mandelbulb_kernel.js,mandelbulb.js'); return false;">
+                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device8','on','title=Mandelbulb&files=mandelbulb_kernel.js,mandelbulb.js'); return false;">
                   Mandelbulb
                 </a>
               </th>
               <td>&nbsp;</td>
               <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device8','on','title=Smallpt&files=smallpt_kernel.js,smallpt.js'); return false;">
+                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device9','on','title=Smallpt&files=smallpt_kernel.js,smallpt.js'); return false;">
                   Smallpt
                 </a>
               </th>
@@ -176,22 +191,10 @@
             <tr>
               <th style="width: 100px;">
                 <div class="switch candy blue">
-                <input id="gpu-device6" name="qjulia" type="radio" checked>
-                <label for="gpu-device6" onclick="">GPU</label>
-                
-                <input id="cpu-device6" name="qjulia" type="radio">  
-                <label for="cpu-device6" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device7" name="mandelbulb" type="radio" checked>
+                <input id="gpu-device7" name="qjulia" type="radio" checked>
                 <label for="gpu-device7" onclick="">GPU</label>
                 
-                <input id="cpu-device7" name="mandelbulb" type="radio">  
+                <input id="cpu-device7" name="qjulia" type="radio">  
                 <label for="cpu-device7" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
@@ -200,11 +203,23 @@
               <td>&nbsp;</td>
               <th style="width: 100px;">
                 <div class="switch candy blue">
-                <input id="gpu-device8" name="smallpt" type="radio" checked>
+                <input id="gpu-device8" name="mandelbulb" type="radio" checked>
                 <label for="gpu-device8" onclick="">GPU</label>
                 
-                <input id="cpu-device8" name="smallpt" type="radio">  
+                <input id="cpu-device8" name="mandelbulb" type="radio">  
                 <label for="cpu-device8" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
+              <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <div class="switch candy blue">
+                <input id="gpu-device9" name="smallpt" type="radio" checked>
+                <label for="gpu-device9" onclick="">GPU</label>
+                
+                <input id="cpu-device9" name="smallpt" type="radio">  
+                <label for="cpu-device9" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
                 </div>
@@ -213,19 +228,19 @@
             <!-- 4 -->
             <tr>
               <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device9','on','title=Dxt Compressor&files='); return false;">
+                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device10','on','title=Dxt Compressor&files='); return false;">
                   DXT
                 </a>
               </th>
               <td>&nbsp;</td>
               <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device10','off','title=FFT&files='); return false;">
+                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device11','off','title=FFT&files='); return false;">
                   FFT
                 </a>
               </th>
               <td>&nbsp;</td>
               <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device11','on','title=Video Decoder&files='); return false;">
+                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device12','on','title=Video Decoder&files='); return false;">
                   Decoder
                 </a>
               </th>
@@ -233,22 +248,10 @@
             <tr>
               <th style="width: 100px;">
                 <div class="switch candy blue">
-                <input id="gpu-device9" name="dxt" type="radio" checked>
-                <label for="gpu-device9" onclick="">GPU</label>
-                
-                <input id="cpu-device9" name="dxt" type="radio">  
-                <label for="cpu-device9" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device10" name="fft" type="radio" checked>
+                <input id="gpu-device10" name="dxt" type="radio" checked>
                 <label for="gpu-device10" onclick="">GPU</label>
                 
-                <input id="cpu-device10" name="fft" type="radio">  
+                <input id="cpu-device10" name="dxt" type="radio">  
                 <label for="cpu-device10" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
@@ -257,11 +260,23 @@
               <td>&nbsp;</td>
               <th style="width: 100px;">
                 <div class="switch candy blue">
-                <input id="gpu-device11" name="videodecode" type="radio" checked>
+                <input id="gpu-device11" name="fft" type="radio" checked>
                 <label for="gpu-device11" onclick="">GPU</label>
                 
-                <input id="cpu-device11" name="videodecode" type="radio">  
+                <input id="cpu-device11" name="fft" type="radio">  
                 <label for="cpu-device11" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
+              <td>&nbsp;</td>
+              <th style="width: 100px;">
+                <div class="switch candy blue">
+                <input id="gpu-device12" name="videodecode" type="radio" checked>
+                <label for="gpu-device12" onclick="">GPU</label>
+                
+                <input id="cpu-device12" name="videodecode" type="radio">  
+                <label for="cpu-device12" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
                 </div>
