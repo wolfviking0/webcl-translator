@@ -69,8 +69,12 @@
             // Add class attribute emscripten
             cnv.setAttribute('class',"emscripten");  
               
+            var textArea = document.getElementById ("output");
             if (USE_GL == 0) {
               div.style.display = 'none';
+              textArea.rows = 40;
+            } else {
+              textArea.rows = 10;
             }
             
             var arg = initArguments();
