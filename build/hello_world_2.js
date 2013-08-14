@@ -2244,11 +2244,13 @@ function copyTempDouble(ptr) {
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
       // empty “localWS” array because give some trouble on CPU mode with mac
+      /*
       if (CL.webcl_mozilla == 1) {
         value_local_work_size = [];
       } else {
         value_local_work_size = null;
       }
+      */
       try {
         // \todo how add some event inside the array
         if (CL.webcl_mozilla == 1) {

@@ -1,8 +1,6 @@
 // MODE
 var TITLE = "";
 var USE_GL = "";
-var PATH = "./samples/"
-var FOLDER = "";
 var FILES = [];
 
 // Global Module

@@ -41,9 +41,9 @@ function assert(check, msg) {
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = 'hello_world_2.data';
+    var PACKAGE_NAME = 'build/hello_world_2.data';
     var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = 'fdcb2adb-a769-4519-9f96-cc2c8ba2e3ea';
+    var PACKAGE_UUID = 'b755066c-e9e5-4d6a-8ac2-a2522fe54e93';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -96,10 +96,10 @@ function assert(check, msg) {
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 180);
         curr.onload();
-                Module['removeRunDependency']('datafile_hello_world_2.data');
+                Module['removeRunDependency']('datafile_build/hello_world_2.data');
 
     };
-    Module['addRunDependency']('datafile_hello_world_2.data');
+    Module['addRunDependency']('datafile_build/hello_world_2.data');
 
     function handleError(error) {
       console.error('package error:', error);
