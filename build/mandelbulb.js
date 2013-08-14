@@ -63,7 +63,7 @@ if (ENVIRONMENT_IS_NODE) {
   Module['arguments'] = process['argv'].slice(2);
   module.exports = Module;
 }
-if (ENVIRONMENT_IS_SHELL) {
+else if (ENVIRONMENT_IS_SHELL) {
   Module['print'] = print;
   if (typeof printErr != 'undefined') Module['printErr'] = printErr; // not present in v8 or older sm
   Module['read'] = read;
@@ -77,16 +77,7 @@ if (ENVIRONMENT_IS_SHELL) {
   }
   this['Module'] = Module;
 }
-if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
-  Module['print'] = function(x) {
-    console.log(x);
-  };
-  Module['printErr'] = function(x) {
-    console.log(x);
-  };
-  this['Module'] = Module;
-}
-if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function(url) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
@@ -96,18 +87,26 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (typeof arguments != 'undefined') {
     Module['arguments'] = arguments;
   }
+  if (ENVIRONMENT_IS_WEB) {
+    Module['print'] = function(x) {
+      console.log(x);
+    };
+    Module['printErr'] = function(x) {
+      console.log(x);
+    };
+    this['Module'] = Module;
+  } else if (ENVIRONMENT_IS_WORKER) {
+    // We can do very little here...
+    var TRY_USE_DUMP = false;
+    Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
+      dump(x);
+    }) : (function(x) {
+      // self.postMessage(x); // enable this if you want stdout to be sent as messages
+    }));
+    Module['load'] = importScripts;
+  }
 }
-if (ENVIRONMENT_IS_WORKER) {
-  // We can do very little here...
-  var TRY_USE_DUMP = false;
-  Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
-    dump(x);
-  }) : (function(x) {
-    // self.postMessage(x); // enable this if you want stdout to be sent as messages
-  }));
-  Module['load'] = importScripts;
-}
-if (!ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_SHELL) {
+else {
   // Unreachable because SHELL is dependant on the others
   throw 'Unknown runtime environment. Where are we?';
 }
@@ -428,6 +427,7 @@ var Runtime = {
 //========================================
 var __THREW__ = 0; // Used in checking for thrown exceptions.
 var ABORT = false; // whether we are quitting the application. no code should run after this. set in exit() and abort()
+var EXITSTATUS = 0;
 var undef = 0;
 // tempInt is used for 32-bit signed values or smaller. tempBigInt is used
 // for 32-bit unsigned values or more than 32 bits. TODO: audit all uses of tempInt
@@ -951,7 +951,1567 @@ function copyTempDouble(ptr) {
   HEAP8[tempDoublePtr+6] = HEAP8[ptr+6];
   HEAP8[tempDoublePtr+7] = HEAP8[ptr+7];
 }
-  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,EDOTDOT:76,EBADMSG:77,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
+  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"No message of desired type",36:"Identifier removed",37:"Channel number out of range",38:"Level 2 not synchronized",39:"Level 3 halted",40:"Level 3 reset",41:"Link number out of range",42:"Protocol driver not attached",43:"No CSI structure available",44:"Level 2 halted",45:"Deadlock condition",46:"No record locks available",50:"Invalid exchange",51:"Invalid request descriptor",52:"Exchange full",53:"No anode",54:"Invalid request code",55:"Invalid slot",56:"File locking deadlock error",57:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",74:"Multihop attempted",76:"Cross mount point (not really error)",77:"Trying to read unreadable message",80:"Given log. name not unique",81:"f.d. invalid for this operation",82:"Remote address changed",83:"Can   access a needed shared lib",84:"Accessing a corrupted shared lib",85:".lib section in a.out corrupted",86:"Attempting to link in too many libs",87:"Attempting to exec a shared library",88:"Function not implemented",90:"Directory not empty",91:"File or path name too long",92:"Too many symbolic links",95:"Operation not supported on transport endpoint",96:"Protocol family not supported",104:"Connection reset by peer",105:"No buffer space available",106:"Address family not supported by protocol family",107:"Protocol wrong type for socket",108:"Socket operation on non-socket",109:"Protocol not available",110:"Can't send after socket shutdown",111:"Connection refused",112:"Address already in use",113:"Connection aborted",114:"Network is unreachable",115:"Network interface is not configured",116:"Connection timed out",117:"Host is down",118:"Host is unreachable",119:"Connection already in progress",120:"Socket already connected",121:"Destination address required",122:"Message too long",123:"Unknown protocol",124:"Socket type not supported",125:"Address not available",126:"Connection reset by network",127:"Socket is already connected",128:"Socket is not connected",129:"Too many references",131:"Too many users",132:"Quota exceeded",133:"Stale file handle",134:"Not supported",135:"No medium (in tape drive)",138:"Illegal byte sequence",139:"Value too large for defined data type",140:"Operation canceled",141:"State not recoverable",142:"Previous owner died",143:"Streams pipe error"};
+  var ___errno_state=0;function ___setErrNo(value) {
+      // For convenient setting and returning of errno.
+      HEAP32[((___errno_state)>>2)]=value
+      return value;
+    }
+  var VFS=undefined;
+  var TTY={ttys:[],register:function (dev, ops) {
+        TTY.ttys[dev] = { input: [], output: [], ops: ops };
+        FS.registerDevice(dev, TTY.stream_ops);
+      },stream_ops:{open:function (stream) {
+          // this wouldn't be required if the library wasn't eval'd at first...
+          if (!TTY.utf8) {
+            TTY.utf8 = new Runtime.UTF8Processor();
+          }
+          var tty = TTY.ttys[stream.node.rdev];
+          if (!tty) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+          }
+          stream.tty = tty;
+          stream.seekable = false;
+        },close:function (stream) {
+          // flush any pending line data
+          if (stream.tty.output.length) {
+            stream.tty.ops.put_char(stream.tty, 10);
+          }
+        },read:function (stream, buffer, offset, length, pos /* ignored */) {
+          if (!stream.tty || !stream.tty.ops.get_char) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENXIO);
+          }
+          var bytesRead = 0;
+          for (var i = 0; i < length; i++) {
+            var result;
+            try {
+              result = stream.tty.ops.get_char(stream.tty);
+            } catch (e) {
+              throw new FS.ErrnoError(ERRNO_CODES.EIO);
+            }
+            if (result === undefined && bytesRead === 0) {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+            if (result === null || result === undefined) break;
+            bytesRead++;
+            buffer[offset+i] = result;
+          }
+          if (bytesRead) {
+            stream.node.timestamp = Date.now();
+          }
+          return bytesRead;
+        },write:function (stream, buffer, offset, length, pos) {
+          if (!stream.tty || !stream.tty.ops.put_char) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENXIO);
+          }
+          for (var i = 0; i < length; i++) {
+            try {
+              stream.tty.ops.put_char(stream.tty, buffer[offset+i]);
+            } catch (e) {
+              throw new FS.ErrnoError(ERRNO_CODES.EIO);
+            }
+          }
+          if (length) {
+            stream.node.timestamp = Date.now();
+          }
+          return i;
+        }},default_tty_ops:{get_char:function (tty) {
+          if (!tty.input.length) {
+            var result = null;
+            if (ENVIRONMENT_IS_NODE) {
+              if (process.stdin.destroyed) {
+                return undefined;
+              }
+              result = process.stdin.read();
+            } else if (typeof window != 'undefined' &&
+              typeof window.prompt == 'function') {
+              // Browser.
+              result = window.prompt('Input: ');  // returns null on cancel
+              if (result !== null) {
+                result += '\n';
+              }
+            } else if (typeof readline == 'function') {
+              // Command line.
+              result = readline();
+              if (result !== null) {
+                result += '\n';
+              }
+            }
+            if (!result) {
+              return null;
+            }
+            tty.input = intArrayFromString(result, true);
+          }
+          return tty.input.shift();
+        },put_char:function (tty, val) {
+          if (val === null || val === 10) {
+            Module['print'](tty.output.join(''));
+            tty.output = [];
+          } else {
+            tty.output.push(TTY.utf8.processCChar(val));
+          }
+        }},default_tty1_ops:{put_char:function (tty, val) {
+          if (val === null || val === 10) {
+            Module['printErr'](tty.output.join(''));
+            tty.output = [];
+          } else {
+            tty.output.push(TTY.utf8.processCChar(val));
+          }
+        }}};
+  var MEMFS={mount:function (mount) {
+        return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
+      },create_node:function (parent, name, mode, dev) {
+        if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
+          // no supported
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        var node = FS.createNode(parent, name, mode, dev);
+        node.node_ops = MEMFS.node_ops;
+        if (FS.isDir(node.mode)) {
+          node.stream_ops = MEMFS.stream_ops;
+          node.contents = {};
+        } else if (FS.isFile(node.mode)) {
+          node.stream_ops = MEMFS.stream_ops;
+          node.contents = [];
+        } else if (FS.isLink(node.mode)) {
+          node.stream_ops = MEMFS.stream_ops;
+        } else if (FS.isChrdev(node.mode)) {
+          node.stream_ops = FS.chrdev_stream_ops;
+        }
+        node.timestamp = Date.now();
+        // add the new node to the parent
+        if (parent) {
+          parent.contents[name] = node;
+        }
+        return node;
+      },node_ops:{getattr:function (node) {
+          var attr = {};
+          // device numbers reuse inode numbers.
+          attr.dev = FS.isChrdev(node.mode) ? node.id : 1;
+          attr.ino = node.id;
+          attr.mode = node.mode;
+          attr.nlink = 1;
+          attr.uid = 0;
+          attr.gid = 0;
+          attr.rdev = node.rdev;
+          if (FS.isDir(node.mode)) {
+            attr.size = 4096;
+          } else if (FS.isFile(node.mode)) {
+            attr.size = node.contents.length;
+          } else if (FS.isLink(node.mode)) {
+            attr.size = node.link.length;
+          } else {
+            attr.size = 0;
+          }
+          attr.atime = new Date(node.timestamp);
+          attr.mtime = new Date(node.timestamp);
+          attr.ctime = new Date(node.timestamp);
+          // NOTE: In our implementation, st_blocks = Math.ceil(st_size/st_blksize),
+          //       but this is not required by the standard.
+          attr.blksize = 4096;
+          attr.blocks = Math.ceil(attr.size / attr.blksize);
+          return attr;
+        },setattr:function (node, attr) {
+          if (attr.mode !== undefined) {
+            node.mode = attr.mode;
+          }
+          if (attr.timestamp !== undefined) {
+            node.timestamp = attr.timestamp;
+          }
+          if (attr.size !== undefined) {
+            var contents = node.contents;
+            if (attr.size < contents.length) contents.length = attr.size;
+            else while (attr.size > contents.length) contents.push(0);
+          }
+        },lookup:function (parent, name) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        },mknod:function (parent, name, mode, dev) {
+          return MEMFS.create_node(parent, name, mode, dev);
+        },rename:function (old_node, new_dir, new_name) {
+          // if we're overwriting a directory at new_name, make sure it's empty.
+          if (FS.isDir(old_node.mode)) {
+            var new_node;
+            try {
+              new_node = FS.lookupNode(new_dir, new_name);
+            } catch (e) {
+            }
+            if (new_node) {
+              for (var i in new_node.contents) {
+                throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
+              }
+            }
+          }
+          // do the internal rewiring
+          delete old_node.parent.contents[old_node.name];
+          old_node.name = new_name;
+          new_dir.contents[new_name] = old_node;
+        },unlink:function (parent, name) {
+          delete parent.contents[name];
+        },rmdir:function (parent, name) {
+          var node = FS.lookupNode(parent, name);
+          for (var i in node.contents) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
+          }
+          delete parent.contents[name];
+        },symlink:function (parent, newname, oldpath) {
+          var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
+          node.link = oldpath;
+          return node;
+        },readlink:function (node) {
+          if (!FS.isLink(node.mode)) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          return node.link;
+        }},stream_ops:{open:function (stream) {
+          if (FS.isDir(stream.node.mode)) {
+            // cache off the directory entries when open'd
+            var entries = ['.', '..']
+            for (var key in stream.node.contents) {
+              if (!stream.node.contents.hasOwnProperty(key)) {
+                continue;
+              }
+              entries.push(key);
+            }
+            stream.entries = entries;
+          }
+        },read:function (stream, buffer, offset, length, position) {
+          var contents = stream.node.contents;
+          var size = Math.min(contents.length - position, length);
+          if (contents.subarray) { // typed array
+            buffer.set(contents.subarray(position, position + size), offset);
+          } else
+          {
+            for (var i = 0; i < size; i++) {
+              buffer[offset + i] = contents[position + i];
+            }
+          }
+          return size;
+        },write:function (stream, buffer, offset, length, position) {
+          var contents = stream.node.contents;
+          while (contents.length < position) contents.push(0);
+          for (var i = 0; i < length; i++) {
+            contents[position + i] = buffer[offset + i];
+          }
+          stream.node.timestamp = Date.now();
+          return length;
+        },llseek:function (stream, offset, whence) {
+          var position = offset;
+          if (whence === 1) {  // SEEK_CUR.
+            position += stream.position;
+          } else if (whence === 2) {  // SEEK_END.
+            if (FS.isFile(stream.node.mode)) {
+              position += stream.node.contents.length;
+            }
+          }
+          if (position < 0) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          stream.ungotten = [];
+          stream.position = position;
+          return position;
+        },readdir:function (stream) {
+          return stream.entries;
+        },allocate:function (stream, offset, length) {
+          var contents = stream.node.contents;
+          var limit = offset + length;
+          while (limit > contents.length) contents.push(0);
+        },mmap:function (stream, buffer, offset, length, position, prot, flags) {
+          if (!FS.isFile(stream.node.mode)) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+          }
+          var ptr;
+          var allocated;
+          var contents = stream.node.contents;
+          // Only make a new copy when MAP_PRIVATE is specified.
+          if (!(flags & 0x02)) {
+            // We can't emulate MAP_SHARED when the file is not backed by the buffer
+            // we're mapping to (e.g. the HEAP buffer).
+            assert(contents.buffer === buffer || contents.buffer === buffer.buffer);
+            allocated = false;
+            ptr = contents.byteOffset;
+          } else {
+            // Try to avoid unnecessary slices.
+            if (position > 0 || position + length < contents.length) {
+              if (contents.subarray) {
+                contents = contents.subarray(position, position + length);
+              } else {
+                contents = Array.prototype.slice.call(contents, position, position + length);
+              }
+            }
+            allocated = true;
+            ptr = _malloc(length);
+            if (!ptr) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOMEM);
+            }
+            buffer.set(contents, ptr);
+          }
+          return { ptr: ptr, allocated: allocated };
+        }}};
+  var _stdin=allocate(1, "i32*", ALLOC_STATIC);
+  var _stdout=allocate(1, "i32*", ALLOC_STATIC);
+  var _stderr=allocate(1, "i32*", ALLOC_STATIC);
+  function _fflush(stream) {
+      // int fflush(FILE *stream);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
+      // we don't currently perform any user-space buffering of data
+    }var FS={root:null,nodes:[null],devices:[null],streams:[null],nextInode:1,name_table:[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,],currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function (errno) {
+        this.errno = errno;
+        for (var key in ERRNO_CODES) {
+          if (ERRNO_CODES[key] === errno) {
+            this.code = key;
+            break;
+          }
+        }
+        this.message = ERRNO_MESSAGES[errno] + ' : ' + new Error().stack;
+      },handleFSError:function (e) {
+        if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
+        return ___setErrNo(e.errno);
+      },hashName:function (parentid, name) {
+        var hash = 0;
+        for (var i = 0; i < name.length; i++) {
+          hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+        }
+        return (parentid + hash) % FS.name_table.length;
+      },hashAddNode:function (node) {
+        var hash = FS.hashName(node.parent.id, node.name);
+        node.name_next = FS.name_table[hash];
+        FS.name_table[hash] = node;
+      },hashRemoveNode:function (node) {
+        var hash = FS.hashName(node.parent.id, node.name);
+        if (FS.name_table[hash] === node) {
+          FS.name_table[hash] = node.name_next;
+        } else {
+          var current = FS.name_table[hash];
+          while (current) {
+            if (current.name_next === node) {
+              current.name_next = node.name_next;
+              break;
+            }
+            current = current.name_next;
+          }
+        }
+      },lookupNode:function (parent, name) {
+        var err = FS.mayLookup(parent);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        var hash = FS.hashName(parent.id, name);
+        for (var node = FS.name_table[hash]; node; node = node.name_next) {
+          if (node.parent.id === parent.id && node.name === name) {
+            return node;
+          }
+        }
+        // if we failed to find it in the cache, call into the VFS
+        return FS.lookup(parent, name);
+      },createNode:function (parent, name, mode, rdev) {
+        var node = {
+          id: FS.nextInode++,
+          name: name,
+          mode: mode,
+          node_ops: {},
+          stream_ops: {},
+          rdev: rdev,
+          parent: null,
+          mount: null
+        };
+        if (!parent) {
+          parent = node;  // root node sets parent to itself
+        }
+        node.parent = parent;
+        node.mount = parent.mount;
+        // compatibility
+        var readMode = 292 | 73;
+        var writeMode = 146;
+        // NOTE we must use Object.defineProperties instead of individual calls to
+        // Object.defineProperty in order to make closure compiler happy
+        Object.defineProperties(node, {
+          read: {
+            get: function() { return (node.mode & readMode) === readMode; },
+            set: function(val) { val ? node.mode |= readMode : node.mode &= ~readMode; }
+          },
+          write: {
+            get: function() { return (node.mode & writeMode) === writeMode; },
+            set: function(val) { val ? node.mode |= writeMode : node.mode &= ~writeMode; }
+          },
+          isFolder: {
+            get: function() { return FS.isDir(node.mode); },
+          },
+          isDevice: {
+            get: function() { return FS.isChrdev(node.mode); },
+          },
+        });
+        FS.hashAddNode(node);
+        return node;
+      },destroyNode:function (node) {
+        FS.hashRemoveNode(node);
+      },isRoot:function (node) {
+        return node === node.parent;
+      },isMountpoint:function (node) {
+        return node.mounted;
+      },isFile:function (mode) {
+        return (mode & 0170000) === 0100000;
+      },isDir:function (mode) {
+        return (mode & 0170000) === 0040000;
+      },isLink:function (mode) {
+        return (mode & 0170000) === 0120000;
+      },isChrdev:function (mode) {
+        return (mode & 0170000) === 0020000;
+      },isBlkdev:function (mode) {
+        return (mode & 0170000) === 0060000;
+      },isFIFO:function (mode) {
+        return (mode & 0170000) === 0010000;
+      },cwd:function () {
+        return FS.currentPath;
+      },lookupPath:function (path, opts) {
+        path = PATH.resolve(FS.currentPath, path);
+        opts = opts || { recurse_count: 0 };
+        if (opts.recurse_count > 8) {  // max recursive lookup of 8
+          throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+        }
+        // split the path
+        var parts = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), false);
+        // start at the root
+        var current = FS.root;
+        var current_path = '/';
+        for (var i = 0; i < parts.length; i++) {
+          var islast = (i === parts.length-1);
+          if (islast && opts.parent) {
+            // stop resolving
+            break;
+          }
+          current = FS.lookupNode(current, parts[i]);
+          current_path = PATH.join(current_path, parts[i]);
+          // jump to the mount's root node if this is a mountpoint
+          if (FS.isMountpoint(current)) {
+            current = current.mount.root;
+          }
+          // follow symlinks
+          // by default, lookupPath will not follow a symlink if it is the final path component.
+          // setting opts.follow = true will override this behavior.
+          if (!islast || opts.follow) {
+            var count = 0;
+            while (FS.isLink(current.mode)) {
+              var link = FS.readlink(current_path);
+              current_path = PATH.resolve(PATH.dirname(current_path), link);
+              var lookup = FS.lookupPath(current_path, { recurse_count: opts.recurse_count });
+              current = lookup.node;
+              if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
+                throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+              }
+            }
+          }
+        }
+        return { path: current_path, node: current };
+      },getPath:function (node) {
+        var path;
+        while (true) {
+          if (FS.isRoot(node)) {
+            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
+          }
+          path = path ? PATH.join(node.name, path) : node.name;
+          node = node.parent;
+        }
+      },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
+        var flags = FS.flagModes[str];
+        if (typeof flags === 'undefined') {
+          throw new Error('Unknown file open mode: ' + str);
+        }
+        return flags;
+      },flagsToPermissionString:function (flag) {
+        var accmode = flag & 3;
+        var perms = ['r', 'w', 'rw'][accmode];
+        if ((flag & 1024)) {
+          perms += 'w';
+        }
+        return perms;
+      },nodePermissions:function (node, perms) {
+        if (FS.ignorePermissions) {
+          return 0;
+        }
+        // return 0 if any user, group or owner bits are set.
+        if (perms.indexOf('r') !== -1 && !(node.mode & 292)) {
+          return ERRNO_CODES.EACCES;
+        } else if (perms.indexOf('w') !== -1 && !(node.mode & 146)) {
+          return ERRNO_CODES.EACCES;
+        } else if (perms.indexOf('x') !== -1 && !(node.mode & 73)) {
+          return ERRNO_CODES.EACCES;
+        }
+        return 0;
+      },mayLookup:function (dir) {
+        return FS.nodePermissions(dir, 'x');
+      },mayMknod:function (mode) {
+        switch (mode & 0170000) {
+          case 0100000:
+          case 0020000:
+          case 0060000:
+          case 0010000:
+          case 0140000:
+            return 0;
+          default:
+            return ERRNO_CODES.EINVAL;
+        }
+      },mayCreate:function (dir, name) {
+        try {
+          var node = FS.lookupNode(dir, name);
+          return ERRNO_CODES.EEXIST;
+        } catch (e) {
+        }
+        return FS.nodePermissions(dir, 'wx');
+      },mayDelete:function (dir, name, isdir) {
+        var node;
+        try {
+          node = FS.lookupNode(dir, name);
+        } catch (e) {
+          return e.errno;
+        }
+        var err = FS.nodePermissions(dir, 'wx');
+        if (err) {
+          return err;
+        }
+        if (isdir) {
+          if (!FS.isDir(node.mode)) {
+            return ERRNO_CODES.ENOTDIR;
+          }
+          if (FS.isRoot(node) || FS.getPath(node) === FS.currentPath) {
+            return ERRNO_CODES.EBUSY;
+          }
+        } else {
+          if (FS.isDir(node.mode)) {
+            return ERRNO_CODES.EISDIR;
+          }
+        }
+        return 0;
+      },mayOpen:function (node, flags) {
+        if (!node) {
+          return ERRNO_CODES.ENOENT;
+        }
+        if (FS.isLink(node.mode)) {
+          return ERRNO_CODES.ELOOP;
+        } else if (FS.isDir(node.mode)) {
+          if ((flags & 3) !== 0 ||  // opening for write
+              (flags & 1024)) {
+            return ERRNO_CODES.EISDIR;
+          }
+        }
+        return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
+      },chrdev_stream_ops:{open:function (stream) {
+          var device = FS.getDevice(stream.node.rdev);
+          // override node's stream ops with the device's
+          stream.stream_ops = device.stream_ops;
+          // forward the open call
+          if (stream.stream_ops.open) {
+            stream.stream_ops.open(stream);
+          }
+        },llseek:function () {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }},major:function (dev) {
+        return ((dev) >> 8);
+      },minor:function (dev) {
+        return ((dev) & 0xff);
+      },makedev:function (ma, mi) {
+        return ((ma) << 8 | (mi));
+      },registerDevice:function (dev, ops) {
+        FS.devices[dev] = { stream_ops: ops };
+      },getDevice:function (dev) {
+        return FS.devices[dev];
+      },MAX_OPEN_FDS:4096,nextfd:function (fd_start, fd_end) {
+        fd_start = fd_start || 1;
+        fd_end = fd_end || FS.MAX_OPEN_FDS;
+        for (var fd = fd_start; fd <= fd_end; fd++) {
+          if (!FS.streams[fd]) {
+            return fd;
+          }
+        }
+        throw new FS.ErrnoError(ERRNO_CODES.EMFILE);
+      },getStream:function (fd) {
+        return FS.streams[fd];
+      },createStream:function (stream, fd_start, fd_end) {
+        var fd = FS.nextfd(fd_start, fd_end);
+        stream.fd = fd;
+        // compatibility
+        Object.defineProperties(stream, {
+          object: {
+            get: function() { return stream.node; },
+            set: function(val) { stream.node = val; }
+          },
+          isRead: {
+            get: function() { return (stream.flags & 3) !== 1; }
+          },
+          isWrite: {
+            get: function() { return (stream.flags & 3) !== 0; }
+          },
+          isAppend: {
+            get: function() { return (stream.flags & 8); }
+          }
+        });
+        FS.streams[fd] = stream;
+        return stream;
+      },closeStream:function (fd) {
+        FS.streams[fd] = null;
+      },getMode:function (canRead, canWrite) {
+        var mode = 0;
+        if (canRead) mode |= 292 | 73;
+        if (canWrite) mode |= 146;
+        return mode;
+      },joinPath:function (parts, forceRelative) {
+        var path = PATH.join.apply(null, parts);
+        if (forceRelative && path[0] == '/') path = path.substr(1);
+        return path;
+      },absolutePath:function (relative, base) {
+        return PATH.resolve(base, relative);
+      },standardizePath:function (path) {
+        return PATH.normalize(path);
+      },findObject:function (path, dontResolveLastLink) {
+        var ret = FS.analyzePath(path, dontResolveLastLink);
+        if (ret.exists) {
+          return ret.object;
+        } else {
+          ___setErrNo(ret.error);
+          return null;
+        }
+      },analyzePath:function (path, dontResolveLastLink) {
+        // operate from within the context of the symlink's target
+        try {
+          var lookup = FS.lookupPath(path, { follow: !dontResolveLastLink });
+          path = lookup.path;
+        } catch (e) {
+        }
+        var ret = {
+          isRoot: false, exists: false, error: 0, name: null, path: null, object: null,
+          parentExists: false, parentPath: null, parentObject: null
+        };
+        try {
+          var lookup = FS.lookupPath(path, { parent: true });
+          ret.parentExists = true;
+          ret.parentPath = lookup.path;
+          ret.parentObject = lookup.node;
+          ret.name = PATH.basename(path);
+          lookup = FS.lookupPath(path, { follow: !dontResolveLastLink });
+          ret.exists = true;
+          ret.path = lookup.path;
+          ret.object = lookup.node;
+          ret.name = lookup.node.name;
+          ret.isRoot = lookup.path === '/';
+        } catch (e) {
+          ret.error = e.errno;
+        };
+        return ret;
+      },createFolder:function (parent, name, canRead, canWrite) {
+        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var mode = FS.getMode(canRead, canWrite);
+        return FS.mkdir(path, mode);
+      },createPath:function (parent, path, canRead, canWrite) {
+        parent = typeof parent === 'string' ? parent : FS.getPath(parent);
+        var parts = path.split('/').reverse();
+        while (parts.length) {
+          var part = parts.pop();
+          if (!part) continue;
+          var current = PATH.join(parent, part);
+          try {
+            FS.mkdir(current, 0777);
+          } catch (e) {
+            // ignore EEXIST
+          }
+          parent = current;
+        }
+        return current;
+      },createFile:function (parent, name, properties, canRead, canWrite) {
+        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var mode = FS.getMode(canRead, canWrite);
+        return FS.create(path, mode);
+      },createDataFile:function (parent, name, data, canRead, canWrite) {
+        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var mode = FS.getMode(canRead, canWrite);
+        var node = FS.create(path, mode);
+        if (data) {
+          if (typeof data === 'string') {
+            var arr = new Array(data.length);
+            for (var i = 0, len = data.length; i < len; ++i) arr[i] = data.charCodeAt(i);
+            data = arr;
+          }
+          // make sure we can write to the file
+          FS.chmod(path, mode | 146);
+          var stream = FS.open(path, 'w');
+          FS.write(stream, data, 0, data.length, 0);
+          FS.close(stream);
+          FS.chmod(path, mode);
+        }
+        return node;
+      },createDevice:function (parent, name, input, output) {
+        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var mode = input && output ? 0777 : (input ? 0333 : 0555);
+        if (!FS.createDevice.major) FS.createDevice.major = 64;
+        var dev = FS.makedev(FS.createDevice.major++, 0);
+        // Create a fake device that a set of stream ops to emulate
+        // the old behavior.
+        FS.registerDevice(dev, {
+          open: function(stream) {
+            stream.seekable = false;
+          },
+          close: function(stream) {
+            // flush any pending line data
+            if (output && output.buffer && output.buffer.length) {
+              output(10);
+            }
+          },
+          read: function(stream, buffer, offset, length, pos /* ignored */) {
+            var bytesRead = 0;
+            for (var i = 0; i < length; i++) {
+              var result;
+              try {
+                result = input();
+              } catch (e) {
+                throw new FS.ErrnoError(ERRNO_CODES.EIO);
+              }
+              if (result === undefined && bytesRead === 0) {
+                throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+              }
+              if (result === null || result === undefined) break;
+              bytesRead++;
+              buffer[offset+i] = result;
+            }
+            if (bytesRead) {
+              stream.node.timestamp = Date.now();
+            }
+            return bytesRead;
+          },
+          write: function(stream, buffer, offset, length, pos) {
+            for (var i = 0; i < length; i++) {
+              try {
+                output(buffer[offset+i]);
+              } catch (e) {
+                throw new FS.ErrnoError(ERRNO_CODES.EIO);
+              }
+            }
+            if (length) {
+              stream.node.timestamp = Date.now();
+            }
+            return i;
+          }
+        });
+        return FS.mkdev(path, mode, dev);
+      },createLink:function (parent, name, target, canRead, canWrite) {
+        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        return FS.symlink(target, path);
+      },forceLoadFile:function (obj) {
+        if (obj.isDevice || obj.isFolder || obj.link || obj.contents) return true;
+        var success = true;
+        if (typeof XMLHttpRequest !== 'undefined') {
+          throw new Error("Lazy loading should have been performed (contents set) in createLazyFile, but it was not. Lazy loading only works in web workers. Use --embed-file or --preload-file in emcc on the main thread.");
+        } else if (Module['read']) {
+          // Command-line.
+          try {
+            // WARNING: Can't read binary files in V8's d8 or tracemonkey's js, as
+            //          read() will try to parse UTF8.
+            obj.contents = intArrayFromString(Module['read'](obj.url), true);
+          } catch (e) {
+            success = false;
+          }
+        } else {
+          throw new Error('Cannot load without read() or XMLHttpRequest.');
+        }
+        if (!success) ___setErrNo(ERRNO_CODES.EIO);
+        return success;
+      },createLazyFile:function (parent, name, url, canRead, canWrite) {
+        if (typeof XMLHttpRequest !== 'undefined') {
+          if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
+          // Lazy chunked Uint8Array (implements get and length from Uint8Array). Actual getting is abstracted away for eventual reuse.
+          var LazyUint8Array = function() {
+            this.lengthKnown = false;
+            this.chunks = []; // Loaded chunks. Index is the chunk number
+          }
+          LazyUint8Array.prototype.get = function(idx) {
+            if (idx > this.length-1 || idx < 0) {
+              return undefined;
+            }
+            var chunkOffset = idx % this.chunkSize;
+            var chunkNum = Math.floor(idx / this.chunkSize);
+            return this.getter(chunkNum)[chunkOffset];
+          }
+          LazyUint8Array.prototype.setDataGetter = function(getter) {
+            this.getter = getter;
+          }
+          LazyUint8Array.prototype.cacheLength = function() {
+              // Find length
+              var xhr = new XMLHttpRequest();
+              xhr.open('HEAD', url, false);
+              xhr.send(null);
+              if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
+              var datalength = Number(xhr.getResponseHeader("Content-length"));
+              var header;
+              var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
+              var chunkSize = 1024*1024; // Chunk size in bytes
+              if (!hasByteServing) chunkSize = datalength;
+              // Function to get a range from the remote URL.
+              var doXHR = (function(from, to) {
+                if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
+                if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
+                // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, false);
+                if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
+                // Some hints to the browser that we want binary data.
+                if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
+                if (xhr.overrideMimeType) {
+                  xhr.overrideMimeType('text/plain; charset=x-user-defined');
+                }
+                xhr.send(null);
+                if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
+                if (xhr.response !== undefined) {
+                  return new Uint8Array(xhr.response || []);
+                } else {
+                  return intArrayFromString(xhr.responseText || '', true);
+                }
+              });
+              var lazyArray = this;
+              lazyArray.setDataGetter(function(chunkNum) {
+                var start = chunkNum * chunkSize;
+                var end = (chunkNum+1) * chunkSize - 1; // including this byte
+                end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
+                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
+                  lazyArray.chunks[chunkNum] = doXHR(start, end);
+                }
+                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
+                return lazyArray.chunks[chunkNum];
+              });
+              this._length = datalength;
+              this._chunkSize = chunkSize;
+              this.lengthKnown = true;
+          }
+          var lazyArray = new LazyUint8Array();
+          Object.defineProperty(lazyArray, "length", {
+              get: function() {
+                  if(!this.lengthKnown) {
+                      this.cacheLength();
+                  }
+                  return this._length;
+              }
+          });
+          Object.defineProperty(lazyArray, "chunkSize", {
+              get: function() {
+                  if(!this.lengthKnown) {
+                      this.cacheLength();
+                  }
+                  return this._chunkSize;
+              }
+          });
+          var properties = { isDevice: false, contents: lazyArray };
+        } else {
+          var properties = { isDevice: false, url: url };
+        }
+        var node = FS.createFile(parent, name, properties, canRead, canWrite);
+        // This is a total hack, but I want to get this lazy file code out of the
+        // core of MEMFS. If we want to keep this lazy file concept I feel it should
+        // be its own thin LAZYFS proxying calls to MEMFS.
+        if (properties.contents) {
+          node.contents = properties.contents;
+        } else if (properties.url) {
+          node.contents = null;
+          node.url = properties.url;
+        }
+        // override each stream op with one that tries to force load the lazy file first
+        var stream_ops = {};
+        var keys = Object.keys(node.stream_ops);
+        keys.forEach(function(key) {
+          var fn = node.stream_ops[key];
+          stream_ops[key] = function() {
+            if (!FS.forceLoadFile(node)) {
+              throw new FS.ErrnoError(ERRNO_CODES.EIO);
+            }
+            return fn.apply(null, arguments);
+          };
+        });
+        // use a custom read function
+        stream_ops.read = function(stream, buffer, offset, length, position) {
+          var contents = stream.node.contents;
+          var size = Math.min(contents.length - position, length);
+          if (contents.slice) { // normal array
+            for (var i = 0; i < size; i++) {
+              buffer[offset + i] = contents[position + i];
+            }
+          } else {
+            for (var i = 0; i < size; i++) { // LazyUint8Array from sync binary XHR
+              buffer[offset + i] = contents.get(position + i);
+            }
+          }
+          return size;
+        };
+        node.stream_ops = stream_ops;
+        return node;
+      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile) {
+        Browser.init();
+        // TODO we should allow people to just pass in a complete filename instead
+        // of parent and name being that we just join them anyways
+        var fullname = PATH.resolve(PATH.join(parent, name));
+        function processData(byteArray) {
+          function finish(byteArray) {
+            if (!dontCreateFile) {
+              FS.createDataFile(parent, name, byteArray, canRead, canWrite);
+            }
+            if (onload) onload();
+            removeRunDependency('cp ' + fullname);
+          }
+          var handled = false;
+          Module['preloadPlugins'].forEach(function(plugin) {
+            if (handled) return;
+            if (plugin['canHandle'](fullname)) {
+              plugin['handle'](byteArray, fullname, finish, function() {
+                if (onerror) onerror();
+                removeRunDependency('cp ' + fullname);
+              });
+              handled = true;
+            }
+          });
+          if (!handled) finish(byteArray);
+        }
+        addRunDependency('cp ' + fullname);
+        if (typeof url == 'string') {
+          Browser.asyncLoad(url, function(byteArray) {
+            processData(byteArray);
+          }, onerror);
+        } else {
+          processData(url);
+        }
+      },createDefaultDirectories:function () {
+        FS.mkdir('/tmp', 0777);
+      },createDefaultDevices:function () {
+        // create /dev
+        FS.mkdir('/dev', 0777);
+        // setup /dev/null
+        FS.registerDevice(FS.makedev(1, 3), {
+          read: function() { return 0; },
+          write: function() { return 0; }
+        });
+        FS.mkdev('/dev/null', 0666, FS.makedev(1, 3));
+        // setup /dev/tty and /dev/tty1
+        // stderr needs to print output using Module['printErr']
+        // so we register a second tty just for it.
+        TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
+        TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
+        FS.mkdev('/dev/tty', 0666, FS.makedev(5, 0));
+        FS.mkdev('/dev/tty1', 0666, FS.makedev(6, 0));
+        // we're not going to emulate the actual shm device,
+        // just create the tmp dirs that reside in it commonly
+        FS.mkdir('/dev/shm', 0777);
+        FS.mkdir('/dev/shm/tmp', 0777);
+      },createStandardStreams:function () {
+        // TODO deprecate the old functionality of a single
+        // input / output callback and that utilizes FS.createDevice
+        // and instead require a unique set of stream ops
+        // by default, we symlink the standard streams to the
+        // default tty devices. however, if the standard streams
+        // have been overwritten we create a unique device for
+        // them instead.
+        if (Module['stdin']) {
+          FS.createDevice('/dev', 'stdin', Module['stdin']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdin');
+        }
+        if (Module['stdout']) {
+          FS.createDevice('/dev', 'stdout', null, Module['stdout']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdout');
+        }
+        if (Module['stderr']) {
+          FS.createDevice('/dev', 'stderr', null, Module['stderr']);
+        } else {
+          FS.symlink('/dev/tty1', '/dev/stderr');
+        }
+        // open default streams for the stdin, stdout and stderr devices
+        var stdin = FS.open('/dev/stdin', 'r');
+        HEAP32[((_stdin)>>2)]=stdin.fd;
+        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
+        var stdout = FS.open('/dev/stdout', 'w');
+        HEAP32[((_stdout)>>2)]=stdout.fd;
+        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
+        var stderr = FS.open('/dev/stderr', 'w');
+        HEAP32[((_stderr)>>2)]=stderr.fd;
+        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
+      },staticInit:function () {
+        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.mount(MEMFS, {}, '/');
+        FS.createDefaultDirectories();
+        FS.createDefaultDevices();
+      },init:function (input, output, error) {
+        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
+        FS.init.initialized = true;
+        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
+        Module['stdin'] = input || Module['stdin'];
+        Module['stdout'] = output || Module['stdout'];
+        Module['stderr'] = error || Module['stderr'];
+        FS.createStandardStreams();
+      },quit:function () {
+        FS.init.initialized = false;
+        for (var i = 0; i < FS.streams.length; i++) {
+          var stream = FS.streams[i];
+          if (!stream) {
+            continue;
+          }
+          FS.close(stream);
+        }
+      },mount:function (type, opts, mountpoint) {
+        var mount = {
+          type: type,
+          opts: opts,
+          mountpoint: mountpoint,
+          root: null
+        };
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+        }
+        // create a root node for the fs
+        var root = type.mount(mount);
+        root.mount = mount;
+        mount.root = root;
+        // assign the mount info to the mountpoint's node
+        if (lookup) {
+          lookup.node.mount = mount;
+          lookup.node.mounted = true;
+          // compatibility update FS.root if we mount to /
+          if (mountpoint === '/') {
+            FS.root = mount.root;
+          }
+        }
+        return root;
+      },lookup:function (parent, name) {
+        return parent.node_ops.lookup(parent, name);
+      },mknod:function (path, mode, dev) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var err = FS.mayCreate(parent, name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.mknod) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.mknod(parent, name, mode, dev);
+      },create:function (path, mode) {
+        mode &= 4095;
+        mode |= 0100000;
+        return FS.mknod(path, mode, 0);
+      },mkdir:function (path, mode) {
+        mode &= 511 | 0001000;
+        mode |= 0040000;
+        return FS.mknod(path, mode, 0);
+      },mkdev:function (path, mode, dev) {
+        mode |= 0020000;
+        return FS.mknod(path, mode, dev);
+      },symlink:function (oldpath, newpath) {
+        var lookup = FS.lookupPath(newpath, { parent: true });
+        var parent = lookup.node;
+        var newname = PATH.basename(newpath);
+        var err = FS.mayCreate(parent, newname);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.symlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.symlink(parent, newname, oldpath);
+      },rename:function (old_path, new_path) {
+        var old_dirname = PATH.dirname(old_path);
+        var new_dirname = PATH.dirname(new_path);
+        var old_name = PATH.basename(old_path);
+        var new_name = PATH.basename(new_path);
+        // parents must exist
+        var lookup, old_dir, new_dir;
+        try {
+          lookup = FS.lookupPath(old_path, { parent: true });
+          old_dir = lookup.node;
+          lookup = FS.lookupPath(new_path, { parent: true });
+          new_dir = lookup.node;
+        } catch (e) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // need to be part of the same mount
+        if (old_dir.mount !== new_dir.mount) {
+          throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
+        }
+        // source must exist
+        var old_node = FS.lookupNode(old_dir, old_name);
+        // old path should not be an ancestor of the new path
+        var relative = PATH.relative(old_path, new_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        // new path should not be an ancestor of the old path
+        relative = PATH.relative(new_path, old_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
+        }
+        // see if the new path already exists
+        var new_node;
+        try {
+          new_node = FS.lookupNode(new_dir, new_name);
+        } catch (e) {
+          // not fatal
+        }
+        // early out if nothing needs to change
+        if (old_node === new_node) {
+          return;
+        }
+        // we'll need to delete the old entry
+        var isdir = FS.isDir(old_node.mode);
+        var err = FS.mayDelete(old_dir, old_name, isdir);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // need delete permissions if we'll be overwriting.
+        // need create permissions if new doesn't already exist.
+        err = new_node ?
+          FS.mayDelete(new_dir, new_name, isdir) :
+          FS.mayCreate(new_dir, new_name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!old_dir.node_ops.rename) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // if we are going to change the parent, check write permissions
+        if (new_dir !== old_dir) {
+          err = FS.nodePermissions(old_dir, 'w');
+          if (err) {
+            throw new FS.ErrnoError(err);
+          }
+        }
+        // remove the node from the lookup hash
+        FS.hashRemoveNode(old_node);
+        // do the underlying fs rename
+        try {
+          old_node.node_ops.rename(old_node, new_dir, new_name);
+        } catch (e) {
+          throw e;
+        } finally {
+          // add the node back to the hash (in case node_ops.rename
+          // changed its name)
+          FS.hashAddNode(old_node);
+        }
+      },rmdir:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, true);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.rmdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.rmdir(parent, name);
+        FS.destroyNode(node);
+      },unlink:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, false);
+        if (err) {
+          // POSIX says unlink should set EPERM, not EISDIR
+          if (err === ERRNO_CODES.EISDIR) err = ERRNO_CODES.EPERM;
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.unlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.unlink(parent, name);
+        FS.destroyNode(node);
+      },readlink:function (path) {
+        var lookup = FS.lookupPath(path, { follow: false });
+        var link = lookup.node;
+        if (!link.node_ops.readlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        return link.node_ops.readlink(link);
+      },stat:function (path, dontFollow) {
+        var lookup = FS.lookupPath(path, { follow: !dontFollow });
+        var node = lookup.node;
+        if (!node.node_ops.getattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return node.node_ops.getattr(node);
+      },lstat:function (path) {
+        return FS.stat(path, true);
+      },chmod:function (path, mode, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          mode: (mode & 4095) | (node.mode & ~4095),
+          timestamp: Date.now()
+        });
+      },lchmod:function (path, mode) {
+        FS.chmod(path, mode, true);
+      },fchmod:function (fd, mode) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chmod(stream.node, mode);
+      },chown:function (path, uid, gid, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          timestamp: Date.now()
+          // we ignore the uid / gid for now
+        });
+      },lchown:function (path, uid, gid) {
+        FS.chown(path, uid, gid, true);
+      },fchown:function (fd, uid, gid) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chown(stream.node, uid, gid);
+      },truncate:function (path, len) {
+        if (len < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: true });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!FS.isFile(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var err = FS.nodePermissions(node, 'w');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        node.node_ops.setattr(node, {
+          size: len,
+          timestamp: Date.now()
+        });
+      },ftruncate:function (fd, len) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        FS.truncate(stream.node, len);
+      },utime:function (path, atime, mtime) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        var node = lookup.node;
+        node.node_ops.setattr(node, {
+          timestamp: Math.max(atime, mtime)
+        });
+      },open:function (path, flags, mode, fd_start, fd_end) {
+        path = PATH.normalize(path);
+        flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
+        if ((flags & 512)) {
+          mode = (mode & 4095) | 0100000;
+        } else {
+          mode = 0;
+        }
+        var node;
+        try {
+          var lookup = FS.lookupPath(path, {
+            follow: !(flags & 0200000)
+          });
+          node = lookup.node;
+          path = lookup.path;
+        } catch (e) {
+          // ignore
+        }
+        // perhaps we need to create the node
+        if ((flags & 512)) {
+          if (node) {
+            // if O_CREAT and O_EXCL are set, error out if the node already exists
+            if ((flags & 2048)) {
+              throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
+            }
+          } else {
+            // node doesn't exist, try to create it
+            node = FS.mknod(path, mode, 0);
+          }
+        }
+        if (!node) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
+        // can't truncate a device
+        if (FS.isChrdev(node.mode)) {
+          flags &= ~1024;
+        }
+        // check permissions
+        var err = FS.mayOpen(node, flags);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // do truncation if necessary
+        if ((flags & 1024)) {
+          FS.truncate(node, 0);
+        }
+        // register the stream with the filesystem
+        var stream = FS.createStream({
+          path: path,
+          node: node,
+          flags: flags,
+          seekable: true,
+          position: 0,
+          stream_ops: node.stream_ops,
+          // used by the file family libc calls (fopen, fwrite, ferror, etc.)
+          ungotten: [],
+          error: false
+        }, fd_start, fd_end);
+        // call the new stream's open function
+        if (stream.stream_ops.open) {
+          stream.stream_ops.open(stream);
+        }
+        return stream;
+      },close:function (stream) {
+        try {
+          if (stream.stream_ops.close) {
+            stream.stream_ops.close(stream);
+          }
+        } catch (e) {
+          throw e;
+        } finally {
+          FS.closeStream(stream.fd);
+        }
+      },llseek:function (stream, offset, whence) {
+        if (!stream.seekable || !stream.stream_ops.llseek) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        return stream.stream_ops.llseek(stream, offset, whence);
+      },readdir:function (stream) {
+        if (!stream.stream_ops.readdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        return stream.stream_ops.readdir(stream);
+      },read:function (stream, buffer, offset, length, position) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.read) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
+        if (!seeking) stream.position += bytesRead;
+        return bytesRead;
+      },write:function (stream, buffer, offset, length, position) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.write) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        if (stream.flags & 8) {
+          // seek to the end before writing in append mode
+          FS.llseek(stream, 0, 2);
+        }
+        var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position);
+        if (!seeking) stream.position += bytesWritten;
+        return bytesWritten;
+      },allocate:function (stream, offset, length) {
+        if (offset < 0 || length <= 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+        }
+        if (!stream.stream_ops.allocate) {
+          throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+        }
+        stream.stream_ops.allocate(stream, offset, length);
+      },mmap:function (stream, buffer, offset, length, position, prot, flags) {
+        // TODO if PROT is PROT_WRITE, make sure we have write access
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EACCES);
+        }
+        if (!stream.stream_ops.mmap) {
+          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+        }
+        return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
+      }};var PATH={splitPath:function (filename) {
+        var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+        return splitPathRe.exec(filename).slice(1);
+      },normalizeArray:function (parts, allowAboveRoot) {
+        // if the path tries to go above the root, `up` ends up > 0
+        var up = 0;
+        for (var i = parts.length - 1; i >= 0; i--) {
+          var last = parts[i];
+          if (last === '.') {
+            parts.splice(i, 1);
+          } else if (last === '..') {
+            parts.splice(i, 1);
+            up++;
+          } else if (up) {
+            parts.splice(i, 1);
+            up--;
+          }
+        }
+        // if the path is allowed to go above the root, restore leading ..s
+        if (allowAboveRoot) {
+          for (; up--; up) {
+            parts.unshift('..');
+          }
+        }
+        return parts;
+      },normalize:function (path) {
+        var isAbsolute = path.charAt(0) === '/',
+            trailingSlash = path.substr(-1) === '/';
+        // Normalize the path
+        path = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), !isAbsolute).join('/');
+        if (!path && !isAbsolute) {
+          path = '.';
+        }
+        if (path && trailingSlash) {
+          path += '/';
+        }
+        return (isAbsolute ? '/' : '') + path;
+      },dirname:function (path) {
+        var result = PATH.splitPath(path),
+            root = result[0],
+            dir = result[1];
+        if (!root && !dir) {
+          // No dirname whatsoever
+          return '.';
+        }
+        if (dir) {
+          // It has a dirname, strip trailing slash
+          dir = dir.substr(0, dir.length - 1);
+        }
+        return root + dir;
+      },basename:function (path, ext) {
+        // EMSCRIPTEN return '/'' for '/', not an empty string
+        if (path === '/') return '/';
+        var f = PATH.splitPath(path)[2];
+        if (ext && f.substr(-1 * ext.length) === ext) {
+          f = f.substr(0, f.length - ext.length);
+        }
+        return f;
+      },join:function () {
+        var paths = Array.prototype.slice.call(arguments, 0);
+        return PATH.normalize(paths.filter(function(p, index) {
+          if (typeof p !== 'string') {
+            throw new TypeError('Arguments to path.join must be strings');
+          }
+          return p;
+        }).join('/'));
+      },resolve:function () {
+        var resolvedPath = '',
+          resolvedAbsolute = false;
+        for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+          var path = (i >= 0) ? arguments[i] : FS.cwd();
+          // Skip empty and invalid entries
+          if (typeof path !== 'string') {
+            throw new TypeError('Arguments to path.resolve must be strings');
+          } else if (!path) {
+            continue;
+          }
+          resolvedPath = path + '/' + resolvedPath;
+          resolvedAbsolute = path.charAt(0) === '/';
+        }
+        // At this point the path should be resolved to a full absolute path, but
+        // handle relative paths to be safe (might happen when process.cwd() fails)
+        resolvedPath = PATH.normalizeArray(resolvedPath.split('/').filter(function(p) {
+          return !!p;
+        }), !resolvedAbsolute).join('/');
+        return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+      },relative:function (from, to) {
+        from = PATH.resolve(from).substr(1);
+        to = PATH.resolve(to).substr(1);
+        function trim(arr) {
+          var start = 0;
+          for (; start < arr.length; start++) {
+            if (arr[start] !== '') break;
+          }
+          var end = arr.length - 1;
+          for (; end >= 0; end--) {
+            if (arr[end] !== '') break;
+          }
+          if (start > end) return [];
+          return arr.slice(start, end - start + 1);
+        }
+        var fromParts = trim(from.split('/'));
+        var toParts = trim(to.split('/'));
+        var length = Math.min(fromParts.length, toParts.length);
+        var samePartsLength = length;
+        for (var i = 0; i < length; i++) {
+          if (fromParts[i] !== toParts[i]) {
+            samePartsLength = i;
+            break;
+          }
+        }
+        var outputParts = [];
+        for (var i = samePartsLength; i < fromParts.length; i++) {
+          outputParts.push('..');
+        }
+        outputParts = outputParts.concat(toParts.slice(samePartsLength));
+        return outputParts.join('/');
+      }};var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
           Browser.mainLoop.shouldPause = true;
         },resume:function () {
           if (Browser.mainLoop.paused) {
@@ -986,7 +2546,11 @@ function copyTempDouble(ptr) {
           console.log("warning: no blob constructor, cannot create blobs with mimetypes");
         }
         Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
-        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : console.log("warning: cannot create object URLs");
+        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : undefined;
+        if (!Module.noImageDecoding && typeof Browser.URLObject === 'undefined') {
+          console.log("warning: Browser does not support creating object URLs. Built-in browser image decoding will not be available.");
+          Module.noImageDecoding = true;
+        }
         // Support for plugins that can process preloaded files. You can add more of these to
         // your app by creating and appending to Module.preloadPlugins.
         //
@@ -1626,567 +3190,54 @@ function copyTempDouble(ptr) {
         return CL.catchError("clSetKernelArg",e);
       }
     }
-  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,ELBIN:75,EDOTDOT:76,EBADMSG:77,EFTYPE:79,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENMFILE:89,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EPROCLIM:130,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,ENOSHARE:136,ECASECLASH:137,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
-  var ___errno_state=0;function ___setErrNo(value) {
-      // For convenient setting and returning of errno.
-      HEAP32[((___errno_state)>>2)]=value
-      return value;
-    }
-  var _stdin=allocate(1, "i32*", ALLOC_STATIC);
-  var _stdout=allocate(1, "i32*", ALLOC_STATIC);
-  var _stderr=allocate(1, "i32*", ALLOC_STATIC);
-  var __impure_ptr=allocate(1, "i32*", ALLOC_STATIC);var FS={currentPath:"/",nextInode:2,streams:[null],ignorePermissions:true,createFileHandle:function (stream, fd) {
-        if (typeof stream === 'undefined') {
-          stream = null;
-        }
-        if (!fd) {
-          if (stream && stream.socket) {
-            for (var i = 1; i < 64; i++) {
-              if (!FS.streams[i]) {
-                fd = i;
-                break;
-              }
-            }
-            assert(fd, 'ran out of low fds for sockets');
-          } else {
-            fd = Math.max(FS.streams.length, 64);
-            for (var i = FS.streams.length; i < fd; i++) {
-              FS.streams[i] = null; // Keep dense
-            }
-          }
-        }
-        // Close WebSocket first if we are about to replace the fd (i.e. dup2)
-        if (FS.streams[fd] && FS.streams[fd].socket && FS.streams[fd].socket.close) {
-          FS.streams[fd].socket.close();
-        }
-        FS.streams[fd] = stream;
-        return fd;
-      },removeFileHandle:function (fd) {
-        FS.streams[fd] = null;
-      },joinPath:function (parts, forceRelative) {
-        var ret = parts[0];
-        for (var i = 1; i < parts.length; i++) {
-          if (ret[ret.length-1] != '/') ret += '/';
-          ret += parts[i];
-        }
-        if (forceRelative && ret[0] == '/') ret = ret.substr(1);
-        return ret;
-      },absolutePath:function (relative, base) {
-        if (typeof relative !== 'string') return null;
-        if (base === undefined) base = FS.currentPath;
-        if (relative && relative[0] == '/') base = '';
-        var full = base + '/' + relative;
-        var parts = full.split('/').reverse();
-        var absolute = [''];
-        while (parts.length) {
-          var part = parts.pop();
-          if (part == '' || part == '.') {
-            // Nothing.
-          } else if (part == '..') {
-            if (absolute.length > 1) absolute.pop();
-          } else {
-            absolute.push(part);
-          }
-        }
-        return absolute.length == 1 ? '/' : absolute.join('/');
-      },analyzePath:function (path, dontResolveLastLink, linksVisited) {
-        var ret = {
-          isRoot: false,
-          exists: false,
-          error: 0,
-          name: null,
-          path: null,
-          object: null,
-          parentExists: false,
-          parentPath: null,
-          parentObject: null
-        };
-        path = FS.absolutePath(path);
-        if (path == '/') {
-          ret.isRoot = true;
-          ret.exists = ret.parentExists = true;
-          ret.name = '/';
-          ret.path = ret.parentPath = '/';
-          ret.object = ret.parentObject = FS.root;
-        } else if (path !== null) {
-          linksVisited = linksVisited || 0;
-          path = path.slice(1).split('/');
-          var current = FS.root;
-          var traversed = [''];
-          while (path.length) {
-            if (path.length == 1 && current.isFolder) {
-              ret.parentExists = true;
-              ret.parentPath = traversed.length == 1 ? '/' : traversed.join('/');
-              ret.parentObject = current;
-              ret.name = path[0];
-            }
-            var target = path.shift();
-            if (!current.isFolder) {
-              ret.error = ERRNO_CODES.ENOTDIR;
-              break;
-            } else if (!current.read) {
-              ret.error = ERRNO_CODES.EACCES;
-              break;
-            } else if (!current.contents.hasOwnProperty(target)) {
-              ret.error = ERRNO_CODES.ENOENT;
-              break;
-            }
-            current = current.contents[target];
-            if (current.link && !(dontResolveLastLink && path.length == 0)) {
-              if (linksVisited > 40) { // Usual Linux SYMLOOP_MAX.
-                ret.error = ERRNO_CODES.ELOOP;
-                break;
-              }
-              var link = FS.absolutePath(current.link, traversed.join('/'));
-              ret = FS.analyzePath([link].concat(path).join('/'),
-                                   dontResolveLastLink, linksVisited + 1);
-              return ret;
-            }
-            traversed.push(target);
-            if (path.length == 0) {
-              ret.exists = true;
-              ret.path = traversed.join('/');
-              ret.object = current;
-            }
-          }
-        }
-        return ret;
-      },findObject:function (path, dontResolveLastLink) {
-        FS.ensureRoot();
-        var ret = FS.analyzePath(path, dontResolveLastLink);
-        if (ret.exists) {
-          return ret.object;
-        } else {
-          ___setErrNo(ret.error);
-          return null;
-        }
-      },createObject:function (parent, name, properties, canRead, canWrite) {
-        if (!parent) parent = '/';
-        if (typeof parent === 'string') parent = FS.findObject(parent);
-        if (!parent) {
-          ___setErrNo(ERRNO_CODES.EACCES);
-          throw new Error('Parent path must exist.');
-        }
-        if (!parent.isFolder) {
-          ___setErrNo(ERRNO_CODES.ENOTDIR);
-          throw new Error('Parent must be a folder.');
-        }
-        if (!parent.write && !FS.ignorePermissions) {
-          ___setErrNo(ERRNO_CODES.EACCES);
-          throw new Error('Parent folder must be writeable.');
-        }
-        if (!name || name == '.' || name == '..') {
-          ___setErrNo(ERRNO_CODES.ENOENT);
-          throw new Error('Name must not be empty.');
-        }
-        if (parent.contents.hasOwnProperty(name)) {
-          ___setErrNo(ERRNO_CODES.EEXIST);
-          throw new Error("Can't overwrite object.");
-        }
-        parent.contents[name] = {
-          read: canRead === undefined ? true : canRead,
-          write: canWrite === undefined ? false : canWrite,
-          timestamp: Date.now(),
-          inodeNumber: FS.nextInode++
-        };
-        for (var key in properties) {
-          if (properties.hasOwnProperty(key)) {
-            parent.contents[name][key] = properties[key];
-          }
-        }
-        return parent.contents[name];
-      },createFolder:function (parent, name, canRead, canWrite) {
-        var properties = {isFolder: true, isDevice: false, contents: {}};
-        return FS.createObject(parent, name, properties, canRead, canWrite);
-      },createPath:function (parent, path, canRead, canWrite) {
-        var current = FS.findObject(parent);
-        if (current === null) throw new Error('Invalid parent.');
-        path = path.split('/').reverse();
-        while (path.length) {
-          var part = path.pop();
-          if (!part) continue;
-          if (!current.contents.hasOwnProperty(part)) {
-            FS.createFolder(current, part, canRead, canWrite);
-          }
-          current = current.contents[part];
-        }
-        return current;
-      },createFile:function (parent, name, properties, canRead, canWrite) {
-        properties.isFolder = false;
-        return FS.createObject(parent, name, properties, canRead, canWrite);
-      },createDataFile:function (parent, name, data, canRead, canWrite) {
-        if (typeof data === 'string') {
-          var dataArray = new Array(data.length);
-          for (var i = 0, len = data.length; i < len; ++i) dataArray[i] = data.charCodeAt(i);
-          data = dataArray;
-        }
-        var properties = {
-          isDevice: false,
-          contents: data.subarray ? data.subarray(0) : data // as an optimization, create a new array wrapper (not buffer) here, to help JS engines understand this object
-        };
-        return FS.createFile(parent, name, properties, canRead, canWrite);
-      },createLazyFile:function (parent, name, url, canRead, canWrite) {
-        if (typeof XMLHttpRequest !== 'undefined') {
-          if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
-          // Lazy chunked Uint8Array (implements get and length from Uint8Array). Actual getting is abstracted away for eventual reuse.
-          var LazyUint8Array = function() {
-            this.lengthKnown = false;
-            this.chunks = []; // Loaded chunks. Index is the chunk number
-          }
-          LazyUint8Array.prototype.get = function(idx) {
-            if (idx > this.length-1 || idx < 0) {
-              return undefined;
-            }
-            var chunkOffset = idx % this.chunkSize;
-            var chunkNum = Math.floor(idx / this.chunkSize);
-            return this.getter(chunkNum)[chunkOffset];
-          }
-          LazyUint8Array.prototype.setDataGetter = function(getter) {
-            this.getter = getter;
-          }
-          LazyUint8Array.prototype.cacheLength = function() {
-              // Find length
-              var xhr = new XMLHttpRequest();
-              xhr.open('HEAD', url, false);
-              xhr.send(null);
-              if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-              var datalength = Number(xhr.getResponseHeader("Content-length"));
-              var header;
-              var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
-              var chunkSize = 1024*1024; // Chunk size in bytes
-              if (!hasByteServing) chunkSize = datalength;
-              // Function to get a range from the remote URL.
-              var doXHR = (function(from, to) {
-                if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
-                if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-                // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url, false);
-                if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-                // Some hints to the browser that we want binary data.
-                if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
-                if (xhr.overrideMimeType) {
-                  xhr.overrideMimeType('text/plain; charset=x-user-defined');
-                }
-                xhr.send(null);
-                if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-                if (xhr.response !== undefined) {
-                  return new Uint8Array(xhr.response || []);
-                } else {
-                  return intArrayFromString(xhr.responseText || '', true);
-                }
-              });
-              var lazyArray = this;
-              lazyArray.setDataGetter(function(chunkNum) {
-                var start = chunkNum * chunkSize;
-                var end = (chunkNum+1) * chunkSize - 1; // including this byte
-                end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
-                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
-                  lazyArray.chunks[chunkNum] = doXHR(start, end);
-                }
-                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
-                return lazyArray.chunks[chunkNum];
-              });
-              this._length = datalength;
-              this._chunkSize = chunkSize;
-              this.lengthKnown = true;
-          }
-          var lazyArray = new LazyUint8Array();
-          Object.defineProperty(lazyArray, "length", {
-              get: function() {
-                  if(!this.lengthKnown) {
-                      this.cacheLength();
-                  }
-                  return this._length;
-              }
-          });
-          Object.defineProperty(lazyArray, "chunkSize", {
-              get: function() {
-                  if(!this.lengthKnown) {
-                      this.cacheLength();
-                  }
-                  return this._chunkSize;
-              }
-          });
-          var properties = { isDevice: false, contents: lazyArray };
-        } else {
-          var properties = { isDevice: false, url: url };
-        }
-        return FS.createFile(parent, name, properties, canRead, canWrite);
-      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile) {
-        Browser.init();
-        var fullname = FS.joinPath([parent, name], true);
-        function processData(byteArray) {
-          function finish(byteArray) {
-            if (!dontCreateFile) {
-              FS.createDataFile(parent, name, byteArray, canRead, canWrite);
-            }
-            if (onload) onload();
-            removeRunDependency('cp ' + fullname);
-          }
-          var handled = false;
-          Module['preloadPlugins'].forEach(function(plugin) {
-            if (handled) return;
-            if (plugin['canHandle'](fullname)) {
-              plugin['handle'](byteArray, fullname, finish, function() {
-                if (onerror) onerror();
-                removeRunDependency('cp ' + fullname);
-              });
-              handled = true;
-            }
-          });
-          if (!handled) finish(byteArray);
-        }
-        addRunDependency('cp ' + fullname);
-        if (typeof url == 'string') {
-          Browser.asyncLoad(url, function(byteArray) {
-            processData(byteArray);
-          }, onerror);
-        } else {
-          processData(url);
-        }
-      },createLink:function (parent, name, target, canRead, canWrite) {
-        var properties = {isDevice: false, link: target};
-        return FS.createFile(parent, name, properties, canRead, canWrite);
-      },createDevice:function (parent, name, input, output) {
-        if (!(input || output)) {
-          throw new Error('A device must have at least one callback defined.');
-        }
-        var ops = {isDevice: true, input: input, output: output};
-        return FS.createFile(parent, name, ops, Boolean(input), Boolean(output));
-      },forceLoadFile:function (obj) {
-        if (obj.isDevice || obj.isFolder || obj.link || obj.contents) return true;
-        var success = true;
-        if (typeof XMLHttpRequest !== 'undefined') {
-          throw new Error("Lazy loading should have been performed (contents set) in createLazyFile, but it was not. Lazy loading only works in web workers. Use --embed-file or --preload-file in emcc on the main thread.");
-        } else if (Module['read']) {
-          // Command-line.
-          try {
-            // WARNING: Can't read binary files in V8's d8 or tracemonkey's js, as
-            //          read() will try to parse UTF8.
-            obj.contents = intArrayFromString(Module['read'](obj.url), true);
-          } catch (e) {
-            success = false;
-          }
-        } else {
-          throw new Error('Cannot load without read() or XMLHttpRequest.');
-        }
-        if (!success) ___setErrNo(ERRNO_CODES.EIO);
-        return success;
-      },ensureRoot:function () {
-        if (FS.root) return;
-        // The main file system tree. All the contents are inside this.
-        FS.root = {
-          read: true,
-          write: true,
-          isFolder: true,
-          isDevice: false,
-          timestamp: Date.now(),
-          inodeNumber: 1,
-          contents: {}
-        };
-      },init:function (input, output, error) {
-        // Make sure we initialize only once.
-        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
-        FS.init.initialized = true;
-        FS.ensureRoot();
-        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
-        input = input || Module['stdin'];
-        output = output || Module['stdout'];
-        error = error || Module['stderr'];
-        // Default handlers.
-        var stdinOverridden = true, stdoutOverridden = true, stderrOverridden = true;
-        if (!input) {
-          stdinOverridden = false;
-          input = function() {
-            if (!input.cache || !input.cache.length) {
-              var result;
-              if (typeof window != 'undefined' &&
-                  typeof window.prompt == 'function') {
-                // Browser.
-                result = window.prompt('Input: ');
-                if (result === null) result = String.fromCharCode(0); // cancel ==> EOF
-              } else if (typeof readline == 'function') {
-                // Command line.
-                result = readline();
-              }
-              if (!result) result = '';
-              input.cache = intArrayFromString(result + '\n', true);
-            }
-            return input.cache.shift();
-          };
-        }
-        var utf8 = new Runtime.UTF8Processor();
-        function createSimpleOutput() {
-          var fn = function (val) {
-            if (val === null || val === 10) {
-              fn.printer(fn.buffer.join(''));
-              fn.buffer = [];
-            } else {
-              fn.buffer.push(utf8.processCChar(val));
-            }
-          };
-          return fn;
-        }
-        if (!output) {
-          stdoutOverridden = false;
-          output = createSimpleOutput();
-        }
-        if (!output.printer) output.printer = Module['print'];
-        if (!output.buffer) output.buffer = [];
-        if (!error) {
-          stderrOverridden = false;
-          error = createSimpleOutput();
-        }
-        if (!error.printer) error.printer = Module['printErr'];
-        if (!error.buffer) error.buffer = [];
-        // Create the temporary folder, if not already created
-        try {
-          FS.createFolder('/', 'tmp', true, true);
-        } catch(e) {}
-        // Create the I/O devices.
-        var devFolder = FS.createFolder('/', 'dev', true, true);
-        var stdin = FS.createDevice(devFolder, 'stdin', input);
-        stdin.isTerminal = !stdinOverridden;
-        var stdout = FS.createDevice(devFolder, 'stdout', null, output);
-        stdout.isTerminal = !stdoutOverridden;
-        var stderr = FS.createDevice(devFolder, 'stderr', null, error);
-        stderr.isTerminal = !stderrOverridden;
-        FS.createDevice(devFolder, 'tty', input, output);
-        FS.createDevice(devFolder, 'null', function(){}, function(){});
-        // Create default streams.
-        FS.streams[1] = {
-          path: '/dev/stdin',
-          object: stdin,
-          position: 0,
-          isRead: true,
-          isWrite: false,
-          isAppend: false,
-          error: false,
-          eof: false,
-          ungotten: []
-        };
-        FS.streams[2] = {
-          path: '/dev/stdout',
-          object: stdout,
-          position: 0,
-          isRead: false,
-          isWrite: true,
-          isAppend: false,
-          error: false,
-          eof: false,
-          ungotten: []
-        };
-        FS.streams[3] = {
-          path: '/dev/stderr',
-          object: stderr,
-          position: 0,
-          isRead: false,
-          isWrite: true,
-          isAppend: false,
-          error: false,
-          eof: false,
-          ungotten: []
-        };
-        // TODO: put these low in memory like we used to assert on: assert(Math.max(_stdin, _stdout, _stderr) < 15000); // make sure these are low, we flatten arrays with these
-        HEAP32[((_stdin)>>2)]=1;
-        HEAP32[((_stdout)>>2)]=2;
-        HEAP32[((_stderr)>>2)]=3;
-        // Other system paths
-        FS.createPath('/', 'dev/shm/tmp', true, true); // temp files
-        // Newlib initialization
-        for (var i = FS.streams.length; i < Math.max(_stdin, _stdout, _stderr) + 4; i++) {
-          FS.streams[i] = null; // Make sure to keep FS.streams dense
-        }
-        FS.streams[_stdin] = FS.streams[1];
-        FS.streams[_stdout] = FS.streams[2];
-        FS.streams[_stderr] = FS.streams[3];
-        allocate([ allocate(
-          [0, 0, 0, 0, _stdin, 0, 0, 0, _stdout, 0, 0, 0, _stderr, 0, 0, 0],
-          'void*', ALLOC_NORMAL) ], 'void*', ALLOC_NONE, __impure_ptr);
-      },quit:function () {
-        if (!FS.init.initialized) return;
-        // Flush any partially-printed lines in stdout and stderr. Careful, they may have been closed
-        if (FS.streams[2] && FS.streams[2].object.output.buffer.length > 0) FS.streams[2].object.output(10);
-        if (FS.streams[3] && FS.streams[3].object.output.buffer.length > 0) FS.streams[3].object.output(10);
-      },standardizePath:function (path) {
-        if (path.substr(0, 2) == './') path = path.substr(2);
-        return path;
-      },deleteFile:function (path) {
-        path = FS.analyzePath(path);
-        if (!path.parentExists || !path.exists) {
-          throw 'Invalid path ' + path;
-        }
-        delete path.parentObject.contents[path.name];
-      }};
   function _send(fd, buf, len, flags) {
-      var info = FS.streams[fd];
-      if (!info) return -1;
+      var info = FS.getStream(fd);
+      if (!info) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      if (info.socket.readyState === WebSocket.CLOSING || info.socket.readyState === WebSocket.CLOSED) {
+        ___setErrNo(ERRNO_CODES.ENOTCONN);
+        return -1;
+      } else if (info.socket.readyState === WebSocket.CONNECTING) {
+        ___setErrNo(ERRNO_CODES.EAGAIN);
+        return -1;
+      }
       info.sender(HEAPU8.subarray(buf, buf+len));
       return len;
     }
   function _pwrite(fildes, buf, nbyte, offset) {
       // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
-      var stream = FS.streams[fildes];
-      if (!stream || stream.object.isDevice) {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      } else if (!stream.isWrite) {
-        ___setErrNo(ERRNO_CODES.EACCES);
+      }
+      try {
+        var slab = HEAP8;
+        return FS.write(stream, slab, buf, nbyte, offset);
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
-      } else if (stream.object.isFolder) {
-        ___setErrNo(ERRNO_CODES.EISDIR);
-        return -1;
-      } else if (nbyte < 0 || offset < 0) {
-        ___setErrNo(ERRNO_CODES.EINVAL);
-        return -1;
-      } else {
-        var contents = stream.object.contents;
-        while (contents.length < offset) contents.push(0);
-        for (var i = 0; i < nbyte; i++) {
-          contents[offset + i] = HEAPU8[(((buf)+(i))|0)];
-        }
-        stream.object.timestamp = Date.now();
-        return i;
       }
     }function _write(fildes, buf, nbyte) {
       // ssize_t write(int fildes, const void *buf, size_t nbyte);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
-      var stream = FS.streams[fildes];
-      if (stream && ('socket' in stream)) {
-          return _send(fildes, buf, nbyte, 0);
-      } else if (!stream) {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      } else if (!stream.isWrite) {
-        ___setErrNo(ERRNO_CODES.EACCES);
+      }
+      if (stream && ('socket' in stream)) {
+        return _send(fildes, buf, nbyte, 0);
+      }
+      try {
+        var slab = HEAP8;
+        return FS.write(stream, slab, buf, nbyte);
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
-      } else if (nbyte < 0) {
-        ___setErrNo(ERRNO_CODES.EINVAL);
-        return -1;
-      } else {
-        if (stream.object.isDevice) {
-          if (stream.object.output) {
-            for (var i = 0; i < nbyte; i++) {
-              try {
-                stream.object.output(HEAP8[(((buf)+(i))|0)]);
-              } catch (e) {
-                ___setErrNo(ERRNO_CODES.EIO);
-                return -1;
-              }
-            }
-            stream.object.timestamp = Date.now();
-            return i;
-          } else {
-            ___setErrNo(ERRNO_CODES.ENXIO);
-            return -1;
-          }
-        } else {
-          var bytesWritten = _pwrite(fildes, buf, nbyte, stream.position);
-          if (bytesWritten != -1) stream.position += bytesWritten;
-          return bytesWritten;
-        }
       }
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
@@ -2195,7 +3246,8 @@ function copyTempDouble(ptr) {
       if (bytesToWrite == 0) return 0;
       var bytesWritten = _write(stream, ptr, bytesToWrite);
       if (bytesWritten == -1) {
-        if (FS.streams[stream]) FS.streams[stream].error = true;
+        var streamObj = FS.getStream(stream);
+        if (streamObj) streamObj.error = true;
         return 0;
       } else {
         return Math.floor(bytesWritten / size);
@@ -2585,6 +3637,7 @@ function copyTempDouble(ptr) {
   function __exit(status) {
       // void _exit(int status);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
+      Module.print('exit(' + status + ') called');
       Module['exit'](status);
     }function _exit(status) {
       __exit(status);
@@ -3393,100 +4446,14 @@ function copyTempDouble(ptr) {
       // NOTE: This implementation tries to mimic glibc rather than strictly
       // following the POSIX standard.
       var mode = HEAP32[((varargs)>>2)];
-      // Simplify flags.
-      var accessMode = oflag & 3;
-      var isWrite = accessMode != 0;
-      var isRead = accessMode != 1;
-      var isCreate = Boolean(oflag & 512);
-      var isExistCheck = Boolean(oflag & 2048);
-      var isTruncate = Boolean(oflag & 1024);
-      var isAppend = Boolean(oflag & 8);
-      // Verify path.
-      var origPath = path;
-      path = FS.analyzePath(Pointer_stringify(path));
-      if (!path.parentExists) {
-        ___setErrNo(path.error);
+      path = Pointer_stringify(path);
+      try {
+        var stream = FS.open(path, oflag, mode);
+        return stream.fd;
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
       }
-      var target = path.object || null;
-      var finalPath;
-      // Verify the file exists, create if needed and allowed.
-      if (target) {
-        if (isCreate && isExistCheck) {
-          ___setErrNo(ERRNO_CODES.EEXIST);
-          return -1;
-        }
-        if ((isWrite || isTruncate) && target.isFolder) {
-          ___setErrNo(ERRNO_CODES.EISDIR);
-          return -1;
-        }
-        if (isRead && !target.read || isWrite && !target.write) {
-          ___setErrNo(ERRNO_CODES.EACCES);
-          return -1;
-        }
-        if (isTruncate && !target.isDevice) {
-          target.contents = [];
-        } else {
-          if (!FS.forceLoadFile(target)) {
-            ___setErrNo(ERRNO_CODES.EIO);
-            return -1;
-          }
-        }
-        finalPath = path.path;
-      } else {
-        if (!isCreate) {
-          ___setErrNo(ERRNO_CODES.ENOENT);
-          return -1;
-        }
-        if (!path.parentObject.write) {
-          ___setErrNo(ERRNO_CODES.EACCES);
-          return -1;
-        }
-        target = FS.createDataFile(path.parentObject, path.name, [],
-                                   mode & 0x100, mode & 0x80);  // S_IRUSR, S_IWUSR.
-        finalPath = path.parentPath + '/' + path.name;
-      }
-      // Actually create an open stream.
-      var id;
-      if (target.isFolder) {
-        var entryBuffer = 0;
-        if (___dirent_struct_layout) {
-          entryBuffer = _malloc(___dirent_struct_layout.__size__);
-        }
-        var contents = [];
-        for (var key in target.contents) contents.push(key);
-        id = FS.createFileHandle({
-          path: finalPath,
-          object: target,
-          // An index into contents. Special values: -2 is ".", -1 is "..".
-          position: -2,
-          isRead: true,
-          isWrite: false,
-          isAppend: false,
-          error: false,
-          eof: false,
-          ungotten: [],
-          // Folder-specific properties:
-          // Remember the contents at the time of opening in an array, so we can
-          // seek between them relying on a single order.
-          contents: contents,
-          // Each stream has its own area for readdir() returns.
-          currentEntry: entryBuffer
-        });
-      } else {
-        id = FS.createFileHandle({
-          path: finalPath,
-          object: target,
-          position: 0,
-          isRead: isRead,
-          isWrite: isWrite,
-          isAppend: isAppend,
-          error: false,
-          eof: false,
-          ungotten: []
-        });
-      }
-      return id;
     }function _fopen(filename, mode) {
       // FILE *fopen(const char *restrict filename, const char *restrict mode);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fopen.html
@@ -3524,24 +4491,15 @@ function copyTempDouble(ptr) {
   function _lseek(fildes, offset, whence) {
       // off_t lseek(int fildes, off_t offset, int whence);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/lseek.html
-      if (FS.streams[fildes] && !FS.streams[fildes].object.isDevice) {
-        var stream = FS.streams[fildes];
-        var position = offset;
-        if (whence === 1) {  // SEEK_CUR.
-          position += stream.position;
-        } else if (whence === 2) {  // SEEK_END.
-          position += stream.object.contents.length;
-        }
-        if (position < 0) {
-          ___setErrNo(ERRNO_CODES.EINVAL);
-          return -1;
-        } else {
-          stream.ungotten = [];
-          stream.position = position;
-          return position;
-        }
-      } else {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      try {
+        return FS.llseek(stream, offset, whence);
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
       }
     }function _fseek(stream, offset, whence) {
@@ -3550,39 +4508,48 @@ function copyTempDouble(ptr) {
       var ret = _lseek(stream, offset, whence);
       if (ret == -1) {
         return -1;
-      } else {
-        FS.streams[stream].eof = false;
-        return 0;
       }
+      stream = FS.getStream(stream);
+      stream.eof = false;
+      return 0;
     }
   function _ftell(stream) {
       // long ftell(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/ftell.html
-      if (FS.streams[stream]) {
-        stream = FS.streams[stream];
-        if (stream.object.isDevice) {
-          ___setErrNo(ERRNO_CODES.ESPIPE);
-          return -1;
-        } else {
-          return stream.position;
-        }
-      } else {
+      stream = FS.getStream(stream);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
+      }
+      if (FS.isChrdev(stream.node.mode)) {
+        ___setErrNo(ERRNO_CODES.ESPIPE);
+        return -1;
+      } else {
+        return stream.position;
       }
     }
   function _rewind(stream) {
       // void rewind(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/rewind.html
       _fseek(stream, 0, 0);  // SEEK_SET.
-      if (FS.streams[stream]) FS.streams[stream].error = false;
+      var streamObj = FS.getStream(stream);
+      if (streamObj) streamObj.error = false;
     }
   function _recv(fd, buf, len, flags) {
-      var info = FS.streams[fd];
-      if (!info) return -1;
-      if (!info.hasData()) {
-        ___setErrNo(ERRNO_CODES.EAGAIN); // no data, and all sockets are nonblocking, so this is the right behavior
+      var info = FS.getStream(fd);
+      if (!info) {
+        ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
+      }
+      if (!info.hasData()) {
+        if (info.socket.readyState === WebSocket.CLOSING || info.socket.readyState === WebSocket.CLOSED) {
+          // socket has closed
+          return 0;
+        } else {
+          // else, our socket is in a valid state but truly has nothing available
+          ___setErrNo(ERRNO_CODES.EAGAIN);
+          return -1;
+        }
       }
       var buffer = info.inQueue.shift();
       if (len < buffer.length) {
@@ -3598,89 +4565,35 @@ function copyTempDouble(ptr) {
   function _pread(fildes, buf, nbyte, offset) {
       // ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
-      var stream = FS.streams[fildes];
-      if (!stream || stream.object.isDevice) {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      } else if (!stream.isRead) {
-        ___setErrNo(ERRNO_CODES.EACCES);
+      }
+      try {
+        var slab = HEAP8;
+        return FS.read(stream, slab, buf, nbyte, offset);
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
-      } else if (stream.object.isFolder) {
-        ___setErrNo(ERRNO_CODES.EISDIR);
-        return -1;
-      } else if (nbyte < 0 || offset < 0) {
-        ___setErrNo(ERRNO_CODES.EINVAL);
-        return -1;
-      } else if (offset >= stream.object.contents.length) {
-        return 0;
-      } else {
-        var bytesRead = 0;
-        var contents = stream.object.contents;
-        var size = Math.min(contents.length - offset, nbyte);
-        assert(size >= 0);
-        if (contents.subarray) { // typed array
-          HEAPU8.set(contents.subarray(offset, offset+size), buf);
-        } else
-        if (contents.slice) { // normal array
-          for (var i = 0; i < size; i++) {
-            HEAP8[(((buf)+(i))|0)]=contents[offset + i]
-          }
-        } else {
-          for (var i = 0; i < size; i++) { // LazyUint8Array from sync binary XHR
-            HEAP8[(((buf)+(i))|0)]=contents.get(offset + i)
-          }
-        }
-        bytesRead += size;
-        return bytesRead;
       }
     }function _read(fildes, buf, nbyte) {
       // ssize_t read(int fildes, void *buf, size_t nbyte);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
-      var stream = FS.streams[fildes];
-      if (stream && ('socket' in stream)) {
-        return _recv(fildes, buf, nbyte, 0);
-      } else if (!stream) {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      } else if (!stream.isRead) {
-        ___setErrNo(ERRNO_CODES.EACCES);
+      }
+      if (stream && ('socket' in stream)) {
+        return _recv(fildes, buf, nbyte, 0);
+      }
+      try {
+        var slab = HEAP8;
+        return FS.read(stream, slab, buf, nbyte);
+      } catch (e) {
+        FS.handleFSError(e);
         return -1;
-      } else if (nbyte < 0) {
-        ___setErrNo(ERRNO_CODES.EINVAL);
-        return -1;
-      } else {
-        var bytesRead;
-        if (stream.object.isDevice) {
-          if (stream.object.input) {
-            bytesRead = 0;
-            for (var i = 0; i < nbyte; i++) {
-              try {
-                var result = stream.object.input();
-              } catch (e) {
-                ___setErrNo(ERRNO_CODES.EIO);
-                return -1;
-              }
-              if (result === undefined && bytesRead === 0) {
-                ___setErrNo(ERRNO_CODES.EAGAIN);
-                return -1;
-              }
-              if (result === null || result === undefined) break;
-              bytesRead++;
-              HEAP8[(((buf)+(i))|0)]=result
-            }
-            return bytesRead;
-          } else {
-            ___setErrNo(ERRNO_CODES.ENXIO);
-            return -1;
-          }
-        } else {
-          bytesRead = _pread(fildes, buf, nbyte, stream.position);
-          assert(bytesRead >= -1);
-          if (bytesRead != -1) {
-            stream.position += bytesRead;
-          }
-          return bytesRead;
-        }
       }
     }function _fread(ptr, size, nitems, stream) {
       // size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
@@ -3690,7 +4603,7 @@ function copyTempDouble(ptr) {
         return 0;
       }
       var bytesRead = 0;
-      var streamObj = FS.streams[stream];
+      var streamObj = FS.getStream(stream);
       while (streamObj.ungotten.length && bytesToRead > 0) {
         HEAP8[((ptr++)|0)]=streamObj.ungotten.pop()
         bytesToRead--;
@@ -3708,21 +4621,24 @@ function copyTempDouble(ptr) {
   function _close(fildes) {
       // int close(int fildes);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/close.html
-      if (FS.streams[fildes]) {
-        if (FS.streams[fildes].currentEntry) {
-          _free(FS.streams[fildes].currentEntry);
-        }
-        FS.streams[fildes] = null;
-        return 0;
-      } else {
+      var stream = FS.getStream(fildes);
+      if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      try {
+        FS.close(stream);
+        return 0;
+      } catch (e) {
+        FS.handleFSError(e);;
         return -1;
       }
     }
   function _fsync(fildes) {
       // int fsync(int fildes);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fsync.html
-      if (FS.streams[fildes]) {
+      var stream = FS.getStream(fildes);
+      if (stream) {
         // We write directly to the file system, so there's nothing to do here.
         return 0;
       } else {
@@ -4395,6 +5311,9 @@ function copyTempDouble(ptr) {
       for (var i = 0; i < n; i++) {
         var id = HEAP32[(((buffers)+(i*4))>>2)];
         var buffer = GL.buffers[id];
+        // From spec: "glDeleteBuffers silently ignores 0's and names that do not
+        // correspond to existing buffer objects."
+        if (!buffer) continue;
         Module.ctx.deleteBuffer(buffer);
         buffer.name = 0;
         GL.buffers[id] = null;
@@ -5385,7 +6304,7 @@ function copyTempDouble(ptr) {
         GLEmulation.hasRunInit = true;
         GLEmulation.fogColor = new Float32Array(4);
         // Add some emulation workarounds
-        Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work');
+        Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work. (If you do not want this, build with -s DISABLE_GL_EMULATION=1)');
         // XXX some of the capabilities we don't support may lead to incorrect rendering, if we do not emulate them in shaders
         var validCapabilities = {
           0x0B44: 1, // GL_CULL_FACE
@@ -9134,7 +10053,7 @@ function copyTempDouble(ptr) {
     }
   function _glutCreateWindow(name) {
       Module.ctx = Browser.createContext(Module['canvas'], true, true);
-      return 1;
+      return Module.ctx ? 1 /* a new GLUT window ID for the created context */ : 0 /* failure */;
     }
   function _glutReshapeFunc(func) {
       GLUT.reshapeFunc = func;
@@ -9169,6 +10088,23 @@ function copyTempDouble(ptr) {
       return ___errno_state;
     }var ___errno=___errno_location;
   Module["_memcpy"] = _memcpy;var _llvm_memcpy_p0i8_p0i8_i32=_memcpy;
+  function _sbrk(bytes) {
+      // Implement a Linux-like 'memory area' for our 'process'.
+      // Changes the size of the memory area by |bytes|; returns the
+      // address of the previous top ('break') of the memory area
+      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
+      var self = _sbrk;
+      if (!self.called) {
+        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
+        self.called = true;
+        assert(Runtime.dynamicAlloc);
+        self.alloc = Runtime.dynamicAlloc;
+        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
+      }
+      var ret = DYNAMICTOP;
+      if (bytes != 0) self.alloc(bytes);
+      return ret;  // Previous break location.
+    }
   function _sysconf(name) {
       // long sysconf(int name);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/sysconf.html
@@ -9315,30 +10251,13 @@ function copyTempDouble(ptr) {
       }
       return ret;
     }
-  function _sbrk(bytes) {
-      // Implement a Linux-like 'memory area' for our 'process'.
-      // Changes the size of the memory area by |bytes|; returns the
-      // address of the previous top ('break') of the memory area
-      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
-      var self = _sbrk;
-      if (!self.called) {
-        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
-        self.called = true;
-        assert(Runtime.dynamicAlloc);
-        self.alloc = Runtime.dynamicAlloc;
-        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
-      }
-      var ret = DYNAMICTOP;
-      if (bytes != 0) self.alloc(bytes);
-      return ret;  // Previous break location.
-    }
   Module["_memset"] = _memset;
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
-__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
+FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 GL.init()
 GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
@@ -9492,13 +10411,13 @@ function asmPrintFloat(x, y) {
   Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
 }
 // EMSCRIPTEN_START_ASM
-var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=env._stderr|0;var n=+env.NaN;var o=+env.Infinity;var p=0;var q=0;var r=0;var s=0;var t=0,u=0,v=0,w=0,x=0.0,y=0,z=0,A=0,B=0.0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=0;var M=global.Math.floor;var N=global.Math.abs;var O=global.Math.sqrt;var P=global.Math.pow;var Q=global.Math.cos;var R=global.Math.sin;var S=global.Math.tan;var T=global.Math.acos;var U=global.Math.asin;var V=global.Math.atan;var W=global.Math.atan2;var X=global.Math.exp;var Y=global.Math.log;var Z=global.Math.ceil;var _=global.Math.imul;var $=env.abort;var aa=env.assert;var ab=env.asmPrintInt;var ac=env.asmPrintFloat;var ad=env.min;var ae=env.invoke_viiiii;var af=env.invoke_vif;var ag=env.invoke_viiiiiii;var ah=env.invoke_i;var ai=env.invoke_vi;var aj=env.invoke_vii;var ak=env.invoke_viff;var al=env.invoke_ii;var am=env.invoke_viii;var an=env.invoke_viiiiiiii;var ao=env.invoke_v;var ap=env.invoke_viiiiiiiii;var aq=env.invoke_vifff;var ar=env.invoke_viiiiii;var as=env.invoke_iii;var at=env.invoke_viffff;var au=env.invoke_viiii;var av=env._llvm_lifetime_end;var aw=env._lseek;var ax=env._glFlush;var ay=env._glGetRenderbufferParameteriv;var az=env._glColor4ub;var aA=env._sysconf;var aB=env._glMultTransposeMatrixf;var aC=env._glPolygonOffset;var aD=env._fclose;var aE=env._glStencilMaskSeparate;var aF=env._glColor4ui;var aG=env._glGetVertexAttribPointerv;var aH=env._glMultTransposeMatrixd;var aI=env._glColor4us;var aJ=env._sqrt;var aK=env._glLinkProgram;var aL=env._glBindTexture;var aM=env._glVertex2fv;var aN=env._glGetUniformiv;var aO=env._glClearColor;var aP=env._clGetPlatformIDs;var aQ=env._glFramebufferRenderbuffer;var aR=env._glGetString;var aS=env._fwrite;var aT=env._gluUnProject;var aU=env._send;var aV=env._glScaled;var aW=env._glGetTexLevelParameteriv;var aX=env._glLineWidth;var aY=env._glUniform2fv;var aZ=env._emscripten_get_now;var a_=env._glAlphaFunc;var a$=env._gluPerspective;var a0=env._glTexImage1D;var a1=env._glutInitDisplayMode;var a2=env._glBlendFuncSeparate;var a3=env._glCompileShader;var a4=env._glDeleteObject;var a5=env._gluLookAt;var a6=env._glDeleteTextures;var a7=env._glCompressedTexImage2D;var a8=env._glPolygonMode;var a9=env._read;var ba=env._glVertexAttrib4f;var bb=env._glShadeModel;var bc=env._glGetObjectParameteriv;var bd=env._glFogiv;var be=env._glVertexAttrib1f;var bf=env._glClearDepthf;var bg=env._glutInitWindowPosition;var bh=env._clGetContextInfo;var bi=env._glGetTexParameteriv;var bj=env._glClearStencil;var bk=env._glSampleCoverage;var bl=env._glFogfv;var bm=env._glutDisplayFunc;var bn=env._glLoadTransposeMatrixd;var bo=env._glColor3us;var bp=env._glColor3uiv;var bq=env._glRotated;var br=env._fsync;var bs=env._glGenTextures;var bt=env._glDepthFunc;var bu=env._glStencilOpSeparate;var bv=env._glCompressedTexSubImage2D;var bw=env._glUniform1f;var bx=env._glGetVertexAttribfv;var by=env._glGetTexParameterfv;var bz=env._glColor3ui;var bA=env._glCreateShader;var bB=env._glIsBuffer;var bC=env._glUniform1i;var bD=env._glMaterialfv;var bE=env._glGenRenderbuffers;var bF=env._glTexEnvf;var bG=env._glTexSubImage2D;var bH=env._snprintf;var bI=env._glUniform2i;var bJ=env._glUniform2f;var bK=env._glStencilFunc;var bL=env._printf;var bM=env._abort;var bN=env._glGetProgramiv;var bO=env._glVertexAttribPointer;var bP=env._glHint;var bQ=env._glBindBuffer;var bR=env._glTexCoord2fv;var bS=env._glVertex3fv;var bT=env._glGetUniformLocation;var bU=env._close;var bV=env._glBlendEquation;var bW=env._clGetKernelWorkGroupInfo;var bX=env._glOrtho;var bY=env._glUniform4fv;var bZ=env._llvm_lifetime_start;var b_=env.___setErrNo;var b$=env._clCreateContextFromType;var b0=env._glTexGeni;var b1=env._glColor3ub;var b2=env._glDrawArrays;var b3=env._glClientActiveTexture;var b4=env._ftell;var b5=env._glDeleteProgram;var b6=env._exit;var b7=env._sprintf;var b8=env._glRenderbufferStorage;var b9=env._glLoadIdentity;var ca=env._glAttachShader;var cb=env._glUniform3i;var cc=env._glutSpecialFunc;var cd=env._glColor3f;var ce=env._glVertex3f;var cf=env._glShaderBinary;var cg=env._glCopyTexImage2D;var ch=env._glUniform3f;var ci=env._clEnqueueWriteBuffer;var cj=env._glGetBufferParameteriv;var ck=env._glBlendEquationSeparate;var cl=env._glDrawElements;var cm=env._glColorMask;var cn=env._glEnableClientState;var co=env._recv;var cp=env._glUniform2iv;var cq=env._glVertexAttrib1fv;var cr=env._glGenVertexArrays;var cs=env._cos;var ct=env._glBufferSubData;var cu=env._glUniform1iv;var cv=env._glBindAttribLocation;var cw=env._glActiveTexture;var cx=env._glMatrixMode;var cy=env._glBindVertexArray;var cz=env._glVertexAttrib3f;var cA=env._clFinish;var cB=env._glViewport;var cC=env._glGenerateMipmap;var cD=env._glDetachShader;var cE=env._glGetShaderiv;var cF=env.__exit;var cG=env._glutReshapeFunc;var cH=env._glLightModelfv;var cI=env._glNormalPointer;var cJ=env._glGetActiveAttrib;var cK=env._glPopMatrix;var cL=env._glBlendColor;var cM=env._glColor3usv;var cN=env._glGetShaderPrecisionFormat;var cO=env._glGetShaderSource;var cP=env._glDepthMask;var cQ=env._glTexCoord2i;var cR=env._glDisableVertexAttribArray;var cS=env._glutSwapBuffers;var cT=env._glFogi;var cU=env._glBegin;var cV=env._glColor3ubv;var cW=env._glShaderSource;var cX=env._glBindRenderbuffer;var cY=env._pread;var cZ=env._fopen;var c_=env._open;var c$=env._glFogf;var c0=env._glTexCoord4f;var c1=env._glIsProgram;var c2=env._glCopyTexSubImage2D;var c3=env._glDepthRangef;var c4=env._glDisable;var c5=env._glLightfv;var c6=env._glutGetModifiers;var c7=env._glIsShader;var c8=env._glClear;var c9=env._glVertexAttrib4fv;var da=env._clGetDeviceInfo;var db=env._clEnqueueNDRangeKernel;var dc=env._glUniform4i;var dd=env._gluProject;var de=env._glEnableVertexAttribArray;var df=env._glutReshapeWindow;var dg=env._glUniform3fv;var dh=env._glIsEnabled;var di=env._glStencilOp;var dj=env._glReadPixels;var dk=env._glDepthRange;var dl=env._glutMouseFunc;var dm=env._glUniform4f;var dn=env._glFramebufferTexture2D;var dp=env._glUniformMatrix2fv;var dq=env.___errno_location;var dr=env._clSetKernelArg;var ds=env._glTranslated;var dt=env._glUniformMatrix3fv;var du=env._glutCreateWindow;var dv=env._glBufferData;var dw=env._clGetPlatformInfo;var dx=env.__formatString;var dy=env._glDisableClientState;var dz=env._clEnqueueReadBuffer;var dA=env._glGetError;var dB=env._glDeleteRenderbuffers;var dC=env._glGetVertexAttribiv;var dD=env._glTexParameteriv;var dE=env._glVertexAttrib3fv;var dF=env._glGetFloatv;var dG=env._glUniform3iv;var dH=env._glVertexAttrib2fv;var dI=env._glBindFramebuffer;var dJ=env._glColor4ubv;var dK=env._glGenFramebuffers;var dL=env._sbrk;var dM=env._glGetInfoLog;var dN=env._glutMotionFunc;var dO=env._glTexEnvfv;var dP=env._clReleaseMemObject;var dQ=env._glGetIntegerv;var dR=env._glGetAttachedShaders;var dS=env._glCheckFramebufferStatus;var dT=env._clCreateBuffer;var dU=env._clGetProgramBuildInfo;var dV=env._glIsRenderbuffer;var dW=env._glTexParameteri;var dX=env._glDeleteVertexArrays;var dY=env._glUniform1fv;var dZ=env._glTexCoordPointer;var d_=env._glFrontFace;var d$=env._glLoadMatrixf;var d0=env._glGetFramebufferAttachmentParameteriv;var d1=env._glUseProgram;var d2=env._glReadBuffer;var d3=env._glTexImage2D;var d4=env._glGetProgramInfoLog;var d5=env._glTexGenfv;var d6=env._glStencilMask;var d7=env._fread;var d8=env._glMultMatrixd;var d9=env._glutTimerFunc;var ea=env._glMultMatrixf;var eb=env._glGetShaderInfoLog;var ec=env._glIsTexture;var ed=env._glLoadTransposeMatrixf;var ee=env._fprintf;var ef=env._glColor4f;var eg=env._glDeleteFramebuffers;var eh=env._glLoadMatrixd;var ei=env._sin;var ej=env._glDrawRangeElements;var ek=env.__reallyNegative;var el=env._clCreateCommandQueue;var em=env._glTexEnvi;var en=env._glEnable;var eo=env._clBuildProgram;var ep=env._glColor4fv;var eq=env._glStencilFuncSeparate;var er=env._fseek;var es=env._glutPostRedisplay;var et=env._glTexParameterfv;var eu=env._write;var ev=env._glutInit;var ew=env._glGenBuffers;var ex=env._glTexCoord3f;var ey=env._glFinish;var ez=env._glGetAttribLocation;var eA=env._rewind;var eB=env._glNormal3f;var eC=env._glDeleteShader;var eD=env._glBlendFunc;var eE=env._glCreateProgram;var eF=env._glCullFace;var eG=env._clCreateKernel;var eH=env._glIsFramebuffer;var eI=env._clCreateProgramWithSource;var eJ=env._time;var eK=env._glVertexAttrib2f;var eL=env._glGetPointerv;var eM=env._glutInitWindowSize;var eN=env._glGetUniformfv;var eO=env._glColor3fv;var eP=env._gluOrtho2D;var eQ=env._glUniformMatrix4fv;var eR=env._glClearDepth;var eS=env._glFrustum;var eT=env._glGetActiveUniform;var eU=env._pwrite;var eV=env._glTexParameterf;var eW=env._glColorPointer;var eX=env._glDrawBuffer;var eY=env._glPushMatrix;var eZ=env._glEnd;var e_=env._glDeleteBuffers;var e$=env._glScissor;var e0=env._glReleaseShaderCompiler;var e1=env._glGetBooleanv;var e2=env._glPixelStorei;var e3=env._glutMainLoop;var e4=env._glValidateProgram;var e5=env._glUniform4iv;var e6=env._glVertexPointer;var e7=env._glBindProgram;var e8=env._glutKeyboardFunc;
+var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=env._stderr|0;var n=+env.NaN;var o=+env.Infinity;var p=0;var q=0;var r=0;var s=0;var t=0,u=0,v=0,w=0,x=0.0,y=0,z=0,A=0,B=0.0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=0;var M=global.Math.floor;var N=global.Math.abs;var O=global.Math.sqrt;var P=global.Math.pow;var Q=global.Math.cos;var R=global.Math.sin;var S=global.Math.tan;var T=global.Math.acos;var U=global.Math.asin;var V=global.Math.atan;var W=global.Math.atan2;var X=global.Math.exp;var Y=global.Math.log;var Z=global.Math.ceil;var _=global.Math.imul;var $=env.abort;var aa=env.assert;var ab=env.asmPrintInt;var ac=env.asmPrintFloat;var ad=env.min;var ae=env.invoke_viiiii;var af=env.invoke_vif;var ag=env.invoke_viiiiiii;var ah=env.invoke_i;var ai=env.invoke_vi;var aj=env.invoke_vii;var ak=env.invoke_viff;var al=env.invoke_ii;var am=env.invoke_viii;var an=env.invoke_viiiiiiii;var ao=env.invoke_v;var ap=env.invoke_viiiiiiiii;var aq=env.invoke_vifff;var ar=env.invoke_viiiiii;var as=env.invoke_iii;var at=env.invoke_viffff;var au=env.invoke_viiii;var av=env._llvm_lifetime_end;var aw=env._lseek;var ax=env._glFlush;var ay=env._glGetRenderbufferParameteriv;var az=env._glColor4ub;var aA=env._sysconf;var aB=env._glMultTransposeMatrixf;var aC=env._glPolygonOffset;var aD=env._fclose;var aE=env._glStencilMaskSeparate;var aF=env._glColor4ui;var aG=env._glGetVertexAttribPointerv;var aH=env._glMultTransposeMatrixd;var aI=env._glColor4us;var aJ=env._sqrt;var aK=env._glLinkProgram;var aL=env._glBindTexture;var aM=env._fflush;var aN=env._glVertex2fv;var aO=env._glGetUniformiv;var aP=env._glClearColor;var aQ=env._clGetPlatformIDs;var aR=env._glFramebufferRenderbuffer;var aS=env._glGetString;var aT=env._fwrite;var aU=env._gluUnProject;var aV=env._send;var aW=env._glScaled;var aX=env._glGetTexLevelParameteriv;var aY=env._glLineWidth;var aZ=env._glUniform2fv;var a_=env._emscripten_get_now;var a$=env._glAlphaFunc;var a0=env._gluPerspective;var a1=env._glTexImage1D;var a2=env._glutInitDisplayMode;var a3=env._glBlendFuncSeparate;var a4=env._glCompileShader;var a5=env._glDeleteObject;var a6=env._gluLookAt;var a7=env._glDeleteTextures;var a8=env._glCompressedTexImage2D;var a9=env._glPolygonMode;var ba=env._read;var bb=env._glVertexAttrib4f;var bc=env._glShadeModel;var bd=env._glGetObjectParameteriv;var be=env._glFogiv;var bf=env._glVertexAttrib1f;var bg=env._glClearDepthf;var bh=env._glutInitWindowPosition;var bi=env._clGetContextInfo;var bj=env._glGetTexParameteriv;var bk=env._glClearStencil;var bl=env._glSampleCoverage;var bm=env._glFogfv;var bn=env._glutDisplayFunc;var bo=env._glLoadTransposeMatrixd;var bp=env._glColor3us;var bq=env._glColor3uiv;var br=env._glRotated;var bs=env._fsync;var bt=env._glGenTextures;var bu=env._glDepthFunc;var bv=env._glStencilOpSeparate;var bw=env._glCompressedTexSubImage2D;var bx=env._glUniform1f;var by=env._glGetVertexAttribfv;var bz=env._glGetTexParameterfv;var bA=env._glColor3ui;var bB=env._glCreateShader;var bC=env._glIsBuffer;var bD=env._glUniform1i;var bE=env._glMaterialfv;var bF=env._glGenRenderbuffers;var bG=env._glTexEnvf;var bH=env._glTexSubImage2D;var bI=env._snprintf;var bJ=env._glUniform2i;var bK=env._glUniform2f;var bL=env._glStencilFunc;var bM=env._printf;var bN=env._abort;var bO=env._glGetProgramiv;var bP=env._glVertexAttribPointer;var bQ=env._glHint;var bR=env._glBindBuffer;var bS=env._glTexCoord2fv;var bT=env._glVertex3fv;var bU=env._glGetUniformLocation;var bV=env._close;var bW=env._glBlendEquation;var bX=env._clGetKernelWorkGroupInfo;var bY=env._glOrtho;var bZ=env._glUniform4fv;var b_=env._llvm_lifetime_start;var b$=env.___setErrNo;var b0=env._clCreateContextFromType;var b1=env._glTexGeni;var b2=env._glColor3ub;var b3=env._glDrawArrays;var b4=env._glClientActiveTexture;var b5=env._ftell;var b6=env._glDeleteProgram;var b7=env._exit;var b8=env._sprintf;var b9=env._glRenderbufferStorage;var ca=env._glLoadIdentity;var cb=env._glAttachShader;var cc=env._glUniform3i;var cd=env._glutSpecialFunc;var ce=env._glColor3f;var cf=env._glVertex3f;var cg=env._glShaderBinary;var ch=env._glCopyTexImage2D;var ci=env._glUniform3f;var cj=env._clEnqueueWriteBuffer;var ck=env._glGetBufferParameteriv;var cl=env._glBlendEquationSeparate;var cm=env._glDrawElements;var cn=env._glColorMask;var co=env._glEnableClientState;var cp=env._recv;var cq=env._glUniform2iv;var cr=env._glVertexAttrib1fv;var cs=env._glGenVertexArrays;var ct=env._cos;var cu=env._glBufferSubData;var cv=env._glUniform1iv;var cw=env._glBindAttribLocation;var cx=env._glActiveTexture;var cy=env._glMatrixMode;var cz=env._glBindVertexArray;var cA=env._glVertexAttrib3f;var cB=env._clFinish;var cC=env._glViewport;var cD=env._glGenerateMipmap;var cE=env._glDetachShader;var cF=env._glGetShaderiv;var cG=env.__exit;var cH=env._glutReshapeFunc;var cI=env._glLightModelfv;var cJ=env._glNormalPointer;var cK=env._glGetActiveAttrib;var cL=env._glPopMatrix;var cM=env._glBlendColor;var cN=env._glColor3usv;var cO=env._glGetShaderPrecisionFormat;var cP=env._glGetShaderSource;var cQ=env._glDepthMask;var cR=env._glTexCoord2i;var cS=env._glDisableVertexAttribArray;var cT=env._glutSwapBuffers;var cU=env._glFogi;var cV=env._glBegin;var cW=env._glColor3ubv;var cX=env._glShaderSource;var cY=env._glBindRenderbuffer;var cZ=env._pread;var c_=env._fopen;var c$=env._open;var c0=env._glFogf;var c1=env._glTexCoord4f;var c2=env._glIsProgram;var c3=env._glCopyTexSubImage2D;var c4=env._glDepthRangef;var c5=env._glDisable;var c6=env._glLightfv;var c7=env._glutGetModifiers;var c8=env._glIsShader;var c9=env._glClear;var da=env._glVertexAttrib4fv;var db=env._clGetDeviceInfo;var dc=env._clEnqueueNDRangeKernel;var dd=env._glUniform4i;var de=env._gluProject;var df=env._glEnableVertexAttribArray;var dg=env._glutReshapeWindow;var dh=env._glUniform3fv;var di=env._glIsEnabled;var dj=env._glStencilOp;var dk=env._glReadPixels;var dl=env._glDepthRange;var dm=env._glutMouseFunc;var dn=env._glUniform4f;var dp=env._glFramebufferTexture2D;var dq=env._glUniformMatrix2fv;var dr=env.___errno_location;var ds=env._clSetKernelArg;var dt=env._glTranslated;var du=env._glUniformMatrix3fv;var dv=env._glutCreateWindow;var dw=env._glBufferData;var dx=env._clGetPlatformInfo;var dy=env.__formatString;var dz=env._glDisableClientState;var dA=env._clEnqueueReadBuffer;var dB=env._glGetError;var dC=env._glDeleteRenderbuffers;var dD=env._glGetVertexAttribiv;var dE=env._glTexParameteriv;var dF=env._glVertexAttrib3fv;var dG=env._glGetFloatv;var dH=env._glUniform3iv;var dI=env._glVertexAttrib2fv;var dJ=env._glBindFramebuffer;var dK=env._glColor4ubv;var dL=env._glGenFramebuffers;var dM=env._sbrk;var dN=env._glGetInfoLog;var dO=env._glutMotionFunc;var dP=env._glTexEnvfv;var dQ=env._clReleaseMemObject;var dR=env._glGetIntegerv;var dS=env._glGetAttachedShaders;var dT=env._glCheckFramebufferStatus;var dU=env._clCreateBuffer;var dV=env._clGetProgramBuildInfo;var dW=env._glIsRenderbuffer;var dX=env._glTexParameteri;var dY=env._glDeleteVertexArrays;var dZ=env._glUniform1fv;var d_=env._glTexCoordPointer;var d$=env._glFrontFace;var d0=env._glLoadMatrixf;var d1=env._glGetFramebufferAttachmentParameteriv;var d2=env._glUseProgram;var d3=env._glReadBuffer;var d4=env._glTexImage2D;var d5=env._glGetProgramInfoLog;var d6=env._glTexGenfv;var d7=env._glStencilMask;var d8=env._fread;var d9=env._glMultMatrixd;var ea=env._glutTimerFunc;var eb=env._glMultMatrixf;var ec=env._glGetShaderInfoLog;var ed=env._glIsTexture;var ee=env._glLoadTransposeMatrixf;var ef=env._fprintf;var eg=env._glColor4f;var eh=env._glDeleteFramebuffers;var ei=env._glLoadMatrixd;var ej=env._sin;var ek=env._glDrawRangeElements;var el=env.__reallyNegative;var em=env._clCreateCommandQueue;var en=env._glTexEnvi;var eo=env._glEnable;var ep=env._clBuildProgram;var eq=env._glColor4fv;var er=env._glStencilFuncSeparate;var es=env._fseek;var et=env._glutPostRedisplay;var eu=env._glTexParameterfv;var ev=env._write;var ew=env._glutInit;var ex=env._glGenBuffers;var ey=env._glTexCoord3f;var ez=env._glFinish;var eA=env._glGetAttribLocation;var eB=env._rewind;var eC=env._glNormal3f;var eD=env._glDeleteShader;var eE=env._glBlendFunc;var eF=env._glCreateProgram;var eG=env._glCullFace;var eH=env._clCreateKernel;var eI=env._glIsFramebuffer;var eJ=env._clCreateProgramWithSource;var eK=env._time;var eL=env._glVertexAttrib2f;var eM=env._glGetPointerv;var eN=env._glutInitWindowSize;var eO=env._glGetUniformfv;var eP=env._glColor3fv;var eQ=env._gluOrtho2D;var eR=env._glUniformMatrix4fv;var eS=env._glClearDepth;var eT=env._glFrustum;var eU=env._glGetActiveUniform;var eV=env._pwrite;var eW=env._glTexParameterf;var eX=env._glColorPointer;var eY=env._glDrawBuffer;var eZ=env._glPushMatrix;var e_=env._glEnd;var e$=env._glDeleteBuffers;var e0=env._glScissor;var e1=env._glReleaseShaderCompiler;var e2=env._glGetBooleanv;var e3=env._glPixelStorei;var e4=env._glutMainLoop;var e5=env._glValidateProgram;var e6=env._glUniform4iv;var e7=env._glVertexPointer;var e8=env._glBindProgram;var e9=env._glutKeyboardFunc;
 // EMSCRIPTEN_START_FUNCS
-function fq(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function fr(){return i|0}function fs(a){a=a|0;i=a}function ft(a,b){a=a|0;b=b|0;if((p|0)==0){p=a;q=b}}function fu(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function fv(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function fw(a){a=a|0;C=a}function fx(a){a=a|0;D=a}function fy(a){a=a|0;E=a}function fz(a){a=a|0;F=a}function fA(a){a=a|0;G=a}function fB(a){a=a|0;H=a}function fC(a){a=a|0;I=a}function fD(a){a=a|0;J=a}function fE(a){a=a|0;K=a}function fF(a){a=a|0;L=a}function fG(){}function fH(){return+(+(aZ()|0)/1.0e3)}function fI(){var a=0.0,b=0.0,d=0.0,e=0.0,f=0.0,h=0.0,i=0.0,j=0.0,k=0.0;a=+g[589]- +g[586];b=+g[590]- +g[587];d=+g[591]- +g[588];e=1.0/+O(+(d*d+(a*a+b*b)));f=a*e;g[592]=f;a=e*b;g[593]=a;b=e*d;g[594]=b;d=a*0.0;e=d-b;h=b*0.0-f*0.0;i=f-d;d=1.0/+O(+(i*i+(e*e+h*h)));j=+((c[572]|0)>>>0>>>0)*.5134999752044678/+((c[573]|0)>>>0>>>0);k=j*e*d;g[595]=k;e=j*d*h;g[596]=e;h=j*d*i;g[597]=h;i=e*b-h*a;d=h*f-k*b;b=k*a-e*f;f=1.0/+O(+(b*b+(i*i+d*d)));g[598]=i*f*.5134999752044678;g[599]=f*d*.5134999752044678;g[600]=f*b*.5134999752044678;return}function fJ(){var a=0,b=0,d=0,e=0.0,f=0,j=0,k=0,l=0,n=0,o=0.0,p=0,q=0,r=0.0,s=0.0,u=0.0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0.0,F=0.0,G=0;a=i;i=i+32|0;b=a|0;d=a+24|0;e=+fH();f=dr(c[564]|0,0,4,2208)|0;if((f|0)!=0){j=c[m>>2]|0;ee(j|0,2120,(t=i,i=i+8|0,c[t>>2]=f,t)|0)|0;b6(-1|0)}f=dr(c[564]|0,1,4,2280)|0;if((f|0)!=0){j=c[m>>2]|0;ee(j|0,2080,(t=i,i=i+8|0,c[t>>2]=f,t)|0)|0;b6(-1|0)}f=_(c[573]|0,c[572]|0)|0;j=a+8|0;c[j>>2]=f;k=c[2]|0;if(((f>>>0)%(k>>>0)|0|0)!=0){c[j>>2]=_(((f>>>0)/(k>>>0)|0)+1|0,k)|0}f=a+16|0;c[f>>2]=k;k=c[574]|0;L12:do{if((c[575]|0)==0&(k|0)>1){if((k|0)>0){l=0;n=k}else{break}L14:while(1){if((n|0)>0){o=+(l|0)+.5;p=0;q=n;while(1){r=+(q|0);s=(+(p|0)+.5)/r;u=o/r;do{if((p|l|0)==0){fN(0,s,u);v=db(c[602]|0,c[564]|0,1,0,j|0,f|0,0,0,0)|0;if((v|0)!=0){w=15;break L14}}else{x=q-1|0;fN(1,s,u);y=c[602]|0;z=c[564]|0;if(!((p|0)==(x|0)&(l|0)==(x|0))){A=db(y|0,z|0,1,0,j|0,f|0,0,0,0)|0;if((A|0)==0){break}else{w=21;break L14}}B=db(y|0,z|0,1,0,j|0,f|0,0,0,b|0)|0;if((B|0)!=0){w=18;break L14}z=c[602]|0;cA(z|0)|0}}while(0);z=p+1|0;y=c[574]|0;if((z|0)<(y|0)){p=z;q=y}else{C=y;break}}}else{C=n}q=l+1|0;if((q|0)<(C|0)){l=q;n=C}else{break L12}}if((w|0)==15){q=c[m>>2]|0;ee(q|0,464,(t=i,i=i+8|0,c[t>>2]=v,t)|0)|0;b6(-1|0)}else if((w|0)==18){ee(c[m>>2]|0,464,(t=i,i=i+8|0,c[t>>2]=B,t)|0)|0;b6(-1|0)}else if((w|0)==21){ee(c[m>>2]|0,464,(t=i,i=i+8|0,c[t>>2]=A,t)|0)|0;b6(-1|0)}}else{fN(0,0.0,0.0);q=db(c[602]|0,c[564]|0,1,0,j|0,f|0,0,0,b|0)|0;if((q|0)==0){p=c[602]|0;cA(p|0)|0;break}else{p=c[m>>2]|0;ee(p|0,464,(t=i,i=i+8|0,c[t>>2]=q,t)|0)|0;b6(-1|0)}}}while(0);b=c[602]|0;f=c[552]|0;j=_((c[572]|0)*12|0,c[573]|0)|0;A=dz(b|0,f|0,1,0,j|0,c[550]|0,0,0,d|0)|0;if((A|0)!=0){d=c[m>>2]|0;ee(d|0,1720,(t=i,i=i+8|0,c[t>>2]=A,t)|0)|0;b6(-1|0)}cA(c[602]|0)|0;A=c[574]|0;do{if((c[575]|0)==0&(A|0)>1){o=1.0/+(_(A,A)|0);if((_((c[572]|0)*3|0,c[573]|0)|0)==0){break}else{D=0}do{d=(c[550]|0)+(D<<2)|0;g[d>>2]=o*+g[d>>2];D=D+1|0;}while(D>>>0<(_((c[572]|0)*3|0,c[573]|0)|0)>>>0)}}while(0);o=+fH()-e;e=+((_(c[572]|0,c[573]|0)|0)>>>0>>>0)/o;D=c[574]|0;if(!((c[575]|0)==0&(D|0)>1)){E=e;F=E*.0009765625;G=b7(2416,1272,(t=i,i=i+16|0,h[t>>3]=o,h[t+8>>3]=F,t)|0)|0;i=a;return}E=e*+(_(D,D)|0);F=E*.0009765625;G=b7(2416,1272,(t=i,i=i+16|0,h[t>>3]=o,h[t+8>>3]=F,t)|0)|0;i=a;return}function fK(a){a=a|0;var b=0,d=0;b=i;i=i+8|0;if((a|0)==0){fI();a=ci(c[602]|0,c[570]|0,1,0,116,2288,0,0,b|0)|0;if((a|0)!=0){d=c[m>>2]|0;ee(d|0,880,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}a=c[602]|0;cA(a|0)|0;i=b;return}a=dP(c[552]|0)|0;if((a|0)!=0){d=c[m>>2]|0;ee(d|0,552,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}a=dP(c[570]|0)|0;if((a|0)!=0){d=c[m>>2]|0;ee(d|0,504,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}fX(c[550]|0);fI();fM();i=b;return}function fL(b,d){b=b|0;d=d|0;var e=0,f=0,h=0,j=0,k=0,l=0,n=0,o=0,p=0,q=0,r=0,s=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0;e=i;i=i+448|0;f=e|0;h=e+8|0;j=e+120|0;k=e+136|0;l=e+144|0;n=e+408|0;o=e+416|0;p=e+424|0;q=e+432|0;r=e+440|0;ee(c[m>>2]|0,408,(t=i,i=i+8|0,c[t>>2]=c[d>>2],t)|0)|0;ee(c[m>>2]|0,224,(t=i,i=i+8|0,c[t>>2]=c[d>>2],t)|0)|0;c[572]=512;c[573]=512;c[576]=1;c[574]=2;c[575]=1;c[577]=6;g[578]=.0010000000474974513;g[583]=5.0;g[584]=10.0;g[585]=15.0;g[579]=-.18799999356269836;g[580]=.4129999876022339;g[581]=-.2630000114440918;g[582]=.6000000238418579;g[586]=1.0;g[587]=2.0;g[588]=8.0;g[589]=0.0;g[590]=0.0;g[591]=0.0;fI();s=e+16|0;u=l;v=e+152|0;w=n;x=o;y=r;z=aP(0,0,f|0)|0;c[h>>2]=z;if((z|0)!=0){z=c[m>>2]|0;aS(104,31,1,z|0)|0;b6(-1|0);return 0}z=c[f>>2]|0;if((z|0)==0){A=0}else{B=fW(z<<2)|0;C=B;D=aP(z|0,C|0,0)|0;c[h>>2]=D;if((D|0)!=0){D=c[m>>2]|0;aS(64,34,1,D|0)|0;b6(-1|0);return 0}L74:do{if((c[f>>2]|0)!=0){D=0;while(1){c[h>>2]=dw(c[C+(D<<2)>>2]|0,2307,100,s|0,0)|0;z=aP(c[f>>2]|0,C|0,0)|0;c[h>>2]=z;E=c[m>>2]|0;if((z|0)!=0){break}ee(E|0,2056,(t=i,i=i+16|0,c[t>>2]=D,c[t+8>>2]=s,t)|0)|0;D=D+1|0;if(D>>>0>=(c[f>>2]|0)>>>0){break L74}}aS(64,34,1,E|0)|0;b6(-1|0);return 0}}while(0);E=c[C>>2]|0;fX(B);A=E}E=j|0;c[E>>2]=4228;c[j+4>>2]=A;c[j+8>>2]=0;j=b$(((A|0)==0?0:E)|0,4,0,0,0,h|0)|0;c[568]=j;if((c[h>>2]|0)!=0){E=c[m>>2]|0;aS(2024,30,1,E|0)|0;b6(-1|0);return 0}E=bh(j|0,4225,0,0,k|0)|0;c[h>>2]=E;if((E|0)!=0){j=c[m>>2]|0;ee(j|0,1976,(t=i,i=i+8|0,c[t>>2]=E,t)|0)|0;b6(-1|0);return 0}E=c[k>>2]|0;j=fW(E)|0;c[566]=j;if((j|0)==0){A=c[m>>2]|0;ee(A|0,1920,(t=i,i=i+8|0,c[t>>2]=0,t)|0)|0;b6(-1|0);return 0}A=bh(c[568]|0,4225,E|0,j|0,0)|0;c[h>>2]=A;if((A|0)!=0){j=c[m>>2]|0;ee(j|0,1880,(t=i,i=i+8|0,c[t>>2]=A,t)|0)|0;b6(-1|0);return 0}L93:do{if((c[k>>2]|0)>>>0>3){A=0;while(1){c[l>>2]=0;c[l+4>>2]=0;F=da(c[(c[566]|0)+(A<<2)>>2]|0,4096,8,u|0,0)|0;c[h>>2]=F;if((F|0)!=0){G=69;break}j=c[l>>2]|0;E=c[l+4>>2]|0;B=4;C=0;f=2;s=0;D=-1;z=0;if((j|0)==1&(E|0)==0){H=1800}else if((j|0)==(f|0)&(E|0)==(s|0)){H=1784}else if((j|0)==(B|0)&(E|0)==(C|0)){H=1768}else if((j|0)==(D|0)&(E|0)==(z|0)){H=1816}else{H=1704}ee(c[m>>2]|0,1672,(t=i,i=i+16|0,c[t>>2]=A,c[t+8>>2]=H,t)|0)|0;I=da(c[(c[566]|0)+(A<<2)>>2]|0,4139,256,v|0,0)|0;c[h>>2]=I;J=c[m>>2]|0;if((I|0)!=0){G=76;break}ee(J|0,1640,(t=i,i=i+16|0,c[t>>2]=A,c[t+8>>2]=v,t)|0)|0;c[n>>2]=0;K=da(c[(c[566]|0)+(A<<2)>>2]|0,4098,4,w|0,0)|0;c[h>>2]=K;L=c[m>>2]|0;if((K|0)!=0){G=78;break}z=c[n>>2]|0;ee(L|0,1600,(t=i,i=i+16|0,c[t>>2]=A,c[t+8>>2]=z,t)|0)|0;c[o>>2]=0;M=da(c[(c[566]|0)+(A<<2)>>2]|0,4100,4,x|0,0)|0;c[h>>2]=M;N=c[m>>2]|0;if((M|0)!=0){G=80;break}z=c[o>>2]|0;ee(N|0,1552,(t=i,i=i+16|0,c[t>>2]=A,c[t+8>>2]=z,t)|0)|0;A=A+1|0;if(A>>>0>=(c[k>>2]|0)>>>2>>>0){break L93}}if((G|0)==69){A=c[m>>2]|0;ee(A|0,1840,(t=i,i=i+8|0,c[t>>2]=F,t)|0)|0;b6(-1|0);return 0}else if((G|0)==76){ee(J|0,1840,(t=i,i=i+8|0,c[t>>2]=I,t)|0)|0;b6(-1|0);return 0}else if((G|0)==78){ee(L|0,1840,(t=i,i=i+8|0,c[t>>2]=K,t)|0)|0;b6(-1|0);return 0}else if((G|0)==80){ee(N|0,1840,(t=i,i=i+8|0,c[t>>2]=M,t)|0)|0;b6(-1|0);return 0}}}while(0);c[602]=el(c[568]|0,c[c[566]>>2]|0,0,0,h|0)|0;M=c[h>>2]|0;if((M|0)!=0){N=c[m>>2]|0;ee(N|0,1504,(t=i,i=i+8|0,c[t>>2]=M,t)|0)|0;b6(-1|0);return 0}fM();M=cZ(1e3,992)|0;if((M|0)==0){N=c[m>>2]|0;ee(N|0,960,(t=i,i=i+8|0,c[t>>2]=1e3,t)|0)|0;b6(-1|0);return 0}if((er(M|0,0,2)|0)!=0){N=c[m>>2]|0;ee(N|0,928,(t=i,i=i+8|0,c[t>>2]=1e3,t)|0)|0;b6(-1|0);return 0}N=b4(M|0)|0;if((N|0)==0){G=c[m>>2]|0;ee(G|0,840,(t=i,i=i+8|0,c[t>>2]=1e3,t)|0)|0;b6(-1|0);return 0}eA(M|0);G=fW(N+1|0)|0;K=c[m>>2]|0;if((G|0)==0){ee(K|0,792,(t=i,i=i+8|0,c[t>>2]=1e3,t)|0)|0;b6(-1|0);return 0}ee(K|0,752,(t=i,i=i+16|0,c[t>>2]=1e3,c[t+8>>2]=N,t)|0)|0;K=d7(G|0,1,N|0,M|0)|0;if((K|0)!=(N|0)){L=c[m>>2]|0;ee(L|0,712,(t=i,i=i+16|0,c[t>>2]=1e3,c[t+8>>2]=K,t)|0)|0;b6(-1|0);return 0}a[G+N|0]=0;aD(M|0)|0;c[p>>2]=G;G=eI(c[568]|0,1,p|0,0,h|0)|0;c[548]=G;p=c[h>>2]|0;if((p|0)!=0){M=c[m>>2]|0;ee(M|0,1416,(t=i,i=i+8|0,c[t>>2]=p,t)|0)|0;b6(-1|0);return 0}p=eo(G|0,1,c[566]|0,1408,0,0)|0;c[h>>2]=p;if((p|0)==0){G=eG(c[548]|0,1184,h|0)|0;c[564]=G;M=c[h>>2]|0;if((M|0)!=0){N=c[m>>2]|0;ee(N|0,1144,(t=i,i=i+8|0,c[t>>2]=M,t)|0)|0;b6(-1|0);return 0}c[r>>2]=0;M=bW(G|0,c[c[566]>>2]|0,4528,4,y|0,0)|0;c[h>>2]=M;if((M|0)==0){y=c[r>>2]|0;c[2]=y;r=c[m>>2]|0;ee(r|0,1040,(t=i,i=i+8|0,c[t>>2]=y,t)|0)|0;fV(b,d,136);e3();i=e;return 0}else{e=c[m>>2]|0;ee(e|0,1088,(t=i,i=i+8|0,c[t>>2]=M,t)|0)|0;b6(-1|0);return 0}}else{M=c[m>>2]|0;ee(M|0,1368,(t=i,i=i+8|0,c[t>>2]=p,t)|0)|0;p=dU(c[548]|0,c[c[566]>>2]|0,4483,0,0,q|0)|0;c[h>>2]=p;if((p|0)!=0){M=c[m>>2]|0;ee(M|0,1320,(t=i,i=i+8|0,c[t>>2]=p,t)|0)|0;b6(-1|0);return 0}p=c[q>>2]|0;M=fW(p+1|0)|0;e=dU(c[548]|0,c[c[566]>>2]|0,4483,p|0,M|0,0)|0;c[h>>2]=e;if((e|0)==0){a[M+(c[q>>2]|0)|0]=0;q=c[m>>2]|0;ee(q|0,1200,(t=i,i=i+8|0,c[t>>2]=M,t)|0)|0;b6(-1|0);return 0}else{M=c[m>>2]|0;ee(M|0,1232,(t=i,i=i+8|0,c[t>>2]=e,t)|0)|0;b6(-1|0);return 0}}return 0}function fM(){var a=0,b=0,d=0,e=0;a=i;i=i+8|0;b=a|0;d=_((c[572]|0)*12|0,c[573]|0)|0;e=fW(d)|0;c[550]=e;c[552]=dT(c[568]|0,33,0,d|0,e|0,b|0)|0;e=c[b>>2]|0;if((e|0)!=0){d=c[m>>2]|0;ee(d|0,664,(t=i,i=i+8|0,c[t>>2]=e,t)|0)|0;b6(-1|0)}c[570]=dT(c[568]|0,36,0,116,2288,b|0)|0;e=c[b>>2]|0;if((e|0)==0){i=a;return}else{a=c[m>>2]|0;ee(a|0,616,(t=i,i=i+8|0,c[t>>2]=e,t)|0)|0;b6(-1|0)}}function fN(a,b,d){a=a|0;b=+b;d=+d;var e=0,f=0,h=0,j=0;e=i;i=i+24|0;f=e|0;h=e+8|0;j=e+16|0;c[f>>2]=a;g[h>>2]=b;g[j>>2]=d;a=dr(c[564]|0,2,4,f|0)|0;if((a|0)!=0){f=c[m>>2]|0;ee(f|0,2080,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}a=dr(c[564]|0,3,4,h|0)|0;if((a|0)!=0){h=c[m>>2]|0;ee(h|0,424,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}a=dr(c[564]|0,4,4,j|0)|0;if((a|0)==0){i=e;return}else{e=c[m>>2]|0;ee(e|0,368,(t=i,i=i+8|0,c[t>>2]=a,t)|0)|0;b6(-1|0)}}function fO(){var a=0,b=0.0,d=0;fJ();c8(16384);a=c[550]|0;c4(2896);cB(0,0,c[572]|0,c[573]|0);cx(5889);b9();eP(-1.0,1.0,-1.0,1.0);cx(5888);b9();cx(5890);b9();en(3553);aL(3553,c[786]|0);if((a|0)!=0){bG(3553,0,0,0,c[572]|0,c[573]|0,6407,5126,a|0)}dy(32888);dy(32884);cU(7);cQ(0.0,0.0);ce(-1|0,-1|0);cQ(0.0,1.0);ce(-1|0,1);cQ(1.0,1.0);ce(1,1);cQ(1.0,0.0);ce(1,-1|0);eZ();aL(3553,0);c4(3553);en(3042);eD(770,771);a=(c[572]|0)-82|0;c4(3042);cd(1.0,1.0,1.0);b=+(a|0);a=~~(b+(+g[579]+1.5)*80.0/3.0);d=~~((+g[580]+1.5)*80.0/3.0+1.0);cU(1);ce(a-4|0,d|0);ce(a+4|0,d|0);ce(a|0,d-4|0);ce(a|0,d+4|0);eZ();d=~~(b+(+g[581]+1.5)*80.0/3.0);a=~~((+g[582]+1.5)*80.0/3.0+82.0);cU(1);ce(d-4|0,a|0);ce(d+4|0,a|0);ce(d|0,a-4|0);ce(d|0,a+4|0);eZ();return}function fP(a,b){a=a|0;b=b|0;c[572]=a;c[573]=b;cB(0,0,a|0,b|0);b9();bX(-.5,+(+((c[572]|0)>>>0>>>0)+-.5),-.5,+(+((c[573]|0)>>>0>>>0)+-.5),-1.0,1.0);fK(1);es();return}function fQ(a,b,c){a=a|0;b=b|0;c=c|0;var d=0.0,e=0.0,f=0.0,i=0.0,j=0.0,k=0.0;if((a|0)==101){d=+g[586];e=+g[587];f=+g[588];i=+g[591]-f;j=(+g[590]-e)*.9993908270285325+i*-.03489949643226648;g[589]=d+(+g[589]-d);g[590]=e+j;g[591]=f+(i*.9993908270285325+(-0.0-j)*-.03489949643226648)}else if((a|0)==103){j=+g[586];i=+g[587];f=+g[588];e=+g[591]-f;d=(+g[590]-i)*.9993908270285325+e*.03489949643226648;g[589]=j+(+g[589]-j);g[590]=i+d;g[591]=f+(e*.9993908270285325+(-0.0-d)*.03489949643226648)}else if((a|0)==100){d=+g[586];e=+g[587];f=+g[588];i=+g[591]-f;j=(+g[589]-d)*.9993908270285325-i*-.03489949643226648;k=e+(+g[590]-e);g[589]=d+j;g[590]=k;g[591]=f+(i*.9993908270285325+j*-.03489949643226648)}else if((a|0)==102){j=+g[586];i=+g[587];f=+g[588];k=+g[591]-f;d=(+g[589]-j)*.9993908270285325-k*.03489949643226648;e=i+(+g[590]-i);g[589]=j+d;g[590]=e;g[591]=f+(k*.9993908270285325+d*.03489949643226648)}else if((a|0)==104){g[590]=+g[590]+.5}else if((a|0)==105){g[590]=+g[590]+-.5}fK(0);es();h[7]=+(aZ()|0)/1.0e3;return}function fR(b,d,e,f){b=b|0;d=d|0;e=e|0;f=f|0;var i=0,j=0,k=0,l=0;L180:do{if((b|0)==0){if((d|0)==1){a[48]=0;a[16]=0;a[32]=0;break}else if((d|0)!=0){break}c[562]=e;c[560]=f;a[48]=1;if((c6()|0)==1){a[16]=1;break}a[16]=0;i=(c[573]|0)-f|0;j=c[572]|0;k=j-82|0;do{if(!((k|0)>(e|0)|(j-2|0)<(e|0))){l=i-2|0;if(l>>>0<81){a[32]=1;g[579]=+(e-k|0)*3.0/80.0-1.5;g[580]=+(l|0)*3.0/80.0-1.5;fK(0);es();break L180}l=i-83|0;if(l>>>0>=81){break}a[32]=1;g[581]=+(e-k|0)*3.0/80.0-1.5;g[582]=+(l|0)*3.0/80.0-1.5;fK(0);es();break L180}}while(0);a[32]=0}else if((b|0)==2){if((d|0)==0){c[562]=e;c[560]=f;a[40]=1;break}else if((d|0)==1){a[40]=0;break}else{break}}}while(0);h[7]=+(aZ()|0)/1.0e3;return}function fS(b,d){b=b|0;d=d|0;var e=0,f=0,i=0,j=0,k=0,l=0.0,m=0.0,n=0.0,o=0.0,p=0.0,q=0.0,r=0.0,s=0.0,t=0.0,u=0.0,v=0.0;L201:do{if(a[48]|0){e=(c[573]|0)-d|0;f=c[572]|0;i=f-82|0;j=a[32]|0;do{if((i|0)>(b|0)|j^1|(f-2|0)<(b|0)){if(j){break L201}}else{k=e-2|0;if(k>>>0<81){g[579]=+(b-i|0)*3.0/80.0-1.5;g[580]=+(k|0)*3.0/80.0-1.5;fK(0);break L201}k=e-83|0;if(k>>>0<81){g[581]=+(b-i|0)*3.0/80.0-1.5;g[582]=+(k|0)*3.0/80.0-1.5;fK(0);break L201}else{if(j){break L201}else{break}}}}while(0);j=b-(c[562]|0)|0;i=d-(c[560]|0)|0;if(a[16]|0){l=+g[586];m=+g[587];n=+g[590]-m;o=+g[588];p=+g[591]-o;q=+g[589]-l;r=+(j|0)*.10000000149011612*.03490658503988659;s=+Q(+r);t=p;p=+R(+r);r=q*s-t*p;q=+(i|0)*.10000000149011612*.03490658503988659;u=+Q(+q);v=o+(s*t+p*r)-o;p=+R(+q);q=(m+n-m)*u+p*v;g[589]=l+(l+r-l);g[590]=m+q;g[591]=o+(u*v+p*(-0.0-q))}else{g[589]=0.0;g[590]=0.0;g[591]=0.0;q=+g[588];p=+g[586];v=+(j|0)*.20000000298023224*.03490658503988659;u=+Q(+v);o=q;q=+R(+v);g[586]=p*u-o*q;v=+g[587];m=+(i|0)*.20000000298023224*.03490658503988659;l=+Q(+m);r=o*u+p*q;q=+R(+m);g[587]=v*l+q*r;g[588]=(-0.0-v)*q+l*r}c[562]=b;c[560]=d;fK(0)}else{if(a[40]|0){i=b-(c[562]|0)|0;r=+g[584];l=+g[585];q=+(d-(c[560]|0)|0)*-.20000000298023224*.03490658503988659;v=+Q(+q);m=l;l=+R(+q);g[584]=r*v+m*l;q=+g[583];p=+(i|0)*-.20000000298023224*.03490658503988659;u=+Q(+p);o=m*v+(-0.0-r)*l;l=+R(+p);g[583]=q*u-l*o;g[585]=q*l+u*o;c[562]=b;c[560]=d;fK(0);break}else{return}}}while(0);es();h[7]=+(aZ()|0)/1.0e3;return}function fT(a,b,d){a=a|0;b=b|0;d=d|0;var e=0,f=0,j=0,k=0,l=0,n=0,o=0,p=0,q=0,r=0,s=0,u=0.0,v=0,w=0,x=0,y=0,z=0.0,A=0.0,B=0.0,C=0.0;d=i;b=a&255;do{if((b|0)==112){a=cZ(352,1832)|0;if((a|0)==0){e=c[m>>2]|0;aS(1464,37,1,e|0)|0;break}e=c[572]|0;f=c[573]|0;ee(a|0,1024,(t=i,i=i+24|0,c[t>>2]=e,c[t+8>>2]=f,c[t+16>>2]=255,t)|0)|0;f=c[573]|0;if((f|0)!=0){e=0;j=c[572]|0;k=f;while(1){if((j|0)==0){l=0;n=k}else{f=~e;o=0;p=j;q=k;while(1){r=((_(q+f|0,p)|0)+o|0)*3|0;s=c[550]|0;u=+g[s+(r<<2)>>2];do{if(u<0.0){v=0}else{if(u>1.0){v=255;break}v=~~(u*255.0+.5)}}while(0);u=+g[s+(r+1<<2)>>2];do{if(u<0.0){w=0}else{if(u>1.0){w=255;break}w=~~(u*255.0+.5)}}while(0);u=+g[s+(r+2<<2)>>2];do{if(u<0.0){x=0}else{if(u>1.0){x=255;break}x=~~(u*255.0+.5)}}while(0);ee(a|0,600,(t=i,i=i+24|0,c[t>>2]=v,c[t+8>>2]=w,c[t+16>>2]=x,t)|0)|0;r=o+1|0;s=c[572]|0;y=c[573]|0;if(r>>>0<s>>>0){o=r;p=s;q=y}else{l=s;n=y;break}}}q=e+1|0;if(q>>>0<n>>>0){e=q;j=l;k=n}else{break}}}aD(a|0)|0}else if((b|0)==27){aS(344,6,1,c[m>>2]|0)|0;b6(0)}else if((b|0)==97){u=+g[595];z=+g[596];A=+g[597];B=1.0/+O(+(u*u+z*z+A*A));C=u*B*-.5;u=z*B*-.5;z=A*B*-.5;g[586]=+g[586]+C;g[587]=+g[587]+u;g[588]=+g[588]+z;g[589]=C+ +g[589];g[590]=u+ +g[590];g[591]=z+ +g[591]}else if((b|0)==100){z=+g[595];u=+g[596];C=+g[597];B=1.0/+O(+(z*z+u*u+C*C));A=z*B*.5;z=u*B*.5;u=C*B*.5;g[586]=+g[586]+A;g[587]=+g[587]+z;g[588]=+g[588]+u;g[589]=A+ +g[589];g[590]=z+ +g[590];g[591]=u+ +g[591]}else if((b|0)==119){u=+g[592]*.5;z=+g[593]*.5;A=+g[594]*.5;g[586]=u+ +g[586];g[587]=z+ +g[587];g[588]=A+ +g[588];g[589]=u+ +g[589];g[590]=z+ +g[590];g[591]=A+ +g[591]}else if((b|0)==115){A=+g[592]*-.5;z=+g[593]*-.5;u=+g[594]*-.5;g[586]=A+ +g[586];g[587]=z+ +g[587];g[588]=u+ +g[588];g[589]=A+ +g[589];g[590]=z+ +g[590];g[591]=u+ +g[591]}else if((b|0)==114){g[587]=+g[587]+.5;g[590]=+g[590]+.5}else if((b|0)==102){g[587]=+g[587]+-.5;g[590]=+g[590]+-.5}else if((b|0)==108){c[576]=(c[576]|0)==0}else if((b|0)==104){c[6]=(c[6]|0)==0}else if((b|0)==49){g[578]=+g[578]*.75}else if((b|0)==50){g[578]=+g[578]*1.3333333730697632}else if((b|0)==51){k=(c[577]|0)-1|0;c[577]=(k|0)==0?1:k}else if((b|0)==52){k=(c[577]|0)+1|0;c[577]=k>>>0>12?12:k}else if((b|0)==53){k=(c[574]|0)-1|0;c[574]=(k|0)<1?1:k}else if((b|0)==54){k=(c[574]|0)+1|0;c[574]=(k|0)>5?5:k}}while(0);fK(0);es();h[7]=+(aZ()|0)/1.0e3;i=d;return}function fU(a){a=a|0;var b=0.0;b=+(aZ()|0)/1.0e3;do{if(b- +h[7]>5.0){if((c[575]|0)==0){break}c[575]=0;es()}else{c[575]=1}}while(0);d9(1e3,22,0);return}function fV(a,b,d){a=a|0;b=b|0;d=d|0;var e=0,f=0,j=0.0;e=i;i=i+8|0;f=e|0;c[f>>2]=a;h[7]=+(aZ()|0)/1.0e3;eM(c[572]|0,c[573]|0);bg(0,0);a1(2);ev(f|0,b|0);du(d|0)|0;cG(42);e8(12);cc(60);bm(2);dl(42);dN(26);d9(1e3,22,0);cx(5889);d=c[572]|0;b=c[573]|0;if((c[786]|0)!=0){a6(1,3144)}c[786]=0;bL(192,(t=i,i=i+16|0,c[t>>2]=d,c[t+8>>2]=b,t)|0)|0;cw(33985);bs(1,3144);aL(3553,c[786]|0);dW(3553,10240,9728);dW(3553,10241,9728);d3(3553,0,6407,d|0,b|0,0,6407,5126,0);aL(3553,0);aO(0.0,0.0,0.0,0.0);c4(2929);cw(33984);cB(0,0,c[572]|0,c[573]|0);cx(5888);b9();cx(5889);b9();g[794]=0.0;g[795]=0.0;j=+((c[572]|0)>>>0>>>0);g[792]=j;g[793]=0.0;g[790]=j;j=+((c[573]|0)>>>0>>>0);g[791]=j;g[788]=0.0;g[789]=j;cn(32884);cn(32888);e6(2,5126,0,2160);b3(33984);dZ(2,5126,0,3152);i=e;return}function fW(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,ai=0,aj=0,ak=0,al=0,am=0,an=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aB=0,aC=0,aD=0,aE=0,aF=0,aG=0,aH=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[668]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=2712+(h<<2)|0;j=2712+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[668]=e&~(1<<g)}else{if(l>>>0<(c[672]|0)>>>0){bM();return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{bM();return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[670]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=2712+(p<<2)|0;m=2712+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[668]=e&~(1<<r)}else{if(l>>>0<(c[672]|0)>>>0){bM();return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{bM();return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[670]|0;if((l|0)!=0){q=c[673]|0;d=l>>>3;l=d<<1;f=2712+(l<<2)|0;k=c[668]|0;h=1<<d;do{if((k&h|0)==0){c[668]=k|h;s=f;t=2712+(l+2<<2)|0}else{d=2712+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[672]|0)>>>0){s=g;t=d;break}bM();return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[670]=m;c[673]=e;n=i;return n|0}l=c[669]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[2976+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[672]|0;if(r>>>0<i>>>0){bM();return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){bM();return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break}else{w=l;x=k}}else{w=g;x=q}while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){bM();return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){bM();return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){bM();return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{bM();return 0}}}while(0);L355:do{if((e|0)!=0){f=d+28|0;i=2976+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[669]=c[669]&~(1<<c[f>>2]);break L355}else{if(e>>>0<(c[672]|0)>>>0){bM();return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L355}}}while(0);if(v>>>0<(c[672]|0)>>>0){bM();return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[672]|0)>>>0){bM();return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[672]|0)>>>0){bM();return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b)>>2]=p;f=c[670]|0;if((f|0)!=0){e=c[673]|0;i=f>>>3;f=i<<1;q=2712+(f<<2)|0;k=c[668]|0;g=1<<i;do{if((k&g|0)==0){c[668]=k|g;y=q;z=2712+(f+2<<2)|0}else{i=2712+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[672]|0)>>>0){y=l;z=i;break}bM();return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[670]=p;c[673]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[669]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=14-(h|f|l)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[2976+(A<<2)>>2]|0;L403:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L403}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[2976+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break}else{p=r;m=i;q=e}}}if((K|0)==0){o=g;break}if(J>>>0>=((c[670]|0)-g|0)>>>0){o=g;break}q=K;m=c[672]|0;if(q>>>0<m>>>0){bM();return 0}p=q+g|0;k=p;if(q>>>0>=p>>>0){bM();return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break}else{M=B;N=j}}else{M=d;N=r}while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<m>>>0){bM();return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<m>>>0){bM();return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){bM();return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{bM();return 0}}}while(0);L453:do{if((e|0)!=0){i=K+28|0;m=2976+(c[i>>2]<<2)|0;do{if((K|0)==(c[m>>2]|0)){c[m>>2]=L;if((L|0)!=0){break}c[669]=c[669]&~(1<<c[i>>2]);break L453}else{if(e>>>0<(c[672]|0)>>>0){bM();return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L453}}}while(0);if(L>>>0<(c[672]|0)>>>0){bM();return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[672]|0)>>>0){bM();return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[672]|0)>>>0){bM();return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=q+(e+4)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[q+(g|4)>>2]=J|1;c[q+(J+g)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;m=2712+(e<<2)|0;r=c[668]|0;j=1<<i;do{if((r&j|0)==0){c[668]=r|j;O=m;P=2712+(e+2<<2)|0}else{i=2712+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[672]|0)>>>0){O=d;P=i;break}bM();return 0}}while(0);c[P>>2]=k;c[O+12>>2]=k;c[q+(g+8)>>2]=O;c[q+(g+12)>>2]=m;break}e=p;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=14-(d|r|i)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=2976+(Q<<2)|0;c[q+(g+28)>>2]=Q;c[q+(g+20)>>2]=0;c[q+(g+16)>>2]=0;m=c[669]|0;l=1<<Q;if((m&l|0)==0){c[669]=m|l;c[j>>2]=e;c[q+(g+24)>>2]=j;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;m=c[j>>2]|0;while(1){if((c[m+4>>2]&-8|0)==(J|0)){break}S=m+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=357;break}else{l=l<<1;m=j}}if((T|0)==357){if(S>>>0<(c[672]|0)>>>0){bM();return 0}else{c[S>>2]=e;c[q+(g+24)>>2]=m;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}}l=m+8|0;j=c[l>>2]|0;i=c[672]|0;if(m>>>0<i>>>0){bM();return 0}if(j>>>0<i>>>0){bM();return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[q+(g+8)>>2]=j;c[q+(g+12)>>2]=m;c[q+(g+24)>>2]=0;break}}}while(0);q=K+8|0;if((q|0)==0){o=g;break}else{n=q}return n|0}}while(0);K=c[670]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[673]|0;if(S>>>0>15){R=J;c[673]=R+o;c[670]=S;c[R+(o+4)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[670]=0;c[673]=0;c[J+4>>2]=K|3;S=J+(K+4)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[671]|0;if(o>>>0<J>>>0){S=J-o|0;c[671]=S;J=c[674]|0;K=J;c[674]=K+o;c[K+(o+4)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[554]|0)==0){J=aA(8)|0;if((J-1&J|0)==0){c[556]=J;c[555]=J;c[557]=-1;c[558]=2097152;c[559]=0;c[779]=0;c[554]=(eJ(0)|0)&-16^1431655768;break}else{bM();return 0}}}while(0);J=o+48|0;S=c[556]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[778]|0;do{if((O|0)!=0){P=c[776]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L545:do{if((c[779]&4|0)==0){O=c[674]|0;L547:do{if((O|0)==0){T=387}else{L=O;P=3120;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=387;break L547}else{P=M}}if((P|0)==0){T=387;break}L=R-(c[671]|0)&Q;if(L>>>0>=2147483647){W=0;break}m=dL(L|0)|0;e=(m|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?m:-1;Y=e?L:0;Z=m;_=L;T=396}}while(0);do{if((T|0)==387){O=dL(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[555]|0;m=L-1|0;if((m&g|0)==0){$=S}else{$=S-g+(m+g&-L)|0}L=c[776]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}m=c[778]|0;if((m|0)!=0){if(g>>>0<=L>>>0|g>>>0>m>>>0){W=0;break}}m=dL($|0)|0;g=(m|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=m;_=$;T=396}}while(0);L567:do{if((T|0)==396){m=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=407;break L545}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[556]|0;O=K-_+g&-g;if(O>>>0>=2147483647){ac=_;break}if((dL(O|0)|0)==-1){dL(m|0)|0;W=Y;break L567}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=407;break L545}}}while(0);c[779]=c[779]|4;ad=W;T=404}else{ad=0;T=404}}while(0);do{if((T|0)==404){if(S>>>0>=2147483647){break}W=dL(S|0)|0;Z=dL(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)!=-1){aa=Z?ac:ad;ab=Y;T=407}}}while(0);do{if((T|0)==407){ad=(c[776]|0)+aa|0;c[776]=ad;if(ad>>>0>(c[777]|0)>>>0){c[777]=ad}ad=c[674]|0;L587:do{if((ad|0)==0){S=c[672]|0;if((S|0)==0|ab>>>0<S>>>0){c[672]=ab}c[780]=ab;c[781]=aa;c[783]=0;c[677]=c[554];c[676]=-1;S=0;do{Y=S<<1;ac=2712+(Y<<2)|0;c[2712+(Y+3<<2)>>2]=ac;c[2712+(Y+2<<2)>>2]=ac;S=S+1|0;}while(S>>>0<32);S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=aa-40-ae|0;c[674]=ab+ae;c[671]=S;c[ab+(ae+4)>>2]=S|1;c[ab+(aa-36)>>2]=40;c[675]=c[558]}else{S=3120;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=419;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==419){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa;ac=c[674]|0;Y=(c[671]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){ai=0}else{ai=-W&7}W=Y-ai|0;c[674]=Z+ai;c[671]=W;c[Z+(ai+4)>>2]=W|1;c[Z+(Y+4)>>2]=40;c[675]=c[558];break L587}}while(0);if(ab>>>0<(c[672]|0)>>>0){c[672]=ab}S=ab+aa|0;Y=3120;while(1){aj=Y|0;if((c[aj>>2]|0)==(S|0)){T=429;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==429){if((c[Y+12>>2]&8|0)!=0){break}c[aj>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa;S=ab+8|0;if((S&7|0)==0){ak=0}else{ak=-S&7}S=ab+(aa+8)|0;if((S&7|0)==0){al=0}else{al=-S&7}S=ab+(al+aa)|0;Z=S;W=ak+o|0;ac=ab+W|0;_=ac;K=S-(ab+ak)-o|0;c[ab+(ak+4)>>2]=o|3;do{if((Z|0)==(c[674]|0)){J=(c[671]|0)+K|0;c[671]=J;c[674]=_;c[ab+(W+4)>>2]=J|1}else{if((Z|0)==(c[673]|0)){J=(c[670]|0)+K|0;c[670]=J;c[673]=_;c[ab+(W+4)>>2]=J|1;c[ab+(J+W)>>2]=J;break}J=aa+4|0;X=c[ab+(J+al)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L632:do{if(X>>>0<256){U=c[ab+((al|8)+aa)>>2]|0;Q=c[ab+(aa+12+al)>>2]|0;R=2712+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[672]|0)>>>0){bM();return 0}if((c[U+12>>2]|0)==(Z|0)){break}bM();return 0}}while(0);if((Q|0)==(U|0)){c[668]=c[668]&~(1<<V);break}do{if((Q|0)==(R|0)){am=Q+8|0}else{if(Q>>>0<(c[672]|0)>>>0){bM();return 0}m=Q+8|0;if((c[m>>2]|0)==(Z|0)){am=m;break}bM();return 0}}while(0);c[U+12>>2]=Q;c[am>>2]=U}else{R=S;m=c[ab+((al|24)+aa)>>2]|0;P=c[ab+(aa+12+al)>>2]|0;do{if((P|0)==(R|0)){O=al|16;g=ab+(J+O)|0;L=c[g>>2]|0;if((L|0)==0){e=ab+(O+aa)|0;O=c[e>>2]|0;if((O|0)==0){an=0;break}else{ao=O;ap=e}}else{ao=L;ap=g}while(1){g=ao+20|0;L=c[g>>2]|0;if((L|0)!=0){ao=L;ap=g;continue}g=ao+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ao=L;ap=g}}if(ap>>>0<(c[672]|0)>>>0){bM();return 0}else{c[ap>>2]=0;an=ao;break}}else{g=c[ab+((al|8)+aa)>>2]|0;if(g>>>0<(c[672]|0)>>>0){bM();return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){bM();return 0}e=P+8|0;if((c[e>>2]|0)==(R|0)){c[L>>2]=P;c[e>>2]=g;an=P;break}else{bM();return 0}}}while(0);if((m|0)==0){break}P=ab+(aa+28+al)|0;U=2976+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=an;if((an|0)!=0){break}c[669]=c[669]&~(1<<c[P>>2]);break L632}else{if(m>>>0<(c[672]|0)>>>0){bM();return 0}Q=m+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=an}else{c[m+20>>2]=an}if((an|0)==0){break L632}}}while(0);if(an>>>0<(c[672]|0)>>>0){bM();return 0}c[an+24>>2]=m;R=al|16;P=c[ab+(R+aa)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[672]|0)>>>0){bM();return 0}else{c[an+16>>2]=P;c[P+24>>2]=an;break}}}while(0);P=c[ab+(J+R)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[672]|0)>>>0){bM();return 0}else{c[an+20>>2]=P;c[P+24>>2]=an;break}}}while(0);aq=ab+(($|al)+aa)|0;ar=$+K|0}else{aq=Z;ar=K}J=aq+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4)>>2]=ar|1;c[ab+(ar+W)>>2]=ar;J=ar>>>3;if(ar>>>0<256){V=J<<1;X=2712+(V<<2)|0;P=c[668]|0;m=1<<J;do{if((P&m|0)==0){c[668]=P|m;as=X;at=2712+(V+2<<2)|0}else{J=2712+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[672]|0)>>>0){as=U;at=J;break}bM();return 0}}while(0);c[at>>2]=_;c[as+12>>2]=_;c[ab+(W+8)>>2]=as;c[ab+(W+12)>>2]=X;break}V=ac;m=ar>>>8;do{if((m|0)==0){au=0}else{if(ar>>>0>16777215){au=31;break}P=(m+1048320|0)>>>16&8;$=m<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=14-(J|P|$)+(U<<$>>>15)|0;au=ar>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2976+(au<<2)|0;c[ab+(W+28)>>2]=au;c[ab+(W+20)>>2]=0;c[ab+(W+16)>>2]=0;X=c[669]|0;Q=1<<au;if((X&Q|0)==0){c[669]=X|Q;c[m>>2]=V;c[ab+(W+24)>>2]=m;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}if((au|0)==31){av=0}else{av=25-(au>>>1)|0}Q=ar<<av;X=c[m>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(ar|0)){break}aw=X+16+(Q>>>31<<2)|0;m=c[aw>>2]|0;if((m|0)==0){T=502;break}else{Q=Q<<1;X=m}}if((T|0)==502){if(aw>>>0<(c[672]|0)>>>0){bM();return 0}else{c[aw>>2]=V;c[ab+(W+24)>>2]=X;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}}Q=X+8|0;m=c[Q>>2]|0;$=c[672]|0;if(X>>>0<$>>>0){bM();return 0}if(m>>>0<$>>>0){bM();return 0}else{c[m+12>>2]=V;c[Q>>2]=V;c[ab+(W+8)>>2]=m;c[ab+(W+12)>>2]=X;c[ab+(W+24)>>2]=0;break}}}while(0);n=ab+(ak|8)|0;return n|0}}while(0);Y=ad;W=3120;while(1){ax=c[W>>2]|0;if(ax>>>0<=Y>>>0){ay=c[W+4>>2]|0;az=ax+ay|0;if(az>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=ax+(ay-39)|0;if((W&7|0)==0){aB=0}else{aB=-W&7}W=ax+(ay-47+aB)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aC=0}else{aC=-_&7}_=aa-40-aC|0;c[674]=ab+aC;c[671]=_;c[ab+(aC+4)>>2]=_|1;c[ab+(aa-36)>>2]=40;c[675]=c[558];c[ac+4>>2]=27;c[W>>2]=c[780];c[W+4>>2]=c[3124>>2];c[W+8>>2]=c[3128>>2];c[W+12>>2]=c[3132>>2];c[780]=ab;c[781]=aa;c[783]=0;c[782]=W;W=ac+28|0;c[W>>2]=7;if((ac+32|0)>>>0<az>>>0){_=W;while(1){W=_+4|0;c[W>>2]=7;if((_+8|0)>>>0<az>>>0){_=W}else{break}}}if((ac|0)==(Y|0)){break}_=ac-ad|0;W=Y+(_+4)|0;c[W>>2]=c[W>>2]&-2;c[ad+4>>2]=_|1;c[Y+_>>2]=_;W=_>>>3;if(_>>>0<256){K=W<<1;Z=2712+(K<<2)|0;S=c[668]|0;m=1<<W;do{if((S&m|0)==0){c[668]=S|m;aD=Z;aE=2712+(K+2<<2)|0}else{W=2712+(K+2<<2)|0;Q=c[W>>2]|0;if(Q>>>0>=(c[672]|0)>>>0){aD=Q;aE=W;break}bM();return 0}}while(0);c[aE>>2]=ad;c[aD+12>>2]=ad;c[ad+8>>2]=aD;c[ad+12>>2]=Z;break}K=ad;m=_>>>8;do{if((m|0)==0){aF=0}else{if(_>>>0>16777215){aF=31;break}S=(m+1048320|0)>>>16&8;Y=m<<S;ac=(Y+520192|0)>>>16&4;W=Y<<ac;Y=(W+245760|0)>>>16&2;Q=14-(ac|S|Y)+(W<<Y>>>15)|0;aF=_>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2976+(aF<<2)|0;c[ad+28>>2]=aF;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[669]|0;Q=1<<aF;if((Z&Q|0)==0){c[669]=Z|Q;c[m>>2]=K;c[ad+24>>2]=m;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aF|0)==31){aG=0}else{aG=25-(aF>>>1)|0}Q=_<<aG;Z=c[m>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(_|0)){break}aH=Z+16+(Q>>>31<<2)|0;m=c[aH>>2]|0;if((m|0)==0){T=537;break}else{Q=Q<<1;Z=m}}if((T|0)==537){if(aH>>>0<(c[672]|0)>>>0){bM();return 0}else{c[aH>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;_=c[Q>>2]|0;m=c[672]|0;if(Z>>>0<m>>>0){bM();return 0}if(_>>>0<m>>>0){bM();return 0}else{c[_+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=_;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[671]|0;if(ad>>>0<=o>>>0){break}_=ad-o|0;c[671]=_;ad=c[674]|0;Q=ad;c[674]=Q+o;c[Q+(o+4)>>2]=_|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[(dq()|0)>>2]=12;n=0;return n|0}function fX(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[672]|0;if(b>>>0<e>>>0){bM()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){bM()}h=f&-8;i=a+(h-8)|0;j=i;L804:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){bM()}if((n|0)==(c[673]|0)){p=a+(h-4)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[670]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8)>>2]|0;s=c[a+(l+12)>>2]|0;t=2712+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){bM()}if((c[k+12>>2]|0)==(n|0)){break}bM()}}while(0);if((s|0)==(k|0)){c[668]=c[668]&~(1<<p);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){bM()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}bM()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24)>>2]|0;v=c[a+(l+12)>>2]|0;do{if((v|0)==(t|0)){w=a+(l+20)|0;x=c[w>>2]|0;if((x|0)==0){y=a+(l+16)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break}else{B=z;C=y}}else{B=x;C=w}while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){bM()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8)>>2]|0;if(w>>>0<e>>>0){bM()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){bM()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{bM()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28)|0;m=2976+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[669]=c[669]&~(1<<c[v>>2]);q=n;r=o;break L804}else{if(p>>>0<(c[672]|0)>>>0){bM()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L804}}}while(0);if(A>>>0<(c[672]|0)>>>0){bM()}c[A+24>>2]=p;t=c[a+(l+16)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[672]|0)>>>0){bM()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[672]|0)>>>0){bM()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){bM()}A=a+(h-4)|0;e=c[A>>2]|0;if((e&1|0)==0){bM()}do{if((e&2|0)==0){if((j|0)==(c[674]|0)){B=(c[671]|0)+r|0;c[671]=B;c[674]=q;c[q+4>>2]=B|1;if((q|0)==(c[673]|0)){c[673]=0;c[670]=0}if(B>>>0<=(c[675]|0)>>>0){return}fY(0)|0;return}if((j|0)==(c[673]|0)){B=(c[670]|0)+r|0;c[670]=B;c[673]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L910:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=2712+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[672]|0)>>>0){bM()}if((c[u+12>>2]|0)==(j|0)){break}bM()}}while(0);if((g|0)==(u|0)){c[668]=c[668]&~(1<<C);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[672]|0)>>>0){bM()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}bM()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16)>>2]|0;t=c[a+(h|4)>>2]|0;do{if((t|0)==(b|0)){p=a+(h+12)|0;v=c[p>>2]|0;if((v|0)==0){m=a+(h+8)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break}else{F=k;G=m}}else{F=v;G=p}while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[672]|0)>>>0){bM()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[672]|0)>>>0){bM()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){bM()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{bM()}}}while(0);if((f|0)==0){break}t=a+(h+20)|0;u=2976+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[669]=c[669]&~(1<<c[t>>2]);break L910}else{if(f>>>0<(c[672]|0)>>>0){bM()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L910}}}while(0);if(E>>>0<(c[672]|0)>>>0){bM()}c[E+24>>2]=f;b=c[a+(h+8)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[672]|0)>>>0){bM()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[672]|0)>>>0){bM()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[673]|0)){H=B;break}c[670]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=2712+(d<<2)|0;A=c[668]|0;E=1<<r;do{if((A&E|0)==0){c[668]=A|E;I=e;J=2712+(d+2<<2)|0}else{r=2712+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[672]|0)>>>0){I=h;J=r;break}bM()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=14-(E|J|d)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=2976+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[669]|0;d=1<<K;do{if((r&d|0)==0){c[669]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=716;break}else{A=A<<1;J=E}}if((N|0)==716){if(M>>>0<(c[672]|0)>>>0){bM()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[672]|0;if(J>>>0<E>>>0){bM()}if(B>>>0<E>>>0){bM()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[676]|0)-1|0;c[676]=q;if((q|0)==0){O=3128}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[676]=-1;return}function fY(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0;do{if((c[554]|0)==0){b=aA(8)|0;if((b-1&b|0)==0){c[556]=b;c[555]=b;c[557]=-1;c[558]=2097152;c[559]=0;c[779]=0;c[554]=(eJ(0)|0)&-16^1431655768;break}else{bM();return 0}}}while(0);if(a>>>0>=4294967232){d=0;return d|0}b=c[674]|0;if((b|0)==0){d=0;return d|0}e=c[671]|0;do{if(e>>>0>(a+40|0)>>>0){f=c[556]|0;g=_((((-40-a-1+e+f|0)>>>0)/(f>>>0)|0)-1|0,f)|0;h=b;i=3120;while(1){j=c[i>>2]|0;if(j>>>0<=h>>>0){if((j+(c[i+4>>2]|0)|0)>>>0>h>>>0){k=i;break}}j=c[i+8>>2]|0;if((j|0)==0){k=0;break}else{i=j}}if((c[k+12>>2]&8|0)!=0){break}i=dL(0)|0;h=k+4|0;if((i|0)!=((c[k>>2]|0)+(c[h>>2]|0)|0)){break}j=dL(-(g>>>0>2147483646?-2147483648-f|0:g)|0)|0;l=dL(0)|0;if(!((j|0)!=-1&l>>>0<i>>>0)){break}j=i-l|0;if((i|0)==(l|0)){break}c[h>>2]=(c[h>>2]|0)-j;c[776]=(c[776]|0)-j;h=c[674]|0;m=(c[671]|0)-j|0;j=h;n=h+8|0;if((n&7|0)==0){o=0}else{o=-n&7}n=m-o|0;c[674]=j+o;c[671]=n;c[j+(o+4)>>2]=n|1;c[j+(m+4)>>2]=40;c[675]=c[558];d=(i|0)!=(l|0)|0;return d|0}}while(0);if((c[671]|0)>>>0<=(c[675]|0)>>>0){d=0;return d|0}c[675]=-1;d=0;return d|0}function fZ(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function f_(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function f$(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function f0(a){a=a|0;return bA(a|0)|0}function f1(a){a=a|0;return bB(a|0)|0}function f2(a){a=a|0;return c7(a|0)|0}function f3(a){a=a|0;return ec(a|0)|0}function f4(a){a=a|0;return aR(a|0)|0}function f5(a){a=a|0;return c1(a|0)|0}function f6(a){a=a|0;return dS(a|0)|0}function f7(a){a=a|0;return dV(a|0)|0}function f8(a){a=a|0;return dh(a|0)|0}function f9(a){a=a|0;return eH(a|0)|0}function ga(a){a=a|0;d1(a|0)}function gb(a){a=a|0;bj(a|0)}function gc(a){a=a|0;aX(a|0)}function gd(a){a=a|0;b5(a|0)}function ge(a){a=a|0;bV(a|0)}function gf(a){a=a|0;cR(a|0)}function gg(a){a=a|0;e4(a|0)}function gh(a){a=a|0;cC(a|0)}function gi(a){a=a|0;cP(a|0)}function gj(a){a=a|0;bt(a|0)}function gk(a){a=a|0;a4(a|0)}function gl(a){a=a|0;eF(a|0)}function gm(a){a=a|0;bf(a|0)}function gn(a){a=a|0;cw(a|0)}function go(a){a=a|0;d_(a|0)}function gp(a){a=a|0;a3(a|0)}function gq(a){a=a|0;de(a|0)}function gr(a){a=a|0;cy(a|0)}function gs(a){a=a|0;bk(a|0)}function gt(a){a=a|0;eC(a|0)}function gu(a){a=a|0;aK(a|0)}function gv(a){a=a|0;c8(a|0)}function gw(a){a=a|0;en(a|0)}function gx(a){a=a|0;b3(a|0)}function gy(a){a=a|0;c4(a|0)}function gz(a){a=a|0;d6(a|0)}function gA(a,b){a=a|0;b=b|0;return bT(a|0,b|0)|0}function gB(){cf()}function gC(){cN()}function gD(){ey()}function gE(){ax()}function gF(){e0()}function gG(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dt(a|0,b|0,c|0,d|0)}function gH(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dp(a|0,b|0,c|0,d|0)}function gI(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eQ(a|0,b|0,c|0,d|0)}function gJ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dM(a|0,b|0,c|0,d|0)}function gK(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;b8(a|0,b|0,c|0,d|0)}function gL(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cW(a|0,b|0,c|0,d|0)}function gM(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aQ(a|0,b|0,c|0,d|0)}function gN(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cz(a|0,b|0,c|0,d|0)}function gO(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d4(a|0,b|0,c|0,d|0)}function gP(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cl(a|0,b|0,c|0,d|0)}function gQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ct(a|0,b|0,c|0,d|0)}function gR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cB(a|0,b|0,c|0,d|0)}function gS(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;bu(a|0,b|0,c|0,d|0)}function gT(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cb(a|0,b|0,c|0,d|0)}function gU(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d0(a|0,b|0,c|0,d|0)}function gV(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eb(a|0,b|0,c|0,d|0)}function gW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a2(a|0,b|0,c|0,d|0)}function gX(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aO(a|0,b|0,c|0,d|0)}function gY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cO(a|0,b|0,c|0,d|0)}function gZ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dv(a|0,b|0,c|0,d|0)}function g_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;e$(a|0,b|0,c|0,d|0)}function g$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dR(a|0,b|0,c|0,d|0)}function g0(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cm(a|0,b|0,c|0,d|0)}function g1(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cL(a|0,b|0,c|0,d|0)}function g2(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eq(a|0,b|0,c|0,d|0)}function g3(a,b,c){a=a|0;b=b|0;c=c|0;bK(a|0,b|0,c|0)}function g4(a,b,c){a=a|0;b=b|0;c=c|0;dD(a|0,b|0,c|0)}function g5(a,b,c){a=a|0;b=b|0;c=c|0;aY(a|0,b|0,c|0)}function g6(a,b,c){a=a|0;b=b|0;c=c|0;dY(a|0,b|0,c|0)}function g7(a,b,c){a=a|0;b=b|0;c=c|0;di(a|0,b|0,c|0)}function g8(a,b,c){a=a|0;b=b|0;c=c|0;bx(a|0,b|0,c|0)}function g9(a,b,c){a=a|0;b=b|0;c=c|0;dC(a|0,b|0,c|0)}function ha(a,b,c){a=a|0;b=b|0;c=c|0;et(a|0,b|0,c|0)}function hb(a,b,c){a=a|0;b=b|0;c=c|0;dG(a|0,b|0,c|0)}function hc(a,b,c){a=a|0;b=b|0;c=c|0;cu(a|0,b|0,c|0)}function hd(a,b,c){a=a|0;b=b|0;c=c|0;bI(a|0,b|0,c|0)}function he(a,b,c){a=a|0;b=b|0;c=c|0;by(a|0,b|0,c|0)}function hf(a,b,c){a=a|0;b=b|0;c=c|0;cj(a|0,b|0,c|0)}function hg(a,b,c){a=a|0;b=b|0;c=c|0;eN(a|0,b|0,c|0)}function hh(a,b,c){a=a|0;b=b|0;c=c|0;dg(a|0,b|0,c|0)}function hi(a,b,c){a=a|0;b=b|0;c=c|0;bc(a|0,b|0,c|0)}function hj(a,b,c){a=a|0;b=b|0;c=c|0;bi(a|0,b|0,c|0)}function hk(a,b,c){a=a|0;b=b|0;c=c|0;b2(a|0,b|0,c|0)}function hl(a,b,c){a=a|0;b=b|0;c=c|0;ay(a|0,b|0,c|0)}function hm(a,b,c){a=a|0;b=b|0;c=c|0;cp(a|0,b|0,c|0)}function hn(a,b,c){a=a|0;b=b|0;c=c|0;aN(a|0,b|0,c|0)}function ho(a,b,c){a=a|0;b=b|0;c=c|0;bN(a|0,b|0,c|0)}function hp(a,b,c){a=a|0;b=b|0;c=c|0;aG(a|0,b|0,c|0)}function hq(a,b,c){a=a|0;b=b|0;c=c|0;cE(a|0,b|0,c|0)}function hr(a,b,c){a=a|0;b=b|0;c=c|0;bY(a|0,b|0,c|0)}function hs(a,b,c){a=a|0;b=b|0;c=c|0;eK(a|0,b|0,c|0)}function ht(a,b,c){a=a|0;b=b|0;c=c|0;cv(a|0,b|0,c|0)}function hu(a,b,c){a=a|0;b=b|0;c=c|0;e5(a|0,b|0,c|0)}function hv(a,b,c){a=a|0;b=b|0;c=c|0;dW(a|0,b|0,c|0)}function hw(a,b,c){a=a|0;b=b|0;c=c|0;eV(a|0,b|0,c|0)}function hx(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;ba(a|0,b|0,c|0,d|0,e|0)}function hy(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dc(a|0,b|0,c|0,d|0,e|0)}function hz(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dn(a|0,b|0,c|0,d|0,e|0)}function hA(a,b){a=a|0;b=b|0;bE(a|0,b|0)}function hB(a,b){a=a|0;b=b|0;bQ(a|0,b|0)}function hC(a,b){a=a|0;b=b|0;eD(a|0,b|0)}function hD(a,b){a=a|0;b=b|0;ez(a|0,b|0)}function hE(a,b){a=a|0;b=b|0;aC(a|0,b|0)}function hF(a,b){a=a|0;b=b|0;ew(a|0,b|0)}function hG(a,b){a=a|0;b=b|0;e1(a|0,b|0)}function hH(a,b){a=a|0;b=b|0;bP(a|0,b|0)}function hI(a,b){a=a|0;b=b|0;dH(a|0,b|0)}function hJ(a,b){a=a|0;b=b|0;cX(a|0,b|0)}function hK(a,b){a=a|0;b=b|0;dX(a|0,b|0)}function hL(a,b){a=a|0;b=b|0;a6(a|0,b|0)}function hM(a,b){a=a|0;b=b|0;bs(a|0,b|0)}function hN(a,b){a=a|0;b=b|0;dQ(a|0,b|0)}function hO(a,b){a=a|0;b=b|0;aE(a|0,b|0)}function hP(a,b){a=a|0;b=b|0;ca(a|0,b|0)}function hQ(a,b){a=a|0;b=b|0;dI(a|0,b|0)}function hR(a,b){a=a|0;b=b|0;cD(a|0,b|0)}function hS(a,b){a=a|0;b=b|0;dK(a|0,b|0)}function hT(a,b){a=a|0;b=b|0;eg(a|0,b|0)}function hU(a,b){a=a|0;b=b|0;e7(a|0,b|0)}function hV(a,b){a=a|0;b=b|0;aL(a|0,b|0)}function hW(a,b){a=a|0;b=b|0;dF(a|0,b|0)}function hX(a,b){a=a|0;b=b|0;bC(a|0,b|0)}function hY(a,b){a=a|0;b=b|0;dE(a|0,b|0)}function hZ(a,b){a=a|0;b=b|0;cq(a|0,b|0)}function h_(a,b){a=a|0;b=b|0;c9(a|0,b|0)}function h$(a,b){a=a|0;b=b|0;e_(a|0,b|0)}function h0(a,b){a=a|0;b=b|0;cr(a|0,b|0)}function h1(a,b){a=a|0;b=b|0;dB(a|0,b|0)}function h2(a,b){a=a|0;b=b|0;c3(a|0,b|0)}function h3(a,b){a=a|0;b=b|0;e2(a|0,b|0)}function h4(a,b){a=a|0;b=b|0;be(a|0,b|0)}function h5(a,b){a=a|0;b=b|0;ck(a|0,b|0)}function h6(){return eE()|0}function h7(){return dA()|0}function h8(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;dm(a|0,+b,+c,+d,+e)}function h9(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;bO(a|0,b|0,c|0,d|0,e|0,f|0)}function ia(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;ej(a|0,b|0,c|0,d|0,e|0,f|0)}function ib(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;ch(a|0,+b,+c,+d)}function ic(a,b,c){a=a|0;b=+b;c=+c;bJ(a|0,+b,+c)}function id(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;a7(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ie(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;cg(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ig(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;c2(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ih(a,b){a=a|0;b=+b;bw(a|0,+b)}function ii(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;dj(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function ij(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;cJ(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function ik(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;eT(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function il(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;d3(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function im(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bv(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function io(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bG(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ip(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;e9[a&7](b|0,c|0,d|0,e|0,f|0)}function iq(a,b,c){a=a|0;b=b|0;c=+c;fa[a&3](b|0,+c)}function ir(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;fb[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function is(a){a=a|0;return fc[a&7]()|0}function it(a,b){a=a|0;b=b|0;fd[a&63](b|0)}function iu(a,b,c){a=a|0;b=b|0;c=c|0;fe[a&127](b|0,c|0)}function iv(a,b,c,d){a=a|0;b=b|0;c=+c;d=+d;ff[a&3](b|0,+c,+d)}function iw(a,b){a=a|0;b=b|0;return fg[a&31](b|0)|0}function ix(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;fh[a&127](b|0,c|0,d|0)}function iy(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;fi[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iz(a){a=a|0;fj[a&15]()}function iA(a,b,c,d,e,f,g,h,i,j){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;j=j|0;fk[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0,j|0)}function iB(a,b,c,d,e){a=a|0;b=b|0;c=+c;d=+d;e=+e;fl[a&3](b|0,+c,+d,+e)}function iC(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;fm[a&7](b|0,c|0,d|0,e|0,f|0,g|0)}function iD(a,b,c){a=a|0;b=b|0;c=c|0;return fn[a&3](b|0,c|0)|0}function iE(a,b,c,d,e,f){a=a|0;b=b|0;c=+c;d=+d;e=+e;f=+f;fo[a&3](b|0,+c,+d,+e,+f)}function iF(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;fp[a&63](b|0,c|0,d|0,e|0)}function iG(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;$(0)}function iH(a,b){a=a|0;b=+b;$(1)}function iI(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;$(2)}function iJ(){$(3);return 0}function iK(a){a=a|0;$(4)}function iL(a,b){a=a|0;b=b|0;$(5)}function iM(a,b,c){a=a|0;b=+b;c=+c;$(6)}function iN(a){a=a|0;$(7);return 0}function iO(a,b,c){a=a|0;b=b|0;c=c|0;$(8)}function iP(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;$(9)}function iQ(){$(10)}function iR(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;$(11)}function iS(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;$(12)}function iT(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;$(13)}function iU(a,b){a=a|0;b=b|0;$(14);return 0}function iV(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;$(15)}function iW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;$(16)}
+function fr(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function fs(){return i|0}function ft(a){a=a|0;i=a}function fu(a,b){a=a|0;b=b|0;if((p|0)==0){p=a;q=b}}function fv(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function fw(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function fx(a){a=a|0;C=a}function fy(a){a=a|0;D=a}function fz(a){a=a|0;E=a}function fA(a){a=a|0;F=a}function fB(a){a=a|0;G=a}function fC(a){a=a|0;H=a}function fD(a){a=a|0;I=a}function fE(a){a=a|0;J=a}function fF(a){a=a|0;K=a}function fG(a){a=a|0;L=a}function fH(){}function fI(){return+(+(a_()|0)/1.0e3)}function fJ(){var a=0.0,b=0.0,d=0.0,e=0.0,f=0.0,h=0.0,i=0.0,j=0.0,k=0.0;a=+g[589]- +g[586];b=+g[590]- +g[587];d=+g[591]- +g[588];e=1.0/+O(+(d*d+(a*a+b*b)));f=a*e;g[592]=f;a=e*b;g[593]=a;b=e*d;g[594]=b;d=a*0.0;e=d-b;h=b*0.0-f*0.0;i=f-d;d=1.0/+O(+(i*i+(e*e+h*h)));j=+((c[572]|0)>>>0>>>0)*.5134999752044678/+((c[573]|0)>>>0>>>0);k=j*e*d;g[595]=k;e=j*d*h;g[596]=e;h=j*d*i;g[597]=h;i=e*b-h*a;d=h*f-k*b;b=k*a-e*f;f=1.0/+O(+(b*b+(i*i+d*d)));g[598]=i*f*.5134999752044678;g[599]=f*d*.5134999752044678;g[600]=f*b*.5134999752044678;return}function fK(){var a=0,b=0,d=0,e=0.0,f=0,j=0,k=0,l=0,n=0,o=0,p=0.0,q=0,r=0,s=0.0,t=0.0,u=0.0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0.0,F=0.0,G=0;a=i;i=i+32|0;b=a|0;d=a+24|0;e=+fI();f=ds(c[564]|0,0,4,2208)|0;if((f|0)!=0){j=c[m>>2]|0;ef(j|0,2120,(k=i,i=i+8|0,c[k>>2]=f,k)|0)|0;i=k;b7(-1|0)}f=ds(c[564]|0,1,4,2280)|0;if((f|0)!=0){j=c[m>>2]|0;ef(j|0,2080,(k=i,i=i+8|0,c[k>>2]=f,k)|0)|0;i=k;b7(-1|0)}f=_(c[573]|0,c[572]|0)|0;j=a+8|0;c[j>>2]=f;l=c[2]|0;if(((f>>>0)%(l>>>0)|0|0)!=0){c[j>>2]=_(((f>>>0)/(l>>>0)|0)+1|0,l)|0}f=a+16|0;c[f>>2]=l;l=c[574]|0;L12:do{if((c[575]|0)==0&(l|0)>1){if((l|0)>0){n=0;o=l}else{break}L14:while(1){if((o|0)>0){p=+(n|0)+.5;q=0;r=o;while(1){s=+(r|0);t=(+(q|0)+.5)/s;u=p/s;do{if((q|n|0)==0){fO(0,t,u);v=dc(c[602]|0,c[564]|0,1,0,j|0,f|0,0,0,0)|0;if((v|0)!=0){w=15;break L14}}else{x=r-1|0;fO(1,t,u);y=c[602]|0;z=c[564]|0;if(!((q|0)==(x|0)&(n|0)==(x|0))){A=dc(y|0,z|0,1,0,j|0,f|0,0,0,0)|0;if((A|0)==0){break}else{w=21;break L14}}B=dc(y|0,z|0,1,0,j|0,f|0,0,0,b|0)|0;if((B|0)!=0){w=18;break L14}z=c[602]|0;cB(z|0)|0}}while(0);z=q+1|0;y=c[574]|0;if((z|0)<(y|0)){q=z;r=y}else{C=y;break}}}else{C=o}r=n+1|0;if((r|0)<(C|0)){n=r;o=C}else{break L12}}if((w|0)==15){r=c[m>>2]|0;ef(r|0,464,(k=i,i=i+8|0,c[k>>2]=v,k)|0)|0;i=k;b7(-1|0)}else if((w|0)==18){ef(c[m>>2]|0,464,(k=i,i=i+8|0,c[k>>2]=B,k)|0)|0;i=k;b7(-1|0)}else if((w|0)==21){ef(c[m>>2]|0,464,(k=i,i=i+8|0,c[k>>2]=A,k)|0)|0;i=k;b7(-1|0)}}else{fO(0,0.0,0.0);r=dc(c[602]|0,c[564]|0,1,0,j|0,f|0,0,0,b|0)|0;if((r|0)==0){q=c[602]|0;cB(q|0)|0;break}else{q=c[m>>2]|0;ef(q|0,464,(k=i,i=i+8|0,c[k>>2]=r,k)|0)|0;i=k;b7(-1|0)}}}while(0);b=c[602]|0;f=c[552]|0;j=_((c[572]|0)*12|0,c[573]|0)|0;A=dA(b|0,f|0,1,0,j|0,c[550]|0,0,0,d|0)|0;if((A|0)!=0){d=c[m>>2]|0;ef(d|0,1720,(k=i,i=i+8|0,c[k>>2]=A,k)|0)|0;i=k;b7(-1|0)}cB(c[602]|0)|0;A=c[574]|0;do{if((c[575]|0)==0&(A|0)>1){p=1.0/+(_(A,A)|0);if((_((c[572]|0)*3|0,c[573]|0)|0)==0){break}else{D=0}do{d=(c[550]|0)+(D<<2)|0;g[d>>2]=p*+g[d>>2];D=D+1|0;}while(D>>>0<(_((c[572]|0)*3|0,c[573]|0)|0)>>>0)}}while(0);p=+fI()-e;e=+((_(c[572]|0,c[573]|0)|0)>>>0>>>0)/p;D=c[574]|0;if(!((c[575]|0)==0&(D|0)>1)){E=e;F=E*.0009765625;G=b8(2416,1272,(k=i,i=i+16|0,h[k>>3]=p,h[k+8>>3]=F,k)|0)|0;i=k;i=a;return}E=e*+(_(D,D)|0);F=E*.0009765625;G=b8(2416,1272,(k=i,i=i+16|0,h[k>>3]=p,h[k+8>>3]=F,k)|0)|0;i=k;i=a;return}function fL(a){a=a|0;var b=0,d=0,e=0;b=i;i=i+8|0;if((a|0)==0){fJ();a=cj(c[602]|0,c[570]|0,1,0,116,2288,0,0,b|0)|0;if((a|0)!=0){d=c[m>>2]|0;ef(d|0,880,(e=i,i=i+8|0,c[e>>2]=a,e)|0)|0;i=e;b7(-1|0)}a=c[602]|0;cB(a|0)|0;i=b;return}a=dQ(c[552]|0)|0;if((a|0)!=0){d=c[m>>2]|0;ef(d|0,552,(e=i,i=i+8|0,c[e>>2]=a,e)|0)|0;i=e;b7(-1|0)}a=dQ(c[570]|0)|0;if((a|0)!=0){d=c[m>>2]|0;ef(d|0,504,(e=i,i=i+8|0,c[e>>2]=a,e)|0)|0;i=e;b7(-1|0)}fY(c[550]|0);fJ();fN();i=b;return}function fM(b,d){b=b|0;d=d|0;var e=0,f=0,h=0,j=0,k=0,l=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0;e=i;i=i+448|0;f=e|0;h=e+8|0;j=e+120|0;k=e+136|0;l=e+144|0;n=e+408|0;o=e+416|0;p=e+424|0;q=e+432|0;r=e+440|0;ef(c[m>>2]|0,408,(s=i,i=i+8|0,c[s>>2]=c[d>>2],s)|0)|0;i=s;ef(c[m>>2]|0,224,(s=i,i=i+8|0,c[s>>2]=c[d>>2],s)|0)|0;i=s;c[572]=512;c[573]=512;c[576]=1;c[574]=2;c[575]=1;c[577]=6;g[578]=.0010000000474974513;g[583]=5.0;g[584]=10.0;g[585]=15.0;g[579]=-.18799999356269836;g[580]=.4129999876022339;g[581]=-.2630000114440918;g[582]=.6000000238418579;g[586]=1.0;g[587]=2.0;g[588]=8.0;g[589]=0.0;g[590]=0.0;g[591]=0.0;fJ();t=e+16|0;u=l;v=e+152|0;w=n;x=o;y=r;z=aQ(0,0,f|0)|0;c[h>>2]=z;if((z|0)!=0){z=c[m>>2]|0;aT(104,31,1,z|0)|0;b7(-1|0);return 0}z=c[f>>2]|0;if((z|0)==0){A=0}else{B=fX(z<<2)|0;C=B;D=aQ(z|0,C|0,0)|0;c[h>>2]=D;if((D|0)!=0){D=c[m>>2]|0;aT(64,34,1,D|0)|0;b7(-1|0);return 0}L74:do{if((c[f>>2]|0)!=0){D=0;while(1){c[h>>2]=dx(c[C+(D<<2)>>2]|0,2307,100,t|0,0)|0;z=aQ(c[f>>2]|0,C|0,0)|0;c[h>>2]=z;E=c[m>>2]|0;if((z|0)!=0){break}ef(E|0,2056,(s=i,i=i+16|0,c[s>>2]=D,c[s+8>>2]=t,s)|0)|0;i=s;D=D+1|0;if(D>>>0>=(c[f>>2]|0)>>>0){break L74}}aT(64,34,1,E|0)|0;b7(-1|0);return 0}}while(0);E=c[C>>2]|0;fY(B);A=E}E=j|0;c[E>>2]=4228;c[j+4>>2]=A;c[j+8>>2]=0;j=b0(((A|0)==0?0:E)|0,4,0,0,0,h|0)|0;c[568]=j;if((c[h>>2]|0)!=0){E=c[m>>2]|0;aT(2024,30,1,E|0)|0;b7(-1|0);return 0}E=bi(j|0,4225,0,0,k|0)|0;c[h>>2]=E;if((E|0)!=0){j=c[m>>2]|0;ef(j|0,1976,(s=i,i=i+8|0,c[s>>2]=E,s)|0)|0;i=s;b7(-1|0);return 0}E=c[k>>2]|0;j=fX(E)|0;c[566]=j;if((j|0)==0){A=c[m>>2]|0;ef(A|0,1920,(s=i,i=i+8|0,c[s>>2]=0,s)|0)|0;i=s;b7(-1|0);return 0}A=bi(c[568]|0,4225,E|0,j|0,0)|0;c[h>>2]=A;if((A|0)!=0){j=c[m>>2]|0;ef(j|0,1880,(s=i,i=i+8|0,c[s>>2]=A,s)|0)|0;i=s;b7(-1|0);return 0}L93:do{if((c[k>>2]|0)>>>0>3){A=0;while(1){c[l>>2]=0;c[l+4>>2]=0;F=db(c[(c[566]|0)+(A<<2)>>2]|0,4096,8,u|0,0)|0;c[h>>2]=F;if((F|0)!=0){G=69;break}j=c[l>>2]|0;E=c[l+4>>2]|0;B=4;C=0;f=2;t=0;D=-1;z=0;if((j|0)==1&(E|0)==0){H=1800}else if((j|0)==(f|0)&(E|0)==(t|0)){H=1784}else if((j|0)==(B|0)&(E|0)==(C|0)){H=1768}else if((j|0)==(D|0)&(E|0)==(z|0)){H=1816}else{H=1704}ef(c[m>>2]|0,1672,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=H,s)|0)|0;i=s;I=db(c[(c[566]|0)+(A<<2)>>2]|0,4139,256,v|0,0)|0;c[h>>2]=I;J=c[m>>2]|0;if((I|0)!=0){G=76;break}ef(J|0,1640,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=v,s)|0)|0;i=s;c[n>>2]=0;K=db(c[(c[566]|0)+(A<<2)>>2]|0,4098,4,w|0,0)|0;c[h>>2]=K;L=c[m>>2]|0;if((K|0)!=0){G=78;break}z=c[n>>2]|0;ef(L|0,1600,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=z,s)|0)|0;i=s;c[o>>2]=0;M=db(c[(c[566]|0)+(A<<2)>>2]|0,4100,4,x|0,0)|0;c[h>>2]=M;N=c[m>>2]|0;if((M|0)!=0){G=80;break}z=c[o>>2]|0;ef(N|0,1552,(s=i,i=i+16|0,c[s>>2]=A,c[s+8>>2]=z,s)|0)|0;i=s;A=A+1|0;if(A>>>0>=(c[k>>2]|0)>>>2>>>0){break L93}}if((G|0)==69){A=c[m>>2]|0;ef(A|0,1840,(s=i,i=i+8|0,c[s>>2]=F,s)|0)|0;i=s;b7(-1|0);return 0}else if((G|0)==76){ef(J|0,1840,(s=i,i=i+8|0,c[s>>2]=I,s)|0)|0;i=s;b7(-1|0);return 0}else if((G|0)==78){ef(L|0,1840,(s=i,i=i+8|0,c[s>>2]=K,s)|0)|0;i=s;b7(-1|0);return 0}else if((G|0)==80){ef(N|0,1840,(s=i,i=i+8|0,c[s>>2]=M,s)|0)|0;i=s;b7(-1|0);return 0}}}while(0);c[602]=em(c[568]|0,c[c[566]>>2]|0,0,0,h|0)|0;M=c[h>>2]|0;if((M|0)!=0){N=c[m>>2]|0;ef(N|0,1504,(s=i,i=i+8|0,c[s>>2]=M,s)|0)|0;i=s;b7(-1|0);return 0}fN();M=c_(1e3,992)|0;if((M|0)==0){N=c[m>>2]|0;ef(N|0,960,(s=i,i=i+8|0,c[s>>2]=1e3,s)|0)|0;i=s;b7(-1|0);return 0}if((es(M|0,0,2)|0)!=0){N=c[m>>2]|0;ef(N|0,928,(s=i,i=i+8|0,c[s>>2]=1e3,s)|0)|0;i=s;b7(-1|0);return 0}N=b5(M|0)|0;if((N|0)==0){G=c[m>>2]|0;ef(G|0,840,(s=i,i=i+8|0,c[s>>2]=1e3,s)|0)|0;i=s;b7(-1|0);return 0}eB(M|0);G=fX(N+1|0)|0;K=c[m>>2]|0;if((G|0)==0){ef(K|0,792,(s=i,i=i+8|0,c[s>>2]=1e3,s)|0)|0;i=s;b7(-1|0);return 0}ef(K|0,752,(s=i,i=i+16|0,c[s>>2]=1e3,c[s+8>>2]=N,s)|0)|0;i=s;K=d8(G|0,1,N|0,M|0)|0;if((K|0)!=(N|0)){L=c[m>>2]|0;ef(L|0,712,(s=i,i=i+16|0,c[s>>2]=1e3,c[s+8>>2]=K,s)|0)|0;i=s;b7(-1|0);return 0}a[G+N|0]=0;aD(M|0)|0;c[p>>2]=G;G=eJ(c[568]|0,1,p|0,0,h|0)|0;c[548]=G;p=c[h>>2]|0;if((p|0)!=0){M=c[m>>2]|0;ef(M|0,1416,(s=i,i=i+8|0,c[s>>2]=p,s)|0)|0;i=s;b7(-1|0);return 0}p=ep(G|0,1,c[566]|0,1408,0,0)|0;c[h>>2]=p;if((p|0)==0){G=eH(c[548]|0,1184,h|0)|0;c[564]=G;M=c[h>>2]|0;if((M|0)!=0){N=c[m>>2]|0;ef(N|0,1144,(s=i,i=i+8|0,c[s>>2]=M,s)|0)|0;i=s;b7(-1|0);return 0}c[r>>2]=0;M=bX(G|0,c[c[566]>>2]|0,4528,4,y|0,0)|0;c[h>>2]=M;if((M|0)==0){y=c[r>>2]|0;c[2]=y;r=c[m>>2]|0;ef(r|0,1040,(s=i,i=i+8|0,c[s>>2]=y,s)|0)|0;i=s;fW(b,d,136);e4();i=e;return 0}else{e=c[m>>2]|0;ef(e|0,1088,(s=i,i=i+8|0,c[s>>2]=M,s)|0)|0;i=s;b7(-1|0);return 0}}else{M=c[m>>2]|0;ef(M|0,1368,(s=i,i=i+8|0,c[s>>2]=p,s)|0)|0;i=s;p=dV(c[548]|0,c[c[566]>>2]|0,4483,0,0,q|0)|0;c[h>>2]=p;if((p|0)!=0){M=c[m>>2]|0;ef(M|0,1320,(s=i,i=i+8|0,c[s>>2]=p,s)|0)|0;i=s;b7(-1|0);return 0}p=c[q>>2]|0;M=fX(p+1|0)|0;e=dV(c[548]|0,c[c[566]>>2]|0,4483,p|0,M|0,0)|0;c[h>>2]=e;if((e|0)==0){a[M+(c[q>>2]|0)|0]=0;q=c[m>>2]|0;ef(q|0,1200,(s=i,i=i+8|0,c[s>>2]=M,s)|0)|0;i=s;b7(-1|0);return 0}else{M=c[m>>2]|0;ef(M|0,1232,(s=i,i=i+8|0,c[s>>2]=e,s)|0)|0;i=s;b7(-1|0);return 0}}return 0}function fN(){var a=0,b=0,d=0,e=0,f=0;a=i;i=i+8|0;b=a|0;d=_((c[572]|0)*12|0,c[573]|0)|0;e=fX(d)|0;c[550]=e;c[552]=dU(c[568]|0,33,0,d|0,e|0,b|0)|0;e=c[b>>2]|0;if((e|0)!=0){d=c[m>>2]|0;ef(d|0,664,(f=i,i=i+8|0,c[f>>2]=e,f)|0)|0;i=f;b7(-1|0)}c[570]=dU(c[568]|0,36,0,116,2288,b|0)|0;e=c[b>>2]|0;if((e|0)==0){i=a;return}else{a=c[m>>2]|0;ef(a|0,616,(f=i,i=i+8|0,c[f>>2]=e,f)|0)|0;i=f;b7(-1|0)}}function fO(a,b,d){a=a|0;b=+b;d=+d;var e=0,f=0,h=0,j=0,k=0;e=i;i=i+24|0;f=e|0;h=e+8|0;j=e+16|0;c[f>>2]=a;g[h>>2]=b;g[j>>2]=d;a=ds(c[564]|0,2,4,f|0)|0;if((a|0)!=0){f=c[m>>2]|0;ef(f|0,2080,(k=i,i=i+8|0,c[k>>2]=a,k)|0)|0;i=k;b7(-1|0)}a=ds(c[564]|0,3,4,h|0)|0;if((a|0)!=0){h=c[m>>2]|0;ef(h|0,424,(k=i,i=i+8|0,c[k>>2]=a,k)|0)|0;i=k;b7(-1|0)}a=ds(c[564]|0,4,4,j|0)|0;if((a|0)==0){i=e;return}else{e=c[m>>2]|0;ef(e|0,368,(k=i,i=i+8|0,c[k>>2]=a,k)|0)|0;i=k;b7(-1|0)}}function fP(){var a=0,b=0.0,d=0;fK();c9(16384);a=c[550]|0;c5(2896);cC(0,0,c[572]|0,c[573]|0);cy(5889);ca();eQ(-1.0,1.0,-1.0,1.0);cy(5888);ca();cy(5890);ca();eo(3553);aL(3553,c[786]|0);if((a|0)!=0){bH(3553,0,0,0,c[572]|0,c[573]|0,6407,5126,a|0)}dz(32888);dz(32884);cV(7);cR(0.0,0.0);cf(-1|0,-1|0);cR(0.0,1.0);cf(-1|0,1);cR(1.0,1.0);cf(1,1);cR(1.0,0.0);cf(1,-1|0);e_();aL(3553,0);c5(3553);eo(3042);eE(770,771);a=(c[572]|0)-82|0;c5(3042);ce(1.0,1.0,1.0);b=+(a|0);a=~~(b+(+g[579]+1.5)*80.0/3.0);d=~~((+g[580]+1.5)*80.0/3.0+1.0);cV(1);cf(a-4|0,d|0);cf(a+4|0,d|0);cf(a|0,d-4|0);cf(a|0,d+4|0);e_();d=~~(b+(+g[581]+1.5)*80.0/3.0);a=~~((+g[582]+1.5)*80.0/3.0+82.0);cV(1);cf(d-4|0,a|0);cf(d+4|0,a|0);cf(d|0,a-4|0);cf(d|0,a+4|0);e_();return}function fQ(a,b){a=a|0;b=b|0;c[572]=a;c[573]=b;cC(0,0,a|0,b|0);ca();bY(-.5,+(+((c[572]|0)>>>0>>>0)+-.5),-.5,+(+((c[573]|0)>>>0>>>0)+-.5),-1.0,1.0);fL(1);et();return}function fR(a,b,c){a=a|0;b=b|0;c=c|0;var d=0.0,e=0.0,f=0.0,i=0.0,j=0.0,k=0.0;if((a|0)==101){d=+g[586];e=+g[587];f=+g[588];i=+g[591]-f;j=(+g[590]-e)*.9993908270285325+i*-.03489949643226648;g[589]=d+(+g[589]-d);g[590]=e+j;g[591]=f+(i*.9993908270285325+(-0.0-j)*-.03489949643226648)}else if((a|0)==103){j=+g[586];i=+g[587];f=+g[588];e=+g[591]-f;d=(+g[590]-i)*.9993908270285325+e*.03489949643226648;g[589]=j+(+g[589]-j);g[590]=i+d;g[591]=f+(e*.9993908270285325+(-0.0-d)*.03489949643226648)}else if((a|0)==100){d=+g[586];e=+g[587];f=+g[588];i=+g[591]-f;j=(+g[589]-d)*.9993908270285325-i*-.03489949643226648;k=e+(+g[590]-e);g[589]=d+j;g[590]=k;g[591]=f+(i*.9993908270285325+j*-.03489949643226648)}else if((a|0)==102){j=+g[586];i=+g[587];f=+g[588];k=+g[591]-f;d=(+g[589]-j)*.9993908270285325-k*.03489949643226648;e=i+(+g[590]-i);g[589]=j+d;g[590]=e;g[591]=f+(k*.9993908270285325+d*.03489949643226648)}else if((a|0)==104){g[590]=+g[590]+.5}else if((a|0)==105){g[590]=+g[590]+-.5}fL(0);et();h[7]=+(a_()|0)/1.0e3;return}function fS(b,d,e,f){b=b|0;d=d|0;e=e|0;f=f|0;var i=0,j=0,k=0,l=0;L180:do{if((b|0)==0){if((d|0)==1){a[48]=0;a[16]=0;a[32]=0;break}else if((d|0)!=0){break}c[562]=e;c[560]=f;a[48]=1;if((c7()|0)==1){a[16]=1;break}a[16]=0;i=(c[573]|0)-f|0;j=c[572]|0;k=j-82|0;do{if(!((k|0)>(e|0)|(j-2|0)<(e|0))){l=i-2|0;if(l>>>0<81){a[32]=1;g[579]=+(e-k|0)*3.0/80.0-1.5;g[580]=+(l|0)*3.0/80.0-1.5;fL(0);et();break L180}l=i-83|0;if(l>>>0>=81){break}a[32]=1;g[581]=+(e-k|0)*3.0/80.0-1.5;g[582]=+(l|0)*3.0/80.0-1.5;fL(0);et();break L180}}while(0);a[32]=0}else if((b|0)==2){if((d|0)==0){c[562]=e;c[560]=f;a[40]=1;break}else if((d|0)==1){a[40]=0;break}else{break}}}while(0);h[7]=+(a_()|0)/1.0e3;return}function fT(b,d){b=b|0;d=d|0;var e=0,f=0,i=0,j=0,k=0,l=0.0,m=0.0,n=0.0,o=0.0,p=0.0,q=0.0,r=0.0,s=0.0,t=0.0,u=0.0,v=0.0;L201:do{if(a[48]|0){e=(c[573]|0)-d|0;f=c[572]|0;i=f-82|0;j=a[32]|0;do{if((i|0)>(b|0)|j^1|(f-2|0)<(b|0)){if(j){break L201}}else{k=e-2|0;if(k>>>0<81){g[579]=+(b-i|0)*3.0/80.0-1.5;g[580]=+(k|0)*3.0/80.0-1.5;fL(0);break L201}k=e-83|0;if(k>>>0<81){g[581]=+(b-i|0)*3.0/80.0-1.5;g[582]=+(k|0)*3.0/80.0-1.5;fL(0);break L201}else{if(j){break L201}else{break}}}}while(0);j=b-(c[562]|0)|0;i=d-(c[560]|0)|0;if(a[16]|0){l=+g[586];m=+g[587];n=+g[590]-m;o=+g[588];p=+g[591]-o;q=+g[589]-l;r=+(j|0)*.10000000149011612*.03490658503988659;s=+Q(+r);t=p;p=+R(+r);r=q*s-t*p;q=+(i|0)*.10000000149011612*.03490658503988659;u=+Q(+q);v=o+(s*t+p*r)-o;p=+R(+q);q=(m+n-m)*u+p*v;g[589]=l+(l+r-l);g[590]=m+q;g[591]=o+(u*v+p*(-0.0-q))}else{g[589]=0.0;g[590]=0.0;g[591]=0.0;q=+g[588];p=+g[586];v=+(j|0)*.20000000298023224*.03490658503988659;u=+Q(+v);o=q;q=+R(+v);g[586]=p*u-o*q;v=+g[587];m=+(i|0)*.20000000298023224*.03490658503988659;l=+Q(+m);r=o*u+p*q;q=+R(+m);g[587]=v*l+q*r;g[588]=(-0.0-v)*q+l*r}c[562]=b;c[560]=d;fL(0)}else{if(a[40]|0){i=b-(c[562]|0)|0;r=+g[584];l=+g[585];q=+(d-(c[560]|0)|0)*-.20000000298023224*.03490658503988659;v=+Q(+q);m=l;l=+R(+q);g[584]=r*v+m*l;q=+g[583];p=+(i|0)*-.20000000298023224*.03490658503988659;u=+Q(+p);o=m*v+(-0.0-r)*l;l=+R(+p);g[583]=q*u-l*o;g[585]=q*l+u*o;c[562]=b;c[560]=d;fL(0);break}else{return}}}while(0);et();h[7]=+(a_()|0)/1.0e3;return}function fU(a,b,d){a=a|0;b=b|0;d=d|0;var e=0.0,f=0.0,j=0.0,k=0.0,l=0.0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0;d=i;b=a&255;do{if((b|0)==119){e=+g[592]*.5;f=+g[593]*.5;j=+g[594]*.5;g[586]=e+ +g[586];g[587]=f+ +g[587];g[588]=j+ +g[588];g[589]=e+ +g[589];g[590]=f+ +g[590];g[591]=j+ +g[591]}else if((b|0)==115){j=+g[592]*-.5;f=+g[593]*-.5;e=+g[594]*-.5;g[586]=j+ +g[586];g[587]=f+ +g[587];g[588]=e+ +g[588];g[589]=j+ +g[589];g[590]=f+ +g[590];g[591]=e+ +g[591]}else if((b|0)==114){g[587]=+g[587]+.5;g[590]=+g[590]+.5}else if((b|0)==102){g[587]=+g[587]+-.5;g[590]=+g[590]+-.5}else if((b|0)==108){c[576]=(c[576]|0)==0}else if((b|0)==104){c[6]=(c[6]|0)==0}else if((b|0)==49){g[578]=+g[578]*.75}else if((b|0)==50){g[578]=+g[578]*1.3333333730697632}else if((b|0)==51){a=(c[577]|0)-1|0;c[577]=(a|0)==0?1:a}else if((b|0)==52){a=(c[577]|0)+1|0;c[577]=a>>>0>12?12:a}else if((b|0)==53){a=(c[574]|0)-1|0;c[574]=(a|0)<1?1:a}else if((b|0)==54){a=(c[574]|0)+1|0;c[574]=(a|0)>5?5:a}else if((b|0)==27){aT(344,6,1,c[m>>2]|0)|0;b7(0)}else if((b|0)==97){e=+g[595];f=+g[596];j=+g[597];k=1.0/+O(+(e*e+f*f+j*j));l=e*k*-.5;e=f*k*-.5;f=j*k*-.5;g[586]=+g[586]+l;g[587]=+g[587]+e;g[588]=+g[588]+f;g[589]=l+ +g[589];g[590]=e+ +g[590];g[591]=f+ +g[591]}else if((b|0)==100){f=+g[595];e=+g[596];l=+g[597];k=1.0/+O(+(f*f+e*e+l*l));j=f*k*.5;f=e*k*.5;e=l*k*.5;g[586]=+g[586]+j;g[587]=+g[587]+f;g[588]=+g[588]+e;g[589]=j+ +g[589];g[590]=f+ +g[590];g[591]=e+ +g[591]}else if((b|0)==112){a=c_(352,1832)|0;if((a|0)==0){n=c[m>>2]|0;aT(1464,37,1,n|0)|0;break}n=c[573]|0;ef(a|0,1024,(o=i,i=i+24|0,c[o>>2]=c[572],c[o+8>>2]=n,c[o+16>>2]=255,o)|0)|0;i=o;n=c[573]|0;if((n|0)!=0){p=0;q=c[572]|0;r=n;while(1){if((q|0)==0){s=0;t=r}else{n=~p;u=0;v=q;w=r;while(1){x=((_(w+n|0,v)|0)+u|0)*3|0;y=c[550]|0;e=+g[y+(x<<2)>>2];do{if(e<0.0){z=0}else{if(e>1.0){z=255;break}z=~~(e*255.0+.5)}}while(0);e=+g[y+(x+1<<2)>>2];do{if(e<0.0){A=0}else{if(e>1.0){A=255;break}A=~~(e*255.0+.5)}}while(0);e=+g[y+(x+2<<2)>>2];do{if(e<0.0){B=0}else{if(e>1.0){B=255;break}B=~~(e*255.0+.5)}}while(0);ef(a|0,600,(o=i,i=i+24|0,c[o>>2]=z,c[o+8>>2]=A,c[o+16>>2]=B,o)|0)|0;i=o;x=u+1|0;y=c[572]|0;C=c[573]|0;if(x>>>0<y>>>0){u=x;v=y;w=C}else{s=y;t=C;break}}}w=p+1|0;if(w>>>0<t>>>0){p=w;q=s;r=t}else{break}}}aD(a|0)|0}}while(0);fL(0);et();h[7]=+(a_()|0)/1.0e3;i=d;return}function fV(a){a=a|0;var b=0.0;b=+(a_()|0)/1.0e3;do{if(b- +h[7]>5.0){if((c[575]|0)==0){break}c[575]=0;et()}else{c[575]=1}}while(0);ea(1e3,22,0);return}function fW(a,b,d){a=a|0;b=b|0;d=d|0;var e=0,f=0,j=0.0;e=i;i=i+8|0;f=e|0;c[f>>2]=a;h[7]=+(a_()|0)/1.0e3;eN(c[572]|0,c[573]|0);bh(0,0);a2(2);ew(f|0,b|0);dv(d|0)|0;cH(42);e9(12);cd(60);bn(2);dm(42);dO(26);ea(1e3,22,0);cy(5889);d=c[572]|0;b=c[573]|0;if((c[786]|0)!=0){a7(1,3144)}c[786]=0;bM(192,(f=i,i=i+16|0,c[f>>2]=d,c[f+8>>2]=b,f)|0)|0;i=f;cx(33985);bt(1,3144);aL(3553,c[786]|0);dX(3553,10240,9728);dX(3553,10241,9728);d4(3553,0,6407,d|0,b|0,0,6407,5126,0);aL(3553,0);aP(0.0,0.0,0.0,0.0);c5(2929);cx(33984);cC(0,0,c[572]|0,c[573]|0);cy(5888);ca();cy(5889);ca();g[794]=0.0;g[795]=0.0;j=+((c[572]|0)>>>0>>>0);g[792]=j;g[793]=0.0;g[790]=j;j=+((c[573]|0)>>>0>>>0);g[791]=j;g[788]=0.0;g[789]=j;co(32884);co(32888);e7(2,5126,0,2160);b4(33984);d_(2,5126,0,3152);i=e;return}function fX(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,ai=0,aj=0,ak=0,al=0,am=0,an=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aB=0,aC=0,aD=0,aE=0,aF=0,aG=0,aH=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[668]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=2712+(h<<2)|0;j=2712+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[668]=e&~(1<<g)}else{if(l>>>0<(c[672]|0)>>>0){bN();return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{bN();return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[670]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=2712+(p<<2)|0;m=2712+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[668]=e&~(1<<r)}else{if(l>>>0<(c[672]|0)>>>0){bN();return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{bN();return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[670]|0;if((l|0)!=0){q=c[673]|0;d=l>>>3;l=d<<1;f=2712+(l<<2)|0;k=c[668]|0;h=1<<d;do{if((k&h|0)==0){c[668]=k|h;s=f;t=2712+(l+2<<2)|0}else{d=2712+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[672]|0)>>>0){s=g;t=d;break}bN();return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[670]=m;c[673]=e;n=i;return n|0}l=c[669]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[2976+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[672]|0;if(r>>>0<i>>>0){bN();return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){bN();return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break}else{w=l;x=k}}else{w=g;x=q}while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){bN();return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){bN();return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){bN();return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{bN();return 0}}}while(0);L355:do{if((e|0)!=0){f=d+28|0;i=2976+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[669]=c[669]&~(1<<c[f>>2]);break L355}else{if(e>>>0<(c[672]|0)>>>0){bN();return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L355}}}while(0);if(v>>>0<(c[672]|0)>>>0){bN();return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[672]|0)>>>0){bN();return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[672]|0)>>>0){bN();return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b)>>2]=p;f=c[670]|0;if((f|0)!=0){e=c[673]|0;i=f>>>3;f=i<<1;q=2712+(f<<2)|0;k=c[668]|0;g=1<<i;do{if((k&g|0)==0){c[668]=k|g;y=q;z=2712+(f+2<<2)|0}else{i=2712+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[672]|0)>>>0){y=l;z=i;break}bN();return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[670]=p;c[673]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[669]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=14-(h|f|l)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[2976+(A<<2)>>2]|0;L403:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L403}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[2976+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break}else{p=r;m=i;q=e}}}if((K|0)==0){o=g;break}if(J>>>0>=((c[670]|0)-g|0)>>>0){o=g;break}q=K;m=c[672]|0;if(q>>>0<m>>>0){bN();return 0}p=q+g|0;k=p;if(q>>>0>=p>>>0){bN();return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break}else{M=B;N=j}}else{M=d;N=r}while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<m>>>0){bN();return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<m>>>0){bN();return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){bN();return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{bN();return 0}}}while(0);L453:do{if((e|0)!=0){i=K+28|0;m=2976+(c[i>>2]<<2)|0;do{if((K|0)==(c[m>>2]|0)){c[m>>2]=L;if((L|0)!=0){break}c[669]=c[669]&~(1<<c[i>>2]);break L453}else{if(e>>>0<(c[672]|0)>>>0){bN();return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L453}}}while(0);if(L>>>0<(c[672]|0)>>>0){bN();return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[672]|0)>>>0){bN();return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[672]|0)>>>0){bN();return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=q+(e+4)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[q+(g|4)>>2]=J|1;c[q+(J+g)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;m=2712+(e<<2)|0;r=c[668]|0;j=1<<i;do{if((r&j|0)==0){c[668]=r|j;O=m;P=2712+(e+2<<2)|0}else{i=2712+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[672]|0)>>>0){O=d;P=i;break}bN();return 0}}while(0);c[P>>2]=k;c[O+12>>2]=k;c[q+(g+8)>>2]=O;c[q+(g+12)>>2]=m;break}e=p;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=14-(d|r|i)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=2976+(Q<<2)|0;c[q+(g+28)>>2]=Q;c[q+(g+20)>>2]=0;c[q+(g+16)>>2]=0;m=c[669]|0;l=1<<Q;if((m&l|0)==0){c[669]=m|l;c[j>>2]=e;c[q+(g+24)>>2]=j;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;m=c[j>>2]|0;while(1){if((c[m+4>>2]&-8|0)==(J|0)){break}S=m+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=357;break}else{l=l<<1;m=j}}if((T|0)==357){if(S>>>0<(c[672]|0)>>>0){bN();return 0}else{c[S>>2]=e;c[q+(g+24)>>2]=m;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}}l=m+8|0;j=c[l>>2]|0;i=c[672]|0;if(m>>>0<i>>>0){bN();return 0}if(j>>>0<i>>>0){bN();return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[q+(g+8)>>2]=j;c[q+(g+12)>>2]=m;c[q+(g+24)>>2]=0;break}}}while(0);q=K+8|0;if((q|0)==0){o=g;break}else{n=q}return n|0}}while(0);K=c[670]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[673]|0;if(S>>>0>15){R=J;c[673]=R+o;c[670]=S;c[R+(o+4)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[670]=0;c[673]=0;c[J+4>>2]=K|3;S=J+(K+4)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[671]|0;if(o>>>0<J>>>0){S=J-o|0;c[671]=S;J=c[674]|0;K=J;c[674]=K+o;c[K+(o+4)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[554]|0)==0){J=aA(8)|0;if((J-1&J|0)==0){c[556]=J;c[555]=J;c[557]=-1;c[558]=-1;c[559]=0;c[779]=0;c[554]=(eK(0)|0)&-16^1431655768;break}else{bN();return 0}}}while(0);J=o+48|0;S=c[556]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[778]|0;do{if((O|0)!=0){P=c[776]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L545:do{if((c[779]&4|0)==0){O=c[674]|0;L547:do{if((O|0)==0){T=387}else{L=O;P=3120;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=387;break L547}else{P=M}}if((P|0)==0){T=387;break}L=R-(c[671]|0)&Q;if(L>>>0>=2147483647){W=0;break}m=dM(L|0)|0;e=(m|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?m:-1;Y=e?L:0;Z=m;_=L;T=396}}while(0);do{if((T|0)==387){O=dM(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[555]|0;m=L-1|0;if((m&g|0)==0){$=S}else{$=S-g+(m+g&-L)|0}L=c[776]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}m=c[778]|0;if((m|0)!=0){if(g>>>0<=L>>>0|g>>>0>m>>>0){W=0;break}}m=dM($|0)|0;g=(m|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=m;_=$;T=396}}while(0);L567:do{if((T|0)==396){m=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=407;break L545}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[556]|0;O=K-_+g&-g;if(O>>>0>=2147483647){ac=_;break}if((dM(O|0)|0)==-1){dM(m|0)|0;W=Y;break L567}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=407;break L545}}}while(0);c[779]=c[779]|4;ad=W;T=404}else{ad=0;T=404}}while(0);do{if((T|0)==404){if(S>>>0>=2147483647){break}W=dM(S|0)|0;Z=dM(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)!=-1){aa=Z?ac:ad;ab=Y;T=407}}}while(0);do{if((T|0)==407){ad=(c[776]|0)+aa|0;c[776]=ad;if(ad>>>0>(c[777]|0)>>>0){c[777]=ad}ad=c[674]|0;L587:do{if((ad|0)==0){S=c[672]|0;if((S|0)==0|ab>>>0<S>>>0){c[672]=ab}c[780]=ab;c[781]=aa;c[783]=0;c[677]=c[554];c[676]=-1;S=0;do{Y=S<<1;ac=2712+(Y<<2)|0;c[2712+(Y+3<<2)>>2]=ac;c[2712+(Y+2<<2)>>2]=ac;S=S+1|0;}while(S>>>0<32);S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=aa-40-ae|0;c[674]=ab+ae;c[671]=S;c[ab+(ae+4)>>2]=S|1;c[ab+(aa-36)>>2]=40;c[675]=c[558]}else{S=3120;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=419;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==419){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa;ac=c[674]|0;Y=(c[671]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){ai=0}else{ai=-W&7}W=Y-ai|0;c[674]=Z+ai;c[671]=W;c[Z+(ai+4)>>2]=W|1;c[Z+(Y+4)>>2]=40;c[675]=c[558];break L587}}while(0);if(ab>>>0<(c[672]|0)>>>0){c[672]=ab}S=ab+aa|0;Y=3120;while(1){aj=Y|0;if((c[aj>>2]|0)==(S|0)){T=429;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==429){if((c[Y+12>>2]&8|0)!=0){break}c[aj>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa;S=ab+8|0;if((S&7|0)==0){ak=0}else{ak=-S&7}S=ab+(aa+8)|0;if((S&7|0)==0){al=0}else{al=-S&7}S=ab+(al+aa)|0;Z=S;W=ak+o|0;ac=ab+W|0;_=ac;K=S-(ab+ak)-o|0;c[ab+(ak+4)>>2]=o|3;do{if((Z|0)==(c[674]|0)){J=(c[671]|0)+K|0;c[671]=J;c[674]=_;c[ab+(W+4)>>2]=J|1}else{if((Z|0)==(c[673]|0)){J=(c[670]|0)+K|0;c[670]=J;c[673]=_;c[ab+(W+4)>>2]=J|1;c[ab+(J+W)>>2]=J;break}J=aa+4|0;X=c[ab+(J+al)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L632:do{if(X>>>0<256){U=c[ab+((al|8)+aa)>>2]|0;Q=c[ab+(aa+12+al)>>2]|0;R=2712+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[672]|0)>>>0){bN();return 0}if((c[U+12>>2]|0)==(Z|0)){break}bN();return 0}}while(0);if((Q|0)==(U|0)){c[668]=c[668]&~(1<<V);break}do{if((Q|0)==(R|0)){am=Q+8|0}else{if(Q>>>0<(c[672]|0)>>>0){bN();return 0}m=Q+8|0;if((c[m>>2]|0)==(Z|0)){am=m;break}bN();return 0}}while(0);c[U+12>>2]=Q;c[am>>2]=U}else{R=S;m=c[ab+((al|24)+aa)>>2]|0;P=c[ab+(aa+12+al)>>2]|0;do{if((P|0)==(R|0)){O=al|16;g=ab+(J+O)|0;L=c[g>>2]|0;if((L|0)==0){e=ab+(O+aa)|0;O=c[e>>2]|0;if((O|0)==0){an=0;break}else{ao=O;ap=e}}else{ao=L;ap=g}while(1){g=ao+20|0;L=c[g>>2]|0;if((L|0)!=0){ao=L;ap=g;continue}g=ao+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ao=L;ap=g}}if(ap>>>0<(c[672]|0)>>>0){bN();return 0}else{c[ap>>2]=0;an=ao;break}}else{g=c[ab+((al|8)+aa)>>2]|0;if(g>>>0<(c[672]|0)>>>0){bN();return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){bN();return 0}e=P+8|0;if((c[e>>2]|0)==(R|0)){c[L>>2]=P;c[e>>2]=g;an=P;break}else{bN();return 0}}}while(0);if((m|0)==0){break}P=ab+(aa+28+al)|0;U=2976+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=an;if((an|0)!=0){break}c[669]=c[669]&~(1<<c[P>>2]);break L632}else{if(m>>>0<(c[672]|0)>>>0){bN();return 0}Q=m+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=an}else{c[m+20>>2]=an}if((an|0)==0){break L632}}}while(0);if(an>>>0<(c[672]|0)>>>0){bN();return 0}c[an+24>>2]=m;R=al|16;P=c[ab+(R+aa)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[672]|0)>>>0){bN();return 0}else{c[an+16>>2]=P;c[P+24>>2]=an;break}}}while(0);P=c[ab+(J+R)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[672]|0)>>>0){bN();return 0}else{c[an+20>>2]=P;c[P+24>>2]=an;break}}}while(0);aq=ab+(($|al)+aa)|0;ar=$+K|0}else{aq=Z;ar=K}J=aq+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4)>>2]=ar|1;c[ab+(ar+W)>>2]=ar;J=ar>>>3;if(ar>>>0<256){V=J<<1;X=2712+(V<<2)|0;P=c[668]|0;m=1<<J;do{if((P&m|0)==0){c[668]=P|m;as=X;at=2712+(V+2<<2)|0}else{J=2712+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[672]|0)>>>0){as=U;at=J;break}bN();return 0}}while(0);c[at>>2]=_;c[as+12>>2]=_;c[ab+(W+8)>>2]=as;c[ab+(W+12)>>2]=X;break}V=ac;m=ar>>>8;do{if((m|0)==0){au=0}else{if(ar>>>0>16777215){au=31;break}P=(m+1048320|0)>>>16&8;$=m<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=14-(J|P|$)+(U<<$>>>15)|0;au=ar>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2976+(au<<2)|0;c[ab+(W+28)>>2]=au;c[ab+(W+20)>>2]=0;c[ab+(W+16)>>2]=0;X=c[669]|0;Q=1<<au;if((X&Q|0)==0){c[669]=X|Q;c[m>>2]=V;c[ab+(W+24)>>2]=m;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}if((au|0)==31){av=0}else{av=25-(au>>>1)|0}Q=ar<<av;X=c[m>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(ar|0)){break}aw=X+16+(Q>>>31<<2)|0;m=c[aw>>2]|0;if((m|0)==0){T=502;break}else{Q=Q<<1;X=m}}if((T|0)==502){if(aw>>>0<(c[672]|0)>>>0){bN();return 0}else{c[aw>>2]=V;c[ab+(W+24)>>2]=X;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}}Q=X+8|0;m=c[Q>>2]|0;$=c[672]|0;if(X>>>0<$>>>0){bN();return 0}if(m>>>0<$>>>0){bN();return 0}else{c[m+12>>2]=V;c[Q>>2]=V;c[ab+(W+8)>>2]=m;c[ab+(W+12)>>2]=X;c[ab+(W+24)>>2]=0;break}}}while(0);n=ab+(ak|8)|0;return n|0}}while(0);Y=ad;W=3120;while(1){ax=c[W>>2]|0;if(ax>>>0<=Y>>>0){ay=c[W+4>>2]|0;az=ax+ay|0;if(az>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=ax+(ay-39)|0;if((W&7|0)==0){aB=0}else{aB=-W&7}W=ax+(ay-47+aB)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aC=0}else{aC=-_&7}_=aa-40-aC|0;c[674]=ab+aC;c[671]=_;c[ab+(aC+4)>>2]=_|1;c[ab+(aa-36)>>2]=40;c[675]=c[558];c[ac+4>>2]=27;c[W>>2]=c[780];c[W+4>>2]=c[3124>>2];c[W+8>>2]=c[3128>>2];c[W+12>>2]=c[3132>>2];c[780]=ab;c[781]=aa;c[783]=0;c[782]=W;W=ac+28|0;c[W>>2]=7;if((ac+32|0)>>>0<az>>>0){_=W;while(1){W=_+4|0;c[W>>2]=7;if((_+8|0)>>>0<az>>>0){_=W}else{break}}}if((ac|0)==(Y|0)){break}_=ac-ad|0;W=Y+(_+4)|0;c[W>>2]=c[W>>2]&-2;c[ad+4>>2]=_|1;c[Y+_>>2]=_;W=_>>>3;if(_>>>0<256){K=W<<1;Z=2712+(K<<2)|0;S=c[668]|0;m=1<<W;do{if((S&m|0)==0){c[668]=S|m;aD=Z;aE=2712+(K+2<<2)|0}else{W=2712+(K+2<<2)|0;Q=c[W>>2]|0;if(Q>>>0>=(c[672]|0)>>>0){aD=Q;aE=W;break}bN();return 0}}while(0);c[aE>>2]=ad;c[aD+12>>2]=ad;c[ad+8>>2]=aD;c[ad+12>>2]=Z;break}K=ad;m=_>>>8;do{if((m|0)==0){aF=0}else{if(_>>>0>16777215){aF=31;break}S=(m+1048320|0)>>>16&8;Y=m<<S;ac=(Y+520192|0)>>>16&4;W=Y<<ac;Y=(W+245760|0)>>>16&2;Q=14-(ac|S|Y)+(W<<Y>>>15)|0;aF=_>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2976+(aF<<2)|0;c[ad+28>>2]=aF;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[669]|0;Q=1<<aF;if((Z&Q|0)==0){c[669]=Z|Q;c[m>>2]=K;c[ad+24>>2]=m;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aF|0)==31){aG=0}else{aG=25-(aF>>>1)|0}Q=_<<aG;Z=c[m>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(_|0)){break}aH=Z+16+(Q>>>31<<2)|0;m=c[aH>>2]|0;if((m|0)==0){T=537;break}else{Q=Q<<1;Z=m}}if((T|0)==537){if(aH>>>0<(c[672]|0)>>>0){bN();return 0}else{c[aH>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;_=c[Q>>2]|0;m=c[672]|0;if(Z>>>0<m>>>0){bN();return 0}if(_>>>0<m>>>0){bN();return 0}else{c[_+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=_;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[671]|0;if(ad>>>0<=o>>>0){break}_=ad-o|0;c[671]=_;ad=c[674]|0;Q=ad;c[674]=Q+o;c[Q+(o+4)>>2]=_|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[(dr()|0)>>2]=12;n=0;return n|0}function fY(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[672]|0;if(b>>>0<e>>>0){bN()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){bN()}h=f&-8;i=a+(h-8)|0;j=i;L804:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){bN()}if((n|0)==(c[673]|0)){p=a+(h-4)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[670]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8)>>2]|0;s=c[a+(l+12)>>2]|0;t=2712+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){bN()}if((c[k+12>>2]|0)==(n|0)){break}bN()}}while(0);if((s|0)==(k|0)){c[668]=c[668]&~(1<<p);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){bN()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}bN()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24)>>2]|0;v=c[a+(l+12)>>2]|0;do{if((v|0)==(t|0)){w=a+(l+20)|0;x=c[w>>2]|0;if((x|0)==0){y=a+(l+16)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break}else{B=z;C=y}}else{B=x;C=w}while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){bN()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8)>>2]|0;if(w>>>0<e>>>0){bN()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){bN()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{bN()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28)|0;m=2976+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[669]=c[669]&~(1<<c[v>>2]);q=n;r=o;break L804}else{if(p>>>0<(c[672]|0)>>>0){bN()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L804}}}while(0);if(A>>>0<(c[672]|0)>>>0){bN()}c[A+24>>2]=p;t=c[a+(l+16)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[672]|0)>>>0){bN()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[672]|0)>>>0){bN()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){bN()}A=a+(h-4)|0;e=c[A>>2]|0;if((e&1|0)==0){bN()}do{if((e&2|0)==0){if((j|0)==(c[674]|0)){B=(c[671]|0)+r|0;c[671]=B;c[674]=q;c[q+4>>2]=B|1;if((q|0)!=(c[673]|0)){return}c[673]=0;c[670]=0;return}if((j|0)==(c[673]|0)){B=(c[670]|0)+r|0;c[670]=B;c[673]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L906:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=2712+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[672]|0)>>>0){bN()}if((c[u+12>>2]|0)==(j|0)){break}bN()}}while(0);if((g|0)==(u|0)){c[668]=c[668]&~(1<<C);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[672]|0)>>>0){bN()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}bN()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16)>>2]|0;t=c[a+(h|4)>>2]|0;do{if((t|0)==(b|0)){p=a+(h+12)|0;v=c[p>>2]|0;if((v|0)==0){m=a+(h+8)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break}else{F=k;G=m}}else{F=v;G=p}while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[672]|0)>>>0){bN()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[672]|0)>>>0){bN()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){bN()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{bN()}}}while(0);if((f|0)==0){break}t=a+(h+20)|0;u=2976+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[669]=c[669]&~(1<<c[t>>2]);break L906}else{if(f>>>0<(c[672]|0)>>>0){bN()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L906}}}while(0);if(E>>>0<(c[672]|0)>>>0){bN()}c[E+24>>2]=f;b=c[a+(h+8)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[672]|0)>>>0){bN()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[672]|0)>>>0){bN()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[673]|0)){H=B;break}c[670]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=2712+(d<<2)|0;A=c[668]|0;E=1<<r;do{if((A&E|0)==0){c[668]=A|E;I=e;J=2712+(d+2<<2)|0}else{r=2712+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[672]|0)>>>0){I=h;J=r;break}bN()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=14-(E|J|d)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=2976+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[669]|0;d=1<<K;do{if((r&d|0)==0){c[669]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=714;break}else{A=A<<1;J=E}}if((N|0)==714){if(M>>>0<(c[672]|0)>>>0){bN()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[672]|0;if(J>>>0<E>>>0){bN()}if(B>>>0<E>>>0){bN()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[676]|0)-1|0;c[676]=q;if((q|0)==0){O=3128}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[676]=-1;return}function fZ(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function f_(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function f$(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function f0(a){a=a|0;return bB(a|0)|0}function f1(a){a=a|0;return bC(a|0)|0}function f2(a){a=a|0;return c8(a|0)|0}function f3(a){a=a|0;return ed(a|0)|0}function f4(a){a=a|0;return aS(a|0)|0}function f5(a){a=a|0;return c2(a|0)|0}function f6(a){a=a|0;return dT(a|0)|0}function f7(a){a=a|0;return dW(a|0)|0}function f8(a){a=a|0;return di(a|0)|0}function f9(a){a=a|0;return eI(a|0)|0}function ga(a){a=a|0;d2(a|0)}function gb(a){a=a|0;bk(a|0)}function gc(a){a=a|0;aY(a|0)}function gd(a){a=a|0;b6(a|0)}function ge(a){a=a|0;bW(a|0)}function gf(a){a=a|0;cS(a|0)}function gg(a){a=a|0;e5(a|0)}function gh(a){a=a|0;cD(a|0)}function gi(a){a=a|0;cQ(a|0)}function gj(a){a=a|0;bu(a|0)}function gk(a){a=a|0;a5(a|0)}function gl(a){a=a|0;eG(a|0)}function gm(a){a=a|0;bg(a|0)}function gn(a){a=a|0;cx(a|0)}function go(a){a=a|0;d$(a|0)}function gp(a){a=a|0;a4(a|0)}function gq(a){a=a|0;df(a|0)}function gr(a){a=a|0;cz(a|0)}function gs(a){a=a|0;bl(a|0)}function gt(a){a=a|0;eD(a|0)}function gu(a){a=a|0;aK(a|0)}function gv(a){a=a|0;c9(a|0)}function gw(a){a=a|0;eo(a|0)}function gx(a){a=a|0;b4(a|0)}function gy(a){a=a|0;c5(a|0)}function gz(a){a=a|0;d7(a|0)}function gA(a,b){a=a|0;b=b|0;return bU(a|0,b|0)|0}function gB(){cg()}function gC(){cO()}function gD(){ez()}function gE(){ax()}function gF(){e1()}function gG(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;du(a|0,b|0,c|0,d|0)}function gH(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dq(a|0,b|0,c|0,d|0)}function gI(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;eR(a|0,b|0,c|0,d|0)}function gJ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dN(a|0,b|0,c|0,d|0)}function gK(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;b9(a|0,b|0,c|0,d|0)}function gL(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cX(a|0,b|0,c|0,d|0)}function gM(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aR(a|0,b|0,c|0,d|0)}function gN(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cA(a|0,b|0,c|0,d|0)}function gO(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d5(a|0,b|0,c|0,d|0)}function gP(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cm(a|0,b|0,c|0,d|0)}function gQ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cu(a|0,b|0,c|0,d|0)}function gR(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cC(a|0,b|0,c|0,d|0)}function gS(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;bv(a|0,b|0,c|0,d|0)}function gT(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cc(a|0,b|0,c|0,d|0)}function gU(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;d1(a|0,b|0,c|0,d|0)}function gV(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;ec(a|0,b|0,c|0,d|0)}function gW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;a3(a|0,b|0,c|0,d|0)}function gX(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;aP(a|0,b|0,c|0,d|0)}function gY(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cP(a|0,b|0,c|0,d|0)}function gZ(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dw(a|0,b|0,c|0,d|0)}function g_(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;e0(a|0,b|0,c|0,d|0)}function g$(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;dS(a|0,b|0,c|0,d|0)}function g0(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cn(a|0,b|0,c|0,d|0)}function g1(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;cM(a|0,b|0,c|0,d|0)}function g2(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;er(a|0,b|0,c|0,d|0)}function g3(a,b,c){a=a|0;b=b|0;c=c|0;bL(a|0,b|0,c|0)}function g4(a,b,c){a=a|0;b=b|0;c=c|0;dE(a|0,b|0,c|0)}function g5(a,b,c){a=a|0;b=b|0;c=c|0;aZ(a|0,b|0,c|0)}function g6(a,b,c){a=a|0;b=b|0;c=c|0;dZ(a|0,b|0,c|0)}function g7(a,b,c){a=a|0;b=b|0;c=c|0;dj(a|0,b|0,c|0)}function g8(a,b,c){a=a|0;b=b|0;c=c|0;by(a|0,b|0,c|0)}function g9(a,b,c){a=a|0;b=b|0;c=c|0;dD(a|0,b|0,c|0)}function ha(a,b,c){a=a|0;b=b|0;c=c|0;eu(a|0,b|0,c|0)}function hb(a,b,c){a=a|0;b=b|0;c=c|0;dH(a|0,b|0,c|0)}function hc(a,b,c){a=a|0;b=b|0;c=c|0;cv(a|0,b|0,c|0)}function hd(a,b,c){a=a|0;b=b|0;c=c|0;bJ(a|0,b|0,c|0)}function he(a,b,c){a=a|0;b=b|0;c=c|0;bz(a|0,b|0,c|0)}function hf(a,b,c){a=a|0;b=b|0;c=c|0;ck(a|0,b|0,c|0)}function hg(a,b,c){a=a|0;b=b|0;c=c|0;eO(a|0,b|0,c|0)}function hh(a,b,c){a=a|0;b=b|0;c=c|0;dh(a|0,b|0,c|0)}function hi(a,b,c){a=a|0;b=b|0;c=c|0;bd(a|0,b|0,c|0)}function hj(a,b,c){a=a|0;b=b|0;c=c|0;bj(a|0,b|0,c|0)}function hk(a,b,c){a=a|0;b=b|0;c=c|0;b3(a|0,b|0,c|0)}function hl(a,b,c){a=a|0;b=b|0;c=c|0;ay(a|0,b|0,c|0)}function hm(a,b,c){a=a|0;b=b|0;c=c|0;cq(a|0,b|0,c|0)}function hn(a,b,c){a=a|0;b=b|0;c=c|0;aO(a|0,b|0,c|0)}function ho(a,b,c){a=a|0;b=b|0;c=c|0;bO(a|0,b|0,c|0)}function hp(a,b,c){a=a|0;b=b|0;c=c|0;aG(a|0,b|0,c|0)}function hq(a,b,c){a=a|0;b=b|0;c=c|0;cF(a|0,b|0,c|0)}function hr(a,b,c){a=a|0;b=b|0;c=c|0;bZ(a|0,b|0,c|0)}function hs(a,b,c){a=a|0;b=b|0;c=c|0;eL(a|0,b|0,c|0)}function ht(a,b,c){a=a|0;b=b|0;c=c|0;cw(a|0,b|0,c|0)}function hu(a,b,c){a=a|0;b=b|0;c=c|0;e6(a|0,b|0,c|0)}function hv(a,b,c){a=a|0;b=b|0;c=c|0;dX(a|0,b|0,c|0)}function hw(a,b,c){a=a|0;b=b|0;c=c|0;eW(a|0,b|0,c|0)}function hx(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;bb(a|0,b|0,c|0,d|0,e|0)}function hy(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dd(a|0,b|0,c|0,d|0,e|0)}function hz(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;dp(a|0,b|0,c|0,d|0,e|0)}function hA(a,b){a=a|0;b=b|0;bF(a|0,b|0)}function hB(a,b){a=a|0;b=b|0;bR(a|0,b|0)}function hC(a,b){a=a|0;b=b|0;eE(a|0,b|0)}function hD(a,b){a=a|0;b=b|0;eA(a|0,b|0)}function hE(a,b){a=a|0;b=b|0;aC(a|0,b|0)}function hF(a,b){a=a|0;b=b|0;ex(a|0,b|0)}function hG(a,b){a=a|0;b=b|0;e2(a|0,b|0)}function hH(a,b){a=a|0;b=b|0;bQ(a|0,b|0)}function hI(a,b){a=a|0;b=b|0;dI(a|0,b|0)}function hJ(a,b){a=a|0;b=b|0;cY(a|0,b|0)}function hK(a,b){a=a|0;b=b|0;dY(a|0,b|0)}function hL(a,b){a=a|0;b=b|0;a7(a|0,b|0)}function hM(a,b){a=a|0;b=b|0;bt(a|0,b|0)}function hN(a,b){a=a|0;b=b|0;dR(a|0,b|0)}function hO(a,b){a=a|0;b=b|0;aE(a|0,b|0)}function hP(a,b){a=a|0;b=b|0;cb(a|0,b|0)}function hQ(a,b){a=a|0;b=b|0;dJ(a|0,b|0)}function hR(a,b){a=a|0;b=b|0;cE(a|0,b|0)}function hS(a,b){a=a|0;b=b|0;dL(a|0,b|0)}function hT(a,b){a=a|0;b=b|0;eh(a|0,b|0)}function hU(a,b){a=a|0;b=b|0;e8(a|0,b|0)}function hV(a,b){a=a|0;b=b|0;aL(a|0,b|0)}function hW(a,b){a=a|0;b=b|0;dG(a|0,b|0)}function hX(a,b){a=a|0;b=b|0;bD(a|0,b|0)}function hY(a,b){a=a|0;b=b|0;dF(a|0,b|0)}function hZ(a,b){a=a|0;b=b|0;cr(a|0,b|0)}function h_(a,b){a=a|0;b=b|0;da(a|0,b|0)}function h$(a,b){a=a|0;b=b|0;e$(a|0,b|0)}function h0(a,b){a=a|0;b=b|0;cs(a|0,b|0)}function h1(a,b){a=a|0;b=b|0;dC(a|0,b|0)}function h2(a,b){a=a|0;b=b|0;c4(a|0,b|0)}function h3(a,b){a=a|0;b=b|0;e3(a|0,b|0)}function h4(a,b){a=a|0;b=b|0;bf(a|0,b|0)}function h5(a,b){a=a|0;b=b|0;cl(a|0,b|0)}function h6(){return eF()|0}function h7(){return dB()|0}function h8(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;dn(a|0,+b,+c,+d,+e)}function h9(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;bP(a|0,b|0,c|0,d|0,e|0,f|0)}function ia(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;ek(a|0,b|0,c|0,d|0,e|0,f|0)}function ib(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;ci(a|0,+b,+c,+d)}function ic(a,b,c){a=a|0;b=+b;c=+c;bK(a|0,+b,+c)}function id(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;a8(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ie(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;ch(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ig(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;c3(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function ih(a,b){a=a|0;b=+b;bx(a|0,+b)}function ii(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;dk(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function ij(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;cK(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function ik(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;eU(a|0,b|0,c|0,d|0,e|0,f|0,g|0)}function il(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;d4(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function im(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bw(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function io(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;bH(a|0,b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function ip(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;fa[a&7](b|0,c|0,d|0,e|0,f|0)}function iq(a,b,c){a=a|0;b=b|0;c=+c;fb[a&3](b|0,+c)}function ir(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;fc[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0)}function is(a){a=a|0;return fd[a&7]()|0}function it(a,b){a=a|0;b=b|0;fe[a&63](b|0)}function iu(a,b,c){a=a|0;b=b|0;c=c|0;ff[a&127](b|0,c|0)}function iv(a,b,c,d){a=a|0;b=b|0;c=+c;d=+d;fg[a&3](b|0,+c,+d)}function iw(a,b){a=a|0;b=b|0;return fh[a&31](b|0)|0}function ix(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;fi[a&127](b|0,c|0,d|0)}function iy(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;fj[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0)}function iz(a){a=a|0;fk[a&15]()}function iA(a,b,c,d,e,f,g,h,i,j){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;j=j|0;fl[a&7](b|0,c|0,d|0,e|0,f|0,g|0,h|0,i|0,j|0)}function iB(a,b,c,d,e){a=a|0;b=b|0;c=+c;d=+d;e=+e;fm[a&3](b|0,+c,+d,+e)}function iC(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;fn[a&7](b|0,c|0,d|0,e|0,f|0,g|0)}function iD(a,b,c){a=a|0;b=b|0;c=c|0;return fo[a&3](b|0,c|0)|0}function iE(a,b,c,d,e,f){a=a|0;b=b|0;c=+c;d=+d;e=+e;f=+f;fp[a&3](b|0,+c,+d,+e,+f)}function iF(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;fq[a&63](b|0,c|0,d|0,e|0)}function iG(a,b,c,d,e){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;$(0)}function iH(a,b){a=a|0;b=+b;$(1)}function iI(a,b,c,d,e,f,g){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;$(2)}function iJ(){$(3);return 0}function iK(a){a=a|0;$(4)}function iL(a,b){a=a|0;b=b|0;$(5)}function iM(a,b,c){a=a|0;b=+b;c=+c;$(6)}function iN(a){a=a|0;$(7);return 0}function iO(a,b,c){a=a|0;b=b|0;c=c|0;$(8)}function iP(a,b,c,d,e,f,g,h){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;$(9)}function iQ(){$(10)}function iR(a,b,c,d,e,f,g,h,i){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;g=g|0;h=h|0;i=i|0;$(11)}function iS(a,b,c,d){a=a|0;b=+b;c=+c;d=+d;$(12)}function iT(a,b,c,d,e,f){a=a|0;b=b|0;c=c|0;d=d|0;e=e|0;f=f|0;$(13)}function iU(a,b){a=a|0;b=b|0;$(14);return 0}function iV(a,b,c,d,e){a=a|0;b=+b;c=+c;d=+d;e=+e;$(15)}function iW(a,b,c,d){a=a|0;b=b|0;c=c|0;d=d|0;$(16)}
 // EMSCRIPTEN_END_FUNCS
-var e9=[iG,iG,hx,iG,hy,iG,hz,iG];var fa=[iH,iH,ih,iH];var fb=[iI,iI,ii,iI,ij,iI,ik,iI];var fc=[iJ,iJ,h6,iJ,h7,iJ,iJ,iJ];var fd=[iK,iK,ga,iK,gb,iK,gc,iK,gd,iK,ge,iK,gf,iK,gg,iK,gh,iK,gi,iK,gj,iK,fU,iK,gk,iK,gl,iK,gm,iK,gn,iK,go,iK,gp,iK,gq,iK,gr,iK,gs,iK,gt,iK,gu,iK,gv,iK,gw,iK,gx,iK,gy,iK,gz,iK,iK,iK,iK,iK,iK,iK,iK,iK];var fe=[iL,iL,hA,iL,hB,iL,hC,iL,hD,iL,hE,iL,hF,iL,hG,iL,hH,iL,hI,iL,hJ,iL,hK,iL,hL,iL,fS,iL,hM,iL,hN,iL,hO,iL,hP,iL,hQ,iL,hR,iL,hS,iL,fP,iL,hT,iL,hU,iL,hV,iL,hW,iL,hX,iL,hY,iL,hZ,iL,h_,iL,h$,iL,h0,iL,h1,iL,h2,iL,h3,iL,h4,iL,h5,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL];var ff=[iM,iM,ic,iM];var fg=[iN,iN,f0,iN,f1,iN,f2,iN,f3,iN,f4,iN,f5,iN,f6,iN,f7,iN,f8,iN,f9,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN];var fh=[iO,iO,g3,iO,g4,iO,g5,iO,g6,iO,g7,iO,fT,iO,g8,iO,g9,iO,ha,iO,hb,iO,hc,iO,hd,iO,he,iO,hf,iO,hg,iO,hh,iO,hi,iO,hj,iO,hk,iO,hl,iO,hm,iO,hn,iO,ho,iO,hp,iO,hq,iO,hr,iO,hs,iO,ht,iO,hu,iO,fQ,iO,hv,iO,hw,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO];var fi=[iP,iP,id,iP,ie,iP,ig,iP];var fj=[iQ,iQ,fO,iQ,gB,iQ,gC,iQ,gD,iQ,gE,iQ,gF,iQ,iQ,iQ];var fk=[iR,iR,il,iR,im,iR,io,iR];var fl=[iS,iS,ib,iS];var fm=[iT,iT,h9,iT,ia,iT,iT,iT];var fn=[iU,iU,gA,iU];var fo=[iV,iV,h8,iV];var fp=[iW,iW,gG,iW,gH,iW,gI,iW,gJ,iW,gK,iW,gL,iW,gM,iW,gN,iW,gO,iW,gP,iW,gQ,iW,gR,iW,gS,iW,gT,iW,gU,iW,gV,iW,gW,iW,gX,iW,gY,iW,gZ,iW,fR,iW,g_,iW,g$,iW,g0,iW,g1,iW,g2,iW,iW,iW,iW,iW,iW,iW,iW,iW,iW,iW];return{_strlen:fZ,_free:fX,_main:fL,_memset:f$,_malloc:fW,_memcpy:f_,runPostSets:fG,stackAlloc:fq,stackSave:fr,stackRestore:fs,setThrew:ft,setTempRet0:fw,setTempRet1:fx,setTempRet2:fy,setTempRet3:fz,setTempRet4:fA,setTempRet5:fB,setTempRet6:fC,setTempRet7:fD,setTempRet8:fE,setTempRet9:fF,dynCall_viiiii:ip,dynCall_vif:iq,dynCall_viiiiiii:ir,dynCall_i:is,dynCall_vi:it,dynCall_vii:iu,dynCall_viff:iv,dynCall_ii:iw,dynCall_viii:ix,dynCall_viiiiiiii:iy,dynCall_v:iz,dynCall_viiiiiiiii:iA,dynCall_vifff:iB,dynCall_viiiiii:iC,dynCall_iii:iD,dynCall_viffff:iE,dynCall_viiii:iF}})
+var fa=[iG,iG,hx,iG,hy,iG,hz,iG];var fb=[iH,iH,ih,iH];var fc=[iI,iI,ii,iI,ij,iI,ik,iI];var fd=[iJ,iJ,h6,iJ,h7,iJ,iJ,iJ];var fe=[iK,iK,ga,iK,gb,iK,gc,iK,gd,iK,ge,iK,gf,iK,gg,iK,gh,iK,gi,iK,gj,iK,fV,iK,gk,iK,gl,iK,gm,iK,gn,iK,go,iK,gp,iK,gq,iK,gr,iK,gs,iK,gt,iK,gu,iK,gv,iK,gw,iK,gx,iK,gy,iK,gz,iK,iK,iK,iK,iK,iK,iK,iK,iK];var ff=[iL,iL,hA,iL,hB,iL,hC,iL,hD,iL,hE,iL,hF,iL,hG,iL,hH,iL,hI,iL,hJ,iL,hK,iL,hL,iL,fT,iL,hM,iL,hN,iL,hO,iL,hP,iL,hQ,iL,hR,iL,hS,iL,fQ,iL,hT,iL,hU,iL,hV,iL,hW,iL,hX,iL,hY,iL,hZ,iL,h_,iL,h$,iL,h0,iL,h1,iL,h2,iL,h3,iL,h4,iL,h5,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL,iL];var fg=[iM,iM,ic,iM];var fh=[iN,iN,f0,iN,f1,iN,f2,iN,f3,iN,f4,iN,f5,iN,f6,iN,f7,iN,f8,iN,f9,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN,iN];var fi=[iO,iO,g3,iO,g4,iO,g5,iO,g6,iO,g7,iO,fU,iO,g8,iO,g9,iO,ha,iO,hb,iO,hc,iO,hd,iO,he,iO,hf,iO,hg,iO,hh,iO,hi,iO,hj,iO,hk,iO,hl,iO,hm,iO,hn,iO,ho,iO,hp,iO,hq,iO,hr,iO,hs,iO,ht,iO,hu,iO,fR,iO,hv,iO,hw,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO,iO];var fj=[iP,iP,id,iP,ie,iP,ig,iP];var fk=[iQ,iQ,fP,iQ,gB,iQ,gC,iQ,gD,iQ,gE,iQ,gF,iQ,iQ,iQ];var fl=[iR,iR,il,iR,im,iR,io,iR];var fm=[iS,iS,ib,iS];var fn=[iT,iT,h9,iT,ia,iT,iT,iT];var fo=[iU,iU,gA,iU];var fp=[iV,iV,h8,iV];var fq=[iW,iW,gG,iW,gH,iW,gI,iW,gJ,iW,gK,iW,gL,iW,gM,iW,gN,iW,gO,iW,gP,iW,gQ,iW,gR,iW,gS,iW,gT,iW,gU,iW,gV,iW,gW,iW,gX,iW,gY,iW,gZ,iW,fS,iW,g_,iW,g$,iW,g0,iW,g1,iW,g2,iW,iW,iW,iW,iW,iW,iW,iW,iW,iW,iW];return{_strlen:fZ,_free:fY,_main:fM,_memset:f$,_malloc:fX,_memcpy:f_,runPostSets:fH,stackAlloc:fr,stackSave:fs,stackRestore:ft,setThrew:fu,setTempRet0:fx,setTempRet1:fy,setTempRet2:fz,setTempRet3:fA,setTempRet4:fB,setTempRet5:fC,setTempRet6:fD,setTempRet7:fE,setTempRet8:fF,setTempRet9:fG,dynCall_viiiii:ip,dynCall_vif:iq,dynCall_viiiiiii:ir,dynCall_i:is,dynCall_vi:it,dynCall_vii:iu,dynCall_viff:iv,dynCall_ii:iw,dynCall_viii:ix,dynCall_viiiiiiii:iy,dynCall_v:iz,dynCall_viiiiiiiii:iA,dynCall_vifff:iB,dynCall_viiiiii:iC,dynCall_iii:iD,dynCall_viffff:iE,dynCall_viiii:iF}})
 // EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "invoke_viiiii": invoke_viiiii, "invoke_vif": invoke_vif, "invoke_viiiiiii": invoke_viiiiiii, "invoke_i": invoke_i, "invoke_vi": invoke_vi, "invoke_vii": invoke_vii, "invoke_viff": invoke_viff, "invoke_ii": invoke_ii, "invoke_viii": invoke_viii, "invoke_viiiiiiii": invoke_viiiiiiii, "invoke_v": invoke_v, "invoke_viiiiiiiii": invoke_viiiiiiiii, "invoke_vifff": invoke_vifff, "invoke_viiiiii": invoke_viiiiii, "invoke_iii": invoke_iii, "invoke_viffff": invoke_viffff, "invoke_viiii": invoke_viiii, "_llvm_lifetime_end": _llvm_lifetime_end, "_lseek": _lseek, "_glFlush": _glFlush, "_glGetRenderbufferParameteriv": _glGetRenderbufferParameteriv, "_glColor4ub": _glColor4ub, "_sysconf": _sysconf, "_glMultTransposeMatrixf": _glMultTransposeMatrixf, "_glPolygonOffset": _glPolygonOffset, "_fclose": _fclose, "_glStencilMaskSeparate": _glStencilMaskSeparate, "_glColor4ui": _glColor4ui, "_glGetVertexAttribPointerv": _glGetVertexAttribPointerv, "_glMultTransposeMatrixd": _glMultTransposeMatrixd, "_glColor4us": _glColor4us, "_sqrt": _sqrt, "_glLinkProgram": _glLinkProgram, "_glBindTexture": _glBindTexture, "_glVertex2fv": _glVertex2fv, "_glGetUniformiv": _glGetUniformiv, "_glClearColor": _glClearColor, "_clGetPlatformIDs": _clGetPlatformIDs, "_glFramebufferRenderbuffer": _glFramebufferRenderbuffer, "_glGetString": _glGetString, "_fwrite": _fwrite, "_gluUnProject": _gluUnProject, "_send": _send, "_glScaled": _glScaled, "_glGetTexLevelParameteriv": _glGetTexLevelParameteriv, "_glLineWidth": _glLineWidth, "_glUniform2fv": _glUniform2fv, "_emscripten_get_now": _emscripten_get_now, "_glAlphaFunc": _glAlphaFunc, "_gluPerspective": _gluPerspective, "_glTexImage1D": _glTexImage1D, "_glutInitDisplayMode": _glutInitDisplayMode, "_glBlendFuncSeparate": _glBlendFuncSeparate, "_glCompileShader": _glCompileShader, "_glDeleteObject": _glDeleteObject, "_gluLookAt": _gluLookAt, "_glDeleteTextures": _glDeleteTextures, "_glCompressedTexImage2D": _glCompressedTexImage2D, "_glPolygonMode": _glPolygonMode, "_read": _read, "_glVertexAttrib4f": _glVertexAttrib4f, "_glShadeModel": _glShadeModel, "_glGetObjectParameteriv": _glGetObjectParameteriv, "_glFogiv": _glFogiv, "_glVertexAttrib1f": _glVertexAttrib1f, "_glClearDepthf": _glClearDepthf, "_glutInitWindowPosition": _glutInitWindowPosition, "_clGetContextInfo": _clGetContextInfo, "_glGetTexParameteriv": _glGetTexParameteriv, "_glClearStencil": _glClearStencil, "_glSampleCoverage": _glSampleCoverage, "_glFogfv": _glFogfv, "_glutDisplayFunc": _glutDisplayFunc, "_glLoadTransposeMatrixd": _glLoadTransposeMatrixd, "_glColor3us": _glColor3us, "_glColor3uiv": _glColor3uiv, "_glRotated": _glRotated, "_fsync": _fsync, "_glGenTextures": _glGenTextures, "_glDepthFunc": _glDepthFunc, "_glStencilOpSeparate": _glStencilOpSeparate, "_glCompressedTexSubImage2D": _glCompressedTexSubImage2D, "_glUniform1f": _glUniform1f, "_glGetVertexAttribfv": _glGetVertexAttribfv, "_glGetTexParameterfv": _glGetTexParameterfv, "_glColor3ui": _glColor3ui, "_glCreateShader": _glCreateShader, "_glIsBuffer": _glIsBuffer, "_glUniform1i": _glUniform1i, "_glMaterialfv": _glMaterialfv, "_glGenRenderbuffers": _glGenRenderbuffers, "_glTexEnvf": _glTexEnvf, "_glTexSubImage2D": _glTexSubImage2D, "_snprintf": _snprintf, "_glUniform2i": _glUniform2i, "_glUniform2f": _glUniform2f, "_glStencilFunc": _glStencilFunc, "_printf": _printf, "_abort": _abort, "_glGetProgramiv": _glGetProgramiv, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_glBindBuffer": _glBindBuffer, "_glTexCoord2fv": _glTexCoord2fv, "_glVertex3fv": _glVertex3fv, "_glGetUniformLocation": _glGetUniformLocation, "_close": _close, "_glBlendEquation": _glBlendEquation, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_glOrtho": _glOrtho, "_glUniform4fv": _glUniform4fv, "_llvm_lifetime_start": _llvm_lifetime_start, "___setErrNo": ___setErrNo, "_clCreateContextFromType": _clCreateContextFromType, "_glTexGeni": _glTexGeni, "_glColor3ub": _glColor3ub, "_glDrawArrays": _glDrawArrays, "_glClientActiveTexture": _glClientActiveTexture, "_ftell": _ftell, "_glDeleteProgram": _glDeleteProgram, "_exit": _exit, "_sprintf": _sprintf, "_glRenderbufferStorage": _glRenderbufferStorage, "_glLoadIdentity": _glLoadIdentity, "_glAttachShader": _glAttachShader, "_glUniform3i": _glUniform3i, "_glutSpecialFunc": _glutSpecialFunc, "_glColor3f": _glColor3f, "_glVertex3f": _glVertex3f, "_glShaderBinary": _glShaderBinary, "_glCopyTexImage2D": _glCopyTexImage2D, "_glUniform3f": _glUniform3f, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glGetBufferParameteriv": _glGetBufferParameteriv, "_glBlendEquationSeparate": _glBlendEquationSeparate, "_glDrawElements": _glDrawElements, "_glColorMask": _glColorMask, "_glEnableClientState": _glEnableClientState, "_recv": _recv, "_glUniform2iv": _glUniform2iv, "_glVertexAttrib1fv": _glVertexAttrib1fv, "_glGenVertexArrays": _glGenVertexArrays, "_cos": _cos, "_glBufferSubData": _glBufferSubData, "_glUniform1iv": _glUniform1iv, "_glBindAttribLocation": _glBindAttribLocation, "_glActiveTexture": _glActiveTexture, "_glMatrixMode": _glMatrixMode, "_glBindVertexArray": _glBindVertexArray, "_glVertexAttrib3f": _glVertexAttrib3f, "_clFinish": _clFinish, "_glViewport": _glViewport, "_glGenerateMipmap": _glGenerateMipmap, "_glDetachShader": _glDetachShader, "_glGetShaderiv": _glGetShaderiv, "__exit": __exit, "_glutReshapeFunc": _glutReshapeFunc, "_glLightModelfv": _glLightModelfv, "_glNormalPointer": _glNormalPointer, "_glGetActiveAttrib": _glGetActiveAttrib, "_glPopMatrix": _glPopMatrix, "_glBlendColor": _glBlendColor, "_glColor3usv": _glColor3usv, "_glGetShaderPrecisionFormat": _glGetShaderPrecisionFormat, "_glGetShaderSource": _glGetShaderSource, "_glDepthMask": _glDepthMask, "_glTexCoord2i": _glTexCoord2i, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glutSwapBuffers": _glutSwapBuffers, "_glFogi": _glFogi, "_glBegin": _glBegin, "_glColor3ubv": _glColor3ubv, "_glShaderSource": _glShaderSource, "_glBindRenderbuffer": _glBindRenderbuffer, "_pread": _pread, "_fopen": _fopen, "_open": _open, "_glFogf": _glFogf, "_glTexCoord4f": _glTexCoord4f, "_glIsProgram": _glIsProgram, "_glCopyTexSubImage2D": _glCopyTexSubImage2D, "_glDepthRangef": _glDepthRangef, "_glDisable": _glDisable, "_glLightfv": _glLightfv, "_glutGetModifiers": _glutGetModifiers, "_glIsShader": _glIsShader, "_glClear": _glClear, "_glVertexAttrib4fv": _glVertexAttrib4fv, "_clGetDeviceInfo": _clGetDeviceInfo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_glUniform4i": _glUniform4i, "_gluProject": _gluProject, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glutReshapeWindow": _glutReshapeWindow, "_glUniform3fv": _glUniform3fv, "_glIsEnabled": _glIsEnabled, "_glStencilOp": _glStencilOp, "_glReadPixels": _glReadPixels, "_glDepthRange": _glDepthRange, "_glutMouseFunc": _glutMouseFunc, "_glUniform4f": _glUniform4f, "_glFramebufferTexture2D": _glFramebufferTexture2D, "_glUniformMatrix2fv": _glUniformMatrix2fv, "___errno_location": ___errno_location, "_clSetKernelArg": _clSetKernelArg, "_glTranslated": _glTranslated, "_glUniformMatrix3fv": _glUniformMatrix3fv, "_glutCreateWindow": _glutCreateWindow, "_glBufferData": _glBufferData, "_clGetPlatformInfo": _clGetPlatformInfo, "__formatString": __formatString, "_glDisableClientState": _glDisableClientState, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_glGetError": _glGetError, "_glDeleteRenderbuffers": _glDeleteRenderbuffers, "_glGetVertexAttribiv": _glGetVertexAttribiv, "_glTexParameteriv": _glTexParameteriv, "_glVertexAttrib3fv": _glVertexAttrib3fv, "_glGetFloatv": _glGetFloatv, "_glUniform3iv": _glUniform3iv, "_glVertexAttrib2fv": _glVertexAttrib2fv, "_glBindFramebuffer": _glBindFramebuffer, "_glColor4ubv": _glColor4ubv, "_glGenFramebuffers": _glGenFramebuffers, "_sbrk": _sbrk, "_glGetInfoLog": _glGetInfoLog, "_glutMotionFunc": _glutMotionFunc, "_glTexEnvfv": _glTexEnvfv, "_clReleaseMemObject": _clReleaseMemObject, "_glGetIntegerv": _glGetIntegerv, "_glGetAttachedShaders": _glGetAttachedShaders, "_glCheckFramebufferStatus": _glCheckFramebufferStatus, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glIsRenderbuffer": _glIsRenderbuffer, "_glTexParameteri": _glTexParameteri, "_glDeleteVertexArrays": _glDeleteVertexArrays, "_glUniform1fv": _glUniform1fv, "_glTexCoordPointer": _glTexCoordPointer, "_glFrontFace": _glFrontFace, "_glLoadMatrixf": _glLoadMatrixf, "_glGetFramebufferAttachmentParameteriv": _glGetFramebufferAttachmentParameteriv, "_glUseProgram": _glUseProgram, "_glReadBuffer": _glReadBuffer, "_glTexImage2D": _glTexImage2D, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glTexGenfv": _glTexGenfv, "_glStencilMask": _glStencilMask, "_fread": _fread, "_glMultMatrixd": _glMultMatrixd, "_glutTimerFunc": _glutTimerFunc, "_glMultMatrixf": _glMultMatrixf, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glIsTexture": _glIsTexture, "_glLoadTransposeMatrixf": _glLoadTransposeMatrixf, "_fprintf": _fprintf, "_glColor4f": _glColor4f, "_glDeleteFramebuffers": _glDeleteFramebuffers, "_glLoadMatrixd": _glLoadMatrixd, "_sin": _sin, "_glDrawRangeElements": _glDrawRangeElements, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_glTexEnvi": _glTexEnvi, "_glEnable": _glEnable, "_clBuildProgram": _clBuildProgram, "_glColor4fv": _glColor4fv, "_glStencilFuncSeparate": _glStencilFuncSeparate, "_fseek": _fseek, "_glutPostRedisplay": _glutPostRedisplay, "_glTexParameterfv": _glTexParameterfv, "_write": _write, "_glutInit": _glutInit, "_glGenBuffers": _glGenBuffers, "_glTexCoord3f": _glTexCoord3f, "_glFinish": _glFinish, "_glGetAttribLocation": _glGetAttribLocation, "_rewind": _rewind, "_glNormal3f": _glNormal3f, "_glDeleteShader": _glDeleteShader, "_glBlendFunc": _glBlendFunc, "_glCreateProgram": _glCreateProgram, "_glCullFace": _glCullFace, "_clCreateKernel": _clCreateKernel, "_glIsFramebuffer": _glIsFramebuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_time": _time, "_glVertexAttrib2f": _glVertexAttrib2f, "_glGetPointerv": _glGetPointerv, "_glutInitWindowSize": _glutInitWindowSize, "_glGetUniformfv": _glGetUniformfv, "_glColor3fv": _glColor3fv, "_gluOrtho2D": _gluOrtho2D, "_glUniformMatrix4fv": _glUniformMatrix4fv, "_glClearDepth": _glClearDepth, "_glFrustum": _glFrustum, "_glGetActiveUniform": _glGetActiveUniform, "_pwrite": _pwrite, "_glTexParameterf": _glTexParameterf, "_glColorPointer": _glColorPointer, "_glDrawBuffer": _glDrawBuffer, "_glPushMatrix": _glPushMatrix, "_glEnd": _glEnd, "_glDeleteBuffers": _glDeleteBuffers, "_glScissor": _glScissor, "_glReleaseShaderCompiler": _glReleaseShaderCompiler, "_glGetBooleanv": _glGetBooleanv, "_glPixelStorei": _glPixelStorei, "_glutMainLoop": _glutMainLoop, "_glValidateProgram": _glValidateProgram, "_glUniform4iv": _glUniform4iv, "_glVertexPointer": _glVertexPointer, "_glBindProgram": _glBindProgram, "_glutKeyboardFunc": _glutKeyboardFunc, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "invoke_viiiii": invoke_viiiii, "invoke_vif": invoke_vif, "invoke_viiiiiii": invoke_viiiiiii, "invoke_i": invoke_i, "invoke_vi": invoke_vi, "invoke_vii": invoke_vii, "invoke_viff": invoke_viff, "invoke_ii": invoke_ii, "invoke_viii": invoke_viii, "invoke_viiiiiiii": invoke_viiiiiiii, "invoke_v": invoke_v, "invoke_viiiiiiiii": invoke_viiiiiiiii, "invoke_vifff": invoke_vifff, "invoke_viiiiii": invoke_viiiiii, "invoke_iii": invoke_iii, "invoke_viffff": invoke_viffff, "invoke_viiii": invoke_viiii, "_llvm_lifetime_end": _llvm_lifetime_end, "_lseek": _lseek, "_glFlush": _glFlush, "_glGetRenderbufferParameteriv": _glGetRenderbufferParameteriv, "_glColor4ub": _glColor4ub, "_sysconf": _sysconf, "_glMultTransposeMatrixf": _glMultTransposeMatrixf, "_glPolygonOffset": _glPolygonOffset, "_fclose": _fclose, "_glStencilMaskSeparate": _glStencilMaskSeparate, "_glColor4ui": _glColor4ui, "_glGetVertexAttribPointerv": _glGetVertexAttribPointerv, "_glMultTransposeMatrixd": _glMultTransposeMatrixd, "_glColor4us": _glColor4us, "_sqrt": _sqrt, "_glLinkProgram": _glLinkProgram, "_glBindTexture": _glBindTexture, "_fflush": _fflush, "_glVertex2fv": _glVertex2fv, "_glGetUniformiv": _glGetUniformiv, "_glClearColor": _glClearColor, "_clGetPlatformIDs": _clGetPlatformIDs, "_glFramebufferRenderbuffer": _glFramebufferRenderbuffer, "_glGetString": _glGetString, "_fwrite": _fwrite, "_gluUnProject": _gluUnProject, "_send": _send, "_glScaled": _glScaled, "_glGetTexLevelParameteriv": _glGetTexLevelParameteriv, "_glLineWidth": _glLineWidth, "_glUniform2fv": _glUniform2fv, "_emscripten_get_now": _emscripten_get_now, "_glAlphaFunc": _glAlphaFunc, "_gluPerspective": _gluPerspective, "_glTexImage1D": _glTexImage1D, "_glutInitDisplayMode": _glutInitDisplayMode, "_glBlendFuncSeparate": _glBlendFuncSeparate, "_glCompileShader": _glCompileShader, "_glDeleteObject": _glDeleteObject, "_gluLookAt": _gluLookAt, "_glDeleteTextures": _glDeleteTextures, "_glCompressedTexImage2D": _glCompressedTexImage2D, "_glPolygonMode": _glPolygonMode, "_read": _read, "_glVertexAttrib4f": _glVertexAttrib4f, "_glShadeModel": _glShadeModel, "_glGetObjectParameteriv": _glGetObjectParameteriv, "_glFogiv": _glFogiv, "_glVertexAttrib1f": _glVertexAttrib1f, "_glClearDepthf": _glClearDepthf, "_glutInitWindowPosition": _glutInitWindowPosition, "_clGetContextInfo": _clGetContextInfo, "_glGetTexParameteriv": _glGetTexParameteriv, "_glClearStencil": _glClearStencil, "_glSampleCoverage": _glSampleCoverage, "_glFogfv": _glFogfv, "_glutDisplayFunc": _glutDisplayFunc, "_glLoadTransposeMatrixd": _glLoadTransposeMatrixd, "_glColor3us": _glColor3us, "_glColor3uiv": _glColor3uiv, "_glRotated": _glRotated, "_fsync": _fsync, "_glGenTextures": _glGenTextures, "_glDepthFunc": _glDepthFunc, "_glStencilOpSeparate": _glStencilOpSeparate, "_glCompressedTexSubImage2D": _glCompressedTexSubImage2D, "_glUniform1f": _glUniform1f, "_glGetVertexAttribfv": _glGetVertexAttribfv, "_glGetTexParameterfv": _glGetTexParameterfv, "_glColor3ui": _glColor3ui, "_glCreateShader": _glCreateShader, "_glIsBuffer": _glIsBuffer, "_glUniform1i": _glUniform1i, "_glMaterialfv": _glMaterialfv, "_glGenRenderbuffers": _glGenRenderbuffers, "_glTexEnvf": _glTexEnvf, "_glTexSubImage2D": _glTexSubImage2D, "_snprintf": _snprintf, "_glUniform2i": _glUniform2i, "_glUniform2f": _glUniform2f, "_glStencilFunc": _glStencilFunc, "_printf": _printf, "_abort": _abort, "_glGetProgramiv": _glGetProgramiv, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_glBindBuffer": _glBindBuffer, "_glTexCoord2fv": _glTexCoord2fv, "_glVertex3fv": _glVertex3fv, "_glGetUniformLocation": _glGetUniformLocation, "_close": _close, "_glBlendEquation": _glBlendEquation, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_glOrtho": _glOrtho, "_glUniform4fv": _glUniform4fv, "_llvm_lifetime_start": _llvm_lifetime_start, "___setErrNo": ___setErrNo, "_clCreateContextFromType": _clCreateContextFromType, "_glTexGeni": _glTexGeni, "_glColor3ub": _glColor3ub, "_glDrawArrays": _glDrawArrays, "_glClientActiveTexture": _glClientActiveTexture, "_ftell": _ftell, "_glDeleteProgram": _glDeleteProgram, "_exit": _exit, "_sprintf": _sprintf, "_glRenderbufferStorage": _glRenderbufferStorage, "_glLoadIdentity": _glLoadIdentity, "_glAttachShader": _glAttachShader, "_glUniform3i": _glUniform3i, "_glutSpecialFunc": _glutSpecialFunc, "_glColor3f": _glColor3f, "_glVertex3f": _glVertex3f, "_glShaderBinary": _glShaderBinary, "_glCopyTexImage2D": _glCopyTexImage2D, "_glUniform3f": _glUniform3f, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glGetBufferParameteriv": _glGetBufferParameteriv, "_glBlendEquationSeparate": _glBlendEquationSeparate, "_glDrawElements": _glDrawElements, "_glColorMask": _glColorMask, "_glEnableClientState": _glEnableClientState, "_recv": _recv, "_glUniform2iv": _glUniform2iv, "_glVertexAttrib1fv": _glVertexAttrib1fv, "_glGenVertexArrays": _glGenVertexArrays, "_cos": _cos, "_glBufferSubData": _glBufferSubData, "_glUniform1iv": _glUniform1iv, "_glBindAttribLocation": _glBindAttribLocation, "_glActiveTexture": _glActiveTexture, "_glMatrixMode": _glMatrixMode, "_glBindVertexArray": _glBindVertexArray, "_glVertexAttrib3f": _glVertexAttrib3f, "_clFinish": _clFinish, "_glViewport": _glViewport, "_glGenerateMipmap": _glGenerateMipmap, "_glDetachShader": _glDetachShader, "_glGetShaderiv": _glGetShaderiv, "__exit": __exit, "_glutReshapeFunc": _glutReshapeFunc, "_glLightModelfv": _glLightModelfv, "_glNormalPointer": _glNormalPointer, "_glGetActiveAttrib": _glGetActiveAttrib, "_glPopMatrix": _glPopMatrix, "_glBlendColor": _glBlendColor, "_glColor3usv": _glColor3usv, "_glGetShaderPrecisionFormat": _glGetShaderPrecisionFormat, "_glGetShaderSource": _glGetShaderSource, "_glDepthMask": _glDepthMask, "_glTexCoord2i": _glTexCoord2i, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glutSwapBuffers": _glutSwapBuffers, "_glFogi": _glFogi, "_glBegin": _glBegin, "_glColor3ubv": _glColor3ubv, "_glShaderSource": _glShaderSource, "_glBindRenderbuffer": _glBindRenderbuffer, "_pread": _pread, "_fopen": _fopen, "_open": _open, "_glFogf": _glFogf, "_glTexCoord4f": _glTexCoord4f, "_glIsProgram": _glIsProgram, "_glCopyTexSubImage2D": _glCopyTexSubImage2D, "_glDepthRangef": _glDepthRangef, "_glDisable": _glDisable, "_glLightfv": _glLightfv, "_glutGetModifiers": _glutGetModifiers, "_glIsShader": _glIsShader, "_glClear": _glClear, "_glVertexAttrib4fv": _glVertexAttrib4fv, "_clGetDeviceInfo": _clGetDeviceInfo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_glUniform4i": _glUniform4i, "_gluProject": _gluProject, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glutReshapeWindow": _glutReshapeWindow, "_glUniform3fv": _glUniform3fv, "_glIsEnabled": _glIsEnabled, "_glStencilOp": _glStencilOp, "_glReadPixels": _glReadPixels, "_glDepthRange": _glDepthRange, "_glutMouseFunc": _glutMouseFunc, "_glUniform4f": _glUniform4f, "_glFramebufferTexture2D": _glFramebufferTexture2D, "_glUniformMatrix2fv": _glUniformMatrix2fv, "___errno_location": ___errno_location, "_clSetKernelArg": _clSetKernelArg, "_glTranslated": _glTranslated, "_glUniformMatrix3fv": _glUniformMatrix3fv, "_glutCreateWindow": _glutCreateWindow, "_glBufferData": _glBufferData, "_clGetPlatformInfo": _clGetPlatformInfo, "__formatString": __formatString, "_glDisableClientState": _glDisableClientState, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_glGetError": _glGetError, "_glDeleteRenderbuffers": _glDeleteRenderbuffers, "_glGetVertexAttribiv": _glGetVertexAttribiv, "_glTexParameteriv": _glTexParameteriv, "_glVertexAttrib3fv": _glVertexAttrib3fv, "_glGetFloatv": _glGetFloatv, "_glUniform3iv": _glUniform3iv, "_glVertexAttrib2fv": _glVertexAttrib2fv, "_glBindFramebuffer": _glBindFramebuffer, "_glColor4ubv": _glColor4ubv, "_glGenFramebuffers": _glGenFramebuffers, "_sbrk": _sbrk, "_glGetInfoLog": _glGetInfoLog, "_glutMotionFunc": _glutMotionFunc, "_glTexEnvfv": _glTexEnvfv, "_clReleaseMemObject": _clReleaseMemObject, "_glGetIntegerv": _glGetIntegerv, "_glGetAttachedShaders": _glGetAttachedShaders, "_glCheckFramebufferStatus": _glCheckFramebufferStatus, "_clCreateBuffer": _clCreateBuffer, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glIsRenderbuffer": _glIsRenderbuffer, "_glTexParameteri": _glTexParameteri, "_glDeleteVertexArrays": _glDeleteVertexArrays, "_glUniform1fv": _glUniform1fv, "_glTexCoordPointer": _glTexCoordPointer, "_glFrontFace": _glFrontFace, "_glLoadMatrixf": _glLoadMatrixf, "_glGetFramebufferAttachmentParameteriv": _glGetFramebufferAttachmentParameteriv, "_glUseProgram": _glUseProgram, "_glReadBuffer": _glReadBuffer, "_glTexImage2D": _glTexImage2D, "_glGetProgramInfoLog": _glGetProgramInfoLog, "_glTexGenfv": _glTexGenfv, "_glStencilMask": _glStencilMask, "_fread": _fread, "_glMultMatrixd": _glMultMatrixd, "_glutTimerFunc": _glutTimerFunc, "_glMultMatrixf": _glMultMatrixf, "_glGetShaderInfoLog": _glGetShaderInfoLog, "_glIsTexture": _glIsTexture, "_glLoadTransposeMatrixf": _glLoadTransposeMatrixf, "_fprintf": _fprintf, "_glColor4f": _glColor4f, "_glDeleteFramebuffers": _glDeleteFramebuffers, "_glLoadMatrixd": _glLoadMatrixd, "_sin": _sin, "_glDrawRangeElements": _glDrawRangeElements, "__reallyNegative": __reallyNegative, "_clCreateCommandQueue": _clCreateCommandQueue, "_glTexEnvi": _glTexEnvi, "_glEnable": _glEnable, "_clBuildProgram": _clBuildProgram, "_glColor4fv": _glColor4fv, "_glStencilFuncSeparate": _glStencilFuncSeparate, "_fseek": _fseek, "_glutPostRedisplay": _glutPostRedisplay, "_glTexParameterfv": _glTexParameterfv, "_write": _write, "_glutInit": _glutInit, "_glGenBuffers": _glGenBuffers, "_glTexCoord3f": _glTexCoord3f, "_glFinish": _glFinish, "_glGetAttribLocation": _glGetAttribLocation, "_rewind": _rewind, "_glNormal3f": _glNormal3f, "_glDeleteShader": _glDeleteShader, "_glBlendFunc": _glBlendFunc, "_glCreateProgram": _glCreateProgram, "_glCullFace": _glCullFace, "_clCreateKernel": _clCreateKernel, "_glIsFramebuffer": _glIsFramebuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_time": _time, "_glVertexAttrib2f": _glVertexAttrib2f, "_glGetPointerv": _glGetPointerv, "_glutInitWindowSize": _glutInitWindowSize, "_glGetUniformfv": _glGetUniformfv, "_glColor3fv": _glColor3fv, "_gluOrtho2D": _gluOrtho2D, "_glUniformMatrix4fv": _glUniformMatrix4fv, "_glClearDepth": _glClearDepth, "_glFrustum": _glFrustum, "_glGetActiveUniform": _glGetActiveUniform, "_pwrite": _pwrite, "_glTexParameterf": _glTexParameterf, "_glColorPointer": _glColorPointer, "_glDrawBuffer": _glDrawBuffer, "_glPushMatrix": _glPushMatrix, "_glEnd": _glEnd, "_glDeleteBuffers": _glDeleteBuffers, "_glScissor": _glScissor, "_glReleaseShaderCompiler": _glReleaseShaderCompiler, "_glGetBooleanv": _glGetBooleanv, "_glPixelStorei": _glPixelStorei, "_glutMainLoop": _glutMainLoop, "_glValidateProgram": _glValidateProgram, "_glUniform4iv": _glUniform4iv, "_glVertexPointer": _glVertexPointer, "_glBindProgram": _glBindProgram, "_glutKeyboardFunc": _glutKeyboardFunc, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
@@ -9529,8 +10448,14 @@ Runtime.stackRestore = function(top) { asm['stackRestore'](top) };
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
+function ExitStatus(status) {
+  this.name = "ExitStatus";
+  this.message = "Program terminated with exit(" + status + ")";
+  this.status = status;
+};
+ExitStatus.prototype = new Error();
+ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
-var inMain;
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
@@ -9551,29 +10476,25 @@ Module['callMain'] = Module.callMain = function callMain(args) {
   argv.push(0);
   argv = allocate(argv, 'i32', ALLOC_NORMAL);
   initialStackTop = STACKTOP;
-  inMain = true;
-  var ret;
   try {
-    ret = Module['_main'](argc, argv, 0);
+    var ret = Module['_main'](argc, argv, 0);
+    // if we're not running an evented main loop, it's time to exit
+    if (!Module['noExitRuntime']) {
+      exit(ret);
+    }
   }
   catch(e) {
-    if (e && typeof e == 'object' && e.type == 'ExitStatus') {
+    if (e instanceof ExitStatus) {
       // exit() throws this once it's done to make sure execution
       // has been stopped completely
-      Module.print('Exit Status: ' + e.value);
-      return e.value;
+      return;
     } else if (e == 'SimulateInfiniteLoop') {
       // running an evented main loop, don't immediately exit
       Module['noExitRuntime'] = true;
+      return;
     } else {
       throw e;
     }
-  } finally {
-    inMain = false;
-  }
-  // if we're not running an evented main loop, it's time to exit
-  if (!Module['noExitRuntime']) {
-    exit(ret);
   }
 }
 function run(args) {
@@ -9611,18 +10532,12 @@ function run(args) {
 Module['run'] = Module.run = run;
 function exit(status) {
   ABORT = true;
+  EXITSTATUS = status;
   STACKTOP = initialStackTop;
-  // TODO call externally added 'exit' callbacks with the status code.
-  // It'd be nice to provide the same interface for all Module events (e.g.
-  // prerun, premain, postmain). Perhaps an EventEmitter so we can do:
-  // Module.on('exit', function (status) {});
   // exit the runtime
   exitRuntime();
-  if (inMain) {
-    // if we're still inside the callMain's try/catch, we need to throw an
-    // exception in order to immediately terminate execution.
-    throw { type: 'ExitStatus', value: status };
-  }
+  // throw an exception to halt the current execution
+  throw new ExitStatus(status);
 }
 Module['exit'] = Module.exit = exit;
 function abort(text) {
@@ -9630,6 +10545,7 @@ function abort(text) {
     Module.print(text);
   }
   ABORT = true;
+  EXITSTATUS = 1;
   throw 'abort() at ' + (new Error().stack);
 }
 Module['abort'] = Module.abort = abort;

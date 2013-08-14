@@ -19,99 +19,99 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'reduce_float_kernel.cl', true);
+    filePreload0.open('GET', '/reduce_float_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file reduce_float_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_float_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_float_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_float_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_float_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_float_kernel.cl');
+    Module['addRunDependency']('fp /reduce_float_kernel.cl');
     filePreload0.send(null);
 
     var filePreload1 = new DataRequest();
-    filePreload1.open('GET', 'reduce_float2_kernel.cl', true);
+    filePreload1.open('GET', '/reduce_float2_kernel.cl', true);
     filePreload1.responseType = 'arraybuffer';
     filePreload1.onload = function() {
       var arrayBuffer = filePreload1.response;
-      assert(arrayBuffer, 'Loading file reduce_float2_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_float2_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_float2_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_float2_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_float2_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_float2_kernel.cl');
+    Module['addRunDependency']('fp /reduce_float2_kernel.cl');
     filePreload1.send(null);
 
     var filePreload2 = new DataRequest();
-    filePreload2.open('GET', 'reduce_float4_kernel.cl', true);
+    filePreload2.open('GET', '/reduce_float4_kernel.cl', true);
     filePreload2.responseType = 'arraybuffer';
     filePreload2.onload = function() {
       var arrayBuffer = filePreload2.response;
-      assert(arrayBuffer, 'Loading file reduce_float4_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_float4_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_float4_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_float4_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_float4_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_float4_kernel.cl');
+    Module['addRunDependency']('fp /reduce_float4_kernel.cl');
     filePreload2.send(null);
 
     var filePreload3 = new DataRequest();
-    filePreload3.open('GET', 'reduce_int_kernel.cl', true);
+    filePreload3.open('GET', '/reduce_int_kernel.cl', true);
     filePreload3.responseType = 'arraybuffer';
     filePreload3.onload = function() {
       var arrayBuffer = filePreload3.response;
-      assert(arrayBuffer, 'Loading file reduce_int_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_int_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_int_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_int_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_int_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_int_kernel.cl');
+    Module['addRunDependency']('fp /reduce_int_kernel.cl');
     filePreload3.send(null);
 
     var filePreload4 = new DataRequest();
-    filePreload4.open('GET', 'reduce_int2_kernel.cl', true);
+    filePreload4.open('GET', '/reduce_int2_kernel.cl', true);
     filePreload4.responseType = 'arraybuffer';
     filePreload4.onload = function() {
       var arrayBuffer = filePreload4.response;
-      assert(arrayBuffer, 'Loading file reduce_int2_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_int2_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_int2_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_int2_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_int2_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_int2_kernel.cl');
+    Module['addRunDependency']('fp /reduce_int2_kernel.cl');
     filePreload4.send(null);
 
     var filePreload5 = new DataRequest();
-    filePreload5.open('GET', 'reduce_int4_kernel.cl', true);
+    filePreload5.open('GET', '/reduce_int4_kernel.cl', true);
     filePreload5.responseType = 'arraybuffer';
     filePreload5.onload = function() {
       var arrayBuffer = filePreload5.response;
-      assert(arrayBuffer, 'Loading file reduce_int4_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /reduce_int4_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'reduce_int4_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp reduce_int4_kernel.cl');
+        Module['removeRunDependency']('fp /reduce_int4_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp reduce_int4_kernel.cl');
+    Module['addRunDependency']('fp /reduce_int4_kernel.cl');
     filePreload5.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -123,7 +123,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/reduce_kernel.data';
     var REMOTE_PACKAGE_NAME = 'reduce_kernel.data';
-    var PACKAGE_UUID = '145d2d7e-33eb-45a7-8b66-c8223c4f201a';
+    var PACKAGE_UUID = 'c6a14399-69e1-42ef-a151-7042d5722ce8';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -170,42 +170,42 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['reduce_float_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_float_kernel.cl'];
         var data = byteArray.subarray(0, 6961);
         var ptr = Module['_malloc'](6961);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 6961);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['reduce_float2_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_float2_kernel.cl'];
         var data = byteArray.subarray(6961, 14189);
         var ptr = Module['_malloc'](7228);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 7228);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['reduce_float4_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_float4_kernel.cl'];
         var data = byteArray.subarray(14189, 21875);
         var ptr = Module['_malloc'](7686);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 7686);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['reduce_int_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_int_kernel.cl'];
         var data = byteArray.subarray(21875, 28803);
         var ptr = Module['_malloc'](6928);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 6928);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['reduce_int2_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_int2_kernel.cl'];
         var data = byteArray.subarray(28803, 35995);
         var ptr = Module['_malloc'](7192);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 7192);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['reduce_int4_kernel.cl'];
+        curr = DataRequest.prototype.requests['/reduce_int4_kernel.cl'];
         var data = byteArray.subarray(35995, 43642);
         var ptr = Module['_malloc'](7647);
         Module['HEAPU8'].set(data, ptr);
