@@ -57,18 +57,20 @@
           </textarea>
           <hr>
           <script type='text/javascript'>
+
+            // Canvas
+            var cnv = document.createElement('canvas');
+            cnv.setAttribute('oncontextmenu',"event.preventDefault()");
+            cnv.setAttribute('id',"glCanvas");
             
-            if (USE_GL) {
-              // Canvas
-              var cnv = document.createElement('canvas');
-              cnv.setAttribute('oncontextmenu',"event.preventDefault()");
-              cnv.setAttribute('id',"glCanvas");
+            var div = document.getElementById('renderArea');
+            div.appendChild(cnv);
+
+            // Add class attribute emscripten
+            cnv.setAttribute('class',"emscripten");  
               
-              var div = document.getElementById('renderArea');
-              div.appendChild(cnv);
-  
-              // Add class attribute emscripten
-              cnv.setAttribute('class',"emscripten");  
+            if (USE_GL == 0) {
+              div.style.display = 'none';
             }
             
             var arg = initArguments();
