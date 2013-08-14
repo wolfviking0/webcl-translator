@@ -28,27 +28,23 @@ for (var i = 0; i < urlParts.length; i++) {
   } else if (eltParts[0].toLowerCase() == "folder") {
     FOLDER = eltParts[1];
   } else if (eltParts[0].toLowerCase() == "files") {
+    
     var filelist = eltParts[1].split(',');
     
-    if (filelist.length == 0) {
-      FILES.push(filelist);
-    } else {
-      for (var i = 0; i < filelist.length; i++) {
-        FILES.push(filelist[i]);
-      }
+    for (var j = 0; j < filelist.length; j++) {
+      console.info(filelist[j]);
+      FILES.push(filelist[j]);
     }
   } 
 }
 
 // Include list of js file
-function includeJS(jsFiles) {
-  for (var file in jsFiles) {
-    var fileref=document.createElement('script');
-    fileref.setAttribute("type","text/javascript");
-    fileref.setAttribute("src", jsFiles[file]);
-    if (typeof fileref!="undefined") {
-      document.getElementsByTagName("head")[0].appendChild(fileref);
-    }
+function includeJS(jsFile) {
+  var fileref=document.createElement('script');
+  fileref.setAttribute("type","text/javascript");
+  fileref.setAttribute("src", jsFile);
+  if (typeof fileref!="undefined") {
+    document.getElementsByTagName("head")[0].appendChild(fileref);
   }
 }
 
