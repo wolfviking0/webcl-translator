@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'scan_kernel.cl', true);
+    filePreload0.open('GET', '/scan_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file scan_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /scan_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'scan_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp scan_kernel.cl');
+        Module['removeRunDependency']('fp /scan_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp scan_kernel.cl');
+    Module['addRunDependency']('fp /scan_kernel.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/scan_kernel.data';
     var REMOTE_PACKAGE_NAME = 'scan_kernel.data';
-    var PACKAGE_UUID = '6e377c1f-597a-4eb2-a2f6-6233b1026d2c';
+    var PACKAGE_UUID = '483e1026-7c98-473d-bb93-4d75967b3c94';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,7 +90,7 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['scan_kernel.cl'];
+        curr = DataRequest.prototype.requests['/scan_kernel.cl'];
         var data = byteArray.subarray(0, 15054);
         var ptr = Module['_malloc'](15054);
         Module['HEAPU8'].set(data, ptr);

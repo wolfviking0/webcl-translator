@@ -25,8 +25,8 @@
 #include "permutations.h"
 #include "block.h"
 
-const char *image_filename = "lena.ppm";
-const char *refimage_filename = "lena_ref.dds";
+const char *image_filename = "./data/lena.ppm";
+const char *refimage_filename = "./data/lena_ref.dds";
 
 unsigned int width, height;
 cl_uint* h_img = NULL;
@@ -222,7 +222,11 @@ int main(const int argc, const char** argv)
     int use_worker = 1;
    
     // load image
+    printf("%s\n",image_filename);
+
     const char* image_path = shrFindFilePath(image_filename, argv[0]);
+    printf("%s\n",image_path);
+    
     shrCheckError(image_path != NULL, shrTRUE);
     shrLoadPPM4ub(image_path, (unsigned char **)&h_img, &width, &height);
     shrCheckError(h_img != NULL, shrTRUE);

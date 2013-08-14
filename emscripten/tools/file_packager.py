@@ -40,7 +40,7 @@ TODO:        You can also provide .crn files yourself, pre-crunched. With this o
 '''
 
 import os, sys, shutil, random, uuid, ctypes
-
+import posixpath
 import shared
 from shared import Compression, execute, suffix, unsuffixed
 from subprocess import Popen, PIPE, STDOUT
@@ -122,8 +122,6 @@ for arg in sys.argv[1:]:
       srcpath, dstpath = arg.split('@') # User is specifying destination filename explicitly.
     else:
       srcpath = dstpath = arg # Use source path as destination path.
-      if os.path.isabs(dstpath):
-        print >> sys.stderr, 'Warning: Embedding an absolute file/directory name "' + dstpath + '" to the virtual filesystem. The file will be made available in the path "' + dstpath + '", and not in the root of the generated file system. Use the explicit syntax --preload-file srcpath@dstpath to specify the target location the absolute source path should be directed to.'
     if os.path.isfile(srcpath) or os.path.isdir(srcpath):
       data_files.append({ 'srcpath': srcpath, 'dstpath': dstpath, 'mode': mode })
     else:
@@ -201,19 +199,25 @@ data_files = filter(lambda file_: not os.path.isdir(file_['srcpath']), data_file
 # Absolutize paths, and check that they make sense
 curr_abspath = os.path.abspath(os.getcwd())
 for file_ in data_files:
-  path = file_['dstpath']
-  abspath = os.path.abspath(path)
-  print >> sys.stderr, path, abspath, curr_abspath
-  if not abspath.startswith(curr_abspath):
-    print >> sys.stderr, 'Error: Embedding "%s" which is below the current directory. This is invalid since the current directory becomes the root that the generated code will see' % path
-    sys.exit(1)
-  file_['dstpath'] = abspath[len(curr_abspath)+1:]
+  if file_['srcpath'] == file_['dstpath']:
+    # This file was not defined with src@dst, so we inferred the destination from the source. In that case,
+    # we require that the destination not be under the current location
+    path = file_['dstpath']
+    abspath = os.path.abspath(path)
+    if DEBUG: print >> sys.stderr, path, abspath, curr_abspath
+    if not abspath.startswith(curr_abspath):
+      print >> sys.stderr, 'Error: Embedding "%s" which is below the current directory "%s". This is invalid since the current directory becomes the root that the generated code will see' % (path, curr_abspath)
+      sys.exit(1)
+    file_['dstpath'] = abspath[len(curr_abspath)+1:]
+    if os.path.isabs(path):
+      print >> sys.stderr, 'Warning: Embedding an absolute file/directory name "' + path + '" to the virtual filesystem. The file will be made available in the relative path "' + file_['dstpath'] + '". You can use the explicit syntax --preload-file srcpath@dstpath to explicitly specify the target location the absolute source path should be directed to.'
 
 for file_ in data_files:
   file_['dstpath'] = file_['dstpath'].replace(os.path.sep, '/') # name in the filesystem, native and emulated
   if file_['dstpath'].endswith('/'): # If user has submitted a directory name as the destination but omitted the destination filename, use the filename from source file
     file_['dstpath'] = file_['dstpath'] + os.path.basename(file_['srcpath'])
-  if file_['dstpath'].startswith('./'): file_['dstpath'] = file_['dstpath'][2:] # remove redundant ./ prefix
+  # make destination path always relative to the root
+  file_['dstpath'] = posixpath.normpath(os.path.join('/', file_['dstpath']))
   if DEBUG:
     print >> sys.stderr, 'Packaging file "' + file_['srcpath'] + '" to VFS in path "' + file_['dstpath'] + '".'
 
@@ -338,6 +342,8 @@ if has_preloaded:
 counter = 0
 for file_ in data_files:
   filename = file_['dstpath']
+  dirname = os.path.dirname(filename)
+  basename = os.path.basename(filename)
   if file_['mode'] == 'embed':
     # Embed
     data = map(ord, open(file_['srcpath'], 'rb').read())
@@ -353,7 +359,7 @@ for file_ in data_files:
           str_data = str(chunk)
         else:
           str_data += '.concat(' + str(chunk) + ')'
-    code += '''Module['FS_createDataFile']('/%s', '%s', %s, true, true);\n''' % (os.path.dirname(filename), os.path.basename(filename), str_data)
+    code += '''Module['FS_createDataFile']('%s', '%s', %s, true, true);\n''' % (dirname, basename, str_data)
   elif file_['mode'] == 'preload':
     # Preload
     varname = 'filePreload%d' % counter
@@ -386,7 +392,7 @@ for file_ in data_files:
       assert(arrayBuffer, 'Loading file %(filename)s failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       %(prepare)s
-      Module['FS_createPreloadedFile']('/%(dirname)s', '%(basename)s', byteArray, true, true, function() {
+      Module['FS_createPreloadedFile']('%(dirname)s', '%(basename)s', byteArray, true, true, function() {
         %(finish)s
       }%(fail)s);
     };
@@ -396,8 +402,8 @@ for file_ in data_files:
         'request': 'DataRequest', # In the past we also supported XHRs here
         'varname': varname,
         'filename': filename,
-        'dirname': os.path.dirname(filename),
-        'basename': os.path.basename(filename),
+        'dirname': dirname,
+        'basename': basename,
         'prepare': prepare,
         'finish': finish,
         'fail': '' if filename[-4:] not in AUDIO_SUFFIXES else ''', function() { Module['removeRunDependency']('fp %s') }''' % filename # workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)

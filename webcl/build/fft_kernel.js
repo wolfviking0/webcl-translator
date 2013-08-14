@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'param.txt', true);
+    filePreload0.open('GET', '/param.txt', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file param.txt failed.');
+      assert(arrayBuffer, 'Loading file /param.txt failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'param.txt', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp param.txt');
+        Module['removeRunDependency']('fp /param.txt');
 
       });
     };
-    Module['addRunDependency']('fp param.txt');
+    Module['addRunDependency']('fp /param.txt');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/fft_kernel.data';
     var REMOTE_PACKAGE_NAME = 'fft_kernel.data';
-    var PACKAGE_UUID = '91e11e6d-513c-4af0-bdd6-053e43c65406';
+    var PACKAGE_UUID = '16717399-9419-4e15-91ad-d8f50f1f36fa';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,7 +90,7 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['param.txt'];
+        curr = DataRequest.prototype.requests['/param.txt'];
         var data = byteArray.subarray(0, 3907);
         var ptr = Module['_malloc'](3907);
         Module['HEAPU8'].set(data, ptr);

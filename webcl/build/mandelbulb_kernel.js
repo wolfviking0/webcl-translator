@@ -19,19 +19,19 @@ function assert(check, msg) {
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'mandelbulb_kernel.cl', true);
+    filePreload0.open('GET', '/mandelbulb_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file mandelbulb_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /mandelbulb_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'mandelbulb_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp mandelbulb_kernel.cl');
+        Module['removeRunDependency']('fp /mandelbulb_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp mandelbulb_kernel.cl');
+    Module['addRunDependency']('fp /mandelbulb_kernel.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb_kernel.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb_kernel.data';
-    var PACKAGE_UUID = '4e9de16b-558e-4086-a581-50547cb51542';
+    var PACKAGE_UUID = '355fb2a4-6a05-4ab4-be24-534666642098';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -90,7 +90,7 @@ function assert(check, msg) {
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['mandelbulb_kernel.cl'];
+        curr = DataRequest.prototype.requests['/mandelbulb_kernel.cl'];
         var data = byteArray.subarray(0, 11928);
         var ptr = Module['_malloc'](11928);
         Module['HEAPU8'].set(data, ptr);

@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,12 +104,9 @@ void test() {
   assert(s.st_ino);
   assert(S_ISCHR(s.st_mode));
   assert(s.st_nlink);
-#if !USE_OLD_FS
-  // old FS doesn't store proper device ids
 #ifndef __APPLE__
   // mac uses makedev(3, 2) for /dev/null
   assert(s.st_rdev == makedev(1, 3));
-#endif
 #endif
   assert(!s.st_size);
   assert(s.st_atime);

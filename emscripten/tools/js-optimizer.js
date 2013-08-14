@@ -2817,7 +2817,7 @@ function relocate(ast) {
             var other = node[3];
             if (base === 0) return other;
             if (other[0] == 'num') {
-              other[1] += base;
+              other[1] = (other[1] + base)|0;
               return other;
             } else {
               node[2] = ['num', base];
@@ -3001,7 +3001,7 @@ function outline(ast) {
 
   // Try to flatten out code as much as possible, to make outlining more feasible.
   function flatten(func, asmData) {
-    var minSize = sizeToOutline;
+    var minSize = extraInfo.sizeToOutline/4;
     var helperId = 0;
     function getHelper() {
       while (1) {
@@ -3106,7 +3106,9 @@ function outline(ast) {
     // Reserve an extra two spots per possible outlining: one for control flow var, the other for control flow data
     // The control variables are zeroed out when calling an outlined function, and after using
     // the value after they return.
-    asmData.maxOutlinings = Math.round(3*measureSize(func)/sizeToOutline);
+    var size = measureSize(func);
+    asmData.maxOutlinings = Math.round(3*size/extraInfo.sizeToOutline);
+    asmData.intendedPieces = Math.ceil(size/extraInfo.sizeToOutline);
     asmData.totalStackSize = stackSize + (stack.length + 2*asmData.maxOutlinings)*8;
     asmData.controlStackPos = function(i) { return stackSize + (stack.length + i)*8 };
     asmData.controlDataStackPos = function(i) { return stackSize + (stack.length + i)*8 + 4 };
@@ -3210,22 +3212,32 @@ function outline(ast) {
 
   var CONTROL_BREAK = 1, CONTROL_BREAK_LABEL = 2, CONTROL_CONTINUE = 3, CONTROL_CONTINUE_LABEL = 4, CONTROL_RETURN_VOID = 5, CONTROL_RETURN_INT = 6, CONTROL_RETURN_DOUBLE = 7;
 
-  var sizeToOutline = extraInfo.sizeToOutline;
-  var level = 0;
+  var sizeToOutline = null; // customized per function and as we make progress
+  function calculateThreshold(func, asmData) {
+    var size = measureSize(func);
+    if (size <= extraInfo.sizeToOutline) {
+      sizeToOutline = Infinity;
+      printErr('  no point in trying to reduce the size of ' + func[1] + ' which is ' + size + ' <= ' + extraInfo.sizeToOutline);
+    } else {
+      sizeToOutline = Math.round(size/Math.max(2, asmData.intendedPieces--));
+      printErr('trying to reduce the size of ' + func[1] + ' which is ' + size + ' (>=? ' + extraInfo.sizeToOutline + '), aim for ' + sizeToOutline);
+    }
+  }
 
+  var level = 0, loops = 0;
   var outliningParents = {}; // function name => parent it was outlined from
 
   function doOutline(func, asmData, stats, start, end) {
     if (asmData.splitCounter === asmData.maxOutlinings) return [];
     if (!extraInfo.allowCostlyOutlines) var originalStats = copy(stats);
     var code = stats.slice(start, end+1);
+    var originalCodeSize =  measureSize(code);
     var funcSize = measureSize(func);
     var outlineIndex = asmData.splitCounter++;
     var newIdent = func[1] + '$' + outlineIndex;
     // analyze variables, and find 'owned' variables - that only appear in the outlined code, and do not need any spill support
     var codeInfo = analyzeCode(func, asmData, code);
     var allCodeInfo = analyzeCode(func, asmData, func);
-    //printErr(' do outline ' + [func[1], level, 'range:', start, end, 'of', stats.length, newIdent, measureSize(code), JSON.stringify(codeInfo.labels), JSON.stringify(codeInfo.breaks), JSON.stringify(codeInfo.continues)]);
     var owned = { sp: 1 }; // sp is always owned, each has its own
     keys(setUnion(codeInfo.reads, codeInfo.writes)).forEach(function(v) {
       if (allCodeInfo.reads[v] === codeInfo.reads[v] && allCodeInfo.writes[v] === codeInfo.writes[v] && !(v in asmData.params)) {
@@ -3233,21 +3245,29 @@ function outline(ast) {
       }
     });
     var reps = [];
-    // wipe out control variable
-    reps.push(['stat', makeAssign(makeStackAccess(ASM_INT, asmData.controlStackPos(outlineIndex)), ['num', 0])]);
-    reps.push(['stat', makeAssign(makeStackAccess(ASM_INT, asmData.controlDataStackPos(outlineIndex)), ['num', 0])]); // XXX not really needed
-    // add spills and reads before and after the call to the outlined code, and in the outlined code itself
-    keys(setUnion(codeInfo.reads, codeInfo.writes)).forEach(function(v) {
+    // add spills
+    function orderFunc(x, y) {
+      return (asmData.stackPos[x] - asmData.stackPos[y]) || x.localeCompare(y);
+    }
+    var sortedReadsAndWrites = keys(setUnion(codeInfo.reads, codeInfo.writes)).sort(orderFunc);
+    var sortedWrites = keys(codeInfo.writes).sort(orderFunc);
+    sortedReadsAndWrites.forEach(function(v) {
       if (!(v in owned)) {
         reps.push(['stat', ['assign', true, ['sub', ['name', getAsmType(v, asmData) == ASM_INT ? 'HEAP32' : 'HEAPF32'], ['binary', '>>', ['binary', '+', ['name', 'sp'], ['num', asmData.stackPos[v]]], ['num', '2']]], ['name', v]]]);
       }
     });
+    // wipe out control variable
+    reps.push(['stat', makeAssign(makeStackAccess(ASM_INT, asmData.controlStackPos(outlineIndex)), ['num', 0])]);
+    reps.push(['stat', makeAssign(makeStackAccess(ASM_INT, asmData.controlDataStackPos(outlineIndex)), ['num', 0])]); // XXX not really needed
+    // do the call
     reps.push(['stat', ['call', ['name', newIdent], [['name', 'sp']]]]);
-    for (var v in codeInfo.writes) {
+    // add unspills
+    sortedWrites.forEach(function(v) {
       if (!(v in owned)) {
         reps.push(['stat', ['assign', true, ['name', v], makeAsmCoercion(['sub', ['name', getAsmType(v, asmData) == ASM_INT ? 'HEAP32' : 'HEAPF32'], ['binary', '>>', ['binary', '+', ['name', 'sp'], ['num', asmData.stackPos[v]]], ['num', '2']]], getAsmType(v, asmData))]]);
       }
-    }
+    });
+
     // Generate new function
     if (codeInfo.hasReturn || codeInfo.hasReturnInt || codeInfo.hasReturnDouble || codeInfo.hasBreak || codeInfo.hasContinue) {
       // we need to capture all control flow using a top-level labeled one-time loop in the outlined function
@@ -3381,16 +3401,17 @@ function outline(ast) {
       }
     }
     // add spills and unspills in outlined code outside the OL loop
-    keys(setUnion(codeInfo.reads, codeInfo.writes)).forEach(function(v) {
+    sortedReadsAndWrites.reverse();
+    sortedReadsAndWrites.forEach(function(v) {
       if (!(v in owned)) {
         code.unshift(['stat', ['assign', true, ['name', v], makeAsmCoercion(['sub', ['name', getAsmType(v, asmData) == ASM_INT ? 'HEAP32' : 'HEAPF32'], ['binary', '>>', ['binary', '+', ['name', 'sp'], ['num', asmData.stackPos[v]]], ['num', '2']]], getAsmType(v, asmData))]]);
       }
     });
-    for (var v in codeInfo.writes) {
+    sortedWrites.forEach(function(v) {
       if (!(v in owned)) {
         code.push(['stat', ['assign', true, ['sub', ['name', getAsmType(v, asmData) == ASM_INT ? 'HEAP32' : 'HEAPF32'], ['binary', '>>', ['binary', '+', ['name', 'sp'], ['num', asmData.stackPos[v]]], ['num', '2']]], ['name', v]]]);
       }
-    }
+    });
     // finalize
     var newFunc = ['defun', newIdent, ['sp'], code];
     var newAsmData = { params: { sp: ASM_INT }, vars: {} };
@@ -3409,9 +3430,11 @@ function outline(ast) {
     stats.splice.apply(stats, [start, end-start+1].concat(reps));
     // final evaluation and processing
     if (!extraInfo.allowCostlyOutlines && (measureSize(func) >= funcSize || measureSize(newFunc) >= funcSize)) {
+      //printErr('aborted outline attempt ' + [measureSize(func), measureSize(newFunc), ' one of which >= ', funcSize]);
       // abort, this was pointless
       stats.length = originalStats.length;
       for (var i = 0; i < stats.length; i++) stats[i] = originalStats[i];
+      asmData.splitCounter--;
       return [];
     }
     for (var v in owned) {
@@ -3426,6 +3449,8 @@ function outline(ast) {
       }
     }
     outliningParents[newIdent] = func[1];
+    printErr('performed outline ' + [func[1], newIdent, 'code sizes (pre/post):', originalCodeSize, measureSize(code), 'overhead (w/r):', setSize(setSub(codeInfo.writes, owned)), setSize(setSub(codeInfo.reads, owned)), ' owned: ', setSize(owned), ' left: ', setSize(asmData.vars), setSize(asmData.params), ' loopsDepth: ', loops]);
+    calculateThreshold(func, asmData);
     return [newFunc];
   }
 
@@ -3450,9 +3475,12 @@ function outline(ast) {
         }
       }
     }
+    function done() {
+      return asmData.splitCounter >= asmData.maxOutlinings || measureSize(func) <= extraInfo.sizeToOutline;
+    }
     while (1) {
       i--;
-      calcMinIndex();
+      calcMinIndex(); // TODO: optimize
       if (i < minIndex) {
         // we might be done. but, if we have just outlined, do a further attempt from the beginning.
         // (but only if the total costs are not extravagant)
@@ -3494,11 +3522,18 @@ function outline(ast) {
               if (subRet && subRet.length > 0) ret.push.apply(ret, subRet);
             }
             return null; // do not recurse into children, outlineStatements will do so if necessary
+          } else if (type == 'while') {
+            loops++;
+          }
+        }, function(node, type) {
+          if (type == 'while') {
+            loops--;
           }
         });
         if (ret.length > pre) {
           // we outlined recursively, reset our state here
           //printErr('successful outline in recursion ' + func[1] + ' due to recursive in level ' + level);
+          if (done()) break;
           end = i-1;
           sizeSeen = 0;
           canRestart = true;
@@ -3509,7 +3544,7 @@ function outline(ast) {
       // If this is big enough to outline, but not too big (if very close to the size of the full function,
       // outlining is pointless; remove stats from the end to try to achieve the good case), then outline.
       // Also, try to reduce the size if it is much larger than the hoped-for size
-      while ((sizeSeen > maxSize || sizeSeen > 2*sizeToOutline) && end > i+1 && stats[end][0] !== 'begin-outline-call' && stats[end][0] !== 'end-outline-call') {
+      while ((sizeSeen > maxSize || sizeSeen > 2*sizeToOutline) && end > i && stats[end][0] !== 'begin-outline-call' && stats[end][0] !== 'end-outline-call') {
         sizeSeen -= measureSize(stats[end]);
         if (sizeSeen >= sizeToOutline) {
           end--;
@@ -3531,13 +3566,14 @@ function outline(ast) {
       });
       assert(sum == 0);
       // final decision and action
+      //printErr(' will try done working on sizeSeen due to ' + [(sizeSeen > maxSize || sizeSeen > 2*sizeToOutline), end > i , stats[end][0] !== 'begin-outline-call' , stats[end][0] !== 'end-outline-call'] + '  ...  ' + [sizeSeen, sizeToOutline, maxSize, sizeSeen >= sizeToOutline, sizeSeen <= maxSize]);
       if (sizeSeen >= sizeToOutline && sizeSeen <= maxSize) {
         assert(i >= minIndex);
         var newFuncs = doOutline(func, asmData, stats, i, end); // outline [i, .. ,end] inclusive
         if (newFuncs.length) {
           ret.push.apply(ret, newFuncs);
-          printErr('performed outline on ' + func[1] + ' of ' + sizeSeen + ', func is now size ' + measureSize(func) + ' ==> ' + newFuncs[0][1]);
         }
+        if (done()) break;
         sizeSeen = 0;
         end = i-1;
         canRestart = true;
@@ -3566,11 +3602,11 @@ function outline(ast) {
     funcs.forEach(function(func) {
       var asmData = normalizeAsm(func);
       var size = measureSize(func);
-      if (size >= sizeToOutline) {
-        printErr('trying to reduce the size of ' + func[1] + ' which is ' + size + ' (>= ' + sizeToOutline + ')');
+      if (size >= extraInfo.sizeToOutline) {
         aggressiveVariableElimination(func, asmData);
         flatten(func, asmData);
         analyzeFunction(func, asmData);
+        calculateThreshold(func, asmData);
         var stats = getStatements(func);
         var ret = outlineStatements(func, asmData, stats, 0.9*size);
         assert(level == 0);

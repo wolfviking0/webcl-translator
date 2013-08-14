@@ -20,51 +20,51 @@ Module['FS_createPath']('/', 'data', true, true);
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'DXTCompressor_kernel.cl', true);
+    filePreload0.open('GET', '/DXTCompressor_kernel.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file DXTCompressor_kernel.cl failed.');
+      assert(arrayBuffer, 'Loading file /DXTCompressor_kernel.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/', 'DXTCompressor_kernel.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp DXTCompressor_kernel.cl');
+        Module['removeRunDependency']('fp /DXTCompressor_kernel.cl');
 
       });
     };
-    Module['addRunDependency']('fp DXTCompressor_kernel.cl');
+    Module['addRunDependency']('fp /DXTCompressor_kernel.cl');
     filePreload0.send(null);
 
     var filePreload1 = new DataRequest();
-    filePreload1.open('GET', 'data/lena_ref.dds', true);
+    filePreload1.open('GET', '/data/lena_ref.dds', true);
     filePreload1.responseType = 'arraybuffer';
     filePreload1.onload = function() {
       var arrayBuffer = filePreload1.response;
-      assert(arrayBuffer, 'Loading file data/lena_ref.dds failed.');
+      assert(arrayBuffer, 'Loading file /data/lena_ref.dds failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/data', 'lena_ref.dds', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp data/lena_ref.dds');
+        Module['removeRunDependency']('fp /data/lena_ref.dds');
 
       });
     };
-    Module['addRunDependency']('fp data/lena_ref.dds');
+    Module['addRunDependency']('fp /data/lena_ref.dds');
     filePreload1.send(null);
 
     var filePreload2 = new DataRequest();
-    filePreload2.open('GET', 'data/lena.ppm', true);
+    filePreload2.open('GET', '/data/lena.ppm', true);
     filePreload2.responseType = 'arraybuffer';
     filePreload2.onload = function() {
       var arrayBuffer = filePreload2.response;
-      assert(arrayBuffer, 'Loading file data/lena.ppm failed.');
+      assert(arrayBuffer, 'Loading file /data/lena.ppm failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
       Module['FS_createPreloadedFile']('/data', 'lena.ppm', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp data/lena.ppm');
+        Module['removeRunDependency']('fp /data/lena.ppm');
 
       });
     };
-    Module['addRunDependency']('fp data/lena.ppm');
+    Module['addRunDependency']('fp /data/lena.ppm');
     filePreload2.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -76,7 +76,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/dxtcompressor_kernel.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor_kernel.data';
-    var PACKAGE_UUID = '9604e529-3e44-45f8-9cba-5b2c8e012fb4';
+    var PACKAGE_UUID = 'd6dc5671-1790-480e-bfd6-6d9d63d033a1';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -123,21 +123,21 @@ Module['FS_createPath']('/', 'data', true, true);
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['DXTCompressor_kernel.cl'];
+        curr = DataRequest.prototype.requests['/DXTCompressor_kernel.cl'];
         var data = byteArray.subarray(0, 13232);
         var ptr = Module['_malloc'](13232);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 13232);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['data/lena_ref.dds'];
+        curr = DataRequest.prototype.requests['/data/lena_ref.dds'];
         var data = byteArray.subarray(13232, 144432);
         var ptr = Module['_malloc'](131200);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 131200);
         curr.onload();
       
-        curr = DataRequest.prototype.requests['data/lena.ppm'];
+        curr = DataRequest.prototype.requests['/data/lena.ppm'];
         var data = byteArray.subarray(144432, 930879);
         var ptr = Module['_malloc'](786447);
         Module['HEAPU8'].set(data, ptr);
