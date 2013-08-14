@@ -1672,10 +1672,12 @@ function copyTempDouble(ptr) {
         var n=str.lastIndexOf(" ");
         var error = str.substr(n+1,str.length-n-2);
         console.error("CATCH: "+name+": "+e);
+        Module.print("/!\\"+name+": "+e);
         return error;
       }};function _clGetPlatformIDs(num_entries,platform_ids,num_platforms) {
       if (CL.checkWebCL() < 0) {
         console.error(CL.errorMessage);
+        Module.print("/!\\"+CL.errorMessage);
         return -1;/*WEBCL_NOT_FOUND*/;
       }
       try { 
@@ -1724,6 +1726,7 @@ function copyTempDouble(ptr) {
   function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
       if (CL.checkWebCL() < 0) {
         console.error(CL.errorMessage);
+        Module.print("/!\\"+CL.errorMessage);
         return -1;/*WEBCL_NOT_FOUND*/;
       }
       // Assume the device type is i32 
@@ -2214,14 +2217,6 @@ function copyTempDouble(ptr) {
         value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
         value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
       }
-      // empty “localWS” array because give some trouble on CPU mode with mac
-      /*
-      if (CL.webcl_mozilla == 1) {
-        value_local_work_size = [];
-      } else {
-        value_local_work_size = null;
-      }
-      */
       try {
         // \todo how add some event inside the array
         if (CL.webcl_mozilla == 1) {
@@ -2231,7 +2226,18 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        return CL.catchError("clEnqueueNDRangeKernel",e);
+        try {
+          // empty “localWS” sometime solve
+          // \todo how add some event inside the array
+          if (CL.webcl_mozilla == 1) {
+            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+          } else {
+            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+          }
+          return 0;/*CL_SUCCESS*/
+        } catch(e) {
+          return CL.catchError("clEnqueueNDRangeKernel",e);
+        }
       }
     }
   function _clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
