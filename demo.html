@@ -53,7 +53,7 @@
             <!-- we want to create canvas inside this div, using JavaScript only if sm necessary-->
           </div>
           <hr/>
-          <textarea class="emscripten" id="output" rows="40">
+          <textarea class="emscripten" id="output" rows="10">
           </textarea>
           <hr>
           <script type='text/javascript'>
@@ -72,9 +72,9 @@
             var textArea = document.getElementById ("output");
             if (USE_GL == 0) {
               div.style.display = 'none';
-              textArea.rows = 40;
+              textArea.rows = "40";
             } else {
-              textArea.rows = 10;
+              textArea.rows = "10";
             }
             
             var arg = initArguments();
