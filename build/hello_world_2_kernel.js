@@ -8,7 +8,6 @@
 function assert(check, msg) {
   if (!check) throw msg + new Error().stack;
 }
-Module['FS_createPath']('/', 'hello_world_2', true, true);
 
     function DataRequest() {}
     DataRequest.prototype = {
@@ -20,19 +19,19 @@ Module['FS_createPath']('/', 'hello_world_2', true, true);
     };
   
     var filePreload0 = new DataRequest();
-    filePreload0.open('GET', 'hello_world_2/hello_world_2.cl', true);
+    filePreload0.open('GET', 'hello_world_2.cl', true);
     filePreload0.responseType = 'arraybuffer';
     filePreload0.onload = function() {
       var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file hello_world_2/hello_world_2.cl failed.');
+      assert(arrayBuffer, 'Loading file hello_world_2.cl failed.');
       var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
       
-      Module['FS_createPreloadedFile']('/hello_world_2', 'hello_world_2.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp hello_world_2/hello_world_2.cl');
+      Module['FS_createPreloadedFile']('/', 'hello_world_2.cl', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp hello_world_2.cl');
 
       });
     };
-    Module['addRunDependency']('fp hello_world_2/hello_world_2.cl');
+    Module['addRunDependency']('fp hello_world_2.cl');
     filePreload0.send(null);
 
     if (!Module.expectedDataFileDownloads) {
@@ -42,9 +41,9 @@ Module['FS_createPath']('/', 'hello_world_2', true, true);
     Module.expectedDataFileDownloads++;
 
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = 'build/hello_world_2.data';
-    var REMOTE_PACKAGE_NAME = 'build/hello_world_2.data';
-    var PACKAGE_UUID = 'a5f2bd39-c368-4545-8c27-b15ad4785179';
+    var PACKAGE_NAME = '../build/hello_world_2.data';
+    var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
+    var PACKAGE_UUID = '3a9425c0-6300-455a-9aad-cee8215eec01';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -91,16 +90,16 @@ Module['FS_createPath']('/', 'hello_world_2', true, true);
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
       
-        curr = DataRequest.prototype.requests['hello_world_2/hello_world_2.cl'];
+        curr = DataRequest.prototype.requests['hello_world_2.cl'];
         var data = byteArray.subarray(0, 180);
         var ptr = Module['_malloc'](180);
         Module['HEAPU8'].set(data, ptr);
         curr.response = Module['HEAPU8'].subarray(ptr, ptr + 180);
         curr.onload();
-                Module['removeRunDependency']('datafile_build/hello_world_2.data');
+                Module['removeRunDependency']('datafile_../build/hello_world_2.data');
 
     };
-    Module['addRunDependency']('datafile_build/hello_world_2.data');
+    Module['addRunDependency']('datafile_../build/hello_world_2.data');
 
     function handleError(error) {
       console.error('package error:', error);
