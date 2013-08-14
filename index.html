@@ -49,9 +49,9 @@
               <td>&nbsp;</td>
               <th style="width: 125px;">Hello World 2</th>
               <td>&nbsp;</td>
-              <th style="width: 125px;">Scan</th>
               <td>&nbsp;</td>
-              <th style="width: 125px;">Reduce</th>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
             </tr>
             <tr>
               <th>
@@ -66,17 +66,9 @@
                 </a>
               </th>
               <td>&nbsp;</td>
-              <th>
-                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Scan&files=scan_kernel.js,scan.js','MyWindow',width=512,height=512); return false;">
-                  <img src="images/demo.jpg" alt="Scan Image" width="125" height="125">
-                </a>
-              </th>
               <td>&nbsp;</td>
-              <th>
-                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Reduce&files=reduce_kernel.js,reduce.js','MyWindow',width=512,height=512); return false;">
-                  <img src="images/demo.jpg" alt="Reduce Image" width="125" height="125">
-                </a>
-              </th>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
             </tr>
             <tr>
               <th style="width: 125px;">
@@ -103,13 +95,61 @@
                 </div>
               </th>
               <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <!-- 2 -->
+            <tr>
+              <th style="width: 125px;">Convolution</th>
+              <td>&nbsp;</td>
+              <th style="width: 125px;">Scan</th>
+              <td>&nbsp;</td>
+              <th style="width: 125px;">Reduce</th>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
               <th>
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Convolution&files=convolution_kernel.js,convolution.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Convolution Image" width="125" height="125">
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <th>
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Scan&files=scan_kernel.js,scan.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Scan Image" width="125" height="125">
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <th>
+                <a href="#" onClick="MyWindow=window.open('demo.html?mode=cpu&gl=off&title=Reduce&files=reduce_kernel.js,reduce.js','MyWindow',width=512,height=512); return false;">
+                  <img src="images/demo.jpg" alt="Reduce Image" width="125" height="125">
+                </a>
+              </th>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <th style="width: 125px;">
                 <div class="switch candy blue">
-                <input id="gpu-device3" name="scan" type="radio" checked>
+                <input id="gpu-device3" name="convolution" type="radio" checked>
                 <label for="gpu-device3" onclick="">GPU</label>
                 
-                <input id="cpu-device3" name="scan" type="radio">  
+                <input id="cpu-device3" name="convolution" type="radio">  
                 <label for="cpu-device3" onclick="">CPU</label>
+                
+                <span class="slide-button"></span>
+                </div>
+              </th>
+              <td>&nbsp;</td>
+              <th style="width: 125px;">
+                <div class="switch candy blue">
+                <input id="gpu-device4" name="scan" type="radio" checked>
+                <label for="gpu-device4" onclick="">GPU</label>
+                
+                <input id="cpu-device4" name="scan" type="radio">  
+                <label for="cpu-device4" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
                 </div>
@@ -117,17 +157,18 @@
               <td>&nbsp;</td>
               <th>
                 <div class="switch candy blue">
-                <input id="gpu-device4" name="reduce" type="radio" checked>
-                <label for="gpu-device4" onclick="">GPU</label>
+                <input id="gpu-device5" name="reduce" type="radio" checked>
+                <label for="gpu-device5" onclick="">GPU</label>
                 
-                <input id="cpu-device4" name="reduce" type="radio">  
-                <label for="cpu-device4" onclick="">CPU</label>
+                <input id="cpu-device5" name="reduce" type="radio">  
+                <label for="cpu-device5" onclick="">CPU</label>
                 
                 <span class="slide-button"></span>
                 </div>
               </th>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
             </tr>
-
 
           </table>
           <!-- END DEMO SAMPLE TABLE -->
