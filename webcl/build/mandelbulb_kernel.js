@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb_kernel.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb_kernel.data';
-    var PACKAGE_UUID = '355fb2a4-6a05-4ab4-be24-534666642098';
+    var PACKAGE_UUID = '019a3db1-0985-41a3-a45e-7ec23b4e577f';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

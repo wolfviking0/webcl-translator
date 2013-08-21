@@ -142,7 +142,9 @@ static char *ReadSources(const char *fileName) {
 }
 
 static void SetUpOpenCL() {
+	/*
 	cl_device_type dType;
+	
 	if (useCPU) {
 		if (useGPU)
 			dType = CL_DEVICE_TYPE_ALL;
@@ -155,6 +157,8 @@ static void SetUpOpenCL() {
 			dType = CL_DEVICE_TYPE_DEFAULT;
 	}
 
+	printf("dType : (%d - %d) %d - %d : %d : %d : %d\n",useCPU,useGPU,dType,CL_DEVICE_TYPE_CPU,CL_DEVICE_TYPE_GPU,CL_DEVICE_TYPE_DEFAULT,CL_DEVICE_TYPE_ALL);
+	*/
     cl_uint numPlatforms;
 	cl_platform_id platform = NULL;
 	cl_int status = clGetPlatformIDs(0, NULL, &numPlatforms);
@@ -203,7 +207,7 @@ static void SetUpOpenCL() {
 
 	context = clCreateContextFromType(
 			cprops,
-			dType,
+			CL_DEVICE_TYPE_GPU,
 			NULL,
 			NULL,
 			&status);
@@ -666,8 +670,32 @@ void ReInit(const int reallocBuffers) {
 }
 
 int main(int argc, char *argv[]) {
-	fprintf(stderr, "Usage: %s\n", argv[0]);
-	fprintf(stderr, "Usage: %s <use CPU device (0 or 1)> <use GPU device (0 or 1)> <kernel file name> <window width> <window height>\n", argv[0]);
+
+    // Parse command line options
+    //
+    int i;
+    int use_gpu = 1;
+    for(i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
+    if (use_gpu) {
+		useCPU = 0;
+    	useGPU = 1;
+    } else {
+		useCPU = 1;
+    	useGPU = 0;
+    }
 
 	config.width = 512;
 	config.height = 512;

@@ -78,7 +78,7 @@ displacement_sample:
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
 	python $(EMSCRIPTEN)/tools/file_packager.py ../build/mandelbulb_kernel.data --preload mandelbulb_kernel.cl --pre-run > ../build/mandelbulb_kernel.js
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o ../build/mandelbulb.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -o ../build/mandelbulb.js
 
 smallpt_sample:
 	$(call chdir,smallpt/)

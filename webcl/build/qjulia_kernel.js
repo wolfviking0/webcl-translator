@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/qjulia_kernel.data';
     var REMOTE_PACKAGE_NAME = 'qjulia_kernel.data';
-    var PACKAGE_UUID = '1183dbe6-8ec4-48ea-a259-63be42e5b0e9';
+    var PACKAGE_UUID = '61c83ef8-d61c-4fe9-85a2-5375957fc78b';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -1,7 +1,7 @@
 // MODE
 var SAMPLE = 0;
 var MODE = "gpu";
-var PARAM = "";
+var PARAM = [];
 
 // Global Module
 var Module = {};
@@ -22,7 +22,10 @@ for (var i = 0; i < urlParts.length; i++) {
   } else if (eltParts[0].toLowerCase() == "mode") {
 	  MODE = eltParts[1];
   } else if (eltParts[0].toLowerCase() == "param") {
-	  PARAM = eltParts[1];
+    var paramParts = eltParts[1].split(',');
+	  for (var j = 0; j < paramParts.length; j++) {
+      PARAM.push(paramParts[j]);
+    }
   } 
 
 }
@@ -40,9 +43,8 @@ function initArguments() {
   var argv = [];
   argv[0] = MODE;
           
-  var paramParts = PARAM.split(' ');
-  for (var i = 0; i < paramParts.length; i++) {
-	  argv[i+1] = paramParts[i];
+  for (var i = 0; i < PARAM.length; i++) {
+	  argv[i+1] = PARAM[i];
   }
 
   return argv;

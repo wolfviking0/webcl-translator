@@ -403,6 +403,9 @@ int main(int argc, char **argv)
         }
     }
     
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+    printf("Use kernel : reduce_%s%d_kernel.cl\n",integer==1?"int":"float",channels);
+
     // Create some random input data on the host 
     //
     float *float_data = (float*)malloc(count * channels * sizeof(float));
@@ -430,6 +433,16 @@ int main(int argc, char **argv)
         printf("Error: Failed to retrieve device info!\n");
         return EXIT_FAILURE;
     }
+   
+    size_t max_workgroup_item_size[3];
+    returned_size = 0;
+    err = CL_SUCCESS;
+    err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_workgroup_item_size), &max_workgroup_item_size, &returned_size);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to retrieve device info!\n");
+        return EXIT_FAILURE;
+    }
 
     cl_char vendor_name[1024] = {0};
     cl_char device_name[1024] = {0};
@@ -442,7 +455,7 @@ int main(int argc, char **argv)
     }
 
     printf(SEPARATOR);
-    printf("Connecting to %s %s...\n", vendor_name, device_name);
+    printf("Connecting to %s %s ...\nCL_DEVICE_MAX_WORK_GROUP_SIZE : %lu\nCL_DEVICE_MAX_WORK_ITEM_SIZES : {%lu / %lu / %lu}\n", vendor_name, device_name,max_workgroup_size,max_workgroup_item_size[0],max_workgroup_item_size[1],max_workgroup_item_size[2]);
 
     // Load the compute program from disk into a cstring buffer
     //

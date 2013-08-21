@@ -618,8 +618,10 @@ int main(int argc, char **argv)
     cl_mem			 output_buffer;
     cl_mem           input_buffer;
     
+    // Parse command line options
+    //
     int use_gpu = 1;
-    for( i = 0; i < argc && argv; i++)
+    for(i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -630,6 +632,8 @@ int main(int argc, char **argv)
         else if(strstr(argv[i], "gpu"))
             use_gpu = 1;
     }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
     
     // Create some random input data on the host 
     //

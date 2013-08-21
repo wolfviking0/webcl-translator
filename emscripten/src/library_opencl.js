@@ -527,6 +527,11 @@ var LibraryOpenCL = {
       }
             
       if (mapcount == 0) {
+//#if OPENCL_DEBUG
+        var notfounddevice ="clGetDeviceIDs: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
+        console.error(notfounddevice);
+        Module.print("/!\\"+notfounddevice);
+//#endif
         var alldev = CL.getAllDevices(plat);
         for (var i = 0 ; i < alldev.length; i++) {
           var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
@@ -885,6 +890,14 @@ var LibraryOpenCL = {
            mapcount ++;
         }        
       }
+
+//#if OPENCL_DEBUG
+      if (mapcount == 0) {   
+        var notfounddevice ="clCreateContextFromType: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
+        console.error(notfounddevice);
+        Module.print("/!\\"+notfounddevice);
+      }
+//#endif
 
       if (CL.webcl_mozilla == 1) {
         if (mapcount >= 1) {        
@@ -1834,6 +1847,9 @@ var LibraryOpenCL = {
 
     } catch(e) {
       try {
+#if OPENCL_DEBUG
+        console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+#endif        
         // empty “localWS” sometime solve
         // \todo how add some event inside the array
         if (CL.webcl_mozilla == 1) {

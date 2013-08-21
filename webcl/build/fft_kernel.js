@@ -43,7 +43,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/fft_kernel.data';
     var REMOTE_PACKAGE_NAME = 'fft_kernel.data';
-    var PACKAGE_UUID = '16717399-9419-4e15-91ad-d8f50f1f36fa';
+    var PACKAGE_UUID = '3afc08d1-a129-4dbc-b29a-f136a1e0b749';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();

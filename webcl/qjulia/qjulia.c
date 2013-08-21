@@ -747,6 +747,7 @@ static int
 SetupComputeKernel(void)
 {
     int err = 0;
+    int i =0;
     char *source = 0;
     size_t length = 0;
 
@@ -825,9 +826,36 @@ SetupComputeKernel(void)
     printf("WorkGroupItems: %d\n", WorkGroupItems);
 #endif
 
+    // Add for check the kernel size ...
+    size_t returned_size = 0;
+    size_t max_workgroup_size = 0;
+    err = clGetDeviceInfo(ComputeDeviceId, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_workgroup_size, &returned_size);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to retrieve device info!\n");
+        return EXIT_FAILURE;
+    }
+   
+    size_t max_workgroup_item_size[3];
+    returned_size = 0;
+    err = CL_SUCCESS;
+    err = clGetDeviceInfo(ComputeDeviceId, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_workgroup_item_size), &max_workgroup_item_size, &returned_size);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to retrieve device info!\n");
+        return EXIT_FAILURE;
+    }
+
     WorkGroupSize[0] = (MaxWorkGroupSize > 1) ? (MaxWorkGroupSize / WorkGroupItems) : MaxWorkGroupSize;
     WorkGroupSize[1] = MaxWorkGroupSize / WorkGroupSize[0];
-
+    
+    for (i = 0; i < 2; i++) {
+        if (WorkGroupSize[i] > max_workgroup_item_size[i]) {
+            printf("[CL_INVALID_WORK_GROUP_SIZE] detected: local_size[%d] = %d must be less than the device max work items size[%d] = %lu\n",i,WorkGroupSize[i],i,max_workgroup_item_size[i]);
+            WorkGroupSize[i] = max_workgroup_item_size[i];
+        }
+    }
+    
     printf(SEPARATOR);
 
     return CL_SUCCESS;
@@ -1167,7 +1195,7 @@ int main(int argc, char** argv)
     //
     int i;
     int use_gpu = 1;
-    for( i = 0; i < argc && argv; i++)
+    for(i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -1178,6 +1206,8 @@ int main(int argc, char** argv)
         else if(strstr(argv[i], "gpu"))
             use_gpu = 1;
     }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
     
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);

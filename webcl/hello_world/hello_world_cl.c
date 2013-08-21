@@ -112,22 +112,12 @@ int main(int argc, char** argv)
     cl_mem input;                       // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
     
-    // Fill our data set with random float values
-    //
-    int i = 0;
-    unsigned int count = DATA_SIZE;
-    for(i = 0; i < count; i++)
-        data[i] = rand() / (float)RAND_MAX;
-    
-    // Connect to a compute device
-    //
-    int gpu = 1;
-    
+    int i;
+
     // Parse command line options
     //
-    i = 0;
     int use_gpu = 1;
-    for( i = 0; i < argc && argv; i++)
+    for(i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -139,6 +129,14 @@ int main(int argc, char** argv)
             use_gpu = 1;
     }
 
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
+    // Fill our data set with random float values
+    //
+    unsigned int count = DATA_SIZE;
+    for(i = 0; i < count; i++)
+        data[i] = rand() / (float)RAND_MAX;
+    
     printf("Call : clGetDeviceIDs ...\n");
     err = clGetDeviceIDs(NULL, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)

@@ -99,6 +99,25 @@ int main(int argc, char** argv)
 	cl_mem outputSignalBuffer;
 	cl_mem maskBuffer;
 
+	int i;
+
+    // Parse command line options
+    //
+    int use_gpu = 1;
+    for(i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
     // First, select an OpenCL platform to run on.  
 	errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
 	checkErr( 
@@ -116,12 +135,12 @@ int main(int argc, char** argv)
 	// Iterate through the list of platforms until we find one that supports
 	// a CPU device, otherwise fail with an error.
 	deviceIDs = NULL;
-	cl_uint i;
+
 	for (i = 0; i < numPlatforms; i++)
 	{
 		errNum = clGetDeviceIDs(
             platformIDs[i], 
-            CL_DEVICE_TYPE_CPU, 
+            use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 
             0,
             NULL,
             &numDevices);
@@ -134,7 +153,7 @@ int main(int argc, char** argv)
 		   	deviceIDs = (cl_device_id *)alloca(sizeof(cl_device_id) * numDevices);
 			errNum = clGetDeviceIDs(
 				platformIDs[i],
-				CL_DEVICE_TYPE_CPU,
+				use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU,
 				numDevices, 
 				&deviceIDs[0], 
 				NULL);

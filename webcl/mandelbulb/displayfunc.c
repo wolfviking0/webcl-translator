@@ -66,10 +66,12 @@ double WallClockTime() {
 #endif
 }
 
-static unsigned int TextureId                   = 0;
+static unsigned int TextureIds[3];
 static unsigned int TextureTarget               = GL_TEXTURE_2D;
 static unsigned int TextureInternal             = GL_RGB;
+static unsigned int TextureInternal2            = GL_RGBA;
 static unsigned int TextureFormat               = GL_RGB;
+static unsigned int TextureFormat2              = GL_RGBA;
 static unsigned int TextureType                 = GL_FLOAT;
 static unsigned int ActiveTextureUnit           = GL_TEXTURE1_ARB;
 static size_t TextureTypeSize                   = sizeof(float);
@@ -145,7 +147,7 @@ void UpdateCamera() {
 }
 
 #define MU_RECT_SIZE 80
-static void DrawJulia(const int origX, const int origY, const float cR, const float cI) {
+static void DrawJulia(const int id, const int origX, const int origY, const float cR, const float cI) {
 	float buffer[MU_RECT_SIZE][MU_RECT_SIZE][4];
 	const float invSize = 3.f / MU_RECT_SIZE;
 	int i, j;
@@ -177,6 +179,23 @@ static void DrawJulia(const int origX, const int origY, const float cR, const fl
 #ifndef __EMSCRIPTEN__
 	glRasterPos2i(origX, origY);
 	glDrawPixels(MU_RECT_SIZE, MU_RECT_SIZE, GL_RGBA, GL_FLOAT, buffer);
+#else
+ 	glEnable( TextureTarget );
+    glBindTexture( TextureTarget, TextureIds[id] );
+
+    if(buffer) {
+        glTexSubImage2D(TextureTarget, 0, 0, 0, MU_RECT_SIZE, MU_RECT_SIZE, TextureFormat2, TextureType, buffer);
+    }
+
+  	glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2i( 0, 0 ); glVertex3f( origX, origY, 0 );
+    glTexCoord2i( 0, 1 ); glVertex3f( origX, origY+MU_RECT_SIZE, 0 );
+    glTexCoord2i( 1, 0 ); glVertex3f( origX+MU_RECT_SIZE, origY, 0 );
+    glTexCoord2i( 1, 1 ); glVertex3f( origX+MU_RECT_SIZE,origY+MU_RECT_SIZE, 0 );
+    glEnd();
+
+    glDisable( TextureTarget );
+    glBindTexture( TextureTarget, 0 );
 #endif
   
 }
@@ -185,52 +204,36 @@ static void
 RenderTexture( float *pvData )
 {
     glDisable( GL_LIGHTING );
-    glViewport( 0, 0, config.width, config.height );
-
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    gluOrtho2D( -1.0, 1.0, -1.0, 1.0 );
-
+ 
+    // Setup our screen
+    glViewport(0,0,config.width, config.height);
+    glMatrixMode(GL_PROJECTION);
+    
+    GLfloat matrixData[] = { 2.0/config.width,        0,  0,  0,
+                              0, 2.0/config.height,  0,  0,
+                                    0,        0, 1,  0,
+                                   -1,        -1,  0,  1 };
+    glLoadMatrixf(matrixData); // test loadmatrix
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
-    glMatrixMode( GL_TEXTURE );
-    glLoadIdentity();
-    
     glEnable( TextureTarget );
-    glBindTexture( TextureTarget, TextureId );
+    glBindTexture( TextureTarget, TextureIds[0] );
 
-    
     if(pvData) {
         glTexSubImage2D(TextureTarget, 0, 0, 0, config.width, config.height, TextureFormat, TextureType, pvData);
     }
 
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-
-    glBegin( GL_QUADS );
-    {
-        //glColor3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f( 0.0f, 0.0f );
-        glVertex2i( -1, -1 );
-        
-        //glColor3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f( 0.0f, 1.0f );
-        glVertex2i( -1, 1 );
-        
-        //glColor3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f( 1.0f, 1.0f );
-        glVertex2i( 1, 1 );
-        
-        //glColor3f(1.0f, 1.0f, 1.0f);
-        glTexCoord2f( 1.0f, 0.0f );
-        glVertex2i( 1, -1 );
-    }
-
+  	glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2i( 0, 0 ); glVertex3f( 0, 0, 0 );
+    glTexCoord2i( 0, 1 ); glVertex3f( 0, config.height, 0 );
+    glTexCoord2i( 1, 0 ); glVertex3f( config.width, 0, 0 );
+    glTexCoord2i( 1, 1 ); glVertex3f( config.width, config.height, 0 );
     glEnd();
-    
-    glBindTexture( TextureTarget, 0 );
+
     glDisable( TextureTarget );
+    glBindTexture( TextureTarget, 0 );
+
 }
 
 void displayFunc(void) {
@@ -275,10 +278,10 @@ void displayFunc(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	const int baseMu1 = config.width - MU_RECT_SIZE - 2;
 	const int baseMu2 = 1;
-	DrawJulia(baseMu1, baseMu2, config.mu[0], config.mu[1]);
+	DrawJulia(1,baseMu1, baseMu2, config.mu[0], config.mu[1]);
 	const int baseMu3 = config.width - MU_RECT_SIZE - 2;
 	const int baseMu4 = MU_RECT_SIZE + 2;
-	DrawJulia(baseMu3, baseMu4, config.mu[2], config.mu[3]);
+	DrawJulia(2,baseMu3, baseMu4, config.mu[2], config.mu[3]);
 	glDisable(GL_BLEND);
 
 	glColor3f(1.f, 1.f, 1.f);
@@ -316,8 +319,10 @@ void displayFunc(void) {
 		glPopMatrix();
 	}
 #endif
-  
-	glutSwapBuffers();
+
+    glFlush();
+    
+    SDL_GL_SwapBuffers();
 }
 
 static double lastUserInputTime;
@@ -651,30 +656,37 @@ void timerFunc(const int id) {
 
 static void CreateTexture(unsigned int width, unsigned int height)
 {    
-    if(TextureId)
-        glDeleteTextures(1, &TextureId);
-    TextureId = 0;
+
+    glGenTextures( 3, TextureIds );
     
-    printf("Creating Texture %d x %d...\n", width, height);
-  
+    printf("Creating Texture 1 %d x %d...\n", width, height);
+  	printf("Creating Texture 2 %d x %d...\n", MU_RECT_SIZE, MU_RECT_SIZE);
+	printf("Creating Texture 3 %d x %d...\n", MU_RECT_SIZE, MU_RECT_SIZE);
+
 #ifndef __EMSCRIPTEN__
     glActiveTextureARB(ActiveTextureUnit);
 #else
     glActiveTexture(ActiveTextureUnit);
 #endif
     
-    glGenTextures(1, &TextureId);
-    glBindTexture(TextureTarget, TextureId);
+    glGenTextures( 3, TextureIds );
+
+    for (int i = 0; i < 3; i++) {
+    	
+    	glBindTexture(TextureTarget, TextureIds[i]);
 
 #ifndef __EMSCRIPTEN__
-    glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    	glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    	glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
 #endif
-    glTexParameteri(TextureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(TextureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexImage2D(TextureTarget, 0, TextureInternal, width, height, 0, 
-                 TextureFormat, TextureType, 0);
-    glBindTexture(TextureTarget, 0);
+    	glTexParameteri(TextureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    	glTexParameteri(TextureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    	if (i==0)
+    		glTexImage2D(TextureTarget, 0, TextureInternal, width, height, 0, TextureFormat, TextureType, 0);
+    	else
+    		glTexImage2D(TextureTarget, 0, TextureInternal2, MU_RECT_SIZE, MU_RECT_SIZE, 0, TextureFormat2, TextureType, 0);
+    	glBindTexture(TextureTarget, 0);
+	}
 }
 
 static int 

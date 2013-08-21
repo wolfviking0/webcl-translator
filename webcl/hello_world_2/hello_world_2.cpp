@@ -236,9 +236,12 @@ int main(int argc, char** argv)
     cl_mem memObjects[3] = { 0, 0, 0 };
     cl_int errNum;
 
-    int use_gpu = 1;
     int i;
-    for( i = 0; i < argc && argv; i++)
+
+    // Parse command line options
+    //
+    int use_gpu = 1;
+    for(i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -249,6 +252,8 @@ int main(int argc, char** argv)
         else if(strstr(argv[i], "gpu"))
             use_gpu = 1;
     }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
     
     // Create an OpenCL context on first available platform
     context = CreateContext(use_gpu);
