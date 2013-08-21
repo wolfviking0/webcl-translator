@@ -3810,9 +3810,11 @@ function copyTempDouble(ptr) {
           }    
         }
         if (mapcount == 0) {
+  //#if OPENCL_DEBUG
           var notfounddevice ="clGetDeviceIDs: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
           console.error(notfounddevice);
           Module.print("/!\\"+notfounddevice);
+  //#endif
           var alldev = CL.getAllDevices(plat);
           for (var i = 0 ; i < alldev.length; i++) {
             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
@@ -4272,9 +4274,7 @@ function copyTempDouble(ptr) {
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         try {
-          var localwsempty = "clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size";
-          console.error(localwsempty);
-          Module.print("/!\\"+localwsempty);
+          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
           // empty “localWS” sometime solve
           // \todo how add some event inside the array
           if (CL.webcl_mozilla == 1) {

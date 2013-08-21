@@ -10404,6 +10404,13 @@ function copyTempDouble(ptr) {
              mapcount ++;
           }        
         }
+  //#if OPENCL_DEBUG
+        if (mapcount == 0) {   
+          var notfounddevice ="clCreateContextFromType: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
+          console.error(notfounddevice);
+          Module.print("/!\\"+notfounddevice);
+        }
+  //#endif
         if (CL.webcl_mozilla == 1) {
           if (mapcount >= 1) {        
             CL.ctx.push(WebCL.createContextFromType(prop, device_type_i64_1));
@@ -10836,6 +10843,7 @@ function copyTempDouble(ptr) {
         return 0;/*CL_SUCCESS*/
       } catch(e) {
         try {
+          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
           // empty “localWS” sometime solve
           // \todo how add some event inside the array
           if (CL.webcl_mozilla == 1) {

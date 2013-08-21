@@ -107,7 +107,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/videodecode_kernel.data';
     var REMOTE_PACKAGE_NAME = 'videodecode_kernel.data';
-    var PACKAGE_UUID = '8666df69-a7ed-4e61-adab-a8b66a649a2b';
+    var PACKAGE_UUID = '6d70234e-d12b-49f6-bd4c-88f43ef07cd8';
   
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
