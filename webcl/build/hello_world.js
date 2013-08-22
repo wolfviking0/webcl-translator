@@ -3941,7 +3941,7 @@ function copyTempDouble(ptr) {
             devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = "";//Pointer_stringify(options);
+        var opt = (options == 0) ? "" : Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 

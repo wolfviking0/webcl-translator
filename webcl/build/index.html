@@ -84,67 +84,66 @@
           break;//------------
 
         case '1':  
-          includeJS("hello_world_2_kernel.js");     
-          includeJS("hello_world_2.js");     
+          includeJS("hello_world_2.js");
+ 
           break;//------------
         
         case '2':  
-          includeJS("convolution_kernel.js");     
-          includeJS("convolution.js");     
+          includeJS("convolution.js");
+   
           break;//------------
         
-        case '3':  
-          includeJS("scan_kernel.js");     
-          includeJS("scan.js");     
+        case '3':   
+          includeJS("scan.js");
+
           break; //------------
 
         case '4':
-          includeJS("reduce_kernel.js");     
-          includeJS("reduce.js");     
+          includeJS("reduce.js");
+          
           break; //------------
 
         case '5':
-          includeJS("displacement_kernel.js");     
-          includeJS("displacement.js");     
+          includeJS("displacement.js");
+          
           break; //------------
 
         case '6':
-          includeJS("qjulia_kernel.js");     
-          includeJS("qjulia.js");     
+          includeJS("qjulia.js");
+    
           break; //------------
 
         case '7':
-          includeJS("mandelbulb_kernel.js");     
-          includeJS("mandelbulb.js");     
+          includeJS("mandelbulb.js");
+          
           break; //------------
   
         case '8':
-          includeJS("smallpt_kernel.js");     
-          includeJS("smallpt.js");     
+          includeJS("smallpt.js");
+          
           break; //------------
 
         case '9':
-          includeJS("fft_kernel.js");     
-          includeJS("fft.js");     
+          includeJS("fft.js");
+          
           break; //------------
 
         case '10':
-          includeJS("dxtcompressor_kernel.js");     
-          includeJS("dxtcompressor_worker.js");     
-          includeJS("dxtcompressor.js");     
+          //includeJS("dxtcompressor_worker.js",function() {
+            includeJS("dxtcompressor.js");
+          //});
+ 
           break; //------------
 
         case '11':
-          includeJS("videodecode_kernel.js");     
-          includeJS("videodecode.js");     
+          includeJS("videodecode.js");
+  
           break; //------------
 
         default:
           includeJS("hello_world.js"); 
           break;
       }
-     
-
     }	  
   </script>
 

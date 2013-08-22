@@ -25,8 +25,8 @@
 #include "permutations.h"
 #include "block.h"
 
-const char *image_filename = "./data/lena.ppm";
-const char *refimage_filename = "./data/lena_ref.dds";
+const char *image_filename = "lena.ppm";
+const char *refimage_filename = "lena_ref.dds";
 
 unsigned int width, height;
 cl_uint* h_img = NULL;
@@ -204,6 +204,22 @@ int main(const int argc, const char** argv)
     shrSetLogFileName ("oclDXTCompression.txt");
     shrLog(LOGBOTH, 0, "%s Starting...\n\n", argv[0]); 
 
+    // Parse command line options
+    //
+    int i;
+    int use_gpu = 1;
+    for(i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
     cl_context cxGPUContext;
     cl_command_queue cqCommandQueue;
     cl_program cpProgram;
@@ -219,14 +235,9 @@ int main(const int argc, const char** argv)
         image_filename = filename;
     }
     
-    int use_worker = 1;
-   
-    // load image
-    printf("%s\n",image_filename);
+    int use_worker = 0;
 
     const char* image_path = shrFindFilePath(image_filename, argv[0]);
-    printf("%s\n",image_path);
-    
     shrCheckError(image_path != NULL, shrTRUE);
     shrLoadPPM4ub(image_path, (unsigned char **)&h_img, &width, &height);
     shrCheckError(h_img != NULL, shrTRUE);
@@ -248,7 +259,7 @@ int main(const int argc, const char** argv)
     }
 
     // create the OpenCL context on a GPU device
-    cxGPUContext = clCreateContextFromType(0, CL_DEVICE_TYPE_GPU, NULL, NULL, &ciErrNum);
+    cxGPUContext = clCreateContextFromType(0, use_gpu==1?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU, NULL, NULL, &ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
 
     // get and log device
@@ -293,7 +304,8 @@ int main(const int argc, const char** argv)
 
     // Program Setup
     size_t program_length;
-    const char* source_path = "DXTCompressor_kernel.cl";//shrFindFilePath("DXTCompression_kernel.cl", argv[0]);
+    const char* source_path = shrFindFilePath("DXTCompressor_kernel.cl", argv[0]);
+    printf("%s\n",source_path);
     shrCheckError(source_path != NULL, shrTRUE);
     char *source = oclLoadProgSource(source_path, "", &program_length);
     shrCheckError(source != NULL, shrTRUE);
@@ -336,8 +348,11 @@ int main(const int argc, const char** argv)
     clEnqueueWriteBuffer(cqCommandQueue, cmMemObjs[1], CL_FALSE, 0, sizeof(cl_uint) * width * height, block_image, 0,0,0);
 
     // set work-item dimensions
-    szGlobalWorkSize[0] = width * height * (NUM_THREADS/16);
-    szLocalWorkSize[0]= NUM_THREADS;
+    szGlobalWorkSize[0] = /*16384;*/width * height * (NUM_THREADS/16);
+    szLocalWorkSize[0]= NUM_THREADS;//1;
+    
+    printf("Work-item : [%d - %d]\n",szGlobalWorkSize[0], szLocalWorkSize[0]);
+
     
 #ifdef GPU_PROFILING
     int numIterations = 100;
@@ -348,9 +363,8 @@ int main(const int argc, const char** argv)
         }
 #endif
         // execute kernel
-        ciErrNum = clEnqueueNDRangeKernel(cqCommandQueue, ckKernel, 1, NULL,
-                                          szGlobalWorkSize, szLocalWorkSize, 
-                                          0, NULL, NULL);
+        ciErrNum = clEnqueueNDRangeKernel(cqCommandQueue, ckKernel, 1, NULL, szGlobalWorkSize , szLocalWorkSize, 0, NULL, NULL);
+
         shrCheckError(ciErrNum, CL_SUCCESS);
 #ifdef GPU_PROFILING
     }
@@ -521,7 +535,7 @@ int main(const int argc, const char** argv)
           if (cmp != 0.0f) 
           {
               compareBlock(((BlockDXT1 *)h_result) + resultBlockIdx, ((BlockDXT1 *)reference) + referenceBlockIdx);
-              shrLog(LOGBOTH, 0, "Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
+              //shrLog(LOGBOTH, 0, "Deviation at (%d, %d):\t%f rms\n", x/4, y/4, float(cmp)/16/3);
           }
           rms += cmp;
       }
