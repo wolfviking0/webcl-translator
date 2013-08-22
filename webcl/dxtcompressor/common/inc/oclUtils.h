@@ -19,12 +19,18 @@
 // Common headers:  Cross-API utililties and OpenCL header
 #include <shrUtils.h>
 
+#define CL_NV_DEVICE_COMPUTE_CAPABILITY_MAJOR       0x4000
+#define CL_NV_DEVICE_COMPUTE_CAPABILITY_MINOR       0x4001
+#define CL_NV_DEVICE_REGISTERS_PER_BLOCK            0x4002
+#define CL_NV_DEVICE_WARP_SIZE                      0x4003
+#define CL_NV_DEVICE_GPU_OVERLAP                    0x4004
+#define CL_NV_DEVICE_KERNEL_EXEC_TIMEOUT            0x4005
+#define CL_NV_DEVICE_INTEGRATED_MEMORY              0x4006
+
 #ifdef __APPLE__
 	#include <OpenCL/OpenCL.h>
-	#include <OpenCL/clext.h> // Not official
 #else
 	#include <CL/cl.h>
-	#include <CL/clext.h>
 #endif
 
 // reminders for output window and build log

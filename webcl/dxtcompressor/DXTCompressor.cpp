@@ -348,8 +348,8 @@ int main(const int argc, const char** argv)
     clEnqueueWriteBuffer(cqCommandQueue, cmMemObjs[1], CL_FALSE, 0, sizeof(cl_uint) * width * height, block_image, 0,0,0);
 
     // set work-item dimensions
-    szGlobalWorkSize[0] = /*16384;*/width * height * (NUM_THREADS/16);
-    szLocalWorkSize[0]= NUM_THREADS;//1;
+    szGlobalWorkSize[0] = /*65536;*/width * height * (NUM_THREADS/16);
+    szLocalWorkSize[0]= /*1;*/NUM_THREADS;
     
     printf("Work-item : [%d - %d]\n",szGlobalWorkSize[0], szLocalWorkSize[0]);
 

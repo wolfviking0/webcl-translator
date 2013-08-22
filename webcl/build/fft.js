@@ -3338,19 +3338,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _clGetKernelWorkGroupInfo(kernel, devices, param_name, param_value_size, param_value, param_value_size_ret) {
@@ -7746,7 +7749,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/fft.data';
     var REMOTE_PACKAGE_NAME = 'fft.data';
-    var PACKAGE_UUID = '179b4df7-a141-4365-b011-4346dab205cd';
+    var PACKAGE_UUID = 'b2bf67b6-b546-4548-89b5-7b1f77707df6';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

@@ -4184,7 +4184,7 @@ function copyTempDouble(ptr) {
           }
         } else {
           if (mapcount >= 1) {
-            var contextProperties = {platform: null, devices: null, deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+            var contextProperties = {platform: platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
             CL.ctx.push(WebCL.createContext(contextProperties));
           } else {
             CL.ctx.push(WebCL.createContext());
@@ -4843,18 +4843,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _llvm_lifetime_start() {}
@@ -10920,7 +10924,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = 'a0e81a72-de41-43a8-8766-644457ba740b';
+    var PACKAGE_UUID = '5ea319ec-8f01-4cde-9d04-741cc9d87c7c';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

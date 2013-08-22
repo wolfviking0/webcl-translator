@@ -10462,7 +10462,7 @@ function copyTempDouble(ptr) {
           }
         } else {
           if (mapcount >= 1) {
-            var contextProperties = {platform: null, devices: null, deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+            var contextProperties = {platform: platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
             CL.ctx.push(WebCL.createContext(contextProperties));
           } else {
             CL.ctx.push(WebCL.createContext());
@@ -10884,19 +10884,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
@@ -94347,7 +94350,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'bfc46533-d10f-45ad-a74d-35db6b6f94c9';
+    var PACKAGE_UUID = 'e6e438a5-4803-4b06-9619-7763e3ed0ec4';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

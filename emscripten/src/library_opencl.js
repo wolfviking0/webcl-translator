@@ -908,7 +908,7 @@ var LibraryOpenCL = {
         }
       } else {
         if (mapcount >= 1) {
-          var contextProperties = {platform: null, devices: null, deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+          var contextProperties = {platform: platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
           CL.ctx.push(WebCL.createContext(contextProperties));
         } else {
           CL.ctx.push(WebCL.createContext());
@@ -1044,7 +1044,7 @@ var LibraryOpenCL = {
       }    
 
       var opt = (options == 0) ? "" : Pointer_stringify(options);
-      
+
       if (CL.webcl_mozilla == 1) {
         CL.programs[prog].buildProgram (devices_tab, opt);
       } else { 
@@ -1846,22 +1846,23 @@ var LibraryOpenCL = {
       return 0;/*CL_SUCCESS*/
 
     } catch(e) {
-      try {
-#if OPENCL_DEBUG
-        console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-#endif        
-        // empty “localWS” sometime solve
-        // \todo how add some event inside the array
-        if (CL.webcl_mozilla == 1) {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-        } else {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-        }
-        return 0;/*CL_SUCCESS*/
+      return CL.catchError("clEnqueueNDRangeKernel",e);      
+//       try {
+// #if OPENCL_DEBUG
+//         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+// #endif        
+//         // empty “localWS” sometime solve
+//         // \todo how add some event inside the array
+//         if (CL.webcl_mozilla == 1) {
+//           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+//         } else {
+//           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+//         }
+//         return 0;/*CL_SUCCESS*/
 
-      } catch(e) {
-        return CL.catchError("clEnqueueNDRangeKernel",e);
-      }
+//       } catch(e) {
+//         return CL.catchError("clEnqueueNDRangeKernel",e);
+//       }
     }
   },
   

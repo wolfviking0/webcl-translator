@@ -4273,19 +4273,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
@@ -7390,7 +7393,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = '763a29e2-f40f-4bff-aa58-6b8f962d3e39';
+    var PACKAGE_UUID = 'dedf4c13-6784-40f4-98d4-a665ea55dd87';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

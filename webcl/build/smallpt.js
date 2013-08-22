@@ -4963,19 +4963,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _llvm_lifetime_start() {}
@@ -11022,7 +11025,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/smallpt.data';
     var REMOTE_PACKAGE_NAME = 'smallpt.data';
-    var PACKAGE_UUID = 'ea4bb2e5-5b05-4beb-a36a-8de63028cc97';
+    var PACKAGE_UUID = 'ce33e3ab-f9fd-4a3e-9fd5-0881eb6984c1';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
