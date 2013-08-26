@@ -1,6 +1,8 @@
 // MODE
 var SAMPLE = 0;
 var MODE = "gpu";
+var USE_GL = 0;
+var TITLE = "";
 var PARAM = [];
 
 // Global Module
@@ -19,6 +21,11 @@ for (var i = 0; i < urlParts.length; i++) {
   var eltParts = urlParts[i].split('=');
   if (eltParts[0].toLowerCase() == "sample") {
     SAMPLE = eltParts[1];
+  } else if (eltParts[0].toLowerCase() == "gl") {
+    USE_GL = eltParts[1] == "off" ? 0 : 1;
+  } else if (eltParts[0].toLowerCase() == "title") {
+    TITLE = eltParts[1];
+    TITLE = TITLE.replace(/%20/gi, " ");
   } else if (eltParts[0].toLowerCase() == "mode") {
 	  MODE = eltParts[1];
   } else if (eltParts[0].toLowerCase() == "param") {
