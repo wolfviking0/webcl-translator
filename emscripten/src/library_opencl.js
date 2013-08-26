@@ -908,7 +908,7 @@ var LibraryOpenCL = {
         }
       } else {
         if (mapcount >= 1) {
-          var contextProperties = {platform: platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+          var contextProperties = {platform: CL.platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
           CL.ctx.push(WebCL.createContext(contextProperties));
         } else {
           CL.ctx.push(WebCL.createContext());
