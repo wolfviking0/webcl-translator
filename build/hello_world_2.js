@@ -3278,7 +3278,7 @@ function copyTempDouble(ptr) {
           }
         } else {
           if (mapcount >= 1) {
-            var contextProperties = {platform: platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+            var contextProperties = {platform: CL.platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
             CL.ctx.push(WebCL.createContext(contextProperties));
           } else {
             CL.ctx.push(WebCL.createContext());
@@ -7434,7 +7434,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/hello_world_2.data';
     var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = 'bff8784a-1974-4b68-965e-ba933b651558';
+    var PACKAGE_UUID = 'acc0b15f-86ce-4ccd-870b-e29f5725f2a9';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

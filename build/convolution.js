@@ -7393,7 +7393,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = 'dedf4c13-6784-40f4-98d4-a665ea55dd87';
+    var PACKAGE_UUID = '4ed9f2e6-7316-4df7-9a80-c51fd322ff5c';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
