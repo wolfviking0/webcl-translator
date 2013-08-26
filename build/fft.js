@@ -3338,18 +3338,22 @@ function copyTempDouble(ptr) {
         }
         return 0;/*CL_SUCCESS*/
       } catch(e) {
-        try {
-          // empty “localWS” sometime solve
-          // \todo how add some event inside the array
-          if (CL.webcl_mozilla == 1) {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-          } else {
-            CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-          }
-          return 0;/*CL_SUCCESS*/
-        } catch(e) {
-          return CL.catchError("clEnqueueNDRangeKernel",e);
-        }
+        return CL.catchError("clEnqueueNDRangeKernel",e);      
+  //       try {
+  // #if OPENCL_DEBUG
+  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
+  // #endif        
+  //         // empty “localWS” sometime solve
+  //         // \todo how add some event inside the array
+  //         if (CL.webcl_mozilla == 1) {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
+  //         } else {
+  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
+  //         }
+  //         return 0;/*CL_SUCCESS*/
+  //       } catch(e) {
+  //         return CL.catchError("clEnqueueNDRangeKernel",e);
+  //       }
       }
     }
   function _clGetKernelWorkGroupInfo(kernel, devices, param_name, param_value_size, param_value, param_value_size_ret) {
@@ -4201,7 +4205,7 @@ function copyTempDouble(ptr) {
             devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = "";//Pointer_stringify(options);
+        var opt = (options == 0) ? "" : Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 
@@ -4645,6 +4649,11 @@ function copyTempDouble(ptr) {
           }    
         }
         if (mapcount == 0) {
+  //#if OPENCL_DEBUG
+          var notfounddevice ="clGetDeviceIDs: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
+          console.error(notfounddevice);
+          Module.print("/!\\"+notfounddevice);
+  //#endif
           var alldev = CL.getAllDevices(plat);
           for (var i = 0 ; i < alldev.length; i++) {
             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
@@ -7707,6 +7716,100 @@ function abort(text) {
 }
 Module['abort'] = Module.abort = abort;
 // {{PRE_RUN_ADDITIONS}}
+(function() {
+function assert(check, msg) {
+  if (!check) throw msg + new Error().stack;
+}
+    function DataRequest() {}
+    DataRequest.prototype = {
+      requests: {},
+      open: function(mode, name) {
+        this.requests[name] = this;
+      },
+      send: function() {}
+    };
+    var filePreload0 = new DataRequest();
+    filePreload0.open('GET', '/param.txt', true);
+    filePreload0.responseType = 'arraybuffer';
+    filePreload0.onload = function() {
+      var arrayBuffer = filePreload0.response;
+      assert(arrayBuffer, 'Loading file /param.txt failed.');
+      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
+      Module['FS_createPreloadedFile']('/', 'param.txt', byteArray, true, true, function() {
+        Module['removeRunDependency']('fp /param.txt');
+      });
+    };
+    Module['addRunDependency']('fp /param.txt');
+    filePreload0.send(null);
+    if (!Module.expectedDataFileDownloads) {
+      Module.expectedDataFileDownloads = 0;
+      Module.finishedDataFileDownloads = 0;
+    }
+    Module.expectedDataFileDownloads++;
+    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    var PACKAGE_NAME = '../build/fft.data';
+    var REMOTE_PACKAGE_NAME = 'fft.data';
+    var PACKAGE_UUID = 'b2bf67b6-b546-4548-89b5-7b1f77707df6';
+    function fetchRemotePackage(packageName, callback, errback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', packageName, true);
+      xhr.responseType = 'arraybuffer';
+      xhr.onprogress = function(event) {
+        var url = packageName;
+        if (event.loaded && event.total) {
+          if (!xhr.addedTotal) {
+            xhr.addedTotal = true;
+            if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
+            Module.dataFileDownloads[url] = {
+              loaded: event.loaded,
+              total: event.total
+            };
+          } else {
+            Module.dataFileDownloads[url].loaded = event.loaded;
+          }
+          var total = 0;
+          var loaded = 0;
+          var num = 0;
+          for (var download in Module.dataFileDownloads) {
+          var data = Module.dataFileDownloads[download];
+            total += data.total;
+            loaded += data.loaded;
+            num++;
+          }
+          total = Math.ceil(total * Module.expectedDataFileDownloads/num);
+          Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
+        } else if (!Module.dataFileDownloads) {
+          Module['setStatus']('Downloading data...');
+        }
+      };
+      xhr.onload = function(event) {
+        var packageData = xhr.response;
+        callback(packageData);
+      };
+      xhr.send(null);
+    };
+    function processPackageData(arrayBuffer) {
+      Module.finishedDataFileDownloads++;
+      assert(arrayBuffer, 'Loading data file failed.');
+      var byteArray = new Uint8Array(arrayBuffer);
+      var curr;
+        curr = DataRequest.prototype.requests['/param.txt'];
+        var data = byteArray.subarray(0, 3907);
+        var ptr = Module['_malloc'](3907);
+        Module['HEAPU8'].set(data, ptr);
+        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 3907);
+        curr.onload();
+                Module['removeRunDependency']('datafile_../build/fft.data');
+    };
+    Module['addRunDependency']('datafile_../build/fft.data');
+    function handleError(error) {
+      console.error('package error:', error);
+    };
+    if (!Module.preloadResults)
+      Module.preloadResults = {};
+      Module.preloadResults[PACKAGE_NAME] = {fromCache: false};
+      fetchRemotePackage(REMOTE_PACKAGE_NAME, processPackageData, handleError);
+})();
 if (Module['preInit']) {
   if (typeof Module['preInit'] == 'function') Module['preInit'] = [Module['preInit']];
   while (Module['preInit'].length > 0) {
