@@ -146,7 +146,7 @@ void UpdateCamera() {
 	vsmul(config.camera.y, .5135f, config.camera.y);
 }
 
-#define MU_RECT_SIZE 80
+#define MU_RECT_SIZE 64
 static void DrawJulia(const int id, const int origX, const int origY, const float cR, const float cI) {
 	float buffer[MU_RECT_SIZE][MU_RECT_SIZE][4];
 	const float invSize = 3.f / MU_RECT_SIZE;

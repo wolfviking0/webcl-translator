@@ -19,28 +19,35 @@ endef
 #----------------------------------------------------------------------------------------#		
 
 all: \
-	helloworld_sample 	\
-	helloworld2_sample 	\
-	convolution_sample 	\
-	reduce_sample 		\
-	scan_sample 		\
-	displacement_sample \
-	qjulia_sample 		\
-	mandelbulb_sample 	\
-	smallpt_sample		\
-	fft_sample			\
-	dxt_sample			\
-	video_sample		\
+	hello_world_sample 			\
+	hello_world_2_sample		\
+	hello_world_interop_sample	\
+	convolution_sample 			\
+	reduce_sample 				\
+	scan_sample 				\
+	displacement_sample 		\
+	qjulia_sample 				\
+	mandelbulb_sample 			\
+	smallpt_sample				\
+	fft_sample					\
+	dxt_sample					\
+	video_sample				\
 
-helloworld_sample:
+hello_world_sample:
 	$(call chdir,hello_world/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_DEBUG=1 -o ../build/hello_world.js
 
-helloworld2_sample:
+hello_world_2_sample:
 	$(call chdir,hello_world_2/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
 	--preload-file hello_world_2.cl \
 	-o ../build/hello_world_2.js
+
+hello_world_interop_sample:
+	$(call chdir,hello_world_interop/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_interop.cpp -O0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
+	--preload-file hello_world_interop.cl \
+	-o ../build/hello_world_interop.js
 
 convolution_sample:
 	$(call chdir,convolution/)
@@ -62,7 +69,7 @@ scan_sample:
 
 qjulia_sample:
 	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/qjulia.js
 

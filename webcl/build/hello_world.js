@@ -2981,403 +2981,198 @@ function copyTempDouble(ptr) {
   function _rand() {
       return Math.floor(Math.random()*0x80000000);
     }
-  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
-          Browser.mainLoop.shouldPause = true;
-        },resume:function () {
-          if (Browser.mainLoop.paused) {
-            Browser.mainLoop.paused = false;
-            Browser.mainLoop.scheduler();
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+      },getNewId:function (table) {
+        var ret = GL.counter++;
+        for (var i = table.length; i < ret; i++) {
+          table[i] = null;
+        }
+        return ret;
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempBufferIndexLookup:null,tempVertexBuffers:null,tempIndexBuffers:null,tempQuadIndexBuffer:null,generateTempBuffers:function (quads) {
+        GL.tempBufferIndexLookup = new Uint8Array(GL.MAX_TEMP_BUFFER_SIZE+1);
+        GL.tempVertexBuffers = [];
+        GL.tempIndexBuffers = [];
+        var last = -1, curr = -1;
+        var size = 1;
+        for (var i = 0; i <= GL.MAX_TEMP_BUFFER_SIZE; i++) {
+          if (i > size) {
+            size <<= 1;
           }
-          Browser.mainLoop.shouldPause = false;
-        },updateStatus:function () {
-          if (Module['setStatus']) {
-            var message = Module['statusMessage'] || 'Please wait...';
-            var remaining = Browser.mainLoop.remainingBlockers;
-            var expected = Browser.mainLoop.expectedBlockers;
-            if (remaining) {
-              if (remaining < expected) {
-                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
-              } else {
-                Module['setStatus'](message);
-              }
+          if (size != last) {
+            curr++;
+            GL.tempVertexBuffers[curr] = Module.ctx.createBuffer();
+            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, GL.tempVertexBuffers[curr]);
+            Module.ctx.bufferData(Module.ctx.ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
+            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
+            GL.tempIndexBuffers[curr] = Module.ctx.createBuffer();
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[curr]);
+            Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
+            last = size;
+          }
+          GL.tempBufferIndexLookup[i] = curr;
+        }
+        if (quads) {
+          // GL_QUAD indexes can be precalculated
+          GL.tempQuadIndexBuffer = Module.ctx.createBuffer();
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
+          var quadIndexes = new Uint16Array(numIndexes);
+          var i = 0, v = 0;
+          while (1) {
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+1;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+3;
+            if (i >= numIndexes) break;
+            v += 4;
+          }
+          Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, quadIndexes, Module.ctx.STATIC_DRAW);
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
+        }
+      },findToken:function (source, token) {
+        function isIdentChar(ch) {
+          if (ch >= 48 && ch <= 57) // 0-9
+            return true;
+          if (ch >= 65 && ch <= 90) // A-Z
+            return true;
+          if (ch >= 97 && ch <= 122) // a-z
+            return true;
+          return false;
+        }
+        var i = -1;
+        do {
+          i = source.indexOf(token, i + 1);
+          if (i < 0) {
+            break;
+          }
+          if (i > 0 && isIdentChar(source[i - 1])) {
+            continue;
+          }
+          i += token.length;
+          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
+            continue;
+          }
+          return true;
+        } while (true);
+        return false;
+      },getSource:function (shader, count, string, length) {
+        var source = '';
+        for (var i = 0; i < count; ++i) {
+          var frag;
+          if (length) {
+            var len = HEAP32[(((length)+(i*4))>>2)];
+            if (len < 0) {
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
             } else {
-              Module['setStatus']('');
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)], len);
             }
+          } else {
+            frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
           }
-        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
-        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
-        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
-        Browser.initted = true;
-        try {
-          new Blob();
-          Browser.hasBlobConstructor = true;
-        } catch(e) {
-          Browser.hasBlobConstructor = false;
-          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
+          source += frag;
         }
-        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
-        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : undefined;
-        if (!Module.noImageDecoding && typeof Browser.URLObject === 'undefined') {
-          console.log("warning: Browser does not support creating object URLs. Built-in browser image decoding will not be available.");
-          Module.noImageDecoding = true;
+        // Let's see if we need to enable the standard derivatives extension
+        type = Module.ctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
+        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
+          if (GL.findToken(source, "dFdx") ||
+              GL.findToken(source, "dFdy") ||
+              GL.findToken(source, "fwidth")) {
+            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
+            var extension = Module.ctx.getExtension("OES_standard_derivatives");
+          }
         }
-        // Support for plugins that can process preloaded files. You can add more of these to
-        // your app by creating and appending to Module.preloadPlugins.
-        //
-        // Each plugin is asked if it can handle a file based on the file's name. If it can,
-        // it is given the file's raw data. When it is done, it calls a callback with the file's
-        // (possibly modified) data. For example, a plugin might decompress a file, or it
-        // might create some side data structure for use later (like an Image element, etc.).
-        var imagePlugin = {};
-        imagePlugin['canHandle'] = function(name) {
-          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
-        };
-        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var b = null;
-          if (Browser.hasBlobConstructor) {
-            try {
-              b = new Blob([byteArray], { type: Browser.getMimetype(name) });
-              if (b.size !== byteArray.length) { // Safari bug #118630
-                // Safari's Blob can only take an ArrayBuffer
-                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: Browser.getMimetype(name) });
-              }
-            } catch(e) {
-              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
+        return source;
+      },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        function roundedToNextMultipleOf(x, y) {
+          return Math.floor((x + y - 1) / y) * y
+        }
+        var plainRowSize = width * sizePerPixel;
+        var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
+        return (height <= 0) ? 0 :
+                 ((height - 1) * alignedRowSize + plainRowSize);
+      },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
+        var sizePerPixel;
+        switch (type) {
+          case 0x1401 /* GL_UNSIGNED_BYTE */:
+            switch (format) {
+              case 0x1906 /* GL_ALPHA */:
+              case 0x1909 /* GL_LUMINANCE */:
+                sizePerPixel = 1;
+                break;
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4;
+                break;
+              case 0x190A /* GL_LUMINANCE_ALPHA */:
+                sizePerPixel = 2;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
             }
-          }
-          if (!b) {
-            var bb = new Browser.BlobBuilder();
-            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
-            b = bb.getBlob();
-          }
-          var url = Browser.URLObject.createObjectURL(b);
-          var img = new Image();
-          img.onload = function() {
-            assert(img.complete, 'Image ' + name + ' could not be decoded');
-            var canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            Module["preloadedImages"][name] = canvas;
-            Browser.URLObject.revokeObjectURL(url);
-            if (onload) onload(byteArray);
-          };
-          img.onerror = function(event) {
-            console.log('Image ' + url + ' could not be decoded');
-            if (onerror) onerror();
-          };
-          img.src = url;
-        };
-        Module['preloadPlugins'].push(imagePlugin);
-        var audioPlugin = {};
-        audioPlugin['canHandle'] = function(name) {
-          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
-        };
-        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var done = false;
-          function finish(audio) {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = audio;
-            if (onload) onload(byteArray);
-          }
-          function fail() {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = new Audio(); // empty shim
-            if (onerror) onerror();
-          }
-          if (Browser.hasBlobConstructor) {
-            try {
-              var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
-            } catch(e) {
-              return fail();
+            break;
+          case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
+          case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
+          case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
+            sizePerPixel = 2;
+            break;
+          case 0x1406 /* GL_FLOAT */:
+            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
+            switch (format) {
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3*4;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4*4;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
             }
-            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
-            var audio = new Audio();
-            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
-            audio.onerror = function(event) {
-              if (done) return;
-              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
-              function encode64(data) {
-                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-                var PAD = '=';
-                var ret = '';
-                var leftchar = 0;
-                var leftbits = 0;
-                for (var i = 0; i < data.length; i++) {
-                  leftchar = (leftchar << 8) | data[i];
-                  leftbits += 8;
-                  while (leftbits >= 6) {
-                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
-                    leftbits -= 6;
-                    ret += BASE[curr];
-                  }
-                }
-                if (leftbits == 2) {
-                  ret += BASE[(leftchar&3) << 4];
-                  ret += PAD + PAD;
-                } else if (leftbits == 4) {
-                  ret += BASE[(leftchar&0xf) << 2];
-                  ret += PAD;
-                }
-                return ret;
-              }
-              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
-              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
-            };
-            audio.src = url;
-            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
-            Browser.safeSetTimeout(function() {
-              finish(audio); // try to use it even though it is not necessarily ready to play
-            }, 10000);
-          } else {
-            return fail();
-          }
-        };
-        Module['preloadPlugins'].push(audioPlugin);
-        // Canvas event setup
-        var canvas = Module['canvas'];
-        canvas.requestPointerLock = canvas['requestPointerLock'] ||
-                                    canvas['mozRequestPointerLock'] ||
-                                    canvas['webkitRequestPointerLock'];
-        canvas.exitPointerLock = document['exitPointerLock'] ||
-                                 document['mozExitPointerLock'] ||
-                                 document['webkitExitPointerLock'] ||
-                                 function(){}; // no-op if function does not exist
-        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
-        function pointerLockChange() {
-          Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                document['mozPointerLockElement'] === canvas ||
-                                document['webkitPointerLockElement'] === canvas;
+            internalFormat = Module.ctx.RGBA;
+            break;
+          default:
+            throw 'Invalid type (' + type + ')';
         }
-        document.addEventListener('pointerlockchange', pointerLockChange, false);
-        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
-        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
-        if (Module['elementPointerLock']) {
-          canvas.addEventListener("click", function(ev) {
-            if (!Browser.pointerLock && canvas.requestPointerLock) {
-              canvas.requestPointerLock();
-              ev.preventDefault();
-            }
-          }, false);
-        }
-      },createContext:function (canvas, useWebGL, setInModule) {
-        var ctx;
-        try {
-          if (useWebGL) {
-            ctx = canvas.getContext('experimental-webgl', {
-              alpha: false
-            });
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas - ' + e);
-          return null;
-        }
-        if (useWebGL) {
-          // Set the background of the WebGL canvas to black
-          canvas.style.backgroundColor = "black";
-          // Warn on context loss
-          canvas.addEventListener('webglcontextlost', function(event) {
-            alert('WebGL context lost. You will need to reload the page.');
-          }, false);
-        }
-        if (setInModule) {
-          Module.ctx = ctx;
-          Module.useWebGL = useWebGL;
-          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
-          Browser.init();
-        }
-        return ctx;
-      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
-        Browser.lockPointer = lockPointer;
-        Browser.resizeCanvas = resizeCanvas;
-        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
-        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
-        var canvas = Module['canvas'];
-        function fullScreenChange() {
-          Browser.isFullScreen = false;
-          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
-               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
-               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
-            canvas.cancelFullScreen = document['cancelFullScreen'] ||
-                                      document['mozCancelFullScreen'] ||
-                                      document['webkitCancelFullScreen'];
-            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
-            if (Browser.lockPointer) canvas.requestPointerLock();
-            Browser.isFullScreen = true;
-            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
-          } else if (Browser.resizeCanvas){
-            Browser.setWindowedCanvasSize();
-          }
-          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
-        }
-        if (!Browser.fullScreenHandlersInstalled) {
-          Browser.fullScreenHandlersInstalled = true;
-          document.addEventListener('fullscreenchange', fullScreenChange, false);
-          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
-          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
-        }
-        canvas.requestFullScreen = canvas['requestFullScreen'] ||
-                                   canvas['mozRequestFullScreen'] ||
-                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
-        canvas.requestFullScreen();
-      },requestAnimationFrame:function (func) {
-        if (!window.requestAnimationFrame) {
-          window.requestAnimationFrame = window['requestAnimationFrame'] ||
-                                         window['mozRequestAnimationFrame'] ||
-                                         window['webkitRequestAnimationFrame'] ||
-                                         window['msRequestAnimationFrame'] ||
-                                         window['oRequestAnimationFrame'] ||
-                                         window['setTimeout'];
-        }
-        window.requestAnimationFrame(func);
-      },safeCallback:function (func) {
-        return function() {
-          if (!ABORT) return func.apply(null, arguments);
-        };
-      },safeRequestAnimationFrame:function (func) {
-        return Browser.requestAnimationFrame(function() {
-          if (!ABORT) func();
-        });
-      },safeSetTimeout:function (func, timeout) {
-        return setTimeout(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },safeSetInterval:function (func, timeout) {
-        return setInterval(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },getMimetype:function (name) {
-        return {
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'png': 'image/png',
-          'bmp': 'image/bmp',
-          'ogg': 'audio/ogg',
-          'wav': 'audio/wav',
-          'mp3': 'audio/mpeg'
-        }[name.substr(name.lastIndexOf('.')+1)];
-      },getUserMedia:function (func) {
-        if(!window.getUserMedia) {
-          window.getUserMedia = navigator['getUserMedia'] ||
-                                navigator['mozGetUserMedia'];
-        }
-        window.getUserMedia(func);
-      },getMovementX:function (event) {
-        return event['movementX'] ||
-               event['mozMovementX'] ||
-               event['webkitMovementX'] ||
-               0;
-      },getMovementY:function (event) {
-        return event['movementY'] ||
-               event['mozMovementY'] ||
-               event['webkitMovementY'] ||
-               0;
-      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
-        if (Browser.pointerLock) {
-          // When the pointer is locked, calculate the coordinates
-          // based on the movement of the mouse.
-          // Workaround for Firefox bug 764498
-          if (event.type != 'mousemove' &&
-              ('mozMovementX' in event)) {
-            Browser.mouseMovementX = Browser.mouseMovementY = 0;
-          } else {
-            Browser.mouseMovementX = Browser.getMovementX(event);
-            Browser.mouseMovementY = Browser.getMovementY(event);
-          }
-          // check if SDL is available
-          if (typeof SDL != "undefined") {
-          	Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
-          	Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
-          } else {
-          	// just add the mouse delta to the current absolut mouse position
-          	// FIXME: ideally this should be clamped against the canvas size and zero
-          	Browser.mouseX += Browser.mouseMovementX;
-          	Browser.mouseY += Browser.mouseMovementY;
-          }        
+        var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
+        if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
+          pixels = HEAPU8.subarray((pixels),(pixels+bytes));
+        } else if (type == 0x1406 /* GL_FLOAT */) {
+          pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
         } else {
-          // Otherwise, calculate the movement based on the changes
-          // in the coordinates.
-          var rect = Module["canvas"].getBoundingClientRect();
-          var x = event.pageX - (window.scrollX + rect.left);
-          var y = event.pageY - (window.scrollY + rect.top);
-          // the canvas might be CSS-scaled compared to its backbuffer;
-          // SDL-using content will want mouse coordinates in terms
-          // of backbuffer units.
-          var cw = Module["canvas"].width;
-          var ch = Module["canvas"].height;
-          x = x * (cw / rect.width);
-          y = y * (ch / rect.height);
-          Browser.mouseMovementX = x - Browser.mouseX;
-          Browser.mouseMovementY = y - Browser.mouseY;
-          Browser.mouseX = x;
-          Browser.mouseY = y;
+          pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
         }
-      },xhrLoad:function (url, onload, onerror) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = function() {
-          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
-            onload(xhr.response);
-          } else {
-            onerror();
-          }
-        };
-        xhr.onerror = onerror;
-        xhr.send(null);
-      },asyncLoad:function (url, onload, onerror, noRunDep) {
-        Browser.xhrLoad(url, function(arrayBuffer) {
-          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
-          onload(new Uint8Array(arrayBuffer));
-          if (!noRunDep) removeRunDependency('al ' + url);
-        }, function(event) {
-          if (onerror) {
-            onerror();
-          } else {
-            throw 'Loading data file "' + url + '" failed.';
-          }
-        });
-        if (!noRunDep) addRunDependency('al ' + url);
-      },resizeListeners:[],updateResizeListeners:function () {
-        var canvas = Module['canvas'];
-        Browser.resizeListeners.forEach(function(listener) {
-          listener(canvas.width, canvas.height);
-        });
-      },setCanvasSize:function (width, height, noUpdates) {
-        var canvas = Module['canvas'];
-        canvas.width = width;
-        canvas.height = height;
-        if (!noUpdates) Browser.updateResizeListeners();
-      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
-        var canvas = Module['canvas'];
-        this.windowedWidth = canvas.width;
-        this.windowedHeight = canvas.height;
-        canvas.width = screen.width;
-        canvas.height = screen.height;
-        // check if SDL is available   
-        if (typeof SDL != "undefined") {
-        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        	flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
-        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        return {
+          pixels: pixels,
+          internalFormat: internalFormat
         }
-        Browser.updateResizeListeners();
-      },setWindowedCanvasSize:function () {
-        var canvas = Module['canvas'];
-        canvas.width = this.windowedWidth;
-        canvas.height = this.windowedHeight;
-        // check if SDL is available       
-        if (typeof SDL != "undefined") {
-        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        	flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
-        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+      },initExtensions:function () {
+        if (GL.initExtensions.done) return;
+        GL.initExtensions.done = true;
+        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
         }
-        Browser.updateResizeListeners();
+        GL.maxVertexAttribs = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_ATTRIBS);
+        GL.compressionExt = Module.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+                            Module.ctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
+                            Module.ctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
+        GL.anisotropicExt = Module.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+                            Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+                            Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+        GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
+        GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
       }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],stack_trace:"// Javascript webcl Stack Trace\n",errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
         // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
         // Remove on Mozilla CL_ prefix on the EnumName
@@ -3595,11 +3390,18 @@ function copyTempDouble(ptr) {
         }
         return res;
       },catchError:function (name,e) {
-        var str=""+e;
+        var message = "";
+        if (CL.webcl_webkit == 1) {
+          message = e.message;
+        } else {
+          message = e;
+        }
+        console.info(message);
+        var str=""+message;
         var n=str.lastIndexOf(" ");
         var error = str.substr(n+1,str.length-n-2);
-        console.error("CATCH: "+name+": "+e);
-        Module.print("/!\\"+name+": "+e);
+        console.error("CATCH: "+name+": "+message);
+        Module.print("/!\\"+name+": "+message);
         return error;
       }};function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
       if (CL.checkWebCL() < 0) {
@@ -3687,13 +3489,28 @@ function copyTempDouble(ptr) {
       }
     }
   function _clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
-      if (CL.platforms.length == 0) {
-        console.error("clCreateContext: Invalid platform");
-        HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-        return 0; // Null pointer    
+      if (CL.checkWebCL() < 0) {
+        console.error(CL.errorMessage);
+        Module.print("/!\\"+CL.errorMessage);
+        return -1;/*WEBCL_NOT_FOUND*/;
       }
       try {
+        if (CL.platforms.length == 0) {
+          // Get the platform
+          var platforms = WebCL.getPlatforms();
+          if (platforms.length > 0) {
+            CL.platforms.push(platforms[0]);
+            plat = CL.platforms.length - 1;
+          } else {
+            console.error("clGetDeviceIDs: Invalid platform : "+platform);
+            HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
+            return 0; // Null pointer    
+          } 
+        } 
         var prop = [];
+        var plat = 0;
+        var use_gl_interop = 0;
+        var share_group = 0;
         if (properties != 0) {
           var i = 0;
           while(1) {
@@ -3711,11 +3528,24 @@ function copyTempDouble(ptr) {
                   HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
                   return 0; // Null pointer    
                 } else {
+                  plat = readprop;    
                   prop.push(CL.platforms[readprop]);
                 }             
               break;
+              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+                use_gl_interop = 1;
+                i++;
+              break;
+              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+                i++;
+              break;
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
+                use_gl_interop = 1;
+                share_group = 1;
+                i++;
+              break;
               default:
-                console.error("clCreateContext : Param not yet implemented or unknow : "+param_name);
+                console.error("clCreateContext : Param not yet implemented or unknow : "+readprop);
                 HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
                 return 0; // Null pointer    
             }
@@ -3723,9 +3553,17 @@ function copyTempDouble(ptr) {
           }        
         }
         if (prop.length == 0) {
-          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]];     
+          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]]; 
+          plat = 0;    
         }
-        if (num_devices > CL.devices.length || CL.devices.length == 0) {
+        if (CL.devices.length == 0) {
+          var alldev = CL.getAllDevices(plat);
+          var mapcount = 0;
+          for (var i = 0 ; i < alldev.length; i++ ) {
+            CL.devices.push(alldev[i]);  
+          }
+        }
+        if (num_devices > CL.devices.length) {
           console.error("clCreateContext: Invalid num devices : "+num_devices);
           HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
           return 0;
@@ -3735,11 +3573,22 @@ function copyTempDouble(ptr) {
         for (var i = 0; i < num_devices; i++) {
           devices_tab[i] = CL.devices[i];
         } 
+        if (num_devices == 0) {
+          devices_tab[0] = CL.devices[0];
+        }
         // Use default platform
         if (CL.webcl_mozilla == 1) {
+          if (use_gl_interop) {
+            console.error("clCreateContext: GL Interop not yet supported by Firefox");
+            HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
+            return 0;
+          }
           CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
         } else {
-          CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+          var builder = WebCL;
+          if (use_gl_interop)
+            builder = WebCL.getExtension("KHR_GL_SHARING");
+          CL.ctx.push(builder.createContext({platform: CL.platforms[plat], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: share_group, hint: null}));
         }
         return CL.getNewId(CL.ctx.length-1);
       } catch (e) {    
@@ -3941,7 +3790,7 @@ function copyTempDouble(ptr) {
             devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = (options == 0) ? "" : Pointer_stringify(options);
+        var opt = "";//(options == 0) ? "" : Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 
@@ -4750,14 +4599,413 @@ function copyTempDouble(ptr) {
       }
       return ret;
     }
+  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
+          Browser.mainLoop.shouldPause = true;
+        },resume:function () {
+          if (Browser.mainLoop.paused) {
+            Browser.mainLoop.paused = false;
+            Browser.mainLoop.scheduler();
+          }
+          Browser.mainLoop.shouldPause = false;
+        },updateStatus:function () {
+          if (Module['setStatus']) {
+            var message = Module['statusMessage'] || 'Please wait...';
+            var remaining = Browser.mainLoop.remainingBlockers;
+            var expected = Browser.mainLoop.expectedBlockers;
+            if (remaining) {
+              if (remaining < expected) {
+                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
+              } else {
+                Module['setStatus'](message);
+              }
+            } else {
+              Module['setStatus']('');
+            }
+          }
+        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
+        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
+        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
+        Browser.initted = true;
+        try {
+          new Blob();
+          Browser.hasBlobConstructor = true;
+        } catch(e) {
+          Browser.hasBlobConstructor = false;
+          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
+        }
+        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
+        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : undefined;
+        if (!Module.noImageDecoding && typeof Browser.URLObject === 'undefined') {
+          console.log("warning: Browser does not support creating object URLs. Built-in browser image decoding will not be available.");
+          Module.noImageDecoding = true;
+        }
+        // Support for plugins that can process preloaded files. You can add more of these to
+        // your app by creating and appending to Module.preloadPlugins.
+        //
+        // Each plugin is asked if it can handle a file based on the file's name. If it can,
+        // it is given the file's raw data. When it is done, it calls a callback with the file's
+        // (possibly modified) data. For example, a plugin might decompress a file, or it
+        // might create some side data structure for use later (like an Image element, etc.).
+        var imagePlugin = {};
+        imagePlugin['canHandle'] = function(name) {
+          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
+        };
+        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var b = null;
+          if (Browser.hasBlobConstructor) {
+            try {
+              b = new Blob([byteArray], { type: Browser.getMimetype(name) });
+              if (b.size !== byteArray.length) { // Safari bug #118630
+                // Safari's Blob can only take an ArrayBuffer
+                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: Browser.getMimetype(name) });
+              }
+            } catch(e) {
+              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
+            }
+          }
+          if (!b) {
+            var bb = new Browser.BlobBuilder();
+            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
+            b = bb.getBlob();
+          }
+          var url = Browser.URLObject.createObjectURL(b);
+          var img = new Image();
+          img.onload = function() {
+            assert(img.complete, 'Image ' + name + ' could not be decoded');
+            var canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            Module["preloadedImages"][name] = canvas;
+            Browser.URLObject.revokeObjectURL(url);
+            if (onload) onload(byteArray);
+          };
+          img.onerror = function(event) {
+            console.log('Image ' + url + ' could not be decoded');
+            if (onerror) onerror();
+          };
+          img.src = url;
+        };
+        Module['preloadPlugins'].push(imagePlugin);
+        var audioPlugin = {};
+        audioPlugin['canHandle'] = function(name) {
+          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
+        };
+        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var done = false;
+          function finish(audio) {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = audio;
+            if (onload) onload(byteArray);
+          }
+          function fail() {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = new Audio(); // empty shim
+            if (onerror) onerror();
+          }
+          if (Browser.hasBlobConstructor) {
+            try {
+              var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
+            } catch(e) {
+              return fail();
+            }
+            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
+            var audio = new Audio();
+            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
+            audio.onerror = function(event) {
+              if (done) return;
+              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
+              function encode64(data) {
+                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+                var PAD = '=';
+                var ret = '';
+                var leftchar = 0;
+                var leftbits = 0;
+                for (var i = 0; i < data.length; i++) {
+                  leftchar = (leftchar << 8) | data[i];
+                  leftbits += 8;
+                  while (leftbits >= 6) {
+                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
+                    leftbits -= 6;
+                    ret += BASE[curr];
+                  }
+                }
+                if (leftbits == 2) {
+                  ret += BASE[(leftchar&3) << 4];
+                  ret += PAD + PAD;
+                } else if (leftbits == 4) {
+                  ret += BASE[(leftchar&0xf) << 2];
+                  ret += PAD;
+                }
+                return ret;
+              }
+              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
+              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
+            };
+            audio.src = url;
+            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
+            Browser.safeSetTimeout(function() {
+              finish(audio); // try to use it even though it is not necessarily ready to play
+            }, 10000);
+          } else {
+            return fail();
+          }
+        };
+        Module['preloadPlugins'].push(audioPlugin);
+        // Canvas event setup
+        var canvas = Module['canvas'];
+        canvas.requestPointerLock = canvas['requestPointerLock'] ||
+                                    canvas['mozRequestPointerLock'] ||
+                                    canvas['webkitRequestPointerLock'];
+        canvas.exitPointerLock = document['exitPointerLock'] ||
+                                 document['mozExitPointerLock'] ||
+                                 document['webkitExitPointerLock'] ||
+                                 function(){}; // no-op if function does not exist
+        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
+        function pointerLockChange() {
+          Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                document['mozPointerLockElement'] === canvas ||
+                                document['webkitPointerLockElement'] === canvas;
+        }
+        document.addEventListener('pointerlockchange', pointerLockChange, false);
+        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+        if (Module['elementPointerLock']) {
+          canvas.addEventListener("click", function(ev) {
+            if (!Browser.pointerLock && canvas.requestPointerLock) {
+              canvas.requestPointerLock();
+              ev.preventDefault();
+            }
+          }, false);
+        }
+      },createContext:function (canvas, useWebGL, setInModule) {
+        var ctx;
+        try {
+          if (useWebGL) {
+            ctx = canvas.getContext('experimental-webgl', {
+              alpha: false
+            });
+          } else {
+            ctx = canvas.getContext('2d');
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas - ' + e);
+          return null;
+        }
+        if (useWebGL) {
+          // Set the background of the WebGL canvas to black
+          canvas.style.backgroundColor = "black";
+          // Warn on context loss
+          canvas.addEventListener('webglcontextlost', function(event) {
+            alert('WebGL context lost. You will need to reload the page.');
+          }, false);
+        }
+        if (setInModule) {
+          Module.ctx = ctx;
+          Module.useWebGL = useWebGL;
+          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
+          Browser.init();
+        }
+        return ctx;
+      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
+        Browser.lockPointer = lockPointer;
+        Browser.resizeCanvas = resizeCanvas;
+        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
+        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
+        var canvas = Module['canvas'];
+        function fullScreenChange() {
+          Browser.isFullScreen = false;
+          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
+               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
+               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
+            canvas.cancelFullScreen = document['cancelFullScreen'] ||
+                                      document['mozCancelFullScreen'] ||
+                                      document['webkitCancelFullScreen'];
+            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
+            if (Browser.lockPointer) canvas.requestPointerLock();
+            Browser.isFullScreen = true;
+            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
+          } else if (Browser.resizeCanvas){
+            Browser.setWindowedCanvasSize();
+          }
+          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
+        }
+        if (!Browser.fullScreenHandlersInstalled) {
+          Browser.fullScreenHandlersInstalled = true;
+          document.addEventListener('fullscreenchange', fullScreenChange, false);
+          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
+          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
+        }
+        canvas.requestFullScreen = canvas['requestFullScreen'] ||
+                                   canvas['mozRequestFullScreen'] ||
+                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
+        canvas.requestFullScreen();
+      },requestAnimationFrame:function (func) {
+        if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame = window['requestAnimationFrame'] ||
+                                         window['mozRequestAnimationFrame'] ||
+                                         window['webkitRequestAnimationFrame'] ||
+                                         window['msRequestAnimationFrame'] ||
+                                         window['oRequestAnimationFrame'] ||
+                                         window['setTimeout'];
+        }
+        window.requestAnimationFrame(func);
+      },safeCallback:function (func) {
+        return function() {
+          if (!ABORT) return func.apply(null, arguments);
+        };
+      },safeRequestAnimationFrame:function (func) {
+        return Browser.requestAnimationFrame(function() {
+          if (!ABORT) func();
+        });
+      },safeSetTimeout:function (func, timeout) {
+        return setTimeout(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },safeSetInterval:function (func, timeout) {
+        return setInterval(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },getMimetype:function (name) {
+        return {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'bmp': 'image/bmp',
+          'ogg': 'audio/ogg',
+          'wav': 'audio/wav',
+          'mp3': 'audio/mpeg'
+        }[name.substr(name.lastIndexOf('.')+1)];
+      },getUserMedia:function (func) {
+        if(!window.getUserMedia) {
+          window.getUserMedia = navigator['getUserMedia'] ||
+                                navigator['mozGetUserMedia'];
+        }
+        window.getUserMedia(func);
+      },getMovementX:function (event) {
+        return event['movementX'] ||
+               event['mozMovementX'] ||
+               event['webkitMovementX'] ||
+               0;
+      },getMovementY:function (event) {
+        return event['movementY'] ||
+               event['mozMovementY'] ||
+               event['webkitMovementY'] ||
+               0;
+      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
+        if (Browser.pointerLock) {
+          // When the pointer is locked, calculate the coordinates
+          // based on the movement of the mouse.
+          // Workaround for Firefox bug 764498
+          if (event.type != 'mousemove' &&
+              ('mozMovementX' in event)) {
+            Browser.mouseMovementX = Browser.mouseMovementY = 0;
+          } else {
+            Browser.mouseMovementX = Browser.getMovementX(event);
+            Browser.mouseMovementY = Browser.getMovementY(event);
+          }
+          // check if SDL is available
+          if (typeof SDL != "undefined") {
+          	Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
+          	Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
+          } else {
+          	// just add the mouse delta to the current absolut mouse position
+          	// FIXME: ideally this should be clamped against the canvas size and zero
+          	Browser.mouseX += Browser.mouseMovementX;
+          	Browser.mouseY += Browser.mouseMovementY;
+          }        
+        } else {
+          // Otherwise, calculate the movement based on the changes
+          // in the coordinates.
+          var rect = Module["canvas"].getBoundingClientRect();
+          var x = event.pageX - (window.scrollX + rect.left);
+          var y = event.pageY - (window.scrollY + rect.top);
+          // the canvas might be CSS-scaled compared to its backbuffer;
+          // SDL-using content will want mouse coordinates in terms
+          // of backbuffer units.
+          var cw = Module["canvas"].width;
+          var ch = Module["canvas"].height;
+          x = x * (cw / rect.width);
+          y = y * (ch / rect.height);
+          Browser.mouseMovementX = x - Browser.mouseX;
+          Browser.mouseMovementY = y - Browser.mouseY;
+          Browser.mouseX = x;
+          Browser.mouseY = y;
+        }
+      },xhrLoad:function (url, onload, onerror) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function() {
+          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
+            onload(xhr.response);
+          } else {
+            onerror();
+          }
+        };
+        xhr.onerror = onerror;
+        xhr.send(null);
+      },asyncLoad:function (url, onload, onerror, noRunDep) {
+        Browser.xhrLoad(url, function(arrayBuffer) {
+          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
+          onload(new Uint8Array(arrayBuffer));
+          if (!noRunDep) removeRunDependency('al ' + url);
+        }, function(event) {
+          if (onerror) {
+            onerror();
+          } else {
+            throw 'Loading data file "' + url + '" failed.';
+          }
+        });
+        if (!noRunDep) addRunDependency('al ' + url);
+      },resizeListeners:[],updateResizeListeners:function () {
+        var canvas = Module['canvas'];
+        Browser.resizeListeners.forEach(function(listener) {
+          listener(canvas.width, canvas.height);
+        });
+      },setCanvasSize:function (width, height, noUpdates) {
+        var canvas = Module['canvas'];
+        canvas.width = width;
+        canvas.height = height;
+        if (!noUpdates) Browser.updateResizeListeners();
+      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
+        var canvas = Module['canvas'];
+        this.windowedWidth = canvas.width;
+        this.windowedHeight = canvas.height;
+        canvas.width = screen.width;
+        canvas.height = screen.height;
+        // check if SDL is available   
+        if (typeof SDL != "undefined") {
+        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        	flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
+        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        }
+        Browser.updateResizeListeners();
+      },setWindowedCanvasSize:function () {
+        var canvas = Module['canvas'];
+        canvas.width = this.windowedWidth;
+        canvas.height = this.windowedHeight;
+        // check if SDL is available       
+        if (typeof SDL != "undefined") {
+        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        	flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
+        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        }
+        Browser.updateResizeListeners();
+      }};
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
+GL.init()
+_fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
-_fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
@@ -4805,7 +5053,7 @@ function asmPrintFloat(x, y) {
 // EMSCRIPTEN_START_ASM
 var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.min;var ad=env.invoke_ii;var ae=env.invoke_v;var af=env.invoke_iii;var ag=env.invoke_vi;var ah=env._rand;var ai=env._sysconf;var aj=env._clGetDeviceIDs;var ak=env.___errno_location;var al=env._clReleaseKernel;var am=env._clReleaseContext;var an=env._abort;var ao=env._fprintf;var ap=env._clGetDeviceInfo;var aq=env._printf;var ar=env._fflush;var as=env.__reallyNegative;var at=env._clCreateCommandQueue;var au=env._clReleaseProgram;var av=env._puts;var aw=env._clBuildProgram;var ax=env.___setErrNo;var ay=env._fwrite;var az=env._send;var aA=env._clEnqueueNDRangeKernel;var aB=env._write;var aC=env._fputs;var aD=env._clGetKernelWorkGroupInfo;var aE=env._exit;var aF=env._clSetKernelArg;var aG=env._webclPrintStackTrace;var aH=env._clCreateKernel;var aI=env._clReleaseCommandQueue;var aJ=env._fputc;var aK=env._clCreateProgramWithSource;var aL=env.__formatString;var aM=env._clEnqueueWriteBuffer;var aN=env._clGetContextInfo;var aO=env._clEnqueueReadBuffer;var aP=env._pwrite;var aQ=env._strstr;var aR=env._sbrk;var aS=env._clReleaseMemObject;var aT=env._clFinish;var aU=env._clCreateBuffer;var aV=env._clGetProgramBuildInfo;var aW=env._time;var aX=env.__exit;var aY=env._clCreateContext;
 // EMSCRIPTEN_START_FUNCS
-function a1(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function a2(){return i|0}function a3(a){a=a|0;i=a}function a4(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a5(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function a6(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function a7(a){a=a|0;B=a}function a8(a){a=a|0;C=a}function a9(a){a=a|0;D=a}function ba(a){a=a|0;E=a}function bb(a){a=a|0;F=a}function bc(a){a=a|0;G=a}function bd(a){a=a|0;H=a}function be(a){a=a|0;I=a}function bf(a){a=a|0;J=a}function bg(a){a=a|0;K=a}function bh(){}function bi(b,d){b=b|0;d=d|0;var e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0.0;e=i;i=i+12432|0;f=e|0;h=e+8|0;j=e+4104|0;k=e+8200|0;l=e+8208|0;m=e+8216|0;n=e+8224|0;o=e+8232|0;p=e+8240|0;q=e+8248|0;r=e+8256|0;s=e+9280|0;t=e+10304|0;u=e+10312|0;v=e+10376|0;w=e+10384|0;if((b|0)<1|(d|0)==0){x=1}else{y=1;z=0;while(1){A=c[d+(z<<2)>>2]|0;do{if((A|0)==0){B=y}else{if((aQ(A|0,1400)|0)!=0){B=0;break}B=(aQ(A|0,1392)|0)==0?y:1}}while(0);A=z+1|0;if((A|0)<(b|0)){y=B;z=A}else{x=B;break}}}aq(1304,(B=i,i=i+8|0,c[B>>2]=(x|0)==1?1088:1080,B)|0)|0;i=B;c[p>>2]=1024;z=0;do{g[h+(z<<2)>>2]=+(ah()|0)*4.656612873077393e-10;z=z+1|0;C=c[p>>2]|0;}while(z>>>0<C>>>0);z=C<<2;av(1048)|0;C=(x|0)!=0;x=aj(0,(C?4:2)|0,(C?0:0)|0,1,m|0,0)|0;c[f>>2]=x;if((x|0)!=0){av(1008)|0;D=1;i=e;return D|0}av(584)|0;x=aY(0,1,m|0,0,0,f|0)|0;if((x|0)==0){av(248)|0;D=1;i=e;return D|0}C=r|0;bm(C|0,0,1024);r=s|0;bm(r|0,0,1024);av(216)|0;c[f>>2]=ap(c[m>>2]|0,4140,1024,C|0,q|0)|0;s=ap(c[m>>2]|0,4139,1024,r|0,q|0)|0;c[f>>2]=c[f>>2]|s;s=ap(c[m>>2]|0,4118,1024,t|0,q|0)|0;y=c[f>>2]|s;c[f>>2]=y;if((y|0)!=0){av(176)|0;D=1;i=e;return D|0}av(144)|0;y=aN(x|0,4225,64,u|0,q|0)|0;c[f>>2]=y;if((y|0)!=0){av(88)|0;D=1;i=e;return D|0}y=(c[q>>2]|0)>>>2;av(56)|0;q=at(x|0,c[m>>2]|0,0,0,f|0)|0;if((q|0)==0){av(8)|0;D=1;i=e;return D|0}av(968)|0;u=aK(x|0,1,2064,0,f|0)|0;if((u|0)==0){av(920)|0;D=1;i=e;return D|0}av(888)|0;s=aw(u|0,0,0,0,0,0)|0;c[f>>2]=s;if((s|0)!=0){av(840)|0;s=c[m>>2]|0;b=w|0;aV(u|0,s|0,4483,2048,b|0,v|0)|0;av(b|0)|0;aE(1);return 0}av(808)|0;b=aH(u|0,1384,f|0)|0;if(!((b|0)!=0&(c[f>>2]|0)==0)){av(768)|0;aE(1);return 0}av(736)|0;v=aU(x|0,4,0,z|0,0,0)|0;c[n>>2]=v;s=aU(x|0,2,0,z|0,0,0)|0;c[o>>2]=s;if((v|0)==0|(s|0)==0){av(688)|0;aE(1);return 0}av(656)|0;s=aM(q|0,v|0,1,0,z|0,h|0,0,0,0)|0;c[f>>2]=s;if((s|0)!=0){av(616)|0;aE(1);return 0}av(552)|0;c[f>>2]=0;c[f>>2]=aF(b|0,0,4,n|0)|0;s=aF(b|0,1,4,o|0)|0;c[f>>2]=c[f>>2]|s;s=aF(b|0,2,4,p|0)|0;z=c[f>>2]|s;c[f>>2]=z;if((z|0)!=0){aq(1336,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}av(512)|0;z=aD(b|0,c[m>>2]|0,4528,4,l|0,0)|0;c[f>>2]=z;if((z|0)!=0){aq(1248,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}c[k>>2]=c[p>>2];av(472)|0;z=aA(q|0,b|0,1,0,k|0,l|0,0,0,0)|0;c[f>>2]=z;if((z|0)!=0){av(432)|0;D=1;i=e;return D|0}av(408)|0;aT(q|0)|0;av(376)|0;z=aO(q|0,c[o>>2]|0,1,0,c[p>>2]<<2|0,j|0,0,0,0)|0;c[f>>2]=z;if((z|0)!=0){aq(1208,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}z=c[p>>2]|0;if((z|0)==0){E=0}else{f=0;l=0;while(1){F=+g[h+(f<<2)>>2];k=(+g[j+(f<<2)>>2]-F*F<1.0e-7)+l|0;m=f+1|0;if(m>>>0<z>>>0){f=m;l=k}else{E=k;break}}}l=c[t>>2]|0;aq(1136,(B=i,i=i+32|0,c[B>>2]=C,c[B+8>>2]=r,c[B+16>>2]=l,c[B+24>>2]=y,B)|0)|0;i=B;y=c[p>>2]|0;aq(1096,(B=i,i=i+16|0,c[B>>2]=E,c[B+8>>2]=y,B)|0)|0;i=B;aS(c[n>>2]|0)|0;aS(c[o>>2]|0)|0;au(u|0)|0;al(b|0)|0;aI(q|0)|0;am(x|0)|0;av(336)|0;aG(0,0);x=bj(1)|0;a[x]=0;aG(x|0,0);av(x|0)|0;av(296)|0;bk(x);D=0;i=e;return D|0}function bj(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,aj=0,al=0,am=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aA=0,aB=0,aC=0,aD=0,aE=0,aF=0,aG=0,aH=0,aI=0,aJ=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[524]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=2136+(h<<2)|0;j=2136+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[524]=e&~(1<<g)}else{if(l>>>0<(c[528]|0)>>>0){an();return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{an();return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[526]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=2136+(p<<2)|0;m=2136+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[524]=e&~(1<<r)}else{if(l>>>0<(c[528]|0)>>>0){an();return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{an();return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[526]|0;if((l|0)!=0){q=c[529]|0;d=l>>>3;l=d<<1;f=2136+(l<<2)|0;k=c[524]|0;h=1<<d;do{if((k&h|0)==0){c[524]=k|h;s=f;t=2136+(l+2<<2)|0}else{d=2136+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[528]|0)>>>0){s=g;t=d;break}an();return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[526]=m;c[529]=e;n=i;return n|0}l=c[525]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[2400+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[528]|0;if(r>>>0<i>>>0){an();return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){an();return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break}else{w=l;x=k}}else{w=g;x=q}while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){an();return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){an();return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){an();return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{an();return 0}}}while(0);L144:do{if((e|0)!=0){f=d+28|0;i=2400+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[525]=c[525]&~(1<<c[f>>2]);break L144}else{if(e>>>0<(c[528]|0)>>>0){an();return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L144}}}while(0);if(v>>>0<(c[528]|0)>>>0){an();return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[528]|0)>>>0){an();return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[528]|0)>>>0){an();return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b)>>2]=p;f=c[526]|0;if((f|0)!=0){e=c[529]|0;i=f>>>3;f=i<<1;q=2136+(f<<2)|0;k=c[524]|0;g=1<<i;do{if((k&g|0)==0){c[524]=k|g;y=q;z=2136+(f+2<<2)|0}else{i=2136+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[528]|0)>>>0){y=l;z=i;break}an();return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[526]=p;c[529]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[525]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=14-(h|f|l)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[2400+(A<<2)>>2]|0;L192:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L192}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[2400+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break}else{p=r;m=i;q=e}}}if((K|0)==0){o=g;break}if(J>>>0>=((c[526]|0)-g|0)>>>0){o=g;break}q=K;m=c[528]|0;if(q>>>0<m>>>0){an();return 0}p=q+g|0;k=p;if(q>>>0>=p>>>0){an();return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break}else{M=B;N=j}}else{M=d;N=r}while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<m>>>0){an();return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<m>>>0){an();return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){an();return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{an();return 0}}}while(0);L242:do{if((e|0)!=0){i=K+28|0;m=2400+(c[i>>2]<<2)|0;do{if((K|0)==(c[m>>2]|0)){c[m>>2]=L;if((L|0)!=0){break}c[525]=c[525]&~(1<<c[i>>2]);break L242}else{if(e>>>0<(c[528]|0)>>>0){an();return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L242}}}while(0);if(L>>>0<(c[528]|0)>>>0){an();return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[528]|0)>>>0){an();return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[528]|0)>>>0){an();return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=q+(e+4)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[q+(g|4)>>2]=J|1;c[q+(J+g)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;m=2136+(e<<2)|0;r=c[524]|0;j=1<<i;do{if((r&j|0)==0){c[524]=r|j;O=m;P=2136+(e+2<<2)|0}else{i=2136+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[528]|0)>>>0){O=d;P=i;break}an();return 0}}while(0);c[P>>2]=k;c[O+12>>2]=k;c[q+(g+8)>>2]=O;c[q+(g+12)>>2]=m;break}e=p;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=14-(d|r|i)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=2400+(Q<<2)|0;c[q+(g+28)>>2]=Q;c[q+(g+20)>>2]=0;c[q+(g+16)>>2]=0;m=c[525]|0;l=1<<Q;if((m&l|0)==0){c[525]=m|l;c[j>>2]=e;c[q+(g+24)>>2]=j;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;m=c[j>>2]|0;while(1){if((c[m+4>>2]&-8|0)==(J|0)){break}S=m+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=198;break}else{l=l<<1;m=j}}if((T|0)==198){if(S>>>0<(c[528]|0)>>>0){an();return 0}else{c[S>>2]=e;c[q+(g+24)>>2]=m;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}}l=m+8|0;j=c[l>>2]|0;i=c[528]|0;if(m>>>0<i>>>0){an();return 0}if(j>>>0<i>>>0){an();return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[q+(g+8)>>2]=j;c[q+(g+12)>>2]=m;c[q+(g+24)>>2]=0;break}}}while(0);q=K+8|0;if((q|0)==0){o=g;break}else{n=q}return n|0}}while(0);K=c[526]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[529]|0;if(S>>>0>15){R=J;c[529]=R+o;c[526]=S;c[R+(o+4)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[526]=0;c[529]=0;c[J+4>>2]=K|3;S=J+(K+4)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[527]|0;if(o>>>0<J>>>0){S=J-o|0;c[527]=S;J=c[530]|0;K=J;c[530]=K+o;c[K+(o+4)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[518]|0)==0){J=ai(8)|0;if((J-1&J|0)==0){c[520]=J;c[519]=J;c[521]=-1;c[522]=-1;c[523]=0;c[635]=0;c[518]=(aW(0)|0)&-16^1431655768;break}else{an();return 0}}}while(0);J=o+48|0;S=c[520]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[634]|0;do{if((O|0)!=0){P=c[632]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L334:do{if((c[635]&4|0)==0){O=c[530]|0;L336:do{if((O|0)==0){T=228}else{L=O;P=2544;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=228;break L336}else{P=M}}if((P|0)==0){T=228;break}L=R-(c[527]|0)&Q;if(L>>>0>=2147483647){W=0;break}m=aR(L|0)|0;e=(m|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?m:-1;Y=e?L:0;Z=m;_=L;T=237}}while(0);do{if((T|0)==228){O=aR(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[519]|0;m=L-1|0;if((m&g|0)==0){$=S}else{$=S-g+(m+g&-L)|0}L=c[632]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}m=c[634]|0;if((m|0)!=0){if(g>>>0<=L>>>0|g>>>0>m>>>0){W=0;break}}m=aR($|0)|0;g=(m|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=m;_=$;T=237}}while(0);L356:do{if((T|0)==237){m=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=248;break L334}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[520]|0;O=K-_+g&-g;if(O>>>0>=2147483647){ac=_;break}if((aR(O|0)|0)==-1){aR(m|0)|0;W=Y;break L356}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=248;break L334}}}while(0);c[635]=c[635]|4;ad=W;T=245}else{ad=0;T=245}}while(0);do{if((T|0)==245){if(S>>>0>=2147483647){break}W=aR(S|0)|0;Z=aR(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)!=-1){aa=Z?ac:ad;ab=Y;T=248}}}while(0);do{if((T|0)==248){ad=(c[632]|0)+aa|0;c[632]=ad;if(ad>>>0>(c[633]|0)>>>0){c[633]=ad}ad=c[530]|0;L376:do{if((ad|0)==0){S=c[528]|0;if((S|0)==0|ab>>>0<S>>>0){c[528]=ab}c[636]=ab;c[637]=aa;c[639]=0;c[533]=c[518];c[532]=-1;S=0;do{Y=S<<1;ac=2136+(Y<<2)|0;c[2136+(Y+3<<2)>>2]=ac;c[2136+(Y+2<<2)>>2]=ac;S=S+1|0;}while(S>>>0<32);S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=aa-40-ae|0;c[530]=ab+ae;c[527]=S;c[ab+(ae+4)>>2]=S|1;c[ab+(aa-36)>>2]=40;c[531]=c[522]}else{S=2544;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=260;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==260){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa;ac=c[530]|0;Y=(c[527]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){aj=0}else{aj=-W&7}W=Y-aj|0;c[530]=Z+aj;c[527]=W;c[Z+(aj+4)>>2]=W|1;c[Z+(Y+4)>>2]=40;c[531]=c[522];break L376}}while(0);if(ab>>>0<(c[528]|0)>>>0){c[528]=ab}S=ab+aa|0;Y=2544;while(1){al=Y|0;if((c[al>>2]|0)==(S|0)){T=270;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==270){if((c[Y+12>>2]&8|0)!=0){break}c[al>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa;S=ab+8|0;if((S&7|0)==0){am=0}else{am=-S&7}S=ab+(aa+8)|0;if((S&7|0)==0){ao=0}else{ao=-S&7}S=ab+(ao+aa)|0;Z=S;W=am+o|0;ac=ab+W|0;_=ac;K=S-(ab+am)-o|0;c[ab+(am+4)>>2]=o|3;do{if((Z|0)==(c[530]|0)){J=(c[527]|0)+K|0;c[527]=J;c[530]=_;c[ab+(W+4)>>2]=J|1}else{if((Z|0)==(c[529]|0)){J=(c[526]|0)+K|0;c[526]=J;c[529]=_;c[ab+(W+4)>>2]=J|1;c[ab+(J+W)>>2]=J;break}J=aa+4|0;X=c[ab+(J+ao)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L421:do{if(X>>>0<256){U=c[ab+((ao|8)+aa)>>2]|0;Q=c[ab+(aa+12+ao)>>2]|0;R=2136+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[528]|0)>>>0){an();return 0}if((c[U+12>>2]|0)==(Z|0)){break}an();return 0}}while(0);if((Q|0)==(U|0)){c[524]=c[524]&~(1<<V);break}do{if((Q|0)==(R|0)){ap=Q+8|0}else{if(Q>>>0<(c[528]|0)>>>0){an();return 0}m=Q+8|0;if((c[m>>2]|0)==(Z|0)){ap=m;break}an();return 0}}while(0);c[U+12>>2]=Q;c[ap>>2]=U}else{R=S;m=c[ab+((ao|24)+aa)>>2]|0;P=c[ab+(aa+12+ao)>>2]|0;do{if((P|0)==(R|0)){O=ao|16;g=ab+(J+O)|0;L=c[g>>2]|0;if((L|0)==0){e=ab+(O+aa)|0;O=c[e>>2]|0;if((O|0)==0){aq=0;break}else{ar=O;as=e}}else{ar=L;as=g}while(1){g=ar+20|0;L=c[g>>2]|0;if((L|0)!=0){ar=L;as=g;continue}g=ar+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ar=L;as=g}}if(as>>>0<(c[528]|0)>>>0){an();return 0}else{c[as>>2]=0;aq=ar;break}}else{g=c[ab+((ao|8)+aa)>>2]|0;if(g>>>0<(c[528]|0)>>>0){an();return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){an();return 0}e=P+8|0;if((c[e>>2]|0)==(R|0)){c[L>>2]=P;c[e>>2]=g;aq=P;break}else{an();return 0}}}while(0);if((m|0)==0){break}P=ab+(aa+28+ao)|0;U=2400+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=aq;if((aq|0)!=0){break}c[525]=c[525]&~(1<<c[P>>2]);break L421}else{if(m>>>0<(c[528]|0)>>>0){an();return 0}Q=m+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=aq}else{c[m+20>>2]=aq}if((aq|0)==0){break L421}}}while(0);if(aq>>>0<(c[528]|0)>>>0){an();return 0}c[aq+24>>2]=m;R=ao|16;P=c[ab+(R+aa)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[528]|0)>>>0){an();return 0}else{c[aq+16>>2]=P;c[P+24>>2]=aq;break}}}while(0);P=c[ab+(J+R)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[528]|0)>>>0){an();return 0}else{c[aq+20>>2]=P;c[P+24>>2]=aq;break}}}while(0);at=ab+(($|ao)+aa)|0;au=$+K|0}else{at=Z;au=K}J=at+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4)>>2]=au|1;c[ab+(au+W)>>2]=au;J=au>>>3;if(au>>>0<256){V=J<<1;X=2136+(V<<2)|0;P=c[524]|0;m=1<<J;do{if((P&m|0)==0){c[524]=P|m;av=X;aw=2136+(V+2<<2)|0}else{J=2136+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[528]|0)>>>0){av=U;aw=J;break}an();return 0}}while(0);c[aw>>2]=_;c[av+12>>2]=_;c[ab+(W+8)>>2]=av;c[ab+(W+12)>>2]=X;break}V=ac;m=au>>>8;do{if((m|0)==0){ax=0}else{if(au>>>0>16777215){ax=31;break}P=(m+1048320|0)>>>16&8;$=m<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=14-(J|P|$)+(U<<$>>>15)|0;ax=au>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2400+(ax<<2)|0;c[ab+(W+28)>>2]=ax;c[ab+(W+20)>>2]=0;c[ab+(W+16)>>2]=0;X=c[525]|0;Q=1<<ax;if((X&Q|0)==0){c[525]=X|Q;c[m>>2]=V;c[ab+(W+24)>>2]=m;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}if((ax|0)==31){ay=0}else{ay=25-(ax>>>1)|0}Q=au<<ay;X=c[m>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(au|0)){break}az=X+16+(Q>>>31<<2)|0;m=c[az>>2]|0;if((m|0)==0){T=343;break}else{Q=Q<<1;X=m}}if((T|0)==343){if(az>>>0<(c[528]|0)>>>0){an();return 0}else{c[az>>2]=V;c[ab+(W+24)>>2]=X;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}}Q=X+8|0;m=c[Q>>2]|0;$=c[528]|0;if(X>>>0<$>>>0){an();return 0}if(m>>>0<$>>>0){an();return 0}else{c[m+12>>2]=V;c[Q>>2]=V;c[ab+(W+8)>>2]=m;c[ab+(W+12)>>2]=X;c[ab+(W+24)>>2]=0;break}}}while(0);n=ab+(am|8)|0;return n|0}}while(0);Y=ad;W=2544;while(1){aA=c[W>>2]|0;if(aA>>>0<=Y>>>0){aB=c[W+4>>2]|0;aC=aA+aB|0;if(aC>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=aA+(aB-39)|0;if((W&7|0)==0){aD=0}else{aD=-W&7}W=aA+(aB-47+aD)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aE=0}else{aE=-_&7}_=aa-40-aE|0;c[530]=ab+aE;c[527]=_;c[ab+(aE+4)>>2]=_|1;c[ab+(aa-36)>>2]=40;c[531]=c[522];c[ac+4>>2]=27;c[W>>2]=c[636];c[W+4>>2]=c[2548>>2];c[W+8>>2]=c[2552>>2];c[W+12>>2]=c[2556>>2];c[636]=ab;c[637]=aa;c[639]=0;c[638]=W;W=ac+28|0;c[W>>2]=7;if((ac+32|0)>>>0<aC>>>0){_=W;while(1){W=_+4|0;c[W>>2]=7;if((_+8|0)>>>0<aC>>>0){_=W}else{break}}}if((ac|0)==(Y|0)){break}_=ac-ad|0;W=Y+(_+4)|0;c[W>>2]=c[W>>2]&-2;c[ad+4>>2]=_|1;c[Y+_>>2]=_;W=_>>>3;if(_>>>0<256){K=W<<1;Z=2136+(K<<2)|0;S=c[524]|0;m=1<<W;do{if((S&m|0)==0){c[524]=S|m;aF=Z;aG=2136+(K+2<<2)|0}else{W=2136+(K+2<<2)|0;Q=c[W>>2]|0;if(Q>>>0>=(c[528]|0)>>>0){aF=Q;aG=W;break}an();return 0}}while(0);c[aG>>2]=ad;c[aF+12>>2]=ad;c[ad+8>>2]=aF;c[ad+12>>2]=Z;break}K=ad;m=_>>>8;do{if((m|0)==0){aH=0}else{if(_>>>0>16777215){aH=31;break}S=(m+1048320|0)>>>16&8;Y=m<<S;ac=(Y+520192|0)>>>16&4;W=Y<<ac;Y=(W+245760|0)>>>16&2;Q=14-(ac|S|Y)+(W<<Y>>>15)|0;aH=_>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2400+(aH<<2)|0;c[ad+28>>2]=aH;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[525]|0;Q=1<<aH;if((Z&Q|0)==0){c[525]=Z|Q;c[m>>2]=K;c[ad+24>>2]=m;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aH|0)==31){aI=0}else{aI=25-(aH>>>1)|0}Q=_<<aI;Z=c[m>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(_|0)){break}aJ=Z+16+(Q>>>31<<2)|0;m=c[aJ>>2]|0;if((m|0)==0){T=378;break}else{Q=Q<<1;Z=m}}if((T|0)==378){if(aJ>>>0<(c[528]|0)>>>0){an();return 0}else{c[aJ>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;_=c[Q>>2]|0;m=c[528]|0;if(Z>>>0<m>>>0){an();return 0}if(_>>>0<m>>>0){an();return 0}else{c[_+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=_;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[527]|0;if(ad>>>0<=o>>>0){break}_=ad-o|0;c[527]=_;ad=c[530]|0;Q=ad;c[530]=Q+o;c[Q+(o+4)>>2]=_|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[(ak()|0)>>2]=12;n=0;return n|0}function bk(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[528]|0;if(b>>>0<e>>>0){an()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){an()}h=f&-8;i=a+(h-8)|0;j=i;L593:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){an()}if((n|0)==(c[529]|0)){p=a+(h-4)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[526]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8)>>2]|0;s=c[a+(l+12)>>2]|0;t=2136+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){an()}if((c[k+12>>2]|0)==(n|0)){break}an()}}while(0);if((s|0)==(k|0)){c[524]=c[524]&~(1<<p);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){an()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}an()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24)>>2]|0;v=c[a+(l+12)>>2]|0;do{if((v|0)==(t|0)){w=a+(l+20)|0;x=c[w>>2]|0;if((x|0)==0){y=a+(l+16)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break}else{B=z;C=y}}else{B=x;C=w}while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){an()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8)>>2]|0;if(w>>>0<e>>>0){an()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){an()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{an()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28)|0;m=2400+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[525]=c[525]&~(1<<c[v>>2]);q=n;r=o;break L593}else{if(p>>>0<(c[528]|0)>>>0){an()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L593}}}while(0);if(A>>>0<(c[528]|0)>>>0){an()}c[A+24>>2]=p;t=c[a+(l+16)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[528]|0)>>>0){an()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[528]|0)>>>0){an()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){an()}A=a+(h-4)|0;e=c[A>>2]|0;if((e&1|0)==0){an()}do{if((e&2|0)==0){if((j|0)==(c[530]|0)){B=(c[527]|0)+r|0;c[527]=B;c[530]=q;c[q+4>>2]=B|1;if((q|0)!=(c[529]|0)){return}c[529]=0;c[526]=0;return}if((j|0)==(c[529]|0)){B=(c[526]|0)+r|0;c[526]=B;c[529]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L696:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=2136+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[528]|0)>>>0){an()}if((c[u+12>>2]|0)==(j|0)){break}an()}}while(0);if((g|0)==(u|0)){c[524]=c[524]&~(1<<C);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[528]|0)>>>0){an()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}an()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16)>>2]|0;t=c[a+(h|4)>>2]|0;do{if((t|0)==(b|0)){p=a+(h+12)|0;v=c[p>>2]|0;if((v|0)==0){m=a+(h+8)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break}else{F=k;G=m}}else{F=v;G=p}while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[528]|0)>>>0){an()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[528]|0)>>>0){an()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){an()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{an()}}}while(0);if((f|0)==0){break}t=a+(h+20)|0;u=2400+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[525]=c[525]&~(1<<c[t>>2]);break L696}else{if(f>>>0<(c[528]|0)>>>0){an()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L696}}}while(0);if(E>>>0<(c[528]|0)>>>0){an()}c[E+24>>2]=f;b=c[a+(h+8)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[528]|0)>>>0){an()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[528]|0)>>>0){an()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[529]|0)){H=B;break}c[526]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=2136+(d<<2)|0;A=c[524]|0;E=1<<r;do{if((A&E|0)==0){c[524]=A|E;I=e;J=2136+(d+2<<2)|0}else{r=2136+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[528]|0)>>>0){I=h;J=r;break}an()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=14-(E|J|d)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=2400+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[525]|0;d=1<<K;do{if((r&d|0)==0){c[525]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=555;break}else{A=A<<1;J=E}}if((N|0)==555){if(M>>>0<(c[528]|0)>>>0){an()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[528]|0;if(J>>>0<E>>>0){an()}if(B>>>0<E>>>0){an()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[532]|0)-1|0;c[532]=q;if((q|0)==0){O=2552}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[532]=-1;return}function bl(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bm(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bn(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bo(a,b){a=a|0;b=b|0;return aZ[a&1](b|0)|0}function bp(a){a=a|0;a_[a&1]()}function bq(a,b,c){a=a|0;b=b|0;c=c|0;return a$[a&1](b|0,c|0)|0}function br(a,b){a=a|0;b=b|0;a0[a&1](b|0)}function bs(a){a=a|0;_(0);return 0}function bt(){_(1)}function bu(a,b){a=a|0;b=b|0;_(2);return 0}function bv(a){a=a|0;_(3)}
+function a1(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function a2(){return i|0}function a3(a){a=a|0;i=a}function a4(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function a5(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function a6(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function a7(a){a=a|0;B=a}function a8(a){a=a|0;C=a}function a9(a){a=a|0;D=a}function ba(a){a=a|0;E=a}function bb(a){a=a|0;F=a}function bc(a){a=a|0;G=a}function bd(a){a=a|0;H=a}function be(a){a=a|0;I=a}function bf(a){a=a|0;J=a}function bg(a){a=a|0;K=a}function bh(){}function bi(b,d){b=b|0;d=d|0;var e=0,f=0,h=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0.0;e=i;i=i+12432|0;f=e|0;h=e+8|0;j=e+4104|0;k=e+8200|0;l=e+8208|0;m=e+8216|0;n=e+8224|0;o=e+8232|0;p=e+8240|0;q=e+8248|0;r=e+8256|0;s=e+9280|0;t=e+10304|0;u=e+10312|0;v=e+10376|0;w=e+10384|0;if((b|0)<1|(d|0)==0){x=1}else{y=1;z=0;while(1){A=c[d+(z<<2)>>2]|0;do{if((A|0)==0){B=y}else{if((aQ(A|0,1400)|0)!=0){B=0;break}B=(aQ(A|0,1392)|0)==0?y:1}}while(0);A=z+1|0;if((A|0)<(b|0)){y=B;z=A}else{x=B;break}}}aq(1304,(B=i,i=i+8|0,c[B>>2]=(x|0)==1?1088:1080,B)|0)|0;i=B;c[p>>2]=1024;z=0;do{g[h+(z<<2)>>2]=+(ah()|0)*4.656612873077393e-10;z=z+1|0;C=c[p>>2]|0;}while(z>>>0<C>>>0);z=C<<2;av(1048)|0;C=(x|0)!=0;x=aj(0,(C?4:2)|0,(C?0:0)|0,1,m|0,0)|0;c[f>>2]=x;if((x|0)!=0){av(1008)|0;D=1;i=e;return D|0}av(584)|0;x=aY(0,1,m|0,0,0,f|0)|0;if((x|0)==0){av(248)|0;D=1;i=e;return D|0}C=r|0;bm(C|0,0,1024);r=s|0;bm(r|0,0,1024);av(216)|0;c[f>>2]=ap(c[m>>2]|0,4140,1024,C|0,q|0)|0;s=ap(c[m>>2]|0,4139,1024,r|0,q|0)|0;c[f>>2]=c[f>>2]|s;s=ap(c[m>>2]|0,4118,1024,t|0,q|0)|0;y=c[f>>2]|s;c[f>>2]=y;if((y|0)!=0){av(176)|0;D=1;i=e;return D|0}av(144)|0;y=aN(x|0,4225,64,u|0,q|0)|0;c[f>>2]=y;if((y|0)!=0){av(88)|0;D=1;i=e;return D|0}y=(c[q>>2]|0)>>>2;av(56)|0;q=at(x|0,c[m>>2]|0,0,0,f|0)|0;if((q|0)==0){av(8)|0;D=1;i=e;return D|0}av(968)|0;u=aK(x|0,1,2064,0,f|0)|0;if((u|0)==0){av(920)|0;D=1;i=e;return D|0}av(888)|0;s=aw(u|0,0,0,0,0,0)|0;c[f>>2]=s;if((s|0)!=0){av(840)|0;s=c[m>>2]|0;b=w|0;aV(u|0,s|0,4483,2048,b|0,v|0)|0;av(b|0)|0;aE(1);return 0}av(808)|0;b=aH(u|0,1384,f|0)|0;if(!((b|0)!=0&(c[f>>2]|0)==0)){av(768)|0;aE(1);return 0}av(736)|0;v=aU(x|0,4,0,z|0,0,0)|0;c[n>>2]=v;s=aU(x|0,2,0,z|0,0,0)|0;c[o>>2]=s;if((v|0)==0|(s|0)==0){av(688)|0;aE(1);return 0}av(656)|0;s=aM(q|0,v|0,1,0,z|0,h|0,0,0,0)|0;c[f>>2]=s;if((s|0)!=0){av(616)|0;aE(1);return 0}av(552)|0;c[f>>2]=0;c[f>>2]=aF(b|0,0,4,n|0)|0;s=aF(b|0,1,4,o|0)|0;c[f>>2]=c[f>>2]|s;s=aF(b|0,2,4,p|0)|0;z=c[f>>2]|s;c[f>>2]=z;if((z|0)!=0){aq(1336,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}av(512)|0;z=aD(b|0,c[m>>2]|0,4528,4,l|0,0)|0;c[f>>2]=z;if((z|0)!=0){aq(1248,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}c[k>>2]=c[p>>2];av(472)|0;z=aA(q|0,b|0,1,0,k|0,l|0,0,0,0)|0;c[f>>2]=z;if((z|0)!=0){av(432)|0;D=1;i=e;return D|0}av(408)|0;aT(q|0)|0;av(376)|0;z=aO(q|0,c[o>>2]|0,1,0,c[p>>2]<<2|0,j|0,0,0,0)|0;c[f>>2]=z;if((z|0)!=0){aq(1208,(B=i,i=i+8|0,c[B>>2]=z,B)|0)|0;i=B;aE(1);return 0}z=c[p>>2]|0;if((z|0)==0){E=0}else{f=0;l=0;while(1){F=+g[h+(f<<2)>>2];k=(+g[j+(f<<2)>>2]-F*F<1.0e-7)+l|0;m=f+1|0;if(m>>>0<z>>>0){f=m;l=k}else{E=k;break}}}l=c[t>>2]|0;aq(1136,(B=i,i=i+32|0,c[B>>2]=C,c[B+8>>2]=r,c[B+16>>2]=l,c[B+24>>2]=y,B)|0)|0;i=B;y=c[p>>2]|0;aq(1096,(B=i,i=i+16|0,c[B>>2]=E,c[B+8>>2]=y,B)|0)|0;i=B;aS(c[n>>2]|0)|0;aS(c[o>>2]|0)|0;au(u|0)|0;al(b|0)|0;aI(q|0)|0;am(x|0)|0;av(336)|0;aG(0,0);x=bj(1)|0;a[x]=0;aG(x|0,0);av(x|0)|0;av(296)|0;bk(x);D=0;i=e;return D|0}function bj(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0,P=0,Q=0,R=0,S=0,T=0,U=0,V=0,W=0,X=0,Y=0,Z=0,_=0,$=0,aa=0,ab=0,ac=0,ad=0,ae=0,af=0,ag=0,ah=0,aj=0,al=0,am=0,ao=0,ap=0,aq=0,ar=0,as=0,at=0,au=0,av=0,aw=0,ax=0,ay=0,az=0,aA=0,aB=0,aC=0,aD=0,aE=0,aF=0,aG=0,aH=0,aI=0,aJ=0;do{if(a>>>0<245){if(a>>>0<11){b=16}else{b=a+11&-8}d=b>>>3;e=c[524]|0;f=e>>>(d>>>0);if((f&3|0)!=0){g=(f&1^1)+d|0;h=g<<1;i=2136+(h<<2)|0;j=2136+(h+2<<2)|0;h=c[j>>2]|0;k=h+8|0;l=c[k>>2]|0;do{if((i|0)==(l|0)){c[524]=e&~(1<<g)}else{if(l>>>0<(c[528]|0)>>>0){an();return 0}m=l+12|0;if((c[m>>2]|0)==(h|0)){c[m>>2]=i;c[j>>2]=l;break}else{an();return 0}}}while(0);l=g<<3;c[h+4>>2]=l|3;j=h+(l|4)|0;c[j>>2]=c[j>>2]|1;n=k;return n|0}if(b>>>0<=(c[526]|0)>>>0){o=b;break}if((f|0)!=0){j=2<<d;l=f<<d&(j|-j);j=(l&-l)-1|0;l=j>>>12&16;i=j>>>(l>>>0);j=i>>>5&8;m=i>>>(j>>>0);i=m>>>2&4;p=m>>>(i>>>0);m=p>>>1&2;q=p>>>(m>>>0);p=q>>>1&1;r=(j|l|i|m|p)+(q>>>(p>>>0))|0;p=r<<1;q=2136+(p<<2)|0;m=2136+(p+2<<2)|0;p=c[m>>2]|0;i=p+8|0;l=c[i>>2]|0;do{if((q|0)==(l|0)){c[524]=e&~(1<<r)}else{if(l>>>0<(c[528]|0)>>>0){an();return 0}j=l+12|0;if((c[j>>2]|0)==(p|0)){c[j>>2]=q;c[m>>2]=l;break}else{an();return 0}}}while(0);l=r<<3;m=l-b|0;c[p+4>>2]=b|3;q=p;e=q+b|0;c[q+(b|4)>>2]=m|1;c[q+l>>2]=m;l=c[526]|0;if((l|0)!=0){q=c[529]|0;d=l>>>3;l=d<<1;f=2136+(l<<2)|0;k=c[524]|0;h=1<<d;do{if((k&h|0)==0){c[524]=k|h;s=f;t=2136+(l+2<<2)|0}else{d=2136+(l+2<<2)|0;g=c[d>>2]|0;if(g>>>0>=(c[528]|0)>>>0){s=g;t=d;break}an();return 0}}while(0);c[t>>2]=q;c[s+12>>2]=q;c[q+8>>2]=s;c[q+12>>2]=f}c[526]=m;c[529]=e;n=i;return n|0}l=c[525]|0;if((l|0)==0){o=b;break}h=(l&-l)-1|0;l=h>>>12&16;k=h>>>(l>>>0);h=k>>>5&8;p=k>>>(h>>>0);k=p>>>2&4;r=p>>>(k>>>0);p=r>>>1&2;d=r>>>(p>>>0);r=d>>>1&1;g=c[2400+((h|l|k|p|r)+(d>>>(r>>>0))<<2)>>2]|0;r=g;d=g;p=(c[g+4>>2]&-8)-b|0;while(1){g=c[r+16>>2]|0;if((g|0)==0){k=c[r+20>>2]|0;if((k|0)==0){break}else{u=k}}else{u=g}g=(c[u+4>>2]&-8)-b|0;k=g>>>0<p>>>0;r=u;d=k?u:d;p=k?g:p}r=d;i=c[528]|0;if(r>>>0<i>>>0){an();return 0}e=r+b|0;m=e;if(r>>>0>=e>>>0){an();return 0}e=c[d+24>>2]|0;f=c[d+12>>2]|0;do{if((f|0)==(d|0)){q=d+20|0;g=c[q>>2]|0;if((g|0)==0){k=d+16|0;l=c[k>>2]|0;if((l|0)==0){v=0;break}else{w=l;x=k}}else{w=g;x=q}while(1){q=w+20|0;g=c[q>>2]|0;if((g|0)!=0){w=g;x=q;continue}q=w+16|0;g=c[q>>2]|0;if((g|0)==0){break}else{w=g;x=q}}if(x>>>0<i>>>0){an();return 0}else{c[x>>2]=0;v=w;break}}else{q=c[d+8>>2]|0;if(q>>>0<i>>>0){an();return 0}g=q+12|0;if((c[g>>2]|0)!=(d|0)){an();return 0}k=f+8|0;if((c[k>>2]|0)==(d|0)){c[g>>2]=f;c[k>>2]=q;v=f;break}else{an();return 0}}}while(0);L267:do{if((e|0)!=0){f=d+28|0;i=2400+(c[f>>2]<<2)|0;do{if((d|0)==(c[i>>2]|0)){c[i>>2]=v;if((v|0)!=0){break}c[525]=c[525]&~(1<<c[f>>2]);break L267}else{if(e>>>0<(c[528]|0)>>>0){an();return 0}q=e+16|0;if((c[q>>2]|0)==(d|0)){c[q>>2]=v}else{c[e+20>>2]=v}if((v|0)==0){break L267}}}while(0);if(v>>>0<(c[528]|0)>>>0){an();return 0}c[v+24>>2]=e;f=c[d+16>>2]|0;do{if((f|0)!=0){if(f>>>0<(c[528]|0)>>>0){an();return 0}else{c[v+16>>2]=f;c[f+24>>2]=v;break}}}while(0);f=c[d+20>>2]|0;if((f|0)==0){break}if(f>>>0<(c[528]|0)>>>0){an();return 0}else{c[v+20>>2]=f;c[f+24>>2]=v;break}}}while(0);if(p>>>0<16){e=p+b|0;c[d+4>>2]=e|3;f=r+(e+4)|0;c[f>>2]=c[f>>2]|1}else{c[d+4>>2]=b|3;c[r+(b|4)>>2]=p|1;c[r+(p+b)>>2]=p;f=c[526]|0;if((f|0)!=0){e=c[529]|0;i=f>>>3;f=i<<1;q=2136+(f<<2)|0;k=c[524]|0;g=1<<i;do{if((k&g|0)==0){c[524]=k|g;y=q;z=2136+(f+2<<2)|0}else{i=2136+(f+2<<2)|0;l=c[i>>2]|0;if(l>>>0>=(c[528]|0)>>>0){y=l;z=i;break}an();return 0}}while(0);c[z>>2]=e;c[y+12>>2]=e;c[e+8>>2]=y;c[e+12>>2]=q}c[526]=p;c[529]=m}f=d+8|0;if((f|0)==0){o=b;break}else{n=f}return n|0}else{if(a>>>0>4294967231){o=-1;break}f=a+11|0;g=f&-8;k=c[525]|0;if((k|0)==0){o=g;break}r=-g|0;i=f>>>8;do{if((i|0)==0){A=0}else{if(g>>>0>16777215){A=31;break}f=(i+1048320|0)>>>16&8;l=i<<f;h=(l+520192|0)>>>16&4;j=l<<h;l=(j+245760|0)>>>16&2;B=14-(h|f|l)+(j<<l>>>15)|0;A=g>>>((B+7|0)>>>0)&1|B<<1}}while(0);i=c[2400+(A<<2)>>2]|0;L75:do{if((i|0)==0){C=0;D=r;E=0}else{if((A|0)==31){F=0}else{F=25-(A>>>1)|0}d=0;m=r;p=i;q=g<<F;e=0;while(1){B=c[p+4>>2]&-8;l=B-g|0;if(l>>>0<m>>>0){if((B|0)==(g|0)){C=p;D=l;E=p;break L75}else{G=p;H=l}}else{G=d;H=m}l=c[p+20>>2]|0;B=c[p+16+(q>>>31<<2)>>2]|0;j=(l|0)==0|(l|0)==(B|0)?e:l;if((B|0)==0){C=G;D=H;E=j;break}else{d=G;m=H;p=B;q=q<<1;e=j}}}}while(0);if((E|0)==0&(C|0)==0){i=2<<A;r=k&(i|-i);if((r|0)==0){o=g;break}i=(r&-r)-1|0;r=i>>>12&16;e=i>>>(r>>>0);i=e>>>5&8;q=e>>>(i>>>0);e=q>>>2&4;p=q>>>(e>>>0);q=p>>>1&2;m=p>>>(q>>>0);p=m>>>1&1;I=c[2400+((i|r|e|q|p)+(m>>>(p>>>0))<<2)>>2]|0}else{I=E}if((I|0)==0){J=D;K=C}else{p=I;m=D;q=C;while(1){e=(c[p+4>>2]&-8)-g|0;r=e>>>0<m>>>0;i=r?e:m;e=r?p:q;r=c[p+16>>2]|0;if((r|0)!=0){p=r;m=i;q=e;continue}r=c[p+20>>2]|0;if((r|0)==0){J=i;K=e;break}else{p=r;m=i;q=e}}}if((K|0)==0){o=g;break}if(J>>>0>=((c[526]|0)-g|0)>>>0){o=g;break}q=K;m=c[528]|0;if(q>>>0<m>>>0){an();return 0}p=q+g|0;k=p;if(q>>>0>=p>>>0){an();return 0}e=c[K+24>>2]|0;i=c[K+12>>2]|0;do{if((i|0)==(K|0)){r=K+20|0;d=c[r>>2]|0;if((d|0)==0){j=K+16|0;B=c[j>>2]|0;if((B|0)==0){L=0;break}else{M=B;N=j}}else{M=d;N=r}while(1){r=M+20|0;d=c[r>>2]|0;if((d|0)!=0){M=d;N=r;continue}r=M+16|0;d=c[r>>2]|0;if((d|0)==0){break}else{M=d;N=r}}if(N>>>0<m>>>0){an();return 0}else{c[N>>2]=0;L=M;break}}else{r=c[K+8>>2]|0;if(r>>>0<m>>>0){an();return 0}d=r+12|0;if((c[d>>2]|0)!=(K|0)){an();return 0}j=i+8|0;if((c[j>>2]|0)==(K|0)){c[d>>2]=i;c[j>>2]=r;L=i;break}else{an();return 0}}}while(0);L125:do{if((e|0)!=0){i=K+28|0;m=2400+(c[i>>2]<<2)|0;do{if((K|0)==(c[m>>2]|0)){c[m>>2]=L;if((L|0)!=0){break}c[525]=c[525]&~(1<<c[i>>2]);break L125}else{if(e>>>0<(c[528]|0)>>>0){an();return 0}r=e+16|0;if((c[r>>2]|0)==(K|0)){c[r>>2]=L}else{c[e+20>>2]=L}if((L|0)==0){break L125}}}while(0);if(L>>>0<(c[528]|0)>>>0){an();return 0}c[L+24>>2]=e;i=c[K+16>>2]|0;do{if((i|0)!=0){if(i>>>0<(c[528]|0)>>>0){an();return 0}else{c[L+16>>2]=i;c[i+24>>2]=L;break}}}while(0);i=c[K+20>>2]|0;if((i|0)==0){break}if(i>>>0<(c[528]|0)>>>0){an();return 0}else{c[L+20>>2]=i;c[i+24>>2]=L;break}}}while(0);do{if(J>>>0<16){e=J+g|0;c[K+4>>2]=e|3;i=q+(e+4)|0;c[i>>2]=c[i>>2]|1}else{c[K+4>>2]=g|3;c[q+(g|4)>>2]=J|1;c[q+(J+g)>>2]=J;i=J>>>3;if(J>>>0<256){e=i<<1;m=2136+(e<<2)|0;r=c[524]|0;j=1<<i;do{if((r&j|0)==0){c[524]=r|j;O=m;P=2136+(e+2<<2)|0}else{i=2136+(e+2<<2)|0;d=c[i>>2]|0;if(d>>>0>=(c[528]|0)>>>0){O=d;P=i;break}an();return 0}}while(0);c[P>>2]=k;c[O+12>>2]=k;c[q+(g+8)>>2]=O;c[q+(g+12)>>2]=m;break}e=p;j=J>>>8;do{if((j|0)==0){Q=0}else{if(J>>>0>16777215){Q=31;break}r=(j+1048320|0)>>>16&8;i=j<<r;d=(i+520192|0)>>>16&4;B=i<<d;i=(B+245760|0)>>>16&2;l=14-(d|r|i)+(B<<i>>>15)|0;Q=J>>>((l+7|0)>>>0)&1|l<<1}}while(0);j=2400+(Q<<2)|0;c[q+(g+28)>>2]=Q;c[q+(g+20)>>2]=0;c[q+(g+16)>>2]=0;m=c[525]|0;l=1<<Q;if((m&l|0)==0){c[525]=m|l;c[j>>2]=e;c[q+(g+24)>>2]=j;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}if((Q|0)==31){R=0}else{R=25-(Q>>>1)|0}l=J<<R;m=c[j>>2]|0;while(1){if((c[m+4>>2]&-8|0)==(J|0)){break}S=m+16+(l>>>31<<2)|0;j=c[S>>2]|0;if((j|0)==0){T=198;break}else{l=l<<1;m=j}}if((T|0)==198){if(S>>>0<(c[528]|0)>>>0){an();return 0}else{c[S>>2]=e;c[q+(g+24)>>2]=m;c[q+(g+12)>>2]=e;c[q+(g+8)>>2]=e;break}}l=m+8|0;j=c[l>>2]|0;i=c[528]|0;if(m>>>0<i>>>0){an();return 0}if(j>>>0<i>>>0){an();return 0}else{c[j+12>>2]=e;c[l>>2]=e;c[q+(g+8)>>2]=j;c[q+(g+12)>>2]=m;c[q+(g+24)>>2]=0;break}}}while(0);q=K+8|0;if((q|0)==0){o=g;break}else{n=q}return n|0}}while(0);K=c[526]|0;if(o>>>0<=K>>>0){S=K-o|0;J=c[529]|0;if(S>>>0>15){R=J;c[529]=R+o;c[526]=S;c[R+(o+4)>>2]=S|1;c[R+K>>2]=S;c[J+4>>2]=o|3}else{c[526]=0;c[529]=0;c[J+4>>2]=K|3;S=J+(K+4)|0;c[S>>2]=c[S>>2]|1}n=J+8|0;return n|0}J=c[527]|0;if(o>>>0<J>>>0){S=J-o|0;c[527]=S;J=c[530]|0;K=J;c[530]=K+o;c[K+(o+4)>>2]=S|1;c[J+4>>2]=o|3;n=J+8|0;return n|0}do{if((c[518]|0)==0){J=ai(8)|0;if((J-1&J|0)==0){c[520]=J;c[519]=J;c[521]=-1;c[522]=-1;c[523]=0;c[635]=0;c[518]=(aW(0)|0)&-16^1431655768;break}else{an();return 0}}}while(0);J=o+48|0;S=c[520]|0;K=o+47|0;R=S+K|0;Q=-S|0;S=R&Q;if(S>>>0<=o>>>0){n=0;return n|0}O=c[634]|0;do{if((O|0)!=0){P=c[632]|0;L=P+S|0;if(L>>>0<=P>>>0|L>>>0>O>>>0){n=0}else{break}return n|0}}while(0);L334:do{if((c[635]&4|0)==0){O=c[530]|0;L336:do{if((O|0)==0){T=228}else{L=O;P=2544;while(1){U=P|0;M=c[U>>2]|0;if(M>>>0<=L>>>0){V=P+4|0;if((M+(c[V>>2]|0)|0)>>>0>L>>>0){break}}M=c[P+8>>2]|0;if((M|0)==0){T=228;break L336}else{P=M}}if((P|0)==0){T=228;break}L=R-(c[527]|0)&Q;if(L>>>0>=2147483647){W=0;break}m=aR(L|0)|0;e=(m|0)==((c[U>>2]|0)+(c[V>>2]|0)|0);X=e?m:-1;Y=e?L:0;Z=m;_=L;T=237}}while(0);do{if((T|0)==228){O=aR(0)|0;if((O|0)==-1){W=0;break}g=O;L=c[519]|0;m=L-1|0;if((m&g|0)==0){$=S}else{$=S-g+(m+g&-L)|0}L=c[632]|0;g=L+$|0;if(!($>>>0>o>>>0&$>>>0<2147483647)){W=0;break}m=c[634]|0;if((m|0)!=0){if(g>>>0<=L>>>0|g>>>0>m>>>0){W=0;break}}m=aR($|0)|0;g=(m|0)==(O|0);X=g?O:-1;Y=g?$:0;Z=m;_=$;T=237}}while(0);L356:do{if((T|0)==237){m=-_|0;if((X|0)!=-1){aa=Y;ab=X;T=248;break L334}do{if((Z|0)!=-1&_>>>0<2147483647&_>>>0<J>>>0){g=c[520]|0;O=K-_+g&-g;if(O>>>0>=2147483647){ac=_;break}if((aR(O|0)|0)==-1){aR(m|0)|0;W=Y;break L356}else{ac=O+_|0;break}}else{ac=_}}while(0);if((Z|0)==-1){W=Y}else{aa=ac;ab=Z;T=248;break L334}}}while(0);c[635]=c[635]|4;ad=W;T=245}else{ad=0;T=245}}while(0);do{if((T|0)==245){if(S>>>0>=2147483647){break}W=aR(S|0)|0;Z=aR(0)|0;if(!((Z|0)!=-1&(W|0)!=-1&W>>>0<Z>>>0)){break}ac=Z-W|0;Z=ac>>>0>(o+40|0)>>>0;Y=Z?W:-1;if((Y|0)!=-1){aa=Z?ac:ad;ab=Y;T=248}}}while(0);do{if((T|0)==248){ad=(c[632]|0)+aa|0;c[632]=ad;if(ad>>>0>(c[633]|0)>>>0){c[633]=ad}ad=c[530]|0;L376:do{if((ad|0)==0){S=c[528]|0;if((S|0)==0|ab>>>0<S>>>0){c[528]=ab}c[636]=ab;c[637]=aa;c[639]=0;c[533]=c[518];c[532]=-1;S=0;do{Y=S<<1;ac=2136+(Y<<2)|0;c[2136+(Y+3<<2)>>2]=ac;c[2136+(Y+2<<2)>>2]=ac;S=S+1|0;}while(S>>>0<32);S=ab+8|0;if((S&7|0)==0){ae=0}else{ae=-S&7}S=aa-40-ae|0;c[530]=ab+ae;c[527]=S;c[ab+(ae+4)>>2]=S|1;c[ab+(aa-36)>>2]=40;c[531]=c[522]}else{S=2544;while(1){af=c[S>>2]|0;ag=S+4|0;ah=c[ag>>2]|0;if((ab|0)==(af+ah|0)){T=260;break}ac=c[S+8>>2]|0;if((ac|0)==0){break}else{S=ac}}do{if((T|0)==260){if((c[S+12>>2]&8|0)!=0){break}ac=ad;if(!(ac>>>0>=af>>>0&ac>>>0<ab>>>0)){break}c[ag>>2]=ah+aa;ac=c[530]|0;Y=(c[527]|0)+aa|0;Z=ac;W=ac+8|0;if((W&7|0)==0){aj=0}else{aj=-W&7}W=Y-aj|0;c[530]=Z+aj;c[527]=W;c[Z+(aj+4)>>2]=W|1;c[Z+(Y+4)>>2]=40;c[531]=c[522];break L376}}while(0);if(ab>>>0<(c[528]|0)>>>0){c[528]=ab}S=ab+aa|0;Y=2544;while(1){al=Y|0;if((c[al>>2]|0)==(S|0)){T=270;break}Z=c[Y+8>>2]|0;if((Z|0)==0){break}else{Y=Z}}do{if((T|0)==270){if((c[Y+12>>2]&8|0)!=0){break}c[al>>2]=ab;S=Y+4|0;c[S>>2]=(c[S>>2]|0)+aa;S=ab+8|0;if((S&7|0)==0){am=0}else{am=-S&7}S=ab+(aa+8)|0;if((S&7|0)==0){ao=0}else{ao=-S&7}S=ab+(ao+aa)|0;Z=S;W=am+o|0;ac=ab+W|0;_=ac;K=S-(ab+am)-o|0;c[ab+(am+4)>>2]=o|3;do{if((Z|0)==(c[530]|0)){J=(c[527]|0)+K|0;c[527]=J;c[530]=_;c[ab+(W+4)>>2]=J|1}else{if((Z|0)==(c[529]|0)){J=(c[526]|0)+K|0;c[526]=J;c[529]=_;c[ab+(W+4)>>2]=J|1;c[ab+(J+W)>>2]=J;break}J=aa+4|0;X=c[ab+(J+ao)>>2]|0;if((X&3|0)==1){$=X&-8;V=X>>>3;L421:do{if(X>>>0<256){U=c[ab+((ao|8)+aa)>>2]|0;Q=c[ab+(aa+12+ao)>>2]|0;R=2136+(V<<1<<2)|0;do{if((U|0)!=(R|0)){if(U>>>0<(c[528]|0)>>>0){an();return 0}if((c[U+12>>2]|0)==(Z|0)){break}an();return 0}}while(0);if((Q|0)==(U|0)){c[524]=c[524]&~(1<<V);break}do{if((Q|0)==(R|0)){ap=Q+8|0}else{if(Q>>>0<(c[528]|0)>>>0){an();return 0}m=Q+8|0;if((c[m>>2]|0)==(Z|0)){ap=m;break}an();return 0}}while(0);c[U+12>>2]=Q;c[ap>>2]=U}else{R=S;m=c[ab+((ao|24)+aa)>>2]|0;P=c[ab+(aa+12+ao)>>2]|0;do{if((P|0)==(R|0)){O=ao|16;g=ab+(J+O)|0;L=c[g>>2]|0;if((L|0)==0){e=ab+(O+aa)|0;O=c[e>>2]|0;if((O|0)==0){aq=0;break}else{ar=O;as=e}}else{ar=L;as=g}while(1){g=ar+20|0;L=c[g>>2]|0;if((L|0)!=0){ar=L;as=g;continue}g=ar+16|0;L=c[g>>2]|0;if((L|0)==0){break}else{ar=L;as=g}}if(as>>>0<(c[528]|0)>>>0){an();return 0}else{c[as>>2]=0;aq=ar;break}}else{g=c[ab+((ao|8)+aa)>>2]|0;if(g>>>0<(c[528]|0)>>>0){an();return 0}L=g+12|0;if((c[L>>2]|0)!=(R|0)){an();return 0}e=P+8|0;if((c[e>>2]|0)==(R|0)){c[L>>2]=P;c[e>>2]=g;aq=P;break}else{an();return 0}}}while(0);if((m|0)==0){break}P=ab+(aa+28+ao)|0;U=2400+(c[P>>2]<<2)|0;do{if((R|0)==(c[U>>2]|0)){c[U>>2]=aq;if((aq|0)!=0){break}c[525]=c[525]&~(1<<c[P>>2]);break L421}else{if(m>>>0<(c[528]|0)>>>0){an();return 0}Q=m+16|0;if((c[Q>>2]|0)==(R|0)){c[Q>>2]=aq}else{c[m+20>>2]=aq}if((aq|0)==0){break L421}}}while(0);if(aq>>>0<(c[528]|0)>>>0){an();return 0}c[aq+24>>2]=m;R=ao|16;P=c[ab+(R+aa)>>2]|0;do{if((P|0)!=0){if(P>>>0<(c[528]|0)>>>0){an();return 0}else{c[aq+16>>2]=P;c[P+24>>2]=aq;break}}}while(0);P=c[ab+(J+R)>>2]|0;if((P|0)==0){break}if(P>>>0<(c[528]|0)>>>0){an();return 0}else{c[aq+20>>2]=P;c[P+24>>2]=aq;break}}}while(0);at=ab+(($|ao)+aa)|0;au=$+K|0}else{at=Z;au=K}J=at+4|0;c[J>>2]=c[J>>2]&-2;c[ab+(W+4)>>2]=au|1;c[ab+(au+W)>>2]=au;J=au>>>3;if(au>>>0<256){V=J<<1;X=2136+(V<<2)|0;P=c[524]|0;m=1<<J;do{if((P&m|0)==0){c[524]=P|m;av=X;aw=2136+(V+2<<2)|0}else{J=2136+(V+2<<2)|0;U=c[J>>2]|0;if(U>>>0>=(c[528]|0)>>>0){av=U;aw=J;break}an();return 0}}while(0);c[aw>>2]=_;c[av+12>>2]=_;c[ab+(W+8)>>2]=av;c[ab+(W+12)>>2]=X;break}V=ac;m=au>>>8;do{if((m|0)==0){ax=0}else{if(au>>>0>16777215){ax=31;break}P=(m+1048320|0)>>>16&8;$=m<<P;J=($+520192|0)>>>16&4;U=$<<J;$=(U+245760|0)>>>16&2;Q=14-(J|P|$)+(U<<$>>>15)|0;ax=au>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2400+(ax<<2)|0;c[ab+(W+28)>>2]=ax;c[ab+(W+20)>>2]=0;c[ab+(W+16)>>2]=0;X=c[525]|0;Q=1<<ax;if((X&Q|0)==0){c[525]=X|Q;c[m>>2]=V;c[ab+(W+24)>>2]=m;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}if((ax|0)==31){ay=0}else{ay=25-(ax>>>1)|0}Q=au<<ay;X=c[m>>2]|0;while(1){if((c[X+4>>2]&-8|0)==(au|0)){break}az=X+16+(Q>>>31<<2)|0;m=c[az>>2]|0;if((m|0)==0){T=343;break}else{Q=Q<<1;X=m}}if((T|0)==343){if(az>>>0<(c[528]|0)>>>0){an();return 0}else{c[az>>2]=V;c[ab+(W+24)>>2]=X;c[ab+(W+12)>>2]=V;c[ab+(W+8)>>2]=V;break}}Q=X+8|0;m=c[Q>>2]|0;$=c[528]|0;if(X>>>0<$>>>0){an();return 0}if(m>>>0<$>>>0){an();return 0}else{c[m+12>>2]=V;c[Q>>2]=V;c[ab+(W+8)>>2]=m;c[ab+(W+12)>>2]=X;c[ab+(W+24)>>2]=0;break}}}while(0);n=ab+(am|8)|0;return n|0}}while(0);Y=ad;W=2544;while(1){aA=c[W>>2]|0;if(aA>>>0<=Y>>>0){aB=c[W+4>>2]|0;aC=aA+aB|0;if(aC>>>0>Y>>>0){break}}W=c[W+8>>2]|0}W=aA+(aB-39)|0;if((W&7|0)==0){aD=0}else{aD=-W&7}W=aA+(aB-47+aD)|0;ac=W>>>0<(ad+16|0)>>>0?Y:W;W=ac+8|0;_=ab+8|0;if((_&7|0)==0){aE=0}else{aE=-_&7}_=aa-40-aE|0;c[530]=ab+aE;c[527]=_;c[ab+(aE+4)>>2]=_|1;c[ab+(aa-36)>>2]=40;c[531]=c[522];c[ac+4>>2]=27;c[W>>2]=c[636];c[W+4>>2]=c[2548>>2];c[W+8>>2]=c[2552>>2];c[W+12>>2]=c[2556>>2];c[636]=ab;c[637]=aa;c[639]=0;c[638]=W;W=ac+28|0;c[W>>2]=7;if((ac+32|0)>>>0<aC>>>0){_=W;while(1){W=_+4|0;c[W>>2]=7;if((_+8|0)>>>0<aC>>>0){_=W}else{break}}}if((ac|0)==(Y|0)){break}_=ac-ad|0;W=Y+(_+4)|0;c[W>>2]=c[W>>2]&-2;c[ad+4>>2]=_|1;c[Y+_>>2]=_;W=_>>>3;if(_>>>0<256){K=W<<1;Z=2136+(K<<2)|0;S=c[524]|0;m=1<<W;do{if((S&m|0)==0){c[524]=S|m;aF=Z;aG=2136+(K+2<<2)|0}else{W=2136+(K+2<<2)|0;Q=c[W>>2]|0;if(Q>>>0>=(c[528]|0)>>>0){aF=Q;aG=W;break}an();return 0}}while(0);c[aG>>2]=ad;c[aF+12>>2]=ad;c[ad+8>>2]=aF;c[ad+12>>2]=Z;break}K=ad;m=_>>>8;do{if((m|0)==0){aH=0}else{if(_>>>0>16777215){aH=31;break}S=(m+1048320|0)>>>16&8;Y=m<<S;ac=(Y+520192|0)>>>16&4;W=Y<<ac;Y=(W+245760|0)>>>16&2;Q=14-(ac|S|Y)+(W<<Y>>>15)|0;aH=_>>>((Q+7|0)>>>0)&1|Q<<1}}while(0);m=2400+(aH<<2)|0;c[ad+28>>2]=aH;c[ad+20>>2]=0;c[ad+16>>2]=0;Z=c[525]|0;Q=1<<aH;if((Z&Q|0)==0){c[525]=Z|Q;c[m>>2]=K;c[ad+24>>2]=m;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}if((aH|0)==31){aI=0}else{aI=25-(aH>>>1)|0}Q=_<<aI;Z=c[m>>2]|0;while(1){if((c[Z+4>>2]&-8|0)==(_|0)){break}aJ=Z+16+(Q>>>31<<2)|0;m=c[aJ>>2]|0;if((m|0)==0){T=378;break}else{Q=Q<<1;Z=m}}if((T|0)==378){if(aJ>>>0<(c[528]|0)>>>0){an();return 0}else{c[aJ>>2]=K;c[ad+24>>2]=Z;c[ad+12>>2]=ad;c[ad+8>>2]=ad;break}}Q=Z+8|0;_=c[Q>>2]|0;m=c[528]|0;if(Z>>>0<m>>>0){an();return 0}if(_>>>0<m>>>0){an();return 0}else{c[_+12>>2]=K;c[Q>>2]=K;c[ad+8>>2]=_;c[ad+12>>2]=Z;c[ad+24>>2]=0;break}}}while(0);ad=c[527]|0;if(ad>>>0<=o>>>0){break}_=ad-o|0;c[527]=_;ad=c[530]|0;Q=ad;c[530]=Q+o;c[Q+(o+4)>>2]=_|1;c[ad+4>>2]=o|3;n=ad+8|0;return n|0}}while(0);c[(ak()|0)>>2]=12;n=0;return n|0}function bk(a){a=a|0;var b=0,d=0,e=0,f=0,g=0,h=0,i=0,j=0,k=0,l=0,m=0,n=0,o=0,p=0,q=0,r=0,s=0,t=0,u=0,v=0,w=0,x=0,y=0,z=0,A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0,I=0,J=0,K=0,L=0,M=0,N=0,O=0;if((a|0)==0){return}b=a-8|0;d=b;e=c[528]|0;if(b>>>0<e>>>0){an()}f=c[a-4>>2]|0;g=f&3;if((g|0)==1){an()}h=f&-8;i=a+(h-8)|0;j=i;L593:do{if((f&1|0)==0){k=c[b>>2]|0;if((g|0)==0){return}l=-8-k|0;m=a+l|0;n=m;o=k+h|0;if(m>>>0<e>>>0){an()}if((n|0)==(c[529]|0)){p=a+(h-4)|0;if((c[p>>2]&3|0)!=3){q=n;r=o;break}c[526]=o;c[p>>2]=c[p>>2]&-2;c[a+(l+4)>>2]=o|1;c[i>>2]=o;return}p=k>>>3;if(k>>>0<256){k=c[a+(l+8)>>2]|0;s=c[a+(l+12)>>2]|0;t=2136+(p<<1<<2)|0;do{if((k|0)!=(t|0)){if(k>>>0<e>>>0){an()}if((c[k+12>>2]|0)==(n|0)){break}an()}}while(0);if((s|0)==(k|0)){c[524]=c[524]&~(1<<p);q=n;r=o;break}do{if((s|0)==(t|0)){u=s+8|0}else{if(s>>>0<e>>>0){an()}v=s+8|0;if((c[v>>2]|0)==(n|0)){u=v;break}an()}}while(0);c[k+12>>2]=s;c[u>>2]=k;q=n;r=o;break}t=m;p=c[a+(l+24)>>2]|0;v=c[a+(l+12)>>2]|0;do{if((v|0)==(t|0)){w=a+(l+20)|0;x=c[w>>2]|0;if((x|0)==0){y=a+(l+16)|0;z=c[y>>2]|0;if((z|0)==0){A=0;break}else{B=z;C=y}}else{B=x;C=w}while(1){w=B+20|0;x=c[w>>2]|0;if((x|0)!=0){B=x;C=w;continue}w=B+16|0;x=c[w>>2]|0;if((x|0)==0){break}else{B=x;C=w}}if(C>>>0<e>>>0){an()}else{c[C>>2]=0;A=B;break}}else{w=c[a+(l+8)>>2]|0;if(w>>>0<e>>>0){an()}x=w+12|0;if((c[x>>2]|0)!=(t|0)){an()}y=v+8|0;if((c[y>>2]|0)==(t|0)){c[x>>2]=v;c[y>>2]=w;A=v;break}else{an()}}}while(0);if((p|0)==0){q=n;r=o;break}v=a+(l+28)|0;m=2400+(c[v>>2]<<2)|0;do{if((t|0)==(c[m>>2]|0)){c[m>>2]=A;if((A|0)!=0){break}c[525]=c[525]&~(1<<c[v>>2]);q=n;r=o;break L593}else{if(p>>>0<(c[528]|0)>>>0){an()}k=p+16|0;if((c[k>>2]|0)==(t|0)){c[k>>2]=A}else{c[p+20>>2]=A}if((A|0)==0){q=n;r=o;break L593}}}while(0);if(A>>>0<(c[528]|0)>>>0){an()}c[A+24>>2]=p;t=c[a+(l+16)>>2]|0;do{if((t|0)!=0){if(t>>>0<(c[528]|0)>>>0){an()}else{c[A+16>>2]=t;c[t+24>>2]=A;break}}}while(0);t=c[a+(l+20)>>2]|0;if((t|0)==0){q=n;r=o;break}if(t>>>0<(c[528]|0)>>>0){an()}else{c[A+20>>2]=t;c[t+24>>2]=A;q=n;r=o;break}}else{q=d;r=h}}while(0);d=q;if(d>>>0>=i>>>0){an()}A=a+(h-4)|0;e=c[A>>2]|0;if((e&1|0)==0){an()}do{if((e&2|0)==0){if((j|0)==(c[530]|0)){B=(c[527]|0)+r|0;c[527]=B;c[530]=q;c[q+4>>2]=B|1;if((q|0)!=(c[529]|0)){return}c[529]=0;c[526]=0;return}if((j|0)==(c[529]|0)){B=(c[526]|0)+r|0;c[526]=B;c[529]=q;c[q+4>>2]=B|1;c[d+B>>2]=B;return}B=(e&-8)+r|0;C=e>>>3;L695:do{if(e>>>0<256){u=c[a+h>>2]|0;g=c[a+(h|4)>>2]|0;b=2136+(C<<1<<2)|0;do{if((u|0)!=(b|0)){if(u>>>0<(c[528]|0)>>>0){an()}if((c[u+12>>2]|0)==(j|0)){break}an()}}while(0);if((g|0)==(u|0)){c[524]=c[524]&~(1<<C);break}do{if((g|0)==(b|0)){D=g+8|0}else{if(g>>>0<(c[528]|0)>>>0){an()}f=g+8|0;if((c[f>>2]|0)==(j|0)){D=f;break}an()}}while(0);c[u+12>>2]=g;c[D>>2]=u}else{b=i;f=c[a+(h+16)>>2]|0;t=c[a+(h|4)>>2]|0;do{if((t|0)==(b|0)){p=a+(h+12)|0;v=c[p>>2]|0;if((v|0)==0){m=a+(h+8)|0;k=c[m>>2]|0;if((k|0)==0){E=0;break}else{F=k;G=m}}else{F=v;G=p}while(1){p=F+20|0;v=c[p>>2]|0;if((v|0)!=0){F=v;G=p;continue}p=F+16|0;v=c[p>>2]|0;if((v|0)==0){break}else{F=v;G=p}}if(G>>>0<(c[528]|0)>>>0){an()}else{c[G>>2]=0;E=F;break}}else{p=c[a+h>>2]|0;if(p>>>0<(c[528]|0)>>>0){an()}v=p+12|0;if((c[v>>2]|0)!=(b|0)){an()}m=t+8|0;if((c[m>>2]|0)==(b|0)){c[v>>2]=t;c[m>>2]=p;E=t;break}else{an()}}}while(0);if((f|0)==0){break}t=a+(h+20)|0;u=2400+(c[t>>2]<<2)|0;do{if((b|0)==(c[u>>2]|0)){c[u>>2]=E;if((E|0)!=0){break}c[525]=c[525]&~(1<<c[t>>2]);break L695}else{if(f>>>0<(c[528]|0)>>>0){an()}g=f+16|0;if((c[g>>2]|0)==(b|0)){c[g>>2]=E}else{c[f+20>>2]=E}if((E|0)==0){break L695}}}while(0);if(E>>>0<(c[528]|0)>>>0){an()}c[E+24>>2]=f;b=c[a+(h+8)>>2]|0;do{if((b|0)!=0){if(b>>>0<(c[528]|0)>>>0){an()}else{c[E+16>>2]=b;c[b+24>>2]=E;break}}}while(0);b=c[a+(h+12)>>2]|0;if((b|0)==0){break}if(b>>>0<(c[528]|0)>>>0){an()}else{c[E+20>>2]=b;c[b+24>>2]=E;break}}}while(0);c[q+4>>2]=B|1;c[d+B>>2]=B;if((q|0)!=(c[529]|0)){H=B;break}c[526]=B;return}else{c[A>>2]=e&-2;c[q+4>>2]=r|1;c[d+r>>2]=r;H=r}}while(0);r=H>>>3;if(H>>>0<256){d=r<<1;e=2136+(d<<2)|0;A=c[524]|0;E=1<<r;do{if((A&E|0)==0){c[524]=A|E;I=e;J=2136+(d+2<<2)|0}else{r=2136+(d+2<<2)|0;h=c[r>>2]|0;if(h>>>0>=(c[528]|0)>>>0){I=h;J=r;break}an()}}while(0);c[J>>2]=q;c[I+12>>2]=q;c[q+8>>2]=I;c[q+12>>2]=e;return}e=q;I=H>>>8;do{if((I|0)==0){K=0}else{if(H>>>0>16777215){K=31;break}J=(I+1048320|0)>>>16&8;d=I<<J;E=(d+520192|0)>>>16&4;A=d<<E;d=(A+245760|0)>>>16&2;r=14-(E|J|d)+(A<<d>>>15)|0;K=H>>>((r+7|0)>>>0)&1|r<<1}}while(0);I=2400+(K<<2)|0;c[q+28>>2]=K;c[q+20>>2]=0;c[q+16>>2]=0;r=c[525]|0;d=1<<K;do{if((r&d|0)==0){c[525]=r|d;c[I>>2]=e;c[q+24>>2]=I;c[q+12>>2]=q;c[q+8>>2]=q}else{if((K|0)==31){L=0}else{L=25-(K>>>1)|0}A=H<<L;J=c[I>>2]|0;while(1){if((c[J+4>>2]&-8|0)==(H|0)){break}M=J+16+(A>>>31<<2)|0;E=c[M>>2]|0;if((E|0)==0){N=555;break}else{A=A<<1;J=E}}if((N|0)==555){if(M>>>0<(c[528]|0)>>>0){an()}else{c[M>>2]=e;c[q+24>>2]=J;c[q+12>>2]=q;c[q+8>>2]=q;break}}A=J+8|0;B=c[A>>2]|0;E=c[528]|0;if(J>>>0<E>>>0){an()}if(B>>>0<E>>>0){an()}else{c[B+12>>2]=e;c[A>>2]=e;c[q+8>>2]=B;c[q+12>>2]=J;c[q+24>>2]=0;break}}}while(0);q=(c[532]|0)-1|0;c[532]=q;if((q|0)==0){O=2552}else{return}while(1){q=c[O>>2]|0;if((q|0)==0){break}else{O=q+8|0}}c[532]=-1;return}function bl(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function bm(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function bn(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function bo(a,b){a=a|0;b=b|0;return aZ[a&1](b|0)|0}function bp(a){a=a|0;a_[a&1]()}function bq(a,b,c){a=a|0;b=b|0;c=c|0;return a$[a&1](b|0,c|0)|0}function br(a,b){a=a|0;b=b|0;a0[a&1](b|0)}function bs(a){a=a|0;_(0);return 0}function bt(){_(1)}function bu(a,b){a=a|0;b=b|0;_(2);return 0}function bv(a){a=a|0;_(3)}
 // EMSCRIPTEN_END_FUNCS
 var aZ=[bs,bs];var a_=[bt,bt];var a$=[bu,bu];var a0=[bv,bv];return{_strlen:bl,_free:bk,_main:bi,_memset:bm,_malloc:bj,_memcpy:bn,runPostSets:bh,stackAlloc:a1,stackSave:a2,stackRestore:a3,setThrew:a4,setTempRet0:a7,setTempRet1:a8,setTempRet2:a9,setTempRet3:ba,setTempRet4:bb,setTempRet5:bc,setTempRet6:bd,setTempRet7:be,setTempRet8:bf,setTempRet9:bg,dynCall_ii:bo,dynCall_v:bp,dynCall_iii:bq,dynCall_vi:br}})
 // EMSCRIPTEN_END_ASM

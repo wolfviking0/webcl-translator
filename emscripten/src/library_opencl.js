@@ -1,7 +1,7 @@
 //"use strict";
 
-var LibraryOpenCL = {
-  $CL__deps: ['$Browser'],
+var LibraryOpenCL = {  
+  $CL__deps: ['$GL'],
   $CL: {
     address_space: {GENERAL:0, GLOBAL:1, LOCAL:2, CONSTANT:4, PRIVATE:8},
     data_type: {FLOAT:16,INT:32,UINT:64},
@@ -325,11 +325,20 @@ var LibraryOpenCL = {
                 
     // Log and return the value error exception
     catchError: function(name,e) {
-      var str=""+e;
+      var message = "";
+      if (CL.webcl_webkit == 1) {
+        message = e.message;
+      } else {
+        message = e;
+      }
+
+      console.info(message);
+
+      var str=""+message;
       var n=str.lastIndexOf(" ");
       var error = str.substr(n+1,str.length-n-2);
-      console.error("CATCH: "+name+": "+e);
-      Module.print("/!\\"+name+": "+e);
+      console.error("CATCH: "+name+": "+message);
+      Module.print("/!\\"+name+": "+message);
       return error;
     },
   },
@@ -730,17 +739,35 @@ var LibraryOpenCL = {
   },
 
   clCreateContext: function(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
-    if (CL.platforms.length == 0) {
-#if OPENCL_DEBUG
-      console.error("clCreateContext: Invalid platform");
-#endif
-      {{{ makeSetValue('errcode_ret', '0', '-32', 'i32') }}} /* CL_INVALID_PLATFORM */;
-      return 0; // Null pointer    
+    if (CL.checkWebCL() < 0) {
+      console.error(CL.errorMessage);
+      Module.print("/!\\"+CL.errorMessage);
+      return -1;/*WEBCL_NOT_FOUND*/;
     }
 
     try {
+
+      if (CL.platforms.length == 0) {
+        // Get the platform
+        var platforms = WebCL.getPlatforms();
+        
+        if (platforms.length > 0) {
+          CL.platforms.push(platforms[0]);
+          plat = CL.platforms.length - 1;
+        } else {
+#if OPENCL_DEBUG
+          console.error("clGetDeviceIDs: Invalid platform : "+platform);
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-32', 'i32') }}} /* CL_INVALID_PLATFORM */;
+          return 0; // Null pointer    
+        } 
+      } 
+
       var prop = [];
-      
+      var plat = 0;
+      var use_gl_interop = 0;
+      var share_group = 0;
+
       if (properties != 0) {
         var i = 0;
         while(1) {
@@ -761,12 +788,25 @@ var LibraryOpenCL = {
                 {{{ makeSetValue('errcode_ret', '0', '-32', 'i32') }}} /* CL_INVALID_PLATFORM */;
                 return 0; // Null pointer    
               } else {
+                plat = readprop;    
                 prop.push(CL.platforms[readprop]);
               }             
             break;
+            case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+              use_gl_interop = 1;
+              i++;
+            break;
+            case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+              i++;
+            break;
+            case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
+              use_gl_interop = 1;
+              share_group = 1;
+              i++;
+            break;
             default:
 #if OPENCL_DEBUG
-              console.error("clCreateContext : Param not yet implemented or unknow : "+param_name);
+              console.error("clCreateContext : Param not yet implemented or unknow : "+readprop);
 #endif
               {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
               return 0; // Null pointer    
@@ -777,10 +817,20 @@ var LibraryOpenCL = {
       }
       
       if (prop.length == 0) {
-        prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]];     
+        prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]]; 
+        plat = 0;    
       }
 
-      if (num_devices > CL.devices.length || CL.devices.length == 0) {
+      if (CL.devices.length == 0) {
+        var alldev = CL.getAllDevices(plat);
+        var mapcount = 0;
+
+        for (var i = 0 ; i < alldev.length; i++ ) {
+          CL.devices.push(alldev[i]);  
+        }
+      }
+
+      if (num_devices > CL.devices.length) {
 #if OPENCL_DEBUG
         console.error("clCreateContext: Invalid num devices : "+num_devices);
 #endif
@@ -793,12 +843,29 @@ var LibraryOpenCL = {
       for (var i = 0; i < num_devices; i++) {
         devices_tab[i] = CL.devices[i];
       } 
+
+      if (num_devices == 0) {
+        devices_tab[0] = CL.devices[0];
+      }
     
       // Use default platform
       if (CL.webcl_mozilla == 1) {
+        if (use_gl_interop) {
+#if OPENCL_DEBUG
+          console.error("clCreateContext: GL Interop not yet supported by Firefox");
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-33', 'i32') }}} /* CL_INVALID_DEVICE */;  
+          return 0;
+        }
+
         CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
       } else {
-        CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+        var builder = WebCL;
+        
+        if (use_gl_interop)
+          builder = WebCL.getExtension("KHR_GL_SHARING");
+        
+        CL.ctx.push(builder.createContext({platform: CL.platforms[plat], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: share_group, hint: null}));
       }
       
       return CL.getNewId(CL.ctx.length-1);
@@ -865,7 +932,7 @@ var LibraryOpenCL = {
             break;
             default:
 #if OPENCL_DEBUG
-              console.error("clCreateContextFromType : Param not yet implemented or unknow : "+param_name);
+              console.error("clCreateContextFromType : Param not yet implemented or unknow : "+readprop);
 #endif
               {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
               return 0; // Null pointer    
@@ -908,7 +975,7 @@ var LibraryOpenCL = {
         }
       } else {
         if (mapcount >= 1) {
-          var contextProperties = {platform: CL.platforms[0], devices: platform.getDevices(cl.device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
+          var contextProperties = {platform: CL.platforms[plat], devices: CL.platforms[plat].getDevices(device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
           CL.ctx.push(WebCL.createContext(contextProperties));
         } else {
           CL.ctx.push(WebCL.createContext());
@@ -1043,7 +1110,7 @@ var LibraryOpenCL = {
         }
       }    
 
-      var opt = (options == 0) ? "" : Pointer_stringify(options);
+      var opt = "";//(options == 0) ? "" : Pointer_stringify(options);
 
       if (CL.webcl_mozilla == 1) {
         CL.programs[prog].buildProgram (devices_tab, opt);
@@ -1213,7 +1280,108 @@ var LibraryOpenCL = {
     }
     
   },
-  
+
+  clCreateFromGLBuffer: function(context, flags_i64_1, flags_i64_2, bufobj, errcode_ret) {
+    // Assume the flags is i32 
+    assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+    var ctx = CL.getArrayId(context);
+    if (ctx >= CL.ctx.length || ctx < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clCreateFromGLBuffer: Invalid context : "+ctx);
+#endif
+      {{{ makeSetValue('errcode_ret', '0', '-34', 'i32') }}} /* CL_INVALID_CONTEXT */;
+      return 0; // Null pointer    
+    }
+
+    try {
+      
+      switch (flags_i64_1) {
+        case (1 << 0) /* CL_MEM_READ_WRITE */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLBuffer(CL.MEM_READ_WRITE,GL.buffers[bufobj]));
+          break;
+        case (1 << 1) /* CL_MEM_WRITE_ONLY */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLBuffer(CL.MEM_WRITE_ONLY,GL.buffers[bufobj]));
+          break;
+        case (1 << 2) /* CL_MEM_READ_ONLY */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLBuffer(CL.MEM_READ_ONLY,GL.buffers[bufobj]));
+          break;
+
+        default:
+#if OPENCL_DEBUG
+          console.error("clCreateFromGLBuffer: flag not yet implemented "+flags_i64_1);
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
+          return 0;
+      };
+
+      {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
+
+      return CL.getNewId(CL.buffers.length-1);
+    } catch(e) {
+      {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateFromGLBuffer",e)', 'i32') }}};
+      return 0;
+    }
+  },
+
+  clCreateFromGLTexture2D: function(context, flags_i64_1, flags_i64_2, texture_target, miplevel, texture, errcode_ret) {
+    // Assume the flags is i32 
+    assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+    var ctx = CL.getArrayId(context);
+    if (ctx >= CL.ctx.length || ctx < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clCreateFromGLTexture2D: Invalid context : "+ctx);
+#endif
+      {{{ makeSetValue('errcode_ret', '0', '-34', 'i32') }}} /* CL_INVALID_CONTEXT */;
+      return 0; // Null pointer    
+    }
+
+    try {
+
+      var tex_targ;
+
+      switch (texture_target) {
+        case (0x0de1) /* GL_TEXTURE_2D */:
+          tex_targ = Module.ctx.TEXTURE_2D;
+        break;
+        default:
+#if OPENCL_DEBUG
+          console.error("clCreateFromGLTexture2D: texture target not yet implemented "+texture_target);
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
+          return 0;
+      };
+
+      switch (flags_i64_1) {
+        case (1 << 0) /* CL_MEM_READ_WRITE */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLTexture(CL.MEM_READ_WRITE,tex_targ, miplevel, GL.textures[texture]));
+          break;
+        case (1 << 1) /* CL_MEM_WRITE_ONLY */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLTexture(CL.MEM_WRITE_ONLY,tex_targ, miplevel, GL.textures[texture]));
+          break;
+        case (1 << 2) /* CL_MEM_READ_ONLY */:
+          CL.buffers.push(CL.ctx[ctx].createFromGLTexture(CL.MEM_READ_ONLY,tex_targ, miplevel, GL.textures[texture]));
+          break;
+
+        default:
+#if OPENCL_DEBUG
+          console.error("clCreateFromGLTexture2D: flag not yet implemented "+flags_i64_1);
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-30', 'i32') }}} /* CL_INVALID_VALUE */;
+          return 0;
+      };
+
+      {{{ makeSetValue('errcode_ret', '0', '0', 'i32') }}} /* CL_SUCCESS */;
+
+      return CL.getNewId(CL.buffers.length-1);
+    } catch(e) {
+      {{{ makeSetValue('errcode_ret', '0', 'CL.catchError("clCreateFromGLTexture2D",e)', 'i32') }}};
+      return 0;
+    }
+
+
+  },
   
   clCreateBuffer: function(context, flags_i64_1, flags_i64_2, size, host_ptr, errcode_ret) {
     // Assume the flags is i32 
@@ -1586,6 +1754,161 @@ var LibraryOpenCL = {
       return 0;
     }
   },
+
+  clEnqueueCopyBufferToImage: function (command_queue, src_buffer, dst_image, src_offset, dst_origin_3, region_3, num_events_in_wait_list, event_wait_list, event) {
+    var queue = CL.getArrayId(command_queue);
+    if (queue >= CL.cmdQueue.length || queue < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clEnqueueCopyBufferToImage: Invalid command queue : "+queue);
+#endif
+      return -36; /*CL_INVALID_COMMAND_QUEUE*/
+    }
+
+    try {
+
+      var origin = [0,0]; 
+      var region = [0,0];
+
+      origin[0] = {{{ makeGetValue('dst_origin_3', '0', 'i32') }}};
+      origin[1] = {{{ makeGetValue('dst_origin_3', '4', 'i32') }}};
+
+      region[0] = {{{ makeGetValue('region_3', '0', 'i32') }}};
+      region[1] = {{{ makeGetValue('region_3', '4', 'i32') }}};
+
+      var src = CL.getArrayId(src_buffer);
+      if (src >= CL.buffers.length || src < 0 ) {
+#if OPENCL_DEBUG
+        console.error("clEnqueueCopyBufferToImage: Invalid buffer mem : "+src);
+#endif
+        {{{ makeSetValue('errcode_ret', '0', '-38', 'i32') }}} /* CL_INVALID_MEM_OBJECT */;
+        return 0;
+      }
+
+      var dest = CL.getArrayId(dst_image);
+      if (dest >= CL.buffers.length || dest < 0 ) {
+#if OPENCL_DEBUG
+        console.error("clEnqueueCopyBufferToImage: Invalid buffer mem : "+dest);
+#endif
+        {{{ makeSetValue('errcode_ret', '0', '-38', 'i32') }}} /* CL_INVALID_MEM_OBJECT */;
+        return 0;
+      }
+
+      console.info("-->"+src+" - "+dest+" - "+src_offset+" - "+origin+" - "+region+" - "+CL.buffers[src]+" - "+CL.buffers[dest]);
+
+      CL.cmdQueue[queue].enqueueCopyBufferToImage(CL.buffers[src], CL.buffers[dest], src_offset, origin, region);
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clEnqueueCopyBufferToImage",e);
+    }
+  },
+
+  clEnqueueAcquireGLObjects: function (command_queue, num_objects, mem_objects, num_events_in_wait_list, event_wait_list, event) {
+    var queue = CL.getArrayId(command_queue);
+    if (queue >= CL.cmdQueue.length || queue < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clEnqueueAcquireGLObjects: Invalid command queue : "+queue);
+#endif
+      return -36; /*CL_INVALID_COMMAND_QUEUE*/
+    }
+
+
+    try {
+
+      var memObjects = [];
+
+      for (var i = 0; i < num_objects; i++) {
+        var memid = {{{ makeGetValue('mem_objects', 'i*4', 'i32') }}};
+        var memarrayid = CL.getArrayId(memid);
+        memObjects.push(CL.buffers[memarrayid]);
+      }
+
+      CL.cmdQueue[queue].enqueueAcquireGLObjects(memObjects);
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clEnqueueAcquireGLObjects",e);
+    }
+
+  },
+
+  clGetGLObjectInfo: function(buffer, gl_object_type, gl_object_name) {
+    var buff = CL.getArrayId(buffer);
+    if (buff >= CL.buffers.length || buff < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clEnqueueMapBuffer: Invalid buffer mem : "+buff);
+#endif
+      return -38;/* CL_INVALID_MEM_OBJECT */
+    }
+
+    try {
+
+      switch (gl_object_type) {
+
+        // case(0x2000): /*CL_GL_OBJECT_BUFFER*/
+        //   break;        
+        // case(0x2001): /*CL_GL_OBJECT_TEXTURE2D*/
+        //   break;     
+        // case(0x2002): /*CL_GL_OBJECT_TEXTURE3D*/
+        //   break;        
+        // case(0x2003): /*CL_GL_OBJECT_RENDERBUFFER*/
+        //   break; 
+        // case(0x200E): /*CL_GL_OBJECT_TEXTURE2D_ARRAY*/
+        //   break;        
+        // case(0x200F): /*CL_GL_OBJECT_TEXTURE1D*/
+        //   break; 
+        // case(0x2010): /*CL_GL_OBJECT_TEXTURE1D_ARRAY*/
+        //   break;        
+        // case(0x2011): /*CL_GL_OBJECT_TEXTURE_BUFFER*/
+        //   break;     
+
+        default:
+#if OPENCL_DEBUG
+          console.error("clGetGLObjectInfo: gl object type not yet implemented "+gl_object_type);
+#endif
+          return -30; /* CL_INVALID_VALUE */
+      }
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clGetGLObjectInfo",e);
+    }
+  },
+
+  clGetGLTextureInfo: function(buffer, gl_tex_type, param_value_size, param_value, param_value_size_ret) {
+
+    var buff = CL.getArrayId(buffer);
+    if (buff >= CL.buffers.length || buff < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clGetGLTextureInfo: Invalid buffer mem : "+buff);
+#endif
+      return -38;/* CL_INVALID_MEM_OBJECT */
+    }
+
+    try {
+
+      switch (gl_tex_type) {
+
+        // case(0x2004): /*CL_GL_TEXTURE_TARGET*/
+        //   break;        
+        // case(0x2005): /*CL_GL_MIPMAP_LEVEL*/
+        //   break;     
+        // case(0x2012): /*CL_GL_NUM_SAMPLES*/
+        //   break;        
+ 
+                                     
+        default:
+#if OPENCL_DEBUG
+          console.error("clGetGLTextureInfo: gl texture type not yet implemented "+gl_tex_type);
+#endif
+          return -30; /* CL_INVALID_VALUE */
+      }
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clGetGLTextureInfo",e);
+    }
+  },
   
   clEnqueueMarker: function(command_queue,event) {
 
@@ -1864,6 +2187,34 @@ var LibraryOpenCL = {
 //         return CL.catchError("clEnqueueNDRangeKernel",e);
 //       }
     }
+  },
+
+  clEnqueueReleaseGLObjects: function (command_queue, num_objects, mem_objects, num_events_in_wait_list, event_wait_list, event) {
+    var queue = CL.getArrayId(command_queue);
+    if (queue >= CL.cmdQueue.length || queue < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clEnqueueReleaseGLObjects: Invalid command queue : "+queue);
+#endif
+      return -36; /*CL_INVALID_COMMAND_QUEUE*/
+    }
+
+    try {
+
+      var memObjects = new Array();
+
+      for (var i = 0; i < num_objects; i++) {
+        var memid = {{{ makeGetValue('mem_objects', 'i*4', 'i32') }}};
+        var memarrayid = CL.getArrayId(memid);
+        memObjects.push(CL.buffers[memarrayid]);
+      }
+
+      CL.cmdQueue[queue].enqueueReleaseGLObjects(memObjects);
+
+      return 0;/*CL_SUCCESS*/
+    } catch(e) {
+      return CL.catchError("clEnqueueReleaseGLObjects",e);
+    }
+
   },
   
   clWaitForEvents: function(num_events, event_list) {

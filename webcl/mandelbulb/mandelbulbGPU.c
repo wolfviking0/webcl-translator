@@ -207,7 +207,7 @@ static void SetUpOpenCL() {
 
 	context = clCreateContextFromType(
 			cprops,
-			CL_DEVICE_TYPE_GPU,
+			useGPU==1?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU,
 			NULL,
 			NULL,
 			&status);

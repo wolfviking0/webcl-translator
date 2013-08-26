@@ -83,7 +83,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define USE_GL_ATTACHMENTS              (0)  // enable OpenGL attachments for Compute results
+#define USE_GL_ATTACHMENTS              (1)  // enable OpenGL attachments for Compute results
 #define DEBUG_INFO                      (0)     
 #define COMPUTE_KERNEL_FILENAME         ("qjulia_kernel.cl")
 #define COMPUTE_KERNEL_METHOD_NAME      ("QJuliaKernel")
@@ -637,14 +637,22 @@ SetupComputeDevices(int gpu)
     printf(SEPARATOR);
     printf("Using active OpenGL context...\n");
 
-    CGLContextObj kCGLContext = CGLGetCurrentContext();              
-    CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
-    
+    #ifndef __EMSCRIPTEN__
+        CGLContextObj kCGLContext = CGLGetCurrentContext();              
+        CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+    #endif
+
     cl_context_properties properties[] = { 
+    #ifdef __EMSCRIPTEN__
+        CL_CGL_SHAREGROUP_KHR,
+        0,
+    #else
         CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, 
-        (cl_context_properties)kCGLShareGroup, 0 
+        (cl_context_properties)kCGLShareGroup
+    #endif
+        0
     };
-        
+
     // Create a context from a CGL share group
     //
 #ifdef __EMSCRIPTEN__
@@ -1226,7 +1234,10 @@ int main(int argc, char** argv)
       	
         printf("Starting event loop...\n");
 
-        glutMainLoop();     
+        for (int i = 0; i < 10 ; i++) {
+            Display();
+        }
+        //glutMainLoop();     
     }
 
     return 0;
