@@ -69,7 +69,7 @@ scan_sample:
 
 qjulia_sample:
 	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=0 \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/qjulia.js
 

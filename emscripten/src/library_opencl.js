@@ -1766,8 +1766,8 @@ var LibraryOpenCL = {
 
     try {
 
-      var origin = [0,0]; 
-      var region = [0,0];
+      var origin = new Int32Array(2); 
+      var region = new Int32Array(2);
 
       origin[0] = {{{ makeGetValue('dst_origin_3', '0', 'i32') }}};
       origin[1] = {{{ makeGetValue('dst_origin_3', '4', 'i32') }}};

@@ -83,7 +83,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define USE_GL_ATTACHMENTS              (1)  // enable OpenGL attachments for Compute results
+//#define USE_GL_ATTACHMENTS              (1)  
+int USE_GL_ATTACHMENTS = 0; // enable OpenGL attachments for Compute results
+  
 #define DEBUG_INFO                      (0)     
 #define COMPUTE_KERNEL_FILENAME         ("qjulia_kernel.cl")
 #define COMPUTE_KERNEL_METHOD_NAME      ("QJuliaKernel")
@@ -1213,6 +1215,9 @@ int main(int argc, char** argv)
 
         else if(strstr(argv[i], "gpu"))
             use_gpu = 1;
+        
+        else if(strstr(argv[i], "interop"))
+            USE_GL_ATTACHMENTS = 1;
     }
 
     printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
@@ -1234,10 +1239,10 @@ int main(int argc, char** argv)
       	
         printf("Starting event loop...\n");
 
-        for (int i = 0; i < 10 ; i++) {
-            Display();
-        }
-        //glutMainLoop();     
+        // for (int i = 0; i < 10 ; i++) {
+        //     Display();
+        // }
+        glutMainLoop();     
     }
 
     return 0;
