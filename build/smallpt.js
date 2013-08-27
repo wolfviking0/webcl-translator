@@ -966,6 +966,501 @@ function copyTempDouble(ptr) {
   HEAP8[tempDoublePtr+6] = HEAP8[ptr+6];
   HEAP8[tempDoublePtr+7] = HEAP8[ptr+7];
 }
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+      },getNewId:function (table) {
+        var ret = GL.counter++;
+        for (var i = table.length; i < ret; i++) {
+          table[i] = null;
+        }
+        return ret;
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempBufferIndexLookup:null,tempVertexBuffers:null,tempIndexBuffers:null,tempQuadIndexBuffer:null,generateTempBuffers:function (quads) {
+        GL.tempBufferIndexLookup = new Uint8Array(GL.MAX_TEMP_BUFFER_SIZE+1);
+        GL.tempVertexBuffers = [];
+        GL.tempIndexBuffers = [];
+        var last = -1, curr = -1;
+        var size = 1;
+        for (var i = 0; i <= GL.MAX_TEMP_BUFFER_SIZE; i++) {
+          if (i > size) {
+            size <<= 1;
+          }
+          if (size != last) {
+            curr++;
+            GL.tempVertexBuffers[curr] = Module.ctx.createBuffer();
+            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, GL.tempVertexBuffers[curr]);
+            Module.ctx.bufferData(Module.ctx.ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
+            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
+            GL.tempIndexBuffers[curr] = Module.ctx.createBuffer();
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[curr]);
+            Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
+            last = size;
+          }
+          GL.tempBufferIndexLookup[i] = curr;
+        }
+        if (quads) {
+          // GL_QUAD indexes can be precalculated
+          GL.tempQuadIndexBuffer = Module.ctx.createBuffer();
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
+          var quadIndexes = new Uint16Array(numIndexes);
+          var i = 0, v = 0;
+          while (1) {
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+1;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+3;
+            if (i >= numIndexes) break;
+            v += 4;
+          }
+          Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, quadIndexes, Module.ctx.STATIC_DRAW);
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
+        }
+      },findToken:function (source, token) {
+        function isIdentChar(ch) {
+          if (ch >= 48 && ch <= 57) // 0-9
+            return true;
+          if (ch >= 65 && ch <= 90) // A-Z
+            return true;
+          if (ch >= 97 && ch <= 122) // a-z
+            return true;
+          return false;
+        }
+        var i = -1;
+        do {
+          i = source.indexOf(token, i + 1);
+          if (i < 0) {
+            break;
+          }
+          if (i > 0 && isIdentChar(source[i - 1])) {
+            continue;
+          }
+          i += token.length;
+          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
+            continue;
+          }
+          return true;
+        } while (true);
+        return false;
+      },getSource:function (shader, count, string, length) {
+        var source = '';
+        for (var i = 0; i < count; ++i) {
+          var frag;
+          if (length) {
+            var len = HEAP32[(((length)+(i*4))>>2)];
+            if (len < 0) {
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
+            } else {
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)], len);
+            }
+          } else {
+            frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
+          }
+          source += frag;
+        }
+        // Let's see if we need to enable the standard derivatives extension
+        type = Module.ctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
+        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
+          if (GL.findToken(source, "dFdx") ||
+              GL.findToken(source, "dFdy") ||
+              GL.findToken(source, "fwidth")) {
+            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
+            var extension = Module.ctx.getExtension("OES_standard_derivatives");
+          }
+        }
+        return source;
+      },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        function roundedToNextMultipleOf(x, y) {
+          return Math.floor((x + y - 1) / y) * y
+        }
+        var plainRowSize = width * sizePerPixel;
+        var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
+        return (height <= 0) ? 0 :
+                 ((height - 1) * alignedRowSize + plainRowSize);
+      },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
+        var sizePerPixel;
+        switch (type) {
+          case 0x1401 /* GL_UNSIGNED_BYTE */:
+            switch (format) {
+              case 0x1906 /* GL_ALPHA */:
+              case 0x1909 /* GL_LUMINANCE */:
+                sizePerPixel = 1;
+                break;
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4;
+                break;
+              case 0x190A /* GL_LUMINANCE_ALPHA */:
+                sizePerPixel = 2;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
+          case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
+          case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
+            sizePerPixel = 2;
+            break;
+          case 0x1406 /* GL_FLOAT */:
+            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
+            switch (format) {
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3*4;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4*4;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
+            }
+            internalFormat = Module.ctx.RGBA;
+            break;
+          default:
+            throw 'Invalid type (' + type + ')';
+        }
+        var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
+        if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
+          pixels = HEAPU8.subarray((pixels),(pixels+bytes));
+        } else if (type == 0x1406 /* GL_FLOAT */) {
+          pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
+        } else {
+          pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
+        }
+        return {
+          pixels: pixels,
+          internalFormat: internalFormat
+        }
+      },initExtensions:function () {
+        if (GL.initExtensions.done) return;
+        GL.initExtensions.done = true;
+        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+        }
+        GL.maxVertexAttribs = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_ATTRIBS);
+        GL.compressionExt = Module.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+                            Module.ctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
+                            Module.ctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
+        GL.anisotropicExt = Module.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+                            Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+                            Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+        GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
+        GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
+        // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
+        // Remove on Mozilla CL_ prefix on the EnumName
+        for (var legacyEnumName in WebCL) {
+          if (typeof WebCL[legacyEnumName] === 'number') {
+            var newEnumName = legacyEnumName;
+            if (CL.webcl_mozilla) {
+              newEnumName = legacyEnumName.slice(3);
+            }
+            CL[newEnumName] = WebCL[legacyEnumName];
+          }
+        }
+      },checkWebCL:function () {
+        // If we already check is not useful to do this again
+        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
+          return 0;
+        }
+        // Look is the browser is comaptible
+        var isWebkit = 'webkitRequestAnimationFrame' in window;
+        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        if (!isWebkit && !isFirefox) {
+          console.error("This current browser is not compatible with WebCL implementation !!! \n");
+          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+          return -1;
+        }
+        // Look is the browser have WebCL implementation
+        if (window.WebCL == undefined || isWebkit) {
+          if (typeof(webcl) === "undefined") {
+            console.error("This browser has not WebCL implementation !!! \n");
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
+            return -1;
+          } else {
+            window.WebCL = webcl
+          }
+        }
+        CL.webcl_webkit = isWebkit == true ? 1 : 0;
+        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
+        CL.index_object = 2147483647;
+        CL.setupWebCLEnums();
+        // Init Device info
+        CL.device_infos = {
+          0x1000:CL.DEVICE_TYPE,
+          0x1001:CL.DEVICE_VENDOR_ID,
+          0x1002:CL.DEVICE_MAX_COMPUTE_UNITS,
+          0x1003:CL.DEVICE_MAX_WORK_ITEM_DIMENSIONS,      
+          0x1004:CL.DEVICE_MAX_WORK_GROUP_SIZE,
+          0x1005:CL.DEVICE_MAX_WORK_ITEM_SIZES,
+          0x1006:CL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
+          0x1007:CL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
+          0x1008:CL.DEVICE_PREFERRED_VECTOR_WIDTH_INT,
+          0x1009:CL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
+          0x100A:CL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
+          0x100B:CL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,      
+          0x100C:CL.DEVICE_MAX_CLOCK_FREQUENCY,
+          0x100D:CL.DEVICE_ADDRESS_BITS,    
+          0x100E:CL.DEVICE_MAX_READ_IMAGE_ARGS,    
+          0x100F:CL.DEVICE_MAX_WRITE_IMAGE_ARGS,    
+          0x1010:CL.DEVICE_MAX_MEM_ALLOC_SIZE,
+          0x1011:CL.DEVICE_IMAGE2D_MAX_WIDTH,
+          0x1012:CL.DEVICE_IMAGE2D_MAX_HEIGHT,
+          0x1013:CL.DEVICE_IMAGE3D_MAX_WIDTH,
+          0x1014:CL.DEVICE_IMAGE3D_MAX_HEIGHT,
+          0x1015:CL.DEVICE_IMAGE3D_MAX_DEPTH,
+          0x1016:CL.DEVICE_IMAGE_SUPPORT,
+          0x101F:CL.DEVICE_GLOBAL_MEM_SIZE,
+          0x1020:CL.DEVICE_MAX_CONSTANT_BUFFER_SIZE,
+          0x1022:CL.DEVICE_LOCAL_MEM_TYPE,
+          0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
+          0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
+          0x1030:CL.DEVICE_EXTENSIONS,
+          0x102A:CL.DEVICE_QUEUE_PROPERTIES,
+          0x102B:CL.DEVICE_NAME,
+          0x102C:CL.DEVICE_VENDOR,
+          0x102D:CL.DRIVER_VERSION,
+          0x102E:CL.DEVICE_PROFILE,
+          0x102F:CL.DEVICE_VERSION            
+        };
+        var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
+        console.info("Webcl implemented for "+browser);
+        return 0;
+      },isFloat:function (ptr,size) {
+        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
+        console.error("But may be the kernel source is not yet parse !!! \n");
+        var v_int = HEAP32[((ptr)>>2)]; 
+        var v_float = HEAPF32[((ptr)>>2)]; 
+        // If the value is 0
+        if ( v_int == 0 ) {
+          // If is an array
+          if (size > 1) {
+            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
+            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
+          } else { 
+            // Use float by default 
+            return 1;
+          }                
+        }
+        // If we read int and is float we have a very big value 1e8
+        if (Math.abs(v_int) > 100000000) {
+          return 1;
+        }
+        return 0;      
+      },parseKernel:function (kernelstring) {
+        // Experimental parse of Kernel
+        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+        // Step 1 : Search __kernel
+        // Step 2 : Search kernel name (before the open brace)
+        // Step 3 : Search brace '(' and ')'
+        // Step 4 : Split all inside the brace by ',' after removing all space
+        // Step 5 : For each parameter search Adress Space and Data Type
+        //
+        // --------------------------------------------------------------------
+        //
+        // \note Work only with one kernel ....
+        var kernel_struct = {};
+        kernelstring = kernelstring.replace(/\n/g, " ");
+        kernelstring = kernelstring.replace(/\r/g, " ");
+        kernelstring = kernelstring.replace(/\t/g, " ");
+        // Search kernel function __kernel 
+        var kernel_start = kernelstring.indexOf("__kernel");
+        while (kernel_start >= 0) {
+          kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
+          var brace_start = kernelstring.indexOf("(");
+          var brace_end = kernelstring.indexOf(")");  
+          var kernels_name = "";
+          // Search kernel Name
+          for (var i = brace_start - 1; i >= 0 ; i--) {
+            var chara = kernelstring.charAt(i);
+            if (chara == ' ' && kernels_name.length > 0) {
+              break;
+            } else if (chara != ' ') {
+              kernels_name = chara + kernels_name;
+            }
+          }
+          kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
+          kernelsubstring = kernelsubstring.replace(/\ /g, "");
+          var kernel_parameter = kernelsubstring.split(",");
+          kernelstring = kernelstring.substr(brace_end);
+          var parameter = new Array(kernel_parameter.length)
+          for (var i = 0; i < kernel_parameter.length; i ++) {
+            var value = 0;
+            var string = kernel_parameter[i]
+            // Adress space
+            // __global, __local, __constant, __private. 
+            if (string.indexOf("__local") >= 0 ) {
+              value |= CL.address_space.LOCAL;
+            }
+            // Data Type
+            // float, uchar, unsigned char, uint, unsigned int, int. 
+            if (string.indexOf("float") >= 0 ) {
+              value |= CL.data_type.FLOAT;
+            } else if (string.indexOf("uchar") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("unsigned char") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("uint") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("unsigned int") >= 0 ) {
+              value |= CL.data_type.UINT;
+            } else if (string.indexOf("int") >= 0 ) {
+              value |= CL.data_type.INT;
+            } else {
+              console.error("Unknow parameter type use float by default ...");   
+              value |= CL.data_type.FLOAT;
+            }
+            parameter[i] = value;
+          }
+          kernel_struct[kernels_name] = parameter;
+          kernel_start = kernelstring.indexOf("__kernel");
+        }
+        for (var name in kernel_struct) {
+          console.info("Kernel NAME : " + name);      
+          console.info("Kernel PARAMETER NUM : "+kernel_struct[name].length);
+        }
+        return kernel_struct;
+      },getNewId:function (id) {
+        return CL.index_object - (id + 1);
+      },getArrayId:function (id) {
+        return CL.index_object - id - 1;
+      },getDeviceName:function (type) {
+        switch (type) {
+          case 2 : return "CPU_DEVICE";
+          case 4 : return "GPU_DEVICE";
+          default : return "UNKNOW_DEVICE";
+        }
+      },getAllDevices:function (platform) {
+        console.info("getAllDevices");
+        var res = [];
+        if (platform >= CL.platforms.length || platform < 0 ) {
+            console.error("getAllDevices: Invalid platform : "+plat);
+            return res; 
+        }
+        if (CL.webcl_mozilla == 1) {
+          res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
+        } else {
+          // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
+          try {
+            res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
+          } catch (e) {
+            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_ALL");
+            try {
+              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
+            } catch (e) {
+              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_CPU");
+            }
+            try {
+              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
+            } catch (e) {
+              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_GPU");
+            }
+          }
+        }    
+        console.info("CL.getAllDevices: "+res.length);
+        if (res.length == 0) {
+          console.error("getAllDevices: Num of all devices can't be null");
+        }
+        return res;
+      },catchError:function (name,e) {
+        var message = "";
+        if (CL.webcl_webkit == 1) {
+          message = e.message;
+        } else {
+          message = e;
+        }
+        console.info(message);
+        var str=""+message;
+        var n=str.lastIndexOf(" ");
+        var error = str.substr(n+1,str.length-n-2);
+        console.error("CATCH: "+name+": "+message);
+        Module.print("/!\\"+name+": "+message);
+        return error;
+      }};function _clSetKernelArg(kernel, arg_index, arg_size, arg_value) {
+      var ker = CL.getArrayId(kernel);
+      if (ker >= CL.kernels.length || ker < 0 ) {
+        console.error("clSetKernelArg: Invalid kernel : "+ker);
+        return -48; /* CL_INVALID_KERNEL */
+      }
+      try {  
+        var name = CL.kernels_name[ker];
+        // \todo problem what is arg_value is buffer or just value ??? hard to say ....
+        // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
+        // not inside the buffers array size we take the value
+        if (CL.kernels_sig[name].length <= 0 && arg_index > CL.kernels_sig[name].length) {
+          console.error("clSetKernelArg: Invalid signature : "+CL.kernels_sig[name].length);
+          return -1; /* CL_FAILED */
+        }
+        var sig = CL.kernels_sig[name];
+        var type = sig[arg_index];
+        // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
+        var isFloat = 0;
+        var isLocal = 0;    
+        if (type&CL.data_type.FLOAT) {
+          isFloat = 1;
+        } 
+        if (type&CL.address_space.LOCAL) {
+          isLocal = 1;
+        }
+        var value;
+        if (isLocal) {     
+          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+        } else if (arg_size > 4) {
+          value = new Array(arg_size/4);
+          for (var i = 0; i < arg_size/4; i++) {
+            if (isFloat) {
+              value[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
+            } else {
+              value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
+            }
+          }
+          var type;
+          if ( CL.webcl_webkit == 1 ) {
+            if (arg_size/4 == 2)
+              type = WebCLKernelArgumentTypes.VEC2;
+            if (arg_size/4 == 3)
+              type = WebCLKernelArgumentTypes.VEC3;
+            if (arg_size/4 == 4)
+              type = WebCLKernelArgumentTypes.VEC4;
+          }
+          if (isFloat) {    
+            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.FLOAT_V)
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
+          } else {          
+            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.INT_V)
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
+          } 
+        } else {     
+          var idx = CL.getArrayId(HEAP32[((arg_value)>>2)]);
+          if (idx >= 0 && idx < CL.buffers.length) {
+            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[idx]) : CL.kernels[ker].setArg(arg_index,CL.buffers[idx]);
+          } else {
+            if (isFloat) { 
+              value = HEAPF32[((arg_value)>>2)];
+              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
+            } else {
+              value = HEAP32[((arg_value)>>2)];
+              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
+            }            
+          }        
+        }
+        return 0;/*CL_SUCCESS*/
+      } catch(e) {
+        return CL.catchError("clSetKernelArg",e);
+      }
+    }
   var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,EDOTDOT:76,EBADMSG:77,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
   var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"No message of desired type",36:"Identifier removed",37:"Channel number out of range",38:"Level 2 not synchronized",39:"Level 3 halted",40:"Level 3 reset",41:"Link number out of range",42:"Protocol driver not attached",43:"No CSI structure available",44:"Level 2 halted",45:"Deadlock condition",46:"No record locks available",50:"Invalid exchange",51:"Invalid request descriptor",52:"Exchange full",53:"No anode",54:"Invalid request code",55:"Invalid slot",56:"File locking deadlock error",57:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",74:"Multihop attempted",76:"Cross mount point (not really error)",77:"Trying to read unreadable message",80:"Given log. name not unique",81:"f.d. invalid for this operation",82:"Remote address changed",83:"Can   access a needed shared lib",84:"Accessing a corrupted shared lib",85:".lib section in a.out corrupted",86:"Attempting to link in too many libs",87:"Attempting to exec a shared library",88:"Function not implemented",90:"Directory not empty",91:"File or path name too long",92:"Too many symbolic links",95:"Operation not supported on transport endpoint",96:"Protocol family not supported",104:"Connection reset by peer",105:"No buffer space available",106:"Address family not supported by protocol family",107:"Protocol wrong type for socket",108:"Socket operation on non-socket",109:"Protocol not available",110:"Can't send after socket shutdown",111:"Connection refused",112:"Address already in use",113:"Connection aborted",114:"Network is unreachable",115:"Network interface is not configured",116:"Connection timed out",117:"Host is down",118:"Host is unreachable",119:"Connection already in progress",120:"Socket already connected",121:"Destination address required",122:"Message too long",123:"Unknown protocol",124:"Socket type not supported",125:"Address not available",126:"Connection reset by network",127:"Socket is already connected",128:"Socket is not connected",129:"Too many references",131:"Too many users",132:"Quota exceeded",133:"Stale file handle",134:"Not supported",135:"No medium (in tape drive)",138:"Illegal byte sequence",139:"Value too large for defined data type",140:"Operation canceled",141:"State not recoverable",142:"Previous owner died",143:"Streams pipe error"};
   var ___errno_state=0;function ___setErrNo(value) {
@@ -974,6 +1469,126 @@ function copyTempDouble(ptr) {
       return value;
     }
   var VFS=undefined;
+  var PATH={splitPath:function (filename) {
+        var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+        return splitPathRe.exec(filename).slice(1);
+      },normalizeArray:function (parts, allowAboveRoot) {
+        // if the path tries to go above the root, `up` ends up > 0
+        var up = 0;
+        for (var i = parts.length - 1; i >= 0; i--) {
+          var last = parts[i];
+          if (last === '.') {
+            parts.splice(i, 1);
+          } else if (last === '..') {
+            parts.splice(i, 1);
+            up++;
+          } else if (up) {
+            parts.splice(i, 1);
+            up--;
+          }
+        }
+        // if the path is allowed to go above the root, restore leading ..s
+        if (allowAboveRoot) {
+          for (; up--; up) {
+            parts.unshift('..');
+          }
+        }
+        return parts;
+      },normalize:function (path) {
+        var isAbsolute = path.charAt(0) === '/',
+            trailingSlash = path.substr(-1) === '/';
+        // Normalize the path
+        path = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), !isAbsolute).join('/');
+        if (!path && !isAbsolute) {
+          path = '.';
+        }
+        if (path && trailingSlash) {
+          path += '/';
+        }
+        return (isAbsolute ? '/' : '') + path;
+      },dirname:function (path) {
+        var result = PATH.splitPath(path),
+            root = result[0],
+            dir = result[1];
+        if (!root && !dir) {
+          // No dirname whatsoever
+          return '.';
+        }
+        if (dir) {
+          // It has a dirname, strip trailing slash
+          dir = dir.substr(0, dir.length - 1);
+        }
+        return root + dir;
+      },basename:function (path, ext) {
+        // EMSCRIPTEN return '/'' for '/', not an empty string
+        if (path === '/') return '/';
+        var f = PATH.splitPath(path)[2];
+        if (ext && f.substr(-1 * ext.length) === ext) {
+          f = f.substr(0, f.length - ext.length);
+        }
+        return f;
+      },join:function () {
+        var paths = Array.prototype.slice.call(arguments, 0);
+        return PATH.normalize(paths.filter(function(p, index) {
+          if (typeof p !== 'string') {
+            throw new TypeError('Arguments to path.join must be strings');
+          }
+          return p;
+        }).join('/'));
+      },resolve:function () {
+        var resolvedPath = '',
+          resolvedAbsolute = false;
+        for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+          var path = (i >= 0) ? arguments[i] : FS.cwd();
+          // Skip empty and invalid entries
+          if (typeof path !== 'string') {
+            throw new TypeError('Arguments to path.resolve must be strings');
+          } else if (!path) {
+            continue;
+          }
+          resolvedPath = path + '/' + resolvedPath;
+          resolvedAbsolute = path.charAt(0) === '/';
+        }
+        // At this point the path should be resolved to a full absolute path, but
+        // handle relative paths to be safe (might happen when process.cwd() fails)
+        resolvedPath = PATH.normalizeArray(resolvedPath.split('/').filter(function(p) {
+          return !!p;
+        }), !resolvedAbsolute).join('/');
+        return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+      },relative:function (from, to) {
+        from = PATH.resolve(from).substr(1);
+        to = PATH.resolve(to).substr(1);
+        function trim(arr) {
+          var start = 0;
+          for (; start < arr.length; start++) {
+            if (arr[start] !== '') break;
+          }
+          var end = arr.length - 1;
+          for (; end >= 0; end--) {
+            if (arr[end] !== '') break;
+          }
+          if (start > end) return [];
+          return arr.slice(start, end - start + 1);
+        }
+        var fromParts = trim(from.split('/'));
+        var toParts = trim(to.split('/'));
+        var length = Math.min(fromParts.length, toParts.length);
+        var samePartsLength = length;
+        for (var i = 0; i < length; i++) {
+          if (fromParts[i] !== toParts[i]) {
+            samePartsLength = i;
+            break;
+          }
+        }
+        var outputParts = [];
+        for (var i = samePartsLength; i < fromParts.length; i++) {
+          outputParts.push('..');
+        }
+        outputParts = outputParts.concat(toParts.slice(samePartsLength));
+        return outputParts.join('/');
+      }};
   var TTY={ttys:[],register:function (dev, ops) {
         TTY.ttys[dev] = { input: [], output: [], ops: ops };
         FS.registerDevice(dev, TTY.stream_ops);
@@ -2407,818 +3022,7 @@ function copyTempDouble(ptr) {
           throw new FS.errnoError(ERRNO_CODES.ENODEV);
         }
         return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
-      }};var PATH={splitPath:function (filename) {
-        var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-        return splitPathRe.exec(filename).slice(1);
-      },normalizeArray:function (parts, allowAboveRoot) {
-        // if the path tries to go above the root, `up` ends up > 0
-        var up = 0;
-        for (var i = parts.length - 1; i >= 0; i--) {
-          var last = parts[i];
-          if (last === '.') {
-            parts.splice(i, 1);
-          } else if (last === '..') {
-            parts.splice(i, 1);
-            up++;
-          } else if (up) {
-            parts.splice(i, 1);
-            up--;
-          }
-        }
-        // if the path is allowed to go above the root, restore leading ..s
-        if (allowAboveRoot) {
-          for (; up--; up) {
-            parts.unshift('..');
-          }
-        }
-        return parts;
-      },normalize:function (path) {
-        var isAbsolute = path.charAt(0) === '/',
-            trailingSlash = path.substr(-1) === '/';
-        // Normalize the path
-        path = PATH.normalizeArray(path.split('/').filter(function(p) {
-          return !!p;
-        }), !isAbsolute).join('/');
-        if (!path && !isAbsolute) {
-          path = '.';
-        }
-        if (path && trailingSlash) {
-          path += '/';
-        }
-        return (isAbsolute ? '/' : '') + path;
-      },dirname:function (path) {
-        var result = PATH.splitPath(path),
-            root = result[0],
-            dir = result[1];
-        if (!root && !dir) {
-          // No dirname whatsoever
-          return '.';
-        }
-        if (dir) {
-          // It has a dirname, strip trailing slash
-          dir = dir.substr(0, dir.length - 1);
-        }
-        return root + dir;
-      },basename:function (path, ext) {
-        // EMSCRIPTEN return '/'' for '/', not an empty string
-        if (path === '/') return '/';
-        var f = PATH.splitPath(path)[2];
-        if (ext && f.substr(-1 * ext.length) === ext) {
-          f = f.substr(0, f.length - ext.length);
-        }
-        return f;
-      },join:function () {
-        var paths = Array.prototype.slice.call(arguments, 0);
-        return PATH.normalize(paths.filter(function(p, index) {
-          if (typeof p !== 'string') {
-            throw new TypeError('Arguments to path.join must be strings');
-          }
-          return p;
-        }).join('/'));
-      },resolve:function () {
-        var resolvedPath = '',
-          resolvedAbsolute = false;
-        for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-          var path = (i >= 0) ? arguments[i] : FS.cwd();
-          // Skip empty and invalid entries
-          if (typeof path !== 'string') {
-            throw new TypeError('Arguments to path.resolve must be strings');
-          } else if (!path) {
-            continue;
-          }
-          resolvedPath = path + '/' + resolvedPath;
-          resolvedAbsolute = path.charAt(0) === '/';
-        }
-        // At this point the path should be resolved to a full absolute path, but
-        // handle relative paths to be safe (might happen when process.cwd() fails)
-        resolvedPath = PATH.normalizeArray(resolvedPath.split('/').filter(function(p) {
-          return !!p;
-        }), !resolvedAbsolute).join('/');
-        return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-      },relative:function (from, to) {
-        from = PATH.resolve(from).substr(1);
-        to = PATH.resolve(to).substr(1);
-        function trim(arr) {
-          var start = 0;
-          for (; start < arr.length; start++) {
-            if (arr[start] !== '') break;
-          }
-          var end = arr.length - 1;
-          for (; end >= 0; end--) {
-            if (arr[end] !== '') break;
-          }
-          if (start > end) return [];
-          return arr.slice(start, end - start + 1);
-        }
-        var fromParts = trim(from.split('/'));
-        var toParts = trim(to.split('/'));
-        var length = Math.min(fromParts.length, toParts.length);
-        var samePartsLength = length;
-        for (var i = 0; i < length; i++) {
-          if (fromParts[i] !== toParts[i]) {
-            samePartsLength = i;
-            break;
-          }
-        }
-        var outputParts = [];
-        for (var i = samePartsLength; i < fromParts.length; i++) {
-          outputParts.push('..');
-        }
-        outputParts = outputParts.concat(toParts.slice(samePartsLength));
-        return outputParts.join('/');
-      }};var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
-          Browser.mainLoop.shouldPause = true;
-        },resume:function () {
-          if (Browser.mainLoop.paused) {
-            Browser.mainLoop.paused = false;
-            Browser.mainLoop.scheduler();
-          }
-          Browser.mainLoop.shouldPause = false;
-        },updateStatus:function () {
-          if (Module['setStatus']) {
-            var message = Module['statusMessage'] || 'Please wait...';
-            var remaining = Browser.mainLoop.remainingBlockers;
-            var expected = Browser.mainLoop.expectedBlockers;
-            if (remaining) {
-              if (remaining < expected) {
-                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
-              } else {
-                Module['setStatus'](message);
-              }
-            } else {
-              Module['setStatus']('');
-            }
-          }
-        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
-        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
-        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
-        Browser.initted = true;
-        try {
-          new Blob();
-          Browser.hasBlobConstructor = true;
-        } catch(e) {
-          Browser.hasBlobConstructor = false;
-          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
-        }
-        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
-        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : undefined;
-        if (!Module.noImageDecoding && typeof Browser.URLObject === 'undefined') {
-          console.log("warning: Browser does not support creating object URLs. Built-in browser image decoding will not be available.");
-          Module.noImageDecoding = true;
-        }
-        // Support for plugins that can process preloaded files. You can add more of these to
-        // your app by creating and appending to Module.preloadPlugins.
-        //
-        // Each plugin is asked if it can handle a file based on the file's name. If it can,
-        // it is given the file's raw data. When it is done, it calls a callback with the file's
-        // (possibly modified) data. For example, a plugin might decompress a file, or it
-        // might create some side data structure for use later (like an Image element, etc.).
-        var imagePlugin = {};
-        imagePlugin['canHandle'] = function(name) {
-          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
-        };
-        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var b = null;
-          if (Browser.hasBlobConstructor) {
-            try {
-              b = new Blob([byteArray], { type: Browser.getMimetype(name) });
-              if (b.size !== byteArray.length) { // Safari bug #118630
-                // Safari's Blob can only take an ArrayBuffer
-                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: Browser.getMimetype(name) });
-              }
-            } catch(e) {
-              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
-            }
-          }
-          if (!b) {
-            var bb = new Browser.BlobBuilder();
-            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
-            b = bb.getBlob();
-          }
-          var url = Browser.URLObject.createObjectURL(b);
-          var img = new Image();
-          img.onload = function() {
-            assert(img.complete, 'Image ' + name + ' could not be decoded');
-            var canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            Module["preloadedImages"][name] = canvas;
-            Browser.URLObject.revokeObjectURL(url);
-            if (onload) onload(byteArray);
-          };
-          img.onerror = function(event) {
-            console.log('Image ' + url + ' could not be decoded');
-            if (onerror) onerror();
-          };
-          img.src = url;
-        };
-        Module['preloadPlugins'].push(imagePlugin);
-        var audioPlugin = {};
-        audioPlugin['canHandle'] = function(name) {
-          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
-        };
-        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
-          var done = false;
-          function finish(audio) {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = audio;
-            if (onload) onload(byteArray);
-          }
-          function fail() {
-            if (done) return;
-            done = true;
-            Module["preloadedAudios"][name] = new Audio(); // empty shim
-            if (onerror) onerror();
-          }
-          if (Browser.hasBlobConstructor) {
-            try {
-              var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
-            } catch(e) {
-              return fail();
-            }
-            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
-            var audio = new Audio();
-            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
-            audio.onerror = function(event) {
-              if (done) return;
-              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
-              function encode64(data) {
-                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-                var PAD = '=';
-                var ret = '';
-                var leftchar = 0;
-                var leftbits = 0;
-                for (var i = 0; i < data.length; i++) {
-                  leftchar = (leftchar << 8) | data[i];
-                  leftbits += 8;
-                  while (leftbits >= 6) {
-                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
-                    leftbits -= 6;
-                    ret += BASE[curr];
-                  }
-                }
-                if (leftbits == 2) {
-                  ret += BASE[(leftchar&3) << 4];
-                  ret += PAD + PAD;
-                } else if (leftbits == 4) {
-                  ret += BASE[(leftchar&0xf) << 2];
-                  ret += PAD;
-                }
-                return ret;
-              }
-              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
-              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
-            };
-            audio.src = url;
-            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
-            Browser.safeSetTimeout(function() {
-              finish(audio); // try to use it even though it is not necessarily ready to play
-            }, 10000);
-          } else {
-            return fail();
-          }
-        };
-        Module['preloadPlugins'].push(audioPlugin);
-        // Canvas event setup
-        var canvas = Module['canvas'];
-        canvas.requestPointerLock = canvas['requestPointerLock'] ||
-                                    canvas['mozRequestPointerLock'] ||
-                                    canvas['webkitRequestPointerLock'];
-        canvas.exitPointerLock = document['exitPointerLock'] ||
-                                 document['mozExitPointerLock'] ||
-                                 document['webkitExitPointerLock'] ||
-                                 function(){}; // no-op if function does not exist
-        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
-        function pointerLockChange() {
-          Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                document['mozPointerLockElement'] === canvas ||
-                                document['webkitPointerLockElement'] === canvas;
-        }
-        document.addEventListener('pointerlockchange', pointerLockChange, false);
-        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
-        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
-        if (Module['elementPointerLock']) {
-          canvas.addEventListener("click", function(ev) {
-            if (!Browser.pointerLock && canvas.requestPointerLock) {
-              canvas.requestPointerLock();
-              ev.preventDefault();
-            }
-          }, false);
-        }
-      },createContext:function (canvas, useWebGL, setInModule) {
-        var ctx;
-        try {
-          if (useWebGL) {
-            ctx = canvas.getContext('experimental-webgl', {
-              alpha: false
-            });
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas - ' + e);
-          return null;
-        }
-        if (useWebGL) {
-          // Set the background of the WebGL canvas to black
-          canvas.style.backgroundColor = "black";
-          // Warn on context loss
-          canvas.addEventListener('webglcontextlost', function(event) {
-            alert('WebGL context lost. You will need to reload the page.');
-          }, false);
-        }
-        if (setInModule) {
-          Module.ctx = ctx;
-          Module.useWebGL = useWebGL;
-          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
-          Browser.init();
-        }
-        return ctx;
-      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
-        Browser.lockPointer = lockPointer;
-        Browser.resizeCanvas = resizeCanvas;
-        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
-        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
-        var canvas = Module['canvas'];
-        function fullScreenChange() {
-          Browser.isFullScreen = false;
-          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
-               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
-               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
-            canvas.cancelFullScreen = document['cancelFullScreen'] ||
-                                      document['mozCancelFullScreen'] ||
-                                      document['webkitCancelFullScreen'];
-            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
-            if (Browser.lockPointer) canvas.requestPointerLock();
-            Browser.isFullScreen = true;
-            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
-          } else if (Browser.resizeCanvas){
-            Browser.setWindowedCanvasSize();
-          }
-          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
-        }
-        if (!Browser.fullScreenHandlersInstalled) {
-          Browser.fullScreenHandlersInstalled = true;
-          document.addEventListener('fullscreenchange', fullScreenChange, false);
-          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
-          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
-        }
-        canvas.requestFullScreen = canvas['requestFullScreen'] ||
-                                   canvas['mozRequestFullScreen'] ||
-                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
-        canvas.requestFullScreen();
-      },requestAnimationFrame:function (func) {
-        if (!window.requestAnimationFrame) {
-          window.requestAnimationFrame = window['requestAnimationFrame'] ||
-                                         window['mozRequestAnimationFrame'] ||
-                                         window['webkitRequestAnimationFrame'] ||
-                                         window['msRequestAnimationFrame'] ||
-                                         window['oRequestAnimationFrame'] ||
-                                         window['setTimeout'];
-        }
-        window.requestAnimationFrame(func);
-      },safeCallback:function (func) {
-        return function() {
-          if (!ABORT) return func.apply(null, arguments);
-        };
-      },safeRequestAnimationFrame:function (func) {
-        return Browser.requestAnimationFrame(function() {
-          if (!ABORT) func();
-        });
-      },safeSetTimeout:function (func, timeout) {
-        return setTimeout(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },safeSetInterval:function (func, timeout) {
-        return setInterval(function() {
-          if (!ABORT) func();
-        }, timeout);
-      },getMimetype:function (name) {
-        return {
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'png': 'image/png',
-          'bmp': 'image/bmp',
-          'ogg': 'audio/ogg',
-          'wav': 'audio/wav',
-          'mp3': 'audio/mpeg'
-        }[name.substr(name.lastIndexOf('.')+1)];
-      },getUserMedia:function (func) {
-        if(!window.getUserMedia) {
-          window.getUserMedia = navigator['getUserMedia'] ||
-                                navigator['mozGetUserMedia'];
-        }
-        window.getUserMedia(func);
-      },getMovementX:function (event) {
-        return event['movementX'] ||
-               event['mozMovementX'] ||
-               event['webkitMovementX'] ||
-               0;
-      },getMovementY:function (event) {
-        return event['movementY'] ||
-               event['mozMovementY'] ||
-               event['webkitMovementY'] ||
-               0;
-      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
-        if (Browser.pointerLock) {
-          // When the pointer is locked, calculate the coordinates
-          // based on the movement of the mouse.
-          // Workaround for Firefox bug 764498
-          if (event.type != 'mousemove' &&
-              ('mozMovementX' in event)) {
-            Browser.mouseMovementX = Browser.mouseMovementY = 0;
-          } else {
-            Browser.mouseMovementX = Browser.getMovementX(event);
-            Browser.mouseMovementY = Browser.getMovementY(event);
-          }
-          // check if SDL is available
-          if (typeof SDL != "undefined") {
-          	Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
-          	Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
-          } else {
-          	// just add the mouse delta to the current absolut mouse position
-          	// FIXME: ideally this should be clamped against the canvas size and zero
-          	Browser.mouseX += Browser.mouseMovementX;
-          	Browser.mouseY += Browser.mouseMovementY;
-          }        
-        } else {
-          // Otherwise, calculate the movement based on the changes
-          // in the coordinates.
-          var rect = Module["canvas"].getBoundingClientRect();
-          var x = event.pageX - (window.scrollX + rect.left);
-          var y = event.pageY - (window.scrollY + rect.top);
-          // the canvas might be CSS-scaled compared to its backbuffer;
-          // SDL-using content will want mouse coordinates in terms
-          // of backbuffer units.
-          var cw = Module["canvas"].width;
-          var ch = Module["canvas"].height;
-          x = x * (cw / rect.width);
-          y = y * (ch / rect.height);
-          Browser.mouseMovementX = x - Browser.mouseX;
-          Browser.mouseMovementY = y - Browser.mouseY;
-          Browser.mouseX = x;
-          Browser.mouseY = y;
-        }
-      },xhrLoad:function (url, onload, onerror) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = function() {
-          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
-            onload(xhr.response);
-          } else {
-            onerror();
-          }
-        };
-        xhr.onerror = onerror;
-        xhr.send(null);
-      },asyncLoad:function (url, onload, onerror, noRunDep) {
-        Browser.xhrLoad(url, function(arrayBuffer) {
-          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
-          onload(new Uint8Array(arrayBuffer));
-          if (!noRunDep) removeRunDependency('al ' + url);
-        }, function(event) {
-          if (onerror) {
-            onerror();
-          } else {
-            throw 'Loading data file "' + url + '" failed.';
-          }
-        });
-        if (!noRunDep) addRunDependency('al ' + url);
-      },resizeListeners:[],updateResizeListeners:function () {
-        var canvas = Module['canvas'];
-        Browser.resizeListeners.forEach(function(listener) {
-          listener(canvas.width, canvas.height);
-        });
-      },setCanvasSize:function (width, height, noUpdates) {
-        var canvas = Module['canvas'];
-        canvas.width = width;
-        canvas.height = height;
-        if (!noUpdates) Browser.updateResizeListeners();
-      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
-        var canvas = Module['canvas'];
-        this.windowedWidth = canvas.width;
-        this.windowedHeight = canvas.height;
-        canvas.width = screen.width;
-        canvas.height = screen.height;
-        // check if SDL is available   
-        if (typeof SDL != "undefined") {
-        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        	flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
-        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
-        }
-        Browser.updateResizeListeners();
-      },setWindowedCanvasSize:function () {
-        var canvas = Module['canvas'];
-        canvas.width = this.windowedWidth;
-        canvas.height = this.windowedHeight;
-        // check if SDL is available       
-        if (typeof SDL != "undefined") {
-        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
-        	flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
-        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
-        }
-        Browser.updateResizeListeners();
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
-        // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
-        // Remove on Mozilla CL_ prefix on the EnumName
-        for (var legacyEnumName in WebCL) {
-          if (typeof WebCL[legacyEnumName] === 'number') {
-            var newEnumName = legacyEnumName;
-            if (CL.webcl_mozilla) {
-              newEnumName = legacyEnumName.slice(3);
-            }
-            CL[newEnumName] = WebCL[legacyEnumName];
-          }
-        }
-      },checkWebCL:function () {
-        // If we already check is not useful to do this again
-        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
-          return 0;
-        }
-        // Look is the browser is comaptible
-        var isWebkit = 'webkitRequestAnimationFrame' in window;
-        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        if (!isWebkit && !isFirefox) {
-          console.error("This current browser is not compatible with WebCL implementation !!! \n");
-          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-          return -1;
-        }
-        // Look is the browser have WebCL implementation
-        if (window.WebCL == undefined || isWebkit) {
-          if (typeof(webcl) === "undefined") {
-            console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-            return -1;
-          } else {
-            window.WebCL = webcl
-          }
-        }
-        CL.webcl_webkit = isWebkit == true ? 1 : 0;
-        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
-        CL.index_object = 2147483647;
-        CL.setupWebCLEnums();
-        // Init Device info
-        CL.device_infos = {
-          0x1000:CL.DEVICE_TYPE,
-          0x1001:CL.DEVICE_VENDOR_ID,
-          0x1002:CL.DEVICE_MAX_COMPUTE_UNITS,
-          0x1003:CL.DEVICE_MAX_WORK_ITEM_DIMENSIONS,      
-          0x1004:CL.DEVICE_MAX_WORK_GROUP_SIZE,
-          0x1005:CL.DEVICE_MAX_WORK_ITEM_SIZES,
-          0x1006:CL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
-          0x1007:CL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
-          0x1008:CL.DEVICE_PREFERRED_VECTOR_WIDTH_INT,
-          0x1009:CL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
-          0x100A:CL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
-          0x100B:CL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,      
-          0x100C:CL.DEVICE_MAX_CLOCK_FREQUENCY,
-          0x100D:CL.DEVICE_ADDRESS_BITS,    
-          0x100E:CL.DEVICE_MAX_READ_IMAGE_ARGS,    
-          0x100F:CL.DEVICE_MAX_WRITE_IMAGE_ARGS,    
-          0x1010:CL.DEVICE_MAX_MEM_ALLOC_SIZE,
-          0x1011:CL.DEVICE_IMAGE2D_MAX_WIDTH,
-          0x1012:CL.DEVICE_IMAGE2D_MAX_HEIGHT,
-          0x1013:CL.DEVICE_IMAGE3D_MAX_WIDTH,
-          0x1014:CL.DEVICE_IMAGE3D_MAX_HEIGHT,
-          0x1015:CL.DEVICE_IMAGE3D_MAX_DEPTH,
-          0x1016:CL.DEVICE_IMAGE_SUPPORT,
-          0x101F:CL.DEVICE_GLOBAL_MEM_SIZE,
-          0x1020:CL.DEVICE_MAX_CONSTANT_BUFFER_SIZE,
-          0x1022:CL.DEVICE_LOCAL_MEM_TYPE,
-          0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
-          0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
-          0x1030:CL.DEVICE_EXTENSIONS,
-          0x102A:CL.DEVICE_QUEUE_PROPERTIES,
-          0x102B:CL.DEVICE_NAME,
-          0x102C:CL.DEVICE_VENDOR,
-          0x102D:CL.DRIVER_VERSION,
-          0x102E:CL.DEVICE_PROFILE,
-          0x102F:CL.DEVICE_VERSION            
-        };
-        var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-        console.info("Webcl implemented for "+browser);
-        return 0;
-      },isFloat:function (ptr,size) {
-        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
-        console.error("But may be the kernel source is not yet parse !!! \n");
-        var v_int = HEAP32[((ptr)>>2)]; 
-        var v_float = HEAPF32[((ptr)>>2)]; 
-        // If the value is 0
-        if ( v_int == 0 ) {
-          // If is an array
-          if (size > 1) {
-            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
-          } else { 
-            // Use float by default 
-            return 1;
-          }                
-        }
-        // If we read int and is float we have a very big value 1e8
-        if (Math.abs(v_int) > 100000000) {
-          return 1;
-        }
-        return 0;      
-      },parseKernel:function (kernelstring) {
-        // Experimental parse of Kernel
-        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
-        // Step 1 : Search __kernel
-        // Step 2 : Search kernel name (before the open brace)
-        // Step 3 : Search brace '(' and ')'
-        // Step 4 : Split all inside the brace by ',' after removing all space
-        // Step 5 : For each parameter search Adress Space and Data Type
-        //
-        // --------------------------------------------------------------------
-        //
-        // \note Work only with one kernel ....
-        var kernel_struct = {};
-        kernelstring = kernelstring.replace(/\n/g, " ");
-        kernelstring = kernelstring.replace(/\r/g, " ");
-        kernelstring = kernelstring.replace(/\t/g, " ");
-        // Search kernel function __kernel 
-        var kernel_start = kernelstring.indexOf("__kernel");
-        while (kernel_start >= 0) {
-          kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
-          var brace_start = kernelstring.indexOf("(");
-          var brace_end = kernelstring.indexOf(")");  
-          var kernels_name = "";
-          // Search kernel Name
-          for (var i = brace_start - 1; i >= 0 ; i--) {
-            var chara = kernelstring.charAt(i);
-            if (chara == ' ' && kernels_name.length > 0) {
-              break;
-            } else if (chara != ' ') {
-              kernels_name = chara + kernels_name;
-            }
-          }
-          kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
-          kernelsubstring = kernelsubstring.replace(/\ /g, "");
-          var kernel_parameter = kernelsubstring.split(",");
-          kernelstring = kernelstring.substr(brace_end);
-          var parameter = new Array(kernel_parameter.length)
-          for (var i = 0; i < kernel_parameter.length; i ++) {
-            var value = 0;
-            var string = kernel_parameter[i]
-            // Adress space
-            // __global, __local, __constant, __private. 
-            if (string.indexOf("__local") >= 0 ) {
-              value |= CL.address_space.LOCAL;
-            }
-            // Data Type
-            // float, uchar, unsigned char, uint, unsigned int, int. 
-            if (string.indexOf("float") >= 0 ) {
-              value |= CL.data_type.FLOAT;
-            } else if (string.indexOf("uchar") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned char") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("uint") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned int") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("int") >= 0 ) {
-              value |= CL.data_type.INT;
-            } else {
-              console.error("Unknow parameter type use float by default ...");   
-              value |= CL.data_type.FLOAT;
-            }
-            parameter[i] = value;
-          }
-          kernel_struct[kernels_name] = parameter;
-          kernel_start = kernelstring.indexOf("__kernel");
-        }
-        for (var name in kernel_struct) {
-          console.info("Kernel NAME : " + name);      
-          console.info("Kernel PARAMETER NUM : "+kernel_struct[name].length);
-        }
-        return kernel_struct;
-      },getNewId:function (id) {
-        return CL.index_object - (id + 1);
-      },getArrayId:function (id) {
-        return CL.index_object - id - 1;
-      },getDeviceName:function (type) {
-        switch (type) {
-          case 2 : return "CPU_DEVICE";
-          case 4 : return "GPU_DEVICE";
-          default : return "UNKNOW_DEVICE";
-        }
-      },getAllDevices:function (platform) {
-        console.info("getAllDevices");
-        var res = [];
-        if (platform >= CL.platforms.length || platform < 0 ) {
-            console.error("getAllDevices: Invalid platform : "+plat);
-            return res; 
-        }
-        if (CL.webcl_mozilla == 1) {
-          res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
-        } else {
-          // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
-          try {
-            res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
-          } catch (e) {
-            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_ALL");
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
-            } catch (e) {
-              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_CPU");
-            }
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
-            } catch (e) {
-              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_GPU");
-            }
-          }
-        }    
-        console.info("CL.getAllDevices: "+res.length);
-        if (res.length == 0) {
-          console.error("getAllDevices: Num of all devices can't be null");
-        }
-        return res;
-      },catchError:function (name,e) {
-        var str=""+e;
-        var n=str.lastIndexOf(" ");
-        var error = str.substr(n+1,str.length-n-2);
-        console.error("CATCH: "+name+": "+e);
-        Module.print("/!\\"+name+": "+e);
-        return error;
-      }};function _clSetKernelArg(kernel, arg_index, arg_size, arg_value) {
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        console.error("clSetKernelArg: Invalid kernel : "+ker);
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      try {  
-        var name = CL.kernels_name[ker];
-        // \todo problem what is arg_value is buffer or just value ??? hard to say ....
-        // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
-        // not inside the buffers array size we take the value
-        if (CL.kernels_sig[name].length <= 0 && arg_index > CL.kernels_sig[name].length) {
-          console.error("clSetKernelArg: Invalid signature : "+CL.kernels_sig[name].length);
-          return -1; /* CL_FAILED */
-        }
-        var sig = CL.kernels_sig[name];
-        var type = sig[arg_index];
-        // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
-        var isFloat = 0;
-        var isLocal = 0;    
-        if (type&CL.data_type.FLOAT) {
-          isFloat = 1;
-        } 
-        if (type&CL.address_space.LOCAL) {
-          isLocal = 1;
-        }
-        var value;
-        if (isLocal) {     
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-        } else if (arg_size > 4) {
-          value = new Array(arg_size/4);
-          for (var i = 0; i < arg_size/4; i++) {
-            if (isFloat) {
-              value[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
-            } else {
-              value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
-            }
-          }
-          var type;
-          if ( CL.webcl_webkit == 1 ) {
-            if (arg_size/4 == 2)
-              type = WebCLKernelArgumentTypes.VEC2;
-            if (arg_size/4 == 3)
-              type = WebCLKernelArgumentTypes.VEC3;
-            if (arg_size/4 == 4)
-              type = WebCLKernelArgumentTypes.VEC4;
-          }
-          if (isFloat) {    
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.FLOAT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
-          } else {          
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.INT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
-          } 
-        } else {     
-          var idx = CL.getArrayId(HEAP32[((arg_value)>>2)]);
-          if (idx >= 0 && idx < CL.buffers.length) {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[idx]) : CL.kernels[ker].setArg(arg_index,CL.buffers[idx]);
-          } else {
-            if (isFloat) { 
-              value = HEAPF32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
-            } else {
-              value = HEAP32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
-            }            
-          }        
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clSetKernelArg",e);
-      }
-    }
+      }};
   function _send(fd, buf, len, flags) {
       var info = FS.getStream(fd);
       if (!info) {
@@ -4294,13 +4098,28 @@ function copyTempDouble(ptr) {
       return 0;/*CL_SUCCESS*/  
     }
   function _clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
-      if (CL.platforms.length == 0) {
-        console.error("clCreateContext: Invalid platform");
-        HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-        return 0; // Null pointer    
+      if (CL.checkWebCL() < 0) {
+        console.error(CL.errorMessage);
+        Module.print("/!\\"+CL.errorMessage);
+        return -1;/*WEBCL_NOT_FOUND*/;
       }
       try {
+        if (CL.platforms.length == 0) {
+          // Get the platform
+          var platforms = WebCL.getPlatforms();
+          if (platforms.length > 0) {
+            CL.platforms.push(platforms[0]);
+            plat = CL.platforms.length - 1;
+          } else {
+            console.error("clGetDeviceIDs: Invalid platform : "+platform);
+            HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
+            return 0; // Null pointer    
+          } 
+        } 
         var prop = [];
+        var plat = 0;
+        var use_gl_interop = 0;
+        var share_group = 0;
         if (properties != 0) {
           var i = 0;
           while(1) {
@@ -4318,11 +4137,24 @@ function copyTempDouble(ptr) {
                   HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
                   return 0; // Null pointer    
                 } else {
+                  plat = readprop;    
                   prop.push(CL.platforms[readprop]);
                 }             
               break;
+              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+                use_gl_interop = 1;
+                i++;
+              break;
+              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+                i++;
+              break;
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
+                use_gl_interop = 1;
+                share_group = 1;
+                i++;
+              break;
               default:
-                console.error("clCreateContext : Param not yet implemented or unknow : "+param_name);
+                console.error("clCreateContext : Param not yet implemented or unknow : "+readprop);
                 HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
                 return 0; // Null pointer    
             }
@@ -4330,9 +4162,17 @@ function copyTempDouble(ptr) {
           }        
         }
         if (prop.length == 0) {
-          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]];     
+          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]]; 
+          plat = 0;    
         }
-        if (num_devices > CL.devices.length || CL.devices.length == 0) {
+        if (CL.devices.length == 0) {
+          var alldev = CL.getAllDevices(plat);
+          var mapcount = 0;
+          for (var i = 0 ; i < alldev.length; i++ ) {
+            CL.devices.push(alldev[i]);  
+          }
+        }
+        if (num_devices > CL.devices.length) {
           console.error("clCreateContext: Invalid num devices : "+num_devices);
           HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
           return 0;
@@ -4342,11 +4182,22 @@ function copyTempDouble(ptr) {
         for (var i = 0; i < num_devices; i++) {
           devices_tab[i] = CL.devices[i];
         } 
+        if (num_devices == 0) {
+          devices_tab[0] = CL.devices[0];
+        }
         // Use default platform
         if (CL.webcl_mozilla == 1) {
+          if (use_gl_interop) {
+            console.error("clCreateContext: GL Interop not yet supported by Firefox");
+            HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
+            return 0;
+          }
           CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
         } else {
-          CL.ctx.push(WebCL.createContext({platform: prop[1], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: 1, hint: null}));
+          var builder = WebCL;
+          if (use_gl_interop)
+            builder = WebCL.getExtension("KHR_GL_SHARING");
+          CL.ctx.push(builder.createContext({platform: CL.platforms[plat], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: share_group, hint: null}));
         }
         return CL.getNewId(CL.ctx.length-1);
       } catch (e) {    
@@ -4590,7 +4441,7 @@ function copyTempDouble(ptr) {
             devices_tab[i] = CL.devices[idx];
           }
         }    
-        var opt = (options == 0) ? "" : Pointer_stringify(options);
+        var opt = "";//(options == 0) ? "" : Pointer_stringify(options);
         if (CL.webcl_mozilla == 1) {
           CL.programs[prog].buildProgram (devices_tab, opt);
         } else { 
@@ -5287,201 +5138,407 @@ function copyTempDouble(ptr) {
       return __scanString(format, get, unget, varargs);
     }
   var _sqrt=Math.sqrt;
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
-        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
-      },getNewId:function (table) {
-        var ret = GL.counter++;
-        for (var i = table.length; i < ret; i++) {
-          table[i] = null;
-        }
-        return ret;
-      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempBufferIndexLookup:null,tempVertexBuffers:null,tempIndexBuffers:null,tempQuadIndexBuffer:null,generateTempBuffers:function (quads) {
-        GL.tempBufferIndexLookup = new Uint8Array(GL.MAX_TEMP_BUFFER_SIZE+1);
-        GL.tempVertexBuffers = [];
-        GL.tempIndexBuffers = [];
-        var last = -1, curr = -1;
-        var size = 1;
-        for (var i = 0; i <= GL.MAX_TEMP_BUFFER_SIZE; i++) {
-          if (i > size) {
-            size <<= 1;
-          }
-          if (size != last) {
-            curr++;
-            GL.tempVertexBuffers[curr] = Module.ctx.createBuffer();
-            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, GL.tempVertexBuffers[curr]);
-            Module.ctx.bufferData(Module.ctx.ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
-            Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
-            GL.tempIndexBuffers[curr] = Module.ctx.createBuffer();
-            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[curr]);
-            Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, size, Module.ctx.DYNAMIC_DRAW);
-            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
-            last = size;
-          }
-          GL.tempBufferIndexLookup[i] = curr;
-        }
-        if (quads) {
-          // GL_QUAD indexes can be precalculated
-          GL.tempQuadIndexBuffer = Module.ctx.createBuffer();
-          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
-          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
-          var quadIndexes = new Uint16Array(numIndexes);
-          var i = 0, v = 0;
-          while (1) {
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+1;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+3;
-            if (i >= numIndexes) break;
-            v += 4;
-          }
-          Module.ctx.bufferData(Module.ctx.ELEMENT_ARRAY_BUFFER, quadIndexes, Module.ctx.STATIC_DRAW);
-          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, null);
-        }
-      },findToken:function (source, token) {
-        function isIdentChar(ch) {
-          if (ch >= 48 && ch <= 57) // 0-9
-            return true;
-          if (ch >= 65 && ch <= 90) // A-Z
-            return true;
-          if (ch >= 97 && ch <= 122) // a-z
-            return true;
-          return false;
-        }
-        var i = -1;
-        do {
-          i = source.indexOf(token, i + 1);
-          if (i < 0) {
-            break;
-          }
-          if (i > 0 && isIdentChar(source[i - 1])) {
-            continue;
-          }
-          i += token.length;
-          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
-            continue;
-          }
-          return true;
-        } while (true);
-        return false;
-      },getSource:function (shader, count, string, length) {
-        var source = '';
-        for (var i = 0; i < count; ++i) {
-          var frag;
-          if (length) {
-            var len = HEAP32[(((length)+(i*4))>>2)];
-            if (len < 0) {
-              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
-            } else {
-              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)], len);
-            }
-          } else {
-            frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
-          }
-          source += frag;
-        }
-        // Let's see if we need to enable the standard derivatives extension
-        type = Module.ctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
-        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
-          if (GL.findToken(source, "dFdx") ||
-              GL.findToken(source, "dFdy") ||
-              GL.findToken(source, "fwidth")) {
-            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
-            var extension = Module.ctx.getExtension("OES_standard_derivatives");
-          }
-        }
-        return source;
-      },computeImageSize:function (width, height, sizePerPixel, alignment) {
-        function roundedToNextMultipleOf(x, y) {
-          return Math.floor((x + y - 1) / y) * y
-        }
-        var plainRowSize = width * sizePerPixel;
-        var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
-        return (height <= 0) ? 0 :
-                 ((height - 1) * alignedRowSize + plainRowSize);
-      },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
-        var sizePerPixel;
-        switch (type) {
-          case 0x1401 /* GL_UNSIGNED_BYTE */:
-            switch (format) {
-              case 0x1906 /* GL_ALPHA */:
-              case 0x1909 /* GL_LUMINANCE */:
-                sizePerPixel = 1;
-                break;
-              case 0x1907 /* GL_RGB */:
-                sizePerPixel = 3;
-                break;
-              case 0x1908 /* GL_RGBA */:
-                sizePerPixel = 4;
-                break;
-              case 0x190A /* GL_LUMINANCE_ALPHA */:
-                sizePerPixel = 2;
-                break;
-              default:
-                throw 'Invalid format (' + format + ')';
-            }
-            break;
-          case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
-          case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
-          case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
-            sizePerPixel = 2;
-            break;
-          case 0x1406 /* GL_FLOAT */:
-            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
-            switch (format) {
-              case 0x1907 /* GL_RGB */:
-                sizePerPixel = 3*4;
-                break;
-              case 0x1908 /* GL_RGBA */:
-                sizePerPixel = 4*4;
-                break;
-              default:
-                throw 'Invalid format (' + format + ')';
-            }
-            internalFormat = Module.ctx.RGBA;
-            break;
-          default:
-            throw 'Invalid type (' + type + ')';
-        }
-        var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
-        if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
-          pixels = HEAPU8.subarray((pixels),(pixels+bytes));
-        } else if (type == 0x1406 /* GL_FLOAT */) {
-          pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
-        } else {
-          pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
-        }
-        return {
-          pixels: pixels,
-          internalFormat: internalFormat
-        }
-      },initExtensions:function () {
-        if (GL.initExtensions.done) return;
-        GL.initExtensions.done = true;
-        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
-        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
-        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
-          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
-        }
-        GL.maxVertexAttribs = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_ATTRIBS);
-        GL.compressionExt = Module.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
-                            Module.ctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
-                            Module.ctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
-        GL.anisotropicExt = Module.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-                            Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-                            Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
-        GL.floatExt = Module.ctx.getExtension('OES_texture_float');
-        GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
-        GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};function _glClear(x0) { Module.ctx.clear(x0) }
+  function _glClear(x0) { Module.ctx.clear(x0) }
   function _glutSwapBuffers() {}
   function _glViewport(x0, x1, x2, x3) { Module.ctx.viewport(x0, x1, x2, x3) }
+  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
+          Browser.mainLoop.shouldPause = true;
+        },resume:function () {
+          if (Browser.mainLoop.paused) {
+            Browser.mainLoop.paused = false;
+            Browser.mainLoop.scheduler();
+          }
+          Browser.mainLoop.shouldPause = false;
+        },updateStatus:function () {
+          if (Module['setStatus']) {
+            var message = Module['statusMessage'] || 'Please wait...';
+            var remaining = Browser.mainLoop.remainingBlockers;
+            var expected = Browser.mainLoop.expectedBlockers;
+            if (remaining) {
+              if (remaining < expected) {
+                Module['setStatus'](message + ' (' + (expected - remaining) + '/' + expected + ')');
+              } else {
+                Module['setStatus'](message);
+              }
+            } else {
+              Module['setStatus']('');
+            }
+          }
+        }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
+        if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
+        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
+        Browser.initted = true;
+        try {
+          new Blob();
+          Browser.hasBlobConstructor = true;
+        } catch(e) {
+          Browser.hasBlobConstructor = false;
+          console.log("warning: no blob constructor, cannot create blobs with mimetypes");
+        }
+        Browser.BlobBuilder = typeof MozBlobBuilder != "undefined" ? MozBlobBuilder : (typeof WebKitBlobBuilder != "undefined" ? WebKitBlobBuilder : (!Browser.hasBlobConstructor ? console.log("warning: no BlobBuilder") : null));
+        Browser.URLObject = typeof window != "undefined" ? (window.URL ? window.URL : window.webkitURL) : undefined;
+        if (!Module.noImageDecoding && typeof Browser.URLObject === 'undefined') {
+          console.log("warning: Browser does not support creating object URLs. Built-in browser image decoding will not be available.");
+          Module.noImageDecoding = true;
+        }
+        // Support for plugins that can process preloaded files. You can add more of these to
+        // your app by creating and appending to Module.preloadPlugins.
+        //
+        // Each plugin is asked if it can handle a file based on the file's name. If it can,
+        // it is given the file's raw data. When it is done, it calls a callback with the file's
+        // (possibly modified) data. For example, a plugin might decompress a file, or it
+        // might create some side data structure for use later (like an Image element, etc.).
+        var imagePlugin = {};
+        imagePlugin['canHandle'] = function(name) {
+          return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
+        };
+        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var b = null;
+          if (Browser.hasBlobConstructor) {
+            try {
+              b = new Blob([byteArray], { type: Browser.getMimetype(name) });
+              if (b.size !== byteArray.length) { // Safari bug #118630
+                // Safari's Blob can only take an ArrayBuffer
+                b = new Blob([(new Uint8Array(byteArray)).buffer], { type: Browser.getMimetype(name) });
+              }
+            } catch(e) {
+              Runtime.warnOnce('Blob constructor present but fails: ' + e + '; falling back to blob builder');
+            }
+          }
+          if (!b) {
+            var bb = new Browser.BlobBuilder();
+            bb.append((new Uint8Array(byteArray)).buffer); // we need to pass a buffer, and must copy the array to get the right data range
+            b = bb.getBlob();
+          }
+          var url = Browser.URLObject.createObjectURL(b);
+          var img = new Image();
+          img.onload = function() {
+            assert(img.complete, 'Image ' + name + ' could not be decoded');
+            var canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            Module["preloadedImages"][name] = canvas;
+            Browser.URLObject.revokeObjectURL(url);
+            if (onload) onload(byteArray);
+          };
+          img.onerror = function(event) {
+            console.log('Image ' + url + ' could not be decoded');
+            if (onerror) onerror();
+          };
+          img.src = url;
+        };
+        Module['preloadPlugins'].push(imagePlugin);
+        var audioPlugin = {};
+        audioPlugin['canHandle'] = function(name) {
+          return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
+        };
+        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
+          var done = false;
+          function finish(audio) {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = audio;
+            if (onload) onload(byteArray);
+          }
+          function fail() {
+            if (done) return;
+            done = true;
+            Module["preloadedAudios"][name] = new Audio(); // empty shim
+            if (onerror) onerror();
+          }
+          if (Browser.hasBlobConstructor) {
+            try {
+              var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
+            } catch(e) {
+              return fail();
+            }
+            var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
+            var audio = new Audio();
+            audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
+            audio.onerror = function(event) {
+              if (done) return;
+              console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
+              function encode64(data) {
+                var BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+                var PAD = '=';
+                var ret = '';
+                var leftchar = 0;
+                var leftbits = 0;
+                for (var i = 0; i < data.length; i++) {
+                  leftchar = (leftchar << 8) | data[i];
+                  leftbits += 8;
+                  while (leftbits >= 6) {
+                    var curr = (leftchar >> (leftbits-6)) & 0x3f;
+                    leftbits -= 6;
+                    ret += BASE[curr];
+                  }
+                }
+                if (leftbits == 2) {
+                  ret += BASE[(leftchar&3) << 4];
+                  ret += PAD + PAD;
+                } else if (leftbits == 4) {
+                  ret += BASE[(leftchar&0xf) << 2];
+                  ret += PAD;
+                }
+                return ret;
+              }
+              audio.src = 'data:audio/x-' + name.substr(-3) + ';base64,' + encode64(byteArray);
+              finish(audio); // we don't wait for confirmation this worked - but it's worth trying
+            };
+            audio.src = url;
+            // workaround for chrome bug 124926 - we do not always get oncanplaythrough or onerror
+            Browser.safeSetTimeout(function() {
+              finish(audio); // try to use it even though it is not necessarily ready to play
+            }, 10000);
+          } else {
+            return fail();
+          }
+        };
+        Module['preloadPlugins'].push(audioPlugin);
+        // Canvas event setup
+        var canvas = Module['canvas'];
+        canvas.requestPointerLock = canvas['requestPointerLock'] ||
+                                    canvas['mozRequestPointerLock'] ||
+                                    canvas['webkitRequestPointerLock'];
+        canvas.exitPointerLock = document['exitPointerLock'] ||
+                                 document['mozExitPointerLock'] ||
+                                 document['webkitExitPointerLock'] ||
+                                 function(){}; // no-op if function does not exist
+        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
+        function pointerLockChange() {
+          Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                document['mozPointerLockElement'] === canvas ||
+                                document['webkitPointerLockElement'] === canvas;
+        }
+        document.addEventListener('pointerlockchange', pointerLockChange, false);
+        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+        if (Module['elementPointerLock']) {
+          canvas.addEventListener("click", function(ev) {
+            if (!Browser.pointerLock && canvas.requestPointerLock) {
+              canvas.requestPointerLock();
+              ev.preventDefault();
+            }
+          }, false);
+        }
+      },createContext:function (canvas, useWebGL, setInModule) {
+        var ctx;
+        try {
+          if (useWebGL) {
+            ctx = canvas.getContext('experimental-webgl', {
+              alpha: false
+            });
+          } else {
+            ctx = canvas.getContext('2d');
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas - ' + e);
+          return null;
+        }
+        if (useWebGL) {
+          // Set the background of the WebGL canvas to black
+          canvas.style.backgroundColor = "black";
+          // Warn on context loss
+          canvas.addEventListener('webglcontextlost', function(event) {
+            alert('WebGL context lost. You will need to reload the page.');
+          }, false);
+        }
+        if (setInModule) {
+          Module.ctx = ctx;
+          Module.useWebGL = useWebGL;
+          Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
+          Browser.init();
+        }
+        return ctx;
+      },destroyContext:function (canvas, useWebGL, setInModule) {},fullScreenHandlersInstalled:false,lockPointer:undefined,resizeCanvas:undefined,requestFullScreen:function (lockPointer, resizeCanvas) {
+        Browser.lockPointer = lockPointer;
+        Browser.resizeCanvas = resizeCanvas;
+        if (typeof Browser.lockPointer === 'undefined') Browser.lockPointer = true;
+        if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
+        var canvas = Module['canvas'];
+        function fullScreenChange() {
+          Browser.isFullScreen = false;
+          if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
+               document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
+               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
+            canvas.cancelFullScreen = document['cancelFullScreen'] ||
+                                      document['mozCancelFullScreen'] ||
+                                      document['webkitCancelFullScreen'];
+            canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
+            if (Browser.lockPointer) canvas.requestPointerLock();
+            Browser.isFullScreen = true;
+            if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
+          } else if (Browser.resizeCanvas){
+            Browser.setWindowedCanvasSize();
+          }
+          if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
+        }
+        if (!Browser.fullScreenHandlersInstalled) {
+          Browser.fullScreenHandlersInstalled = true;
+          document.addEventListener('fullscreenchange', fullScreenChange, false);
+          document.addEventListener('mozfullscreenchange', fullScreenChange, false);
+          document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
+        }
+        canvas.requestFullScreen = canvas['requestFullScreen'] ||
+                                   canvas['mozRequestFullScreen'] ||
+                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
+        canvas.requestFullScreen();
+      },requestAnimationFrame:function (func) {
+        if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame = window['requestAnimationFrame'] ||
+                                         window['mozRequestAnimationFrame'] ||
+                                         window['webkitRequestAnimationFrame'] ||
+                                         window['msRequestAnimationFrame'] ||
+                                         window['oRequestAnimationFrame'] ||
+                                         window['setTimeout'];
+        }
+        window.requestAnimationFrame(func);
+      },safeCallback:function (func) {
+        return function() {
+          if (!ABORT) return func.apply(null, arguments);
+        };
+      },safeRequestAnimationFrame:function (func) {
+        return Browser.requestAnimationFrame(function() {
+          if (!ABORT) func();
+        });
+      },safeSetTimeout:function (func, timeout) {
+        return setTimeout(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },safeSetInterval:function (func, timeout) {
+        return setInterval(function() {
+          if (!ABORT) func();
+        }, timeout);
+      },getMimetype:function (name) {
+        return {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'bmp': 'image/bmp',
+          'ogg': 'audio/ogg',
+          'wav': 'audio/wav',
+          'mp3': 'audio/mpeg'
+        }[name.substr(name.lastIndexOf('.')+1)];
+      },getUserMedia:function (func) {
+        if(!window.getUserMedia) {
+          window.getUserMedia = navigator['getUserMedia'] ||
+                                navigator['mozGetUserMedia'];
+        }
+        window.getUserMedia(func);
+      },getMovementX:function (event) {
+        return event['movementX'] ||
+               event['mozMovementX'] ||
+               event['webkitMovementX'] ||
+               0;
+      },getMovementY:function (event) {
+        return event['movementY'] ||
+               event['mozMovementY'] ||
+               event['webkitMovementY'] ||
+               0;
+      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
+        if (Browser.pointerLock) {
+          // When the pointer is locked, calculate the coordinates
+          // based on the movement of the mouse.
+          // Workaround for Firefox bug 764498
+          if (event.type != 'mousemove' &&
+              ('mozMovementX' in event)) {
+            Browser.mouseMovementX = Browser.mouseMovementY = 0;
+          } else {
+            Browser.mouseMovementX = Browser.getMovementX(event);
+            Browser.mouseMovementY = Browser.getMovementY(event);
+          }
+          // check if SDL is available
+          if (typeof SDL != "undefined") {
+          	Browser.mouseX = SDL.mouseX + Browser.mouseMovementX;
+          	Browser.mouseY = SDL.mouseY + Browser.mouseMovementY;
+          } else {
+          	// just add the mouse delta to the current absolut mouse position
+          	// FIXME: ideally this should be clamped against the canvas size and zero
+          	Browser.mouseX += Browser.mouseMovementX;
+          	Browser.mouseY += Browser.mouseMovementY;
+          }        
+        } else {
+          // Otherwise, calculate the movement based on the changes
+          // in the coordinates.
+          var rect = Module["canvas"].getBoundingClientRect();
+          var x = event.pageX - (window.scrollX + rect.left);
+          var y = event.pageY - (window.scrollY + rect.top);
+          // the canvas might be CSS-scaled compared to its backbuffer;
+          // SDL-using content will want mouse coordinates in terms
+          // of backbuffer units.
+          var cw = Module["canvas"].width;
+          var ch = Module["canvas"].height;
+          x = x * (cw / rect.width);
+          y = y * (ch / rect.height);
+          Browser.mouseMovementX = x - Browser.mouseX;
+          Browser.mouseMovementY = y - Browser.mouseY;
+          Browser.mouseX = x;
+          Browser.mouseY = y;
+        }
+      },xhrLoad:function (url, onload, onerror) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function() {
+          if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
+            onload(xhr.response);
+          } else {
+            onerror();
+          }
+        };
+        xhr.onerror = onerror;
+        xhr.send(null);
+      },asyncLoad:function (url, onload, onerror, noRunDep) {
+        Browser.xhrLoad(url, function(arrayBuffer) {
+          assert(arrayBuffer, 'Loading data file "' + url + '" failed (no arrayBuffer).');
+          onload(new Uint8Array(arrayBuffer));
+          if (!noRunDep) removeRunDependency('al ' + url);
+        }, function(event) {
+          if (onerror) {
+            onerror();
+          } else {
+            throw 'Loading data file "' + url + '" failed.';
+          }
+        });
+        if (!noRunDep) addRunDependency('al ' + url);
+      },resizeListeners:[],updateResizeListeners:function () {
+        var canvas = Module['canvas'];
+        Browser.resizeListeners.forEach(function(listener) {
+          listener(canvas.width, canvas.height);
+        });
+      },setCanvasSize:function (width, height, noUpdates) {
+        var canvas = Module['canvas'];
+        canvas.width = width;
+        canvas.height = height;
+        if (!noUpdates) Browser.updateResizeListeners();
+      },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
+        var canvas = Module['canvas'];
+        this.windowedWidth = canvas.width;
+        this.windowedHeight = canvas.height;
+        canvas.width = screen.width;
+        canvas.height = screen.height;
+        // check if SDL is available   
+        if (typeof SDL != "undefined") {
+        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        	flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
+        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        }
+        Browser.updateResizeListeners();
+      },setWindowedCanvasSize:function () {
+        var canvas = Module['canvas'];
+        canvas.width = this.windowedWidth;
+        canvas.height = this.windowedHeight;
+        // check if SDL is available       
+        if (typeof SDL != "undefined") {
+        	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
+        	flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
+        	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
+        }
+        Browser.updateResizeListeners();
+      }};
   function _glPixelStorei(pname, param) {
       if (pname == 0x0D05 /* GL_PACK_ALIGNMENT */) {
         GL.packAlignment = param;
@@ -10754,17 +10811,17 @@ function copyTempDouble(ptr) {
         ptr = (ptr+1)|0;
       }
     }
+GL.init()
+FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
+___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
+_fputc.ret = allocate([0], "i8", ALLOC_STATIC);
+_fgetc.ret = allocate([0], "i8", ALLOC_STATIC);
+GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
-FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
-___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
-_fputc.ret = allocate([0], "i8", ALLOC_STATIC);
-_fgetc.ret = allocate([0], "i8", ALLOC_STATIC);
-GL.init()
-GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
 GLEmulation.init();
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
@@ -10803,7 +10860,7 @@ var FUNCTION_TABLE = [0,0,_glUseProgram,0,_glClearStencil,0,_glUniformMatrix3fv,
 ,0,_glColorMask,0,_glClientActiveTexture,0,_glCopyTexSubImage2D,0,_glDisable,0,_glTexParameteri
 ,0,_glBlendColor,0,_glStencilMask,0,_glBlendEquationSeparate,0,_glTexParameterf,0,_glStencilFuncSeparate,0,_glTexSubImage2D];
 // EMSCRIPTEN_START_FUNCS
-function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+16|0;r3=r2;r4=r2+8;r5=_WallClockTime();r6=HEAP32[840];r7=_clSetKernelArg(HEAP32[836],0,4,3392);if((r7|0)!=0){_printf(3216,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],1,4,3288);if((r7|0)!=0){_printf(3176,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],2,4,3272);if((r7|0)!=0){_printf(2480,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],3,4,3400);if((r7|0)!=0){_printf(2200,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],4,4,3264);if((r7|0)!=0){_printf(1760,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],5,4,16);if((r7|0)!=0){_printf(1312,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],6,4,216);if((r7|0)!=0){_printf(912,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],7,4,3360);if((r7|0)!=0){_printf(432,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],8,4,3312);if((r7|0)!=0){_printf(376,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=HEAP32[840];L28:do{if((r7|0)<20){r8=Math.imul(HEAP32[54],HEAP32[4])|0;r9=r3|0;HEAP32[r9>>2]=r8;r10=HEAP32[2];if(((r8>>>0)%(r10>>>0)&-1|0)!=0){r11=Math.imul(((r8>>>0)/(r10>>>0)&-1)+1|0,r10)|0;HEAP32[r9>>2]=r11}r11=r4|0;HEAP32[r11>>2]=r10;r10=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r9,r11,0,0,0);if((r10|0)==0){HEAP32[840]=HEAP32[840]+1;break}else{_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r10,r1));STACKTOP=r1;_exit(-1)}}else{r10=r7-20|0;if((r10|0)<100){r12=r10|0}else{r12=100}r10=r12/100*.5;r11=r3|0;r9=r4|0;while(1){r8=Math.imul(HEAP32[54],HEAP32[4])|0;HEAP32[r11>>2]=r8;r13=HEAP32[2];if(((r8>>>0)%(r13>>>0)&-1|0)!=0){r14=Math.imul(((r8>>>0)/(r13>>>0)&-1)+1|0,r13)|0;HEAP32[r11>>2]=r14}HEAP32[r9>>2]=r13;r15=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r11,r9,0,0,0);if((r15|0)!=0){break}_clFinish(HEAP32[844]);HEAP32[840]=HEAP32[840]+1;if(_WallClockTime()-r5>r10){break L28}}_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r15,r1));STACKTOP=r1;_exit(-1)}}while(0);r15=HEAP32[844];r4=HEAP32[828];r3=_clEnqueueReadBuffer(r15,r4,1,0,Math.imul(HEAP32[4]<<2,HEAP32[54])|0,HEAP32[826],0,0,0);if((r3|0)==0){r4=_WallClockTime()-r5;r5=HEAP32[840];r15=(Math.imul(Math.imul(r5-r6|0,HEAP32[54])|0,HEAP32[4])|0)/r4/1e3;_printf(3120,(r1=STACKTOP,STACKTOP=STACKTOP+24|0,HEAPF64[r1>>3]=r4,HEAP32[r1+8>>2]=r5,HEAPF64[r1+16>>3]=r15,r1));STACKTOP=r1;STACKTOP=r2;return}else{_printf(280,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInitScene(){var r1,r2,r3;r1=0;r2=STACKTOP;HEAP32[840]=0;r3=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[818],1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);if((r3|0)==0){STACKTOP=r2;return}else{_printf(3040,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInit(r1){var r2,r3,r4;r2=0;r3=STACKTOP;do{if((r1|0)==0){_UpdateCamera()}else{r4=_clReleaseMemObject(HEAP32[848]);if((r4|0)!=0){_printf(608,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[828]);if((r4|0)!=0){_printf(560,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[822]);if((r4|0)==0){_free(HEAP32[820]);_free(HEAP32[846]);_free(HEAP32[826]);_UpdateCamera();_AllocateBuffers();break}else{_printf(512,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}}}while(0);r1=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[850],1,0,60,3408,0,0,0);if((r1|0)==0){HEAP32[840]=0;STACKTOP=r3;return}else{_printf(2968,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+872|0;r6=r5,r7=r6>>2;r8=r5+8,r9=r8>>2;r10=r5+120;r11=r5+248;r12=r5+256;r13=r5+264,r14=r13>>2;r15=r5+528;r16=r5+536;r17=r5+544;r18=r5+560;r19=r5+568,r20=r19>>2;r21=r5+832;r22=r5+840;r23=r5+848;r24=r5+856;r25=r5+864;HEAP32[868]=0;_printf(2944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;_printf(2720,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;HEAP32[52]=2672;HEAP32[4]=512;HEAP32[54]=512;_ReadScene(2632);_UpdateCamera();r26=r5+16|0;r27=r10;r28=r13;r13=r5+272|0;r29=r15;r30=r16;r31=r19;r19=r5+576|0;r32=r21;r33=r22;r34=r25;r35=_clGetPlatformIDs(0,0,r6);HEAP32[r9]=r35;if((r35|0)!=0){_puts(168);_exit(-1)}r35=HEAP32[r7];if((r35|0)==0){r36=0}else{r6=_malloc(r35<<2);r37=r6;r38=_clGetPlatformIDs(r35,r37,0);HEAP32[r9]=r38;if((r38|0)!=0){_puts(128);_exit(-1)}L81:do{if((HEAP32[r7]|0)!=0){r38=0;while(1){r35=_clGetPlatformInfo(HEAP32[r37+(r38<<2)>>2],2307,100,r26,0);HEAP32[r9]=r35;r35=_clGetPlatformIDs(HEAP32[r7],r37,0);HEAP32[r9]=r35;if((r35|0)!=0){break}_printf(2456,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r38,HEAP32[r4+8>>2]=r26,r4));STACKTOP=r4;r35=r38+1|0;if(r35>>>0<HEAP32[r7]>>>0){r38=r35}else{break L81}}_puts(128);_exit(-1)}}while(0);r7=HEAP32[r37>>2];_free(r6);r36=r7}r7=r10|0,r6=r7>>2;r37=_clGetDeviceIDs(r36,-1,0,32,r7,r11);HEAP32[r9]=r37;if((r37|0)!=0){_puts(96);_exit(-1)}if((HEAP32[r11>>2]|0)==0){r39=_puts(56);_exit(-1)}else{r40=0;r41=0}while(1){HEAP32[r14]=0;HEAP32[r14+1]=0;r37=((r41<<2)+r10|0)>>2;r42=_clGetDeviceInfo(HEAP32[r37],4096,8,r28,0);HEAP32[r9]=r42;if((r42|0)!=0){r3=65;break}r26=HEAP32[r14];r38=HEAP32[r14+1];r35=4;r43=0;r44=2;r45=0;r46=-1;r47=0;do{if(r26==1&r38==0){r48=2352;r49=r40}else if(r26==r44&r38==r45){r48=2336;r49=r40}else if(r26==r35&r38==r43){if((r40|0)!=0){r48=2320;r49=r40;break}HEAP32[r12>>2]=HEAP32[r37];r48=2320;r49=1}else if(r26==r46&r38==r47){r48=2368;r49=r40}else{r48=2304;r49=r40}}while(0);_printf(2272,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r48,r4));STACKTOP=r4;r50=_clGetDeviceInfo(HEAP32[r37],4139,256,r13,0);HEAP32[r9]=r50;if((r50|0)!=0){r3=73;break}_printf(2240,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r13,r4));STACKTOP=r4;HEAP32[r15>>2]=0;r51=_clGetDeviceInfo(HEAP32[r37],4098,4,r29,0);HEAP32[r9]=r51;if((r51|0)!=0){r3=75;break}r47=HEAP32[r15>>2];_printf(2160,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;HEAP32[r16>>2]=0;r52=_clGetDeviceInfo(HEAP32[r37],4100,4,r30,0);HEAP32[r9]=r52;if((r52|0)!=0){r3=77;break}r47=HEAP32[r16>>2];_printf(2112,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;r47=r41+1|0;if(r47>>>0<HEAP32[r11>>2]>>>0){r40=r49;r41=r47}else{r3=79;break}}if(r3==65){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r42,r4));STACKTOP=r4;_exit(-1)}else if(r3==73){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r50,r4));STACKTOP=r4;_exit(-1)}else if(r3==75){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r51,r4));STACKTOP=r4;_exit(-1)}else if(r3==77){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r52,r4));STACKTOP=r4;_exit(-1)}else if(r3==79){if((r49|0)==0){r39=_puts(56);_exit(-1)}r39=r17|0;HEAP32[r39>>2]=4228;HEAP32[r17+4>>2]=r36;HEAP32[r17+8>>2]=0;r17=_clCreateContext((r36|0)==0?0:r39,1,r12,0,0,r8);HEAP32[842]=r17;if((HEAP32[r9]|0)!=0){_puts(24);_exit(-1)}r12=_clGetContextInfo(r17,4225,32,r27,r18);HEAP32[r9]=r12;if((r12|0)!=0){_printf(2040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r12,r4));STACKTOP=r4;_exit(-1)}L121:do{if(HEAP32[r18>>2]>>>0>3){r12=0;while(1){HEAP32[r20]=0;HEAP32[r20+1]=0;r27=((r12<<2)+r10|0)>>2;r53=_clGetDeviceInfo(HEAP32[r27],4096,8,r31,0);HEAP32[r9]=r53;if((r53|0)!=0){r3=87;break}r17=HEAP32[r20];r39=HEAP32[r20+1];r36=4;r49=0;r52=2;r51=0;r50=-1;r42=0;if(r17==1&r39==0){r54=2352}else if(r17==r52&r39==r51){r54=2336}else if(r17==r36&r39==r49){r54=2320}else if(r17==r50&r39==r42){r54=2368}else{r54=2304}_printf(2e3,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r54,r4));STACKTOP=r4;r55=_clGetDeviceInfo(HEAP32[r27],4139,256,r19,0);HEAP32[r9]=r55;if((r55|0)!=0){r3=94;break}_printf(1960,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r19,r4));STACKTOP=r4;HEAP32[r21>>2]=0;r56=_clGetDeviceInfo(HEAP32[r27],4098,4,r32,0);HEAP32[r9]=r56;if((r56|0)!=0){r3=96;break}r42=HEAP32[r21>>2];_printf(1904,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r42,r4));STACKTOP=r4;HEAP32[r22>>2]=0;r57=_clGetDeviceInfo(HEAP32[r27],4100,4,r33,0);HEAP32[r9]=r57;if((r57|0)!=0){r3=98;break}r27=HEAP32[r22>>2];_printf(1848,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r27,r4));STACKTOP=r4;r27=r12+1|0;if(r27>>>0<HEAP32[r18>>2]>>>2>>>0){r12=r27}else{break L121}}if(r3==87){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r53,r4));STACKTOP=r4;_exit(-1)}else if(r3==94){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}else if(r3==96){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r56,r4));STACKTOP=r4;_exit(-1)}else if(r3==98){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}}}while(0);r57=_clCreateCommandQueue(HEAP32[842],HEAP32[r6],0,0,r8);HEAP32[844]=r57;r57=HEAP32[r9];if((r57|0)!=0){_printf(1800,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clCreateBuffer(HEAP32[842],4,0,HEAP32[816]*44&-1,0,r8);HEAP32[818]=r57;r3=HEAP32[r9];if((r3|0)!=0){_printf(1712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r57,1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);HEAP32[r9]=r3;if((r3|0)!=0){_printf(3040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clCreateBuffer(HEAP32[842],4,0,60,0,r8);HEAP32[850]=r3;r57=HEAP32[r9];if((r57|0)!=0){_printf(1664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clEnqueueWriteBuffer(HEAP32[844],r3,1,0,60,3408,0,0,0);HEAP32[r9]=r57;if((r57|0)!=0){_printf(2968,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r57=HEAP32[52];r3=_fopen(r57,1184);if((r3|0)==0){_printf(1152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r3,0,2)|0)!=0){_printf(1120,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r56=_ftell(r3);if((r56|0)==0){_printf(1080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_rewind(r3);r55=_malloc(r56+1|0);if((r55|0)==0){_printf(1032,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_printf(992,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r56,r4));STACKTOP=r4;r53=_fread(r55,1,r56,r3);if((r53|0)!=(r56|0)){_printf(952,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r53,r4));STACKTOP=r4;_exit(-1)}HEAP8[r55+r56|0]=0;_fclose(r3);HEAP32[r23>>2]=r55;r55=_clCreateProgramWithSource(HEAP32[842],1,r23,0,r8);HEAP32[824]=r55;r23=HEAP32[r9];if((r23|0)!=0){_printf(1616,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}r23=_clBuildProgram(r55,1,r7,1568,0,0);HEAP32[r9]=r23;if((r23|0)==0){r7=_clCreateKernel(HEAP32[824],1392,r8);HEAP32[836]=r7;r8=HEAP32[r9];if((r8|0)!=0){_printf(1352,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}HEAP32[r25>>2]=0;r8=_clGetKernelWorkGroupInfo(r7,HEAP32[r6],4528,4,r34,0);HEAP32[r9]=r8;if((r8|0)==0){r34=HEAP32[r25>>2];HEAP32[2]=r34;_printf(1208,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_InitGlut(r1,r2,2576);_glutMainLoop();STACKTOP=r5;return 0}else{_printf(1256,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}}else{r8=HEAP32[r6];_printf(1528,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r23,HEAP32[r4+8>>2]=r8,r4));STACKTOP=r4;r8=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,0,0,r24);HEAP32[r9]=r8;if((r8|0)!=0){_printf(1480,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}r8=HEAP32[r24>>2];r23=_malloc(r8+1|0);r5=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,r8,r23,0);HEAP32[r9]=r5;if((r5|0)==0){HEAP8[r23+HEAP32[r24>>2]|0]=0;_printf(1408,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}else{_printf(1440,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}}function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[855]-HEAPF32[852];r2=HEAPF32[856]-HEAPF32[853];r3=HEAPF32[857]-HEAPF32[854];r4=1/Math.sqrt(r3*r3+r1*r1+r2*r2);r5=r1*r4;HEAPF32[858]=r5;r1=r4*r2;HEAPF32[859]=r1;r2=r4*r3;HEAPF32[860]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+r4*r4+r6*r6);r8=(HEAP32[4]|0)*.7853981852531433/(HEAP32[54]|0);r9=r8*r4*r3;HEAPF32[861]=r9;r4=r8*r3*r6;HEAPF32[862]=r4;r6=r8*r3*r7;HEAPF32[863]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+r7*r7+r3*r3);HEAPF32[864]=r7*r5*.7853981852531433;HEAPF32[865]=r5*r3*.7853981852531433;HEAPF32[866]=r5*r2*.7853981852531433;return}function _idleFunc(){_UpdateRendering();_glutPostRedisplay();return}function _displayFunc(){_glClear(16384);return}function _reshapeFunc(r1,r2){HEAP32[4]=r1;HEAP32[54]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7;if((r1|0)==101){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[856]-r2)*.9993908270190958+r5*-.03489949670250097;HEAPF32[855]=r3+(HEAPF32[855]-r3);HEAPF32[856]=r2+r6;HEAPF32[857]=r4+r5*.9993908270190958+ -r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==103){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r2=HEAPF32[857]-r4;r3=(HEAPF32[856]-r5)*.9993908270190958+r2*.03489949670250097;HEAPF32[855]=r6+(HEAPF32[855]-r6);HEAPF32[856]=r5+r3;HEAPF32[857]=r4+r2*.9993908270190958+ -r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==100){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[855]-r3)*.9993908270190958-r5*-.03489949670250097;r7=r2+(HEAPF32[856]-r2);HEAPF32[855]=r3+r6;HEAPF32[856]=r7;HEAPF32[857]=r4+r5*.9993908270190958+r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==102){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r7=HEAPF32[857]-r4;r3=(HEAPF32[855]-r6)*.9993908270190958-r7*.03489949670250097;r2=r5+(HEAPF32[856]-r5);HEAPF32[855]=r6+r3;HEAPF32[856]=r2;HEAPF32[857]=r4+r7*.9993908270190958+r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==104){HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);return}else if((r1|0)==105){HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);return}else{return}}function _InitGlut(r1,r2,r3){var r4,r5;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;_glutInitWindowSize(HEAP32[4],HEAP32[54]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r5,r2);_glutCreateWindow(r3);_glutReshapeFunc(156);_glutKeyboardFunc(62);_glutSpecialFunc(288);_glutDisplayFunc(10);_glutIdleFunc(136);_glViewport(0,0,HEAP32[4],HEAP32[54]);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);STACKTOP=r4;return}function _AllocateBuffers(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2,r4=r3>>2;r5=Math.imul(HEAP32[54],HEAP32[4])|0;r6=_malloc(r5*12&-1);HEAP32[846]=r6;r6=r5<<2;r7=_malloc(r5<<3);HEAP32[820]=r7;r7=r5<<1;if((r7|0)>0){r8=0;while(1){r9=_rand();HEAP32[HEAP32[820]+(r8<<2)>>2]=r9;r9=(r8<<2)+HEAP32[820]|0;if(HEAP32[r9>>2]>>>0<2){HEAP32[r9>>2]=2}r9=r8+1|0;if((r9|0)<(r7|0)){r8=r9}else{break}}}r8=_malloc(r6);HEAP32[826]=r8;L217:do{if((r5|0)>0){r6=0;r7=r8;while(1){HEAP32[r7+(r6<<2)>>2]=r6;r9=r6+1|0;if((r9|0)>=(r5|0)){break L217}r6=r9;r7=HEAP32[826]}}}while(0);r5=Math.imul(HEAP32[4]*12&-1,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[848]=r8;r8=HEAP32[r4];if((r8|0)!=0){_printf(840,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r8,r1));STACKTOP=r1;_exit(-1)}r8=Math.imul(HEAP32[4]<<2,HEAP32[54])|0;r5=_clCreateBuffer(HEAP32[842],2,0,r8,0,r3);HEAP32[828]=r5;r5=HEAP32[r4];if((r5|0)!=0){_printf(792,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}r5=Math.imul(HEAP32[4]<<3,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[822]=r8;r3=HEAP32[r4];if((r3|0)!=0){_printf(704,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r8,1,0,r5,HEAP32[820],0,0,0);HEAP32[r4]=r3;if((r3|0)==0){STACKTOP=r2;return}else{_printf(656,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReadScene(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;_fprintf(HEAP32[_stderr>>2],2520,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;r6=_fopen(r1,3016);if((r6|0)==0){_fprintf(HEAP32[_stderr>>2],2384,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,2080,(r3=STACKTOP,STACKTOP=STACKTOP+48|0,HEAP32[r3>>2]=3408,HEAP32[r3+8>>2]=3412,HEAP32[r3+16>>2]=3416,HEAP32[r3+24>>2]=3420,HEAP32[r3+32>>2]=3424,HEAP32[r3+40>>2]=3428,r3));STACKTOP=r3;if((r1|0)!=6){_fprintf(HEAP32[_stderr>>2],1576,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,1192,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=3264,r3));STACKTOP=r3;r7=HEAP32[_stderr>>2];if((r1|0)!=1){_fprintf(r7,752,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}_fprintf(r7,416,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=HEAP32[816],r3));STACKTOP=r3;r7=HEAP32[816];r1=_malloc(r7*44&-1);HEAP32[814]=r1;r1=0;r8=r7;while(1){if(r1>>>0>=r8>>>0){r2=188;break}r7=HEAP32[814],r9=r7>>2;r10=_fscanf(r6,328,(r3=STACKTOP,STACKTOP=STACKTOP+88|0,HEAP32[r3>>2]=r7+(r1*44&-1),HEAP32[r3+8>>2]=r7+(r1*44&-1)+4,HEAP32[r3+16>>2]=r7+(r1*44&-1)+8,HEAP32[r3+24>>2]=r7+(r1*44&-1)+12,HEAP32[r3+32>>2]=r7+(r1*44&-1)+16,HEAP32[r3+40>>2]=r7+(r1*44&-1)+20,HEAP32[r3+48>>2]=r7+(r1*44&-1)+24,HEAP32[r3+56>>2]=r7+(r1*44&-1)+28,HEAP32[r3+64>>2]=r7+(r1*44&-1)+32,HEAP32[r3+72>>2]=r7+(r1*44&-1)+36,HEAP32[r3+80>>2]=r5,r3));STACKTOP=r3;r11=HEAP32[r5>>2];if((r11|0)==0){HEAP32[((r1*44&-1)+40>>2)+r9]=0}else if((r11|0)==1){HEAP32[((r1*44&-1)+40>>2)+r9]=1}else if((r11|0)==2){HEAP32[((r1*44&-1)+40>>2)+r9]=2}else{r2=184;break}if((r10|0)!=11){r2=187;break}r1=r1+1|0;r8=HEAP32[816]}if(r2==184){_fprintf(HEAP32[_stderr>>2],224,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r11,r3));STACKTOP=r3;_exit(-1)}else if(r2==187){_fprintf(HEAP32[_stderr>>2],3088,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r10,r3));STACKTOP=r3;_exit(-1)}else if(r2==188){_fclose(r6);STACKTOP=r4;return}}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12;r3=0;r2=STACKTOP;r4=r1&255;if((r4|0)==112){r1=_fopen(3024,2960);if((r1|0)==0){_fwrite(2904,37,1,HEAP32[_stderr>>2]);STACKTOP=r2;return}r5=HEAP32[54];_fprintf(r1,2704,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAP32[4],HEAP32[r3+8>>2]=r5,HEAP32[r3+16>>2]=255,r3));STACKTOP=r3;r5=HEAP32[54];if((r5|0)>0){r6=r5;r5=HEAP32[4];while(1){r7=r6-1|0;if((r5|0)>0){r8=HEAP32[826]+(Math.imul(r5,r7)<<2)|0;r9=0;while(1){r10=HEAPU8[r8+1|0];r11=HEAPU8[r8+2|0];_fprintf(r1,2656,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAPU8[r8],HEAP32[r3+8>>2]=r10,HEAP32[r3+16>>2]=r11,r3));STACKTOP=r3;r11=r9+1|0;r10=HEAP32[4];if((r11|0)<(r10|0)){r8=r8+4|0;r9=r11}else{r12=r10;break}}}else{r12=r5}if((r7|0)>0){r6=r7;r5=r12}else{break}}}_fclose(r1);STACKTOP=r2;return}else if((r4|0)==27){_fwrite(2624,6,1,HEAP32[_stderr>>2]);_exit(0)}else if((r4|0)==32){_ReInit(1);STACKTOP=r2;return}else if((r4|0)==97){r1=HEAPF32[861];r12=HEAPF32[862];r5=HEAPF32[863];r6=1/Math.sqrt(r1*r1+r12*r12+r5*r5);r9=r1*r6*-10;r1=r12*r6*-10;r12=r5*r6*-10;HEAPF32[852]=HEAPF32[852]+r9;HEAPF32[853]=HEAPF32[853]+r1;HEAPF32[854]=HEAPF32[854]+r12;HEAPF32[855]=r9+HEAPF32[855];HEAPF32[856]=r1+HEAPF32[856];HEAPF32[857]=r12+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==100){r12=HEAPF32[861];r1=HEAPF32[862];r9=HEAPF32[863];r6=1/Math.sqrt(r12*r12+r1*r1+r9*r9);r5=r12*r6*10;r12=r1*r6*10;r1=r9*r6*10;HEAPF32[852]=HEAPF32[852]+r5;HEAPF32[853]=HEAPF32[853]+r12;HEAPF32[854]=HEAPF32[854]+r1;HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==119){r1=HEAPF32[858]*10;r12=HEAPF32[859]*10;r5=HEAPF32[860]*10;HEAPF32[852]=r1+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r5+HEAPF32[854];HEAPF32[855]=r1+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r5+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==115){r5=HEAPF32[858]*-10;r12=HEAPF32[859]*-10;r1=HEAPF32[860]*-10;HEAPF32[852]=r5+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r1+HEAPF32[854];HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==114){HEAPF32[853]=HEAPF32[853]+10;HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==102){HEAPF32[853]=HEAPF32[853]-10;HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==43){r1=((HEAP32[838]+1|0)>>>0)%(HEAP32[816]>>>0)&-1;HEAP32[838]=r1;r12=HEAP32[814]>>2;r5=HEAPF32[((r1*44&-1)+4>>2)+r12];r6=HEAPF32[((r1*44&-1)+8>>2)+r12];r9=HEAPF32[((r1*44&-1)+12>>2)+r12];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r1,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r6,HEAPF64[r3+24>>3]=r9,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==45){r9=HEAP32[816];r6=((HEAP32[838]-1+r9|0)>>>0)%(r9>>>0)&-1;HEAP32[838]=r6;r9=HEAP32[814]>>2;r5=HEAPF32[((r6*44&-1)+4>>2)+r9];r1=HEAPF32[((r6*44&-1)+8>>2)+r9];r12=HEAPF32[((r6*44&-1)+12>>2)+r9];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r6,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r1,HEAPF64[r3+24>>3]=r12,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==52){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==54){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==56){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==50){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==57){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==51){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==104){HEAP32[50]=(HEAP32[50]|0)==0;STACKTOP=r2;return}else{STACKTOP=r2;return}}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[870];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=(r8<<2)+3520|0;r10=(r8+2<<2)+3520|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[870]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[872]>>>0){r15=r3,r16=r15>>2;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r17=r13>>>(r9>>>0);r13=r17>>>1&2;r18=r17>>>(r13>>>0);r17=r18>>>1&1;r19=(r10|r12|r9|r13|r17)+(r18>>>(r17>>>0))|0;r17=r19<<1;r18=(r17<<2)+3520|0;r13=(r17+2<<2)+3520|0;r17=HEAP32[r13>>2];r9=r17+8|0;r12=HEAP32[r9>>2];do{if((r18|0)==(r12|0)){HEAP32[870]=r5&~(1<<r19)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r17|0)){HEAP32[r10>>2]=r18;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r19<<3;r13=r12-r3|0;HEAP32[r17+4>>2]=r3|3;r18=r17;r5=r18+r3|0;HEAP32[r18+(r3|4)>>2]=r13|1;HEAP32[r18+r12>>2]=r13;r12=HEAP32[872];if((r12|0)!=0){r18=HEAP32[875];r4=r12>>>3;r12=r4<<1;r6=(r12<<2)+3520|0;r11=HEAP32[870];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[870]=r11|r8;r20=r6;r21=(r12+2<<2)+3520|0}else{r4=(r12+2<<2)+3520|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[874]>>>0){r20=r7;r21=r4;break}_abort()}}while(0);HEAP32[r21>>2]=r18;HEAP32[r20+12>>2]=r18;HEAP32[r18+8>>2]=r20;HEAP32[r18+12>>2]=r6}HEAP32[872]=r13;HEAP32[875]=r5;r14=r9;return r14}r12=HEAP32[871];if((r12|0)==0){r15=r3,r16=r15>>2;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r17=r11>>>(r8>>>0);r11=r17>>>2&4;r19=r17>>>(r11>>>0);r17=r19>>>1&2;r4=r19>>>(r17>>>0);r19=r4>>>1&1;r7=HEAP32[((r8|r12|r11|r17|r19)+(r4>>>(r19>>>0))<<2)+3784>>2];r19=r7;r4=r7,r17=r4>>2;r11=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r19+16>>2];if((r7|0)==0){r12=HEAP32[r19+20>>2];if((r12|0)==0){break}else{r22=r12}}else{r22=r7}r7=(HEAP32[r22+4>>2]&-8)-r3|0;r12=r7>>>0<r11>>>0;r19=r22;r4=r12?r22:r4,r17=r4>>2;r11=r12?r7:r11}r19=r4;r9=HEAP32[874];if(r19>>>0<r9>>>0){_abort()}r5=r19+r3|0;r13=r5;if(r19>>>0>=r5>>>0){_abort()}r5=HEAP32[r17+6];r6=HEAP32[r17+3];do{if((r6|0)==(r4|0)){r18=r4+20|0;r7=HEAP32[r18>>2];if((r7|0)==0){r12=r4+16|0;r8=HEAP32[r12>>2];if((r8|0)==0){r23=0,r24=r23>>2;break}else{r25=r8;r26=r12}}else{r25=r7;r26=r18}while(1){r18=r25+20|0;r7=HEAP32[r18>>2];if((r7|0)!=0){r25=r7;r26=r18;continue}r18=r25+16|0;r7=HEAP32[r18>>2];if((r7|0)==0){break}else{r25=r7;r26=r18}}if(r26>>>0<r9>>>0){_abort()}else{HEAP32[r26>>2]=0;r23=r25,r24=r23>>2;break}}else{r18=HEAP32[r17+2];if(r18>>>0<r9>>>0){_abort()}r7=r18+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r12=r6+8|0;if((HEAP32[r12>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r12>>2]=r18;r23=r6,r24=r23>>2;break}else{_abort()}}}while(0);L387:do{if((r5|0)!=0){r6=r4+28|0;r9=(HEAP32[r6>>2]<<2)+3784|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r23;if((r23|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r6>>2]);break L387}else{if(r5>>>0<HEAP32[874]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r4|0)){HEAP32[r18>>2]=r23}else{HEAP32[r5+20>>2]=r23}if((r23|0)==0){break L387}}}while(0);if(r23>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r24+6]=r5;r6=HEAP32[r17+4];do{if((r6|0)!=0){if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+4]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);r6=HEAP32[r17+5];if((r6|0)==0){break}if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+5]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);if(r11>>>0<16){r5=r11+r3|0;HEAP32[r17+1]=r5|3;r6=r5+(r19+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r17+1]=r3|3;HEAP32[r19+(r3|4)>>2]=r11|1;HEAP32[r19+r11+r3>>2]=r11;r6=HEAP32[872];if((r6|0)!=0){r5=HEAP32[875];r9=r6>>>3;r6=r9<<1;r18=(r6<<2)+3520|0;r12=HEAP32[870];r7=1<<r9;do{if((r12&r7|0)==0){HEAP32[870]=r12|r7;r27=r18;r28=(r6+2<<2)+3520|0}else{r9=(r6+2<<2)+3520|0;r8=HEAP32[r9>>2];if(r8>>>0>=HEAP32[874]>>>0){r27=r8;r28=r9;break}_abort()}}while(0);HEAP32[r28>>2]=r5;HEAP32[r27+12>>2]=r5;HEAP32[r5+8>>2]=r27;HEAP32[r5+12>>2]=r18}HEAP32[872]=r11;HEAP32[875]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3,r16=r15>>2;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1,r16=r15>>2;break}r6=r1+11|0;r7=r6&-8,r12=r7>>2;r19=HEAP32[871];if((r19|0)==0){r15=r7,r16=r15>>2;break}r17=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r29=0}else{if(r7>>>0>16777215){r29=31;break}r6=(r9+1048320|0)>>>16&8;r8=r9<<r6;r10=(r8+520192|0)>>>16&4;r30=r8<<r10;r8=(r30+245760|0)>>>16&2;r31=14-(r10|r6|r8)+(r30<<r8>>>15)|0;r29=r7>>>((r31+7|0)>>>0)&1|r31<<1}}while(0);r9=HEAP32[(r29<<2)+3784>>2];L435:do{if((r9|0)==0){r32=0;r33=r17;r34=0}else{if((r29|0)==31){r35=0}else{r35=25-(r29>>>1)|0}r4=0;r13=r17;r11=r9,r18=r11>>2;r5=r7<<r35;r31=0;while(1){r8=HEAP32[r18+1]&-8;r30=r8-r7|0;if(r30>>>0<r13>>>0){if((r8|0)==(r7|0)){r32=r11;r33=r30;r34=r11;break L435}else{r36=r11;r37=r30}}else{r36=r4;r37=r13}r30=HEAP32[r18+5];r8=HEAP32[((r5>>>31<<2)+16>>2)+r18];r6=(r30|0)==0|(r30|0)==(r8|0)?r31:r30;if((r8|0)==0){r32=r36;r33=r37;r34=r6;break}else{r4=r36;r13=r37;r11=r8,r18=r11>>2;r5=r5<<1;r31=r6}}}}while(0);if((r34|0)==0&(r32|0)==0){r9=2<<r29;r17=r19&(r9|-r9);if((r17|0)==0){r15=r7,r16=r15>>2;break}r9=(r17&-r17)-1|0;r17=r9>>>12&16;r31=r9>>>(r17>>>0);r9=r31>>>5&8;r5=r31>>>(r9>>>0);r31=r5>>>2&4;r11=r5>>>(r31>>>0);r5=r11>>>1&2;r18=r11>>>(r5>>>0);r11=r18>>>1&1;r38=HEAP32[((r9|r17|r31|r5|r11)+(r18>>>(r11>>>0))<<2)+3784>>2]}else{r38=r34}if((r38|0)==0){r39=r33;r40=r32,r41=r40>>2}else{r11=r38,r18=r11>>2;r5=r33;r31=r32;while(1){r17=(HEAP32[r18+1]&-8)-r7|0;r9=r17>>>0<r5>>>0;r13=r9?r17:r5;r17=r9?r11:r31;r9=HEAP32[r18+4];if((r9|0)!=0){r11=r9,r18=r11>>2;r5=r13;r31=r17;continue}r9=HEAP32[r18+5];if((r9|0)==0){r39=r13;r40=r17,r41=r40>>2;break}else{r11=r9,r18=r11>>2;r5=r13;r31=r17}}}if((r40|0)==0){r15=r7,r16=r15>>2;break}if(r39>>>0>=(HEAP32[872]-r7|0)>>>0){r15=r7,r16=r15>>2;break}r31=r40,r5=r31>>2;r11=HEAP32[874];if(r31>>>0<r11>>>0){_abort()}r18=r31+r7|0;r19=r18;if(r31>>>0>=r18>>>0){_abort()}r17=HEAP32[r41+6];r13=HEAP32[r41+3];do{if((r13|0)==(r40|0)){r9=r40+20|0;r4=HEAP32[r9>>2];if((r4|0)==0){r6=r40+16|0;r8=HEAP32[r6>>2];if((r8|0)==0){r42=0,r43=r42>>2;break}else{r44=r8;r45=r6}}else{r44=r4;r45=r9}while(1){r9=r44+20|0;r4=HEAP32[r9>>2];if((r4|0)!=0){r44=r4;r45=r9;continue}r9=r44+16|0;r4=HEAP32[r9>>2];if((r4|0)==0){break}else{r44=r4;r45=r9}}if(r45>>>0<r11>>>0){_abort()}else{HEAP32[r45>>2]=0;r42=r44,r43=r42>>2;break}}else{r9=HEAP32[r41+2];if(r9>>>0<r11>>>0){_abort()}r4=r9+12|0;if((HEAP32[r4>>2]|0)!=(r40|0)){_abort()}r6=r13+8|0;if((HEAP32[r6>>2]|0)==(r40|0)){HEAP32[r4>>2]=r13;HEAP32[r6>>2]=r9;r42=r13,r43=r42>>2;break}else{_abort()}}}while(0);L485:do{if((r17|0)!=0){r13=r40+28|0;r11=(HEAP32[r13>>2]<<2)+3784|0;do{if((r40|0)==(HEAP32[r11>>2]|0)){HEAP32[r11>>2]=r42;if((r42|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r13>>2]);break L485}else{if(r17>>>0<HEAP32[874]>>>0){_abort()}r9=r17+16|0;if((HEAP32[r9>>2]|0)==(r40|0)){HEAP32[r9>>2]=r42}else{HEAP32[r17+20>>2]=r42}if((r42|0)==0){break L485}}}while(0);if(r42>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r43+6]=r17;r13=HEAP32[r41+4];do{if((r13|0)!=0){if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+4]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);r13=HEAP32[r41+5];if((r13|0)==0){break}if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+5]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);do{if(r39>>>0<16){r17=r39+r7|0;HEAP32[r41+1]=r17|3;r13=r17+(r31+4)|0;HEAP32[r13>>2]=HEAP32[r13>>2]|1}else{HEAP32[r41+1]=r7|3;HEAP32[((r7|4)>>2)+r5]=r39|1;HEAP32[(r39>>2)+r5+r12]=r39;r13=r39>>>3;if(r39>>>0<256){r17=r13<<1;r11=(r17<<2)+3520|0;r9=HEAP32[870];r6=1<<r13;do{if((r9&r6|0)==0){HEAP32[870]=r9|r6;r46=r11;r47=(r17+2<<2)+3520|0}else{r13=(r17+2<<2)+3520|0;r4=HEAP32[r13>>2];if(r4>>>0>=HEAP32[874]>>>0){r46=r4;r47=r13;break}_abort()}}while(0);HEAP32[r47>>2]=r19;HEAP32[r46+12>>2]=r19;HEAP32[r12+(r5+2)]=r46;HEAP32[r12+(r5+3)]=r11;break}r17=r18;r6=r39>>>8;do{if((r6|0)==0){r48=0}else{if(r39>>>0>16777215){r48=31;break}r9=(r6+1048320|0)>>>16&8;r13=r6<<r9;r4=(r13+520192|0)>>>16&4;r8=r13<<r4;r13=(r8+245760|0)>>>16&2;r30=14-(r4|r9|r13)+(r8<<r13>>>15)|0;r48=r39>>>((r30+7|0)>>>0)&1|r30<<1}}while(0);r6=(r48<<2)+3784|0;HEAP32[r12+(r5+7)]=r48;HEAP32[r12+(r5+5)]=0;HEAP32[r12+(r5+4)]=0;r11=HEAP32[871];r30=1<<r48;if((r11&r30|0)==0){HEAP32[871]=r11|r30;HEAP32[r6>>2]=r17;HEAP32[r12+(r5+6)]=r6;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}if((r48|0)==31){r49=0}else{r49=25-(r48>>>1)|0}r30=r39<<r49;r11=HEAP32[r6>>2];while(1){if((HEAP32[r11+4>>2]&-8|0)==(r39|0)){break}r50=(r30>>>31<<2)+r11+16|0;r6=HEAP32[r50>>2];if((r6|0)==0){r2=386;break}else{r30=r30<<1;r11=r6}}if(r2==386){if(r50>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r50>>2]=r17;HEAP32[r12+(r5+6)]=r11;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}}r30=r11+8|0;r6=HEAP32[r30>>2];r13=HEAP32[874];if(r11>>>0<r13>>>0){_abort()}if(r6>>>0<r13>>>0){_abort()}else{HEAP32[r6+12>>2]=r17;HEAP32[r30>>2]=r17;HEAP32[r12+(r5+2)]=r6;HEAP32[r12+(r5+3)]=r11;HEAP32[r12+(r5+6)]=0;break}}}while(0);r5=r40+8|0;if((r5|0)==0){r15=r7,r16=r15>>2;break}else{r14=r5}return r14}}while(0);r40=HEAP32[872];if(r15>>>0<=r40>>>0){r50=r40-r15|0;r39=HEAP32[875];if(r50>>>0>15){r49=r39;HEAP32[875]=r49+r15;HEAP32[872]=r50;HEAP32[(r49+4>>2)+r16]=r50|1;HEAP32[r49+r40>>2]=r50;HEAP32[r39+4>>2]=r15|3}else{HEAP32[872]=0;HEAP32[875]=0;HEAP32[r39+4>>2]=r40|3;r50=r40+(r39+4)|0;HEAP32[r50>>2]=HEAP32[r50>>2]|1}r14=r39+8|0;return r14}r39=HEAP32[873];if(r15>>>0<r39>>>0){r50=r39-r15|0;HEAP32[873]=r50;r39=HEAP32[876];r40=r39;HEAP32[876]=r40+r15;HEAP32[(r40+4>>2)+r16]=r50|1;HEAP32[r39+4>>2]=r15|3;r14=r39+8|0;return r14}do{if((HEAP32[830]|0)==0){r39=_sysconf(8);if((r39-1&r39|0)==0){HEAP32[832]=r39;HEAP32[831]=r39;HEAP32[833]=-1;HEAP32[834]=-1;HEAP32[835]=0;HEAP32[981]=0;r39=_time(0)&-16^1431655768;HEAP32[830]=r39;break}else{_abort()}}}while(0);r39=r15+48|0;r50=HEAP32[832];r40=r15+47|0;r49=r50+r40|0;r48=-r50|0;r50=r49&r48;if(r50>>>0<=r15>>>0){r14=0;return r14}r46=HEAP32[980];do{if((r46|0)!=0){r47=HEAP32[978];r41=r47+r50|0;if(r41>>>0<=r47>>>0|r41>>>0>r46>>>0){r14=0}else{break}return r14}}while(0);L577:do{if((HEAP32[981]&4|0)==0){r46=HEAP32[876];L579:do{if((r46|0)==0){r2=416}else{r41=r46;r47=3928;while(1){r51=r47|0;r42=HEAP32[r51>>2];if(r42>>>0<=r41>>>0){r52=r47+4|0;if((r42+HEAP32[r52>>2]|0)>>>0>r41>>>0){break}}r42=HEAP32[r47+8>>2];if((r42|0)==0){r2=416;break L579}else{r47=r42}}if((r47|0)==0){r2=416;break}r41=r49-HEAP32[873]&r48;if(r41>>>0>=2147483647){r53=0;break}r11=_sbrk(r41);r17=(r11|0)==(HEAP32[r51>>2]+HEAP32[r52>>2]|0);r54=r17?r11:-1;r55=r17?r41:0;r56=r11;r57=r41;r2=425}}while(0);do{if(r2==416){r46=_sbrk(0);if((r46|0)==-1){r53=0;break}r7=r46;r41=HEAP32[831];r11=r41-1|0;if((r11&r7|0)==0){r58=r50}else{r58=r50-r7+(r11+r7&-r41)|0}r41=HEAP32[978];r7=r41+r58|0;if(!(r58>>>0>r15>>>0&r58>>>0<2147483647)){r53=0;break}r11=HEAP32[980];if((r11|0)!=0){if(r7>>>0<=r41>>>0|r7>>>0>r11>>>0){r53=0;break}}r11=_sbrk(r58);r7=(r11|0)==(r46|0);r54=r7?r46:-1;r55=r7?r58:0;r56=r11;r57=r58;r2=425}}while(0);L599:do{if(r2==425){r11=-r57|0;if((r54|0)!=-1){r59=r55,r60=r59>>2;r61=r54,r62=r61>>2;r2=436;break L577}do{if((r56|0)!=-1&r57>>>0<2147483647&r57>>>0<r39>>>0){r7=HEAP32[832];r46=r40-r57+r7&-r7;if(r46>>>0>=2147483647){r63=r57;break}if((_sbrk(r46)|0)==-1){_sbrk(r11);r53=r55;break L599}else{r63=r46+r57|0;break}}else{r63=r57}}while(0);if((r56|0)==-1){r53=r55}else{r59=r63,r60=r59>>2;r61=r56,r62=r61>>2;r2=436;break L577}}}while(0);HEAP32[981]=HEAP32[981]|4;r64=r53;r2=433}else{r64=0;r2=433}}while(0);do{if(r2==433){if(r50>>>0>=2147483647){break}r53=_sbrk(r50);r56=_sbrk(0);if(!((r56|0)!=-1&(r53|0)!=-1&r53>>>0<r56>>>0)){break}r63=r56-r53|0;r56=r63>>>0>(r15+40|0)>>>0;r55=r56?r53:-1;if((r55|0)!=-1){r59=r56?r63:r64,r60=r59>>2;r61=r55,r62=r61>>2;r2=436}}}while(0);do{if(r2==436){r64=HEAP32[978]+r59|0;HEAP32[978]=r64;if(r64>>>0>HEAP32[979]>>>0){HEAP32[979]=r64}r64=HEAP32[876],r50=r64>>2;L619:do{if((r64|0)==0){r55=HEAP32[874];if((r55|0)==0|r61>>>0<r55>>>0){HEAP32[874]=r61}HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[879]=HEAP32[830];HEAP32[878]=-1;r55=0;while(1){r63=r55<<1;r56=(r63<<2)+3520|0;HEAP32[(r63+3<<2)+3520>>2]=r56;HEAP32[(r63+2<<2)+3520>>2]=r56;r56=r55+1|0;if(r56>>>0<32){r55=r56}else{break}}r55=r61+8|0;if((r55&7|0)==0){r65=0}else{r65=-r55&7}r55=r59-40-r65|0;HEAP32[876]=r61+r65;HEAP32[873]=r55;HEAP32[(r65+4>>2)+r62]=r55|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834]}else{r55=3928,r56=r55>>2;while(1){r66=HEAP32[r56];r67=r55+4|0;r68=HEAP32[r67>>2];if((r61|0)==(r66+r68|0)){r2=448;break}r63=HEAP32[r56+2];if((r63|0)==0){break}else{r55=r63,r56=r55>>2}}do{if(r2==448){if((HEAP32[r56+3]&8|0)!=0){break}r55=r64;if(!(r55>>>0>=r66>>>0&r55>>>0<r61>>>0)){break}HEAP32[r67>>2]=r68+r59;r55=HEAP32[876];r63=HEAP32[873]+r59|0;r53=r55;r57=r55+8|0;if((r57&7|0)==0){r69=0}else{r69=-r57&7}r57=r63-r69|0;HEAP32[876]=r53+r69;HEAP32[873]=r57;HEAP32[r69+(r53+4)>>2]=r57|1;HEAP32[r63+(r53+4)>>2]=40;HEAP32[877]=HEAP32[834];break L619}}while(0);if(r61>>>0<HEAP32[874]>>>0){HEAP32[874]=r61}r56=r61+r59|0;r53=3928;while(1){r70=r53|0;if((HEAP32[r70>>2]|0)==(r56|0)){r2=458;break}r63=HEAP32[r53+8>>2];if((r63|0)==0){break}else{r53=r63}}do{if(r2==458){if((HEAP32[r53+12>>2]&8|0)!=0){break}HEAP32[r70>>2]=r61;r56=r53+4|0;HEAP32[r56>>2]=HEAP32[r56>>2]+r59;r56=r61+8|0;if((r56&7|0)==0){r71=0}else{r71=-r56&7}r56=r59+(r61+8)|0;if((r56&7|0)==0){r72=0,r73=r72>>2}else{r72=-r56&7,r73=r72>>2}r56=r61+r72+r59|0;r63=r56;r57=r71+r15|0,r55=r57>>2;r40=r61+r57|0;r57=r40;r39=r56-(r61+r71)-r15|0;HEAP32[(r71+4>>2)+r62]=r15|3;do{if((r63|0)==(HEAP32[876]|0)){r54=HEAP32[873]+r39|0;HEAP32[873]=r54;HEAP32[876]=r57;HEAP32[r55+(r62+1)]=r54|1}else{if((r63|0)==(HEAP32[875]|0)){r54=HEAP32[872]+r39|0;HEAP32[872]=r54;HEAP32[875]=r57;HEAP32[r55+(r62+1)]=r54|1;HEAP32[(r54>>2)+r62+r55]=r54;break}r54=r59+4|0;r58=HEAP32[(r54>>2)+r62+r73];if((r58&3|0)==1){r52=r58&-8;r51=r58>>>3;L664:do{if(r58>>>0<256){r48=HEAP32[((r72|8)>>2)+r62+r60];r49=HEAP32[r73+(r62+(r60+3))];r11=(r51<<3)+3520|0;do{if((r48|0)!=(r11|0)){if(r48>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r48+12>>2]|0)==(r63|0)){break}_abort()}}while(0);if((r49|0)==(r48|0)){HEAP32[870]=HEAP32[870]&~(1<<r51);break}do{if((r49|0)==(r11|0)){r74=r49+8|0}else{if(r49>>>0<HEAP32[874]>>>0){_abort()}r47=r49+8|0;if((HEAP32[r47>>2]|0)==(r63|0)){r74=r47;break}_abort()}}while(0);HEAP32[r48+12>>2]=r49;HEAP32[r74>>2]=r48}else{r11=r56;r47=HEAP32[((r72|24)>>2)+r62+r60];r46=HEAP32[r73+(r62+(r60+3))];do{if((r46|0)==(r11|0)){r7=r72|16;r41=r61+r54+r7|0;r17=HEAP32[r41>>2];if((r17|0)==0){r42=r61+r7+r59|0;r7=HEAP32[r42>>2];if((r7|0)==0){r75=0,r76=r75>>2;break}else{r77=r7;r78=r42}}else{r77=r17;r78=r41}while(1){r41=r77+20|0;r17=HEAP32[r41>>2];if((r17|0)!=0){r77=r17;r78=r41;continue}r41=r77+16|0;r17=HEAP32[r41>>2];if((r17|0)==0){break}else{r77=r17;r78=r41}}if(r78>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r78>>2]=0;r75=r77,r76=r75>>2;break}}else{r41=HEAP32[((r72|8)>>2)+r62+r60];if(r41>>>0<HEAP32[874]>>>0){_abort()}r17=r41+12|0;if((HEAP32[r17>>2]|0)!=(r11|0)){_abort()}r42=r46+8|0;if((HEAP32[r42>>2]|0)==(r11|0)){HEAP32[r17>>2]=r46;HEAP32[r42>>2]=r41;r75=r46,r76=r75>>2;break}else{_abort()}}}while(0);if((r47|0)==0){break}r46=r72+(r61+(r59+28))|0;r48=(HEAP32[r46>>2]<<2)+3784|0;do{if((r11|0)==(HEAP32[r48>>2]|0)){HEAP32[r48>>2]=r75;if((r75|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r46>>2]);break L664}else{if(r47>>>0<HEAP32[874]>>>0){_abort()}r49=r47+16|0;if((HEAP32[r49>>2]|0)==(r11|0)){HEAP32[r49>>2]=r75}else{HEAP32[r47+20>>2]=r75}if((r75|0)==0){break L664}}}while(0);if(r75>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r76+6]=r47;r11=r72|16;r46=HEAP32[(r11>>2)+r62+r60];do{if((r46|0)!=0){if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+4]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r46=HEAP32[(r54+r11>>2)+r62];if((r46|0)==0){break}if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+5]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r79=r61+(r52|r72)+r59|0;r80=r52+r39|0}else{r79=r63;r80=r39}r54=r79+4|0;HEAP32[r54>>2]=HEAP32[r54>>2]&-2;HEAP32[r55+(r62+1)]=r80|1;HEAP32[(r80>>2)+r62+r55]=r80;r54=r80>>>3;if(r80>>>0<256){r51=r54<<1;r58=(r51<<2)+3520|0;r46=HEAP32[870];r47=1<<r54;do{if((r46&r47|0)==0){HEAP32[870]=r46|r47;r81=r58;r82=(r51+2<<2)+3520|0}else{r54=(r51+2<<2)+3520|0;r48=HEAP32[r54>>2];if(r48>>>0>=HEAP32[874]>>>0){r81=r48;r82=r54;break}_abort()}}while(0);HEAP32[r82>>2]=r57;HEAP32[r81+12>>2]=r57;HEAP32[r55+(r62+2)]=r81;HEAP32[r55+(r62+3)]=r58;break}r51=r40;r47=r80>>>8;do{if((r47|0)==0){r83=0}else{if(r80>>>0>16777215){r83=31;break}r46=(r47+1048320|0)>>>16&8;r52=r47<<r46;r54=(r52+520192|0)>>>16&4;r48=r52<<r54;r52=(r48+245760|0)>>>16&2;r49=14-(r54|r46|r52)+(r48<<r52>>>15)|0;r83=r80>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r83<<2)+3784|0;HEAP32[r55+(r62+7)]=r83;HEAP32[r55+(r62+5)]=0;HEAP32[r55+(r62+4)]=0;r58=HEAP32[871];r49=1<<r83;if((r58&r49|0)==0){HEAP32[871]=r58|r49;HEAP32[r47>>2]=r51;HEAP32[r55+(r62+6)]=r47;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}if((r83|0)==31){r84=0}else{r84=25-(r83>>>1)|0}r49=r80<<r84;r58=HEAP32[r47>>2];while(1){if((HEAP32[r58+4>>2]&-8|0)==(r80|0)){break}r85=(r49>>>31<<2)+r58+16|0;r47=HEAP32[r85>>2];if((r47|0)==0){r2=531;break}else{r49=r49<<1;r58=r47}}if(r2==531){if(r85>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r85>>2]=r51;HEAP32[r55+(r62+6)]=r58;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}}r49=r58+8|0;r47=HEAP32[r49>>2];r52=HEAP32[874];if(r58>>>0<r52>>>0){_abort()}if(r47>>>0<r52>>>0){_abort()}else{HEAP32[r47+12>>2]=r51;HEAP32[r49>>2]=r51;HEAP32[r55+(r62+2)]=r47;HEAP32[r55+(r62+3)]=r58;HEAP32[r55+(r62+6)]=0;break}}}while(0);r14=r61+(r71|8)|0;return r14}}while(0);r53=r64;r55=3928,r40=r55>>2;while(1){r86=HEAP32[r40];if(r86>>>0<=r53>>>0){r87=HEAP32[r40+1];r88=r86+r87|0;if(r88>>>0>r53>>>0){break}}r55=HEAP32[r40+2],r40=r55>>2}r55=r86+(r87-39)|0;if((r55&7|0)==0){r89=0}else{r89=-r55&7}r55=r86+(r87-47)+r89|0;r40=r55>>>0<(r64+16|0)>>>0?r53:r55;r55=r40+8|0,r57=r55>>2;r39=r61+8|0;if((r39&7|0)==0){r90=0}else{r90=-r39&7}r39=r59-40-r90|0;HEAP32[876]=r61+r90;HEAP32[873]=r39;HEAP32[(r90+4>>2)+r62]=r39|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834];HEAP32[r40+4>>2]=27;HEAP32[r57]=HEAP32[982];HEAP32[r57+1]=HEAP32[983];HEAP32[r57+2]=HEAP32[984];HEAP32[r57+3]=HEAP32[985];HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[984]=r55;r55=r40+28|0;HEAP32[r55>>2]=7;if((r40+32|0)>>>0<r88>>>0){r57=r55;while(1){r55=r57+4|0;HEAP32[r55>>2]=7;if((r57+8|0)>>>0<r88>>>0){r57=r55}else{break}}}if((r40|0)==(r53|0)){break}r57=r40-r64|0;r55=r57+(r53+4)|0;HEAP32[r55>>2]=HEAP32[r55>>2]&-2;HEAP32[r50+1]=r57|1;HEAP32[r53+r57>>2]=r57;r55=r57>>>3;if(r57>>>0<256){r39=r55<<1;r63=(r39<<2)+3520|0;r56=HEAP32[870];r47=1<<r55;do{if((r56&r47|0)==0){HEAP32[870]=r56|r47;r91=r63;r92=(r39+2<<2)+3520|0}else{r55=(r39+2<<2)+3520|0;r49=HEAP32[r55>>2];if(r49>>>0>=HEAP32[874]>>>0){r91=r49;r92=r55;break}_abort()}}while(0);HEAP32[r92>>2]=r64;HEAP32[r91+12>>2]=r64;HEAP32[r50+2]=r91;HEAP32[r50+3]=r63;break}r39=r64;r47=r57>>>8;do{if((r47|0)==0){r93=0}else{if(r57>>>0>16777215){r93=31;break}r56=(r47+1048320|0)>>>16&8;r53=r47<<r56;r40=(r53+520192|0)>>>16&4;r55=r53<<r40;r53=(r55+245760|0)>>>16&2;r49=14-(r40|r56|r53)+(r55<<r53>>>15)|0;r93=r57>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r93<<2)+3784|0;HEAP32[r50+7]=r93;HEAP32[r50+5]=0;HEAP32[r50+4]=0;r63=HEAP32[871];r49=1<<r93;if((r63&r49|0)==0){HEAP32[871]=r63|r49;HEAP32[r47>>2]=r39;HEAP32[r50+6]=r47;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}if((r93|0)==31){r94=0}else{r94=25-(r93>>>1)|0}r49=r57<<r94;r63=HEAP32[r47>>2];while(1){if((HEAP32[r63+4>>2]&-8|0)==(r57|0)){break}r95=(r49>>>31<<2)+r63+16|0;r47=HEAP32[r95>>2];if((r47|0)==0){r2=566;break}else{r49=r49<<1;r63=r47}}if(r2==566){if(r95>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r95>>2]=r39;HEAP32[r50+6]=r63;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}}r49=r63+8|0;r57=HEAP32[r49>>2];r47=HEAP32[874];if(r63>>>0<r47>>>0){_abort()}if(r57>>>0<r47>>>0){_abort()}else{HEAP32[r57+12>>2]=r39;HEAP32[r49>>2]=r39;HEAP32[r50+2]=r57;HEAP32[r50+3]=r63;HEAP32[r50+6]=0;break}}}while(0);r50=HEAP32[873];if(r50>>>0<=r15>>>0){break}r64=r50-r15|0;HEAP32[873]=r64;r50=HEAP32[876];r57=r50;HEAP32[876]=r57+r15;HEAP32[(r57+4>>2)+r16]=r64|1;HEAP32[r50+4>>2]=r15|3;r14=r50+8|0;return r14}}while(0);r15=___errno_location();HEAP32[r15>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46;r2=r1>>2;r3=0;if((r1|0)==0){return}r4=r1-8|0;r5=r4;r6=HEAP32[874];if(r4>>>0<r6>>>0){_abort()}r7=HEAP32[r1-4>>2];r8=r7&3;if((r8|0)==1){_abort()}r9=r7&-8,r10=r9>>2;r11=r1+(r9-8)|0;r12=r11;L836:do{if((r7&1|0)==0){r13=HEAP32[r4>>2];if((r8|0)==0){return}r14=-8-r13|0,r15=r14>>2;r16=r1+r14|0;r17=r16;r18=r13+r9|0;if(r16>>>0<r6>>>0){_abort()}if((r17|0)==(HEAP32[875]|0)){r19=(r1+(r9-4)|0)>>2;if((HEAP32[r19]&3|0)!=3){r20=r17,r21=r20>>2;r22=r18;break}HEAP32[872]=r18;HEAP32[r19]=HEAP32[r19]&-2;HEAP32[r15+(r2+1)]=r18|1;HEAP32[r11>>2]=r18;return}r19=r13>>>3;if(r13>>>0<256){r13=HEAP32[r15+(r2+2)];r23=HEAP32[r15+(r2+3)];r24=(r19<<3)+3520|0;do{if((r13|0)!=(r24|0)){if(r13>>>0<r6>>>0){_abort()}if((HEAP32[r13+12>>2]|0)==(r17|0)){break}_abort()}}while(0);if((r23|0)==(r13|0)){HEAP32[870]=HEAP32[870]&~(1<<r19);r20=r17,r21=r20>>2;r22=r18;break}do{if((r23|0)==(r24|0)){r25=r23+8|0}else{if(r23>>>0<r6>>>0){_abort()}r26=r23+8|0;if((HEAP32[r26>>2]|0)==(r17|0)){r25=r26;break}_abort()}}while(0);HEAP32[r13+12>>2]=r23;HEAP32[r25>>2]=r13;r20=r17,r21=r20>>2;r22=r18;break}r24=r16;r19=HEAP32[r15+(r2+6)];r26=HEAP32[r15+(r2+3)];do{if((r26|0)==(r24|0)){r27=r14+(r1+20)|0;r28=HEAP32[r27>>2];if((r28|0)==0){r29=r14+(r1+16)|0;r30=HEAP32[r29>>2];if((r30|0)==0){r31=0,r32=r31>>2;break}else{r33=r30;r34=r29}}else{r33=r28;r34=r27}while(1){r27=r33+20|0;r28=HEAP32[r27>>2];if((r28|0)!=0){r33=r28;r34=r27;continue}r27=r33+16|0;r28=HEAP32[r27>>2];if((r28|0)==0){break}else{r33=r28;r34=r27}}if(r34>>>0<r6>>>0){_abort()}else{HEAP32[r34>>2]=0;r31=r33,r32=r31>>2;break}}else{r27=HEAP32[r15+(r2+2)];if(r27>>>0<r6>>>0){_abort()}r28=r27+12|0;if((HEAP32[r28>>2]|0)!=(r24|0)){_abort()}r29=r26+8|0;if((HEAP32[r29>>2]|0)==(r24|0)){HEAP32[r28>>2]=r26;HEAP32[r29>>2]=r27;r31=r26,r32=r31>>2;break}else{_abort()}}}while(0);if((r19|0)==0){r20=r17,r21=r20>>2;r22=r18;break}r26=r14+(r1+28)|0;r16=(HEAP32[r26>>2]<<2)+3784|0;do{if((r24|0)==(HEAP32[r16>>2]|0)){HEAP32[r16>>2]=r31;if((r31|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r26>>2]);r20=r17,r21=r20>>2;r22=r18;break L836}else{if(r19>>>0<HEAP32[874]>>>0){_abort()}r13=r19+16|0;if((HEAP32[r13>>2]|0)==(r24|0)){HEAP32[r13>>2]=r31}else{HEAP32[r19+20>>2]=r31}if((r31|0)==0){r20=r17,r21=r20>>2;r22=r18;break L836}}}while(0);if(r31>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r32+6]=r19;r24=HEAP32[r15+(r2+4)];do{if((r24|0)!=0){if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+4]=r24;HEAP32[r24+24>>2]=r31;break}}}while(0);r24=HEAP32[r15+(r2+5)];if((r24|0)==0){r20=r17,r21=r20>>2;r22=r18;break}if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+5]=r24;HEAP32[r24+24>>2]=r31;r20=r17,r21=r20>>2;r22=r18;break}}else{r20=r5,r21=r20>>2;r22=r9}}while(0);r5=r20,r31=r5>>2;if(r5>>>0>=r11>>>0){_abort()}r5=r1+(r9-4)|0;r32=HEAP32[r5>>2];if((r32&1|0)==0){_abort()}do{if((r32&2|0)==0){if((r12|0)==(HEAP32[876]|0)){r6=HEAP32[873]+r22|0;HEAP32[873]=r6;HEAP32[876]=r20;HEAP32[r21+1]=r6|1;if((r20|0)!=(HEAP32[875]|0)){return}HEAP32[875]=0;HEAP32[872]=0;return}if((r12|0)==(HEAP32[875]|0)){r6=HEAP32[872]+r22|0;HEAP32[872]=r6;HEAP32[875]=r20;HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;return}r6=(r32&-8)+r22|0;r33=r32>>>3;L939:do{if(r32>>>0<256){r34=HEAP32[r2+r10];r25=HEAP32[((r9|4)>>2)+r2];r8=(r33<<3)+3520|0;do{if((r34|0)!=(r8|0)){if(r34>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r34+12>>2]|0)==(r12|0)){break}_abort()}}while(0);if((r25|0)==(r34|0)){HEAP32[870]=HEAP32[870]&~(1<<r33);break}do{if((r25|0)==(r8|0)){r35=r25+8|0}else{if(r25>>>0<HEAP32[874]>>>0){_abort()}r4=r25+8|0;if((HEAP32[r4>>2]|0)==(r12|0)){r35=r4;break}_abort()}}while(0);HEAP32[r34+12>>2]=r25;HEAP32[r35>>2]=r34}else{r8=r11;r4=HEAP32[r10+(r2+4)];r7=HEAP32[((r9|4)>>2)+r2];do{if((r7|0)==(r8|0)){r24=r9+(r1+12)|0;r19=HEAP32[r24>>2];if((r19|0)==0){r26=r9+(r1+8)|0;r16=HEAP32[r26>>2];if((r16|0)==0){r36=0,r37=r36>>2;break}else{r38=r16;r39=r26}}else{r38=r19;r39=r24}while(1){r24=r38+20|0;r19=HEAP32[r24>>2];if((r19|0)!=0){r38=r19;r39=r24;continue}r24=r38+16|0;r19=HEAP32[r24>>2];if((r19|0)==0){break}else{r38=r19;r39=r24}}if(r39>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r39>>2]=0;r36=r38,r37=r36>>2;break}}else{r24=HEAP32[r2+r10];if(r24>>>0<HEAP32[874]>>>0){_abort()}r19=r24+12|0;if((HEAP32[r19>>2]|0)!=(r8|0)){_abort()}r26=r7+8|0;if((HEAP32[r26>>2]|0)==(r8|0)){HEAP32[r19>>2]=r7;HEAP32[r26>>2]=r24;r36=r7,r37=r36>>2;break}else{_abort()}}}while(0);if((r4|0)==0){break}r7=r9+(r1+20)|0;r34=(HEAP32[r7>>2]<<2)+3784|0;do{if((r8|0)==(HEAP32[r34>>2]|0)){HEAP32[r34>>2]=r36;if((r36|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r7>>2]);break L939}else{if(r4>>>0<HEAP32[874]>>>0){_abort()}r25=r4+16|0;if((HEAP32[r25>>2]|0)==(r8|0)){HEAP32[r25>>2]=r36}else{HEAP32[r4+20>>2]=r36}if((r36|0)==0){break L939}}}while(0);if(r36>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r37+6]=r4;r8=HEAP32[r10+(r2+2)];do{if((r8|0)!=0){if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+4]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);r8=HEAP32[r10+(r2+3)];if((r8|0)==0){break}if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+5]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;if((r20|0)!=(HEAP32[875]|0)){r40=r6;break}HEAP32[872]=r6;return}else{HEAP32[r5>>2]=r32&-2;HEAP32[r21+1]=r22|1;HEAP32[(r22>>2)+r31]=r22;r40=r22}}while(0);r22=r40>>>3;if(r40>>>0<256){r31=r22<<1;r32=(r31<<2)+3520|0;r5=HEAP32[870];r36=1<<r22;do{if((r5&r36|0)==0){HEAP32[870]=r5|r36;r41=r32;r42=(r31+2<<2)+3520|0}else{r22=(r31+2<<2)+3520|0;r37=HEAP32[r22>>2];if(r37>>>0>=HEAP32[874]>>>0){r41=r37;r42=r22;break}_abort()}}while(0);HEAP32[r42>>2]=r20;HEAP32[r41+12>>2]=r20;HEAP32[r21+2]=r41;HEAP32[r21+3]=r32;return}r32=r20;r41=r40>>>8;do{if((r41|0)==0){r43=0}else{if(r40>>>0>16777215){r43=31;break}r42=(r41+1048320|0)>>>16&8;r31=r41<<r42;r36=(r31+520192|0)>>>16&4;r5=r31<<r36;r31=(r5+245760|0)>>>16&2;r22=14-(r36|r42|r31)+(r5<<r31>>>15)|0;r43=r40>>>((r22+7|0)>>>0)&1|r22<<1}}while(0);r41=(r43<<2)+3784|0;HEAP32[r21+7]=r43;HEAP32[r21+5]=0;HEAP32[r21+4]=0;r22=HEAP32[871];r31=1<<r43;do{if((r22&r31|0)==0){HEAP32[871]=r22|r31;HEAP32[r41>>2]=r32;HEAP32[r21+6]=r41;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20}else{if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r5=r40<<r44;r42=HEAP32[r41>>2];while(1){if((HEAP32[r42+4>>2]&-8|0)==(r40|0)){break}r45=(r5>>>31<<2)+r42+16|0;r36=HEAP32[r45>>2];if((r36|0)==0){r3=743;break}else{r5=r5<<1;r42=r36}}if(r3==743){if(r45>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r45>>2]=r32;HEAP32[r21+6]=r42;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20;break}}r5=r42+8|0;r6=HEAP32[r5>>2];r36=HEAP32[874];if(r42>>>0<r36>>>0){_abort()}if(r6>>>0<r36>>>0){_abort()}else{HEAP32[r6+12>>2]=r32;HEAP32[r5>>2]=r32;HEAP32[r21+2]=r6;HEAP32[r21+3]=r42;HEAP32[r21+6]=0;break}}}while(0);r21=HEAP32[878]-1|0;HEAP32[878]=r21;if((r21|0)==0){r46=3936}else{return}while(1){r21=HEAP32[r46>>2];if((r21|0)==0){break}else{r46=r21+8|0}}HEAP32[878]=-1;return}
+function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+16|0;r3=r2;r4=r2+8;r5=_WallClockTime();r6=HEAP32[840];r7=_clSetKernelArg(HEAP32[836],0,4,3392);if((r7|0)!=0){_printf(3216,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],1,4,3288);if((r7|0)!=0){_printf(3176,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],2,4,3272);if((r7|0)!=0){_printf(2480,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],3,4,3400);if((r7|0)!=0){_printf(2200,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],4,4,3264);if((r7|0)!=0){_printf(1760,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],5,4,16);if((r7|0)!=0){_printf(1312,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],6,4,216);if((r7|0)!=0){_printf(912,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],7,4,3360);if((r7|0)!=0){_printf(432,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],8,4,3312);if((r7|0)!=0){_printf(376,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=HEAP32[840];L28:do{if((r7|0)<20){r8=Math.imul(HEAP32[54],HEAP32[4])|0;r9=r3|0;HEAP32[r9>>2]=r8;r10=HEAP32[2];if(((r8>>>0)%(r10>>>0)&-1|0)!=0){r11=Math.imul(((r8>>>0)/(r10>>>0)&-1)+1|0,r10)|0;HEAP32[r9>>2]=r11}r11=r4|0;HEAP32[r11>>2]=r10;r10=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r9,r11,0,0,0);if((r10|0)==0){HEAP32[840]=HEAP32[840]+1;break}else{_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r10,r1));STACKTOP=r1;_exit(-1)}}else{r10=r7-20|0;if((r10|0)<100){r12=r10|0}else{r12=100}r10=r12/100*.5;r11=r3|0;r9=r4|0;while(1){r8=Math.imul(HEAP32[54],HEAP32[4])|0;HEAP32[r11>>2]=r8;r13=HEAP32[2];if(((r8>>>0)%(r13>>>0)&-1|0)!=0){r14=Math.imul(((r8>>>0)/(r13>>>0)&-1)+1|0,r13)|0;HEAP32[r11>>2]=r14}HEAP32[r9>>2]=r13;r15=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r11,r9,0,0,0);if((r15|0)!=0){break}_clFinish(HEAP32[844]);HEAP32[840]=HEAP32[840]+1;if(_WallClockTime()-r5>r10){break L28}}_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r15,r1));STACKTOP=r1;_exit(-1)}}while(0);r15=HEAP32[844];r4=HEAP32[828];r3=_clEnqueueReadBuffer(r15,r4,1,0,Math.imul(HEAP32[4]<<2,HEAP32[54])|0,HEAP32[826],0,0,0);if((r3|0)==0){r4=_WallClockTime()-r5;r5=HEAP32[840];r15=(Math.imul(Math.imul(r5-r6|0,HEAP32[54])|0,HEAP32[4])|0)/r4/1e3;_printf(3120,(r1=STACKTOP,STACKTOP=STACKTOP+24|0,HEAPF64[r1>>3]=r4,HEAP32[r1+8>>2]=r5,HEAPF64[r1+16>>3]=r15,r1));STACKTOP=r1;STACKTOP=r2;return}else{_printf(280,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInitScene(){var r1,r2,r3;r1=0;r2=STACKTOP;HEAP32[840]=0;r3=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[818],1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);if((r3|0)==0){STACKTOP=r2;return}else{_printf(3040,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInit(r1){var r2,r3,r4;r2=0;r3=STACKTOP;do{if((r1|0)==0){_UpdateCamera()}else{r4=_clReleaseMemObject(HEAP32[848]);if((r4|0)!=0){_printf(608,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[828]);if((r4|0)!=0){_printf(560,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[822]);if((r4|0)==0){_free(HEAP32[820]);_free(HEAP32[846]);_free(HEAP32[826]);_UpdateCamera();_AllocateBuffers();break}else{_printf(512,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}}}while(0);r1=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[850],1,0,60,3408,0,0,0);if((r1|0)==0){HEAP32[840]=0;STACKTOP=r3;return}else{_printf(2968,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+872|0;r6=r5,r7=r6>>2;r8=r5+8,r9=r8>>2;r10=r5+120;r11=r5+248;r12=r5+256;r13=r5+264,r14=r13>>2;r15=r5+528;r16=r5+536;r17=r5+544;r18=r5+560;r19=r5+568,r20=r19>>2;r21=r5+832;r22=r5+840;r23=r5+848;r24=r5+856;r25=r5+864;HEAP32[868]=0;_printf(2944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;_printf(2720,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;HEAP32[52]=2672;HEAP32[4]=512;HEAP32[54]=512;_ReadScene(2632);_UpdateCamera();r26=r5+16|0;r27=r10;r28=r13;r13=r5+272|0;r29=r15;r30=r16;r31=r19;r19=r5+576|0;r32=r21;r33=r22;r34=r25;r35=_clGetPlatformIDs(0,0,r6);HEAP32[r9]=r35;if((r35|0)!=0){_puts(168);_exit(-1)}r35=HEAP32[r7];if((r35|0)==0){r36=0}else{r6=_malloc(r35<<2);r37=r6;r38=_clGetPlatformIDs(r35,r37,0);HEAP32[r9]=r38;if((r38|0)!=0){_puts(128);_exit(-1)}L81:do{if((HEAP32[r7]|0)!=0){r38=0;while(1){r35=_clGetPlatformInfo(HEAP32[r37+(r38<<2)>>2],2307,100,r26,0);HEAP32[r9]=r35;r35=_clGetPlatformIDs(HEAP32[r7],r37,0);HEAP32[r9]=r35;if((r35|0)!=0){break}_printf(2456,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r38,HEAP32[r4+8>>2]=r26,r4));STACKTOP=r4;r35=r38+1|0;if(r35>>>0<HEAP32[r7]>>>0){r38=r35}else{break L81}}_puts(128);_exit(-1)}}while(0);r7=HEAP32[r37>>2];_free(r6);r36=r7}r7=r10|0,r6=r7>>2;r37=_clGetDeviceIDs(r36,-1,0,32,r7,r11);HEAP32[r9]=r37;if((r37|0)!=0){_puts(96);_exit(-1)}if((HEAP32[r11>>2]|0)==0){r39=_puts(56);_exit(-1)}else{r40=0;r41=0}while(1){HEAP32[r14]=0;HEAP32[r14+1]=0;r37=((r41<<2)+r10|0)>>2;r42=_clGetDeviceInfo(HEAP32[r37],4096,8,r28,0);HEAP32[r9]=r42;if((r42|0)!=0){r3=65;break}r26=HEAP32[r14];r38=HEAP32[r14+1];r35=4;r43=0;r44=2;r45=0;r46=-1;r47=0;do{if(r26==1&r38==0){r48=2352;r49=r40}else if(r26==r44&r38==r45){r48=2336;r49=r40}else if(r26==r35&r38==r43){if((r40|0)!=0){r48=2320;r49=r40;break}HEAP32[r12>>2]=HEAP32[r37];r48=2320;r49=1}else if(r26==r46&r38==r47){r48=2368;r49=r40}else{r48=2304;r49=r40}}while(0);_printf(2272,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r48,r4));STACKTOP=r4;r50=_clGetDeviceInfo(HEAP32[r37],4139,256,r13,0);HEAP32[r9]=r50;if((r50|0)!=0){r3=73;break}_printf(2240,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r13,r4));STACKTOP=r4;HEAP32[r15>>2]=0;r51=_clGetDeviceInfo(HEAP32[r37],4098,4,r29,0);HEAP32[r9]=r51;if((r51|0)!=0){r3=75;break}r47=HEAP32[r15>>2];_printf(2160,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;HEAP32[r16>>2]=0;r52=_clGetDeviceInfo(HEAP32[r37],4100,4,r30,0);HEAP32[r9]=r52;if((r52|0)!=0){r3=77;break}r47=HEAP32[r16>>2];_printf(2112,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;r47=r41+1|0;if(r47>>>0<HEAP32[r11>>2]>>>0){r40=r49;r41=r47}else{r3=79;break}}if(r3==65){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r42,r4));STACKTOP=r4;_exit(-1)}else if(r3==73){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r50,r4));STACKTOP=r4;_exit(-1)}else if(r3==75){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r51,r4));STACKTOP=r4;_exit(-1)}else if(r3==77){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r52,r4));STACKTOP=r4;_exit(-1)}else if(r3==79){if((r49|0)==0){r39=_puts(56);_exit(-1)}r39=r17|0;HEAP32[r39>>2]=4228;HEAP32[r17+4>>2]=r36;HEAP32[r17+8>>2]=0;r17=_clCreateContext((r36|0)==0?0:r39,1,r12,0,0,r8);HEAP32[842]=r17;if((HEAP32[r9]|0)!=0){_puts(24);_exit(-1)}r12=_clGetContextInfo(r17,4225,32,r27,r18);HEAP32[r9]=r12;if((r12|0)!=0){_printf(2040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r12,r4));STACKTOP=r4;_exit(-1)}L121:do{if(HEAP32[r18>>2]>>>0>3){r12=0;while(1){HEAP32[r20]=0;HEAP32[r20+1]=0;r27=((r12<<2)+r10|0)>>2;r53=_clGetDeviceInfo(HEAP32[r27],4096,8,r31,0);HEAP32[r9]=r53;if((r53|0)!=0){r3=87;break}r17=HEAP32[r20];r39=HEAP32[r20+1];r36=4;r49=0;r52=2;r51=0;r50=-1;r42=0;if(r17==1&r39==0){r54=2352}else if(r17==r52&r39==r51){r54=2336}else if(r17==r36&r39==r49){r54=2320}else if(r17==r50&r39==r42){r54=2368}else{r54=2304}_printf(2e3,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r54,r4));STACKTOP=r4;r55=_clGetDeviceInfo(HEAP32[r27],4139,256,r19,0);HEAP32[r9]=r55;if((r55|0)!=0){r3=94;break}_printf(1960,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r19,r4));STACKTOP=r4;HEAP32[r21>>2]=0;r56=_clGetDeviceInfo(HEAP32[r27],4098,4,r32,0);HEAP32[r9]=r56;if((r56|0)!=0){r3=96;break}r42=HEAP32[r21>>2];_printf(1904,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r42,r4));STACKTOP=r4;HEAP32[r22>>2]=0;r57=_clGetDeviceInfo(HEAP32[r27],4100,4,r33,0);HEAP32[r9]=r57;if((r57|0)!=0){r3=98;break}r27=HEAP32[r22>>2];_printf(1848,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r27,r4));STACKTOP=r4;r27=r12+1|0;if(r27>>>0<HEAP32[r18>>2]>>>2>>>0){r12=r27}else{break L121}}if(r3==87){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r53,r4));STACKTOP=r4;_exit(-1)}else if(r3==94){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}else if(r3==96){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r56,r4));STACKTOP=r4;_exit(-1)}else if(r3==98){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}}}while(0);r57=_clCreateCommandQueue(HEAP32[842],HEAP32[r6],0,0,r8);HEAP32[844]=r57;r57=HEAP32[r9];if((r57|0)!=0){_printf(1800,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clCreateBuffer(HEAP32[842],4,0,HEAP32[816]*44&-1,0,r8);HEAP32[818]=r57;r3=HEAP32[r9];if((r3|0)!=0){_printf(1712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r57,1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);HEAP32[r9]=r3;if((r3|0)!=0){_printf(3040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clCreateBuffer(HEAP32[842],4,0,60,0,r8);HEAP32[850]=r3;r57=HEAP32[r9];if((r57|0)!=0){_printf(1664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clEnqueueWriteBuffer(HEAP32[844],r3,1,0,60,3408,0,0,0);HEAP32[r9]=r57;if((r57|0)!=0){_printf(2968,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r57=HEAP32[52];r3=_fopen(r57,1184);if((r3|0)==0){_printf(1152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r3,0,2)|0)!=0){_printf(1120,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r56=_ftell(r3);if((r56|0)==0){_printf(1080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_rewind(r3);r55=_malloc(r56+1|0);if((r55|0)==0){_printf(1032,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_printf(992,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r56,r4));STACKTOP=r4;r53=_fread(r55,1,r56,r3);if((r53|0)!=(r56|0)){_printf(952,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r53,r4));STACKTOP=r4;_exit(-1)}HEAP8[r55+r56|0]=0;_fclose(r3);HEAP32[r23>>2]=r55;r55=_clCreateProgramWithSource(HEAP32[842],1,r23,0,r8);HEAP32[824]=r55;r23=HEAP32[r9];if((r23|0)!=0){_printf(1616,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}r23=_clBuildProgram(r55,1,r7,1568,0,0);HEAP32[r9]=r23;if((r23|0)==0){r7=_clCreateKernel(HEAP32[824],1392,r8);HEAP32[836]=r7;r8=HEAP32[r9];if((r8|0)!=0){_printf(1352,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}HEAP32[r25>>2]=0;r8=_clGetKernelWorkGroupInfo(r7,HEAP32[r6],4528,4,r34,0);HEAP32[r9]=r8;if((r8|0)==0){r34=HEAP32[r25>>2];HEAP32[2]=r34;_printf(1208,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_InitGlut(r1,r2,2576);_glutMainLoop();STACKTOP=r5;return 0}else{_printf(1256,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}}else{r8=HEAP32[r6];_printf(1528,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r23,HEAP32[r4+8>>2]=r8,r4));STACKTOP=r4;r8=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,0,0,r24);HEAP32[r9]=r8;if((r8|0)!=0){_printf(1480,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}r8=HEAP32[r24>>2];r23=_malloc(r8+1|0);r5=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,r8,r23,0);HEAP32[r9]=r5;if((r5|0)==0){HEAP8[r23+HEAP32[r24>>2]|0]=0;_printf(1408,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}else{_printf(1440,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}}function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[855]-HEAPF32[852];r2=HEAPF32[856]-HEAPF32[853];r3=HEAPF32[857]-HEAPF32[854];r4=1/Math.sqrt(r3*r3+r1*r1+r2*r2);r5=r1*r4;HEAPF32[858]=r5;r1=r4*r2;HEAPF32[859]=r1;r2=r4*r3;HEAPF32[860]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+r4*r4+r6*r6);r8=(HEAP32[4]|0)*.7853981852531433/(HEAP32[54]|0);r9=r8*r4*r3;HEAPF32[861]=r9;r4=r8*r3*r6;HEAPF32[862]=r4;r6=r8*r3*r7;HEAPF32[863]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+r7*r7+r3*r3);HEAPF32[864]=r7*r5*.7853981852531433;HEAPF32[865]=r5*r3*.7853981852531433;HEAPF32[866]=r5*r2*.7853981852531433;return}function _idleFunc(){_UpdateRendering();_glutPostRedisplay();return}function _displayFunc(){_glClear(16384);return}function _reshapeFunc(r1,r2){HEAP32[4]=r1;HEAP32[54]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7;if((r1|0)==101){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[856]-r2)*.9993908270190958+r5*-.03489949670250097;HEAPF32[855]=r3+(HEAPF32[855]-r3);HEAPF32[856]=r2+r6;HEAPF32[857]=r4+r5*.9993908270190958+ -r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==103){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r2=HEAPF32[857]-r4;r3=(HEAPF32[856]-r5)*.9993908270190958+r2*.03489949670250097;HEAPF32[855]=r6+(HEAPF32[855]-r6);HEAPF32[856]=r5+r3;HEAPF32[857]=r4+r2*.9993908270190958+ -r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==100){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[855]-r3)*.9993908270190958-r5*-.03489949670250097;r7=r2+(HEAPF32[856]-r2);HEAPF32[855]=r3+r6;HEAPF32[856]=r7;HEAPF32[857]=r4+r5*.9993908270190958+r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==102){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r7=HEAPF32[857]-r4;r3=(HEAPF32[855]-r6)*.9993908270190958-r7*.03489949670250097;r2=r5+(HEAPF32[856]-r5);HEAPF32[855]=r6+r3;HEAPF32[856]=r2;HEAPF32[857]=r4+r7*.9993908270190958+r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==104){HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);return}else if((r1|0)==105){HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);return}else{return}}function _InitGlut(r1,r2,r3){var r4,r5;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;_glutInitWindowSize(HEAP32[4],HEAP32[54]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r5,r2);_glutCreateWindow(r3);_glutReshapeFunc(156);_glutKeyboardFunc(62);_glutSpecialFunc(288);_glutDisplayFunc(10);_glutIdleFunc(136);_glViewport(0,0,HEAP32[4],HEAP32[54]);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);STACKTOP=r4;return}function _AllocateBuffers(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2,r4=r3>>2;r5=Math.imul(HEAP32[54],HEAP32[4])|0;r6=_malloc(r5*12&-1);HEAP32[846]=r6;r6=r5<<2;r7=_malloc(r5<<3);HEAP32[820]=r7;r7=r5<<1;if((r7|0)>0){r8=0;while(1){r9=_rand();HEAP32[HEAP32[820]+(r8<<2)>>2]=r9;r9=(r8<<2)+HEAP32[820]|0;if(HEAP32[r9>>2]>>>0<2){HEAP32[r9>>2]=2}r9=r8+1|0;if((r9|0)<(r7|0)){r8=r9}else{break}}}r8=_malloc(r6);HEAP32[826]=r8;L217:do{if((r5|0)>0){r6=0;r7=r8;while(1){HEAP32[r7+(r6<<2)>>2]=r6;r9=r6+1|0;if((r9|0)>=(r5|0)){break L217}r6=r9;r7=HEAP32[826]}}}while(0);r5=Math.imul(HEAP32[4]*12&-1,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[848]=r8;r8=HEAP32[r4];if((r8|0)!=0){_printf(840,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r8,r1));STACKTOP=r1;_exit(-1)}r8=Math.imul(HEAP32[4]<<2,HEAP32[54])|0;r5=_clCreateBuffer(HEAP32[842],2,0,r8,0,r3);HEAP32[828]=r5;r5=HEAP32[r4];if((r5|0)!=0){_printf(792,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}r5=Math.imul(HEAP32[4]<<3,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[822]=r8;r3=HEAP32[r4];if((r3|0)!=0){_printf(704,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r8,1,0,r5,HEAP32[820],0,0,0);HEAP32[r4]=r3;if((r3|0)==0){STACKTOP=r2;return}else{_printf(656,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReadScene(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;_fprintf(HEAP32[_stderr>>2],2520,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;r6=_fopen(r1,3016);if((r6|0)==0){_fprintf(HEAP32[_stderr>>2],2384,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,2080,(r3=STACKTOP,STACKTOP=STACKTOP+48|0,HEAP32[r3>>2]=3408,HEAP32[r3+8>>2]=3412,HEAP32[r3+16>>2]=3416,HEAP32[r3+24>>2]=3420,HEAP32[r3+32>>2]=3424,HEAP32[r3+40>>2]=3428,r3));STACKTOP=r3;if((r1|0)!=6){_fprintf(HEAP32[_stderr>>2],1576,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,1192,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=3264,r3));STACKTOP=r3;r7=HEAP32[_stderr>>2];if((r1|0)!=1){_fprintf(r7,752,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}_fprintf(r7,416,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=HEAP32[816],r3));STACKTOP=r3;r7=HEAP32[816];r1=_malloc(r7*44&-1);HEAP32[814]=r1;r1=0;r8=r7;while(1){if(r1>>>0>=r8>>>0){r2=188;break}r7=HEAP32[814],r9=r7>>2;r10=_fscanf(r6,328,(r3=STACKTOP,STACKTOP=STACKTOP+88|0,HEAP32[r3>>2]=r7+(r1*44&-1),HEAP32[r3+8>>2]=r7+(r1*44&-1)+4,HEAP32[r3+16>>2]=r7+(r1*44&-1)+8,HEAP32[r3+24>>2]=r7+(r1*44&-1)+12,HEAP32[r3+32>>2]=r7+(r1*44&-1)+16,HEAP32[r3+40>>2]=r7+(r1*44&-1)+20,HEAP32[r3+48>>2]=r7+(r1*44&-1)+24,HEAP32[r3+56>>2]=r7+(r1*44&-1)+28,HEAP32[r3+64>>2]=r7+(r1*44&-1)+32,HEAP32[r3+72>>2]=r7+(r1*44&-1)+36,HEAP32[r3+80>>2]=r5,r3));STACKTOP=r3;r11=HEAP32[r5>>2];if((r11|0)==0){HEAP32[((r1*44&-1)+40>>2)+r9]=0}else if((r11|0)==1){HEAP32[((r1*44&-1)+40>>2)+r9]=1}else if((r11|0)==2){HEAP32[((r1*44&-1)+40>>2)+r9]=2}else{r2=184;break}if((r10|0)!=11){r2=187;break}r1=r1+1|0;r8=HEAP32[816]}if(r2==184){_fprintf(HEAP32[_stderr>>2],224,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r11,r3));STACKTOP=r3;_exit(-1)}else if(r2==187){_fprintf(HEAP32[_stderr>>2],3088,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r10,r3));STACKTOP=r3;_exit(-1)}else if(r2==188){_fclose(r6);STACKTOP=r4;return}}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12;r3=0;r2=STACKTOP;r4=r1&255;if((r4|0)==114){HEAPF32[853]=HEAPF32[853]+10;HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==112){r1=_fopen(3024,2960);if((r1|0)==0){_fwrite(2904,37,1,HEAP32[_stderr>>2]);STACKTOP=r2;return}r5=HEAP32[54];_fprintf(r1,2704,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAP32[4],HEAP32[r3+8>>2]=r5,HEAP32[r3+16>>2]=255,r3));STACKTOP=r3;r5=HEAP32[54];if((r5|0)>0){r6=r5;r5=HEAP32[4];while(1){r7=r6-1|0;if((r5|0)>0){r8=HEAP32[826]+(Math.imul(r5,r7)<<2)|0;r9=0;while(1){r10=HEAPU8[r8+1|0];r11=HEAPU8[r8+2|0];_fprintf(r1,2656,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAPU8[r8],HEAP32[r3+8>>2]=r10,HEAP32[r3+16>>2]=r11,r3));STACKTOP=r3;r11=r9+1|0;r10=HEAP32[4];if((r11|0)<(r10|0)){r8=r8+4|0;r9=r11}else{r12=r10;break}}}else{r12=r5}if((r7|0)>0){r6=r7;r5=r12}else{break}}}_fclose(r1);STACKTOP=r2;return}else if((r4|0)==27){_fwrite(2624,6,1,HEAP32[_stderr>>2]);_exit(0)}else if((r4|0)==32){_ReInit(1);STACKTOP=r2;return}else if((r4|0)==97){r1=HEAPF32[861];r12=HEAPF32[862];r5=HEAPF32[863];r6=1/Math.sqrt(r1*r1+r12*r12+r5*r5);r9=r1*r6*-10;r1=r12*r6*-10;r12=r5*r6*-10;HEAPF32[852]=HEAPF32[852]+r9;HEAPF32[853]=HEAPF32[853]+r1;HEAPF32[854]=HEAPF32[854]+r12;HEAPF32[855]=r9+HEAPF32[855];HEAPF32[856]=r1+HEAPF32[856];HEAPF32[857]=r12+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==100){r12=HEAPF32[861];r1=HEAPF32[862];r9=HEAPF32[863];r6=1/Math.sqrt(r12*r12+r1*r1+r9*r9);r5=r12*r6*10;r12=r1*r6*10;r1=r9*r6*10;HEAPF32[852]=HEAPF32[852]+r5;HEAPF32[853]=HEAPF32[853]+r12;HEAPF32[854]=HEAPF32[854]+r1;HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==119){r1=HEAPF32[858]*10;r12=HEAPF32[859]*10;r5=HEAPF32[860]*10;HEAPF32[852]=r1+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r5+HEAPF32[854];HEAPF32[855]=r1+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r5+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==115){r5=HEAPF32[858]*-10;r12=HEAPF32[859]*-10;r1=HEAPF32[860]*-10;HEAPF32[852]=r5+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r1+HEAPF32[854];HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==102){HEAPF32[853]=HEAPF32[853]-10;HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==43){r1=((HEAP32[838]+1|0)>>>0)%(HEAP32[816]>>>0)&-1;HEAP32[838]=r1;r12=HEAP32[814]>>2;r5=HEAPF32[((r1*44&-1)+4>>2)+r12];r6=HEAPF32[((r1*44&-1)+8>>2)+r12];r9=HEAPF32[((r1*44&-1)+12>>2)+r12];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r1,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r6,HEAPF64[r3+24>>3]=r9,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==45){r9=HEAP32[816];r6=((HEAP32[838]-1+r9|0)>>>0)%(r9>>>0)&-1;HEAP32[838]=r6;r9=HEAP32[814]>>2;r5=HEAPF32[((r6*44&-1)+4>>2)+r9];r1=HEAPF32[((r6*44&-1)+8>>2)+r9];r12=HEAPF32[((r6*44&-1)+12>>2)+r9];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r6,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r1,HEAPF64[r3+24>>3]=r12,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==52){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==54){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==56){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==50){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==57){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==51){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==104){HEAP32[50]=(HEAP32[50]|0)==0;STACKTOP=r2;return}else{STACKTOP=r2;return}}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[870];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=(r8<<2)+3520|0;r10=(r8+2<<2)+3520|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[870]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[872]>>>0){r15=r3,r16=r15>>2;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r17=r13>>>(r9>>>0);r13=r17>>>1&2;r18=r17>>>(r13>>>0);r17=r18>>>1&1;r19=(r10|r12|r9|r13|r17)+(r18>>>(r17>>>0))|0;r17=r19<<1;r18=(r17<<2)+3520|0;r13=(r17+2<<2)+3520|0;r17=HEAP32[r13>>2];r9=r17+8|0;r12=HEAP32[r9>>2];do{if((r18|0)==(r12|0)){HEAP32[870]=r5&~(1<<r19)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r17|0)){HEAP32[r10>>2]=r18;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r19<<3;r13=r12-r3|0;HEAP32[r17+4>>2]=r3|3;r18=r17;r5=r18+r3|0;HEAP32[r18+(r3|4)>>2]=r13|1;HEAP32[r18+r12>>2]=r13;r12=HEAP32[872];if((r12|0)!=0){r18=HEAP32[875];r4=r12>>>3;r12=r4<<1;r6=(r12<<2)+3520|0;r11=HEAP32[870];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[870]=r11|r8;r20=r6;r21=(r12+2<<2)+3520|0}else{r4=(r12+2<<2)+3520|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[874]>>>0){r20=r7;r21=r4;break}_abort()}}while(0);HEAP32[r21>>2]=r18;HEAP32[r20+12>>2]=r18;HEAP32[r18+8>>2]=r20;HEAP32[r18+12>>2]=r6}HEAP32[872]=r13;HEAP32[875]=r5;r14=r9;return r14}r12=HEAP32[871];if((r12|0)==0){r15=r3,r16=r15>>2;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r17=r11>>>(r8>>>0);r11=r17>>>2&4;r19=r17>>>(r11>>>0);r17=r19>>>1&2;r4=r19>>>(r17>>>0);r19=r4>>>1&1;r7=HEAP32[((r8|r12|r11|r17|r19)+(r4>>>(r19>>>0))<<2)+3784>>2];r19=r7;r4=r7,r17=r4>>2;r11=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r19+16>>2];if((r7|0)==0){r12=HEAP32[r19+20>>2];if((r12|0)==0){break}else{r22=r12}}else{r22=r7}r7=(HEAP32[r22+4>>2]&-8)-r3|0;r12=r7>>>0<r11>>>0;r19=r22;r4=r12?r22:r4,r17=r4>>2;r11=r12?r7:r11}r19=r4;r9=HEAP32[874];if(r19>>>0<r9>>>0){_abort()}r5=r19+r3|0;r13=r5;if(r19>>>0>=r5>>>0){_abort()}r5=HEAP32[r17+6];r6=HEAP32[r17+3];do{if((r6|0)==(r4|0)){r18=r4+20|0;r7=HEAP32[r18>>2];if((r7|0)==0){r12=r4+16|0;r8=HEAP32[r12>>2];if((r8|0)==0){r23=0,r24=r23>>2;break}else{r25=r8;r26=r12}}else{r25=r7;r26=r18}while(1){r18=r25+20|0;r7=HEAP32[r18>>2];if((r7|0)!=0){r25=r7;r26=r18;continue}r18=r25+16|0;r7=HEAP32[r18>>2];if((r7|0)==0){break}else{r25=r7;r26=r18}}if(r26>>>0<r9>>>0){_abort()}else{HEAP32[r26>>2]=0;r23=r25,r24=r23>>2;break}}else{r18=HEAP32[r17+2];if(r18>>>0<r9>>>0){_abort()}r7=r18+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r12=r6+8|0;if((HEAP32[r12>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r12>>2]=r18;r23=r6,r24=r23>>2;break}else{_abort()}}}while(0);L510:do{if((r5|0)!=0){r6=r4+28|0;r9=(HEAP32[r6>>2]<<2)+3784|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r23;if((r23|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r6>>2]);break L510}else{if(r5>>>0<HEAP32[874]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r4|0)){HEAP32[r18>>2]=r23}else{HEAP32[r5+20>>2]=r23}if((r23|0)==0){break L510}}}while(0);if(r23>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r24+6]=r5;r6=HEAP32[r17+4];do{if((r6|0)!=0){if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+4]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);r6=HEAP32[r17+5];if((r6|0)==0){break}if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+5]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);if(r11>>>0<16){r5=r11+r3|0;HEAP32[r17+1]=r5|3;r6=r5+(r19+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r17+1]=r3|3;HEAP32[r19+(r3|4)>>2]=r11|1;HEAP32[r19+r11+r3>>2]=r11;r6=HEAP32[872];if((r6|0)!=0){r5=HEAP32[875];r9=r6>>>3;r6=r9<<1;r18=(r6<<2)+3520|0;r12=HEAP32[870];r7=1<<r9;do{if((r12&r7|0)==0){HEAP32[870]=r12|r7;r27=r18;r28=(r6+2<<2)+3520|0}else{r9=(r6+2<<2)+3520|0;r8=HEAP32[r9>>2];if(r8>>>0>=HEAP32[874]>>>0){r27=r8;r28=r9;break}_abort()}}while(0);HEAP32[r28>>2]=r5;HEAP32[r27+12>>2]=r5;HEAP32[r5+8>>2]=r27;HEAP32[r5+12>>2]=r18}HEAP32[872]=r11;HEAP32[875]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3,r16=r15>>2;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1,r16=r15>>2;break}r6=r1+11|0;r7=r6&-8,r12=r7>>2;r19=HEAP32[871];if((r19|0)==0){r15=r7,r16=r15>>2;break}r17=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r29=0}else{if(r7>>>0>16777215){r29=31;break}r6=(r9+1048320|0)>>>16&8;r8=r9<<r6;r10=(r8+520192|0)>>>16&4;r30=r8<<r10;r8=(r30+245760|0)>>>16&2;r31=14-(r10|r6|r8)+(r30<<r8>>>15)|0;r29=r7>>>((r31+7|0)>>>0)&1|r31<<1}}while(0);r9=HEAP32[(r29<<2)+3784>>2];L318:do{if((r9|0)==0){r32=0;r33=r17;r34=0}else{if((r29|0)==31){r35=0}else{r35=25-(r29>>>1)|0}r4=0;r13=r17;r11=r9,r18=r11>>2;r5=r7<<r35;r31=0;while(1){r8=HEAP32[r18+1]&-8;r30=r8-r7|0;if(r30>>>0<r13>>>0){if((r8|0)==(r7|0)){r32=r11;r33=r30;r34=r11;break L318}else{r36=r11;r37=r30}}else{r36=r4;r37=r13}r30=HEAP32[r18+5];r8=HEAP32[((r5>>>31<<2)+16>>2)+r18];r6=(r30|0)==0|(r30|0)==(r8|0)?r31:r30;if((r8|0)==0){r32=r36;r33=r37;r34=r6;break}else{r4=r36;r13=r37;r11=r8,r18=r11>>2;r5=r5<<1;r31=r6}}}}while(0);if((r34|0)==0&(r32|0)==0){r9=2<<r29;r17=r19&(r9|-r9);if((r17|0)==0){r15=r7,r16=r15>>2;break}r9=(r17&-r17)-1|0;r17=r9>>>12&16;r31=r9>>>(r17>>>0);r9=r31>>>5&8;r5=r31>>>(r9>>>0);r31=r5>>>2&4;r11=r5>>>(r31>>>0);r5=r11>>>1&2;r18=r11>>>(r5>>>0);r11=r18>>>1&1;r38=HEAP32[((r9|r17|r31|r5|r11)+(r18>>>(r11>>>0))<<2)+3784>>2]}else{r38=r34}if((r38|0)==0){r39=r33;r40=r32,r41=r40>>2}else{r11=r38,r18=r11>>2;r5=r33;r31=r32;while(1){r17=(HEAP32[r18+1]&-8)-r7|0;r9=r17>>>0<r5>>>0;r13=r9?r17:r5;r17=r9?r11:r31;r9=HEAP32[r18+4];if((r9|0)!=0){r11=r9,r18=r11>>2;r5=r13;r31=r17;continue}r9=HEAP32[r18+5];if((r9|0)==0){r39=r13;r40=r17,r41=r40>>2;break}else{r11=r9,r18=r11>>2;r5=r13;r31=r17}}}if((r40|0)==0){r15=r7,r16=r15>>2;break}if(r39>>>0>=(HEAP32[872]-r7|0)>>>0){r15=r7,r16=r15>>2;break}r31=r40,r5=r31>>2;r11=HEAP32[874];if(r31>>>0<r11>>>0){_abort()}r18=r31+r7|0;r19=r18;if(r31>>>0>=r18>>>0){_abort()}r17=HEAP32[r41+6];r13=HEAP32[r41+3];do{if((r13|0)==(r40|0)){r9=r40+20|0;r4=HEAP32[r9>>2];if((r4|0)==0){r6=r40+16|0;r8=HEAP32[r6>>2];if((r8|0)==0){r42=0,r43=r42>>2;break}else{r44=r8;r45=r6}}else{r44=r4;r45=r9}while(1){r9=r44+20|0;r4=HEAP32[r9>>2];if((r4|0)!=0){r44=r4;r45=r9;continue}r9=r44+16|0;r4=HEAP32[r9>>2];if((r4|0)==0){break}else{r44=r4;r45=r9}}if(r45>>>0<r11>>>0){_abort()}else{HEAP32[r45>>2]=0;r42=r44,r43=r42>>2;break}}else{r9=HEAP32[r41+2];if(r9>>>0<r11>>>0){_abort()}r4=r9+12|0;if((HEAP32[r4>>2]|0)!=(r40|0)){_abort()}r6=r13+8|0;if((HEAP32[r6>>2]|0)==(r40|0)){HEAP32[r4>>2]=r13;HEAP32[r6>>2]=r9;r42=r13,r43=r42>>2;break}else{_abort()}}}while(0);L368:do{if((r17|0)!=0){r13=r40+28|0;r11=(HEAP32[r13>>2]<<2)+3784|0;do{if((r40|0)==(HEAP32[r11>>2]|0)){HEAP32[r11>>2]=r42;if((r42|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r13>>2]);break L368}else{if(r17>>>0<HEAP32[874]>>>0){_abort()}r9=r17+16|0;if((HEAP32[r9>>2]|0)==(r40|0)){HEAP32[r9>>2]=r42}else{HEAP32[r17+20>>2]=r42}if((r42|0)==0){break L368}}}while(0);if(r42>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r43+6]=r17;r13=HEAP32[r41+4];do{if((r13|0)!=0){if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+4]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);r13=HEAP32[r41+5];if((r13|0)==0){break}if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+5]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);do{if(r39>>>0<16){r17=r39+r7|0;HEAP32[r41+1]=r17|3;r13=r17+(r31+4)|0;HEAP32[r13>>2]=HEAP32[r13>>2]|1}else{HEAP32[r41+1]=r7|3;HEAP32[((r7|4)>>2)+r5]=r39|1;HEAP32[(r39>>2)+r5+r12]=r39;r13=r39>>>3;if(r39>>>0<256){r17=r13<<1;r11=(r17<<2)+3520|0;r9=HEAP32[870];r6=1<<r13;do{if((r9&r6|0)==0){HEAP32[870]=r9|r6;r46=r11;r47=(r17+2<<2)+3520|0}else{r13=(r17+2<<2)+3520|0;r4=HEAP32[r13>>2];if(r4>>>0>=HEAP32[874]>>>0){r46=r4;r47=r13;break}_abort()}}while(0);HEAP32[r47>>2]=r19;HEAP32[r46+12>>2]=r19;HEAP32[r12+(r5+2)]=r46;HEAP32[r12+(r5+3)]=r11;break}r17=r18;r6=r39>>>8;do{if((r6|0)==0){r48=0}else{if(r39>>>0>16777215){r48=31;break}r9=(r6+1048320|0)>>>16&8;r13=r6<<r9;r4=(r13+520192|0)>>>16&4;r8=r13<<r4;r13=(r8+245760|0)>>>16&2;r30=14-(r4|r9|r13)+(r8<<r13>>>15)|0;r48=r39>>>((r30+7|0)>>>0)&1|r30<<1}}while(0);r6=(r48<<2)+3784|0;HEAP32[r12+(r5+7)]=r48;HEAP32[r12+(r5+5)]=0;HEAP32[r12+(r5+4)]=0;r11=HEAP32[871];r30=1<<r48;if((r11&r30|0)==0){HEAP32[871]=r11|r30;HEAP32[r6>>2]=r17;HEAP32[r12+(r5+6)]=r6;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}if((r48|0)==31){r49=0}else{r49=25-(r48>>>1)|0}r30=r39<<r49;r11=HEAP32[r6>>2];while(1){if((HEAP32[r11+4>>2]&-8|0)==(r39|0)){break}r50=(r30>>>31<<2)+r11+16|0;r6=HEAP32[r50>>2];if((r6|0)==0){r2=386;break}else{r30=r30<<1;r11=r6}}if(r2==386){if(r50>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r50>>2]=r17;HEAP32[r12+(r5+6)]=r11;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}}r30=r11+8|0;r6=HEAP32[r30>>2];r13=HEAP32[874];if(r11>>>0<r13>>>0){_abort()}if(r6>>>0<r13>>>0){_abort()}else{HEAP32[r6+12>>2]=r17;HEAP32[r30>>2]=r17;HEAP32[r12+(r5+2)]=r6;HEAP32[r12+(r5+3)]=r11;HEAP32[r12+(r5+6)]=0;break}}}while(0);r5=r40+8|0;if((r5|0)==0){r15=r7,r16=r15>>2;break}else{r14=r5}return r14}}while(0);r40=HEAP32[872];if(r15>>>0<=r40>>>0){r50=r40-r15|0;r39=HEAP32[875];if(r50>>>0>15){r49=r39;HEAP32[875]=r49+r15;HEAP32[872]=r50;HEAP32[(r49+4>>2)+r16]=r50|1;HEAP32[r49+r40>>2]=r50;HEAP32[r39+4>>2]=r15|3}else{HEAP32[872]=0;HEAP32[875]=0;HEAP32[r39+4>>2]=r40|3;r50=r40+(r39+4)|0;HEAP32[r50>>2]=HEAP32[r50>>2]|1}r14=r39+8|0;return r14}r39=HEAP32[873];if(r15>>>0<r39>>>0){r50=r39-r15|0;HEAP32[873]=r50;r39=HEAP32[876];r40=r39;HEAP32[876]=r40+r15;HEAP32[(r40+4>>2)+r16]=r50|1;HEAP32[r39+4>>2]=r15|3;r14=r39+8|0;return r14}do{if((HEAP32[830]|0)==0){r39=_sysconf(8);if((r39-1&r39|0)==0){HEAP32[832]=r39;HEAP32[831]=r39;HEAP32[833]=-1;HEAP32[834]=-1;HEAP32[835]=0;HEAP32[981]=0;r39=_time(0)&-16^1431655768;HEAP32[830]=r39;break}else{_abort()}}}while(0);r39=r15+48|0;r50=HEAP32[832];r40=r15+47|0;r49=r50+r40|0;r48=-r50|0;r50=r49&r48;if(r50>>>0<=r15>>>0){r14=0;return r14}r46=HEAP32[980];do{if((r46|0)!=0){r47=HEAP32[978];r41=r47+r50|0;if(r41>>>0<=r47>>>0|r41>>>0>r46>>>0){r14=0}else{break}return r14}}while(0);L577:do{if((HEAP32[981]&4|0)==0){r46=HEAP32[876];L579:do{if((r46|0)==0){r2=416}else{r41=r46;r47=3928;while(1){r51=r47|0;r42=HEAP32[r51>>2];if(r42>>>0<=r41>>>0){r52=r47+4|0;if((r42+HEAP32[r52>>2]|0)>>>0>r41>>>0){break}}r42=HEAP32[r47+8>>2];if((r42|0)==0){r2=416;break L579}else{r47=r42}}if((r47|0)==0){r2=416;break}r41=r49-HEAP32[873]&r48;if(r41>>>0>=2147483647){r53=0;break}r11=_sbrk(r41);r17=(r11|0)==(HEAP32[r51>>2]+HEAP32[r52>>2]|0);r54=r17?r11:-1;r55=r17?r41:0;r56=r11;r57=r41;r2=425}}while(0);do{if(r2==416){r46=_sbrk(0);if((r46|0)==-1){r53=0;break}r7=r46;r41=HEAP32[831];r11=r41-1|0;if((r11&r7|0)==0){r58=r50}else{r58=r50-r7+(r11+r7&-r41)|0}r41=HEAP32[978];r7=r41+r58|0;if(!(r58>>>0>r15>>>0&r58>>>0<2147483647)){r53=0;break}r11=HEAP32[980];if((r11|0)!=0){if(r7>>>0<=r41>>>0|r7>>>0>r11>>>0){r53=0;break}}r11=_sbrk(r58);r7=(r11|0)==(r46|0);r54=r7?r46:-1;r55=r7?r58:0;r56=r11;r57=r58;r2=425}}while(0);L599:do{if(r2==425){r11=-r57|0;if((r54|0)!=-1){r59=r55,r60=r59>>2;r61=r54,r62=r61>>2;r2=436;break L577}do{if((r56|0)!=-1&r57>>>0<2147483647&r57>>>0<r39>>>0){r7=HEAP32[832];r46=r40-r57+r7&-r7;if(r46>>>0>=2147483647){r63=r57;break}if((_sbrk(r46)|0)==-1){_sbrk(r11);r53=r55;break L599}else{r63=r46+r57|0;break}}else{r63=r57}}while(0);if((r56|0)==-1){r53=r55}else{r59=r63,r60=r59>>2;r61=r56,r62=r61>>2;r2=436;break L577}}}while(0);HEAP32[981]=HEAP32[981]|4;r64=r53;r2=433}else{r64=0;r2=433}}while(0);do{if(r2==433){if(r50>>>0>=2147483647){break}r53=_sbrk(r50);r56=_sbrk(0);if(!((r56|0)!=-1&(r53|0)!=-1&r53>>>0<r56>>>0)){break}r63=r56-r53|0;r56=r63>>>0>(r15+40|0)>>>0;r55=r56?r53:-1;if((r55|0)!=-1){r59=r56?r63:r64,r60=r59>>2;r61=r55,r62=r61>>2;r2=436}}}while(0);do{if(r2==436){r64=HEAP32[978]+r59|0;HEAP32[978]=r64;if(r64>>>0>HEAP32[979]>>>0){HEAP32[979]=r64}r64=HEAP32[876],r50=r64>>2;L619:do{if((r64|0)==0){r55=HEAP32[874];if((r55|0)==0|r61>>>0<r55>>>0){HEAP32[874]=r61}HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[879]=HEAP32[830];HEAP32[878]=-1;r55=0;while(1){r63=r55<<1;r56=(r63<<2)+3520|0;HEAP32[(r63+3<<2)+3520>>2]=r56;HEAP32[(r63+2<<2)+3520>>2]=r56;r56=r55+1|0;if(r56>>>0<32){r55=r56}else{break}}r55=r61+8|0;if((r55&7|0)==0){r65=0}else{r65=-r55&7}r55=r59-40-r65|0;HEAP32[876]=r61+r65;HEAP32[873]=r55;HEAP32[(r65+4>>2)+r62]=r55|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834]}else{r55=3928,r56=r55>>2;while(1){r66=HEAP32[r56];r67=r55+4|0;r68=HEAP32[r67>>2];if((r61|0)==(r66+r68|0)){r2=448;break}r63=HEAP32[r56+2];if((r63|0)==0){break}else{r55=r63,r56=r55>>2}}do{if(r2==448){if((HEAP32[r56+3]&8|0)!=0){break}r55=r64;if(!(r55>>>0>=r66>>>0&r55>>>0<r61>>>0)){break}HEAP32[r67>>2]=r68+r59;r55=HEAP32[876];r63=HEAP32[873]+r59|0;r53=r55;r57=r55+8|0;if((r57&7|0)==0){r69=0}else{r69=-r57&7}r57=r63-r69|0;HEAP32[876]=r53+r69;HEAP32[873]=r57;HEAP32[r69+(r53+4)>>2]=r57|1;HEAP32[r63+(r53+4)>>2]=40;HEAP32[877]=HEAP32[834];break L619}}while(0);if(r61>>>0<HEAP32[874]>>>0){HEAP32[874]=r61}r56=r61+r59|0;r53=3928;while(1){r70=r53|0;if((HEAP32[r70>>2]|0)==(r56|0)){r2=458;break}r63=HEAP32[r53+8>>2];if((r63|0)==0){break}else{r53=r63}}do{if(r2==458){if((HEAP32[r53+12>>2]&8|0)!=0){break}HEAP32[r70>>2]=r61;r56=r53+4|0;HEAP32[r56>>2]=HEAP32[r56>>2]+r59;r56=r61+8|0;if((r56&7|0)==0){r71=0}else{r71=-r56&7}r56=r59+(r61+8)|0;if((r56&7|0)==0){r72=0,r73=r72>>2}else{r72=-r56&7,r73=r72>>2}r56=r61+r72+r59|0;r63=r56;r57=r71+r15|0,r55=r57>>2;r40=r61+r57|0;r57=r40;r39=r56-(r61+r71)-r15|0;HEAP32[(r71+4>>2)+r62]=r15|3;do{if((r63|0)==(HEAP32[876]|0)){r54=HEAP32[873]+r39|0;HEAP32[873]=r54;HEAP32[876]=r57;HEAP32[r55+(r62+1)]=r54|1}else{if((r63|0)==(HEAP32[875]|0)){r54=HEAP32[872]+r39|0;HEAP32[872]=r54;HEAP32[875]=r57;HEAP32[r55+(r62+1)]=r54|1;HEAP32[(r54>>2)+r62+r55]=r54;break}r54=r59+4|0;r58=HEAP32[(r54>>2)+r62+r73];if((r58&3|0)==1){r52=r58&-8;r51=r58>>>3;L664:do{if(r58>>>0<256){r48=HEAP32[((r72|8)>>2)+r62+r60];r49=HEAP32[r73+(r62+(r60+3))];r11=(r51<<3)+3520|0;do{if((r48|0)!=(r11|0)){if(r48>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r48+12>>2]|0)==(r63|0)){break}_abort()}}while(0);if((r49|0)==(r48|0)){HEAP32[870]=HEAP32[870]&~(1<<r51);break}do{if((r49|0)==(r11|0)){r74=r49+8|0}else{if(r49>>>0<HEAP32[874]>>>0){_abort()}r47=r49+8|0;if((HEAP32[r47>>2]|0)==(r63|0)){r74=r47;break}_abort()}}while(0);HEAP32[r48+12>>2]=r49;HEAP32[r74>>2]=r48}else{r11=r56;r47=HEAP32[((r72|24)>>2)+r62+r60];r46=HEAP32[r73+(r62+(r60+3))];do{if((r46|0)==(r11|0)){r7=r72|16;r41=r61+r54+r7|0;r17=HEAP32[r41>>2];if((r17|0)==0){r42=r61+r7+r59|0;r7=HEAP32[r42>>2];if((r7|0)==0){r75=0,r76=r75>>2;break}else{r77=r7;r78=r42}}else{r77=r17;r78=r41}while(1){r41=r77+20|0;r17=HEAP32[r41>>2];if((r17|0)!=0){r77=r17;r78=r41;continue}r41=r77+16|0;r17=HEAP32[r41>>2];if((r17|0)==0){break}else{r77=r17;r78=r41}}if(r78>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r78>>2]=0;r75=r77,r76=r75>>2;break}}else{r41=HEAP32[((r72|8)>>2)+r62+r60];if(r41>>>0<HEAP32[874]>>>0){_abort()}r17=r41+12|0;if((HEAP32[r17>>2]|0)!=(r11|0)){_abort()}r42=r46+8|0;if((HEAP32[r42>>2]|0)==(r11|0)){HEAP32[r17>>2]=r46;HEAP32[r42>>2]=r41;r75=r46,r76=r75>>2;break}else{_abort()}}}while(0);if((r47|0)==0){break}r46=r72+(r61+(r59+28))|0;r48=(HEAP32[r46>>2]<<2)+3784|0;do{if((r11|0)==(HEAP32[r48>>2]|0)){HEAP32[r48>>2]=r75;if((r75|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r46>>2]);break L664}else{if(r47>>>0<HEAP32[874]>>>0){_abort()}r49=r47+16|0;if((HEAP32[r49>>2]|0)==(r11|0)){HEAP32[r49>>2]=r75}else{HEAP32[r47+20>>2]=r75}if((r75|0)==0){break L664}}}while(0);if(r75>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r76+6]=r47;r11=r72|16;r46=HEAP32[(r11>>2)+r62+r60];do{if((r46|0)!=0){if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+4]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r46=HEAP32[(r54+r11>>2)+r62];if((r46|0)==0){break}if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+5]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r79=r61+(r52|r72)+r59|0;r80=r52+r39|0}else{r79=r63;r80=r39}r54=r79+4|0;HEAP32[r54>>2]=HEAP32[r54>>2]&-2;HEAP32[r55+(r62+1)]=r80|1;HEAP32[(r80>>2)+r62+r55]=r80;r54=r80>>>3;if(r80>>>0<256){r51=r54<<1;r58=(r51<<2)+3520|0;r46=HEAP32[870];r47=1<<r54;do{if((r46&r47|0)==0){HEAP32[870]=r46|r47;r81=r58;r82=(r51+2<<2)+3520|0}else{r54=(r51+2<<2)+3520|0;r48=HEAP32[r54>>2];if(r48>>>0>=HEAP32[874]>>>0){r81=r48;r82=r54;break}_abort()}}while(0);HEAP32[r82>>2]=r57;HEAP32[r81+12>>2]=r57;HEAP32[r55+(r62+2)]=r81;HEAP32[r55+(r62+3)]=r58;break}r51=r40;r47=r80>>>8;do{if((r47|0)==0){r83=0}else{if(r80>>>0>16777215){r83=31;break}r46=(r47+1048320|0)>>>16&8;r52=r47<<r46;r54=(r52+520192|0)>>>16&4;r48=r52<<r54;r52=(r48+245760|0)>>>16&2;r49=14-(r54|r46|r52)+(r48<<r52>>>15)|0;r83=r80>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r83<<2)+3784|0;HEAP32[r55+(r62+7)]=r83;HEAP32[r55+(r62+5)]=0;HEAP32[r55+(r62+4)]=0;r58=HEAP32[871];r49=1<<r83;if((r58&r49|0)==0){HEAP32[871]=r58|r49;HEAP32[r47>>2]=r51;HEAP32[r55+(r62+6)]=r47;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}if((r83|0)==31){r84=0}else{r84=25-(r83>>>1)|0}r49=r80<<r84;r58=HEAP32[r47>>2];while(1){if((HEAP32[r58+4>>2]&-8|0)==(r80|0)){break}r85=(r49>>>31<<2)+r58+16|0;r47=HEAP32[r85>>2];if((r47|0)==0){r2=531;break}else{r49=r49<<1;r58=r47}}if(r2==531){if(r85>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r85>>2]=r51;HEAP32[r55+(r62+6)]=r58;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}}r49=r58+8|0;r47=HEAP32[r49>>2];r52=HEAP32[874];if(r58>>>0<r52>>>0){_abort()}if(r47>>>0<r52>>>0){_abort()}else{HEAP32[r47+12>>2]=r51;HEAP32[r49>>2]=r51;HEAP32[r55+(r62+2)]=r47;HEAP32[r55+(r62+3)]=r58;HEAP32[r55+(r62+6)]=0;break}}}while(0);r14=r61+(r71|8)|0;return r14}}while(0);r53=r64;r55=3928,r40=r55>>2;while(1){r86=HEAP32[r40];if(r86>>>0<=r53>>>0){r87=HEAP32[r40+1];r88=r86+r87|0;if(r88>>>0>r53>>>0){break}}r55=HEAP32[r40+2],r40=r55>>2}r55=r86+(r87-39)|0;if((r55&7|0)==0){r89=0}else{r89=-r55&7}r55=r86+(r87-47)+r89|0;r40=r55>>>0<(r64+16|0)>>>0?r53:r55;r55=r40+8|0,r57=r55>>2;r39=r61+8|0;if((r39&7|0)==0){r90=0}else{r90=-r39&7}r39=r59-40-r90|0;HEAP32[876]=r61+r90;HEAP32[873]=r39;HEAP32[(r90+4>>2)+r62]=r39|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834];HEAP32[r40+4>>2]=27;HEAP32[r57]=HEAP32[982];HEAP32[r57+1]=HEAP32[983];HEAP32[r57+2]=HEAP32[984];HEAP32[r57+3]=HEAP32[985];HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[984]=r55;r55=r40+28|0;HEAP32[r55>>2]=7;if((r40+32|0)>>>0<r88>>>0){r57=r55;while(1){r55=r57+4|0;HEAP32[r55>>2]=7;if((r57+8|0)>>>0<r88>>>0){r57=r55}else{break}}}if((r40|0)==(r53|0)){break}r57=r40-r64|0;r55=r57+(r53+4)|0;HEAP32[r55>>2]=HEAP32[r55>>2]&-2;HEAP32[r50+1]=r57|1;HEAP32[r53+r57>>2]=r57;r55=r57>>>3;if(r57>>>0<256){r39=r55<<1;r63=(r39<<2)+3520|0;r56=HEAP32[870];r47=1<<r55;do{if((r56&r47|0)==0){HEAP32[870]=r56|r47;r91=r63;r92=(r39+2<<2)+3520|0}else{r55=(r39+2<<2)+3520|0;r49=HEAP32[r55>>2];if(r49>>>0>=HEAP32[874]>>>0){r91=r49;r92=r55;break}_abort()}}while(0);HEAP32[r92>>2]=r64;HEAP32[r91+12>>2]=r64;HEAP32[r50+2]=r91;HEAP32[r50+3]=r63;break}r39=r64;r47=r57>>>8;do{if((r47|0)==0){r93=0}else{if(r57>>>0>16777215){r93=31;break}r56=(r47+1048320|0)>>>16&8;r53=r47<<r56;r40=(r53+520192|0)>>>16&4;r55=r53<<r40;r53=(r55+245760|0)>>>16&2;r49=14-(r40|r56|r53)+(r55<<r53>>>15)|0;r93=r57>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r93<<2)+3784|0;HEAP32[r50+7]=r93;HEAP32[r50+5]=0;HEAP32[r50+4]=0;r63=HEAP32[871];r49=1<<r93;if((r63&r49|0)==0){HEAP32[871]=r63|r49;HEAP32[r47>>2]=r39;HEAP32[r50+6]=r47;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}if((r93|0)==31){r94=0}else{r94=25-(r93>>>1)|0}r49=r57<<r94;r63=HEAP32[r47>>2];while(1){if((HEAP32[r63+4>>2]&-8|0)==(r57|0)){break}r95=(r49>>>31<<2)+r63+16|0;r47=HEAP32[r95>>2];if((r47|0)==0){r2=566;break}else{r49=r49<<1;r63=r47}}if(r2==566){if(r95>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r95>>2]=r39;HEAP32[r50+6]=r63;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}}r49=r63+8|0;r57=HEAP32[r49>>2];r47=HEAP32[874];if(r63>>>0<r47>>>0){_abort()}if(r57>>>0<r47>>>0){_abort()}else{HEAP32[r57+12>>2]=r39;HEAP32[r49>>2]=r39;HEAP32[r50+2]=r57;HEAP32[r50+3]=r63;HEAP32[r50+6]=0;break}}}while(0);r50=HEAP32[873];if(r50>>>0<=r15>>>0){break}r64=r50-r15|0;HEAP32[873]=r64;r50=HEAP32[876];r57=r50;HEAP32[876]=r57+r15;HEAP32[(r57+4>>2)+r16]=r64|1;HEAP32[r50+4>>2]=r15|3;r14=r50+8|0;return r14}}while(0);r15=___errno_location();HEAP32[r15>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46;r2=r1>>2;r3=0;if((r1|0)==0){return}r4=r1-8|0;r5=r4;r6=HEAP32[874];if(r4>>>0<r6>>>0){_abort()}r7=HEAP32[r1-4>>2];r8=r7&3;if((r8|0)==1){_abort()}r9=r7&-8,r10=r9>>2;r11=r1+(r9-8)|0;r12=r11;L836:do{if((r7&1|0)==0){r13=HEAP32[r4>>2];if((r8|0)==0){return}r14=-8-r13|0,r15=r14>>2;r16=r1+r14|0;r17=r16;r18=r13+r9|0;if(r16>>>0<r6>>>0){_abort()}if((r17|0)==(HEAP32[875]|0)){r19=(r1+(r9-4)|0)>>2;if((HEAP32[r19]&3|0)!=3){r20=r17,r21=r20>>2;r22=r18;break}HEAP32[872]=r18;HEAP32[r19]=HEAP32[r19]&-2;HEAP32[r15+(r2+1)]=r18|1;HEAP32[r11>>2]=r18;return}r19=r13>>>3;if(r13>>>0<256){r13=HEAP32[r15+(r2+2)];r23=HEAP32[r15+(r2+3)];r24=(r19<<3)+3520|0;do{if((r13|0)!=(r24|0)){if(r13>>>0<r6>>>0){_abort()}if((HEAP32[r13+12>>2]|0)==(r17|0)){break}_abort()}}while(0);if((r23|0)==(r13|0)){HEAP32[870]=HEAP32[870]&~(1<<r19);r20=r17,r21=r20>>2;r22=r18;break}do{if((r23|0)==(r24|0)){r25=r23+8|0}else{if(r23>>>0<r6>>>0){_abort()}r26=r23+8|0;if((HEAP32[r26>>2]|0)==(r17|0)){r25=r26;break}_abort()}}while(0);HEAP32[r13+12>>2]=r23;HEAP32[r25>>2]=r13;r20=r17,r21=r20>>2;r22=r18;break}r24=r16;r19=HEAP32[r15+(r2+6)];r26=HEAP32[r15+(r2+3)];do{if((r26|0)==(r24|0)){r27=r14+(r1+20)|0;r28=HEAP32[r27>>2];if((r28|0)==0){r29=r14+(r1+16)|0;r30=HEAP32[r29>>2];if((r30|0)==0){r31=0,r32=r31>>2;break}else{r33=r30;r34=r29}}else{r33=r28;r34=r27}while(1){r27=r33+20|0;r28=HEAP32[r27>>2];if((r28|0)!=0){r33=r28;r34=r27;continue}r27=r33+16|0;r28=HEAP32[r27>>2];if((r28|0)==0){break}else{r33=r28;r34=r27}}if(r34>>>0<r6>>>0){_abort()}else{HEAP32[r34>>2]=0;r31=r33,r32=r31>>2;break}}else{r27=HEAP32[r15+(r2+2)];if(r27>>>0<r6>>>0){_abort()}r28=r27+12|0;if((HEAP32[r28>>2]|0)!=(r24|0)){_abort()}r29=r26+8|0;if((HEAP32[r29>>2]|0)==(r24|0)){HEAP32[r28>>2]=r26;HEAP32[r29>>2]=r27;r31=r26,r32=r31>>2;break}else{_abort()}}}while(0);if((r19|0)==0){r20=r17,r21=r20>>2;r22=r18;break}r26=r14+(r1+28)|0;r16=(HEAP32[r26>>2]<<2)+3784|0;do{if((r24|0)==(HEAP32[r16>>2]|0)){HEAP32[r16>>2]=r31;if((r31|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r26>>2]);r20=r17,r21=r20>>2;r22=r18;break L836}else{if(r19>>>0<HEAP32[874]>>>0){_abort()}r13=r19+16|0;if((HEAP32[r13>>2]|0)==(r24|0)){HEAP32[r13>>2]=r31}else{HEAP32[r19+20>>2]=r31}if((r31|0)==0){r20=r17,r21=r20>>2;r22=r18;break L836}}}while(0);if(r31>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r32+6]=r19;r24=HEAP32[r15+(r2+4)];do{if((r24|0)!=0){if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+4]=r24;HEAP32[r24+24>>2]=r31;break}}}while(0);r24=HEAP32[r15+(r2+5)];if((r24|0)==0){r20=r17,r21=r20>>2;r22=r18;break}if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+5]=r24;HEAP32[r24+24>>2]=r31;r20=r17,r21=r20>>2;r22=r18;break}}else{r20=r5,r21=r20>>2;r22=r9}}while(0);r5=r20,r31=r5>>2;if(r5>>>0>=r11>>>0){_abort()}r5=r1+(r9-4)|0;r32=HEAP32[r5>>2];if((r32&1|0)==0){_abort()}do{if((r32&2|0)==0){if((r12|0)==(HEAP32[876]|0)){r6=HEAP32[873]+r22|0;HEAP32[873]=r6;HEAP32[876]=r20;HEAP32[r21+1]=r6|1;if((r20|0)!=(HEAP32[875]|0)){return}HEAP32[875]=0;HEAP32[872]=0;return}if((r12|0)==(HEAP32[875]|0)){r6=HEAP32[872]+r22|0;HEAP32[872]=r6;HEAP32[875]=r20;HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;return}r6=(r32&-8)+r22|0;r33=r32>>>3;L938:do{if(r32>>>0<256){r34=HEAP32[r2+r10];r25=HEAP32[((r9|4)>>2)+r2];r8=(r33<<3)+3520|0;do{if((r34|0)!=(r8|0)){if(r34>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r34+12>>2]|0)==(r12|0)){break}_abort()}}while(0);if((r25|0)==(r34|0)){HEAP32[870]=HEAP32[870]&~(1<<r33);break}do{if((r25|0)==(r8|0)){r35=r25+8|0}else{if(r25>>>0<HEAP32[874]>>>0){_abort()}r4=r25+8|0;if((HEAP32[r4>>2]|0)==(r12|0)){r35=r4;break}_abort()}}while(0);HEAP32[r34+12>>2]=r25;HEAP32[r35>>2]=r34}else{r8=r11;r4=HEAP32[r10+(r2+4)];r7=HEAP32[((r9|4)>>2)+r2];do{if((r7|0)==(r8|0)){r24=r9+(r1+12)|0;r19=HEAP32[r24>>2];if((r19|0)==0){r26=r9+(r1+8)|0;r16=HEAP32[r26>>2];if((r16|0)==0){r36=0,r37=r36>>2;break}else{r38=r16;r39=r26}}else{r38=r19;r39=r24}while(1){r24=r38+20|0;r19=HEAP32[r24>>2];if((r19|0)!=0){r38=r19;r39=r24;continue}r24=r38+16|0;r19=HEAP32[r24>>2];if((r19|0)==0){break}else{r38=r19;r39=r24}}if(r39>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r39>>2]=0;r36=r38,r37=r36>>2;break}}else{r24=HEAP32[r2+r10];if(r24>>>0<HEAP32[874]>>>0){_abort()}r19=r24+12|0;if((HEAP32[r19>>2]|0)!=(r8|0)){_abort()}r26=r7+8|0;if((HEAP32[r26>>2]|0)==(r8|0)){HEAP32[r19>>2]=r7;HEAP32[r26>>2]=r24;r36=r7,r37=r36>>2;break}else{_abort()}}}while(0);if((r4|0)==0){break}r7=r9+(r1+20)|0;r34=(HEAP32[r7>>2]<<2)+3784|0;do{if((r8|0)==(HEAP32[r34>>2]|0)){HEAP32[r34>>2]=r36;if((r36|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r7>>2]);break L938}else{if(r4>>>0<HEAP32[874]>>>0){_abort()}r25=r4+16|0;if((HEAP32[r25>>2]|0)==(r8|0)){HEAP32[r25>>2]=r36}else{HEAP32[r4+20>>2]=r36}if((r36|0)==0){break L938}}}while(0);if(r36>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r37+6]=r4;r8=HEAP32[r10+(r2+2)];do{if((r8|0)!=0){if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+4]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);r8=HEAP32[r10+(r2+3)];if((r8|0)==0){break}if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+5]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;if((r20|0)!=(HEAP32[875]|0)){r40=r6;break}HEAP32[872]=r6;return}else{HEAP32[r5>>2]=r32&-2;HEAP32[r21+1]=r22|1;HEAP32[(r22>>2)+r31]=r22;r40=r22}}while(0);r22=r40>>>3;if(r40>>>0<256){r31=r22<<1;r32=(r31<<2)+3520|0;r5=HEAP32[870];r36=1<<r22;do{if((r5&r36|0)==0){HEAP32[870]=r5|r36;r41=r32;r42=(r31+2<<2)+3520|0}else{r22=(r31+2<<2)+3520|0;r37=HEAP32[r22>>2];if(r37>>>0>=HEAP32[874]>>>0){r41=r37;r42=r22;break}_abort()}}while(0);HEAP32[r42>>2]=r20;HEAP32[r41+12>>2]=r20;HEAP32[r21+2]=r41;HEAP32[r21+3]=r32;return}r32=r20;r41=r40>>>8;do{if((r41|0)==0){r43=0}else{if(r40>>>0>16777215){r43=31;break}r42=(r41+1048320|0)>>>16&8;r31=r41<<r42;r36=(r31+520192|0)>>>16&4;r5=r31<<r36;r31=(r5+245760|0)>>>16&2;r22=14-(r36|r42|r31)+(r5<<r31>>>15)|0;r43=r40>>>((r22+7|0)>>>0)&1|r22<<1}}while(0);r41=(r43<<2)+3784|0;HEAP32[r21+7]=r43;HEAP32[r21+5]=0;HEAP32[r21+4]=0;r22=HEAP32[871];r31=1<<r43;do{if((r22&r31|0)==0){HEAP32[871]=r22|r31;HEAP32[r41>>2]=r32;HEAP32[r21+6]=r41;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20}else{if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r5=r40<<r44;r42=HEAP32[r41>>2];while(1){if((HEAP32[r42+4>>2]&-8|0)==(r40|0)){break}r45=(r5>>>31<<2)+r42+16|0;r36=HEAP32[r45>>2];if((r36|0)==0){r3=743;break}else{r5=r5<<1;r42=r36}}if(r3==743){if(r45>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r45>>2]=r32;HEAP32[r21+6]=r42;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20;break}}r5=r42+8|0;r6=HEAP32[r5>>2];r36=HEAP32[874];if(r42>>>0<r36>>>0){_abort()}if(r6>>>0<r36>>>0){_abort()}else{HEAP32[r6+12>>2]=r32;HEAP32[r5>>2]=r32;HEAP32[r21+2]=r6;HEAP32[r21+3]=r42;HEAP32[r21+6]=0;break}}}while(0);r21=HEAP32[878]-1|0;HEAP32[878]=r21;if((r21|0)==0){r46=3936}else{return}while(1){r21=HEAP32[r46>>2];if((r21|0)==0){break}else{r46=r21+8|0}}HEAP32[878]=-1;return}
 // EMSCRIPTEN_END_FUNCS
 Module["_main"] = _main;
 Module["_malloc"] = _malloc;
@@ -11025,7 +11082,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/smallpt.data';
     var REMOTE_PACKAGE_NAME = 'smallpt.data';
-    var PACKAGE_UUID = '705071cf-7544-43aa-96df-1bf84fd4cc8d';
+    var PACKAGE_UUID = '389842dc-bf87-4e73-b543-c8d3f3de1ebb';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
