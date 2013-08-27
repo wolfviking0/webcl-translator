@@ -1282,7 +1282,7 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,ctx:[],webcl_mozilla:0,webcl_webkit:0,ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],platforms:[],devices:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
+      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,webcl_mozilla:0,webcl_webkit:0,ctx:[],ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],devices:[],devices_clean:[],platforms:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
         // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
         // Remove on Mozilla CL_ prefix on the EnumName
         for (var legacyEnumName in WebCL) {
@@ -1352,6 +1352,7 @@ function copyTempDouble(ptr) {
           0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
           0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
           0x1030:CL.DEVICE_EXTENSIONS,
+          0x1031:CL.DEVICE_PLATFORM,
           0x102A:CL.DEVICE_QUEUE_PROPERTIES,
           0x102B:CL.DEVICE_NAME,
           0x102C:CL.DEVICE_VENDOR,
@@ -10402,6 +10403,8 @@ function copyTempDouble(ptr) {
       assert(device_type_i64_2 == 0, 'Invalid flags i64');
       var prop = [];
       var plat = 0;
+      var use_gl_interop = 0;
+      var share_group = 0;
       try {
         if (CL.platforms.length == 0) {
             var platforms = WebCL.getPlatforms();
@@ -10434,6 +10437,18 @@ function copyTempDouble(ptr) {
                   prop.push(CL.platforms[readprop]);
                 }             
               break;
+              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+                use_gl_interop = 1;
+                i++;
+              break;
+              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+                i++;
+              break;
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
+                use_gl_interop = 1;
+                share_group = 1;
+                i++;
+              break;
               default:
                 console.error("clCreateContextFromType : Param not yet implemented or unknow : "+readprop);
                 HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
@@ -10463,6 +10478,11 @@ function copyTempDouble(ptr) {
         }
   //#endif
         if (CL.webcl_mozilla == 1) {
+          if (use_gl_interop) {
+            console.error("clCreateContext: GL Interop not yet supported by Firefox");
+            HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
+            return 0;
+          }
           if (mapcount >= 1) {        
             CL.ctx.push(WebCL.createContextFromType(prop, device_type_i64_1));
           } else {
@@ -10471,8 +10491,11 @@ function copyTempDouble(ptr) {
           }
         } else {
           if (mapcount >= 1) {
+            var builder = WebCL;
+            if (use_gl_interop)
+              builder = WebCL.getExtension("KHR_GL_SHARING");
             var contextProperties = {platform: CL.platforms[plat], devices: CL.platforms[plat].getDevices(device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
-            CL.ctx.push(WebCL.createContext(contextProperties));
+            CL.ctx.push(builder.createContext(contextProperties));
           } else {
             CL.ctx.push(WebCL.createContext());
           }
@@ -94344,7 +94367,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '2a944b68-58f0-49af-8602-ab7ed54d35cf';
+    var PACKAGE_UUID = 'bce7f43a-4ed4-4443-9f17-406112e5e059';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
