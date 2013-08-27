@@ -21,11 +21,9 @@ endef
 all: \
 	hello_world_sample 			\
 	hello_world_2_sample		\
-	hello_world_interop_sample	\
 	convolution_sample 			\
 	reduce_sample 				\
 	scan_sample 				\
-	displacement_sample 		\
 	qjulia_sample 				\
 	mandelbulb_sample 			\
 	smallpt_sample				\
@@ -42,12 +40,6 @@ hello_world_2_sample:
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
 	--preload-file hello_world_2.cl \
 	-o ../build/hello_world_2.js
-
-hello_world_interop_sample:
-	$(call chdir,hello_world_interop/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_interop.cpp -O0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 \
-	--preload-file hello_world_interop.cl \
-	-o ../build/hello_world_interop.js
 
 convolution_sample:
 	$(call chdir,convolution/)
@@ -72,12 +64,6 @@ qjulia_sample:
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=0 \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/qjulia.js
-
-displacement_sample:
-	$(call chdir,displacement/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) displacement.c -O2 -s ALLOW_MEMORY_GROWTH=1 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_DEBUG=1 -s GL_DEBUG=0 \
-	--preload-file displacement_kernel.cl --preload-file stpeters_probe.pfm --preload-file phong.frag --preload-file phong.vert --preload-file skybox.frag --preload-file skybox.vert --preload-file fresnel.frag --preload-file fresnel.vert \
-	-o ../build/displacement.js
 
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)

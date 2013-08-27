@@ -7,9 +7,9 @@ var LibraryOpenCL = {
     data_type: {FLOAT:16,INT:32,UINT:64},
     device_infos: {},
     index_object: 0,
-    ctx: [],
     webcl_mozilla: 0,
     webcl_webkit: 0,
+    ctx: [],
     ctx_clean: [],
     cmdQueue: [],
     cmdQueue_clean: [],
@@ -21,8 +21,9 @@ var LibraryOpenCL = {
     kernels_clean: [],
     buffers: [],
     buffers_clean: [],
-    platforms: [],
     devices: [],
+    devices_clean: [],
+    platforms: [],
 #if OPENCL_STACK_TRACE    
     stack_trace: "// Javascript webcl Stack Trace\n",
 #endif
@@ -107,6 +108,7 @@ var LibraryOpenCL = {
         0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
         0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
         0x1030:CL.DEVICE_EXTENSIONS,
+        0x1031:CL.DEVICE_PLATFORM,
         0x102A:CL.DEVICE_QUEUE_PROPERTIES,
         0x102B:CL.DEVICE_NAME,
         0x102C:CL.DEVICE_VENDOR,
@@ -847,8 +849,7 @@ var LibraryOpenCL = {
       if (num_devices == 0) {
         devices_tab[0] = CL.devices[0];
       }
-    
-      // Use default platform
+
       if (CL.webcl_mozilla == 1) {
         if (use_gl_interop) {
 #if OPENCL_DEBUG
@@ -888,7 +889,9 @@ var LibraryOpenCL = {
     
     var prop = [];
     var plat = 0;
-     
+    var use_gl_interop = 0;
+    var share_group = 0;
+
     try {
       
       if (CL.platforms.length == 0) {
@@ -930,6 +933,18 @@ var LibraryOpenCL = {
                 prop.push(CL.platforms[readprop]);
               }             
             break;
+            case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+              use_gl_interop = 1;
+              i++;
+            break;
+            case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+              i++;
+            break;
+            case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
+              use_gl_interop = 1;
+              share_group = 1;
+              i++;
+            break;
             default:
 #if OPENCL_DEBUG
               console.error("clCreateContextFromType : Param not yet implemented or unknow : "+readprop);
@@ -967,6 +982,13 @@ var LibraryOpenCL = {
 //#endif
 
       if (CL.webcl_mozilla == 1) {
+        if (use_gl_interop) {
+#if OPENCL_DEBUG
+          console.error("clCreateContext: GL Interop not yet supported by Firefox");
+#endif
+          {{{ makeSetValue('errcode_ret', '0', '-33', 'i32') }}} /* CL_INVALID_DEVICE */;  
+          return 0;
+        }
         if (mapcount >= 1) {        
           CL.ctx.push(WebCL.createContextFromType(prop, device_type_i64_1));
         } else {
@@ -974,9 +996,15 @@ var LibraryOpenCL = {
           CL.ctx.push(WebCL.createContextFromType(prop, CL.DEVICE_TYPE_DEFAULT));
         }
       } else {
+        
         if (mapcount >= 1) {
+          var builder = WebCL;
+        
+          if (use_gl_interop)
+            builder = WebCL.getExtension("KHR_GL_SHARING");
+
           var contextProperties = {platform: CL.platforms[plat], devices: CL.platforms[plat].getDevices(device_type_i64_1), deviceType: device_type_i64_1, shareGroup: 0, hint: null};
-          CL.ctx.push(WebCL.createContext(contextProperties));
+          CL.ctx.push(builder.createContext(contextProperties));
         } else {
           CL.ctx.push(WebCL.createContext());
         }
@@ -2338,6 +2366,37 @@ var LibraryOpenCL = {
     } catch(e) {
       return CL.catchError("clEnqueueReadBuffer",e);
     }
+  },
+
+  clReleaseDevice: function(device) {
+    var dev = CL.getArrayId(device);  
+    if (dev >= (CL.devices.length + CL.devices_clean.length) || dev < 0 ) {
+#if OPENCL_DEBUG
+      console.error("clReleaseDevice: Invalid command queue : "+dev);
+#endif
+
+      return -33; /* CL_INVALID_DEVICE */
+    }
+
+    var offset = 0;
+    for (var i = 0; i < CL.devices_clean.length; i++) {
+      if (CL.devices_clean[i] < dev) {
+        offset++;
+      }
+    }
+    
+    CL.devices.splice(dev - offset, 1);
+    CL.devices_clean.push(dev);
+        
+    if (CL.devices.length == 0) {
+      CL.devices_clean = [];
+    }
+    
+#if OPENCL_DEBUG
+    console.info("clReleaseDevice: Release device : "+dev);
+#endif
+
+    return 0;/*CL_SUCCESS*/
   },
 
   clReleaseMemObject: function(memobj) { 

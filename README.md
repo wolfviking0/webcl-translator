@@ -39,7 +39,7 @@ Call makefile inside the different sample folder
 Launch Sample :
 ---------------
 
-Call index.html inside webcl/build/ folder, by default use GPU mode and sample hello_world, you can change parameter and sample using index.html?sample=[0-11]&mode=cpu or index.html?sample=[0-11]&mode=gpu
+Call index.html inside webcl/build/ folder, by default use GPU mode and sample hello_world, you can change parameter and sample using index.html?sample=[0-11]&mode=cpu or index.html?sample=[0-10]&mode=gpu&param=interop
 
 
 					|------------------|------------------|			
@@ -48,14 +48,13 @@ Call index.html inside webcl/build/ folder, by default use GPU mode and sample h
 	| hello_world	|		 OK		   |	   OK		  |
 	| hello_world_2	|		 OK		   |	   OK		  |
 	| convolution	|		 OK		   |	   OK		  |
-	| reduce		|		 OK		   |	   OK		  |
+	| reduce		|   OK (Only GPU)  |   OK (Only GPU)  |
 	| scan   		|		 OK		   |	   OK		  |
 	| mandelbulb	|		 OK		   |	   OK		  |
-	| qjulia		| 	BAD RESULT     |OK(sharath_setArg)|
-	| displacement	| WORK IN PROGRESS | WORK IN PROGRESS |
+	| qjulia 		| 	 BAD RESULT    |	   OK  		  |
 	| smallpt  		| WORK IN PROGRESS | WORK IN PROGRESS |
 	| FFT			| WORK IN PROGRESS | WORK IN PROGRESS |
-	| DXTCompressor | WORK IN PROGRESS | WORK IN PROGRESS |
+	| DXTCompressor |   OK (Only GPU)  |   OK (Only GPU)  |
 	| OVDecodeRender| WORK IN PROGRESS | WORK IN PROGRESS |
 	|---------------|------------------|------------------|
 	
@@ -76,8 +75,6 @@ https://developer.apple.com/library/mac/#samplecode/OpenCL_Parallel_Prefix_Sum_E
 http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html
 
 https://developer.apple.com/library/mac/#samplecode/OpenCL_RayTraced_Quaternion_Julia-Set_Example/
-
-http://developer.apple.com/library/mac/#samplecode/OpenCL_Procedural_Geometric_Displacement_Example/
 
 http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
 
