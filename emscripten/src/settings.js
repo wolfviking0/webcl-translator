@@ -189,6 +189,8 @@ var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL impleme
 
 var OPENCL_STACK_TRACE = 0 // Print all the wecl call
 
+var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
+
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime
                   // option, in this case GL.debug.
 var GL_TESTING = 0; // When enabled, sets preserveDrawingBuffer in the context, to allow tests to work (but adds overhead)
