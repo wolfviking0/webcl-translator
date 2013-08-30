@@ -1,15 +1,194 @@
 var LibraryOpenCL = {  
   $CL__deps: ['$GL'],
   $CL: {
-    
+    cl_objects: {},
+    cl_objects_size: 0,
+
+    udid: function() {
+      var _id = new Date().valueOf() - 1377000000000;
+#if OPENCL_DEBUG
+      console.info("udid : "+_id);
+#endif
+      
+      // /!\ Call udid when you add inside cl_objects
+      CL.cl_objects_size++;
+
+      return _id;
+    },
+
+    catchError: function(e) {
+      var _str=e.message;
+      var _n=_str.lastIndexOf(" ");
+      var _error = _str.substr(_n+1,_str.length-_n-1);
+      return _error;
+    },
+
+#if OPENCL_STACK_TRACE    
+    stack_trace: "// Javascript webcl Stack Trace\n",
+
+    webclBeginStackTrace: function(name,parameter) {
+      CL.stack_trace += "\n" + name + "("
+
+      CL.webclCallParameterStackTrace(parameter);
+
+      CL.stack_trace += ")\n";
+    },
+        
+    webclCallStackTrace: function(name,parameter) {
+      CL.stack_trace += "\t" + name + "("
+
+      CL.webclCallParameterStackTrace(parameter);
+
+      CL.stack_trace += ")\n";
+    },
+
+    webclCallParameterStackTrace: function(parameter) {
+      for (var i = 0; i < parameter.length - 1 ; i++) {
+        CL.stack_trace += parameter[i] + ",";
+      }
+
+      if (parameter.length >= 1) {
+        CL.stack_trace += parameter[parameter.length - 1];
+      }
+    },
+
+    webclEndStackTrace: function(result,message,exception) {
+      CL.stack_trace += "\tResult (" + result[0];
+      if (result.length >= 2) {
+        CL.stack_trace += " : ";
+      }
+
+      for (var i = 1; i < result.length - 1 ; i++) {
+        CL.stack_trace += {{{ makeGetValue('result[i]', '0', 'i32') }}} + " - ";
+      }
+
+      if (result.length >= 2) {
+        CL.stack_trace +=  {{{ makeGetValue('result[result.length - 1]', '0', 'i32') }}};
+      }
+
+      CL.stack_trace += ") - Message (" + message + ") - Exception (" + exception + ")\n";
+    },
+#endif
   },
 
+#if OPENCL_STACK_TRACE
+  webclPrintStackTrace: function(stack_string,stack_size) {
+    var _size = {{{ makeGetValue('stack_size', '0', 'i32') }}} ;
+    
+    if (_size == 0) {
+      {{{ makeSetValue('stack_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Num of devices */;
+    } else {
+      writeStringToMemory(CL.stack_trace, stack_string);
+    }
+  },
+#endif
+
   clGetPlatformIDs: function(num_entries,platforms,num_platforms) {
-    console.error("clGetPlatformIDs: Not yet implemented\n");
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetPlatformIDs",[num_entries,platforms,num_platforms]);
+#endif
+
+    try { 
+
+      if ( num_entries == 0 && platforms != 0) {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and platforms is not NULL","");
+#endif
+        return webcl.INVALID_VALUE
+      }
+
+      if ( num_platforms == 0 && platforms == 0) {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_platforms and platforms are NULL","");
+#endif
+        return webcl.INVALID_VALUE
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace("webcl.getPlatforms",[]);
+#endif
+      var _platforms = webcl.getPlatforms();
+
+      if (platforms == 0) {
+        {{{ makeSetValue('num_platforms', '0', 'Math.min(num_entries,_platforms.length)', 'i32') }}} /* Num of platforms */;
+      } 
+
+      if (platforms != 0) {
+        for (var i = 0; i < Math.min(num_entries,_platforms.length); i++) {
+          var _id = CL.udid();
+          CL.cl_objects[_id]=_platforms[i];
+          {{{ makeSetValue('platforms', 'i*4', '_id', 'i32') }}};
+        }
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,platforms,num_platforms],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,platforms,num_platforms],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetPlatformInfo: function(platform,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetPlatformInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetPlatformInfo",[platform,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+      if (platform in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",param_name);
+#endif        
+
+        var _info = CL.cl_objects[platform].getInfo(param_name);
+
+        if (param_value != 0) {
+          writeStringToMemory(_info, param_value);
+        }
+      
+        if (param_value_size_ret != 0) {
+          {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+        }
+           
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform are NULL","");
+#endif
+        return webcl.INVALID_PLATFORM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+      var _info = "undefined";
+
+      if (param_value != 0) {
+        writeStringToMemory(_info, param_value);
+      }
+    
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
+
   },
 
   clGetDeviceIDs: function(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {

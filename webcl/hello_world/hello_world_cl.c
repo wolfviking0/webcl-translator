@@ -89,10 +89,101 @@ const char *KernelSource = "\n" \
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef __EMSCRIPTEN__
-extern void webclPrintStackTrace(const char * stack, int size);
+extern void webclPrintStackTrace(const char * stack, int* size);
+
+void print_stack() {
+    printf("\n___________________________________\n");
+    int size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
 #endif
 
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
+}
+
 int main(int argc, char** argv)
+{
+    cl_uint err;
+    cl_uint num_platforms;
+    cl_platform_id first_platform_id;
+
+    // Parse command line options
+    //
+    int counter = 0;
+    int i = 0;
+    int use_gpu = 1;
+    for(; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
+    printf("TEST : clGetPlatformIDs\n");
+    printf("-----------------------\n");
+
+    err = clGetPlatformIDs(0, NULL, NULL);
+    printf("%d) %d\n",++counter,err);
+
+    err = clGetPlatformIDs(0, &first_platform_id, NULL);
+    printf("%d) %d - %d\n",++counter,err,(int)first_platform_id);
+
+    err = clGetPlatformIDs(0, NULL, &num_platforms);
+    printf("%d) %d - %d\n",++counter,err,num_platforms);
+
+    err = clGetPlatformIDs(2, NULL, &num_platforms);
+    printf("%d) %d - %d\n",++counter,err,num_platforms);
+
+    err = clGetPlatformIDs(1, &first_platform_id, NULL);
+    printf("%d) %d - %d\n",++counter,err,(int)first_platform_id);
+
+    err = clGetPlatformIDs(1, &first_platform_id, &num_platforms);
+    printf("%d) %d - %d - %d\n",++counter,err,(int)first_platform_id,num_platforms);
+
+    printf("\nTEST : clGetPlatformInfo\n");
+    printf("-----------------------\n");
+    char buffer[1024];
+    size_t size = 0;
+    
+    err = clGetPlatformInfo(0, CL_PLATFORM_PROFILE, 1024, buffer, NULL );
+    printf("%d) %d - %s\n",++counter,err,buffer);
+
+    err = clGetPlatformInfo(0, CL_PLATFORM_VENDOR, 1024, buffer, NULL);
+    printf("%d) %d - %s\n",++counter,err,buffer);    
+
+    err = clGetPlatformInfo(first_platform_id, CL_PLATFORM_PROFILE, 1024, buffer, NULL);
+    printf("%d) %d - %s\n",++counter,err,buffer);
+
+    err = clGetPlatformInfo(first_platform_id, CL_PLATFORM_VERSION, 1024, NULL, NULL);
+    printf("%d) %d\n",++counter,err);
+
+    err = clGetPlatformInfo(first_platform_id, CL_PLATFORM_VENDOR, 1024, buffer, &size);
+    printf("%d) %d - %s - %d\n",++counter,err,buffer,size);    
+
+    return end(EXIT_SUCCESS);
+}
+
+int main_2(int argc, char** argv)
 {
     int err;                            // error code returned from api calls
       
@@ -328,19 +419,6 @@ int main(int argc, char** argv)
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
 
-#ifdef __EMSCRIPTEN__
-    printf("\n___________________________________\n");
-    int size = 0;
-    webclPrintStackTrace(0,size);
-    char* webcl_stack = (char*)malloc(size+1);
-    webcl_stack[size] = '\0';
-    
-    webclPrintStackTrace(webcl_stack,size);
-    printf("%s\n",webcl_stack);
-    printf("___________________________________\n");
-    free(webcl_stack);
-#endif
-    
     return 0;
 }
 
