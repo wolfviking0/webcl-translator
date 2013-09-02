@@ -178,7 +178,74 @@ int main(int argc, char** argv)
     printf("%d) %d\n",++counter,err);
 
     err = clGetPlatformInfo(first_platform_id, CL_PLATFORM_VENDOR, 1024, buffer, &size);
-    printf("%d) %d - %s - %d\n",++counter,err,buffer,size);    
+    printf("%d) %d - %s - %d\n",++counter,err,buffer,size); 
+
+    printf("\nTEST : clGetDeviceIDs\n");
+    printf("-----------------------\n");   
+
+    cl_device_id first_device_id;
+    cl_uint num_devices;
+
+    cl_device_type array_type[5] = {CL_DEVICE_TYPE_ALL,CL_DEVICE_TYPE_GPU,CL_DEVICE_TYPE_DEFAULT,CL_DEVICE_TYPE_ACCELERATOR,CL_DEVICE_TYPE_CPU};
+
+    for (int i = 0 ; i < 5 ; i ++) {
+        printf("clGetDeviceIDs type : %llu\n",array_type[i]);
+        err = clGetDeviceIDs(0, array_type[i], 0, 0, 0 );
+        printf("%d) %d\n",++counter,err);
+
+        err = clGetDeviceIDs(0, 0, 0, 0, 0 );
+        printf("%d) %d\n",++counter,err);
+
+        err = clGetDeviceIDs(0, array_type[i], 1, 0, &num_devices );
+        printf("%d) %d - %d\n",++counter,err,(int)num_devices);
+
+        err = clGetDeviceIDs(0, array_type[i], 1, &first_device_id, 0 );
+        printf("%d) %d - %d\n",++counter,err,(int)first_device_id);
+
+        err = clGetDeviceIDs(0, array_type[i], 2, &first_device_id, &num_devices );
+        printf("%d) %d - %d - %d\n",++counter,err,(int)first_device_id,(int)num_devices);
+
+        err = clGetDeviceIDs(first_platform_id, array_type[i], 1, 0, &num_devices );
+        printf("%d) %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)num_devices);
+
+        err = clGetDeviceIDs(first_platform_id, array_type[i], 1, &first_device_id, 0 );
+        printf("%d) %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)first_device_id);
+
+        err = clGetDeviceIDs(first_platform_id, array_type[i], 2, &first_device_id, &num_devices );
+        printf("%d) %d - %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)first_device_id,(int)num_devices);
+    }
+
+    printf("\nTEST : clGetDeviceInfo\n");
+    printf("-----------------------\n");   
+
+    cl_device_info array_info[75] = {CL_DEVICE_TYPE,CL_DEVICE_VENDOR_ID,CL_DEVICE_MAX_COMPUTE_UNITS,CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,CL_DEVICE_MAX_WORK_GROUP_SIZE ,CL_DEVICE_MAX_WORK_ITEM_SIZES,CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,CL_DEVICE_MAX_CLOCK_FREQUENCY,CL_DEVICE_ADDRESS_BITS,CL_DEVICE_MAX_READ_IMAGE_ARGS,CL_DEVICE_MAX_WRITE_IMAGE_ARGS,CL_DEVICE_MAX_MEM_ALLOC_SIZE,CL_DEVICE_IMAGE2D_MAX_WIDTH,CL_DEVICE_IMAGE2D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_WIDTH,CL_DEVICE_IMAGE3D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_DEPTH,CL_DEVICE_IMAGE_SUPPORT,CL_DEVICE_MAX_PARAMETER_SIZE,CL_DEVICE_MAX_SAMPLERS,CL_DEVICE_MEM_BASE_ADDR_ALIGN,CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE,CL_DEVICE_SINGLE_FP_CONFIG,CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,CL_DEVICE_GLOBAL_MEM_SIZE,CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,CL_DEVICE_MAX_CONSTANT_ARGS,CL_DEVICE_LOCAL_MEM_TYPE,CL_DEVICE_LOCAL_MEM_SIZE,CL_DEVICE_ERROR_CORRECTION_SUPPORT,CL_DEVICE_PROFILING_TIMER_RESOLUTION,CL_DEVICE_ENDIAN_LITTLE,CL_DEVICE_AVAILABLE,CL_DEVICE_COMPILER_AVAILABLE,CL_DEVICE_EXECUTION_CAPABILITIES,CL_DEVICE_QUEUE_PROPERTIES,CL_DEVICE_NAME,CL_DEVICE_VENDOR ,CL_DRIVER_VERSION,CL_DEVICE_PROFILE,CL_DEVICE_VERSION,CL_DEVICE_EXTENSIONS,CL_DEVICE_PLATFORM,CL_DEVICE_DOUBLE_FP_CONFIG ,CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,CL_DEVICE_HOST_UNIFIED_MEMORY,CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT,CL_DEVICE_NATIVE_VECTOR_WIDTH_INT,CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG,CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,CL_DEVICE_OPENCL_C_VERSION  ,CL_DEVICE_LINKER_AVAILABLE  ,CL_DEVICE_BUILT_IN_KERNELS  ,CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,CL_DEVICE_IMAGE_MAX_ARRAY_SIZE,CL_DEVICE_PARENT_DEVICE,CL_DEVICE_PARTITION_MAX_SUB_DEVICES,CL_DEVICE_PARTITION_PROPERTIES,CL_DEVICE_PARTITION_AFFINITY_DOMAIN,CL_DEVICE_PARTITION_TYPE,CL_DEVICE_REFERENCE_COUNT,CL_DEVICE_PREFERRED_INTEROP_USER_SYNC,CL_DEVICE_PRINTF_BUFFER_SIZE,CL_DEVICE_IMAGE_PITCH_ALIGNMENT,CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT};
+    
+    size = 0;
+    cl_int value = 0;
+
+    for (int i = 0 ; i < 75 ; i ++) {
+        err = clGetDeviceInfo(first_device_id, array_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_info[i],err,size,value);        
+    }
+
+    // Return array[3]
+    //CL_DEVICE_MAX_WORK_ITEM_SIZES
+
+    cl_int array[3];
+    err = clGetDeviceInfo(first_device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(array), &array, &size);
+    printf("%d) %d : %d - %d => %d, %d , %d\n",++counter,CL_DEVICE_MAX_WORK_ITEM_SIZES,err,size,array[0],array[1],array[2]);       
+
+    // Return 64 bit
+    //CL_DEVICE_MAX_MEM_ALLOC_SIZE
+    //CL_DEVICE_GLOBAL_MEM_SIZE
+
+    cl_ulong ul;
+    err = clGetDeviceInfo(first_device_id, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &ul, &size);
+    printf("%d) %d : %d - %d => %llu\n",++counter,CL_DEVICE_MAX_MEM_ALLOC_SIZE,err,size,ul);       
+    
+    ul = 0;
+    err = clGetDeviceInfo(first_device_id, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &ul, &size);
+    printf("%d) %d : %d - %d => %llu\n",++counter,CL_DEVICE_GLOBAL_MEM_SIZE,err,size,ul);     
 
     return end(EXIT_SUCCESS);
 }
