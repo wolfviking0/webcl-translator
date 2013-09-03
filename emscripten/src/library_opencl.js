@@ -81,9 +81,15 @@ var LibraryOpenCL = {
     },
 
     catchError: function(e) {
-      var _str=e.message;
-      var _n=_str.lastIndexOf(" ");
-      var _error = _str.substr(_n+1,_str.length-_n-1);
+      console.error(e);
+      var _error = -1;
+
+      if (e instanceof WebCLException) {
+        var _str=e.message;
+        var _n=_str.lastIndexOf(" ");
+        _error = _str.substr(_n+1,_str.length-_n-1);
+      }
+
       return _error;
     },
 
@@ -158,24 +164,24 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clGetPlatformIDs",[num_entries,platforms,num_platforms]);
 #endif
 
+    if ( num_entries == 0 && platforms != 0) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and platforms is not NULL","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
+
+    if ( num_platforms == 0 && platforms == 0) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_platforms and platforms are NULL","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
+
     try { 
 
-      if ( num_entries == 0 && platforms != 0) {
 #if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and platforms is not NULL","");
-#endif
-        return webcl.INVALID_VALUE;
-      }
-
-      if ( num_platforms == 0 && platforms == 0) {
-#if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_platforms and platforms are NULL","");
-#endif
-        return webcl.INVALID_VALUE;
-      }
-
-#if OPENCL_STACK_TRACE
-      CL.webclCallStackTrace("webcl.getPlatforms",[]);
+      CL.webclCallStackTrace(webcl+".getPlatforms",[]);
 #endif
       var _platforms = webcl.getPlatforms();
 
@@ -215,7 +221,7 @@ var LibraryOpenCL = {
       if (platform in CL.cl_objects) {
 
 #if OPENCL_STACK_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",param_name);
+        CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",[param_name]);
 #endif        
 
         var _info = CL.cl_objects[platform].getInfo(param_name);
@@ -268,28 +274,28 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clGetDeviceIDs",[platform,device_type_i64_1,num_entries,devices,num_devices]);
 #endif
 
+    if ( num_entries == 0 && device_type_i64_1 != 0) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device_type is not NULL","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
+
+    if ( num_devices == 0 && device_type_i64_1 == 0) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_devices and device_type are NULL","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
+
     try {
-
-      if ( num_entries == 0 && device_type_i64_1 != 0) {
-#if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device_type is not NULL","");
-#endif
-        return webcl.INVALID_VALUE;
-      }
-
-      if ( num_devices == 0 && device_type_i64_1 == 0) {
-#if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_devices and device_type are NULL","");
-#endif
-        return webcl.INVALID_VALUE;
-      }
 
       if ((platform in CL.cl_objects) || (platform == 0)) {
 
         // If platform is NULL use the first platform found ...
         if (platform == 0) {
 #if OPENCL_STACK_TRACE
-          CL.webclCallStackTrace("webcl.getPlatforms",[]);
+          CL.webclCallStackTrace(webcl+".getPlatforms",[]);
 #endif          
           var _platforms = webcl.getPlatforms();
           if (_platforms.length == 0) {
@@ -355,11 +361,27 @@ var LibraryOpenCL = {
 
       if (device in CL.cl_objects) {
 
+        var _object = CL.cl_objects[device];
+
+        if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
 #if OPENCL_STACK_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[device]+".getInfo",param_name);
+          CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP64"]);
+#endif              
+          _object = webcl.getExtension("KHR_FP64");
+        }
+
+        if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP16"]);
+#endif    
+          _object = webcl.getExtension("KHR_FP16");
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
 #endif        
 
-        var _info = CL.cl_objects[device].getInfo(param_name);
+        var _info = _object.getInfo(param_name);
         
         if(typeof(_info) == "number") {
 
@@ -384,14 +406,18 @@ var LibraryOpenCL = {
         } else if(typeof(_info) == "object") {
           
           if (_info instanceof Int32Array) {
+           
             for (var i = 0; i < _info.length; i++) {
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
             }
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+          
           } else if (_info instanceof WebCLPlatform) {
+         
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          
           }
         }
       } else {
@@ -425,14 +451,247 @@ var LibraryOpenCL = {
   },
 
   clCreateContext: function(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
-    console.error("clCreateContext: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateContext",[properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _context = null;
+
+    try { 
+
+      var _webcl = webcl;
+      var _platform = null;
+      var _devices = [];
+      var _deviceType = null;
+      var _sharedContext = null;
+
+      // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
+      // WebCL can work using default device / platform, we check only if parameter are set.
+      for (var i = 0; i < num_devices; i++) {
+        var _idxDevice = {{{ makeGetValue('devices', 'i*4', 'i32') }}};
+        if (_idxDevice in CL.cl_objects) {
+          _devices.push(CL.cl_objects[_idxDevice]);
+        } else {
+          if (cl_errcode_ret != 0) {
+            {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_DEVICE', 'i32') }}};
+          }
+
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([0,cl_errcode_ret],"devices contains an invalid device","");
+#endif
+          return 0;  
+        }
+      }
+
+      // Verify the property
+      if (properties != 0) {
+        var _propertiesCounter = 0;
+        while(1) {
+          var _readprop = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+          if (_readprop == 0) break;
+
+          switch (_readprop) {
+            case webcl.CONTEXT_PLATFORM:
+              _propertiesCounter ++;
+              var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+              if (_idxPlatform in CL.cl_objects) {
+                _platform = CL.cl_objects[_idxPlatform];
+              } else {
+                if (cl_errcode_ret != 0) {
+                  {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PLATFORM', 'i32') }}};
+                }
+
+#if OPENCL_STACK_TRACE
+                CL.webclEndStackTrace([0,cl_errcode_ret],"platform value specified in properties is not a valid platform","");
+#endif
+                return 0;  
+              }
+              break;
+
+            // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree ??
+            case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+            case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+            case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
+              _propertiesCounter ++;
+
+              // Just one is enough 
+              if (!(_webcl instanceof WebCLGL)){
+                _sharedContext = Module.ctx;
+#if OPENCL_STACK_TRACE
+                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+#endif              
+                _webcl = webcl.getExtension("KHR_GL_SHARING");
+              }
+              break;
+
+            default:
+              if (cl_errcode_ret != 0) {
+                {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PROPERTY', 'i32') }}};
+              }
+
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([0,cl_errcode_ret],"context property name '"+_readprop+"' in properties is not a supported property name","");
+#endif
+              return 0; 
+          };
+
+          _propertiesCounter ++;
+        }
+      }
+
+      var _prop;
+
+      if (_webcl instanceof WebCLGL) {   
+        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+      } else {
+        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+      }
+      
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace(_webcl+".createContext",[_prop]);
+#endif      
+      _context = _webcl.createContext(_prop)
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_context);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateContextFromType: function(properties,device_type_i64_1,device_type_i64_2,pfn_notify,user_data,cl_errcode_ret) {
     // Assume the device_type is i32 
     assert(device_type_i64_2 == 0, 'Invalid device_type i64');
     
-    console.error("clCreateContextFromType: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateContextFromType",[properties,device_type_i64_1,pfn_notify,user_data,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _context = null;
+
+    try { 
+
+      var _webcl = webcl;
+      var _platform = null;
+      var _devices = null;
+      var _deviceType = device_type_i64_1;
+      var _sharedContext = null;
+
+      // Verify the property
+      if (properties != 0) {
+        var _propertiesCounter = 0;
+        while(1) {
+          var _readprop = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+          if (_readprop == 0) break;
+
+          switch (_readprop) {
+            case webcl.CONTEXT_PLATFORM:
+              _propertiesCounter ++;
+              var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+              if (_idxPlatform in CL.cl_objects) {
+                _platform = CL.cl_objects[_idxPlatform];
+              } else {
+                if (cl_errcode_ret != 0) {
+                  {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PLATFORM', 'i32') }}};
+                }
+
+#if OPENCL_STACK_TRACE
+                CL.webclEndStackTrace([0,cl_errcode_ret],"platform value specified in properties is not a valid platform","");
+#endif
+                return 0;  
+              }
+              break;
+
+            // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree like for the clCreateContext ??
+            case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+            case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+            case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
+              _propertiesCounter ++;
+              
+              // Just one is enough 
+              if (!(_webcl instanceof WebCLGL)){
+                _sharedContext = Module.ctx;
+
+#if OPENCL_STACK_TRACE
+                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+#endif              
+                _webcl = webcl.getExtension("KHR_GL_SHARING");
+              }
+              break;
+
+            default:
+              if (cl_errcode_ret != 0) {
+                {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PROPERTY', 'i32') }}};
+              }
+
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([0,cl_errcode_ret],"context property name '"+_readprop+"' in properties is not a supported property name","");
+#endif
+              return 0; 
+          };
+
+          _propertiesCounter ++;
+        }
+      }
+
+      var _prop;
+
+      if (_webcl instanceof WebCLGL) {
+        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+      } else {
+        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+      }
+      
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace(_webcl+".createContext",[_prop]);
+#endif      
+      _context = _webcl.createContext(_prop)
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_context);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clRetainContext: function(context) {
@@ -440,11 +699,119 @@ var LibraryOpenCL = {
   },
 
   clReleaseContext: function(context) {
-    console.error("clReleaseContext: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseContext",[context]);
+#endif
+
+    try {
+
+      if (context in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
+#endif        
+        CL.cl_objects[context].release();
+        delete CL.cl_objects[context];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context is not a valid OpenCL context","");
+#endif
+        return webcl.INVALID_CONTEXT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetContextInfo: function(context,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetContextInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetContextInfo",[context,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (context in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[context]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[context].getInfo(param_name);
+
+        console.info(_info+" - "+typeof(_info));
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "boolean") {
+
+          if (param_value != 0) (_info == true) ? {{{ makeSetValue('param_value', '0', '1', 'i32') }}} : {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "object") {
+
+          if (_info instanceof WebCLContextProperties) {
+
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info instanceof Array) {
+
+            for (var i = 0; i < _info.length; i++) {
+              var _id = CL.udid(_info[i]);
+              if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_id', 'i32') }}};
+            }
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+
+          }
+        }
+           
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context are NULL","");
+#endif
+        return webcl.INVALID_PLATFORM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+      var _info = "undefined";
+
+      if (param_value != 0) {
+        writeStringToMemory(_info, param_value);
+      }
+    
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clCreateCommandQueue: function(context,device,properties,cl_errcode_ret) {

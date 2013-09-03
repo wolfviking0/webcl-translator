@@ -60,7 +60,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef __EMSCRIPTEN__
-#include <CL/opencl.h>
+    #include <GL/gl.h>
+    #include <GL/glut.h>
+    #include <CL/opencl.h>
 #else
 #include <OpenCL/opencl.h>
 #endif
@@ -119,6 +121,12 @@ int main(int argc, char** argv)
     cl_uint err;
     cl_uint num_platforms;
     cl_platform_id first_platform_id;
+
+    // Need this for cl_gl interop
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize (256, 256);
+    glutCreateWindow (argv[0]);
 
     // Parse command line options
     //
@@ -219,7 +227,7 @@ int main(int argc, char** argv)
     printf("-----------------------\n");   
 
     cl_device_info array_info[75] = {CL_DEVICE_TYPE,CL_DEVICE_VENDOR_ID,CL_DEVICE_MAX_COMPUTE_UNITS,CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,CL_DEVICE_MAX_WORK_GROUP_SIZE ,CL_DEVICE_MAX_WORK_ITEM_SIZES,CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,CL_DEVICE_MAX_CLOCK_FREQUENCY,CL_DEVICE_ADDRESS_BITS,CL_DEVICE_MAX_READ_IMAGE_ARGS,CL_DEVICE_MAX_WRITE_IMAGE_ARGS,CL_DEVICE_MAX_MEM_ALLOC_SIZE,CL_DEVICE_IMAGE2D_MAX_WIDTH,CL_DEVICE_IMAGE2D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_WIDTH,CL_DEVICE_IMAGE3D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_DEPTH,CL_DEVICE_IMAGE_SUPPORT,CL_DEVICE_MAX_PARAMETER_SIZE,CL_DEVICE_MAX_SAMPLERS,CL_DEVICE_MEM_BASE_ADDR_ALIGN,CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE,CL_DEVICE_SINGLE_FP_CONFIG,CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,CL_DEVICE_GLOBAL_MEM_SIZE,CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,CL_DEVICE_MAX_CONSTANT_ARGS,CL_DEVICE_LOCAL_MEM_TYPE,CL_DEVICE_LOCAL_MEM_SIZE,CL_DEVICE_ERROR_CORRECTION_SUPPORT,CL_DEVICE_PROFILING_TIMER_RESOLUTION,CL_DEVICE_ENDIAN_LITTLE,CL_DEVICE_AVAILABLE,CL_DEVICE_COMPILER_AVAILABLE,CL_DEVICE_EXECUTION_CAPABILITIES,CL_DEVICE_QUEUE_PROPERTIES,CL_DEVICE_NAME,CL_DEVICE_VENDOR ,CL_DRIVER_VERSION,CL_DEVICE_PROFILE,CL_DEVICE_VERSION,CL_DEVICE_EXTENSIONS,CL_DEVICE_PLATFORM,CL_DEVICE_DOUBLE_FP_CONFIG ,CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,CL_DEVICE_HOST_UNIFIED_MEMORY,CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT,CL_DEVICE_NATIVE_VECTOR_WIDTH_INT,CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG,CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,CL_DEVICE_OPENCL_C_VERSION  ,CL_DEVICE_LINKER_AVAILABLE  ,CL_DEVICE_BUILT_IN_KERNELS  ,CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,CL_DEVICE_IMAGE_MAX_ARRAY_SIZE,CL_DEVICE_PARENT_DEVICE,CL_DEVICE_PARTITION_MAX_SUB_DEVICES,CL_DEVICE_PARTITION_PROPERTIES,CL_DEVICE_PARTITION_AFFINITY_DOMAIN,CL_DEVICE_PARTITION_TYPE,CL_DEVICE_REFERENCE_COUNT,CL_DEVICE_PREFERRED_INTEROP_USER_SYNC,CL_DEVICE_PRINTF_BUFFER_SIZE,CL_DEVICE_IMAGE_PITCH_ALIGNMENT,CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT};
-    
+
     size = 0;
     cl_int value = 0;
 
@@ -227,6 +235,15 @@ int main(int argc, char** argv)
         err = clGetDeviceInfo(first_device_id, array_info[i], sizeof(cl_int), &value, &size);
         printf("%d) %d : %d - %d => %d\n",++counter,array_info[i],err,size,value);        
     }
+   
+    // Return char *
+    // CL_DEVICE_EXTENSIONS
+
+    size = 0;
+    char extensions[1024];
+
+    err = clGetDeviceInfo(first_device_id, CL_DEVICE_EXTENSIONS, 1024, &extensions, &size);
+    printf("%d) %d : %d - %d => %s\n",++counter,CL_DEVICE_EXTENSIONS,err,size,extensions);       
 
     // Return array[3]
     //CL_DEVICE_MAX_WORK_ITEM_SIZES
@@ -246,6 +263,141 @@ int main(int argc, char** argv)
     ul = 0;
     err = clGetDeviceInfo(first_device_id, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &ul, &size);
     printf("%d) %d : %d - %d => %llu\n",++counter,CL_DEVICE_GLOBAL_MEM_SIZE,err,size,ul);     
+
+
+    printf("\nTEST : clCreateContext\n");
+    printf("-----------------------\n");   
+
+    cl_int cl_errcode_ret = 0;
+    cl_context context;
+    cl_context contextFromType;
+
+    context = clCreateContext(0,0,0,NULL,NULL,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);       
+
+    context = clCreateContext(0,1,0,NULL,NULL,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);   
+
+    context = clCreateContext(0,0,&first_device_id,NULL,NULL,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);    
+
+    context = clCreateContext(0,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);   
+
+    {
+        cl_context_properties properties[] = { 
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)0,
+            CL_CGL_SHAREGROUP_KHR,
+            (cl_context_properties)0,
+            0
+        };
+
+        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
+        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
+    }
+
+    {    
+        cl_context_properties properties[] = { 
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)first_platform_id,
+            CL_GL_CONTEXT_KHR,
+            (cl_context_properties)0,
+            CL_CGL_SHAREGROUP_KHR,
+            (cl_context_properties)0,            
+            0
+        };  
+
+        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
+        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
+    }
+
+    {
+        cl_context_properties properties[] = { 
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)first_platform_id,
+            0
+        };
+
+        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
+        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
+    }
+
+    printf("\nTEST : clCreateContextFromType\n");
+    printf("-----------------------\n");   
+
+    for (int i = 0 ; i < 5 ; i ++) {
+        printf("clCreateContextFromType type : %llu\n",array_type[i]);
+        contextFromType = clCreateContextFromType(0,array_type[i],NULL,NULL,&cl_errcode_ret);
+        
+        printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
+
+        {
+
+            contextFromType = clCreateContextFromType(0,array_type[i],NULL,NULL,&cl_errcode_ret);
+            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
+
+            cl_context_properties properties[] = { 
+                CL_CONTEXT_PLATFORM,
+                (cl_context_properties)0,
+                CL_CGL_SHAREGROUP_KHR,
+                (cl_context_properties)0,
+                0
+            };
+
+            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
+            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
+        }
+
+        {    
+            cl_context_properties properties[] = { 
+                CL_CONTEXT_PLATFORM,
+                (cl_context_properties)first_platform_id,
+                CL_GL_CONTEXT_KHR,
+                (cl_context_properties)0,
+                CL_CGL_SHAREGROUP_KHR,
+                (cl_context_properties)0,    
+                0
+            };  
+
+            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
+            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
+        }
+
+        {
+            cl_context_properties properties[] = { 
+                CL_CONTEXT_PLATFORM,
+                (cl_context_properties)first_platform_id,
+                0
+            };
+
+            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
+            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
+        }
+    }
+
+    printf("\nTEST : clGetContextInfo\n");
+    printf("-----------------------\n");   
+    
+    size = 0;
+    value = 0;
+
+    cl_context_info array_context_info[4] = {CL_CONTEXT_REFERENCE_COUNT,CL_CONTEXT_NUM_DEVICES,CL_CONTEXT_DEVICES,CL_CONTEXT_PROPERTIES};
+
+    for (int i = 0; i < 4; i++) {
+        err = clGetContextInfo(contextFromType, array_context_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_context_info[i],err,size,value);   
+    }
+
+
+    printf("\nTEST : clReleaseContext\n");
+    printf("-----------------------\n");   
+
+    err = clReleaseContext(NULL);
+    printf("%d) %d : %d\n",++counter,err,(int)contextFromType); 
+
+    err = clReleaseContext(contextFromType);
+    printf("%d) %d : %d\n",++counter,err,(int)contextFromType); 
 
     return end(EXIT_SUCCESS);
 }
