@@ -6,55 +6,55 @@ var LibraryOpenCL = {
     cl_objects: {},
     cl_objects_size: 0,
 
-    isObjectsEquals: function (obj1, obj2, loose) { 
-      var _count1 = 0, _count2 = 0;
-      if (!loose){
-        for (i in obj1){
-          _count1++;
-        }
-        for (i in obj2){
-          _count2++;
-        }
-      }
-     
-      if (_count1 != _count2) { 
-        return false;
-      } else { 
-        for (i in obj1) {
-          if (typeof obj1[i] == 'object' && typeof obj2[i] == 'object') {
-            if (!CL.isObjectsEquals(obj1[i], obj2[i], loose)) {
-              return false;
-            }
-          } else if ( loose && !( (obj1[i] || '') == (obj2[i] || '') || ((typeof obj1[i] == 'number' || typeof obj2[i] == 'number') && Number(obj1[i]) == Number(obj2[i])))) {
-            return false;
-          } else if ( !loose && !(obj1[i] === obj2[i]) ) {
-            return false;
-          }
-        }
-      }
+    // isObjectsEquals: function (obj1, obj2, loose) { 
+    //   var _count1 = 0, _count2 = 0;
+    //   if (!loose){
+    //     for (i in obj1){
+    //       _count1++;
+    //     }
+    //     for (i in obj2){
+    //       _count2++;
+    //     }
+    //   }
+    //  
+    //   if (_count1 != _count2) { 
+    //     return false;
+    //   } else { 
+    //     for (i in obj1) {
+    //       if (typeof obj1[i] == 'object' && typeof obj2[i] == 'object') {
+    //         if (!CL.isObjectsEquals(obj1[i], obj2[i], loose)) {
+    //           return false;
+    //         }
+    //       } else if ( loose && !( (obj1[i] || '') == (obj2[i] || '') || ((typeof obj1[i] == 'number' || typeof obj2[i] == 'number') && Number(obj1[i]) == Number(obj2[i])))) {
+    //         return false;
+    //       } else if ( !loose && !(obj1[i] === obj2[i]) ) {
+    //         return false;
+    //       }
+    //     }
+    //   }
+    // 
+    //   return true; // all tests passed, objects are equivalent
+    // },
 
-      return true; // all tests passed, objects are equivalent
-    },
-
-    getUdid: function (object) {
-      for (var elts in CL.cl_objects) {
-        if (CL.isObjectsEquals(object,CL.cl_objects[elts])) {
-          return elts;
-        }  
-      }
-      return -1;
-    },
+    // getUdid: function (object) {
+    //   for (var elts in CL.cl_objects) {
+    //     if (CL.isObjectsEquals(object,CL.cl_objects[elts])) {
+    //       return elts;
+    //     }  
+    //   }
+    //   return -1;
+    // },
 
     udid: function (obj) {
       
       var _id;
-      if (obj !== undefined) {
-        _id = CL.getUdid(obj);
-      
-        if (_id != -1) {
-          return _id;
-        }
-      }
+      // if (obj !== undefined) {
+      //   _id = CL.getUdid(obj);
+      // 
+      //   if (_id != -1) {
+      //     return _id;
+      //   }
+      // }
 
       var _uuid = [];
 
@@ -68,7 +68,7 @@ var LibraryOpenCL = {
         console.error("/!\\ UDID not unique !!!!!!");
         console.error("/!\\ **********************");        
       }
-      console.info("udid : "+_id);
+      console.info("udid : "+_id+" - "+obj);
 #endif
       
       // /!\ Call udid when you add inside cl_objects if you pass object in parameter
