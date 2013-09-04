@@ -382,7 +382,7 @@ int main(int argc, char** argv)
     size = 0;
     value = 0;
 
-    cl_context_info array_context_info[4] = {CL_CONTEXT_REFERENCE_COUNT,CL_CONTEXT_NUM_DEVICES,CL_CONTEXT_DEVICES,CL_CONTEXT_PROPERTIES};
+    cl_context_info array_context_info[5] = {CL_CONTEXT_REFERENCE_COUNT,CL_CONTEXT_NUM_DEVICES,CL_CONTEXT_DEVICES,CL_CONTEXT_PROPERTIES,CL_CONTEXT_PLATFORM};
 
     for (int i = 0; i < 4; i++) {
         err = clGetContextInfo(contextFromType, array_context_info[i], sizeof(cl_int), &value, &size);
@@ -394,10 +394,42 @@ int main(int argc, char** argv)
     printf("-----------------------\n");   
 
     err = clReleaseContext(NULL);
-    printf("%d) %d : %d\n",++counter,err,(int)contextFromType); 
+    printf("%d) %d : %d\n",++counter,err,0); 
 
     err = clReleaseContext(contextFromType);
     printf("%d) %d : %d\n",++counter,err,(int)contextFromType); 
+
+    printf("\nTEST : clCreateCommandQueue\n");
+    printf("-----------------------\n");   
+
+    cl_command_queue queue;
+    queue = clCreateCommandQueue(0,0,0,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+
+    queue = clCreateCommandQueue(context,0,0,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+
+    queue = clCreateCommandQueue(context,first_device_id,0,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+
+    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+    
+    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+
+    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
+    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
+
+    printf("\nTEST : clReleaseCommandQueue\n");
+    printf("-----------------------\n");  
+
+    cl_command_queue queue_to_release = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
+    err = clReleaseCommandQueue(NULL);
+    printf("%d) %d : %d\n",++counter,err,0); 
+
+    err = clReleaseCommandQueue(queue_to_release);
+    printf("%d) %d : %d\n",++counter,err,(int)queue_to_release); 
 
     return end(EXIT_SUCCESS);
 }

@@ -716,7 +716,7 @@ var LibraryOpenCL = {
 
       } else {
 #if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context is not a valid OpenCL context","");
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
 #endif
         return webcl.INVALID_CONTEXT;
       }
@@ -766,8 +766,8 @@ var LibraryOpenCL = {
 
         } else if(typeof(_info) == "object") {
 
-          if (_info instanceof WebCLContextProperties) {
-
+          if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
+         
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
@@ -814,8 +814,72 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
-  clCreateCommandQueue: function(context,device,properties,cl_errcode_ret) {
-    console.error("clCreateCommandQueue: Not yet implemented\n");
+  clCreateCommandQueue: function(context,device,properties_1,properties_2,cl_errcode_ret) {
+    // Assume the properties is i32 
+    assert(properties_2 == 0, 'Invalid properties i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateCommandQueue",[context,device,properties_1,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _command = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    if (device == 0) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_DEVICE', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"device '"+device+"' is not a valid device","");
+#endif
+      return 0; 
+    }
+
+    try { 
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[properties_1]);
+#endif      
+
+      CL.cl_objects[context].createCommandQueue(device,properties_1);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_command);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clRetainCommandQueue: function(command_queue) {
@@ -823,7 +887,42 @@ var LibraryOpenCL = {
   },
 
   clReleaseCommandQueue: function(command_queue) {
-    console.error("clReleaseCommandQueue: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseCommandQueue",[command_queue]);
+#endif
+
+    try {
+
+      if (command_queue in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
+#endif        
+        CL.cl_objects[command_queue].release();
+        delete CL.cl_objects[command_queue];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],CL.cl_objects[command_queue]+" is not a valid OpenCL command_queue","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetCommandQueueInfo: function(command_queue,param_name,param_value_size,param_value,param_value_size_ret) {
