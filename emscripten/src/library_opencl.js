@@ -418,8 +418,13 @@ var LibraryOpenCL = {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
           
+          } else {
+            console.error("clGetDeviceInfo : "+typeof(_info)+" not yet implemented");
           }
+        } else {
+          console.error("clGetDeviceInfo : "+typeof(_info)+" not yet implemented");
         }
+
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
@@ -752,8 +757,6 @@ var LibraryOpenCL = {
 
         var _info = CL.cl_objects[context].getInfo(param_name);
 
-        console.info(_info+" - "+typeof(_info));
-
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
@@ -780,26 +783,29 @@ var LibraryOpenCL = {
             }
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
 
+          } else {
+            console.error("clGetContextInfo : "+typeof(_info)+" not yet implemented");
           }
+        } else {
+          console.error("clGetContextInfo : "+typeof(_info)+" not yet implemented");
         }
            
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context are NULL","");
 #endif
-        return webcl.INVALID_PLATFORM;
+        return webcl.INVALID_CONTEXT;
       }
 
     } catch (e) {
       var _error = CL.catchError(e);
-      var _info = "undefined";
 
       if (param_value != 0) {
-        writeStringToMemory(_info, param_value);
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
     
       if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
       }
 
 #if OPENCL_STACK_TRACE
@@ -854,7 +860,7 @@ var LibraryOpenCL = {
       CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[properties_1]);
 #endif      
 
-      CL.cl_objects[context].createCommandQueue(device,properties_1);
+      _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -926,7 +932,71 @@ var LibraryOpenCL = {
   },
 
   clGetCommandQueueInfo: function(command_queue,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetCommandQueueInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetCommandQueueInfo",[command_queue,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[command_queue].getInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value_size == 8) {
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i64') }}};
+          } else {
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          } 
+
+        } else if(typeof(_info) == "object") {
+
+          if ( (_info instanceof WebCLDevice) || (_info instanceof WebCLContext)) {
+         
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+            console.error("clGetCommandQueueInfo : "+typeof(_info)+" not yet implemented");
+          }
+        } else {
+          console.error("clGetCommandQueueInfo : "+typeof(_info)+" not yet implemented");
+        }
+           
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+    
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clCreateBuffer: function(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {

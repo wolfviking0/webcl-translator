@@ -421,10 +421,21 @@ int main(int argc, char** argv)
     queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
     printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
 
+
+    printf("\nTEST : clGetCommandQueueInfo\n");
+    printf("-----------------------\n");   
+
+    cl_command_queue queue_to_release = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
+    cl_command_queue_info array_command_info[4] = {CL_QUEUE_CONTEXT,CL_QUEUE_DEVICE,CL_QUEUE_REFERENCE_COUNT,CL_QUEUE_PROPERTIES};
+
+    for (int i = 0; i < 4; i++) {
+        err = clGetCommandQueueInfo(queue_to_release, array_command_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_command_info[i],err,size,value);   
+    }
+
     printf("\nTEST : clReleaseCommandQueue\n");
     printf("-----------------------\n");  
 
-    cl_command_queue queue_to_release = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
     err = clReleaseCommandQueue(NULL);
     printf("%d) %d : %d\n",++counter,err,0); 
 
