@@ -66,7 +66,11 @@ if (ENVIRONMENT_IS_NODE) {
 else if (ENVIRONMENT_IS_SHELL) {
   Module['print'] = print;
   if (typeof printErr != 'undefined') Module['printErr'] = printErr; // not present in v8 or older sm
-  Module['read'] = read;
+  if (typeof read != 'undefined') {
+    Module['read'] = read;
+  } else {
+    Module['read'] = function() { throw 'no read() available (jsc?)' };
+  }
   Module['readBinary'] = function(f) {
     return read(f, 'binary');
   };
@@ -376,30 +380,42 @@ var Runtime = {
     var buffer = [];
     var needed = 0;
     this.processCChar = function (code) {
-      code = code & 0xff;
-      if (needed) {
-        buffer.push(code);
-        needed--;
-      }
+      code = code & 0xFF;
       if (buffer.length == 0) {
-        if (code < 128) return String.fromCharCode(code);
+        if ((code & 0x80) == 0x00) {        // 0xxxxxxx
+          return String.fromCharCode(code);
+        }
         buffer.push(code);
-        if (code > 191 && code < 224) {
+        if ((code & 0xE0) == 0xC0) {        // 110xxxxx
           needed = 1;
-        } else {
+        } else if ((code & 0xF0) == 0xE0) { // 1110xxxx
           needed = 2;
+        } else {                            // 11110xxx
+          needed = 3;
         }
         return '';
       }
-      if (needed > 0) return '';
+      if (needed) {
+        buffer.push(code);
+        needed--;
+        if (needed > 0) return '';
+      }
       var c1 = buffer[0];
       var c2 = buffer[1];
       var c3 = buffer[2];
+      var c4 = buffer[3];
       var ret;
-      if (c1 > 191 && c1 < 224) {
-        ret = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+      if (buffer.length == 2) {
+        ret = String.fromCharCode(((c1 & 0x1F) << 6)  | (c2 & 0x3F));
+      } else if (buffer.length == 3) {
+        ret = String.fromCharCode(((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6)  | (c3 & 0x3F));
       } else {
-        ret = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+        // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+        var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
+                        ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
+        ret = String.fromCharCode(
+          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
       return ret;
@@ -534,7 +550,7 @@ function setValue(ptr, value, type, noSafe) {
       case 'i8': HEAP8[(ptr)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
-      case 'i64': (tempI64 = [value>>>0,((Math.min((+(Math.floor((value)/(+(4294967296))))), (+(4294967295))))|0)>>>0],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
+      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,(+(Math.abs(tempDouble))) >= (+(1)) ? (tempDouble > (+(0)) ? ((Math.min((+(Math.floor((tempDouble)/(+(4294967296))))), (+(4294967295))))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/(+(4294967296)))))))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
       case 'float': HEAPF32[((ptr)>>2)]=value; break;
       case 'double': HEAPF64[((ptr)>>3)]=value; break;
       default: abort('invalid type for setValue: ' + type);
@@ -642,6 +658,7 @@ function allocate(slab, types, allocator, ptr) {
 }
 Module['allocate'] = allocate;
 function Pointer_stringify(ptr, /* optional */ length) {
+  // TODO: use TextDecoder
   // Find the length, and check for UTF while doing so
   var hasUtf = false;
   var t;
@@ -685,7 +702,7 @@ var STATIC_BASE = 0, STATICTOP = 0, staticSealed = false; // static area
 var STACK_BASE = 0, STACKTOP = 0, STACK_MAX = 0; // stack area
 var DYNAMIC_BASE = 0, DYNAMICTOP = 0; // dynamic area handled by sbrk
 function enlargeMemory() {
-  abort('Cannot enlarge memory arrays in asm.js. Either (1) compile with -s TOTAL_MEMORY=X with X higher than the current value, or (2) set Module.TOTAL_MEMORY before the program runs.');
+  abort('Cannot enlarge memory arrays in asm.js. Either (1) compile with -s TOTAL_MEMORY=X with X higher than the current value ' + TOTAL_MEMORY + ', or (2) set Module.TOTAL_MEMORY before the program runs.');
 }
 var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
@@ -1017,6 +1034,8 @@ function copyTempDouble(ptr) {
           f = f.substr(0, f.length - ext.length);
         }
         return f;
+      },extname:function (path) {
+        return PATH.splitPath(path)[3];
       },join:function () {
         var paths = Array.prototype.slice.call(arguments, 0);
         return PATH.normalize(paths.filter(function(p, index) {
@@ -1077,14 +1096,29 @@ function copyTempDouble(ptr) {
         outputParts = outputParts.concat(toParts.slice(samePartsLength));
         return outputParts.join('/');
       }};
-  var TTY={ttys:[],register:function (dev, ops) {
+  var TTY={ttys:[],init:function () {
+        // https://github.com/kripken/emscripten/pull/1555
+        // if (ENVIRONMENT_IS_NODE) {
+        //   // currently, FS.init does not distinguish if process.stdin is a file or TTY
+        //   // device, it always assumes it's a TTY device. because of this, we're forcing
+        //   // process.stdin to UTF8 encoding to at least make stdin reading compatible
+        //   // with text files until FS.init can be refactored.
+        //   process['stdin']['setEncoding']('utf8');
+        // }
+      },shutdown:function () {
+        // https://github.com/kripken/emscripten/pull/1555
+        // if (ENVIRONMENT_IS_NODE) {
+        //   // inolen: any idea as to why node -e 'process.stdin.read()' wouldn't exit immediately (with process.stdin being a tty)?
+        //   // isaacs: because now it's reading from the stream, you've expressed interest in it, so that read() kicks off a _read() which creates a ReadReq operation
+        //   // inolen: I thought read() in that case was a synchronous operation that just grabbed some amount of buffered data if it exists?
+        //   // isaacs: it is. but it also triggers a _read() call, which calls readStart() on the handle
+        //   // isaacs: do process.stdin.pause() and i'd think it'd probably close the pending call
+        //   process['stdin']['pause']();
+        // }
+      },register:function (dev, ops) {
         TTY.ttys[dev] = { input: [], output: [], ops: ops };
         FS.registerDevice(dev, TTY.stream_ops);
       },stream_ops:{open:function (stream) {
-          // this wouldn't be required if the library wasn't eval'd at first...
-          if (!TTY.utf8) {
-            TTY.utf8 = new Runtime.UTF8Processor();
-          }
           var tty = TTY.ttys[stream.node.rdev];
           if (!tty) {
             throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
@@ -1138,10 +1172,13 @@ function copyTempDouble(ptr) {
           if (!tty.input.length) {
             var result = null;
             if (ENVIRONMENT_IS_NODE) {
-              if (process.stdin.destroyed) {
-                return undefined;
+              result = process['stdin']['read']();
+              if (!result) {
+                if (process['stdin']['_readableState'] && process['stdin']['_readableState']['ended']) {
+                  return null;  // EOF
+                }
+                return undefined;  // no data available
               }
-              result = process.stdin.read();
             } else if (typeof window != 'undefined' &&
               typeof window.prompt == 'function') {
               // Browser.
@@ -1177,7 +1214,13 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={mount:function (mount) {
+  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,ensureFlexible:function (node) {
+        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
+          var contents = node.contents;
+          node.contents = Array.prototype.slice.call(contents);
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+        }
+      },mount:function (mount) {
         return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
       },create_node:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
@@ -1185,16 +1228,49 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
         }
         var node = FS.createNode(parent, name, mode, dev);
-        node.node_ops = MEMFS.node_ops;
         if (FS.isDir(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr,
+            lookup: MEMFS.node_ops.lookup,
+            mknod: MEMFS.node_ops.mknod,
+            mknod: MEMFS.node_ops.mknod,
+            rename: MEMFS.node_ops.rename,
+            unlink: MEMFS.node_ops.unlink,
+            rmdir: MEMFS.node_ops.rmdir,
+            readdir: MEMFS.node_ops.readdir,
+            symlink: MEMFS.node_ops.symlink
+          };
+          node.stream_ops = {
+            llseek: MEMFS.stream_ops.llseek
+          };
           node.contents = {};
         } else if (FS.isFile(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr
+          };
+          node.stream_ops = {
+            llseek: MEMFS.stream_ops.llseek,
+            read: MEMFS.stream_ops.read,
+            write: MEMFS.stream_ops.write,
+            allocate: MEMFS.stream_ops.allocate,
+            mmap: MEMFS.stream_ops.mmap
+          };
           node.contents = [];
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
         } else if (FS.isLink(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr,
+            readlink: MEMFS.node_ops.readlink
+          };
+          node.stream_ops = {};
         } else if (FS.isChrdev(node.mode)) {
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr
+          };
           node.stream_ops = FS.chrdev_stream_ops;
         }
         node.timestamp = Date.now();
@@ -1238,6 +1314,7 @@ function copyTempDouble(ptr) {
             node.timestamp = attr.timestamp;
           }
           if (attr.size !== undefined) {
+            MEMFS.ensureFlexible(node);
             var contents = node.contents;
             if (attr.size < contents.length) contents.length = attr.size;
             else while (attr.size > contents.length) contents.push(0);
@@ -1272,6 +1349,15 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
           }
           delete parent.contents[name];
+        },readdir:function (node) {
+          var entries = ['.', '..']
+          for (var key in node.contents) {
+            if (!node.contents.hasOwnProperty(key)) {
+              continue;
+            }
+            entries.push(key);
+          }
+          return entries;
         },symlink:function (parent, newname, oldpath) {
           var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
           node.link = oldpath;
@@ -1281,22 +1367,10 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
           }
           return node.link;
-        }},stream_ops:{open:function (stream) {
-          if (FS.isDir(stream.node.mode)) {
-            // cache off the directory entries when open'd
-            var entries = ['.', '..']
-            for (var key in stream.node.contents) {
-              if (!stream.node.contents.hasOwnProperty(key)) {
-                continue;
-              }
-              entries.push(key);
-            }
-            stream.entries = entries;
-          }
-        },read:function (stream, buffer, offset, length, position) {
+        }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
           var size = Math.min(contents.length - position, length);
-          if (contents.subarray) { // typed array
+          if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
           {
@@ -1305,13 +1379,28 @@ function copyTempDouble(ptr) {
             }
           }
           return size;
-        },write:function (stream, buffer, offset, length, position) {
-          var contents = stream.node.contents;
+        },write:function (stream, buffer, offset, length, position, canOwn) {
+          var node = stream.node;
+          node.timestamp = Date.now();
+          var contents = node.contents;
+          if (length && contents.length === 0 && position === 0 && buffer.subarray) {
+            // just replace it with the new data
+            assert(buffer.length);
+            if (canOwn && buffer.buffer === HEAP8.buffer && offset === 0) {
+              node.contents = buffer; // this is a subarray of the heap, and we can own it
+              node.contentMode = MEMFS.CONTENT_OWNING;
+            } else {
+              node.contents = new Uint8Array(buffer.subarray(offset, offset+length));
+              node.contentMode = MEMFS.CONTENT_FIXED;
+            }
+            return length;
+          }
+          MEMFS.ensureFlexible(node);
+          var contents = node.contents;
           while (contents.length < position) contents.push(0);
           for (var i = 0; i < length; i++) {
             contents[position + i] = buffer[offset + i];
           }
-          stream.node.timestamp = Date.now();
           return length;
         },llseek:function (stream, offset, whence) {
           var position = offset;
@@ -1328,9 +1417,8 @@ function copyTempDouble(ptr) {
           stream.ungotten = [];
           stream.position = position;
           return position;
-        },readdir:function (stream) {
-          return stream.entries;
         },allocate:function (stream, offset, length) {
+          MEMFS.ensureFlexible(stream.node);
           var contents = stream.node.contents;
           var limit = offset + length;
           while (limit > contents.length) contents.push(0);
@@ -1342,10 +1430,10 @@ function copyTempDouble(ptr) {
           var allocated;
           var contents = stream.node.contents;
           // Only make a new copy when MAP_PRIVATE is specified.
-          if (!(flags & 0x02)) {
+          if ( !(flags & 0x02) &&
+                (contents.buffer === buffer || contents.buffer === buffer.buffer) ) {
             // We can't emulate MAP_SHARED when the file is not backed by the buffer
             // we're mapping to (e.g. the HEAP buffer).
-            assert(contents.buffer === buffer || contents.buffer === buffer.buffer);
             allocated = false;
             ptr = contents.byteOffset;
           } else {
@@ -1373,34 +1461,87 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,nodes:[null],devices:[null],streams:[null],nextInode:1,name_table:[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,],currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function (errno) {
-        this.errno = errno;
-        for (var key in ERRNO_CODES) {
-          if (ERRNO_CODES[key] === errno) {
-            this.code = key;
-            break;
+    }var FS={root:null,devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
+          this.errno = errno;
+          for (var key in ERRNO_CODES) {
+            if (ERRNO_CODES[key] === errno) {
+              this.code = key;
+              break;
+            }
           }
-        }
-        this.message = ERRNO_MESSAGES[errno] + ' : ' + new Error().stack;
-      },handleFSError:function (e) {
+          this.message = ERRNO_MESSAGES[errno];
+        },handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
         return ___setErrNo(e.errno);
+      },cwd:function () {
+        return FS.currentPath;
+      },lookupPath:function (path, opts) {
+        path = PATH.resolve(FS.currentPath, path);
+        opts = opts || { recurse_count: 0 };
+        if (opts.recurse_count > 8) {  // max recursive lookup of 8
+          throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+        }
+        // split the path
+        var parts = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), false);
+        // start at the root
+        var current = FS.root;
+        var current_path = '/';
+        for (var i = 0; i < parts.length; i++) {
+          var islast = (i === parts.length-1);
+          if (islast && opts.parent) {
+            // stop resolving
+            break;
+          }
+          current = FS.lookupNode(current, parts[i]);
+          current_path = PATH.join(current_path, parts[i]);
+          // jump to the mount's root node if this is a mountpoint
+          if (FS.isMountpoint(current)) {
+            current = current.mount.root;
+          }
+          // follow symlinks
+          // by default, lookupPath will not follow a symlink if it is the final path component.
+          // setting opts.follow = true will override this behavior.
+          if (!islast || opts.follow) {
+            var count = 0;
+            while (FS.isLink(current.mode)) {
+              var link = FS.readlink(current_path);
+              current_path = PATH.resolve(PATH.dirname(current_path), link);
+              var lookup = FS.lookupPath(current_path, { recurse_count: opts.recurse_count });
+              current = lookup.node;
+              if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
+                throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+              }
+            }
+          }
+        }
+        return { path: current_path, node: current };
+      },getPath:function (node) {
+        var path;
+        while (true) {
+          if (FS.isRoot(node)) {
+            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
+          }
+          path = path ? PATH.join(node.name, path) : node.name;
+          node = node.parent;
+        }
       },hashName:function (parentid, name) {
         var hash = 0;
         for (var i = 0; i < name.length; i++) {
           hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
         }
-        return (parentid + hash) % FS.name_table.length;
+        return ((parentid + hash) >>> 0) % FS.nameTable.length;
       },hashAddNode:function (node) {
         var hash = FS.hashName(node.parent.id, node.name);
-        node.name_next = FS.name_table[hash];
-        FS.name_table[hash] = node;
+        node.name_next = FS.nameTable[hash];
+        FS.nameTable[hash] = node;
       },hashRemoveNode:function (node) {
         var hash = FS.hashName(node.parent.id, node.name);
-        if (FS.name_table[hash] === node) {
-          FS.name_table[hash] = node.name_next;
+        if (FS.nameTable[hash] === node) {
+          FS.nameTable[hash] = node.name_next;
         } else {
-          var current = FS.name_table[hash];
+          var current = FS.nameTable[hash];
           while (current) {
             if (current.name_next === node) {
               current.name_next = node.name_next;
@@ -1415,7 +1556,7 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(err);
         }
         var hash = FS.hashName(parent.id, name);
-        for (var node = FS.name_table[hash]; node; node = node.name_next) {
+        for (var node = FS.nameTable[hash]; node; node = node.name_next) {
           if (node.parent.id === parent.id && node.name === name) {
             return node;
           }
@@ -1479,59 +1620,8 @@ function copyTempDouble(ptr) {
         return (mode & 0170000) === 0060000;
       },isFIFO:function (mode) {
         return (mode & 0170000) === 0010000;
-      },cwd:function () {
-        return FS.currentPath;
-      },lookupPath:function (path, opts) {
-        path = PATH.resolve(FS.currentPath, path);
-        opts = opts || { recurse_count: 0 };
-        if (opts.recurse_count > 8) {  // max recursive lookup of 8
-          throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
-        }
-        // split the path
-        var parts = PATH.normalizeArray(path.split('/').filter(function(p) {
-          return !!p;
-        }), false);
-        // start at the root
-        var current = FS.root;
-        var current_path = '/';
-        for (var i = 0; i < parts.length; i++) {
-          var islast = (i === parts.length-1);
-          if (islast && opts.parent) {
-            // stop resolving
-            break;
-          }
-          current = FS.lookupNode(current, parts[i]);
-          current_path = PATH.join(current_path, parts[i]);
-          // jump to the mount's root node if this is a mountpoint
-          if (FS.isMountpoint(current)) {
-            current = current.mount.root;
-          }
-          // follow symlinks
-          // by default, lookupPath will not follow a symlink if it is the final path component.
-          // setting opts.follow = true will override this behavior.
-          if (!islast || opts.follow) {
-            var count = 0;
-            while (FS.isLink(current.mode)) {
-              var link = FS.readlink(current_path);
-              current_path = PATH.resolve(PATH.dirname(current_path), link);
-              var lookup = FS.lookupPath(current_path, { recurse_count: opts.recurse_count });
-              current = lookup.node;
-              if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
-                throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
-              }
-            }
-          }
-        }
-        return { path: current_path, node: current };
-      },getPath:function (node) {
-        var path;
-        while (true) {
-          if (FS.isRoot(node)) {
-            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
-          }
-          path = path ? PATH.join(node.name, path) : node.name;
-          node = node.parent;
-        }
+      },isSocket:function (mode) {
+        return (mode & 0140000) === 0140000;
       },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
         var flags = FS.flagModes[str];
         if (typeof flags === 'undefined') {
@@ -1560,17 +1650,6 @@ function copyTempDouble(ptr) {
         return 0;
       },mayLookup:function (dir) {
         return FS.nodePermissions(dir, 'x');
-      },mayMknod:function (mode) {
-        switch (mode & 0170000) {
-          case 0100000:
-          case 0020000:
-          case 0060000:
-          case 0010000:
-          case 0140000:
-            return 0;
-          default:
-            return ERRNO_CODES.EINVAL;
-        }
       },mayCreate:function (dir, name) {
         try {
           var node = FS.lookupNode(dir, name);
@@ -1615,26 +1694,6 @@ function copyTempDouble(ptr) {
           }
         }
         return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
-      },chrdev_stream_ops:{open:function (stream) {
-          var device = FS.getDevice(stream.node.rdev);
-          // override node's stream ops with the device's
-          stream.stream_ops = device.stream_ops;
-          // forward the open call
-          if (stream.stream_ops.open) {
-            stream.stream_ops.open(stream);
-          }
-        },llseek:function () {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }},major:function (dev) {
-        return ((dev) >> 8);
-      },minor:function (dev) {
-        return ((dev) & 0xff);
-      },makedev:function (ma, mi) {
-        return ((ma) << 8 | (mi));
-      },registerDevice:function (dev, ops) {
-        FS.devices[dev] = { stream_ops: ops };
-      },getDevice:function (dev) {
-        return FS.devices[dev];
       },MAX_OPEN_FDS:4096,nextfd:function (fd_start, fd_end) {
         fd_start = fd_start || 1;
         fd_end = fd_end || FS.MAX_OPEN_FDS;
@@ -1669,6 +1728,596 @@ function copyTempDouble(ptr) {
         return stream;
       },closeStream:function (fd) {
         FS.streams[fd] = null;
+      },chrdev_stream_ops:{open:function (stream) {
+          var device = FS.getDevice(stream.node.rdev);
+          // override node's stream ops with the device's
+          stream.stream_ops = device.stream_ops;
+          // forward the open call
+          if (stream.stream_ops.open) {
+            stream.stream_ops.open(stream);
+          }
+        },llseek:function () {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }},major:function (dev) {
+        return ((dev) >> 8);
+      },minor:function (dev) {
+        return ((dev) & 0xff);
+      },makedev:function (ma, mi) {
+        return ((ma) << 8 | (mi));
+      },registerDevice:function (dev, ops) {
+        FS.devices[dev] = { stream_ops: ops };
+      },getDevice:function (dev) {
+        return FS.devices[dev];
+      },mount:function (type, opts, mountpoint) {
+        var mount = {
+          type: type,
+          opts: opts,
+          mountpoint: mountpoint,
+          root: null
+        };
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+        }
+        // create a root node for the fs
+        var root = type.mount(mount);
+        root.mount = mount;
+        mount.root = root;
+        // assign the mount info to the mountpoint's node
+        if (lookup) {
+          lookup.node.mount = mount;
+          lookup.node.mounted = true;
+          // compatibility update FS.root if we mount to /
+          if (mountpoint === '/') {
+            FS.root = mount.root;
+          }
+        }
+        return root;
+      },lookup:function (parent, name) {
+        return parent.node_ops.lookup(parent, name);
+      },mknod:function (path, mode, dev) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var err = FS.mayCreate(parent, name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.mknod) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.mknod(parent, name, mode, dev);
+      },create:function (path, mode) {
+        mode = mode !== undefined ? mode : 0666;
+        mode &= 4095;
+        mode |= 0100000;
+        return FS.mknod(path, mode, 0);
+      },mkdir:function (path, mode) {
+        mode = mode !== undefined ? mode : 0777;
+        mode &= 511 | 0001000;
+        mode |= 0040000;
+        return FS.mknod(path, mode, 0);
+      },mkdev:function (path, mode, dev) {
+        if (typeof(dev) === 'undefined') {
+          dev = mode;
+          mode = 0666;
+        }
+        mode |= 0020000;
+        return FS.mknod(path, mode, dev);
+      },symlink:function (oldpath, newpath) {
+        var lookup = FS.lookupPath(newpath, { parent: true });
+        var parent = lookup.node;
+        var newname = PATH.basename(newpath);
+        var err = FS.mayCreate(parent, newname);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.symlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.symlink(parent, newname, oldpath);
+      },rename:function (old_path, new_path) {
+        var old_dirname = PATH.dirname(old_path);
+        var new_dirname = PATH.dirname(new_path);
+        var old_name = PATH.basename(old_path);
+        var new_name = PATH.basename(new_path);
+        // parents must exist
+        var lookup, old_dir, new_dir;
+        try {
+          lookup = FS.lookupPath(old_path, { parent: true });
+          old_dir = lookup.node;
+          lookup = FS.lookupPath(new_path, { parent: true });
+          new_dir = lookup.node;
+        } catch (e) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // need to be part of the same mount
+        if (old_dir.mount !== new_dir.mount) {
+          throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
+        }
+        // source must exist
+        var old_node = FS.lookupNode(old_dir, old_name);
+        // old path should not be an ancestor of the new path
+        var relative = PATH.relative(old_path, new_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        // new path should not be an ancestor of the old path
+        relative = PATH.relative(new_path, old_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
+        }
+        // see if the new path already exists
+        var new_node;
+        try {
+          new_node = FS.lookupNode(new_dir, new_name);
+        } catch (e) {
+          // not fatal
+        }
+        // early out if nothing needs to change
+        if (old_node === new_node) {
+          return;
+        }
+        // we'll need to delete the old entry
+        var isdir = FS.isDir(old_node.mode);
+        var err = FS.mayDelete(old_dir, old_name, isdir);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // need delete permissions if we'll be overwriting.
+        // need create permissions if new doesn't already exist.
+        err = new_node ?
+          FS.mayDelete(new_dir, new_name, isdir) :
+          FS.mayCreate(new_dir, new_name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!old_dir.node_ops.rename) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // if we are going to change the parent, check write permissions
+        if (new_dir !== old_dir) {
+          err = FS.nodePermissions(old_dir, 'w');
+          if (err) {
+            throw new FS.ErrnoError(err);
+          }
+        }
+        // remove the node from the lookup hash
+        FS.hashRemoveNode(old_node);
+        // do the underlying fs rename
+        try {
+          old_dir.node_ops.rename(old_node, new_dir, new_name);
+        } catch (e) {
+          throw e;
+        } finally {
+          // add the node back to the hash (in case node_ops.rename
+          // changed its name)
+          FS.hashAddNode(old_node);
+        }
+      },rmdir:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, true);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.rmdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.rmdir(parent, name);
+        FS.destroyNode(node);
+      },readdir:function (path) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        var node = lookup.node;
+        if (!node.node_ops.readdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        return node.node_ops.readdir(node);
+      },unlink:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, false);
+        if (err) {
+          // POSIX says unlink should set EPERM, not EISDIR
+          if (err === ERRNO_CODES.EISDIR) err = ERRNO_CODES.EPERM;
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.unlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.unlink(parent, name);
+        FS.destroyNode(node);
+      },readlink:function (path) {
+        var lookup = FS.lookupPath(path, { follow: false });
+        var link = lookup.node;
+        if (!link.node_ops.readlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        return link.node_ops.readlink(link);
+      },stat:function (path, dontFollow) {
+        var lookup = FS.lookupPath(path, { follow: !dontFollow });
+        var node = lookup.node;
+        if (!node.node_ops.getattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return node.node_ops.getattr(node);
+      },lstat:function (path) {
+        return FS.stat(path, true);
+      },chmod:function (path, mode, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          mode: (mode & 4095) | (node.mode & ~4095),
+          timestamp: Date.now()
+        });
+      },lchmod:function (path, mode) {
+        FS.chmod(path, mode, true);
+      },fchmod:function (fd, mode) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chmod(stream.node, mode);
+      },chown:function (path, uid, gid, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          timestamp: Date.now()
+          // we ignore the uid / gid for now
+        });
+      },lchown:function (path, uid, gid) {
+        FS.chown(path, uid, gid, true);
+      },fchown:function (fd, uid, gid) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chown(stream.node, uid, gid);
+      },truncate:function (path, len) {
+        if (len < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: true });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!FS.isFile(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var err = FS.nodePermissions(node, 'w');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        node.node_ops.setattr(node, {
+          size: len,
+          timestamp: Date.now()
+        });
+      },ftruncate:function (fd, len) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        FS.truncate(stream.node, len);
+      },utime:function (path, atime, mtime) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        var node = lookup.node;
+        node.node_ops.setattr(node, {
+          timestamp: Math.max(atime, mtime)
+        });
+      },open:function (path, flags, mode, fd_start, fd_end) {
+        path = PATH.normalize(path);
+        flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
+        mode = typeof mode === 'undefined' ? 0666 : mode;
+        if ((flags & 512)) {
+          mode = (mode & 4095) | 0100000;
+        } else {
+          mode = 0;
+        }
+        var node;
+        try {
+          var lookup = FS.lookupPath(path, {
+            follow: !(flags & 0200000)
+          });
+          node = lookup.node;
+          path = lookup.path;
+        } catch (e) {
+          // ignore
+        }
+        // perhaps we need to create the node
+        if ((flags & 512)) {
+          if (node) {
+            // if O_CREAT and O_EXCL are set, error out if the node already exists
+            if ((flags & 2048)) {
+              throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
+            }
+          } else {
+            // node doesn't exist, try to create it
+            node = FS.mknod(path, mode, 0);
+          }
+        }
+        if (!node) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
+        // can't truncate a device
+        if (FS.isChrdev(node.mode)) {
+          flags &= ~1024;
+        }
+        // check permissions
+        var err = FS.mayOpen(node, flags);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // do truncation if necessary
+        if ((flags & 1024)) {
+          FS.truncate(node, 0);
+        }
+        // register the stream with the filesystem
+        var stream = FS.createStream({
+          path: path,
+          node: node,
+          flags: flags,
+          seekable: true,
+          position: 0,
+          stream_ops: node.stream_ops,
+          // used by the file family libc calls (fopen, fwrite, ferror, etc.)
+          ungotten: [],
+          error: false
+        }, fd_start, fd_end);
+        // call the new stream's open function
+        if (stream.stream_ops.open) {
+          stream.stream_ops.open(stream);
+        }
+        return stream;
+      },close:function (stream) {
+        try {
+          if (stream.stream_ops.close) {
+            stream.stream_ops.close(stream);
+          }
+        } catch (e) {
+          throw e;
+        } finally {
+          FS.closeStream(stream.fd);
+        }
+      },llseek:function (stream, offset, whence) {
+        if (!stream.seekable || !stream.stream_ops.llseek) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        return stream.stream_ops.llseek(stream, offset, whence);
+      },read:function (stream, buffer, offset, length, position) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.read) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
+        if (!seeking) stream.position += bytesRead;
+        return bytesRead;
+      },write:function (stream, buffer, offset, length, position, canOwn) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.write) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        if (stream.flags & 8) {
+          // seek to the end before writing in append mode
+          FS.llseek(stream, 0, 2);
+        }
+        var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
+        if (!seeking) stream.position += bytesWritten;
+        return bytesWritten;
+      },allocate:function (stream, offset, length) {
+        if (offset < 0 || length <= 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+        }
+        if (!stream.stream_ops.allocate) {
+          throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+        }
+        stream.stream_ops.allocate(stream, offset, length);
+      },mmap:function (stream, buffer, offset, length, position, prot, flags) {
+        // TODO if PROT is PROT_WRITE, make sure we have write access
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EACCES);
+        }
+        if (!stream.stream_ops.mmap) {
+          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+        }
+        return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
+      },ioctl:function (stream, cmd, arg) {
+        if (!stream.stream_ops.ioctl) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTTY);
+        }
+        return stream.stream_ops.ioctl(stream, cmd, arg);
+      },readFile:function (path, opts) {
+        opts = opts || {};
+        opts.flags = opts.flags || 'r';
+        opts.encoding = opts.encoding || 'binary';
+        var ret;
+        var stream = FS.open(path, opts.flags);
+        var stat = FS.stat(path);
+        var length = stat.size;
+        var buf = new Uint8Array(length);
+        FS.read(stream, buf, 0, length, 0);
+        if (opts.encoding === 'utf8') {
+          ret = '';
+          var utf8 = new Runtime.UTF8Processor();
+          for (var i = 0; i < length; i++) {
+            ret += utf8.processCChar(buf[i]);
+          }
+        } else if (opts.encoding === 'binary') {
+          ret = buf;
+        } else {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
+        FS.close(stream);
+        return ret;
+      },writeFile:function (path, data, opts) {
+        opts = opts || {};
+        opts.flags = opts.flags || 'w';
+        opts.encoding = opts.encoding || 'utf8';
+        var stream = FS.open(path, opts.flags, opts.mode);
+        if (opts.encoding === 'utf8') {
+          var utf8 = new Runtime.UTF8Processor();
+          var buf = new Uint8Array(utf8.processJSString(data));
+          FS.write(stream, buf, 0, buf.length, 0);
+        } else if (opts.encoding === 'binary') {
+          FS.write(stream, data, 0, data.length, 0);
+        } else {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
+        FS.close(stream);
+      },createDefaultDirectories:function () {
+        FS.mkdir('/tmp');
+      },createDefaultDevices:function () {
+        // create /dev
+        FS.mkdir('/dev');
+        // setup /dev/null
+        FS.registerDevice(FS.makedev(1, 3), {
+          read: function() { return 0; },
+          write: function() { return 0; }
+        });
+        FS.mkdev('/dev/null', FS.makedev(1, 3));
+        // setup /dev/tty and /dev/tty1
+        // stderr needs to print output using Module['printErr']
+        // so we register a second tty just for it.
+        TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
+        TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
+        FS.mkdev('/dev/tty', FS.makedev(5, 0));
+        FS.mkdev('/dev/tty1', FS.makedev(6, 0));
+        // we're not going to emulate the actual shm device,
+        // just create the tmp dirs that reside in it commonly
+        FS.mkdir('/dev/shm');
+        FS.mkdir('/dev/shm/tmp');
+      },createStandardStreams:function () {
+        // TODO deprecate the old functionality of a single
+        // input / output callback and that utilizes FS.createDevice
+        // and instead require a unique set of stream ops
+        // by default, we symlink the standard streams to the
+        // default tty devices. however, if the standard streams
+        // have been overwritten we create a unique device for
+        // them instead.
+        if (Module['stdin']) {
+          FS.createDevice('/dev', 'stdin', Module['stdin']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdin');
+        }
+        if (Module['stdout']) {
+          FS.createDevice('/dev', 'stdout', null, Module['stdout']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdout');
+        }
+        if (Module['stderr']) {
+          FS.createDevice('/dev', 'stderr', null, Module['stderr']);
+        } else {
+          FS.symlink('/dev/tty1', '/dev/stderr');
+        }
+        // open default streams for the stdin, stdout and stderr devices
+        var stdin = FS.open('/dev/stdin', 'r');
+        HEAP32[((_stdin)>>2)]=stdin.fd;
+        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
+        var stdout = FS.open('/dev/stdout', 'w');
+        HEAP32[((_stdout)>>2)]=stdout.fd;
+        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
+        var stderr = FS.open('/dev/stderr', 'w');
+        HEAP32[((_stderr)>>2)]=stderr.fd;
+        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
+      },staticInit:function () {
+        FS.nameTable = new Array(4096);
+        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.mount(MEMFS, {}, '/');
+        FS.createDefaultDirectories();
+        FS.createDefaultDevices();
+      },init:function (input, output, error) {
+        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
+        FS.init.initialized = true;
+        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
+        Module['stdin'] = input || Module['stdin'];
+        Module['stdout'] = output || Module['stdout'];
+        Module['stderr'] = error || Module['stderr'];
+        FS.createStandardStreams();
+      },quit:function () {
+        FS.init.initialized = false;
+        for (var i = 0; i < FS.streams.length; i++) {
+          var stream = FS.streams[i];
+          if (!stream) {
+            continue;
+          }
+          FS.close(stream);
+        }
       },getMode:function (canRead, canWrite) {
         var mode = 0;
         if (canRead) mode |= 292 | 73;
@@ -1729,7 +2378,7 @@ function copyTempDouble(ptr) {
           if (!part) continue;
           var current = PATH.join(parent, part);
           try {
-            FS.mkdir(current, 0777);
+            FS.mkdir(current);
           } catch (e) {
             // ignore EEXIST
           }
@@ -1740,8 +2389,8 @@ function copyTempDouble(ptr) {
         var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         var mode = FS.getMode(canRead, canWrite);
         return FS.create(path, mode);
-      },createDataFile:function (parent, name, data, canRead, canWrite) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+      },createDataFile:function (parent, name, data, canRead, canWrite, canOwn) {
+        var path = name ? PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name) : parent;
         var mode = FS.getMode(canRead, canWrite);
         var node = FS.create(path, mode);
         if (data) {
@@ -1753,14 +2402,14 @@ function copyTempDouble(ptr) {
           // make sure we can write to the file
           FS.chmod(path, mode | 146);
           var stream = FS.open(path, 'w');
-          FS.write(stream, data, 0, data.length, 0);
+          FS.write(stream, data, 0, data.length, 0, canOwn);
           FS.close(stream);
           FS.chmod(path, mode);
         }
         return node;
       },createDevice:function (parent, name, input, output) {
         var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
-        var mode = input && output ? 0777 : (input ? 0333 : 0555);
+        var mode = FS.getMode(!!input, !!output);
         if (!FS.createDevice.major) FS.createDevice.major = 64;
         var dev = FS.makedev(FS.createDevice.major++, 0);
         // Create a fake device that a set of stream ops to emulate
@@ -1944,6 +2593,9 @@ function copyTempDouble(ptr) {
         });
         // use a custom read function
         stream_ops.read = function(stream, buffer, offset, length, position) {
+          if (!FS.forceLoadFile(node)) {
+            throw new FS.ErrnoError(ERRNO_CODES.EIO);
+          }
           var contents = stream.node.contents;
           var size = Math.min(contents.length - position, length);
           if (contents.slice) { // normal array
@@ -1959,15 +2611,15 @@ function copyTempDouble(ptr) {
         };
         node.stream_ops = stream_ops;
         return node;
-      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile) {
+      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn) {
         Browser.init();
         // TODO we should allow people to just pass in a complete filename instead
         // of parent and name being that we just join them anyways
-        var fullname = PATH.resolve(PATH.join(parent, name));
+        var fullname = name ? PATH.resolve(PATH.join(parent, name)) : parent;
         function processData(byteArray) {
           function finish(byteArray) {
             if (!dontCreateFile) {
-              FS.createDataFile(parent, name, byteArray, canRead, canWrite);
+              FS.createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
             }
             if (onload) onload();
             removeRunDependency('cp ' + fullname);
@@ -1993,539 +2645,530 @@ function copyTempDouble(ptr) {
         } else {
           processData(url);
         }
-      },createDefaultDirectories:function () {
-        FS.mkdir('/tmp', 0777);
-      },createDefaultDevices:function () {
-        // create /dev
-        FS.mkdir('/dev', 0777);
-        // setup /dev/null
-        FS.registerDevice(FS.makedev(1, 3), {
-          read: function() { return 0; },
-          write: function() { return 0; }
-        });
-        FS.mkdev('/dev/null', 0666, FS.makedev(1, 3));
-        // setup /dev/tty and /dev/tty1
-        // stderr needs to print output using Module['printErr']
-        // so we register a second tty just for it.
-        TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
-        TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
-        FS.mkdev('/dev/tty', 0666, FS.makedev(5, 0));
-        FS.mkdev('/dev/tty1', 0666, FS.makedev(6, 0));
-        // we're not going to emulate the actual shm device,
-        // just create the tmp dirs that reside in it commonly
-        FS.mkdir('/dev/shm', 0777);
-        FS.mkdir('/dev/shm/tmp', 0777);
-      },createStandardStreams:function () {
-        // TODO deprecate the old functionality of a single
-        // input / output callback and that utilizes FS.createDevice
-        // and instead require a unique set of stream ops
-        // by default, we symlink the standard streams to the
-        // default tty devices. however, if the standard streams
-        // have been overwritten we create a unique device for
-        // them instead.
-        if (Module['stdin']) {
-          FS.createDevice('/dev', 'stdin', Module['stdin']);
-        } else {
-          FS.symlink('/dev/tty', '/dev/stdin');
+      },indexedDB:function () {
+        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+      },DB_NAME:function () {
+        return 'EM_FS_' + window.location.pathname;
+      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",saveFilesToDB:function (paths, onload, onerror) {
+        onload = onload || function(){};
+        onerror = onerror || function(){};
+        var indexedDB = FS.indexedDB();
+        try {
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
+        } catch (e) {
+          return onerror(e);
         }
-        if (Module['stdout']) {
-          FS.createDevice('/dev', 'stdout', null, Module['stdout']);
-        } else {
-          FS.symlink('/dev/tty', '/dev/stdout');
-        }
-        if (Module['stderr']) {
-          FS.createDevice('/dev', 'stderr', null, Module['stderr']);
-        } else {
-          FS.symlink('/dev/tty1', '/dev/stderr');
-        }
-        // open default streams for the stdin, stdout and stderr devices
-        var stdin = FS.open('/dev/stdin', 'r');
-        HEAP32[((_stdin)>>2)]=stdin.fd;
-        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
-        var stdout = FS.open('/dev/stdout', 'w');
-        HEAP32[((_stdout)>>2)]=stdout.fd;
-        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
-        var stderr = FS.open('/dev/stderr', 'w');
-        HEAP32[((_stderr)>>2)]=stderr.fd;
-        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
-      },staticInit:function () {
-        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
-        FS.mount(MEMFS, {}, '/');
-        FS.createDefaultDirectories();
-        FS.createDefaultDevices();
-      },init:function (input, output, error) {
-        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
-        FS.init.initialized = true;
-        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
-        Module['stdin'] = input || Module['stdin'];
-        Module['stdout'] = output || Module['stdout'];
-        Module['stderr'] = error || Module['stderr'];
-        FS.createStandardStreams();
-      },quit:function () {
-        FS.init.initialized = false;
-        for (var i = 0; i < FS.streams.length; i++) {
-          var stream = FS.streams[i];
-          if (!stream) {
-            continue;
-          }
-          FS.close(stream);
-        }
-      },mount:function (type, opts, mountpoint) {
-        var mount = {
-          type: type,
-          opts: opts,
-          mountpoint: mountpoint,
-          root: null
+        openRequest.onupgradeneeded = function() {
+          console.log('creating db');
+          var db = openRequest.result;
+          db.createObjectStore(FS.DB_STORE_NAME);
         };
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
-        }
-        // create a root node for the fs
-        var root = type.mount(mount);
-        root.mount = mount;
-        mount.root = root;
-        // assign the mount info to the mountpoint's node
-        if (lookup) {
-          lookup.node.mount = mount;
-          lookup.node.mounted = true;
-          // compatibility update FS.root if we mount to /
-          if (mountpoint === '/') {
-            FS.root = mount.root;
+        openRequest.onsuccess = function() {
+          var db = openRequest.result;
+          var transaction = db.transaction([FS.DB_STORE_NAME], 'readwrite');
+          var files = transaction.objectStore(FS.DB_STORE_NAME);
+          var ok = 0, fail = 0, total = paths.length;
+          function finish() {
+            if (fail == 0) onload(); else onerror();
           }
-        }
-        return root;
-      },lookup:function (parent, name) {
-        return parent.node_ops.lookup(parent, name);
-      },mknod:function (path, mode, dev) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var err = FS.mayCreate(parent, name);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.mknod) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return parent.node_ops.mknod(parent, name, mode, dev);
-      },create:function (path, mode) {
-        mode &= 4095;
-        mode |= 0100000;
-        return FS.mknod(path, mode, 0);
-      },mkdir:function (path, mode) {
-        mode &= 511 | 0001000;
-        mode |= 0040000;
-        return FS.mknod(path, mode, 0);
-      },mkdev:function (path, mode, dev) {
-        mode |= 0020000;
-        return FS.mknod(path, mode, dev);
-      },symlink:function (oldpath, newpath) {
-        var lookup = FS.lookupPath(newpath, { parent: true });
-        var parent = lookup.node;
-        var newname = PATH.basename(newpath);
-        var err = FS.mayCreate(parent, newname);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.symlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return parent.node_ops.symlink(parent, newname, oldpath);
-      },rename:function (old_path, new_path) {
-        var old_dirname = PATH.dirname(old_path);
-        var new_dirname = PATH.dirname(new_path);
-        var old_name = PATH.basename(old_path);
-        var new_name = PATH.basename(new_path);
-        // parents must exist
-        var lookup, old_dir, new_dir;
-        try {
-          lookup = FS.lookupPath(old_path, { parent: true });
-          old_dir = lookup.node;
-          lookup = FS.lookupPath(new_path, { parent: true });
-          new_dir = lookup.node;
-        } catch (e) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        // need to be part of the same mount
-        if (old_dir.mount !== new_dir.mount) {
-          throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
-        }
-        // source must exist
-        var old_node = FS.lookupNode(old_dir, old_name);
-        // old path should not be an ancestor of the new path
-        var relative = PATH.relative(old_path, new_dirname);
-        if (relative.charAt(0) !== '.') {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        // new path should not be an ancestor of the old path
-        relative = PATH.relative(new_path, old_dirname);
-        if (relative.charAt(0) !== '.') {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
-        }
-        // see if the new path already exists
-        var new_node;
-        try {
-          new_node = FS.lookupNode(new_dir, new_name);
-        } catch (e) {
-          // not fatal
-        }
-        // early out if nothing needs to change
-        if (old_node === new_node) {
-          return;
-        }
-        // we'll need to delete the old entry
-        var isdir = FS.isDir(old_node.mode);
-        var err = FS.mayDelete(old_dir, old_name, isdir);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        // need delete permissions if we'll be overwriting.
-        // need create permissions if new doesn't already exist.
-        err = new_node ?
-          FS.mayDelete(new_dir, new_name, isdir) :
-          FS.mayCreate(new_dir, new_name);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!old_dir.node_ops.rename) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        // if we are going to change the parent, check write permissions
-        if (new_dir !== old_dir) {
-          err = FS.nodePermissions(old_dir, 'w');
-          if (err) {
-            throw new FS.ErrnoError(err);
-          }
-        }
-        // remove the node from the lookup hash
-        FS.hashRemoveNode(old_node);
-        // do the underlying fs rename
-        try {
-          old_node.node_ops.rename(old_node, new_dir, new_name);
-        } catch (e) {
-          throw e;
-        } finally {
-          // add the node back to the hash (in case node_ops.rename
-          // changed its name)
-          FS.hashAddNode(old_node);
-        }
-      },rmdir:function (path) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var node = FS.lookupNode(parent, name);
-        var err = FS.mayDelete(parent, name, true);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.rmdir) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(node)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        parent.node_ops.rmdir(parent, name);
-        FS.destroyNode(node);
-      },unlink:function (path) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var node = FS.lookupNode(parent, name);
-        var err = FS.mayDelete(parent, name, false);
-        if (err) {
-          // POSIX says unlink should set EPERM, not EISDIR
-          if (err === ERRNO_CODES.EISDIR) err = ERRNO_CODES.EPERM;
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.unlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(node)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        parent.node_ops.unlink(parent, name);
-        FS.destroyNode(node);
-      },readlink:function (path) {
-        var lookup = FS.lookupPath(path, { follow: false });
-        var link = lookup.node;
-        if (!link.node_ops.readlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        return link.node_ops.readlink(link);
-      },stat:function (path, dontFollow) {
-        var lookup = FS.lookupPath(path, { follow: !dontFollow });
-        var node = lookup.node;
-        if (!node.node_ops.getattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return node.node_ops.getattr(node);
-      },lstat:function (path) {
-        return FS.stat(path, true);
-      },chmod:function (path, mode, dontFollow) {
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: !dontFollow });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        node.node_ops.setattr(node, {
-          mode: (mode & 4095) | (node.mode & ~4095),
-          timestamp: Date.now()
-        });
-      },lchmod:function (path, mode) {
-        FS.chmod(path, mode, true);
-      },fchmod:function (fd, mode) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        FS.chmod(stream.node, mode);
-      },chown:function (path, uid, gid, dontFollow) {
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: !dontFollow });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        node.node_ops.setattr(node, {
-          timestamp: Date.now()
-          // we ignore the uid / gid for now
-        });
-      },lchown:function (path, uid, gid) {
-        FS.chown(path, uid, gid, true);
-      },fchown:function (fd, uid, gid) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        FS.chown(stream.node, uid, gid);
-      },truncate:function (path, len) {
-        if (len < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: true });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isDir(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!FS.isFile(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var err = FS.nodePermissions(node, 'w');
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        node.node_ops.setattr(node, {
-          size: len,
-          timestamp: Date.now()
-        });
-      },ftruncate:function (fd, len) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        FS.truncate(stream.node, len);
-      },utime:function (path, atime, mtime) {
-        var lookup = FS.lookupPath(path, { follow: true });
-        var node = lookup.node;
-        node.node_ops.setattr(node, {
-          timestamp: Math.max(atime, mtime)
-        });
-      },open:function (path, flags, mode, fd_start, fd_end) {
-        path = PATH.normalize(path);
-        flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
-        if ((flags & 512)) {
-          mode = (mode & 4095) | 0100000;
-        } else {
-          mode = 0;
-        }
-        var node;
-        try {
-          var lookup = FS.lookupPath(path, {
-            follow: !(flags & 0200000)
+          paths.forEach(function(path) {
+            var putRequest = files.put(FS.analyzePath(path).object.contents, path);
+            putRequest.onsuccess = function() { ok++; if (ok + fail == total) finish() };
+            putRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
           });
-          node = lookup.node;
-          path = lookup.path;
+          transaction.onerror = onerror;
+        };
+        openRequest.onerror = onerror;
+      },loadFilesFromDB:function (paths, onload, onerror) {
+        onload = onload || function(){};
+        onerror = onerror || function(){};
+        var indexedDB = FS.indexedDB();
+        try {
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
         } catch (e) {
-          // ignore
+          return onerror(e);
         }
-        // perhaps we need to create the node
-        if ((flags & 512)) {
-          if (node) {
-            // if O_CREAT and O_EXCL are set, error out if the node already exists
-            if ((flags & 2048)) {
-              throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
+        openRequest.onupgradeneeded = onerror; // no database to load from
+        openRequest.onsuccess = function() {
+          var db = openRequest.result;
+          try {
+            var transaction = db.transaction([FS.DB_STORE_NAME], 'readonly');
+          } catch(e) {
+            onerror(e);
+            return;
+          }
+          var files = transaction.objectStore(FS.DB_STORE_NAME);
+          var ok = 0, fail = 0, total = paths.length;
+          function finish() {
+            if (fail == 0) onload(); else onerror();
+          }
+          paths.forEach(function(path) {
+            var getRequest = files.get(path);
+            getRequest.onsuccess = function() {
+              if (FS.analyzePath(path).exists) {
+                FS.unlink(path);
+              }
+              FS.createDataFile(PATH.dirname(path), PATH.basename(path), getRequest.result, true, true, true);
+              ok++;
+              if (ok + fail == total) finish();
+            };
+            getRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
+          });
+          transaction.onerror = onerror;
+        };
+        openRequest.onerror = onerror;
+      }};
+  var SOCKFS={mount:function (mount) {
+        return FS.createNode(null, '/', 0040000 | 0777, 0);
+      },nextname:function () {
+        if (!SOCKFS.nextname.current) {
+          SOCKFS.nextname.current = 0;
+        }
+        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+      },createSocket:function (family, type, protocol) {
+        var streaming = type == 1;
+        if (protocol) {
+          assert(streaming == (protocol == 6)); // if SOCK_STREAM, must be tcp
+        }
+        // create our internal socket structure
+        var sock = {
+          family: family,
+          type: type,
+          protocol: protocol,
+          server: null,
+          peers: {},
+          pending: [],
+          recv_queue: [],
+          sock_ops: SOCKFS.websocket_sock_ops
+        };
+        // create the filesystem node to store the socket structure
+        var name = SOCKFS.nextname();
+        var node = FS.createNode(SOCKFS.root, name, 0140000, 0);
+        node.sock = sock;
+        // and the wrapping stream that enables library functions such
+        // as read and write to indirectly interact with the socket
+        var stream = FS.createStream({
+          path: name,
+          node: node,
+          flags: FS.modeStringToFlags('r+'),
+          seekable: false,
+          stream_ops: SOCKFS.stream_ops
+        });
+        // map the new stream to the socket structure (sockets have a 1:1
+        // relationship with a stream)
+        sock.stream = stream;
+        return sock;
+      },getSocket:function (fd) {
+        var stream = FS.getStream(fd);
+        if (!stream || !FS.isSocket(stream.node.mode)) {
+          return null;
+        }
+        return stream.node.sock;
+      },stream_ops:{poll:function (stream) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.poll(sock);
+        },ioctl:function (stream, request, varargs) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.ioctl(sock, request, varargs);
+        },read:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          var msg = sock.sock_ops.recvmsg(sock, length);
+          if (!msg) {
+            // socket is closed
+            return 0;
+          }
+          buffer.set(msg.buffer, offset);
+          return msg.buffer.length;
+        },write:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.sendmsg(sock, buffer, offset, length);
+        },close:function (stream) {
+          var sock = stream.node.sock;
+          sock.sock_ops.close(sock);
+        }},websocket_sock_ops:{createPeer:function (sock, addr, port) {
+          var ws;
+          if (typeof addr === 'object') {
+            ws = addr;
+            addr = null;
+            port = null;
+          }
+          if (ws) {
+            // for sockets that've already connected (e.g. we're the server)
+            // we can inspect the _socket property for the address
+            if (ws._socket) {
+              addr = ws._socket.remoteAddress;
+              port = ws._socket.remotePort;
+            }
+            // if we're just now initializing a connection to the remote,
+            // inspect the url property
+            else {
+              var result = /ws[s]?:\/\/([^:]+):(\d+)/.exec(ws.url);
+              if (!result) {
+                throw new Error('WebSocket URL must be in the format ws(s)://address:port');
+              }
+              addr = result[1];
+              port = parseInt(result[2], 10);
             }
           } else {
-            // node doesn't exist, try to create it
-            node = FS.mknod(path, mode, 0);
+            // create the actual websocket object and connect
+            try {
+              var url = 'ws://' + addr + ':' + port;
+              // the node ws library API is slightly different than the browser's
+              var opts = ENVIRONMENT_IS_NODE ? {} : ['binary'];
+              ws = new WebSocket(url, opts);
+              ws.binaryType = 'arraybuffer';
+            } catch (e) {
+              throw new FS.ErrnoError(ERRNO_CODES.EHOSTUNREACH);
+            }
           }
-        }
-        if (!node) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
-        }
-        // can't truncate a device
-        if (FS.isChrdev(node.mode)) {
-          flags &= ~1024;
-        }
-        // check permissions
-        var err = FS.mayOpen(node, flags);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        // do truncation if necessary
-        if ((flags & 1024)) {
-          FS.truncate(node, 0);
-        }
-        // register the stream with the filesystem
-        var stream = FS.createStream({
-          path: path,
-          node: node,
-          flags: flags,
-          seekable: true,
-          position: 0,
-          stream_ops: node.stream_ops,
-          // used by the file family libc calls (fopen, fwrite, ferror, etc.)
-          ungotten: [],
-          error: false
-        }, fd_start, fd_end);
-        // call the new stream's open function
-        if (stream.stream_ops.open) {
-          stream.stream_ops.open(stream);
-        }
-        return stream;
-      },close:function (stream) {
-        try {
-          if (stream.stream_ops.close) {
-            stream.stream_ops.close(stream);
+          var peer = {
+            addr: addr,
+            port: port,
+            socket: ws,
+            dgram_send_queue: []
+          };
+          SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+          SOCKFS.websocket_sock_ops.handlePeerEvents(sock, peer);
+          // if this is a bound dgram socket, send the port number first to allow
+          // us to override the ephemeral port reported to us by remotePort on the
+          // remote end.
+          if (sock.type === 2 && typeof sock.sport !== 'undefined') {
+            peer.dgram_send_queue.push(new Uint8Array([
+                255, 255, 255, 255,
+                'p'.charCodeAt(0), 'o'.charCodeAt(0), 'r'.charCodeAt(0), 't'.charCodeAt(0),
+                ((sock.sport & 0xff00) >> 8) , (sock.sport & 0xff)
+            ]));
           }
-        } catch (e) {
-          throw e;
-        } finally {
-          FS.closeStream(stream.fd);
-        }
-      },llseek:function (stream, offset, whence) {
-        if (!stream.seekable || !stream.stream_ops.llseek) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        return stream.stream_ops.llseek(stream, offset, whence);
-      },readdir:function (stream) {
-        if (!stream.stream_ops.readdir) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
-        }
-        return stream.stream_ops.readdir(stream);
-      },read:function (stream, buffer, offset, length, position) {
-        if (length < 0 || position < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 1) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (FS.isDir(stream.node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!stream.stream_ops.read) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var seeking = true;
-        if (typeof position === 'undefined') {
-          position = stream.position;
-          seeking = false;
-        } else if (!stream.seekable) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
-        if (!seeking) stream.position += bytesRead;
-        return bytesRead;
-      },write:function (stream, buffer, offset, length, position) {
-        if (length < 0 || position < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (FS.isDir(stream.node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!stream.stream_ops.write) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var seeking = true;
-        if (typeof position === 'undefined') {
-          position = stream.position;
-          seeking = false;
-        } else if (!stream.seekable) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        if (stream.flags & 8) {
-          // seek to the end before writing in append mode
-          FS.llseek(stream, 0, 2);
-        }
-        var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position);
-        if (!seeking) stream.position += bytesWritten;
-        return bytesWritten;
-      },allocate:function (stream, offset, length) {
-        if (offset < 0 || length <= 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
-        }
-        if (!stream.stream_ops.allocate) {
-          throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
-        }
-        stream.stream_ops.allocate(stream, offset, length);
-      },mmap:function (stream, buffer, offset, length, position, prot, flags) {
-        // TODO if PROT is PROT_WRITE, make sure we have write access
-        if ((stream.flags & 3) === 1) {
-          throw new FS.ErrnoError(ERRNO_CODES.EACCES);
-        }
-        if (!stream.stream_ops.mmap) {
-          throw new FS.errnoError(ERRNO_CODES.ENODEV);
-        }
-        return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
-      }};
-  function _send(fd, buf, len, flags) {
-      var info = FS.getStream(fd);
-      if (!info) {
+          return peer;
+        },getPeer:function (sock, addr, port) {
+          return sock.peers[addr + ':' + port];
+        },addPeer:function (sock, peer) {
+          sock.peers[peer.addr + ':' + peer.port] = peer;
+        },removePeer:function (sock, peer) {
+          delete sock.peers[peer.addr + ':' + peer.port];
+        },handlePeerEvents:function (sock, peer) {
+          var first = true;
+          var handleOpen = function () {
+            try {
+              var queued = peer.dgram_send_queue.shift();
+              while (queued) {
+                peer.socket.send(queued);
+                queued = peer.dgram_send_queue.shift();
+              }
+            } catch (e) {
+              // not much we can do here in the way of proper error handling as we've already
+              // lied and said this data was sent. shut it down.
+              peer.socket.close();
+            }
+          };
+          var handleMessage = function(data) {
+            assert(typeof data !== 'string' && data.byteLength !== undefined);  // must receive an ArrayBuffer
+            data = new Uint8Array(data);  // make a typed array view on the array buffer
+            // if this is the port message, override the peer's port with it
+            var wasfirst = first;
+            first = false;
+            if (wasfirst &&
+                data.length === 10 &&
+                data[0] === 255 && data[1] === 255 && data[2] === 255 && data[3] === 255 &&
+                data[4] === 'p'.charCodeAt(0) && data[5] === 'o'.charCodeAt(0) && data[6] === 'r'.charCodeAt(0) && data[7] === 't'.charCodeAt(0)) {
+              // update the peer's port and it's key in the peer map
+              var newport = ((data[8] << 8) | data[9]);
+              SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+              peer.port = newport;
+              SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+              return;
+            }
+            sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
+          };
+          if (ENVIRONMENT_IS_NODE) {
+            peer.socket.on('open', handleOpen);
+            peer.socket.on('message', function(data, flags) {
+              if (!flags.binary) {
+                return;
+              }
+              handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
+            });
+            peer.socket.on('error', function() {
+              // don't throw
+            });
+          } else {
+            peer.socket.onopen = handleOpen;
+            peer.socket.onmessage = function(event) {
+              handleMessage(event.data);
+            };
+          }
+        },poll:function (sock) {
+          if (sock.type === 1 && sock.server) {
+            // listen sockets should only say they're available for reading
+            // if there are pending clients.
+            return sock.pending.length ? (0 /* XXX missing C define POLLRDNORM */ | 1) : 0;
+          }
+          var mask = 0;
+          var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
+            SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport) :
+            null;
+          if (sock.recv_queue.length ||
+              !dest ||  // connection-less sockets are always ready to read
+              (dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
+            mask |= (0 /* XXX missing C define POLLRDNORM */ | 1);
+          }
+          if (!dest ||  // connection-less sockets are always ready to write
+              (dest && dest.socket.readyState === dest.socket.OPEN)) {
+            mask |= 2;
+          }
+          if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {
+            mask |= 16;
+          }
+          return mask;
+        },ioctl:function (sock, request, arg) {
+          switch (request) {
+            case 1:
+              var bytes = 0;
+              if (sock.recv_queue.length) {
+                bytes = sock.recv_queue[0].data.length;
+              }
+              HEAP32[((arg)>>2)]=bytes;
+              return 0;
+            default:
+              return ERRNO_CODES.EINVAL;
+          }
+        },close:function (sock) {
+          // if we've spawned a listen server, close it
+          if (sock.server) {
+            try {
+              sock.server.close();
+            } catch (e) {
+            }
+            sock.server = null;
+          }
+          // close any peer connections
+          var peers = Object.keys(sock.peers);
+          for (var i = 0; i < peers.length; i++) {
+            var peer = sock.peers[peers[i]];
+            try {
+              peer.socket.close();
+            } catch (e) {
+            }
+            SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+          }
+          return 0;
+        },bind:function (sock, addr, port) {
+          if (typeof sock.saddr !== 'undefined' || typeof sock.sport !== 'undefined') {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already bound
+          }
+          sock.saddr = addr;
+          sock.sport = port || _mkport();
+          // in order to emulate dgram sockets, we need to launch a listen server when
+          // binding on a connection-less socket
+          // note: this is only required on the server side
+          if (sock.type === 2) {
+            // close the existing server if it exists
+            if (sock.server) {
+              sock.server.close();
+              sock.server = null;
+            }
+            // swallow error operation not supported error that occurs when binding in the
+            // browser where this isn't supported
+            try {
+              sock.sock_ops.listen(sock, 0);
+            } catch (e) {
+              if (!(e instanceof FS.ErrnoError)) throw e;
+              if (e.errno !== ERRNO_CODES.EOPNOTSUPP) throw e;
+            }
+          }
+        },connect:function (sock, addr, port) {
+          if (sock.server) {
+            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
+          }
+          // TODO autobind
+          // if (!sock.addr && sock.type == 2) {
+          // }
+          // early out if we're already connected / in the middle of connecting
+          if (typeof sock.daddr !== 'undefined' && typeof sock.dport !== 'undefined') {
+            var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+            if (dest) {
+              if (dest.socket.readyState === dest.socket.CONNECTING) {
+                throw new FS.ErrnoError(ERRNO_CODES.EALREADY);
+              } else {
+                throw new FS.ErrnoError(ERRNO_CODES.EISCONN);
+              }
+            }
+          }
+          // add the socket to our peer list and set our
+          // destination address / port to match
+          var peer = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+          sock.daddr = peer.addr;
+          sock.dport = peer.port;
+          // always "fail" in non-blocking mode
+          throw new FS.ErrnoError(ERRNO_CODES.EINPROGRESS);
+        },listen:function (sock, backlog) {
+          if (!ENVIRONMENT_IS_NODE) {
+            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+          }
+          if (sock.server) {
+             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already listening
+          }
+          var WebSocketServer = require('ws').Server;
+          var host = sock.saddr;
+          sock.server = new WebSocketServer({
+            host: host,
+            port: sock.sport
+            // TODO support backlog
+          });
+          sock.server.on('connection', function(ws) {
+            if (sock.type === 1) {
+              var newsock = SOCKFS.createSocket(sock.family, sock.type, sock.protocol);
+              // create a peer on the new socket
+              var peer = SOCKFS.websocket_sock_ops.createPeer(newsock, ws);
+              newsock.daddr = peer.addr;
+              newsock.dport = peer.port;
+              // push to queue for accept to pick up
+              sock.pending.push(newsock);
+            } else {
+              // create a peer on the listen socket so calling sendto
+              // with the listen socket and an address will resolve
+              // to the correct client
+              SOCKFS.websocket_sock_ops.createPeer(sock, ws);
+            }
+          });
+          sock.server.on('closed', function() {
+            sock.server = null;
+          });
+          sock.server.on('error', function() {
+            // don't throw
+          });
+        },accept:function (listensock) {
+          if (!listensock.server) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          var newsock = listensock.pending.shift();
+          newsock.stream.flags = listensock.stream.flags;
+          return newsock;
+        },getname:function (sock, peer) {
+          var addr, port;
+          if (peer) {
+            if (sock.daddr === undefined || sock.dport === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            }
+            addr = sock.daddr;
+            port = sock.dport;
+          } else {
+            // TODO saddr and sport will be set for bind()'d UDP sockets, but what
+            // should we be returning for TCP sockets that've been connect()'d?
+            addr = sock.saddr || 0;
+            port = sock.sport || 0;
+          }
+          return { addr: addr, port: port };
+        },sendmsg:function (sock, buffer, offset, length, addr, port) {
+          if (sock.type === 2) {
+            // connection-less sockets will honor the message address,
+            // and otherwise fall back to the bound destination address
+            if (addr === undefined || port === undefined) {
+              addr = sock.daddr;
+              port = sock.dport;
+            }
+            // if there was no address to fall back to, error out
+            if (addr === undefined || port === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.EDESTADDRREQ);
+            }
+          } else {
+            // connection-based sockets will only use the bound
+            addr = sock.daddr;
+            port = sock.dport;
+          }
+          // find the peer for the destination address
+          var dest = SOCKFS.websocket_sock_ops.getPeer(sock, addr, port);
+          // early out if not connected with a connection-based socket
+          if (sock.type === 1) {
+            if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            } else if (dest.socket.readyState === dest.socket.CONNECTING) {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+          // create a copy of the incoming data to send, as the WebSocket API
+          // doesn't work entirely with an ArrayBufferView, it'll just send
+          // the entire underlying buffer
+          var data;
+          if (buffer instanceof Array || buffer instanceof ArrayBuffer) {
+            data = buffer.slice(offset, offset + length);
+          } else {  // ArrayBufferView
+            data = buffer.buffer.slice(buffer.byteOffset + offset, buffer.byteOffset + offset + length);
+          }
+          // if we're emulating a connection-less dgram socket and don't have
+          // a cached connection, queue the buffer to send upon connect and
+          // lie, saying the data was sent now.
+          if (sock.type === 2) {
+            if (!dest || dest.socket.readyState !== dest.socket.OPEN) {
+              // if we're not connected, open a new connection
+              if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                dest = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+              }
+              dest.dgram_send_queue.push(data);
+              return length;
+            }
+          }
+          try {
+            // send the actual data
+            dest.socket.send(data);
+            return length;
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+        },recvmsg:function (sock, length) {
+          // http://pubs.opengroup.org/onlinepubs/7908799/xns/recvmsg.html
+          if (sock.type === 1 && sock.server) {
+            // tcp servers should not be recv()'ing on the listen socket
+            throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+          }
+          var queued = sock.recv_queue.shift();
+          if (!queued) {
+            if (sock.type === 1) {
+              var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+              if (!dest) {
+                // if we have a destination address but are not connected, error out
+                throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+              }
+              else if (dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                // return null if the socket has closed
+                return null;
+              }
+              else {
+                // else, our socket is in a valid state but truly has nothing available
+                throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+              }
+            } else {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+          // queued.data will be an ArrayBuffer if it's unadulterated, but if it's
+          // requeued TCP data it'll be an ArrayBufferView
+          var queuedLength = queued.data.byteLength || queued.data.length;
+          var queuedOffset = queued.data.byteOffset || 0;
+          var queuedBuffer = queued.data.buffer || queued.data;
+          var bytesRead = Math.min(length, queuedLength);
+          var res = {
+            buffer: new Uint8Array(queuedBuffer, queuedOffset, bytesRead),
+            addr: queued.addr,
+            port: queued.port
+          };
+          // push back any unread data for TCP connections
+          if (sock.type === 1 && bytesRead < queuedLength) {
+            var bytesRemaining = queuedLength - bytesRead;
+            queued.data = new Uint8Array(queuedBuffer, queuedOffset + bytesRead, bytesRemaining);
+            sock.recv_queue.unshift(queued);
+          }
+          return res;
+        }}};function _send(fd, buf, len, flags) {
+      var sock = SOCKFS.getSocket(fd);
+      if (!sock) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
       }
-      if (info.socket.readyState === WebSocket.CLOSING || info.socket.readyState === WebSocket.CLOSED) {
-        ___setErrNo(ERRNO_CODES.ENOTCONN);
-        return -1;
-      } else if (info.socket.readyState === WebSocket.CONNECTING) {
-        ___setErrNo(ERRNO_CODES.EAGAIN);
-        return -1;
-      }
-      info.sender(HEAPU8.subarray(buf, buf+len));
-      return len;
+      // TODO honor flags
+      return _write(fd, buf, len);
     }
   function _pwrite(fildes, buf, nbyte, offset) {
       // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
@@ -2549,9 +3192,6 @@ function copyTempDouble(ptr) {
       if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      }
-      if (stream && ('socket' in stream)) {
-        return _send(fildes, buf, nbyte, 0);
       }
       try {
         var slab = HEAP8;
@@ -3545,8 +4185,21 @@ function copyTempDouble(ptr) {
           // Otherwise, calculate the movement based on the changes
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
-          var x = event.pageX - (window.scrollX + rect.left);
-          var y = event.pageY - (window.scrollY + rect.top);
+          var x, y;
+          if (event.type == 'touchstart' ||
+              event.type == 'touchend' ||
+              event.type == 'touchmove') {
+            var t = event.touches.item(0);
+            if (t) {
+              x = t.pageX - (window.scrollX + rect.left);
+              y = t.pageY - (window.scrollY + rect.top);
+            } else {
+              return;
+            }
+          } else {
+            x = event.pageX - (window.scrollX + rect.left);
+            y = event.pageY - (window.scrollY + rect.top);
+          }
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
           // of backbuffer units.
@@ -3622,11 +4275,18 @@ function copyTempDouble(ptr) {
       }};function _glutInit(argcp, argv) {
       // Ignore arguments
       GLUT.initTime = Date.now();
+      var isTouchDevice = 'ontouchstart' in document.documentElement;
       window.addEventListener("keydown", GLUT.onKeydown, true);
       window.addEventListener("keyup", GLUT.onKeyup, true);
-      window.addEventListener("mousemove", GLUT.onMousemove, true);
-      window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
-      window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
+      if (isTouchDevice) {
+        window.addEventListener("touchmove", GLUT.onMousemove, true);
+        window.addEventListener("touchstart", GLUT.onMouseButtonDown, true);
+        window.addEventListener("touchend", GLUT.onMouseButtonUp, true);
+      } else {
+        window.addEventListener("mousemove", GLUT.onMousemove, true);
+        window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
+        window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
+      }
       Browser.resizeListeners.push(function(width, height) {
         if (GLUT.reshapeFunc) {
         	Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
@@ -3635,9 +4295,15 @@ function copyTempDouble(ptr) {
       __ATEXIT__.push({ func: function() {
         window.removeEventListener("keydown", GLUT.onKeydown, true);
         window.removeEventListener("keyup", GLUT.onKeyup, true);
-        window.removeEventListener("mousemove", GLUT.onMousemove, true);
-        window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
-        window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
+        if (isTouchDevice) {
+          window.removeEventListener("touchmove", GLUT.onMousemove, true);
+          window.removeEventListener("touchstart", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("touchend", GLUT.onMouseButtonUp, true);
+        } else {
+          window.removeEventListener("mousemove", GLUT.onMousemove, true);
+          window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
+        }
         Module["canvas"].width = Module["canvas"].height = 1;
       } });
     }
@@ -4000,7 +4666,7 @@ function copyTempDouble(ptr) {
           var _info = _object.getInfo(param_name);
           if(typeof(_info) == "number") {
             if (param_value_size == 8) {
-              if (param_value != 0) (tempI64 = [_info>>>0,((Math.min((+(Math.floor((_info)/(+(4294967296))))), (+(4294967295))))|0)>>>0],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+              if (param_value != 0) (tempI64 = [_info>>>0,((+(Math.abs(_info))) >= (+(1)) ? (_info > (+(0)) ? ((Math.min((+(Math.floor((_info)/(+(4294967296))))), (+(4294967295))))|0)>>>0 : (~~((+(Math.ceil((_info - +(((~~(_info)))>>>0))/(+(4294967296)))))))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
             } else {
               if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
             } 
@@ -4325,7 +4991,7 @@ function copyTempDouble(ptr) {
           var _info = CL.cl_objects[command_queue].getInfo(param_name);
           if(typeof(_info) == "number") {
             if (param_value_size == 8) {
-              if (param_value != 0) (tempI64 = [_info>>>0,((Math.min((+(Math.floor((_info)/(+(4294967296))))), (+(4294967295))))|0)>>>0],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+              if (param_value != 0) (tempI64 = [_info>>>0,((+(Math.abs(_info))) >= (+(1)) ? (_info > (+(0)) ? ((Math.min((+(Math.floor((_info)/(+(4294967296))))), (+(4294967295))))|0)>>>0 : (~~((+(Math.ceil((_info - +(((~~(_info)))>>>0))/(+(4294967296)))))))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
             } else {
               if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
             } 
@@ -4582,9 +5248,12 @@ function copyTempDouble(ptr) {
     }
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
+__ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+__ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 GL.init()
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
+  Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
@@ -4666,10 +5335,14 @@ function ExitStatus(status) {
 ExitStatus.prototype = new Error();
 ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
+var preloadStartTime = null;
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
   args = args || [];
+  if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) {
+    Module.printErr('preload time: ' + (Date.now() - preloadStartTime) + ' ms');
+  }
   ensureInitRuntime();
   var argc = args.length+1;
   function pad() {
@@ -4709,6 +5382,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
 }
 function run(args) {
   args = args || Module['arguments'];
+  if (preloadStartTime === null) preloadStartTime = Date.now();
   if (runDependencies > 0) {
     Module.printErr('run() called, but dependencies remain, so not running');
     return;
@@ -4753,6 +5427,7 @@ Module['exit'] = Module.exit = exit;
 function abort(text) {
   if (text) {
     Module.print(text);
+    Module.printErr(text);
   }
   ABORT = true;
   EXITSTATUS = 1;

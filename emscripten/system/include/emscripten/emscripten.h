@@ -19,15 +19,24 @@ extern "C" {
 #endif
 
 /*
- * Forces LLVM to not dead-code-eliminate a function. Note that
- * closure may still eliminate it at the JS level, for which you
- * should use EXPORTED_FUNCTIONS (see settings.js).
+ * Convenient syntax for inline assembly/js. Allows stuff like
  *
- * **DEPRECATED**: Use EXPORTED_FUNCTIONS instead, which will work
- *                 with closure, asm.js, etc. For example
- *                   -s EXPORTED_FUNCTIONS=["_main", "myfunc"]
+ *    EM_ASM(window.alert('hai'));
+ *
+ * Note: double-quotes (") are not supported, but you can use
+ *       single-quotes (') in js anyhow.
  */
-/* #define EMSCRIPTEN_KEEPALIVE __attribute__((used)) */
+#define EM_ASM(...) asm(#__VA_ARGS__)
+
+/*
+ * Forces LLVM to not dead-code-eliminate a function. Note that
+ * you still need to use EXPORTED_FUNCTIONS so it stays alive
+ * in JS, e.g.
+ *     emcc -s EXPORTED_FUNCTIONS=["_main", "_myfunc"]
+ * and in the source file
+ *     void EMSCRIPTEN_KEEPALIVE myfunc() {..}
+ */
+#define EMSCRIPTEN_KEEPALIVE __attribute__((used))
 
 /*
  * Interface to the underlying JS engine. This function will
@@ -159,6 +168,12 @@ void emscripten_hide_mouse();
  * on the Emscripten web page.
  */
 void emscripten_set_canvas_size(int width, int height);
+
+/*
+ * Get the current pixel width and height of the <canvas> element
+ * as well as whether the canvas is fullscreen or not.
+ */
+void emscripten_get_canvas_size(int *width, int *height, int *isFullscreen);
 
 /*
  * Returns the highest-precision representation of the

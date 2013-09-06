@@ -808,6 +808,80 @@ nada
     '''
     self.do_run(src, ',0,,2,C!,0,C!,0,,65535,C!,0,')
 
+  def test_double_i64_conversion(self):
+    if Settings.USE_TYPED_ARRAYS != 2: return self.skip('needs ta2')
+
+    src = r'''
+      #include <cassert>
+      #include <inttypes.h>
+      #include <stdio.h>
+
+      __attribute((noinline)) bool eq(double d, int64_t i) {
+        int64_t i2 = (int64_t)d;
+        if (i != i2) {
+          printf("%.20g converted to int64 returns %lld, not %lld as expected!\n", d, i2, i);
+        }
+        return i == i2;
+      }
+
+      int main() {
+        assert(eq(0.0, 0));
+        assert(eq(-0.0, 0));
+        assert(eq(0.1, 0));
+        assert(eq(-0.1, 0));
+        assert(eq(0.6, 0));
+        assert(eq(-0.6, 0));
+        assert(eq(1.0, 1));
+        assert(eq(-1.0, -1));
+        assert(eq(1.1, 1));
+        assert(eq(-1.1, -1));
+        assert(eq(1.6, 1));
+        assert(eq(-1.6, -1));
+        assert(eq(4294967295.0, 4294967295LL));
+        assert(eq(4294967295.5, 4294967295LL));
+        assert(eq(4294967296.0, 4294967296LL));
+        assert(eq(4294967296.5, 4294967296LL));
+        assert(eq(14294967295.0, 14294967295LL));
+        assert(eq(14294967295.5, 14294967295LL));
+        assert(eq(14294967296.0, 14294967296LL));
+        assert(eq(14294967296.5, 14294967296LL));
+        assert(eq(-4294967295.0, -4294967295LL));
+        assert(eq(-4294967295.5, -4294967295LL));
+        assert(eq(-4294967296.0, -4294967296LL));
+        assert(eq(-4294967296.5, -4294967296LL));
+        assert(eq(-14294967295.0, -14294967295LL));
+        assert(eq(-14294967295.5, -14294967295LL));
+        assert(eq(-14294967296.0, -14294967296LL));
+        assert(eq(-14294967296.5, -14294967296LL));
+
+        assert(eq(4294967295.3, 4294967295LL));
+        assert(eq(4294967296.3, 4294967296LL));
+        assert(eq(14294967295.3, 14294967295LL));
+        assert(eq(14294967296.3, 14294967296LL));
+        assert(eq(-4294967295.3, -4294967295LL));
+        assert(eq(-4294967296.3, -4294967296LL));
+        assert(eq(-14294967295.3, -14294967295LL));
+        assert(eq(-14294967296.3, -14294967296LL));
+
+        assert(eq(4294967295.8, 4294967295LL));
+        assert(eq(4294967296.8, 4294967296LL));
+        assert(eq(14294967295.8, 14294967295LL));
+        assert(eq(14294967296.8, 14294967296LL));
+        assert(eq(-4294967295.8, -4294967295LL));
+        assert(eq(-4294967296.8, -4294967296LL));
+        assert(eq(-14294967295.8, -14294967295LL));
+        assert(eq(-14294967296.8, -14294967296LL));
+
+        // The following number is the largest double such that all integers smaller than this can exactly be represented in a double.
+        assert(eq(9007199254740992.0, 9007199254740992LL /* == 2^53 */));
+        assert(eq(-9007199254740992.0, -9007199254740992LL /* == -2^53 */));
+
+        printf("OK!\n");
+        return 0;
+      }
+    '''
+    self.do_run(src, 'OK!\n');
+
   def test_negative_zero(self):
     src = r'''
       #include <stdio.h>
@@ -3660,8 +3734,15 @@ def process(filename):
       Settings.EXPORT_ALL = 1
       self.do_run(src, 'hello world!\n*100*\n*fivesix*\nmann\n', post_build=check)
 
+  def test_emscripten_get_now(self):
+      if Settings.USE_TYPED_ARRAYS != 2: return self.skip('requires ta2')
+
+      if self.run_name == 'o2':
+        self.emcc_args += ['--closure', '1'] # Use closure here for some additional coverage
+      self.do_run(open(path_from_root('tests', 'emscripten_get_now.cpp')).read(), 'Timer resolution is good.')
+
   def test_inlinejs(self):
-      if Settings.ASM_JS: return self.skip('asm does not support random code, TODO: something that works in asm')
+      if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
       src = r'''
         #include <stdio.h>
 
@@ -3678,10 +3759,10 @@ def process(filename):
         }
         '''
 
-      self.do_run(src, 'Inline JS is very cool\n3.64')
+      self.do_run(src, 'Inline JS is very cool\n3.64\n')
 
   def test_inlinejs2(self):
-      if Settings.ASM_JS: return self.skip('asm does not support random code, TODO: something that works in asm')
+      if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
       src = r'''
         #include <stdio.h>
 
@@ -3704,6 +3785,27 @@ def process(filename):
         '''
 
       self.do_run(src, '4\n200\n')
+
+  def test_inlinejs3(self):
+      if Settings.ASM_JS: return self.skip('asm does not support random code, TODO: something that works in asm')
+      src = r'''
+        #include <stdio.h>
+        #include <emscripten.h>
+
+        int main() {
+          EM_ASM(Module.print('hello dere1'));
+          EM_ASM(
+            Module.print('hello dere2');
+          );
+          EM_ASM(
+            Module.print('hello dere3');
+            Module.print('hello dere' + 4);
+          );
+          return 0;
+        }
+        '''
+
+      self.do_run(src, 'hello dere1\nhello dere2\nhello dere3\nhello dere4\n')
 
   def test_memorygrowth(self):
     if Settings.USE_TYPED_ARRAYS == 0: return self.skip('memory growth is only supported with typed arrays')
@@ -3861,8 +3963,7 @@ def process(filename):
       self.do_run(src, 'Hello world!')
 
   def test_bigswitch(self):
-    if Settings.RELOOP: return self.skip('TODO: switch in relooper, issue #781')
-    if Settings.ASM_JS: return self.skip('TODO: switch too large for asm')
+    if self.run_name != 'default': return self.skip('TODO: issue #781')
 
     src = open(path_from_root('tests', 'bigswitch.cpp')).read()
     self.do_run(src, '''34962: GL_ARRAY_BUFFER (0x8892)
@@ -4569,6 +4670,16 @@ The current type of b is: 9
       }
       '''
     self.do_run(src, 'BA')
+
+  def test_pthread_specific(self):
+    if self.emcc_args is None: return self.skip('requires emcc')
+    src = open(path_from_root('tests', 'pthread', 'specific.c'), 'r').read()
+    expected = open(path_from_root('tests', 'pthread', 'specific.c.txt'), 'r').read()
+    self.do_run(src, expected, force_c=True)
+
+  def test_tcgetattr(self):
+    src = open(path_from_root('tests', 'termios', 'test_tcgetattr.c'), 'r').read()
+    self.do_run(src, 'success', force_c=True)
 
   def test_time(self):
     # XXX Not sure what the right output is here. Looks like the test started failing with daylight savings changes. Modified it to pass again.
@@ -5451,7 +5562,7 @@ The current type of b is: 9
         self.do_run(src, '*16,0,4,8,8,12|20,0,4,4,8,12,12,16|24,0,20,0,4,4,8,12,12,16*\n*0,0,0,1,2,64,68,69,72*\n*2*')
 
   def test_runtimelink(self):
-    return self.skip('shared libs are deprecated')
+    return self.skip('BUILD_AS_SHARED_LIB=2 is deprecated')
     if Building.LLVM_OPTS: return self.skip('LLVM opts will optimize printf into puts in the parent, and the child will still look for puts')
     if Settings.ASM_JS: return self.skip('asm does not support runtime linking')
 
@@ -5469,13 +5580,53 @@ The current type of b is: 9
     Settings.RUNTIME_LINKED_LIBS = ['liblib.so'];
     self.do_run(main, 'supp: 54,2\nmain: 56\nsupp see: 543\nmain see: 76\nok.')
 
+  def can_dlfcn(self):
+    if self.emcc_args and '--memory-init-file' in self.emcc_args:
+      for i in range(len(self.emcc_args)):
+        if self.emcc_args[i] == '--memory-init-file':
+          self.emcc_args = self.emcc_args[:i] + self.emcc_args[i+2:]
+          break
+
+    if Settings.ASM_JS:
+      Settings.DLOPEN_SUPPORT = 1
+    else:
+      Settings.NAMED_GLOBALS = 1
+
+    if not self.is_le32():
+      self.skip('need le32 for dlfcn support')
+      return False
+    else:
+      return True
+
+  def prep_dlfcn_lib(self):
+    if Settings.ASM_JS:
+      Settings.MAIN_MODULE = 0
+      Settings.SIDE_MODULE = 1
+    else:
+      Settings.BUILD_AS_SHARED_LIB = 1
+      Settings.INCLUDE_FULL_LIBRARY = 0
+
+  def prep_dlfcn_main(self):
+    if Settings.ASM_JS:
+      Settings.MAIN_MODULE = 1
+      Settings.SIDE_MODULE = 0
+    else:
+      Settings.BUILD_AS_SHARED_LIB = 0
+      Settings.INCLUDE_FULL_LIBRARY = 1
+
+  dlfcn_post_build = '''
+def process(filename):
+  src = open(filename, 'r').read().replace(
+    '// {{PRE_RUN_ADDITIONS}}',
+    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
+  )
+  open(filename, 'w').write(src)
+'''
+
   def test_dlfcn_basic(self):
-    return self.skip('shared libs are deprecated')
-    if Settings.ASM_JS: return self.skip('TODO: dlopen in asm')
+    if not self.can_dlfcn(): return
 
-    Settings.NAMED_GLOBALS = 1
-    Settings.LINKABLE = 1
-
+    self.prep_dlfcn_lib()
     lib_src = '''
       #include <cstdio>
 
@@ -5490,10 +5641,10 @@ The current type of b is: 9
       '''
     dirname = self.get_dir()
     filename = os.path.join(dirname, 'liblib.cpp')
-    Settings.BUILD_AS_SHARED_LIB = 1
     self.build(lib_src, dirname, filename)
     shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
 
+    self.prep_dlfcn_main()
     src = '''
       #include <cstdio>
       #include <dlfcn.h>
@@ -5512,29 +5663,17 @@ The current type of b is: 9
         return 0;
       }
       '''
-    Settings.BUILD_AS_SHARED_LIB = 0
-    add_pre_run_and_checks = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
-  )
-  open(filename, 'w').write(src)
-'''
     self.do_run(src, 'Constructing main object.\nConstructing lib object.\n',
-                post_build=add_pre_run_and_checks)
+                post_build=self.dlfcn_post_build)
 
   def test_dlfcn_qsort(self):
-    return self.skip('shared libs are deprecated')
-    if self.emcc_args is None: return self.skip('requires emcc')
-    if Settings.ASM_JS: return self.skip('TODO: dlopen in asm')
-
-    Settings.LINKABLE = 1
-    Settings.NAMED_GLOBALS = 1
+    if not self.can_dlfcn(): return
 
     if Settings.USE_TYPED_ARRAYS == 2:
       Settings.CORRECT_SIGNS = 1 # Needed for unsafe optimizations
 
+    self.prep_dlfcn_lib()
+    Settings.EXPORTED_FUNCTIONS = ['_get_cmp']
     lib_src = '''
       int lib_cmp(const void* left, const void* right) {
         const int* a = (const int*) left;
@@ -5552,11 +5691,11 @@ def process(filename):
       '''
     dirname = self.get_dir()
     filename = os.path.join(dirname, 'liblib.cpp')
-    Settings.BUILD_AS_SHARED_LIB = 1
-    Settings.EXPORTED_FUNCTIONS = ['_get_cmp']
     self.build(lib_src, dirname, filename)
     shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
 
+    self.prep_dlfcn_main()
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc']
     src = '''
       #include <stdio.h>
       #include <stdlib.h>
@@ -5578,6 +5717,13 @@ def process(filename):
         CMP_TYPE lib_cmp_ptr;
         int arr[5] = {4, 2, 5, 1, 3};
 
+        qsort((void*)arr, 5, sizeof(int), main_cmp);
+        printf("Sort with main comparison: ");
+        for (int i = 0; i < 5; i++) {
+          printf("%d ", arr[i]);
+        }
+        printf("\\n");
+
         lib_handle = dlopen("liblib.so", RTLD_NOW);
         if (lib_handle == NULL) {
           printf("Could not load lib.\\n");
@@ -5589,14 +5735,6 @@ def process(filename):
           return 1;
         }
         lib_cmp_ptr = getter_ptr();
-
-        qsort((void*)arr, 5, sizeof(int), main_cmp);
-        printf("Sort with main comparison: ");
-        for (int i = 0; i < 5; i++) {
-          printf("%d ", arr[i]);
-        }
-        printf("\\n");
-
         qsort((void*)arr, 5, sizeof(int), lib_cmp_ptr);
         printf("Sort with lib comparison: ");
         for (int i = 0; i < 5; i++) {
@@ -5607,28 +5745,22 @@ def process(filename):
         return 0;
       }
       '''
-    Settings.BUILD_AS_SHARED_LIB = 0
-    Settings.EXPORTED_FUNCTIONS = ['_main']
-    add_pre_run_and_checks = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
-  )
-  open(filename, 'w').write(src)
-'''
     self.do_run(src, 'Sort with main comparison: 5 4 3 2 1 *Sort with lib comparison: 1 2 3 4 5 *',
                 output_nicerizer=lambda x, err: x.replace('\n', '*'),
-                post_build=add_pre_run_and_checks)
+                post_build=self.dlfcn_post_build)
+
+    if Settings.ASM_JS and os.path.exists(SPIDERMONKEY_ENGINE[0]):
+      out = run_js('liblib.so', engine=SPIDERMONKEY_ENGINE, full_output=True, stderr=STDOUT)
+      if 'asm' in out:
+        self.validate_asmjs(out)
 
   def test_dlfcn_data_and_fptr(self):
-    return self.skip('shared libs are deprecated')
-    if Settings.ASM_JS: return self.skip('TODO: dlopen in asm')
+    if Settings.ASM_JS: return self.skip('this is not a valid case - libraries should not be able to access their parents globals willy nilly')
+    if not self.can_dlfcn(): return
+
     if Building.LLVM_OPTS: return self.skip('LLVM opts will optimize out parent_func')
 
-    Settings.LINKABLE = 1
-    Settings.NAMED_GLOBALS = 1
-
+    self.prep_dlfcn_lib()
     lib_src = '''
       #include <stdio.h>
 
@@ -5653,21 +5785,23 @@ def process(filename):
       '''
     dirname = self.get_dir()
     filename = os.path.join(dirname, 'liblib.cpp')
-    Settings.BUILD_AS_SHARED_LIB = 1
     Settings.EXPORTED_FUNCTIONS = ['_func']
     Settings.EXPORTED_GLOBALS = ['_global']
     self.build(lib_src, dirname, filename)
     shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
 
+    self.prep_dlfcn_main()
+    Settings.LINKABLE = 1
     src = '''
       #include <stdio.h>
       #include <dlfcn.h>
+      #include <emscripten.h>
 
       typedef void (*FUNCTYPE(int, void(*)()))();
 
       FUNCTYPE func;
 
-      void parent_func() {
+      void EMSCRIPTEN_KEEPALIVE parent_func() {
         printf("parent_func called from child\\n");
       }
 
@@ -5711,24 +5845,14 @@ def process(filename):
         return 0;
       }
       '''
-    Settings.BUILD_AS_SHARED_LIB = 0
     Settings.EXPORTED_FUNCTIONS = ['_main']
     Settings.EXPORTED_GLOBALS = []
-    add_pre_run_and_checks = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
-  )
-  open(filename, 'w').write(src)
-'''
     self.do_run(src, 'In func: 13*First calling main_fptr from lib.*Second calling lib_fptr from main.*parent_func called from child*parent_func called from child*Var: 42*',
                  output_nicerizer=lambda x, err: x.replace('\n', '*'),
-                 post_build=add_pre_run_and_checks)
+                 post_build=self.dlfcn_post_build)
 
   def test_dlfcn_alias(self):
-    return self.skip('shared libs are deprecated')
-    if Settings.ASM_JS: return self.skip('TODO: dlopen in asm')
+    if Settings.ASM_JS: return self.skip('this is not a valid case - libraries should not be able to access their parents globals willy nilly')
 
     Settings.LINKABLE = 1
     Settings.NAMED_GLOBALS = 1
@@ -5770,30 +5894,23 @@ def process(filename):
     Settings.BUILD_AS_SHARED_LIB = 0
     Settings.INCLUDE_FULL_LIBRARY = 1
     Settings.EXPORTED_FUNCTIONS = ['_main']
-    add_pre_run_and_checks = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
-  )
-  open(filename, 'w').write(src)
-'''
     self.do_run(src, 'Parent global: 123.*Parent global: 456.*',
                 output_nicerizer=lambda x, err: x.replace('\n', '*'),
-                post_build=add_pre_run_and_checks,
+                post_build=self.dlfcn_post_build,
                 extra_emscripten_args=['-H', 'libc/fcntl.h,libc/sys/unistd.h,poll.h,libc/math.h,libc/time.h,libc/langinfo.h'])
     Settings.INCLUDE_FULL_LIBRARY = 0
 
   def test_dlfcn_varargs(self):
-    return self.skip('shared libs are deprecated')
-    if Settings.ASM_JS: return self.skip('TODO: dlopen in asm')
+    if Settings.ASM_JS: return self.skip('this is not a valid case - libraries should not be able to access their parents globals willy nilly')
+
+    if not self.can_dlfcn(): return
 
     Settings.LINKABLE = 1
-    Settings.NAMED_GLOBALS = 1
 
     if Building.LLVM_OPTS == 2: return self.skip('LLVM LTO will optimize things that prevent shared objects from working')
     if Settings.QUANTUM_SIZE == 1: return self.skip('FIXME: Add support for this')
 
+    self.prep_dlfcn_lib()
     lib_src = r'''
       void print_ints(int n, ...);
       extern "C" void func() {
@@ -5802,15 +5919,16 @@ def process(filename):
       '''
     dirname = self.get_dir()
     filename = os.path.join(dirname, 'liblib.cpp')
-    Settings.BUILD_AS_SHARED_LIB = 1
     Settings.EXPORTED_FUNCTIONS = ['_func']
     self.build(lib_src, dirname, filename)
     shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
 
+    self.prep_dlfcn_main()
     src = r'''
       #include <stdarg.h>
       #include <stdio.h>
       #include <dlfcn.h>
+      #include <assert.h>
 
       void print_ints(int n, ...) {
         va_list args;
@@ -5828,24 +5946,16 @@ def process(filename):
         print_ints(2, 100, 200);
 
         lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle);
         fptr = (void (*)())dlsym(lib_handle, "func");
         fptr();
 
         return 0;
       }
       '''
-    Settings.BUILD_AS_SHARED_LIB = 0
     Settings.EXPORTED_FUNCTIONS = ['_main']
-    add_pre_run_and_checks = '''
-def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createLazyFile('/', 'liblib.so', 'liblib.so', true, false);"
-  )
-  open(filename, 'w').write(src)
-'''
     self.do_run(src, '100\n200\n13\n42\n',
-                post_build=add_pre_run_and_checks)
+                post_build=self.dlfcn_post_build)
 
   def test_dlfcn_self(self):
     if Settings.USE_TYPED_ARRAYS == 1: return self.skip('Does not work with USE_TYPED_ARRAYS=1')
@@ -5854,14 +5964,15 @@ def process(filename):
     src = r'''
 #include <stdio.h>
 #include <dlfcn.h>
+#include <emscripten.h>
 
-int global = 123;
+int EMSCRIPTEN_KEEPALIVE global = 123;
 
-extern "C" __attribute__((noinline)) void foo(int x) {
+extern "C" EMSCRIPTEN_KEEPALIVE void foo(int x) {
 printf("%d\n", x);
 }
 
-extern "C" __attribute__((noinline)) void repeatable() {
+extern "C" EMSCRIPTEN_KEEPALIVE void repeatable() {
 void* self = dlopen(NULL, RTLD_LAZY);
 int* global_ptr = (int*)dlsym(self, "global");
 void (*foo_ptr)(int) = (void (*)(int))dlsym(self, "foo");
@@ -5882,14 +5993,371 @@ return 0;
             break
         else:
           raise Exception('Could not find symbol table!')
-      import json
-      table = json.loads(table[table.find('{'):table.rfind('}')+1])
-      actual = list(sorted(table.keys()))
+      table = table[table.find('{'):table.rfind('}')+1]
       # ensure there aren't too many globals; we don't want unnamed_addr
-      assert actual == ['_foo', '_global', '_main', '_repeatable'], \
-        "Symbol table does not match: %s" % actual
-
+      assert table.count(',') <= 4
     self.do_run(src, '123\n123', post_build=(None, post))
+
+
+  def test_dlfcn_unique_sig(self):
+    if not self.can_dlfcn(): return
+
+    self.prep_dlfcn_lib()
+    lib_src = '''
+      #include <stdio.h>
+
+      int myfunc(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m) {
+        return 13;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_myfunc']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.c')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = '''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <dlfcn.h>
+
+      typedef int (*FUNCTYPE)(int, int, int, int, int, int, int, int, int, int, int, int, int);
+
+      int main() {
+        void *lib_handle;
+        FUNCTYPE func_ptr;
+
+        lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle != NULL);
+
+        func_ptr = (FUNCTYPE)dlsym(lib_handle, "myfunc");
+        assert(func_ptr != NULL);
+        assert(func_ptr(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == 13);
+
+        puts("success");
+
+        return 0;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc']
+    self.do_run(src, 'success', force_c=True, post_build=self.dlfcn_post_build)
+
+  def test_dlfcn_stacks(self):
+    if not self.can_dlfcn(): return
+
+    self.prep_dlfcn_lib()
+    lib_src = '''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <string.h>
+
+      int myfunc(const char *input) {
+        char bigstack[1024] = { 0 };
+
+        // make sure we didn't just trample the stack!
+        assert(!strcmp(input, "foobar"));
+
+        snprintf(bigstack, sizeof(bigstack), input);
+        return strlen(bigstack);
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_myfunc']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.c')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = '''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <dlfcn.h>
+
+      typedef int (*FUNCTYPE)(const char *);
+
+      int main() {
+        void *lib_handle;
+        FUNCTYPE func_ptr;
+        char str[128];
+
+        snprintf(str, sizeof(str), "foobar");
+
+        lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle != NULL);
+
+        func_ptr = (FUNCTYPE)dlsym(lib_handle, "myfunc");
+        assert(func_ptr != NULL);
+        assert(func_ptr(str) == 6);
+
+        puts("success");
+
+        return 0;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc']
+    self.do_run(src, 'success', force_c=True, post_build=self.dlfcn_post_build)
+
+  def test_dlfcn_funcs(self):
+    if not self.can_dlfcn(): return
+
+    self.prep_dlfcn_lib()
+    lib_src = r'''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <string.h>
+
+      typedef void (*voidfunc)();
+      typedef void (*intfunc)(int);
+
+      void callvoid(voidfunc f) { f(); }
+      void callint(voidfunc f, int x) { f(x); }
+
+      void void_0() { printf("void 0\n"); }
+      void void_1() { printf("void 1\n"); }
+      voidfunc getvoid(int i) {
+        switch(i) {
+          case 0: return void_0;
+          case 1: return void_1;
+          default: return NULL;
+        }
+      }
+
+      void int_0(int x) { printf("int 0 %d\n", x); }
+      void int_1(int x) { printf("int 1 %d\n", x); }
+      intfunc getint(int i) {
+        switch(i) {
+          case 0: return int_0;
+          case 1: return int_1;
+          default: return NULL;
+        }
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_callvoid', '_callint', '_getvoid', '_getint']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.c')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = r'''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <dlfcn.h>
+
+      typedef void (*voidfunc)();
+      typedef void (*intfunc)(int);
+
+      typedef void (*voidcaller)(voidfunc);
+      typedef void (*intcaller)(intfunc, int);
+
+      typedef voidfunc (*voidgetter)(int);
+      typedef intfunc (*intgetter)(int);
+
+      void void_main() { printf("main.\n"); }
+      void int_main(int x) { printf("main %d\n", x); }
+
+      int main() {
+        printf("go\n");
+        void *lib_handle;
+        lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle != NULL);
+
+        voidcaller callvoid = (voidcaller)dlsym(lib_handle, "callvoid");
+        assert(callvoid != NULL);
+        callvoid(void_main);
+
+        intcaller callint = (intcaller)dlsym(lib_handle, "callint");
+        assert(callint != NULL);
+        callint(int_main, 201);
+
+        voidgetter getvoid = (voidgetter)dlsym(lib_handle, "getvoid");
+        assert(getvoid != NULL);
+        callvoid(getvoid(0));
+        callvoid(getvoid(1));
+
+        intgetter getint = (intgetter)dlsym(lib_handle, "getint");
+        assert(getint != NULL);
+        callint(getint(0), 54);
+        callint(getint(1), 9000);
+
+        assert(getint(1000) == NULL);
+
+        puts("ok");
+        return 0;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc']
+    self.do_run(src, '''go
+main.
+main 201
+void 0
+void 1
+int 0 54
+int 1 9000
+ok
+''', force_c=True, post_build=self.dlfcn_post_build)
+
+  def test_dlfcn_mallocs(self):
+    if not Settings.ASM_JS: return self.skip('needs asm')
+
+    if not self.can_dlfcn(): return
+
+    Settings.TOTAL_MEMORY = 64*1024*1024 # will be exhausted without functional malloc/free
+
+    self.prep_dlfcn_lib()
+    lib_src = r'''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <string.h>
+      #include <stdlib.h>
+
+      void *mallocproxy(int n) { return malloc(n); }
+      void freeproxy(void *p) { free(p); }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_mallocproxy', '_freeproxy']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.c')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = open(path_from_root('tests', 'dlmalloc_proxy.c')).read()
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc', '_free']
+    self.do_run(src, '''*294,153*''', force_c=True, post_build=self.dlfcn_post_build)
+
+  def test_dlfcn_longjmp(self):
+    if not self.can_dlfcn(): return
+
+    self.prep_dlfcn_lib()
+    lib_src = r'''
+      #include <setjmp.h>
+
+      void jumpy(jmp_buf buf) {
+        static int i = 0;
+        i++;
+        if (i == 10) longjmp(buf, i);
+        printf("pre %d\n", i);
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_jumpy']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.c')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = r'''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <dlfcn.h>
+      #include <setjmp.h>
+
+      typedef void (*jumpfunc)(jmp_buf);
+
+      int main() {
+        printf("go!\n");
+
+        void *lib_handle;
+        lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle != NULL);
+
+        jumpfunc jumpy = (jumpfunc)dlsym(lib_handle, "jumpy");
+        assert(jumpy);
+
+        jmp_buf buf;
+        int jmpval = setjmp(buf);
+        if (jmpval == 0) {
+          while (1) jumpy(buf);
+        } else {
+          printf("out!\n");
+        }
+
+        return 0;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc', '_free']
+    self.do_run(src, '''go!
+pre 1
+pre 2
+pre 3
+pre 4
+pre 5
+pre 6
+pre 7
+pre 8
+pre 9
+out!
+''', post_build=self.dlfcn_post_build, force_c=True)
+
+  def zzztest_dlfcn_exceptions(self): # TODO: make this work. need to forward tempRet0 across modules
+    if not self.can_dlfcn(): return
+
+    Settings.DISABLE_EXCEPTION_CATCHING = 0
+
+    self.prep_dlfcn_lib()
+    lib_src = r'''
+      extern "C" {
+      int ok() {
+        return 65;
+      }
+      int fail() {
+        throw 123;
+      }
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_ok', '_fail']
+    dirname = self.get_dir()
+    filename = os.path.join(dirname, 'liblib.cpp')
+    self.build(lib_src, dirname, filename)
+    shutil.move(filename + '.o.js', os.path.join(dirname, 'liblib.so'))
+
+    self.prep_dlfcn_main()
+    src = r'''
+      #include <assert.h>
+      #include <stdio.h>
+      #include <dlfcn.h>
+
+      typedef int (*intfunc)();
+
+      int main() {
+        printf("go!\n");
+
+        void *lib_handle;
+        lib_handle = dlopen("liblib.so", RTLD_NOW);
+        assert(lib_handle != NULL);
+
+        intfunc okk = (intfunc)dlsym(lib_handle, "ok");
+        intfunc faill = (intfunc)dlsym(lib_handle, "fail");
+        assert(okk && faill);
+
+        try {
+          printf("ok: %d\n", okk());
+        } catch(...) {
+          printf("wha\n");
+        }
+
+        try {
+          printf("fail: %d\n", faill());
+        } catch(int x) {
+          printf("int %d\n", x);
+        }
+
+        try {
+          printf("fail: %d\n", faill());
+        } catch(double x) {
+          printf("caught %f\n", x);
+        }
+
+        return 0;
+      }
+      '''
+    Settings.EXPORTED_FUNCTIONS = ['_main', '_malloc', '_free']
+    self.do_run(src, '''go!
+ok: 65
+int 123
+ok
+''', post_build=self.dlfcn_post_build)
 
   def test_rand(self):
     return self.skip('rand() is now random') # FIXME
@@ -6673,6 +7141,7 @@ date: 18.07.2013w; day 18, month  7, year 2013, extra: 201, 3
   def test_files(self):
     if self.emcc_args is not None and '-O2' in self.emcc_args:
       self.emcc_args += ['--closure', '1'] # Use closure here, to test we don't break FS stuff
+      self.emcc_args = filter(lambda x: x != '-g', self.emcc_args) # ensure we test --closure 1 --memory-init-file 1 (-g would disable closure)
 
     Settings.CORRECT_SIGNS = 1 # Just so our output is what we expect. Can flip them both.
     post = '''
@@ -6699,8 +7168,13 @@ def process(filename):
     other.close()
 
     src = open(path_from_root('tests', 'files.cpp'), 'r').read()
+
+    mem_file = 'src.cpp.o.js.mem'
+    try_delete(mem_file)
     self.do_run(src, ('size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\nok.\ntexte\n', 'size: 7\ndata: 100,-56,50,25,10,77,123\nloop: 100 -56 50 25 10 77 123 \ninput:hi there!\ntexto\ntexte\n$\n5 : 10,30,20,11,88\nother=some data.\nseeked=me da.\nseeked=ata.\nseeked=ta.\nfscanfed: 10 - hello\nok.\n'),
                  post_build=post, extra_emscripten_args=['-H', 'libc/fcntl.h'])
+    if self.emcc_args and '--memory-init-file' in self.emcc_args:
+      assert os.path.exists(mem_file)
 
   def test_files_m(self):
     # Test for Module.stdin etc.
@@ -6877,8 +7351,11 @@ def process(filename):
   src = open(filename, 'r').read().replace(
     '// {{PRE_RUN_ADDITIONS}}',
     \'\'\'
+      var dummy_device = FS.makedev(64, 0);
+      FS.registerDevice(dummy_device, {});
+
       FS.createDataFile('/', 'file', 'abcdef', true, true);
-      FS.createDevice('/', 'device', function() {}, function() {});
+      FS.mkdev('/device', dummy_device);
     \'\'\'
   )
   open(filename, 'w').write(src)
@@ -7036,14 +7513,15 @@ def process(filename):
       #include <emscripten.h>
 
       int main() {
-        char *c = "μ†ℱ ╋ℯ╳╋";
+        char *c = "μ†ℱ ╋ℯ╳╋ 😇";
         printf("%d %d %d %d %s\n", c[0]&0xff, c[1]&0xff, c[2]&0xff, c[3]&0xff, c);
-        emscripten_run_script("cheez = _malloc(100);"
-                              "Module.writeStringToMemory(\"μ†ℱ ╋ℯ╳╋\", cheez);"
-                              "Module.print([Pointer_stringify(cheez), Module.getValue(cheez, 'i8')&0xff, Module.getValue(cheez+1, 'i8')&0xff, Module.getValue(cheez+2, 'i8')&0xff, Module.getValue(cheez+3, 'i8')&0xff, ]);");
+        emscripten_run_script(
+          "cheez = _malloc(100);"
+          "Module.writeStringToMemory(\"μ†ℱ ╋ℯ╳╋ 😇\", cheez);"
+          "Module.print([Pointer_stringify(cheez), Module.getValue(cheez, 'i8')&0xff, Module.getValue(cheez+1, 'i8')&0xff, Module.getValue(cheez+2, 'i8')&0xff, Module.getValue(cheez+3, 'i8')&0xff, ]);");
       }
     '''
-    self.do_run(src, '206 188 226 128 μ†ℱ ╋ℯ╳╋\nμ†ℱ ╋ℯ╳╋,206,188,226,128\n');
+    self.do_run(src, '206 188 226 128 μ†ℱ ╋ℯ╳╋ 😇\nμ†ℱ ╋ℯ╳╋ 😇,206,188,226,128\n');
 
   def test_direct_string_constant_usage(self):
     if self.emcc_args is None: return self.skip('requires libcxx')
@@ -7135,32 +7613,16 @@ def process(filename):
       Settings.INCLUDE_FULL_LIBRARY = 0
 
   def test_unistd_access(self):
-    add_pre_run = '''
-def process(filename):
-  import tools.shared as shared
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'unistd', 'access.js'), 'r').read()
-  )
-  open(filename, 'w').write(src)
-'''
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     src = open(path_from_root('tests', 'unistd', 'access.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'access.out'), 'r').read()
-    self.do_run(src, expected, post_build=add_pre_run)
+    self.do_run(src, expected)
 
   def test_unistd_curdir(self):
-    add_pre_run = '''
-def process(filename):
-  import tools.shared as shared
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'unistd', 'curdir.js'), 'r').read()
-  )
-  open(filename, 'w').write(src)
-'''
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     src = open(path_from_root('tests', 'unistd', 'curdir.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'curdir.out'), 'r').read()
-    self.do_run(src, expected, post_build=add_pre_run)
+    self.do_run(src, expected)
 
   def test_unistd_close(self):
     src = open(path_from_root('tests', 'unistd', 'close.c'), 'r').read()
@@ -7187,18 +7649,10 @@ def process(filename):
     self.do_run(src, expected)
 
   def test_unistd_truncate(self):
-    add_pre_run = '''
-def process(filename):
-  import tools.shared as shared
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'unistd', 'truncate.js'), 'r').read()
-  )
-  open(filename, 'w').write(src)
-'''
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     src = open(path_from_root('tests', 'unistd', 'truncate.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'truncate.out'), 'r').read()
-    self.do_run(src, expected, post_build=add_pre_run)
+    self.do_run(src, expected)
 
   def test_unistd_swab(self):
     src = open(path_from_root('tests', 'unistd', 'swab.c'), 'r').read()
@@ -7224,18 +7678,10 @@ def process(filename):
     self.do_run(src, 'success', force_c=True)
 
   def test_unistd_links(self):
-    add_pre_run = '''
-def process(filename):
-  import tools.shared as shared
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'unistd', 'links.js'), 'r').read()
-  )
-  open(filename, 'w').write(src)
-'''
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     src = open(path_from_root('tests', 'unistd', 'links.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'links.out'), 'r').read()
-    self.do_run(src, expected, post_build=add_pre_run)
+    self.do_run(src, expected)
 
   def test_unistd_sleep(self):
     src = open(path_from_root('tests', 'unistd', 'sleep.c'), 'r').read()
@@ -7243,18 +7689,10 @@ def process(filename):
     self.do_run(src, expected)
 
   def test_unistd_io(self):
-    add_pre_run = '''
-def process(filename):
-  import tools.shared as shared
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'unistd', 'io.js'), 'r').read()
-  )
-  open(filename, 'w').write(src)
-'''
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     src = open(path_from_root('tests', 'unistd', 'io.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'io.out'), 'r').read()
-    self.do_run(src, expected, post_build=add_pre_run)
+    self.do_run(src, expected)
 
   def test_unistd_misc(self):
     src = open(path_from_root('tests', 'unistd', 'misc.c'), 'r').read()
@@ -7323,168 +7761,6 @@ def process(filename):
       load[4]: 42.130
     '''
     self.do_run(src, re.sub('(^|\n)\s+', '\\1', expected))
-
-  def test_inet(self):
-    src = r'''
-      #include <stdio.h>
-      #include <arpa/inet.h>
-
-      int main() {
-        printf("*%x,%x,%x,%x,%x,%x*\n", htonl(0xa1b2c3d4), htonl(0xfe3572e0), htonl(0x07abcdf0), htons(0xabcd), ntohl(0x43211234), ntohs(0xbeaf));
-        in_addr_t i = inet_addr("190.180.10.78");
-        printf("%x\n", i);
-        return 0;
-      }
-    '''
-    self.do_run(src, '*d4c3b2a1,e07235fe,f0cdab07,cdab,34122143,afbe*\n4e0ab4be\n')
-
-  def test_inet2(self):
-    src = r'''
-      #include <stdio.h>
-      #include <arpa/inet.h>
-
-      int main() {
-        struct in_addr x, x2;
-        int *y = (int*)&x;
-        *y = 0x12345678;
-        printf("%s\n", inet_ntoa(x));
-        int r = inet_aton(inet_ntoa(x), &x2);
-        printf("%s\n", inet_ntoa(x2));
-        return 0;
-      }
-    '''
-    self.do_run(src, '120.86.52.18\n120.86.52.18\n')
-
-  def test_inet3(self):
-    src = r'''
-      #include <stdio.h>
-      #include <arpa/inet.h>
-      #include <sys/socket.h>
-      int main() {
-        char dst[64];
-        struct in_addr x, x2;
-        int *y = (int*)&x;
-        *y = 0x12345678;
-        printf("%s\n", inet_ntop(AF_INET,&x,dst,sizeof dst));
-        int r = inet_aton(inet_ntoa(x), &x2);
-        printf("%s\n", inet_ntop(AF_INET,&x2,dst,sizeof dst));
-        return 0;
-      }
-    '''
-    self.do_run(src, '120.86.52.18\n120.86.52.18\n')
-
-  def test_inet4(self):
-    if Settings.USE_TYPED_ARRAYS != 2: return self.skip('requires ta2')
-
-    src = r'''
-      #include <stdio.h>
-      #include <arpa/inet.h>
-      #include <sys/socket.h>
-
-      void test(char *test_addr){
-          char str[40];
-          struct in6_addr addr;
-          unsigned char *p = (unsigned char*)&addr;
-          int ret;
-          ret = inet_pton(AF_INET6,test_addr,&addr);
-          if(ret == -1) return;
-          if(ret == 0) return;
-          if(inet_ntop(AF_INET6,&addr,str,sizeof(str)) == NULL ) return;
-          printf("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x - %s\n",
-               p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8],p[9],p[10],p[11],p[12],p[13],p[14],p[15],str);
-      }
-      int main(){
-          test("::");
-          test("::1");
-          test("::1.2.3.4");
-          test("::17.18.19.20");
-          test("::ffff:1.2.3.4");
-          test("1::ffff");
-          test("::255.255.255.255");
-          test("0:ff00:1::");
-          test("0:ff::");
-          test("abcd::");
-          test("ffff::a");
-          test("ffff::a:b");
-          test("ffff::a:b:c");
-          test("ffff::a:b:c:d");
-          test("ffff::a:b:c:d:e");
-          test("::1:2:0:0:0");
-          test("0:0:1:2:3::");
-          test("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
-          test("1::255.255.255.255");
-
-          //below should fail and not produce results..
-          test("1.2.3.4");
-          test("");
-          test("-");
-      }
-    '''
-    self.do_run(src,
-        "0000:0000:0000:0000:0000:0000:0000:0000 - ::\n"
-        "0000:0000:0000:0000:0000:0000:0000:0001 - ::1\n"
-        "0000:0000:0000:0000:0000:0000:0102:0304 - ::1.2.3.4\n"
-        "0000:0000:0000:0000:0000:0000:1112:1314 - ::17.18.19.20\n"
-        "0000:0000:0000:0000:0000:ffff:0102:0304 - ::ffff:1.2.3.4\n"
-        "0001:0000:0000:0000:0000:0000:0000:ffff - 1::ffff\n"
-        "0000:0000:0000:0000:0000:0000:ffff:ffff - ::255.255.255.255\n"
-        "0000:ff00:0001:0000:0000:0000:0000:0000 - 0:ff00:1::\n"
-        "0000:00ff:0000:0000:0000:0000:0000:0000 - 0:ff::\n"
-        "abcd:0000:0000:0000:0000:0000:0000:0000 - abcd::\n"
-        "ffff:0000:0000:0000:0000:0000:0000:000a - ffff::a\n"
-        "ffff:0000:0000:0000:0000:0000:000a:000b - ffff::a:b\n"
-        "ffff:0000:0000:0000:0000:000a:000b:000c - ffff::a:b:c\n"
-        "ffff:0000:0000:0000:000a:000b:000c:000d - ffff::a:b:c:d\n"
-        "ffff:0000:0000:000a:000b:000c:000d:000e - ffff::a:b:c:d:e\n"
-        "0000:0000:0000:0001:0002:0000:0000:0000 - ::1:2:0:0:0\n"
-        "0000:0000:0001:0002:0003:0000:0000:0000 - 0:0:1:2:3::\n"
-        "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff - ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff\n"
-        "0001:0000:0000:0000:0000:0000:ffff:ffff - 1::ffff:ffff\n"
-    )
-
-  def test_gethostbyname(self):
-    if Settings.USE_TYPED_ARRAYS != 2: return self.skip("assume t2 in gethostbyname")
-
-    src = r'''
-      #include <netdb.h>
-      #include <stdio.h>
-
-      void test(char *hostname) {
-        hostent *host = gethostbyname(hostname);
-        if (!host) {
-          printf("no such thing\n");
-          return;
-        }
-        printf("%s : %d : %d\n", host->h_name, host->h_addrtype, host->h_length);
-        char **name = host->h_aliases;
-        while (*name) {
-          printf("- %s\n", *name);
-          name++;
-        }
-        name = host->h_addr_list;
-        while (name && *name) {
-          printf("* ");
-          for (int i = 0; i < host->h_length; i++)
-            printf("%d.", (*name)[i]);
-          printf("\n");
-          name++;
-        }
-      }
-
-      int main() {
-        test("www.cheezburger.com");
-        test("fail.on.this.never.work"); // we will "work" on this - because we are just making aliases of names to ips
-        test("localhost");
-        return 0;
-      }
-    '''
-    self.do_run(src, '''www.cheezburger.com : 2 : 4
-* -84.29.1.0.
-fail.on.this.never.work : 2 : 4
-* -84.29.2.0.
-localhost : 2 : 4
-* -84.29.3.0.
-''')
 
   def test_799(self):
     src = open(path_from_root('tests', '799.cpp'), 'r').read()
@@ -8232,13 +8508,15 @@ def process(filename):
     shutil.copyfile(path_from_root('tests', 'freetype', 'LiberationSansBold.ttf'), os.path.join(self.get_dir(), 'font.ttf'))
 
     # Main
-    self.do_run(open(path_from_root('tests', 'freetype', 'main.c'), 'r').read(),
-                 open(path_from_root('tests', 'freetype', 'ref.txt'), 'r').read(),
-                 ['font.ttf', 'test!', '150', '120', '25'],
-                 libraries=self.get_freetype(),
-                 includes=[path_from_root('tests', 'freetype', 'include')],
-                 post_build=post)
-                 #build_ll_hook=self.do_autodebug)
+    for outlining in [0, 5000]:
+      Settings.OUTLINING_LIMIT = outlining
+      print >> sys.stderr, 'outlining:', outlining
+      self.do_run(open(path_from_root('tests', 'freetype', 'main.c'), 'r').read(),
+                   open(path_from_root('tests', 'freetype', 'ref.txt'), 'r').read(),
+                   ['font.ttf', 'test!', '150', '120', '25'],
+                   libraries=self.get_freetype(),
+                   includes=[path_from_root('tests', 'freetype', 'include')],
+                   post_build=post)
 
     # github issue 324
     print '[issue 324]'
@@ -8491,7 +8769,7 @@ def process(filename):
     do_test()
 
     # some test coverage for EMCC_DEBUG 1 and 2
-    if self.emcc_args and '-O2' in self.emcc_args and 'EMCC_DEBUG' not in os.environ:
+    if self.emcc_args and '-O2' in self.emcc_args and 'EMCC_DEBUG' not in os.environ and '-g' in self.emcc_args:
       shutil.copyfile('src.c.o.js', 'release.js')
       try:
         os.environ['EMCC_DEBUG'] = '1'
@@ -8506,7 +8784,8 @@ def process(filename):
         del os.environ['EMCC_DEBUG']
       for debug in [1,2]:
         def clean(text):
-          return text.replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('{\n}', '{}')
+          text = text.replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').replace('{\n}', '{}')
+          return '\n'.join(sorted(text.split('\n')))
         self.assertIdentical(clean(open('release.js').read()), clean(open('debug%d.js' % debug).read())) # EMCC_DEBUG=1 mode must not generate different code!
         print >> sys.stderr, 'debug check %d passed too' % debug
 
@@ -9578,19 +9857,20 @@ def process(filename):
       # optimizer can deal with both types.
       out_file = re.sub(' *//@.*$', '', out_file, flags=re.MULTILINE)
       def clean(code):
-        return code.replace('{\n}', '{}')
+        code = code.replace('{\n}', '{}')
+        return '\n'.join(sorted(code.split('\n')))
       self.assertIdentical(clean(no_maps_file), clean(out_file))
       map_filename = out_filename + '.map'
       data = json.load(open(map_filename, 'r'))
-      self.assertIdentical(out_filename, data['file'])
-      self.assertIdentical(src_filename, data['sources'][0])
-      self.assertIdentical(src, data['sourcesContent'][0])
+      self.assertPathsIdentical(out_filename, data['file'])
+      self.assertPathsIdentical(src_filename, data['sources'][0])
+      self.assertTextDataIdentical(src, data['sourcesContent'][0])
       mappings = json.loads(jsrun.run_js(
         path_from_root('tools', 'source-maps', 'sourcemap2json.js'),
         tools.shared.NODE_JS, [map_filename]))
       seen_lines = set()
       for m in mappings:
-        self.assertIdentical(src_filename, m['source'])
+        self.assertPathsIdentical(src_filename, m['source'])
         seen_lines.add(m['originalLine'])
       # ensure that all the 'meaningful' lines in the original code get mapped
       assert seen_lines.issuperset([6, 7, 11, 12])

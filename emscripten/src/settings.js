@@ -6,6 +6,11 @@
 //   emcc -s OPTION1=VALUE1 -s OPTION2=VALUE2 [..other stuff..]
 //
 // See https://github.com/kripken/emscripten/wiki/Code-Generation-Modes/
+//
+// Note that the values here are the defaults in -O0, that is, unoptimized
+// mode. See apply_opt_level in tools/shared.py for how -O1,2,3 affect these
+// flags.
+//
 
 // Tuning
 var QUANTUM_SIZE = 4; // This is the size of an individual field in a structure. 1 would
@@ -131,6 +136,16 @@ var OUTLINING_LIMIT = 0; // A function size above which we try to automatically 
                          // large functions (JS engines often compile them very slowly,
                          // compile them with lower optimizations, or do not optimize them
                          // at all). If 0, we do not perform outlining at all.
+                         // To see which funcs are large, you can inspect the source
+                         // in a debug build (-g2 or -g for example), and can run
+                         // tools/find_bigfuncs.py on that to get a sorted list by size.
+                         // Another possibility is to look in the web console in firefox,
+                         // which will note slowly-compiling functions.
+                         // You will probably want to experiment with various values to
+                         // see the impact on compilation time, code size and runtime
+                         // throughput. It is hard to say what values to start testing
+                         // with, but something around 20,000 to 100,000 might make sense.
+                         // (The unit size is number of AST nodes.)
 
 // Generated code debugging options
 var SAFE_HEAP = 0; // Check each write to the heap, for example, this will give a clear
@@ -186,9 +201,7 @@ var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
 var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
-
 var OPENCL_STACK_TRACE = 0 // Print all the wecl call
-
 var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
 
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime
@@ -197,9 +210,8 @@ var GL_TESTING = 0; // When enabled, sets preserveDrawingBuffer in the context, 
 var GL_MAX_TEMP_BUFFER_SIZE = 2097152; // How large GL emulation temp buffers are
 var GL_UNSAFE_OPTS = 1; // Enables some potentially-unsafe optimizations in GL emulation code
 var FULL_ES2 = 0; // Forces support for all GLES2 features, not just the WebGL-friendly subset.
-var FORCE_GL_EMULATION = 0; // Forces inclusion of full GL emulation code.
-var DISABLE_GL_EMULATION = 0; // Disable inclusion of full GL emulation code. Useful when you don't want emulation
-                              // but do need INCLUDE_FULL_LIBRARY or MAIN_MODULE.
+var LEGACY_GL_EMULATION = 0; // Includes code to emulate various desktop GL features. Incomplete but useful
+                             // in some cases, see https://github.com/kripken/emscripten/wiki/OpenGL-support
 
 var STB_IMAGE = 0; // Enables building of stb-image, a tiny public-domain library for decoding images, allowing
                    // decoding of images without using the browser's built-in decoders. The benefit is that this
@@ -322,11 +334,12 @@ var SIDE_MODULE = 0; // Corresponds to MAIN_MODULE
 
 var BUILD_AS_SHARED_LIB = 0; // Whether to build the code as a shared library
                              // 0 here means this is not a shared lib: It is a main file.
-                             // All shared library options (1 and 2) are currently deprecated XXX
                              // 1 means this is a normal shared lib, load it with dlopen()
                              // 2 means this is a shared lib that will be linked at runtime,
                              //   which means it will insert its functions into
                              //   the global namespace. See STATIC_LIBS_TO_LOAD.
+                             //
+                             // Value 2 is currently deprecated.
 var RUNTIME_LINKED_LIBS = []; // If this is a main file (BUILD_AS_SHARED_LIB == 0), then
                               // we will link these at runtime. They must have been built with
                               // BUILD_AS_SHARED_LIB == 2.
@@ -345,9 +358,10 @@ var LINKABLE = 0; // If set to 1, this file can be linked with others, either as
                   // LINKABLE of 0 is very useful in that we can reduce the size of the
                   // generated code very significantly, by removing everything not actually used.
 
-var DLOPEN_SUPPORT = 0; // Whether to support dlopen(NULL, ...) which enables dynamic access to the
-                        // module's functions and globals. Implies LINKABLE=1, because we do not want
-                        // dead code elimination.
+var DLOPEN_SUPPORT = 0; // Full support for dlopen. This is necessary for asm.js and for all code
+                        // modes for dlopen(NULL, ...). Note that you must use EMSCRIPTEN_KEEPALIVE
+                        // to ensure that functions and globals can be accessed through dlsym,
+                        // otherwise LLVM may optimize them out.
 
 var RUNTIME_TYPE_INFO = 0; // Whether to expose type info to the script at run time. This
                            // increases the size of the generated script, but allows you
@@ -386,9 +400,7 @@ var HEADLESS = 0; // If 1, will include shim code that tries to 'fake' a browser
 var BENCHMARK = 0; // If 1, will just time how long main() takes to execute, and not
                    // print out anything at all whatsoever. This is useful for benchmarking.
 
-var ASM_JS = 0; // If 1, generate code in asm.js format. XXX This is highly experimental,
-                // and will not work on most codebases yet. It is NOT recommended that you
-                // try this yet.
+var ASM_JS = 0; // If 1, generate code in asm.js format.
 
 var PGO = 0; // Enables profile-guided optimization in the form of runtime checks for
              // which functions are actually called. Emits a list during shutdown that you
@@ -450,6 +462,7 @@ var C_DEFINES = {
    'ABMON_8': '40',
    'ABMON_9': '41',
    'ACCESSPERMS': '0000400',
+   'AF_UNSPEC': '0',
    'AF_INET': '2',
    'AF_INET6': '10',
    'ALLPERMS': '0004000',
@@ -711,6 +724,7 @@ var C_DEFINES = {
    'PM_STR': '6',
    'POLLERR': '8',
    'POLLHUP': '16',
+   'POLLPRI': '32',
    'POLLIN': '1',
    'POLLNVAL': '4',
    'POLLOUT': '2',
@@ -867,9 +881,9 @@ var C_DEFINES = {
    'SOCK_DGRAM': '2',
    'SOCK_STREAM': '1',
    'STDC_HEADERS': '1',
-   'STDERR_FILENO': '2',
-   'STDIN_FILENO': '0',
-   'STDOUT_FILENO': '1',
+   'STDERR_FILENO': '3',
+   'STDIN_FILENO': '1',
+   'STDOUT_FILENO': '2',
    'S_BLKSIZE': '1024',
    'S_ENFMT': '0002000',
    'S_IEXEC': '0000100',
@@ -1450,6 +1464,35 @@ var C_DEFINES = {
    'ECANCELED': '140',
    'ENOTRECOVERABLE': '141',
    'EOWNERDEAD': '142',
-   'ESTRPIPE': '143'
+   'ESTRPIPE': '143',
+   'AI_PASSIVE': '0x0001',
+   'AI_CANONNAME': '0x0002',
+   'AI_NUMERICHOST': '0x0004',
+   'AI_V4MAPPED': '0x0008',
+   'AI_ALL': '0x0010',
+   'AI_ADDRCONFIG': '0x0020',
+   'AI_NUMERICSERV': '0x0400',
+   'EAI_ADDRFAMILY': '1',
+   'EAI_AGAIN': '2',
+   'EAI_BADFLAGS': '3',
+   'EAI_FAIL': '4',
+   'EAI_FAMILY': '5',
+   'EAI_MEMORY': '6',
+   'EAI_NODATA': '7',
+   'EAI_NONAME': '8',
+   'EAI_SERVICE': '9',
+   'EAI_SOCKTYPE': '10',
+   'EAI_SYSTEM': '11',
+   'EAI_BADHINTS': '12',
+   'EAI_PROTOCOL': '13',
+   'EAI_OVERFLOW': '14',
+   'EAI_MAX': '15',
+   'NI_NOFQDN': '0x00000001',
+   'NI_NUMERICHOST': '0x00000002',
+   'NI_NAMEREQD': '0x00000004',
+   'NI_NUMERICSERV': '0x00000008',
+   'NI_DGRAM': '0x00000010',
+   'INADDR_ANY': '0',
+   'INADDR_LOOPBACK': '0x7f000001'
 };
 

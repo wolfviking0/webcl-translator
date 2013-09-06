@@ -6,6 +6,7 @@ mergeInto(LibraryManager.library, {
   $Browser__deps: ['$PATH'],
   $Browser__postset: 'Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };\n' + // exports
                      'Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };\n' +
+                     'Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };\n' +
                      'Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };\n' +
                      'Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };\n' +
                      'Module["getUserMedia"] = function() { Browser.getUserMedia() }',
@@ -451,8 +452,21 @@ mergeInto(LibraryManager.library, {
         // Otherwise, calculate the movement based on the changes
         // in the coordinates.
         var rect = Module["canvas"].getBoundingClientRect();
-        var x = event.pageX - (window.scrollX + rect.left);
-        var y = event.pageY - (window.scrollY + rect.top);
+        var x, y;
+        if (event.type == 'touchstart' ||
+            event.type == 'touchend' ||
+            event.type == 'touchmove') {
+          var t = event.touches.item(0);
+          if (t) {
+            x = t.pageX - (window.scrollX + rect.left);
+            y = t.pageY - (window.scrollY + rect.top);
+          } else {
+            return;
+          }
+        } else {
+          x = event.pageX - (window.scrollX + rect.left);
+          y = event.pageY - (window.scrollY + rect.top);
+        }
 
         // the canvas might be CSS-scaled compared to its backbuffer;
         // SDL-using content will want mouse coordinates in terms
@@ -807,17 +821,30 @@ mergeInto(LibraryManager.library, {
   emscripten_set_canvas_size: function(width, height) {
     Browser.setCanvasSize(width, height);
   },
+  
+  emscripten_get_canvas_size: function(width, height, isFullscreen) {
+    var canvas = Module['canvas'];
+    {{{ makeSetValue('width', '0', 'canvas.width', 'i32') }}};
+    {{{ makeSetValue('height', '0', 'canvas.height', 'i32') }}};
+    {{{ makeSetValue('isFullscreen', '0', 'Browser.isFullScreen ? 1 : 0', 'i32') }}};
+  },
 
   emscripten_get_now: function() {
-    if (ENVIRONMENT_IS_NODE) {
-        var t = process['hrtime']();
-        return t[0] * 1e3 + t[1] / 1e6;
+    if (!_emscripten_get_now.actual) {
+      if (ENVIRONMENT_IS_NODE) {
+          _emscripten_get_now.actual = function() {
+            var t = process['hrtime']();
+            return t[0] * 1e3 + t[1] / 1e6;
+          }
+      } else if (typeof dateNow !== 'undefined') {
+        _emscripten_get_now.actual = dateNow;
+      } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
+        _emscripten_get_now.actual = function() { return window['performance']['now'](); };
+      } else {
+        _emscripten_get_now.actual = Date.now;
+      }
     }
-    else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
-      return window['performance']['now']();
-    } else {
-      return Date.now();
-    }
+    return _emscripten_get_now.actual();
   },
 
   emscripten_create_worker: function(url) {

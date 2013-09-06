@@ -66,7 +66,11 @@ if (ENVIRONMENT_IS_NODE) {
 else if (ENVIRONMENT_IS_SHELL) {
   Module['print'] = print;
   if (typeof printErr != 'undefined') Module['printErr'] = printErr; // not present in v8 or older sm
-  Module['read'] = read;
+  if (typeof read != 'undefined') {
+    Module['read'] = read;
+  } else {
+    Module['read'] = function() { throw 'no read() available (jsc?)' };
+  }
   Module['readBinary'] = function(f) {
     return read(f, 'binary');
   };
@@ -372,30 +376,42 @@ var Runtime = {
     var buffer = [];
     var needed = 0;
     this.processCChar = function (code) {
-      code = code & 0xff;
-      if (needed) {
-        buffer.push(code);
-        needed--;
-      }
+      code = code & 0xFF;
       if (buffer.length == 0) {
-        if (code < 128) return String.fromCharCode(code);
+        if ((code & 0x80) == 0x00) {        // 0xxxxxxx
+          return String.fromCharCode(code);
+        }
         buffer.push(code);
-        if (code > 191 && code < 224) {
+        if ((code & 0xE0) == 0xC0) {        // 110xxxxx
           needed = 1;
-        } else {
+        } else if ((code & 0xF0) == 0xE0) { // 1110xxxx
           needed = 2;
+        } else {                            // 11110xxx
+          needed = 3;
         }
         return '';
       }
-      if (needed > 0) return '';
+      if (needed) {
+        buffer.push(code);
+        needed--;
+        if (needed > 0) return '';
+      }
       var c1 = buffer[0];
       var c2 = buffer[1];
       var c3 = buffer[2];
+      var c4 = buffer[3];
       var ret;
-      if (c1 > 191 && c1 < 224) {
-        ret = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+      if (buffer.length == 2) {
+        ret = String.fromCharCode(((c1 & 0x1F) << 6)  | (c2 & 0x3F));
+      } else if (buffer.length == 3) {
+        ret = String.fromCharCode(((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6)  | (c3 & 0x3F));
       } else {
-        ret = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+        // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+        var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
+                        ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
+        ret = String.fromCharCode(
+          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
       return ret;
@@ -532,7 +548,7 @@ function setValue(ptr, value, type, noSafe) {
       case 'i8': HEAP8[(ptr)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
-      case 'i64': (tempI64 = [value>>>0,Math.min(Math.floor((value)/4294967296), 4294967295)>>>0],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
+      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,Math.abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math.min(Math.floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
       case 'float': HEAPF32[((ptr)>>2)]=value; break;
       case 'double': HEAPF64[((ptr)>>3)]=value; break;
       default: abort('invalid type for setValue: ' + type);
@@ -640,6 +656,7 @@ function allocate(slab, types, allocator, ptr) {
 }
 Module['allocate'] = allocate;
 function Pointer_stringify(ptr, /* optional */ length) {
+  // TODO: use TextDecoder
   // Find the length, and check for UTF while doing so
   var hasUtf = false;
   var t;
@@ -1530,6 +1547,8 @@ function copyTempDouble(ptr) {
           f = f.substr(0, f.length - ext.length);
         }
         return f;
+      },extname:function (path) {
+        return PATH.splitPath(path)[3];
       },join:function () {
         var paths = Array.prototype.slice.call(arguments, 0);
         return PATH.normalize(paths.filter(function(p, index) {
@@ -1590,14 +1609,29 @@ function copyTempDouble(ptr) {
         outputParts = outputParts.concat(toParts.slice(samePartsLength));
         return outputParts.join('/');
       }};
-  var TTY={ttys:[],register:function (dev, ops) {
+  var TTY={ttys:[],init:function () {
+        // https://github.com/kripken/emscripten/pull/1555
+        // if (ENVIRONMENT_IS_NODE) {
+        //   // currently, FS.init does not distinguish if process.stdin is a file or TTY
+        //   // device, it always assumes it's a TTY device. because of this, we're forcing
+        //   // process.stdin to UTF8 encoding to at least make stdin reading compatible
+        //   // with text files until FS.init can be refactored.
+        //   process['stdin']['setEncoding']('utf8');
+        // }
+      },shutdown:function () {
+        // https://github.com/kripken/emscripten/pull/1555
+        // if (ENVIRONMENT_IS_NODE) {
+        //   // inolen: any idea as to why node -e 'process.stdin.read()' wouldn't exit immediately (with process.stdin being a tty)?
+        //   // isaacs: because now it's reading from the stream, you've expressed interest in it, so that read() kicks off a _read() which creates a ReadReq operation
+        //   // inolen: I thought read() in that case was a synchronous operation that just grabbed some amount of buffered data if it exists?
+        //   // isaacs: it is. but it also triggers a _read() call, which calls readStart() on the handle
+        //   // isaacs: do process.stdin.pause() and i'd think it'd probably close the pending call
+        //   process['stdin']['pause']();
+        // }
+      },register:function (dev, ops) {
         TTY.ttys[dev] = { input: [], output: [], ops: ops };
         FS.registerDevice(dev, TTY.stream_ops);
       },stream_ops:{open:function (stream) {
-          // this wouldn't be required if the library wasn't eval'd at first...
-          if (!TTY.utf8) {
-            TTY.utf8 = new Runtime.UTF8Processor();
-          }
           var tty = TTY.ttys[stream.node.rdev];
           if (!tty) {
             throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
@@ -1651,10 +1685,13 @@ function copyTempDouble(ptr) {
           if (!tty.input.length) {
             var result = null;
             if (ENVIRONMENT_IS_NODE) {
-              if (process.stdin.destroyed) {
-                return undefined;
+              result = process['stdin']['read']();
+              if (!result) {
+                if (process['stdin']['_readableState'] && process['stdin']['_readableState']['ended']) {
+                  return null;  // EOF
+                }
+                return undefined;  // no data available
               }
-              result = process.stdin.read();
             } else if (typeof window != 'undefined' &&
               typeof window.prompt == 'function') {
               // Browser.
@@ -1690,7 +1727,13 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={mount:function (mount) {
+  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,ensureFlexible:function (node) {
+        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
+          var contents = node.contents;
+          node.contents = Array.prototype.slice.call(contents);
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+        }
+      },mount:function (mount) {
         return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
       },create_node:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
@@ -1698,16 +1741,49 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
         }
         var node = FS.createNode(parent, name, mode, dev);
-        node.node_ops = MEMFS.node_ops;
         if (FS.isDir(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr,
+            lookup: MEMFS.node_ops.lookup,
+            mknod: MEMFS.node_ops.mknod,
+            mknod: MEMFS.node_ops.mknod,
+            rename: MEMFS.node_ops.rename,
+            unlink: MEMFS.node_ops.unlink,
+            rmdir: MEMFS.node_ops.rmdir,
+            readdir: MEMFS.node_ops.readdir,
+            symlink: MEMFS.node_ops.symlink
+          };
+          node.stream_ops = {
+            llseek: MEMFS.stream_ops.llseek
+          };
           node.contents = {};
         } else if (FS.isFile(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr
+          };
+          node.stream_ops = {
+            llseek: MEMFS.stream_ops.llseek,
+            read: MEMFS.stream_ops.read,
+            write: MEMFS.stream_ops.write,
+            allocate: MEMFS.stream_ops.allocate,
+            mmap: MEMFS.stream_ops.mmap
+          };
           node.contents = [];
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
         } else if (FS.isLink(node.mode)) {
-          node.stream_ops = MEMFS.stream_ops;
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr,
+            readlink: MEMFS.node_ops.readlink
+          };
+          node.stream_ops = {};
         } else if (FS.isChrdev(node.mode)) {
+          node.node_ops = {
+            getattr: MEMFS.node_ops.getattr,
+            setattr: MEMFS.node_ops.setattr
+          };
           node.stream_ops = FS.chrdev_stream_ops;
         }
         node.timestamp = Date.now();
@@ -1751,6 +1827,7 @@ function copyTempDouble(ptr) {
             node.timestamp = attr.timestamp;
           }
           if (attr.size !== undefined) {
+            MEMFS.ensureFlexible(node);
             var contents = node.contents;
             if (attr.size < contents.length) contents.length = attr.size;
             else while (attr.size > contents.length) contents.push(0);
@@ -1785,6 +1862,15 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
           }
           delete parent.contents[name];
+        },readdir:function (node) {
+          var entries = ['.', '..']
+          for (var key in node.contents) {
+            if (!node.contents.hasOwnProperty(key)) {
+              continue;
+            }
+            entries.push(key);
+          }
+          return entries;
         },symlink:function (parent, newname, oldpath) {
           var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
           node.link = oldpath;
@@ -1794,22 +1880,10 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
           }
           return node.link;
-        }},stream_ops:{open:function (stream) {
-          if (FS.isDir(stream.node.mode)) {
-            // cache off the directory entries when open'd
-            var entries = ['.', '..']
-            for (var key in stream.node.contents) {
-              if (!stream.node.contents.hasOwnProperty(key)) {
-                continue;
-              }
-              entries.push(key);
-            }
-            stream.entries = entries;
-          }
-        },read:function (stream, buffer, offset, length, position) {
+        }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
           var size = Math.min(contents.length - position, length);
-          if (contents.subarray) { // typed array
+          if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
           {
@@ -1818,13 +1892,28 @@ function copyTempDouble(ptr) {
             }
           }
           return size;
-        },write:function (stream, buffer, offset, length, position) {
-          var contents = stream.node.contents;
+        },write:function (stream, buffer, offset, length, position, canOwn) {
+          var node = stream.node;
+          node.timestamp = Date.now();
+          var contents = node.contents;
+          if (length && contents.length === 0 && position === 0 && buffer.subarray) {
+            // just replace it with the new data
+            assert(buffer.length);
+            if (canOwn && buffer.buffer === HEAP8.buffer && offset === 0) {
+              node.contents = buffer; // this is a subarray of the heap, and we can own it
+              node.contentMode = MEMFS.CONTENT_OWNING;
+            } else {
+              node.contents = new Uint8Array(buffer.subarray(offset, offset+length));
+              node.contentMode = MEMFS.CONTENT_FIXED;
+            }
+            return length;
+          }
+          MEMFS.ensureFlexible(node);
+          var contents = node.contents;
           while (contents.length < position) contents.push(0);
           for (var i = 0; i < length; i++) {
             contents[position + i] = buffer[offset + i];
           }
-          stream.node.timestamp = Date.now();
           return length;
         },llseek:function (stream, offset, whence) {
           var position = offset;
@@ -1841,9 +1930,8 @@ function copyTempDouble(ptr) {
           stream.ungotten = [];
           stream.position = position;
           return position;
-        },readdir:function (stream) {
-          return stream.entries;
         },allocate:function (stream, offset, length) {
+          MEMFS.ensureFlexible(stream.node);
           var contents = stream.node.contents;
           var limit = offset + length;
           while (limit > contents.length) contents.push(0);
@@ -1855,10 +1943,10 @@ function copyTempDouble(ptr) {
           var allocated;
           var contents = stream.node.contents;
           // Only make a new copy when MAP_PRIVATE is specified.
-          if (!(flags & 0x02)) {
+          if ( !(flags & 0x02) &&
+                (contents.buffer === buffer || contents.buffer === buffer.buffer) ) {
             // We can't emulate MAP_SHARED when the file is not backed by the buffer
             // we're mapping to (e.g. the HEAP buffer).
-            assert(contents.buffer === buffer || contents.buffer === buffer.buffer);
             allocated = false;
             ptr = contents.byteOffset;
           } else {
@@ -1886,34 +1974,87 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,nodes:[null],devices:[null],streams:[null],nextInode:1,name_table:[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,],currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function (errno) {
-        this.errno = errno;
-        for (var key in ERRNO_CODES) {
-          if (ERRNO_CODES[key] === errno) {
-            this.code = key;
-            break;
+    }var FS={root:null,devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
+          this.errno = errno;
+          for (var key in ERRNO_CODES) {
+            if (ERRNO_CODES[key] === errno) {
+              this.code = key;
+              break;
+            }
           }
-        }
-        this.message = ERRNO_MESSAGES[errno] + ' : ' + new Error().stack;
-      },handleFSError:function (e) {
+          this.message = ERRNO_MESSAGES[errno];
+        },handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
         return ___setErrNo(e.errno);
+      },cwd:function () {
+        return FS.currentPath;
+      },lookupPath:function (path, opts) {
+        path = PATH.resolve(FS.currentPath, path);
+        opts = opts || { recurse_count: 0 };
+        if (opts.recurse_count > 8) {  // max recursive lookup of 8
+          throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+        }
+        // split the path
+        var parts = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), false);
+        // start at the root
+        var current = FS.root;
+        var current_path = '/';
+        for (var i = 0; i < parts.length; i++) {
+          var islast = (i === parts.length-1);
+          if (islast && opts.parent) {
+            // stop resolving
+            break;
+          }
+          current = FS.lookupNode(current, parts[i]);
+          current_path = PATH.join(current_path, parts[i]);
+          // jump to the mount's root node if this is a mountpoint
+          if (FS.isMountpoint(current)) {
+            current = current.mount.root;
+          }
+          // follow symlinks
+          // by default, lookupPath will not follow a symlink if it is the final path component.
+          // setting opts.follow = true will override this behavior.
+          if (!islast || opts.follow) {
+            var count = 0;
+            while (FS.isLink(current.mode)) {
+              var link = FS.readlink(current_path);
+              current_path = PATH.resolve(PATH.dirname(current_path), link);
+              var lookup = FS.lookupPath(current_path, { recurse_count: opts.recurse_count });
+              current = lookup.node;
+              if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
+                throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
+              }
+            }
+          }
+        }
+        return { path: current_path, node: current };
+      },getPath:function (node) {
+        var path;
+        while (true) {
+          if (FS.isRoot(node)) {
+            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
+          }
+          path = path ? PATH.join(node.name, path) : node.name;
+          node = node.parent;
+        }
       },hashName:function (parentid, name) {
         var hash = 0;
         for (var i = 0; i < name.length; i++) {
           hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
         }
-        return (parentid + hash) % FS.name_table.length;
+        return ((parentid + hash) >>> 0) % FS.nameTable.length;
       },hashAddNode:function (node) {
         var hash = FS.hashName(node.parent.id, node.name);
-        node.name_next = FS.name_table[hash];
-        FS.name_table[hash] = node;
+        node.name_next = FS.nameTable[hash];
+        FS.nameTable[hash] = node;
       },hashRemoveNode:function (node) {
         var hash = FS.hashName(node.parent.id, node.name);
-        if (FS.name_table[hash] === node) {
-          FS.name_table[hash] = node.name_next;
+        if (FS.nameTable[hash] === node) {
+          FS.nameTable[hash] = node.name_next;
         } else {
-          var current = FS.name_table[hash];
+          var current = FS.nameTable[hash];
           while (current) {
             if (current.name_next === node) {
               current.name_next = node.name_next;
@@ -1928,7 +2069,7 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(err);
         }
         var hash = FS.hashName(parent.id, name);
-        for (var node = FS.name_table[hash]; node; node = node.name_next) {
+        for (var node = FS.nameTable[hash]; node; node = node.name_next) {
           if (node.parent.id === parent.id && node.name === name) {
             return node;
           }
@@ -1992,59 +2133,8 @@ function copyTempDouble(ptr) {
         return (mode & 0170000) === 0060000;
       },isFIFO:function (mode) {
         return (mode & 0170000) === 0010000;
-      },cwd:function () {
-        return FS.currentPath;
-      },lookupPath:function (path, opts) {
-        path = PATH.resolve(FS.currentPath, path);
-        opts = opts || { recurse_count: 0 };
-        if (opts.recurse_count > 8) {  // max recursive lookup of 8
-          throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
-        }
-        // split the path
-        var parts = PATH.normalizeArray(path.split('/').filter(function(p) {
-          return !!p;
-        }), false);
-        // start at the root
-        var current = FS.root;
-        var current_path = '/';
-        for (var i = 0; i < parts.length; i++) {
-          var islast = (i === parts.length-1);
-          if (islast && opts.parent) {
-            // stop resolving
-            break;
-          }
-          current = FS.lookupNode(current, parts[i]);
-          current_path = PATH.join(current_path, parts[i]);
-          // jump to the mount's root node if this is a mountpoint
-          if (FS.isMountpoint(current)) {
-            current = current.mount.root;
-          }
-          // follow symlinks
-          // by default, lookupPath will not follow a symlink if it is the final path component.
-          // setting opts.follow = true will override this behavior.
-          if (!islast || opts.follow) {
-            var count = 0;
-            while (FS.isLink(current.mode)) {
-              var link = FS.readlink(current_path);
-              current_path = PATH.resolve(PATH.dirname(current_path), link);
-              var lookup = FS.lookupPath(current_path, { recurse_count: opts.recurse_count });
-              current = lookup.node;
-              if (count++ > 40) {  // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
-                throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
-              }
-            }
-          }
-        }
-        return { path: current_path, node: current };
-      },getPath:function (node) {
-        var path;
-        while (true) {
-          if (FS.isRoot(node)) {
-            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
-          }
-          path = path ? PATH.join(node.name, path) : node.name;
-          node = node.parent;
-        }
+      },isSocket:function (mode) {
+        return (mode & 0140000) === 0140000;
       },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
         var flags = FS.flagModes[str];
         if (typeof flags === 'undefined') {
@@ -2073,17 +2163,6 @@ function copyTempDouble(ptr) {
         return 0;
       },mayLookup:function (dir) {
         return FS.nodePermissions(dir, 'x');
-      },mayMknod:function (mode) {
-        switch (mode & 0170000) {
-          case 0100000:
-          case 0020000:
-          case 0060000:
-          case 0010000:
-          case 0140000:
-            return 0;
-          default:
-            return ERRNO_CODES.EINVAL;
-        }
       },mayCreate:function (dir, name) {
         try {
           var node = FS.lookupNode(dir, name);
@@ -2128,26 +2207,6 @@ function copyTempDouble(ptr) {
           }
         }
         return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
-      },chrdev_stream_ops:{open:function (stream) {
-          var device = FS.getDevice(stream.node.rdev);
-          // override node's stream ops with the device's
-          stream.stream_ops = device.stream_ops;
-          // forward the open call
-          if (stream.stream_ops.open) {
-            stream.stream_ops.open(stream);
-          }
-        },llseek:function () {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }},major:function (dev) {
-        return ((dev) >> 8);
-      },minor:function (dev) {
-        return ((dev) & 0xff);
-      },makedev:function (ma, mi) {
-        return ((ma) << 8 | (mi));
-      },registerDevice:function (dev, ops) {
-        FS.devices[dev] = { stream_ops: ops };
-      },getDevice:function (dev) {
-        return FS.devices[dev];
       },MAX_OPEN_FDS:4096,nextfd:function (fd_start, fd_end) {
         fd_start = fd_start || 1;
         fd_end = fd_end || FS.MAX_OPEN_FDS;
@@ -2182,6 +2241,596 @@ function copyTempDouble(ptr) {
         return stream;
       },closeStream:function (fd) {
         FS.streams[fd] = null;
+      },chrdev_stream_ops:{open:function (stream) {
+          var device = FS.getDevice(stream.node.rdev);
+          // override node's stream ops with the device's
+          stream.stream_ops = device.stream_ops;
+          // forward the open call
+          if (stream.stream_ops.open) {
+            stream.stream_ops.open(stream);
+          }
+        },llseek:function () {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }},major:function (dev) {
+        return ((dev) >> 8);
+      },minor:function (dev) {
+        return ((dev) & 0xff);
+      },makedev:function (ma, mi) {
+        return ((ma) << 8 | (mi));
+      },registerDevice:function (dev, ops) {
+        FS.devices[dev] = { stream_ops: ops };
+      },getDevice:function (dev) {
+        return FS.devices[dev];
+      },mount:function (type, opts, mountpoint) {
+        var mount = {
+          type: type,
+          opts: opts,
+          mountpoint: mountpoint,
+          root: null
+        };
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+        }
+        // create a root node for the fs
+        var root = type.mount(mount);
+        root.mount = mount;
+        mount.root = root;
+        // assign the mount info to the mountpoint's node
+        if (lookup) {
+          lookup.node.mount = mount;
+          lookup.node.mounted = true;
+          // compatibility update FS.root if we mount to /
+          if (mountpoint === '/') {
+            FS.root = mount.root;
+          }
+        }
+        return root;
+      },lookup:function (parent, name) {
+        return parent.node_ops.lookup(parent, name);
+      },mknod:function (path, mode, dev) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var err = FS.mayCreate(parent, name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.mknod) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.mknod(parent, name, mode, dev);
+      },create:function (path, mode) {
+        mode = mode !== undefined ? mode : 0666;
+        mode &= 4095;
+        mode |= 0100000;
+        return FS.mknod(path, mode, 0);
+      },mkdir:function (path, mode) {
+        mode = mode !== undefined ? mode : 0777;
+        mode &= 511 | 0001000;
+        mode |= 0040000;
+        return FS.mknod(path, mode, 0);
+      },mkdev:function (path, mode, dev) {
+        if (typeof(dev) === 'undefined') {
+          dev = mode;
+          mode = 0666;
+        }
+        mode |= 0020000;
+        return FS.mknod(path, mode, dev);
+      },symlink:function (oldpath, newpath) {
+        var lookup = FS.lookupPath(newpath, { parent: true });
+        var parent = lookup.node;
+        var newname = PATH.basename(newpath);
+        var err = FS.mayCreate(parent, newname);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.symlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return parent.node_ops.symlink(parent, newname, oldpath);
+      },rename:function (old_path, new_path) {
+        var old_dirname = PATH.dirname(old_path);
+        var new_dirname = PATH.dirname(new_path);
+        var old_name = PATH.basename(old_path);
+        var new_name = PATH.basename(new_path);
+        // parents must exist
+        var lookup, old_dir, new_dir;
+        try {
+          lookup = FS.lookupPath(old_path, { parent: true });
+          old_dir = lookup.node;
+          lookup = FS.lookupPath(new_path, { parent: true });
+          new_dir = lookup.node;
+        } catch (e) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // need to be part of the same mount
+        if (old_dir.mount !== new_dir.mount) {
+          throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
+        }
+        // source must exist
+        var old_node = FS.lookupNode(old_dir, old_name);
+        // old path should not be an ancestor of the new path
+        var relative = PATH.relative(old_path, new_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        // new path should not be an ancestor of the old path
+        relative = PATH.relative(new_path, old_dirname);
+        if (relative.charAt(0) !== '.') {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
+        }
+        // see if the new path already exists
+        var new_node;
+        try {
+          new_node = FS.lookupNode(new_dir, new_name);
+        } catch (e) {
+          // not fatal
+        }
+        // early out if nothing needs to change
+        if (old_node === new_node) {
+          return;
+        }
+        // we'll need to delete the old entry
+        var isdir = FS.isDir(old_node.mode);
+        var err = FS.mayDelete(old_dir, old_name, isdir);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // need delete permissions if we'll be overwriting.
+        // need create permissions if new doesn't already exist.
+        err = new_node ?
+          FS.mayDelete(new_dir, new_name, isdir) :
+          FS.mayCreate(new_dir, new_name);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!old_dir.node_ops.rename) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        // if we are going to change the parent, check write permissions
+        if (new_dir !== old_dir) {
+          err = FS.nodePermissions(old_dir, 'w');
+          if (err) {
+            throw new FS.ErrnoError(err);
+          }
+        }
+        // remove the node from the lookup hash
+        FS.hashRemoveNode(old_node);
+        // do the underlying fs rename
+        try {
+          old_dir.node_ops.rename(old_node, new_dir, new_name);
+        } catch (e) {
+          throw e;
+        } finally {
+          // add the node back to the hash (in case node_ops.rename
+          // changed its name)
+          FS.hashAddNode(old_node);
+        }
+      },rmdir:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, true);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.rmdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.rmdir(parent, name);
+        FS.destroyNode(node);
+      },readdir:function (path) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        var node = lookup.node;
+        if (!node.node_ops.readdir) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        return node.node_ops.readdir(node);
+      },unlink:function (path) {
+        var lookup = FS.lookupPath(path, { parent: true });
+        var parent = lookup.node;
+        var name = PATH.basename(path);
+        var node = FS.lookupNode(parent, name);
+        var err = FS.mayDelete(parent, name, false);
+        if (err) {
+          // POSIX says unlink should set EPERM, not EISDIR
+          if (err === ERRNO_CODES.EISDIR) err = ERRNO_CODES.EPERM;
+          throw new FS.ErrnoError(err);
+        }
+        if (!parent.node_ops.unlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isMountpoint(node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        }
+        parent.node_ops.unlink(parent, name);
+        FS.destroyNode(node);
+      },readlink:function (path) {
+        var lookup = FS.lookupPath(path, { follow: false });
+        var link = lookup.node;
+        if (!link.node_ops.readlink) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        return link.node_ops.readlink(link);
+      },stat:function (path, dontFollow) {
+        var lookup = FS.lookupPath(path, { follow: !dontFollow });
+        var node = lookup.node;
+        if (!node.node_ops.getattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        return node.node_ops.getattr(node);
+      },lstat:function (path) {
+        return FS.stat(path, true);
+      },chmod:function (path, mode, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          mode: (mode & 4095) | (node.mode & ~4095),
+          timestamp: Date.now()
+        });
+      },lchmod:function (path, mode) {
+        FS.chmod(path, mode, true);
+      },fchmod:function (fd, mode) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chmod(stream.node, mode);
+      },chown:function (path, uid, gid, dontFollow) {
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: !dontFollow });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        node.node_ops.setattr(node, {
+          timestamp: Date.now()
+          // we ignore the uid / gid for now
+        });
+      },lchown:function (path, uid, gid) {
+        FS.chown(path, uid, gid, true);
+      },fchown:function (fd, uid, gid) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        FS.chown(stream.node, uid, gid);
+      },truncate:function (path, len) {
+        if (len < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node;
+        if (typeof path === 'string') {
+          var lookup = FS.lookupPath(path, { follow: true });
+          node = lookup.node;
+        } else {
+          node = path;
+        }
+        if (!node.node_ops.setattr) {
+          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
+        }
+        if (FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!FS.isFile(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var err = FS.nodePermissions(node, 'w');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        node.node_ops.setattr(node, {
+          size: len,
+          timestamp: Date.now()
+        });
+      },ftruncate:function (fd, len) {
+        var stream = FS.getStream(fd);
+        if (!stream) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        FS.truncate(stream.node, len);
+      },utime:function (path, atime, mtime) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        var node = lookup.node;
+        node.node_ops.setattr(node, {
+          timestamp: Math.max(atime, mtime)
+        });
+      },open:function (path, flags, mode, fd_start, fd_end) {
+        path = PATH.normalize(path);
+        flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
+        mode = typeof mode === 'undefined' ? 0666 : mode;
+        if ((flags & 512)) {
+          mode = (mode & 4095) | 0100000;
+        } else {
+          mode = 0;
+        }
+        var node;
+        try {
+          var lookup = FS.lookupPath(path, {
+            follow: !(flags & 0200000)
+          });
+          node = lookup.node;
+          path = lookup.path;
+        } catch (e) {
+          // ignore
+        }
+        // perhaps we need to create the node
+        if ((flags & 512)) {
+          if (node) {
+            // if O_CREAT and O_EXCL are set, error out if the node already exists
+            if ((flags & 2048)) {
+              throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
+            }
+          } else {
+            // node doesn't exist, try to create it
+            node = FS.mknod(path, mode, 0);
+          }
+        }
+        if (!node) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
+        // can't truncate a device
+        if (FS.isChrdev(node.mode)) {
+          flags &= ~1024;
+        }
+        // check permissions
+        var err = FS.mayOpen(node, flags);
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        // do truncation if necessary
+        if ((flags & 1024)) {
+          FS.truncate(node, 0);
+        }
+        // register the stream with the filesystem
+        var stream = FS.createStream({
+          path: path,
+          node: node,
+          flags: flags,
+          seekable: true,
+          position: 0,
+          stream_ops: node.stream_ops,
+          // used by the file family libc calls (fopen, fwrite, ferror, etc.)
+          ungotten: [],
+          error: false
+        }, fd_start, fd_end);
+        // call the new stream's open function
+        if (stream.stream_ops.open) {
+          stream.stream_ops.open(stream);
+        }
+        return stream;
+      },close:function (stream) {
+        try {
+          if (stream.stream_ops.close) {
+            stream.stream_ops.close(stream);
+          }
+        } catch (e) {
+          throw e;
+        } finally {
+          FS.closeStream(stream.fd);
+        }
+      },llseek:function (stream, offset, whence) {
+        if (!stream.seekable || !stream.stream_ops.llseek) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        return stream.stream_ops.llseek(stream, offset, whence);
+      },read:function (stream, buffer, offset, length, position) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.read) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
+        if (!seeking) stream.position += bytesRead;
+        return bytesRead;
+      },write:function (stream, buffer, offset, length, position, canOwn) {
+        if (length < 0 || position < 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (FS.isDir(stream.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
+        }
+        if (!stream.stream_ops.write) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var seeking = true;
+        if (typeof position === 'undefined') {
+          position = stream.position;
+          seeking = false;
+        } else if (!stream.seekable) {
+          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
+        }
+        if (stream.flags & 8) {
+          // seek to the end before writing in append mode
+          FS.llseek(stream, 0, 2);
+        }
+        var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
+        if (!seeking) stream.position += bytesWritten;
+        return bytesWritten;
+      },allocate:function (stream, offset, length) {
+        if (offset < 0 || length <= 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        if ((stream.flags & 3) === 0) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
+        }
+        if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+        }
+        if (!stream.stream_ops.allocate) {
+          throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+        }
+        stream.stream_ops.allocate(stream, offset, length);
+      },mmap:function (stream, buffer, offset, length, position, prot, flags) {
+        // TODO if PROT is PROT_WRITE, make sure we have write access
+        if ((stream.flags & 3) === 1) {
+          throw new FS.ErrnoError(ERRNO_CODES.EACCES);
+        }
+        if (!stream.stream_ops.mmap) {
+          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+        }
+        return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
+      },ioctl:function (stream, cmd, arg) {
+        if (!stream.stream_ops.ioctl) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTTY);
+        }
+        return stream.stream_ops.ioctl(stream, cmd, arg);
+      },readFile:function (path, opts) {
+        opts = opts || {};
+        opts.flags = opts.flags || 'r';
+        opts.encoding = opts.encoding || 'binary';
+        var ret;
+        var stream = FS.open(path, opts.flags);
+        var stat = FS.stat(path);
+        var length = stat.size;
+        var buf = new Uint8Array(length);
+        FS.read(stream, buf, 0, length, 0);
+        if (opts.encoding === 'utf8') {
+          ret = '';
+          var utf8 = new Runtime.UTF8Processor();
+          for (var i = 0; i < length; i++) {
+            ret += utf8.processCChar(buf[i]);
+          }
+        } else if (opts.encoding === 'binary') {
+          ret = buf;
+        } else {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
+        FS.close(stream);
+        return ret;
+      },writeFile:function (path, data, opts) {
+        opts = opts || {};
+        opts.flags = opts.flags || 'w';
+        opts.encoding = opts.encoding || 'utf8';
+        var stream = FS.open(path, opts.flags, opts.mode);
+        if (opts.encoding === 'utf8') {
+          var utf8 = new Runtime.UTF8Processor();
+          var buf = new Uint8Array(utf8.processJSString(data));
+          FS.write(stream, buf, 0, buf.length, 0);
+        } else if (opts.encoding === 'binary') {
+          FS.write(stream, data, 0, data.length, 0);
+        } else {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
+        FS.close(stream);
+      },createDefaultDirectories:function () {
+        FS.mkdir('/tmp');
+      },createDefaultDevices:function () {
+        // create /dev
+        FS.mkdir('/dev');
+        // setup /dev/null
+        FS.registerDevice(FS.makedev(1, 3), {
+          read: function() { return 0; },
+          write: function() { return 0; }
+        });
+        FS.mkdev('/dev/null', FS.makedev(1, 3));
+        // setup /dev/tty and /dev/tty1
+        // stderr needs to print output using Module['printErr']
+        // so we register a second tty just for it.
+        TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
+        TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
+        FS.mkdev('/dev/tty', FS.makedev(5, 0));
+        FS.mkdev('/dev/tty1', FS.makedev(6, 0));
+        // we're not going to emulate the actual shm device,
+        // just create the tmp dirs that reside in it commonly
+        FS.mkdir('/dev/shm');
+        FS.mkdir('/dev/shm/tmp');
+      },createStandardStreams:function () {
+        // TODO deprecate the old functionality of a single
+        // input / output callback and that utilizes FS.createDevice
+        // and instead require a unique set of stream ops
+        // by default, we symlink the standard streams to the
+        // default tty devices. however, if the standard streams
+        // have been overwritten we create a unique device for
+        // them instead.
+        if (Module['stdin']) {
+          FS.createDevice('/dev', 'stdin', Module['stdin']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdin');
+        }
+        if (Module['stdout']) {
+          FS.createDevice('/dev', 'stdout', null, Module['stdout']);
+        } else {
+          FS.symlink('/dev/tty', '/dev/stdout');
+        }
+        if (Module['stderr']) {
+          FS.createDevice('/dev', 'stderr', null, Module['stderr']);
+        } else {
+          FS.symlink('/dev/tty1', '/dev/stderr');
+        }
+        // open default streams for the stdin, stdout and stderr devices
+        var stdin = FS.open('/dev/stdin', 'r');
+        HEAP32[((_stdin)>>2)]=stdin.fd;
+        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
+        var stdout = FS.open('/dev/stdout', 'w');
+        HEAP32[((_stdout)>>2)]=stdout.fd;
+        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
+        var stderr = FS.open('/dev/stderr', 'w');
+        HEAP32[((_stderr)>>2)]=stderr.fd;
+        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
+      },staticInit:function () {
+        FS.nameTable = new Array(4096);
+        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.mount(MEMFS, {}, '/');
+        FS.createDefaultDirectories();
+        FS.createDefaultDevices();
+      },init:function (input, output, error) {
+        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
+        FS.init.initialized = true;
+        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
+        Module['stdin'] = input || Module['stdin'];
+        Module['stdout'] = output || Module['stdout'];
+        Module['stderr'] = error || Module['stderr'];
+        FS.createStandardStreams();
+      },quit:function () {
+        FS.init.initialized = false;
+        for (var i = 0; i < FS.streams.length; i++) {
+          var stream = FS.streams[i];
+          if (!stream) {
+            continue;
+          }
+          FS.close(stream);
+        }
       },getMode:function (canRead, canWrite) {
         var mode = 0;
         if (canRead) mode |= 292 | 73;
@@ -2242,7 +2891,7 @@ function copyTempDouble(ptr) {
           if (!part) continue;
           var current = PATH.join(parent, part);
           try {
-            FS.mkdir(current, 0777);
+            FS.mkdir(current);
           } catch (e) {
             // ignore EEXIST
           }
@@ -2253,8 +2902,8 @@ function copyTempDouble(ptr) {
         var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         var mode = FS.getMode(canRead, canWrite);
         return FS.create(path, mode);
-      },createDataFile:function (parent, name, data, canRead, canWrite) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+      },createDataFile:function (parent, name, data, canRead, canWrite, canOwn) {
+        var path = name ? PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name) : parent;
         var mode = FS.getMode(canRead, canWrite);
         var node = FS.create(path, mode);
         if (data) {
@@ -2266,14 +2915,14 @@ function copyTempDouble(ptr) {
           // make sure we can write to the file
           FS.chmod(path, mode | 146);
           var stream = FS.open(path, 'w');
-          FS.write(stream, data, 0, data.length, 0);
+          FS.write(stream, data, 0, data.length, 0, canOwn);
           FS.close(stream);
           FS.chmod(path, mode);
         }
         return node;
       },createDevice:function (parent, name, input, output) {
         var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
-        var mode = input && output ? 0777 : (input ? 0333 : 0555);
+        var mode = FS.getMode(!!input, !!output);
         if (!FS.createDevice.major) FS.createDevice.major = 64;
         var dev = FS.makedev(FS.createDevice.major++, 0);
         // Create a fake device that a set of stream ops to emulate
@@ -2457,6 +3106,9 @@ function copyTempDouble(ptr) {
         });
         // use a custom read function
         stream_ops.read = function(stream, buffer, offset, length, position) {
+          if (!FS.forceLoadFile(node)) {
+            throw new FS.ErrnoError(ERRNO_CODES.EIO);
+          }
           var contents = stream.node.contents;
           var size = Math.min(contents.length - position, length);
           if (contents.slice) { // normal array
@@ -2472,15 +3124,15 @@ function copyTempDouble(ptr) {
         };
         node.stream_ops = stream_ops;
         return node;
-      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile) {
+      },createPreloadedFile:function (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn) {
         Browser.init();
         // TODO we should allow people to just pass in a complete filename instead
         // of parent and name being that we just join them anyways
-        var fullname = PATH.resolve(PATH.join(parent, name));
+        var fullname = name ? PATH.resolve(PATH.join(parent, name)) : parent;
         function processData(byteArray) {
           function finish(byteArray) {
             if (!dontCreateFile) {
-              FS.createDataFile(parent, name, byteArray, canRead, canWrite);
+              FS.createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
             }
             if (onload) onload();
             removeRunDependency('cp ' + fullname);
@@ -2506,539 +3158,530 @@ function copyTempDouble(ptr) {
         } else {
           processData(url);
         }
-      },createDefaultDirectories:function () {
-        FS.mkdir('/tmp', 0777);
-      },createDefaultDevices:function () {
-        // create /dev
-        FS.mkdir('/dev', 0777);
-        // setup /dev/null
-        FS.registerDevice(FS.makedev(1, 3), {
-          read: function() { return 0; },
-          write: function() { return 0; }
-        });
-        FS.mkdev('/dev/null', 0666, FS.makedev(1, 3));
-        // setup /dev/tty and /dev/tty1
-        // stderr needs to print output using Module['printErr']
-        // so we register a second tty just for it.
-        TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
-        TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
-        FS.mkdev('/dev/tty', 0666, FS.makedev(5, 0));
-        FS.mkdev('/dev/tty1', 0666, FS.makedev(6, 0));
-        // we're not going to emulate the actual shm device,
-        // just create the tmp dirs that reside in it commonly
-        FS.mkdir('/dev/shm', 0777);
-        FS.mkdir('/dev/shm/tmp', 0777);
-      },createStandardStreams:function () {
-        // TODO deprecate the old functionality of a single
-        // input / output callback and that utilizes FS.createDevice
-        // and instead require a unique set of stream ops
-        // by default, we symlink the standard streams to the
-        // default tty devices. however, if the standard streams
-        // have been overwritten we create a unique device for
-        // them instead.
-        if (Module['stdin']) {
-          FS.createDevice('/dev', 'stdin', Module['stdin']);
-        } else {
-          FS.symlink('/dev/tty', '/dev/stdin');
+      },indexedDB:function () {
+        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+      },DB_NAME:function () {
+        return 'EM_FS_' + window.location.pathname;
+      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",saveFilesToDB:function (paths, onload, onerror) {
+        onload = onload || function(){};
+        onerror = onerror || function(){};
+        var indexedDB = FS.indexedDB();
+        try {
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
+        } catch (e) {
+          return onerror(e);
         }
-        if (Module['stdout']) {
-          FS.createDevice('/dev', 'stdout', null, Module['stdout']);
-        } else {
-          FS.symlink('/dev/tty', '/dev/stdout');
-        }
-        if (Module['stderr']) {
-          FS.createDevice('/dev', 'stderr', null, Module['stderr']);
-        } else {
-          FS.symlink('/dev/tty1', '/dev/stderr');
-        }
-        // open default streams for the stdin, stdout and stderr devices
-        var stdin = FS.open('/dev/stdin', 'r');
-        HEAP32[((_stdin)>>2)]=stdin.fd;
-        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
-        var stdout = FS.open('/dev/stdout', 'w');
-        HEAP32[((_stdout)>>2)]=stdout.fd;
-        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
-        var stderr = FS.open('/dev/stderr', 'w');
-        HEAP32[((_stderr)>>2)]=stderr.fd;
-        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
-      },staticInit:function () {
-        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
-        FS.mount(MEMFS, {}, '/');
-        FS.createDefaultDirectories();
-        FS.createDefaultDevices();
-      },init:function (input, output, error) {
-        assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
-        FS.init.initialized = true;
-        // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
-        Module['stdin'] = input || Module['stdin'];
-        Module['stdout'] = output || Module['stdout'];
-        Module['stderr'] = error || Module['stderr'];
-        FS.createStandardStreams();
-      },quit:function () {
-        FS.init.initialized = false;
-        for (var i = 0; i < FS.streams.length; i++) {
-          var stream = FS.streams[i];
-          if (!stream) {
-            continue;
-          }
-          FS.close(stream);
-        }
-      },mount:function (type, opts, mountpoint) {
-        var mount = {
-          type: type,
-          opts: opts,
-          mountpoint: mountpoint,
-          root: null
+        openRequest.onupgradeneeded = function() {
+          console.log('creating db');
+          var db = openRequest.result;
+          db.createObjectStore(FS.DB_STORE_NAME);
         };
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
-        }
-        // create a root node for the fs
-        var root = type.mount(mount);
-        root.mount = mount;
-        mount.root = root;
-        // assign the mount info to the mountpoint's node
-        if (lookup) {
-          lookup.node.mount = mount;
-          lookup.node.mounted = true;
-          // compatibility update FS.root if we mount to /
-          if (mountpoint === '/') {
-            FS.root = mount.root;
+        openRequest.onsuccess = function() {
+          var db = openRequest.result;
+          var transaction = db.transaction([FS.DB_STORE_NAME], 'readwrite');
+          var files = transaction.objectStore(FS.DB_STORE_NAME);
+          var ok = 0, fail = 0, total = paths.length;
+          function finish() {
+            if (fail == 0) onload(); else onerror();
           }
-        }
-        return root;
-      },lookup:function (parent, name) {
-        return parent.node_ops.lookup(parent, name);
-      },mknod:function (path, mode, dev) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var err = FS.mayCreate(parent, name);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.mknod) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return parent.node_ops.mknod(parent, name, mode, dev);
-      },create:function (path, mode) {
-        mode &= 4095;
-        mode |= 0100000;
-        return FS.mknod(path, mode, 0);
-      },mkdir:function (path, mode) {
-        mode &= 511 | 0001000;
-        mode |= 0040000;
-        return FS.mknod(path, mode, 0);
-      },mkdev:function (path, mode, dev) {
-        mode |= 0020000;
-        return FS.mknod(path, mode, dev);
-      },symlink:function (oldpath, newpath) {
-        var lookup = FS.lookupPath(newpath, { parent: true });
-        var parent = lookup.node;
-        var newname = PATH.basename(newpath);
-        var err = FS.mayCreate(parent, newname);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.symlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return parent.node_ops.symlink(parent, newname, oldpath);
-      },rename:function (old_path, new_path) {
-        var old_dirname = PATH.dirname(old_path);
-        var new_dirname = PATH.dirname(new_path);
-        var old_name = PATH.basename(old_path);
-        var new_name = PATH.basename(new_path);
-        // parents must exist
-        var lookup, old_dir, new_dir;
-        try {
-          lookup = FS.lookupPath(old_path, { parent: true });
-          old_dir = lookup.node;
-          lookup = FS.lookupPath(new_path, { parent: true });
-          new_dir = lookup.node;
-        } catch (e) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        // need to be part of the same mount
-        if (old_dir.mount !== new_dir.mount) {
-          throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
-        }
-        // source must exist
-        var old_node = FS.lookupNode(old_dir, old_name);
-        // old path should not be an ancestor of the new path
-        var relative = PATH.relative(old_path, new_dirname);
-        if (relative.charAt(0) !== '.') {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        // new path should not be an ancestor of the old path
-        relative = PATH.relative(new_path, old_dirname);
-        if (relative.charAt(0) !== '.') {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOTEMPTY);
-        }
-        // see if the new path already exists
-        var new_node;
-        try {
-          new_node = FS.lookupNode(new_dir, new_name);
-        } catch (e) {
-          // not fatal
-        }
-        // early out if nothing needs to change
-        if (old_node === new_node) {
-          return;
-        }
-        // we'll need to delete the old entry
-        var isdir = FS.isDir(old_node.mode);
-        var err = FS.mayDelete(old_dir, old_name, isdir);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        // need delete permissions if we'll be overwriting.
-        // need create permissions if new doesn't already exist.
-        err = new_node ?
-          FS.mayDelete(new_dir, new_name, isdir) :
-          FS.mayCreate(new_dir, new_name);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!old_dir.node_ops.rename) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(old_node) || (new_node && FS.isMountpoint(new_node))) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        // if we are going to change the parent, check write permissions
-        if (new_dir !== old_dir) {
-          err = FS.nodePermissions(old_dir, 'w');
-          if (err) {
-            throw new FS.ErrnoError(err);
-          }
-        }
-        // remove the node from the lookup hash
-        FS.hashRemoveNode(old_node);
-        // do the underlying fs rename
-        try {
-          old_node.node_ops.rename(old_node, new_dir, new_name);
-        } catch (e) {
-          throw e;
-        } finally {
-          // add the node back to the hash (in case node_ops.rename
-          // changed its name)
-          FS.hashAddNode(old_node);
-        }
-      },rmdir:function (path) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var node = FS.lookupNode(parent, name);
-        var err = FS.mayDelete(parent, name, true);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.rmdir) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(node)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        parent.node_ops.rmdir(parent, name);
-        FS.destroyNode(node);
-      },unlink:function (path) {
-        var lookup = FS.lookupPath(path, { parent: true });
-        var parent = lookup.node;
-        var name = PATH.basename(path);
-        var node = FS.lookupNode(parent, name);
-        var err = FS.mayDelete(parent, name, false);
-        if (err) {
-          // POSIX says unlink should set EPERM, not EISDIR
-          if (err === ERRNO_CODES.EISDIR) err = ERRNO_CODES.EPERM;
-          throw new FS.ErrnoError(err);
-        }
-        if (!parent.node_ops.unlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isMountpoint(node)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
-        }
-        parent.node_ops.unlink(parent, name);
-        FS.destroyNode(node);
-      },readlink:function (path) {
-        var lookup = FS.lookupPath(path, { follow: false });
-        var link = lookup.node;
-        if (!link.node_ops.readlink) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        return link.node_ops.readlink(link);
-      },stat:function (path, dontFollow) {
-        var lookup = FS.lookupPath(path, { follow: !dontFollow });
-        var node = lookup.node;
-        if (!node.node_ops.getattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        return node.node_ops.getattr(node);
-      },lstat:function (path) {
-        return FS.stat(path, true);
-      },chmod:function (path, mode, dontFollow) {
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: !dontFollow });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        node.node_ops.setattr(node, {
-          mode: (mode & 4095) | (node.mode & ~4095),
-          timestamp: Date.now()
-        });
-      },lchmod:function (path, mode) {
-        FS.chmod(path, mode, true);
-      },fchmod:function (fd, mode) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        FS.chmod(stream.node, mode);
-      },chown:function (path, uid, gid, dontFollow) {
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: !dontFollow });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        node.node_ops.setattr(node, {
-          timestamp: Date.now()
-          // we ignore the uid / gid for now
-        });
-      },lchown:function (path, uid, gid) {
-        FS.chown(path, uid, gid, true);
-      },fchown:function (fd, uid, gid) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        FS.chown(stream.node, uid, gid);
-      },truncate:function (path, len) {
-        if (len < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var node;
-        if (typeof path === 'string') {
-          var lookup = FS.lookupPath(path, { follow: true });
-          node = lookup.node;
-        } else {
-          node = path;
-        }
-        if (!node.node_ops.setattr) {
-          throw new FS.ErrnoError(ERRNO_CODES.EPERM);
-        }
-        if (FS.isDir(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!FS.isFile(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var err = FS.nodePermissions(node, 'w');
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        node.node_ops.setattr(node, {
-          size: len,
-          timestamp: Date.now()
-        });
-      },ftruncate:function (fd, len) {
-        var stream = FS.getStream(fd);
-        if (!stream) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        FS.truncate(stream.node, len);
-      },utime:function (path, atime, mtime) {
-        var lookup = FS.lookupPath(path, { follow: true });
-        var node = lookup.node;
-        node.node_ops.setattr(node, {
-          timestamp: Math.max(atime, mtime)
-        });
-      },open:function (path, flags, mode, fd_start, fd_end) {
-        path = PATH.normalize(path);
-        flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
-        if ((flags & 512)) {
-          mode = (mode & 4095) | 0100000;
-        } else {
-          mode = 0;
-        }
-        var node;
-        try {
-          var lookup = FS.lookupPath(path, {
-            follow: !(flags & 0200000)
+          paths.forEach(function(path) {
+            var putRequest = files.put(FS.analyzePath(path).object.contents, path);
+            putRequest.onsuccess = function() { ok++; if (ok + fail == total) finish() };
+            putRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
           });
-          node = lookup.node;
-          path = lookup.path;
+          transaction.onerror = onerror;
+        };
+        openRequest.onerror = onerror;
+      },loadFilesFromDB:function (paths, onload, onerror) {
+        onload = onload || function(){};
+        onerror = onerror || function(){};
+        var indexedDB = FS.indexedDB();
+        try {
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
         } catch (e) {
-          // ignore
+          return onerror(e);
         }
-        // perhaps we need to create the node
-        if ((flags & 512)) {
-          if (node) {
-            // if O_CREAT and O_EXCL are set, error out if the node already exists
-            if ((flags & 2048)) {
-              throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
+        openRequest.onupgradeneeded = onerror; // no database to load from
+        openRequest.onsuccess = function() {
+          var db = openRequest.result;
+          try {
+            var transaction = db.transaction([FS.DB_STORE_NAME], 'readonly');
+          } catch(e) {
+            onerror(e);
+            return;
+          }
+          var files = transaction.objectStore(FS.DB_STORE_NAME);
+          var ok = 0, fail = 0, total = paths.length;
+          function finish() {
+            if (fail == 0) onload(); else onerror();
+          }
+          paths.forEach(function(path) {
+            var getRequest = files.get(path);
+            getRequest.onsuccess = function() {
+              if (FS.analyzePath(path).exists) {
+                FS.unlink(path);
+              }
+              FS.createDataFile(PATH.dirname(path), PATH.basename(path), getRequest.result, true, true, true);
+              ok++;
+              if (ok + fail == total) finish();
+            };
+            getRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
+          });
+          transaction.onerror = onerror;
+        };
+        openRequest.onerror = onerror;
+      }};
+  var SOCKFS={mount:function (mount) {
+        return FS.createNode(null, '/', 0040000 | 0777, 0);
+      },nextname:function () {
+        if (!SOCKFS.nextname.current) {
+          SOCKFS.nextname.current = 0;
+        }
+        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+      },createSocket:function (family, type, protocol) {
+        var streaming = type == 1;
+        if (protocol) {
+          assert(streaming == (protocol == 6)); // if SOCK_STREAM, must be tcp
+        }
+        // create our internal socket structure
+        var sock = {
+          family: family,
+          type: type,
+          protocol: protocol,
+          server: null,
+          peers: {},
+          pending: [],
+          recv_queue: [],
+          sock_ops: SOCKFS.websocket_sock_ops
+        };
+        // create the filesystem node to store the socket structure
+        var name = SOCKFS.nextname();
+        var node = FS.createNode(SOCKFS.root, name, 0140000, 0);
+        node.sock = sock;
+        // and the wrapping stream that enables library functions such
+        // as read and write to indirectly interact with the socket
+        var stream = FS.createStream({
+          path: name,
+          node: node,
+          flags: FS.modeStringToFlags('r+'),
+          seekable: false,
+          stream_ops: SOCKFS.stream_ops
+        });
+        // map the new stream to the socket structure (sockets have a 1:1
+        // relationship with a stream)
+        sock.stream = stream;
+        return sock;
+      },getSocket:function (fd) {
+        var stream = FS.getStream(fd);
+        if (!stream || !FS.isSocket(stream.node.mode)) {
+          return null;
+        }
+        return stream.node.sock;
+      },stream_ops:{poll:function (stream) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.poll(sock);
+        },ioctl:function (stream, request, varargs) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.ioctl(sock, request, varargs);
+        },read:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          var msg = sock.sock_ops.recvmsg(sock, length);
+          if (!msg) {
+            // socket is closed
+            return 0;
+          }
+          buffer.set(msg.buffer, offset);
+          return msg.buffer.length;
+        },write:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.sendmsg(sock, buffer, offset, length);
+        },close:function (stream) {
+          var sock = stream.node.sock;
+          sock.sock_ops.close(sock);
+        }},websocket_sock_ops:{createPeer:function (sock, addr, port) {
+          var ws;
+          if (typeof addr === 'object') {
+            ws = addr;
+            addr = null;
+            port = null;
+          }
+          if (ws) {
+            // for sockets that've already connected (e.g. we're the server)
+            // we can inspect the _socket property for the address
+            if (ws._socket) {
+              addr = ws._socket.remoteAddress;
+              port = ws._socket.remotePort;
+            }
+            // if we're just now initializing a connection to the remote,
+            // inspect the url property
+            else {
+              var result = /ws[s]?:\/\/([^:]+):(\d+)/.exec(ws.url);
+              if (!result) {
+                throw new Error('WebSocket URL must be in the format ws(s)://address:port');
+              }
+              addr = result[1];
+              port = parseInt(result[2], 10);
             }
           } else {
-            // node doesn't exist, try to create it
-            node = FS.mknod(path, mode, 0);
+            // create the actual websocket object and connect
+            try {
+              var url = 'ws://' + addr + ':' + port;
+              // the node ws library API is slightly different than the browser's
+              var opts = ENVIRONMENT_IS_NODE ? {} : ['binary'];
+              ws = new WebSocket(url, opts);
+              ws.binaryType = 'arraybuffer';
+            } catch (e) {
+              throw new FS.ErrnoError(ERRNO_CODES.EHOSTUNREACH);
+            }
           }
-        }
-        if (!node) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
-        }
-        // can't truncate a device
-        if (FS.isChrdev(node.mode)) {
-          flags &= ~1024;
-        }
-        // check permissions
-        var err = FS.mayOpen(node, flags);
-        if (err) {
-          throw new FS.ErrnoError(err);
-        }
-        // do truncation if necessary
-        if ((flags & 1024)) {
-          FS.truncate(node, 0);
-        }
-        // register the stream with the filesystem
-        var stream = FS.createStream({
-          path: path,
-          node: node,
-          flags: flags,
-          seekable: true,
-          position: 0,
-          stream_ops: node.stream_ops,
-          // used by the file family libc calls (fopen, fwrite, ferror, etc.)
-          ungotten: [],
-          error: false
-        }, fd_start, fd_end);
-        // call the new stream's open function
-        if (stream.stream_ops.open) {
-          stream.stream_ops.open(stream);
-        }
-        return stream;
-      },close:function (stream) {
-        try {
-          if (stream.stream_ops.close) {
-            stream.stream_ops.close(stream);
+          var peer = {
+            addr: addr,
+            port: port,
+            socket: ws,
+            dgram_send_queue: []
+          };
+          SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+          SOCKFS.websocket_sock_ops.handlePeerEvents(sock, peer);
+          // if this is a bound dgram socket, send the port number first to allow
+          // us to override the ephemeral port reported to us by remotePort on the
+          // remote end.
+          if (sock.type === 2 && typeof sock.sport !== 'undefined') {
+            peer.dgram_send_queue.push(new Uint8Array([
+                255, 255, 255, 255,
+                'p'.charCodeAt(0), 'o'.charCodeAt(0), 'r'.charCodeAt(0), 't'.charCodeAt(0),
+                ((sock.sport & 0xff00) >> 8) , (sock.sport & 0xff)
+            ]));
           }
-        } catch (e) {
-          throw e;
-        } finally {
-          FS.closeStream(stream.fd);
-        }
-      },llseek:function (stream, offset, whence) {
-        if (!stream.seekable || !stream.stream_ops.llseek) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        return stream.stream_ops.llseek(stream, offset, whence);
-      },readdir:function (stream) {
-        if (!stream.stream_ops.readdir) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
-        }
-        return stream.stream_ops.readdir(stream);
-      },read:function (stream, buffer, offset, length, position) {
-        if (length < 0 || position < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 1) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (FS.isDir(stream.node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!stream.stream_ops.read) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var seeking = true;
-        if (typeof position === 'undefined') {
-          position = stream.position;
-          seeking = false;
-        } else if (!stream.seekable) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
-        if (!seeking) stream.position += bytesRead;
-        return bytesRead;
-      },write:function (stream, buffer, offset, length, position) {
-        if (length < 0 || position < 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (FS.isDir(stream.node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.EISDIR);
-        }
-        if (!stream.stream_ops.write) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        var seeking = true;
-        if (typeof position === 'undefined') {
-          position = stream.position;
-          seeking = false;
-        } else if (!stream.seekable) {
-          throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        if (stream.flags & 8) {
-          // seek to the end before writing in append mode
-          FS.llseek(stream, 0, 2);
-        }
-        var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position);
-        if (!seeking) stream.position += bytesWritten;
-        return bytesWritten;
-      },allocate:function (stream, offset, length) {
-        if (offset < 0 || length <= 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        }
-        if ((stream.flags & 3) === 0) {
-          throw new FS.ErrnoError(ERRNO_CODES.EBADF);
-        }
-        if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
-        }
-        if (!stream.stream_ops.allocate) {
-          throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
-        }
-        stream.stream_ops.allocate(stream, offset, length);
-      },mmap:function (stream, buffer, offset, length, position, prot, flags) {
-        // TODO if PROT is PROT_WRITE, make sure we have write access
-        if ((stream.flags & 3) === 1) {
-          throw new FS.ErrnoError(ERRNO_CODES.EACCES);
-        }
-        if (!stream.stream_ops.mmap) {
-          throw new FS.errnoError(ERRNO_CODES.ENODEV);
-        }
-        return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
-      }};
-  function _send(fd, buf, len, flags) {
-      var info = FS.getStream(fd);
-      if (!info) {
+          return peer;
+        },getPeer:function (sock, addr, port) {
+          return sock.peers[addr + ':' + port];
+        },addPeer:function (sock, peer) {
+          sock.peers[peer.addr + ':' + peer.port] = peer;
+        },removePeer:function (sock, peer) {
+          delete sock.peers[peer.addr + ':' + peer.port];
+        },handlePeerEvents:function (sock, peer) {
+          var first = true;
+          var handleOpen = function () {
+            try {
+              var queued = peer.dgram_send_queue.shift();
+              while (queued) {
+                peer.socket.send(queued);
+                queued = peer.dgram_send_queue.shift();
+              }
+            } catch (e) {
+              // not much we can do here in the way of proper error handling as we've already
+              // lied and said this data was sent. shut it down.
+              peer.socket.close();
+            }
+          };
+          var handleMessage = function(data) {
+            assert(typeof data !== 'string' && data.byteLength !== undefined);  // must receive an ArrayBuffer
+            data = new Uint8Array(data);  // make a typed array view on the array buffer
+            // if this is the port message, override the peer's port with it
+            var wasfirst = first;
+            first = false;
+            if (wasfirst &&
+                data.length === 10 &&
+                data[0] === 255 && data[1] === 255 && data[2] === 255 && data[3] === 255 &&
+                data[4] === 'p'.charCodeAt(0) && data[5] === 'o'.charCodeAt(0) && data[6] === 'r'.charCodeAt(0) && data[7] === 't'.charCodeAt(0)) {
+              // update the peer's port and it's key in the peer map
+              var newport = ((data[8] << 8) | data[9]);
+              SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+              peer.port = newport;
+              SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+              return;
+            }
+            sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
+          };
+          if (ENVIRONMENT_IS_NODE) {
+            peer.socket.on('open', handleOpen);
+            peer.socket.on('message', function(data, flags) {
+              if (!flags.binary) {
+                return;
+              }
+              handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
+            });
+            peer.socket.on('error', function() {
+              // don't throw
+            });
+          } else {
+            peer.socket.onopen = handleOpen;
+            peer.socket.onmessage = function(event) {
+              handleMessage(event.data);
+            };
+          }
+        },poll:function (sock) {
+          if (sock.type === 1 && sock.server) {
+            // listen sockets should only say they're available for reading
+            // if there are pending clients.
+            return sock.pending.length ? (0 /* XXX missing C define POLLRDNORM */ | 1) : 0;
+          }
+          var mask = 0;
+          var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
+            SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport) :
+            null;
+          if (sock.recv_queue.length ||
+              !dest ||  // connection-less sockets are always ready to read
+              (dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
+            mask |= (0 /* XXX missing C define POLLRDNORM */ | 1);
+          }
+          if (!dest ||  // connection-less sockets are always ready to write
+              (dest && dest.socket.readyState === dest.socket.OPEN)) {
+            mask |= 2;
+          }
+          if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {
+            mask |= 16;
+          }
+          return mask;
+        },ioctl:function (sock, request, arg) {
+          switch (request) {
+            case 1:
+              var bytes = 0;
+              if (sock.recv_queue.length) {
+                bytes = sock.recv_queue[0].data.length;
+              }
+              HEAP32[((arg)>>2)]=bytes;
+              return 0;
+            default:
+              return ERRNO_CODES.EINVAL;
+          }
+        },close:function (sock) {
+          // if we've spawned a listen server, close it
+          if (sock.server) {
+            try {
+              sock.server.close();
+            } catch (e) {
+            }
+            sock.server = null;
+          }
+          // close any peer connections
+          var peers = Object.keys(sock.peers);
+          for (var i = 0; i < peers.length; i++) {
+            var peer = sock.peers[peers[i]];
+            try {
+              peer.socket.close();
+            } catch (e) {
+            }
+            SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+          }
+          return 0;
+        },bind:function (sock, addr, port) {
+          if (typeof sock.saddr !== 'undefined' || typeof sock.sport !== 'undefined') {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already bound
+          }
+          sock.saddr = addr;
+          sock.sport = port || _mkport();
+          // in order to emulate dgram sockets, we need to launch a listen server when
+          // binding on a connection-less socket
+          // note: this is only required on the server side
+          if (sock.type === 2) {
+            // close the existing server if it exists
+            if (sock.server) {
+              sock.server.close();
+              sock.server = null;
+            }
+            // swallow error operation not supported error that occurs when binding in the
+            // browser where this isn't supported
+            try {
+              sock.sock_ops.listen(sock, 0);
+            } catch (e) {
+              if (!(e instanceof FS.ErrnoError)) throw e;
+              if (e.errno !== ERRNO_CODES.EOPNOTSUPP) throw e;
+            }
+          }
+        },connect:function (sock, addr, port) {
+          if (sock.server) {
+            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
+          }
+          // TODO autobind
+          // if (!sock.addr && sock.type == 2) {
+          // }
+          // early out if we're already connected / in the middle of connecting
+          if (typeof sock.daddr !== 'undefined' && typeof sock.dport !== 'undefined') {
+            var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+            if (dest) {
+              if (dest.socket.readyState === dest.socket.CONNECTING) {
+                throw new FS.ErrnoError(ERRNO_CODES.EALREADY);
+              } else {
+                throw new FS.ErrnoError(ERRNO_CODES.EISCONN);
+              }
+            }
+          }
+          // add the socket to our peer list and set our
+          // destination address / port to match
+          var peer = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+          sock.daddr = peer.addr;
+          sock.dport = peer.port;
+          // always "fail" in non-blocking mode
+          throw new FS.ErrnoError(ERRNO_CODES.EINPROGRESS);
+        },listen:function (sock, backlog) {
+          if (!ENVIRONMENT_IS_NODE) {
+            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+          }
+          if (sock.server) {
+             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already listening
+          }
+          var WebSocketServer = require('ws').Server;
+          var host = sock.saddr;
+          sock.server = new WebSocketServer({
+            host: host,
+            port: sock.sport
+            // TODO support backlog
+          });
+          sock.server.on('connection', function(ws) {
+            if (sock.type === 1) {
+              var newsock = SOCKFS.createSocket(sock.family, sock.type, sock.protocol);
+              // create a peer on the new socket
+              var peer = SOCKFS.websocket_sock_ops.createPeer(newsock, ws);
+              newsock.daddr = peer.addr;
+              newsock.dport = peer.port;
+              // push to queue for accept to pick up
+              sock.pending.push(newsock);
+            } else {
+              // create a peer on the listen socket so calling sendto
+              // with the listen socket and an address will resolve
+              // to the correct client
+              SOCKFS.websocket_sock_ops.createPeer(sock, ws);
+            }
+          });
+          sock.server.on('closed', function() {
+            sock.server = null;
+          });
+          sock.server.on('error', function() {
+            // don't throw
+          });
+        },accept:function (listensock) {
+          if (!listensock.server) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          var newsock = listensock.pending.shift();
+          newsock.stream.flags = listensock.stream.flags;
+          return newsock;
+        },getname:function (sock, peer) {
+          var addr, port;
+          if (peer) {
+            if (sock.daddr === undefined || sock.dport === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            }
+            addr = sock.daddr;
+            port = sock.dport;
+          } else {
+            // TODO saddr and sport will be set for bind()'d UDP sockets, but what
+            // should we be returning for TCP sockets that've been connect()'d?
+            addr = sock.saddr || 0;
+            port = sock.sport || 0;
+          }
+          return { addr: addr, port: port };
+        },sendmsg:function (sock, buffer, offset, length, addr, port) {
+          if (sock.type === 2) {
+            // connection-less sockets will honor the message address,
+            // and otherwise fall back to the bound destination address
+            if (addr === undefined || port === undefined) {
+              addr = sock.daddr;
+              port = sock.dport;
+            }
+            // if there was no address to fall back to, error out
+            if (addr === undefined || port === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.EDESTADDRREQ);
+            }
+          } else {
+            // connection-based sockets will only use the bound
+            addr = sock.daddr;
+            port = sock.dport;
+          }
+          // find the peer for the destination address
+          var dest = SOCKFS.websocket_sock_ops.getPeer(sock, addr, port);
+          // early out if not connected with a connection-based socket
+          if (sock.type === 1) {
+            if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            } else if (dest.socket.readyState === dest.socket.CONNECTING) {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+          // create a copy of the incoming data to send, as the WebSocket API
+          // doesn't work entirely with an ArrayBufferView, it'll just send
+          // the entire underlying buffer
+          var data;
+          if (buffer instanceof Array || buffer instanceof ArrayBuffer) {
+            data = buffer.slice(offset, offset + length);
+          } else {  // ArrayBufferView
+            data = buffer.buffer.slice(buffer.byteOffset + offset, buffer.byteOffset + offset + length);
+          }
+          // if we're emulating a connection-less dgram socket and don't have
+          // a cached connection, queue the buffer to send upon connect and
+          // lie, saying the data was sent now.
+          if (sock.type === 2) {
+            if (!dest || dest.socket.readyState !== dest.socket.OPEN) {
+              // if we're not connected, open a new connection
+              if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                dest = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+              }
+              dest.dgram_send_queue.push(data);
+              return length;
+            }
+          }
+          try {
+            // send the actual data
+            dest.socket.send(data);
+            return length;
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+        },recvmsg:function (sock, length) {
+          // http://pubs.opengroup.org/onlinepubs/7908799/xns/recvmsg.html
+          if (sock.type === 1 && sock.server) {
+            // tcp servers should not be recv()'ing on the listen socket
+            throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+          }
+          var queued = sock.recv_queue.shift();
+          if (!queued) {
+            if (sock.type === 1) {
+              var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+              if (!dest) {
+                // if we have a destination address but are not connected, error out
+                throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+              }
+              else if (dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                // return null if the socket has closed
+                return null;
+              }
+              else {
+                // else, our socket is in a valid state but truly has nothing available
+                throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+              }
+            } else {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+          // queued.data will be an ArrayBuffer if it's unadulterated, but if it's
+          // requeued TCP data it'll be an ArrayBufferView
+          var queuedLength = queued.data.byteLength || queued.data.length;
+          var queuedOffset = queued.data.byteOffset || 0;
+          var queuedBuffer = queued.data.buffer || queued.data;
+          var bytesRead = Math.min(length, queuedLength);
+          var res = {
+            buffer: new Uint8Array(queuedBuffer, queuedOffset, bytesRead),
+            addr: queued.addr,
+            port: queued.port
+          };
+          // push back any unread data for TCP connections
+          if (sock.type === 1 && bytesRead < queuedLength) {
+            var bytesRemaining = queuedLength - bytesRead;
+            queued.data = new Uint8Array(queuedBuffer, queuedOffset + bytesRead, bytesRemaining);
+            sock.recv_queue.unshift(queued);
+          }
+          return res;
+        }}};function _send(fd, buf, len, flags) {
+      var sock = SOCKFS.getSocket(fd);
+      if (!sock) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
       }
-      if (info.socket.readyState === WebSocket.CLOSING || info.socket.readyState === WebSocket.CLOSED) {
-        ___setErrNo(ERRNO_CODES.ENOTCONN);
-        return -1;
-      } else if (info.socket.readyState === WebSocket.CONNECTING) {
-        ___setErrNo(ERRNO_CODES.EAGAIN);
-        return -1;
-      }
-      info.sender(HEAPU8.subarray(buf, buf+len));
-      return len;
+      // TODO honor flags
+      return _write(fd, buf, len);
     }
   function _pwrite(fildes, buf, nbyte, offset) {
       // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
@@ -3062,9 +3705,6 @@ function copyTempDouble(ptr) {
       if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      }
-      if (stream && ('socket' in stream)) {
-        return _send(fildes, buf, nbyte, 0);
       }
       try {
         var slab = HEAP8;
@@ -4550,8 +5190,6 @@ function copyTempDouble(ptr) {
   var ___dirent_struct_layout={__size__:1040,d_ino:0,d_name:4,d_off:1028,d_reclen:1032,d_type:1036};function _open(path, oflag, varargs) {
       // int open(const char *path, int oflag, ...);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/open.html
-      // NOTE: This implementation tries to mimic glibc rather than strictly
-      // following the POSIX standard.
       var mode = HEAP32[((varargs)>>2)];
       path = Pointer_stringify(path);
       try {
@@ -4643,31 +5281,13 @@ function copyTempDouble(ptr) {
       if (streamObj) streamObj.error = false;
     }
   function _recv(fd, buf, len, flags) {
-      var info = FS.getStream(fd);
-      if (!info) {
+      var sock = SOCKFS.getSocket(fd);
+      if (!sock) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
       }
-      if (!info.hasData()) {
-        if (info.socket.readyState === WebSocket.CLOSING || info.socket.readyState === WebSocket.CLOSED) {
-          // socket has closed
-          return 0;
-        } else {
-          // else, our socket is in a valid state but truly has nothing available
-          ___setErrNo(ERRNO_CODES.EAGAIN);
-          return -1;
-        }
-      }
-      var buffer = info.inQueue.shift();
-      if (len < buffer.length) {
-        if (info.stream) {
-          // This is tcp (reliable), so if not all was read, keep it
-          info.inQueue.unshift(buffer.subarray(len));
-        }
-        buffer = buffer.subarray(0, len);
-      }
-      HEAPU8.set(buffer, buf);
-      return buffer.length;
+      // TODO honor flags
+      return _read(fd, buf, len);
     }
   function _pread(fildes, buf, nbyte, offset) {
       // ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
@@ -4691,9 +5311,6 @@ function copyTempDouble(ptr) {
       if (!stream) {
         ___setErrNo(ERRNO_CODES.EBADF);
         return -1;
-      }
-      if (stream && ('socket' in stream)) {
-        return _recv(fildes, buf, nbyte, 0);
       }
       try {
         var slab = HEAP8;
@@ -4737,7 +5354,7 @@ function copyTempDouble(ptr) {
         FS.close(stream);
         return 0;
       } catch (e) {
-        FS.handleFSError(e);;
+        FS.handleFSError(e);
         return -1;
       }
     }
@@ -4866,15 +5483,21 @@ function copyTempDouble(ptr) {
       }
     }
   function _emscripten_get_now() {
-      if (ENVIRONMENT_IS_NODE) {
-          var t = process['hrtime']();
-          return t[0] * 1e3 + t[1] / 1e6;
+      if (!_emscripten_get_now.actual) {
+        if (ENVIRONMENT_IS_NODE) {
+            _emscripten_get_now.actual = function() {
+              var t = process['hrtime']();
+              return t[0] * 1e3 + t[1] / 1e6;
+            }
+        } else if (typeof dateNow !== 'undefined') {
+          _emscripten_get_now.actual = dateNow;
+        } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
+          _emscripten_get_now.actual = function() { return window['performance']['now'](); };
+        } else {
+          _emscripten_get_now.actual = Date.now;
+        }
       }
-      else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
-        return window['performance']['now']();
-      } else {
-        return Date.now();
-      }
+      return _emscripten_get_now.actual();
     }
   function __isFloat(text) {
       return !!(/^[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?$/.exec(text));
@@ -5036,7 +5659,7 @@ function copyTempDouble(ptr) {
               if (half) {
                 HEAP16[((argPtr)>>1)]=parseInt(text, 10);
               } else if (longLong) {
-                (tempI64 = [parseInt(text, 10)>>>0,Math.min(Math.floor((parseInt(text, 10))/4294967296), 4294967295)>>>0],HEAP32[((argPtr)>>2)]=tempI64[0],HEAP32[(((argPtr)+(4))>>2)]=tempI64[1]);
+                (tempI64 = [parseInt(text, 10)>>>0,(tempDouble=parseInt(text, 10),Math.abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math.min(Math.floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((argPtr)>>2)]=tempI64[0],HEAP32[(((argPtr)+(4))>>2)]=tempI64[1]);
               } else {
                 HEAP32[((argPtr)>>2)]=parseInt(text, 10);
               }
@@ -5095,7 +5718,6 @@ function copyTempDouble(ptr) {
       if (streamObj.eof || streamObj.error) return -1;
       var ret = _fread(_fgetc.ret, 1, 1, stream);
       if (ret == 0) {
-        streamObj.eof = true;
         return -1;
       } else if (ret == -1) {
         streamObj.error = true;
@@ -5141,6 +5763,16 @@ function copyTempDouble(ptr) {
   function _glClear(x0) { Module.ctx.clear(x0) }
   function _glutSwapBuffers() {}
   function _glViewport(x0, x1, x2, x3) { Module.ctx.viewport(x0, x1, x2, x3) }
+  function _glLoadIdentity(){ throw 'Legacy GL function (glLoadIdentity) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
+;
+  function _glutInitWindowSize(width, height) {
+      Browser.setCanvasSize( GLUT.initWindowWidth = width,
+                             GLUT.initWindowHeight = height );
+    }
+  function _glutInitWindowPosition(x, y) {
+      // Ignore for now
+    }
+  function _glutInitDisplayMode(mode) {}
   var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
           Browser.mainLoop.shouldPause = true;
         },resume:function () {
@@ -5464,8 +6096,21 @@ function copyTempDouble(ptr) {
           // Otherwise, calculate the movement based on the changes
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
-          var x = event.pageX - (window.scrollX + rect.left);
-          var y = event.pageY - (window.scrollY + rect.top);
+          var x, y;
+          if (event.type == 'touchstart' ||
+              event.type == 'touchend' ||
+              event.type == 'touchmove') {
+            var t = event.touches.item(0);
+            if (t) {
+              x = t.pageX - (window.scrollX + rect.left);
+              y = t.pageY - (window.scrollY + rect.top);
+            } else {
+              return;
+            }
+          } else {
+            x = event.pageX - (window.scrollX + rect.left);
+            y = event.pageY - (window.scrollY + rect.top);
+          }
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
           // of backbuffer units.
@@ -5538,5014 +6183,21 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};
-  function _glPixelStorei(pname, param) {
-      if (pname == 0x0D05 /* GL_PACK_ALIGNMENT */) {
-        GL.packAlignment = param;
-      } else if (pname == 0x0cf5 /* GL_UNPACK_ALIGNMENT */) {
-        GL.unpackAlignment = param;
-      }
-      Module.ctx.pixelStorei(pname, param);
-    }
-  function _glGetString(name_) {
-      switch(name_) {
-        case 0x1F00 /* GL_VENDOR */:
-        case 0x1F01 /* GL_RENDERER */:
-        case 0x1F02 /* GL_VERSION */:
-          return allocate(intArrayFromString(Module.ctx.getParameter(name_)), 'i8', ALLOC_NORMAL);
-        case 0x1F03 /* GL_EXTENSIONS */:
-          return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ')), 'i8', ALLOC_NORMAL);
-        case 0x8B8C /* GL_SHADING_LANGUAGE_VERSION */:
-          return allocate(intArrayFromString('OpenGL ES GLSL 1.00 (WebGL)'), 'i8', ALLOC_NORMAL);
-        default:
-          throw 'Failure: Invalid glGetString value: ' + name_;
-      }
-    }
-  function _glGetIntegerv(name_, p) {
-      switch(name_) { // Handle a few trivial GLES values
-        case 0x8DFA: // GL_SHADER_COMPILER
-          HEAP32[((p)>>2)]=1;
-          return;
-        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
-          HEAP32[((p)>>2)]=0;
-          return;
-        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-          // so implement it ourselves to allow C++ GLES2 code get the length.
-          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
-          HEAP32[((p)>>2)]=formats.length;
-          return;
-      }
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAP32[((p)>>2)]=result;
-          break;
-        case "boolean":
-          HEAP8[(p)]=result ? 1 : 0;
-          break;
-        case "string":
-          throw 'Native code calling glGetIntegerv(' + name_ + ') on a name which returns a string!';
-        case "object":
-          if (result === null) {
-            HEAP32[((p)>>2)]=0;
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAP32[(((p)+(i*4))>>2)]=result[i];
-            }
-          } else if (result instanceof WebGLBuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLProgram) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLFramebuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLRenderbuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLTexture) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else {
-            throw 'Unknown object returned from WebGL getParameter';
-          }
-          break;
-        case "undefined":
-          throw 'Native code calling glGetIntegerv(' + name_ + ') and it returns undefined';
-        default:
-          throw 'Why did we hit the default case?';
-      }
-    }
-  function _glGetFloatv(name_, p) {
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAPF32[((p)>>2)]=result;
-          break;
-        case "boolean":
-          HEAPF32[((p)>>2)]=result ? 1.0 : 0.0;
-          break;
-        case "string":
-            HEAPF32[((p)>>2)]=0;
-        case "object":
-          if (result === null) {
-            throw 'Native code calling glGetFloatv(' + name_ + ') and it returns null';
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAPF32[(((p)+(i*4))>>2)]=result[i];
-            }
-          } else if (result instanceof WebGLBuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLProgram) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLFramebuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLRenderbuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLTexture) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else {
-            throw 'Unknown object returned from WebGL getParameter';
-          }
-          break;
-        case "undefined":
-          throw 'Native code calling glGetFloatv(' + name_ + ') and it returns undefined';
-        default:
-          throw 'Why did we hit the default case?';
-      }
-    }
-  function _glGetBooleanv(name_, p) {
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAP8[(p)]=result != 0;
-          break;
-        case "boolean":
-          HEAP8[(p)]=result != 0;
-          break;
-        case "string":
-          throw 'Native code calling glGetBooleanv(' + name_ + ') on a name which returns a string!';
-        case "object":
-          if (result === null) {
-            HEAP8[(p)]=0;
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAP8[(((p)+(i))|0)]=result[i] != 0;
-            }
-          } else if (result instanceof WebGLBuffer ||
-                     result instanceof WebGLProgram ||
-                     result instanceof WebGLFramebuffer ||
-                     result instanceof WebGLRenderbuffer ||
-                     result instanceof WebGLTexture) {
-            HEAP8[(p)]=1; // non-zero ID is always 1!
-          } else {
-            throw 'Unknown object returned from WebGL getParameter';
-          }
-          break;
-        case "undefined":
-            throw 'Unknown object returned from WebGL getParameter';
-        default:
-          throw 'Why did we hit the default case?';
-      }
-    }
-  function _glGenTextures(n, textures) {
-      for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GL.textures);
-        var texture = Module.ctx.createTexture();
-        texture.name = id;
-        GL.textures[id] = texture;
-        HEAP32[(((textures)+(i*4))>>2)]=id;
-      }
-    }
-  function _glDeleteTextures(n, textures) {
-      for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((textures)+(i*4))>>2)];
-        var texture = GL.textures[id];
-        Module.ctx.deleteTexture(texture);
-        texture.name = 0;
-        GL.textures[id] = null;
-      }
-    }
-  function _glCompressedTexImage2D(target, level, internalFormat, width, height, border, imageSize, data) {
-      assert(GL.compressionExt);
-      if (data) {
-        data = HEAPU8.subarray((data),(data+imageSize));
-      } else {
-        data = null;
-      }
-      Module.ctx['compressedTexImage2D'](target, level, internalFormat, width, height, border, data);
-    }
-  function _glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data) {
-      assert(GL.compressionExt);
-      if (data) {
-        data = HEAPU8.subarray((data),(data+imageSize));
-      } else {
-        data = null;
-      }
-      Module.ctx['compressedTexSubImage2D'](target, level, xoffset, yoffset, width, height, data);
-    }
-  function _glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels) {
-      if (pixels) {
-        var data = GL.getTexPixelData(type, format, width, height, pixels, internalFormat);
-        pixels = data.pixels;
-        internalFormat = data.internalFormat;
-      } else {
-        pixels = null;
-      }
-      Module.ctx.texImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
-    }
-  function _glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels) {
-      if (pixels) {
-        var data = GL.getTexPixelData(type, format, width, height, pixels, -1);
-        pixels = data.pixels;
-      } else {
-        pixels = null;
-      }
-      Module.ctx.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-    }
-  function _glReadPixels(x, y, width, height, format, type, pixels) {
-      assert(type == 0x1401 /* GL_UNSIGNED_BYTE */);
-      var sizePerPixel;
-      switch (format) {
-        case 0x1907 /* GL_RGB */:
-          sizePerPixel = 3;
-          break;
-        case 0x1908 /* GL_RGBA */:
-          sizePerPixel = 4;
-          break;
-        default: throw 'unsupported glReadPixels format';
-      }
-      var totalSize = width*height*sizePerPixel;
-      Module.ctx.readPixels(x, y, width, height, format, type, HEAPU8.subarray(pixels, pixels + totalSize));
-    }
-  function _glBindTexture(target, texture) {
-      Module.ctx.bindTexture(target, texture ? GL.textures[texture] : null);
-    }
-  function _glGetTexParameterfv(target, pname, params) {
-      HEAPF32[((params)>>2)]=Module.getTexParameter(target, pname);
-    }
-  function _glGetTexParameteriv(target, pname, params) {
-      HEAP32[((params)>>2)]=Module.getTexParameter(target, pname);
-    }
-  function _glTexParameterfv(target, pname, params) {
-      var param = HEAPF32[((params)>>2)];
-      Module.ctx.texParameterf(target, pname, param);
-    }
-  function _glTexParameteriv(target, pname, params) {
-      var param = HEAP32[((params)>>2)];
-      Module.ctx.texParameteri(target, pname, param);
-    }
-  function _glIsTexture(texture) {
-      var texture = GL.textures[texture];
-      if (!texture) return 0;
-      return Module.ctx.isTexture(texture);
-    }
-  function _glGenBuffers(n, buffers) {
-      for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GL.buffers);
-        var buffer = Module.ctx.createBuffer();
-        buffer.name = id;
-        GL.buffers[id] = buffer;
-        HEAP32[(((buffers)+(i*4))>>2)]=id;
-      }
-    }
-  function _glDeleteBuffers(n, buffers) {
-      for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((buffers)+(i*4))>>2)];
-        var buffer = GL.buffers[id];
-        // From spec: "glDeleteBuffers silently ignores 0's and names that do not
-        // correspond to existing buffer objects."
-        if (!buffer) continue;
-        Module.ctx.deleteBuffer(buffer);
-        buffer.name = 0;
-        GL.buffers[id] = null;
-        if (id == GL.currArrayBuffer) GL.currArrayBuffer = 0;
-        if (id == GL.currElementArrayBuffer) GL.currElementArrayBuffer = 0;
-      }
-    }
-  function _glGetBufferParameteriv(target, value, data) {
-      HEAP32[((data)>>2)]=Module.ctx.getBufferParameter(target, value);
-    }
-  function _glBufferData(target, size, data, usage) {
-      Module.ctx.bufferData(target, HEAPU8.subarray(data, data+size), usage);
-    }
-  function _glBufferSubData(target, offset, size, data) {
-      Module.ctx.bufferSubData(target, offset, HEAPU8.subarray(data, data+size));
-    }
-  function _glIsBuffer(buffer) {
-      var b = GL.buffers[buffer];
-      if (!b) return 0;
-      return Module.ctx.isBuffer(b);
-    }
-  function _glGenRenderbuffers(n, renderbuffers) {
-      for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GL.renderbuffers);
-        var renderbuffer = Module.ctx.createRenderbuffer();
-        renderbuffer.name = id;
-        GL.renderbuffers[id] = renderbuffer;
-        HEAP32[(((renderbuffers)+(i*4))>>2)]=id;
-      }
-    }
-  function _glDeleteRenderbuffers(n, renderbuffers) {
-      for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((renderbuffers)+(i*4))>>2)];
-        var renderbuffer = GL.renderbuffers[id];
-        Module.ctx.deleteRenderbuffer(renderbuffer);
-        renderbuffer.name = 0;
-        GL.renderbuffers[id] = null;
-      }
-    }
-  function _glBindRenderbuffer(target, renderbuffer) {
-      Module.ctx.bindRenderbuffer(target, renderbuffer ? GL.renderbuffers[renderbuffer] : null);
-    }
-  function _glGetRenderbufferParameteriv(target, pname, params) {
-      HEAP32[((params)>>2)]=Module.ctx.getRenderbufferParameter(target, pname);
-    }
-  function _glIsRenderbuffer(renderbuffer) {
-      var rb = GL.renderbuffers[renderbuffer];
-      if (!rb) return 0;
-      return Module.ctx.isRenderbuffer(rb);
-    }
-  function _glGetUniformfv(program, location, params) {
-      var data = Module.ctx.getUniform(GL.programs[program], GL.uniforms[location]);
-      if (typeof data == 'number') {
-        HEAPF32[((params)>>2)]=data;
-      } else {
-        for (var i = 0; i < data.length; i++) {
-          HEAPF32[(((params)+(i))>>2)]=data[i];
-        }
-      }
-    }
-  function _glGetUniformiv(program, location, params) {
-      var data = Module.ctx.getUniform(GL.programs[program], GL.uniforms[location]);
-      if (typeof data == 'number' || typeof data == 'boolean') {
-        HEAP32[((params)>>2)]=data;
-      } else {
-        for (var i = 0; i < data.length; i++) {
-          HEAP32[(((params)+(i))>>2)]=data[i];
-        }
-      }
-    }
-  function _glGetUniformLocation(program, name) {
-      name = Pointer_stringify(name);
-      var ptable = GL.uniformTable[program];
-      if (!ptable) ptable = GL.uniformTable[program] = {};
-      var id = ptable[name];
-      if (id) return id;
-      var loc = Module.ctx.getUniformLocation(GL.programs[program], name);
-      if (!loc) return -1;
-      id = GL.getNewId(GL.uniforms);
-      GL.uniforms[id] = loc;
-      ptable[name] = id;
-      return id;
-    }
-  function _glGetVertexAttribfv(index, pname, params) {
-      var data = Module.ctx.getVertexAttrib(index, pname);
-      if (typeof data == 'number') {
-        HEAPF32[((params)>>2)]=data;
-      } else {
-        for (var i = 0; i < data.length; i++) {
-          HEAPF32[(((params)+(i))>>2)]=data[i];
-        }
-      }
-    }
-  function _glGetVertexAttribiv(index, pname, params) {
-      var data = Module.ctx.getVertexAttrib(index, pname);
-      if (typeof data == 'number' || typeof data == 'boolean') {
-        HEAP32[((params)>>2)]=data;
-      } else {
-        for (var i = 0; i < data.length; i++) {
-          HEAP32[(((params)+(i))>>2)]=data[i];
-        }
-      }
-    }
-  function _glGetVertexAttribPointerv(index, pname, pointer) {
-      HEAP32[((pointer)>>2)]=Module.ctx.getVertexAttribOffset(index, pname);
-    }
-  function _glGetActiveUniform(program, index, bufSize, length, size, type, name) {
-      program = GL.programs[program];
-      var info = Module.ctx.getActiveUniform(program, index);
-      var infoname = info.name.slice(0, Math.max(0, bufSize - 1));
-      writeStringToMemory(infoname, name);
-      if (length) {
-        HEAP32[((length)>>2)]=infoname.length;
-      }
-      if (size) {
-        HEAP32[((size)>>2)]=info.size;
-      }
-      if (type) {
-        HEAP32[((type)>>2)]=info.type;
-      }
-    }
-  function _glUniform1f(location, v0) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform1f(location, v0);
-    }
-  function _glUniform2f(location, v0, v1) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform2f(location, v0, v1);
-    }
-  function _glUniform3f(location, v0, v1, v2) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform3f(location, v0, v1, v2);
-    }
-  function _glUniform4f(location, v0, v1, v2, v3) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform4f(location, v0, v1, v2, v3);
-    }
-  function _glUniform1i(location, v0) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform1i(location, v0);
-    }
-  function _glUniform2i(location, v0, v1) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform2i(location, v0, v1);
-    }
-  function _glUniform3i(location, v0, v1, v2) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform3i(location, v0, v1, v2);
-    }
-  function _glUniform4i(location, v0, v1, v2, v3) {
-      location = GL.uniforms[location];
-      Module.ctx.uniform4i(location, v0, v1, v2, v3);
-    }
-  function _glUniform1iv(location, count, value) {
-      location = GL.uniforms[location];
-      value = HEAP32.subarray((value)>>2,(value+count*4)>>2);
-      Module.ctx.uniform1iv(location, value);
-    }
-  function _glUniform2iv(location, count, value) {
-      location = GL.uniforms[location];
-      count *= 2;
-      value = HEAP32.subarray((value)>>2,(value+count*4)>>2);
-      Module.ctx.uniform2iv(location, value);
-    }
-  function _glUniform3iv(location, count, value) {
-      location = GL.uniforms[location];
-      count *= 3;
-      value = HEAP32.subarray((value)>>2,(value+count*4)>>2);
-      Module.ctx.uniform3iv(location, value);
-    }
-  function _glUniform4iv(location, count, value) {
-      location = GL.uniforms[location];
-      count *= 4;
-      value = HEAP32.subarray((value)>>2,(value+count*4)>>2);
-      Module.ctx.uniform4iv(location, value);
-    }
-  function _glUniform1fv(location, count, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform
-        view = GL.miniTempBufferViews[0];
-        view[0] = HEAPF32[((value)>>2)];
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*4)>>2);
-      }
-      Module.ctx.uniform1fv(location, view);
-    }
-  function _glUniform2fv(location, count, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform
-        view = GL.miniTempBufferViews[1];
-        view[0] = HEAPF32[((value)>>2)];
-        view[1] = HEAPF32[(((value)+(4))>>2)];
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*8)>>2);
-      }
-      Module.ctx.uniform2fv(location, view);
-    }
-  function _glUniform3fv(location, count, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform
-        view = GL.miniTempBufferViews[2];
-        view[0] = HEAPF32[((value)>>2)];
-        view[1] = HEAPF32[(((value)+(4))>>2)];
-        view[2] = HEAPF32[(((value)+(8))>>2)];
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*12)>>2);
-      }
-      Module.ctx.uniform3fv(location, view);
-    }
-  function _glUniform4fv(location, count, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform
-        view = GL.miniTempBufferViews[3];
-        view[0] = HEAPF32[((value)>>2)];
-        view[1] = HEAPF32[(((value)+(4))>>2)];
-        view[2] = HEAPF32[(((value)+(8))>>2)];
-        view[3] = HEAPF32[(((value)+(12))>>2)];
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*16)>>2);
-      }
-      Module.ctx.uniform4fv(location, view);
-    }
-  function _glUniformMatrix2fv(location, count, transpose, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform matrix
-        view = GL.miniTempBufferViews[3];
-        for (var i = 0; i < 4; i++) {
-          view[i] = HEAPF32[(((value)+(i*4))>>2)];
-        }
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*16)>>2);
-      }
-      Module.ctx.uniformMatrix2fv(location, transpose, view);
-    }
-  function _glUniformMatrix3fv(location, count, transpose, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform matrix
-        view = GL.miniTempBufferViews[8];
-        for (var i = 0; i < 9; i++) {
-          view[i] = HEAPF32[(((value)+(i*4))>>2)];
-        }
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*36)>>2);
-      }
-      Module.ctx.uniformMatrix3fv(location, transpose, view);
-    }
-  function _glUniformMatrix4fv(location, count, transpose, value) {
-      location = GL.uniforms[location];
-      var view;
-      if (count == 1) {
-        // avoid allocation for the common case of uploading one uniform matrix
-        view = GL.miniTempBufferViews[15];
-        for (var i = 0; i < 16; i++) {
-          view[i] = HEAPF32[(((value)+(i*4))>>2)];
-        }
-      } else {
-        view = HEAPF32.subarray((value)>>2,(value+count*64)>>2);
-      }
-      Module.ctx.uniformMatrix4fv(location, transpose, view);
-    }
-  function _glBindBuffer(target, buffer) {
-      var bufferObj = buffer ? GL.buffers[buffer] : null;
-      if (target == Module.ctx.ARRAY_BUFFER) {
-        GL.currArrayBuffer = buffer;
-      } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
-        GL.currElementArrayBuffer = buffer;
-      }
-      Module.ctx.bindBuffer(target, bufferObj);
-    }
-  function _glVertexAttrib1fv(index, v) {
-      v = HEAPF32.subarray((v)>>2,(v+4)>>2);
-      Module.ctx.vertexAttrib1fv(index, v);
-    }
-  function _glVertexAttrib2fv(index, v) {
-      v = HEAPF32.subarray((v)>>2,(v+8)>>2);
-      Module.ctx.vertexAttrib2fv(index, v);
-    }
-  function _glVertexAttrib3fv(index, v) {
-      v = HEAPF32.subarray((v)>>2,(v+12)>>2);
-      Module.ctx.vertexAttrib3fv(index, v);
-    }
-  function _glVertexAttrib4fv(index, v) {
-      v = HEAPF32.subarray((v)>>2,(v+16)>>2);
-      Module.ctx.vertexAttrib4fv(index, v);
-    }
-  function _glGetAttribLocation(program, name) {
-      program = GL.programs[program];
-      name = Pointer_stringify(name);
-      return Module.ctx.getAttribLocation(program, name);
-    }
-  function _glGetActiveAttrib(program, index, bufSize, length, size, type, name) {
-      program = GL.programs[program];
-      var info = Module.ctx.getActiveAttrib(program, index);
-      var infoname = info.name.slice(0, Math.max(0, bufSize - 1));
-      writeStringToMemory(infoname, name);
-      if (length) {
-        HEAP32[((length)>>2)]=infoname.length;
-      }
-      if (size) {
-        HEAP32[((size)>>2)]=info.size;
-      }
-      if (type) {
-        HEAP32[((type)>>2)]=info.type;
-      }
-    }
-  function _glCreateShader(shaderType) {
-      var id = GL.getNewId(GL.shaders);
-      GL.shaders[id] = Module.ctx.createShader(shaderType);
-      return id;
-    }
-  function _glDeleteShader(shader) {
-      Module.ctx.deleteShader(GL.shaders[shader]);
-      GL.shaders[shader] = null;
-    }
-  function _glGetAttachedShaders(program, maxCount, count, shaders) {
-      var result = Module.ctx.getAttachedShaders(GL.programs[program]);
-      var len = result.length;
-      if (len > maxCount) {
-        len = maxCount;
-      }
-      HEAP32[((count)>>2)]=len;
-      for (var i = 0; i < len; ++i) {
-        var id = GL.shaders.indexOf(result[i]);
-        assert(id !== -1, 'shader not bound to local id');
-        HEAP32[(((shaders)+(i*4))>>2)]=id;
-      }
-    }
-  function _glShaderSource(shader, count, string, length) {
-      var source = GL.getSource(shader, count, string, length);
-      Module.ctx.shaderSource(GL.shaders[shader], source);
-    }
-  function _glGetShaderSource(shader, bufSize, length, source) {
-      var result = Module.ctx.getShaderSource(GL.shaders[shader]);
-      result = result.slice(0, Math.max(0, bufSize - 1));
-      writeStringToMemory(result, source);
-      if (length) {
-        HEAP32[((length)>>2)]=result.length;
-      }
-    }
-  function _glCompileShader(shader) {
-      Module.ctx.compileShader(GL.shaders[shader]);
-    }
-  function _glGetShaderInfoLog(shader, maxLength, length, infoLog) {
-      var log = Module.ctx.getShaderInfoLog(GL.shaders[shader]);
-      // Work around a bug in Chromium which causes getShaderInfoLog to return null
-      if (!log) {
-        log = "";
-      }
-      log = log.substr(0, maxLength - 1);
-      writeStringToMemory(log, infoLog);
-      if (length) {
-        HEAP32[((length)>>2)]=log.length
-      }
-    }
-  function _glGetShaderiv(shader, pname, p) {
-      if (pname == 0x8B84) { // GL_INFO_LOG_LENGTH
-        HEAP32[((p)>>2)]=Module.ctx.getShaderInfoLog(GL.shaders[shader]).length + 1;
-      } else {
-        HEAP32[((p)>>2)]=Module.ctx.getShaderParameter(GL.shaders[shader], pname);
-      }
-    }
-  function _glGetProgramiv(program, pname, p) {
-      if (pname == 0x8B84) { // GL_INFO_LOG_LENGTH
-        HEAP32[((p)>>2)]=Module.ctx.getProgramInfoLog(GL.programs[program]).length + 1;
-      } else {
-        HEAP32[((p)>>2)]=Module.ctx.getProgramParameter(GL.programs[program], pname);
-      }
-    }
-  function _glIsShader(shader) {
-      var s = GL.shaders[shader];
-      if (!s) return 0;
-      return Module.ctx.isShader(s);
-    }
-  function _glCreateProgram() {
-      var id = GL.getNewId(GL.programs);
-      var program = Module.ctx.createProgram();
-      program.name = id;
-      GL.programs[id] = program;
-      return id;
-    }
-  function _glDeleteProgram(program) {
-      var program = GL.programs[program];
-      Module.ctx.deleteProgram(program);
-      program.name = 0;
-      GL.programs[program] = null;
-      GL.uniformTable[program] = null;
-    }
-  function _glAttachShader(program, shader) {
-      Module.ctx.attachShader(GL.programs[program],
-                              GL.shaders[shader]);
-    }
-  function _glDetachShader(program, shader) {
-      Module.ctx.detachShader(GL.programs[program],
-                              GL.shaders[shader]);
-    }
-  function _glGetShaderPrecisionFormat() { throw 'glGetShaderPrecisionFormat: TODO' }
-  function _glLinkProgram(program) {
-      Module.ctx.linkProgram(GL.programs[program]);
-      GL.uniformTable[program] = {}; // uniforms no longer keep the same names after linking
-    }
-  function _glGetProgramInfoLog(program, maxLength, length, infoLog) {
-      var log = Module.ctx.getProgramInfoLog(GL.programs[program]);
-      // Work around a bug in Chromium which causes getProgramInfoLog to return null
-      if (!log) {
-        log = "";
-      }
-      log = log.substr(0, maxLength - 1);
-      writeStringToMemory(log, infoLog);
-      if (length) {
-        HEAP32[((length)>>2)]=log.length
-      }
-    }
-  function _glUseProgram(program) {
-      Module.ctx.useProgram(program ? GL.programs[program] : null);
-    }
-  function _glValidateProgram(program) {
-      Module.ctx.validateProgram(GL.programs[program]);
-    }
-  function _glIsProgram(program) {
-      var program = GL.programs[program];
-      if (!program) return 0;
-      return Module.ctx.isProgram(program);
-    }
-  function _glBindAttribLocation(program, index, name) {
-      name = Pointer_stringify(name);
-      Module.ctx.bindAttribLocation(GL.programs[program], index, name);
-    }
-  function _glBindFramebuffer(target, framebuffer) {
-      Module.ctx.bindFramebuffer(target, framebuffer ? GL.framebuffers[framebuffer] : null);
-    }
-  function _glGenFramebuffers(n, ids) {
-      for (var i = 0; i < n; ++i) {
-        var id = GL.getNewId(GL.framebuffers);
-        var framebuffer = Module.ctx.createFramebuffer();
-        framebuffer.name = id;
-        GL.framebuffers[id] = framebuffer;
-        HEAP32[(((ids)+(i*4))>>2)]=id;
-      }
-    }
-  function _glDeleteFramebuffers(n, framebuffers) {
-      for (var i = 0; i < n; ++i) {
-        var id = HEAP32[(((framebuffers)+(i*4))>>2)];
-        var framebuffer = GL.framebuffers[id];
-        Module.ctx.deleteFramebuffer(framebuffer);
-        framebuffer.name = 0;
-        GL.framebuffers[id] = null;
-      }
-    }
-  function _glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer) {
-      Module.ctx.framebufferRenderbuffer(target, attachment, renderbuffertarget,
-                                         GL.renderbuffers[renderbuffer]);
-    }
-  function _glFramebufferTexture2D(target, attachment, textarget, texture, level) {
-      Module.ctx.framebufferTexture2D(target, attachment, textarget,
-                                      GL.textures[texture], level);
-    }
-  function _glGetFramebufferAttachmentParameteriv(target, attachment, pname, params) {
-      var result = Module.ctx.getFramebufferAttachmentParameter(target, attachment, pname);
-      HEAP32[((params)>>2)]=params;
-    }
-  function _glIsFramebuffer(framebuffer) {
-      var fb = GL.framebuffers[framebuffer];
-      if (!fb) return 0;
-      return Module.ctx.isFramebuffer(fb);
-    }
-  function _glShaderBinary() { throw 'glShaderBinary: TODO' }
-  function _glDeleteObject(id) {
-      if (GL.programs[id]) {
-        _glDeleteProgram(id);
-      } else if (GL.shaders[id]) {
-        _glDeleteShader(id);
-      } else {
-        Module.printErr('WARNING: deleteObject received invalid id: ' + id);
-      }
-    }
-  function _glReleaseShaderCompiler() {
-      // NOP (as allowed by GLES 2.0 spec)
-    }
-  function _glGetObjectParameteriv(id, type, result) {
-      if (GL.programs[id]) {
-        if (type == 0x8B84) { // GL_OBJECT_INFO_LOG_LENGTH_ARB
-          HEAP32[((result)>>2)]=Module.ctx.getProgramInfoLog(GL.programs[id]).length;
-          return;
-        }
-        _glGetProgramiv(id, type, result);
-      } else if (GL.shaders[id]) {
-        if (type == 0x8B84) { // GL_OBJECT_INFO_LOG_LENGTH_ARB
-          HEAP32[((result)>>2)]=Module.ctx.getShaderInfoLog(GL.shaders[id]).length;
-          return;
-        } else if (type == 0x8B88) { // GL_OBJECT_SHADER_SOURCE_LENGTH_ARB
-          HEAP32[((result)>>2)]=Module.ctx.getShaderSource(GL.shaders[id]).length;
-          return;
-        }
-        _glGetShaderiv(id, type, result);
-      } else {
-        Module.printErr('WARNING: getObjectParameteriv received invalid id: ' + id);
-      }
-    }
-  function _glGetInfoLog(id, maxLength, length, infoLog) {
-      if (GL.programs[id]) {
-        _glGetProgramInfoLog(id, maxLength, length, infoLog);
-      } else if (GL.shaders[id]) {
-        _glGetShaderInfoLog(id, maxLength, length, infoLog);
-      } else {
-        Module.printErr('WARNING: getObjectParameteriv received invalid id: ' + id);
-      }
-    }
-  function _glBindProgram(type, id) {
-      assert(id == 0);
-    }
-  function _glGetPointerv(name, p) {
-      var attribute;
-      switch(name) {
-        case 0x808E: // GL_VERTEX_ARRAY_POINTER
-          attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX]; break;
-        case 0x8090: // GL_COLOR_ARRAY_POINTER
-          attribute = GLImmediate.clientAttributes[GLImmediate.COLOR]; break;
-        case 0x8092: // GL_TEXTURE_COORD_ARRAY_POINTER
-          attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0]; break;
-        default: throw 'TODO: glGetPointerv for ' + name;
-      }
-      HEAP32[((p)>>2)]=attribute ? attribute.pointer : 0;
-    }
-  function _glBegin(mode) {
-      // Push the old state:
-      GL.immediate.enabledClientAttributes_preBegin = GL.immediate.enabledClientAttributes;
-      GL.immediate.enabledClientAttributes = [];
-      GL.immediate.clientAttributes_preBegin = GL.immediate.clientAttributes;
-      GL.immediate.clientAttributes = []
-      for (var i = 0; i < GL.immediate.clientAttributes_preBegin.length; i++) {
-        GL.immediate.clientAttributes.push({});
-      }
-      GL.immediate.mode = mode;
-      GL.immediate.vertexCounter = 0;
-      var components = GL.immediate.rendererComponents = [];
-      for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
-        components[i] = 0;
-      }
-      GL.immediate.rendererComponentPointer = 0;
-      GL.immediate.vertexData = GL.immediate.tempData;
-    }
-  function _glEnd() {
-      GL.immediate.prepareClientAttributes(GL.immediate.rendererComponents[GL.immediate.VERTEX], true);
-      GL.immediate.firstVertex = 0;
-      GL.immediate.lastVertex = GL.immediate.vertexCounter / (GL.immediate.stride >> 2);
-      GL.immediate.flush();
-      GL.immediate.disableBeginEndClientAttributes();
-      GL.immediate.mode = -1;
-      // Pop the old state:
-      GL.immediate.enabledClientAttributes = GL.immediate.enabledClientAttributes_preBegin;
-      GL.immediate.clientAttributes = GL.immediate.clientAttributes_preBegin;
-      GL.immediate.modifiedClientAttributes = true;
-    }
-  function _glVertex3f(x, y, z) {
-      GL.immediate.vertexData[GL.immediate.vertexCounter++] = x;
-      GL.immediate.vertexData[GL.immediate.vertexCounter++] = y;
-      GL.immediate.vertexData[GL.immediate.vertexCounter++] = z || 0;
-      GL.immediate.addRendererComponent(GL.immediate.VERTEX, 3, Module.ctx.FLOAT);
-    }
-  var _glVertex2f=_glVertex3f;
-  function _glVertex3fv(p) {
-      _glVertex3f(HEAPF32[((p)>>2)], HEAPF32[(((p)+(4))>>2)], HEAPF32[(((p)+(8))>>2)]);
-    }
-  function _glVertex2fv(p) {
-      _glVertex3f(HEAPF32[((p)>>2)], HEAPF32[(((p)+(4))>>2)], 0);
-    }
-  var _glVertex3i=_glVertex3f;
-  var _glVertex2i=_glVertex3f;
-  function _glTexCoord2i(u, v) {
-      GL.immediate.vertexData[GL.immediate.vertexCounter++] = u;
-      GL.immediate.vertexData[GL.immediate.vertexCounter++] = v;
-      GL.immediate.addRendererComponent(GL.immediate.TEXTURE0, 2, Module.ctx.FLOAT);
-    }
-  var _glTexCoord2f=_glTexCoord2i;
-  function _glTexCoord2fv(v) {
-      _glTexCoord2i(HEAPF32[((v)>>2)], HEAPF32[(((v)+(4))>>2)]);
-    }
-  function _glTexCoord4f() { throw 'glTexCoord4f: TODO' }
-  function _glColor4f(r, g, b, a) {
-      r = Math.max(Math.min(r, 1), 0);
-      g = Math.max(Math.min(g, 1), 0);
-      b = Math.max(Math.min(b, 1), 0);
-      a = Math.max(Math.min(a, 1), 0);
-      // TODO: make ub the default, not f, save a few mathops
-      if (GL.immediate.mode >= 0) {
-        var start = GL.immediate.vertexCounter << 2;
-        GL.immediate.vertexDataU8[start + 0] = r * 255;
-        GL.immediate.vertexDataU8[start + 1] = g * 255;
-        GL.immediate.vertexDataU8[start + 2] = b * 255;
-        GL.immediate.vertexDataU8[start + 3] = a * 255;
-        GL.immediate.vertexCounter++;
-        GL.immediate.addRendererComponent(GL.immediate.COLOR, 4, Module.ctx.UNSIGNED_BYTE);
-      } else {
-        GL.immediate.clientColor[0] = r;
-        GL.immediate.clientColor[1] = g;
-        GL.immediate.clientColor[2] = b;
-        GL.immediate.clientColor[3] = a;
-      }
-    }
-  var _glColor4d=_glColor4f;
-  function _glColor4ub(r, g, b, a) {
-      _glColor4f((r&255)/255, (g&255)/255, (b&255)/255, (a&255)/255);
-    }
-  function _glColor4us(r, g, b, a) {
-      _glColor4f((r&65535)/65535, (g&65535)/65535, (b&65535)/65535, (a&65535)/65535);
-    }
-  function _glColor4ui(r, g, b, a) {
-      _glColor4f((r>>>0)/4294967295, (g>>>0)/4294967295, (b>>>0)/4294967295, (a>>>0)/4294967295);
-    }
-  function _glColor3f(r, g, b) {
-      _glColor4f(r, g, b, 1);
-    }
-  var _glColor3d=_glColor3f;
-  function _glColor3ub(r, g, b) {
-      _glColor4ub(r, g, b, 255);
-    }
-  function _glColor3us(r, g, b) {
-      _glColor4us(r, g, b, 65535);
-    }
-  function _glColor3ui(r, g, b) {
-      _glColor4ui(r, g, b, 4294967295);
-    }
-  function _glColor3ubv(p) {
-      _glColor3ub(HEAP8[(p)], HEAP8[(((p)+(1))|0)], HEAP8[(((p)+(2))|0)]);
-    }
-  function _glColor3usv(p) {
-      _glColor3us(HEAP16[((p)>>1)], HEAP16[(((p)+(2))>>1)], HEAP16[(((p)+(4))>>1)]);
-    }
-  function _glColor3uiv(p) {
-      _glColor3ui(HEAP32[((p)>>2)], HEAP32[(((p)+(4))>>2)], HEAP32[(((p)+(8))>>2)]);
-    }
-  function _glColor3fv(p) {
-      _glColor3f(HEAPF32[((p)>>2)], HEAPF32[(((p)+(4))>>2)], HEAPF32[(((p)+(8))>>2)]);
-    }
-  function _glColor4fv(p) {
-      _glColor4f(HEAPF32[((p)>>2)], HEAPF32[(((p)+(4))>>2)], HEAPF32[(((p)+(8))>>2)], HEAPF32[(((p)+(12))>>2)]);
-    }
-  function _glColor4ubv() { throw 'glColor4ubv not implemented' }
-  function _glFogf(pname, param) { // partial support, TODO
-      switch(pname) {
-        case 0x0B63: // GL_FOG_START
-          GLEmulation.fogStart = param; break;
-        case 0x0B64: // GL_FOG_END
-          GLEmulation.fogEnd = param; break;
-        case 0x0B62: // GL_FOG_DENSITY
-          GLEmulation.fogDensity = param; break;
-        case 0x0B65: // GL_FOG_MODE
-          switch (param) {
-            case 0x0801: // GL_EXP2
-            case 0x2601: // GL_LINEAR
-              GLEmulation.fogMode = param; break;
-            default: // default to GL_EXP
-              GLEmulation.fogMode = 0x0800 /* GL_EXP */; break;
-          }
-          break;
-      }
-    }
-  function _glFogi(pname, param) {
-      return _glFogf(pname, param);
-    }
-  function _glFogfv(pname, param) { // partial support, TODO
-      switch(pname) {
-        case 0x0B66: // GL_FOG_COLOR
-          GLEmulation.fogColor[0] = HEAPF32[((param)>>2)];
-          GLEmulation.fogColor[1] = HEAPF32[(((param)+(4))>>2)];
-          GLEmulation.fogColor[2] = HEAPF32[(((param)+(8))>>2)];
-          GLEmulation.fogColor[3] = HEAPF32[(((param)+(12))>>2)];
-          break;
-        case 0x0B63: // GL_FOG_START
-        case 0x0B64: // GL_FOG_END
-          _glFogf(pname, HEAPF32[((param)>>2)]); break;
-      }
-    }
-  function _glFogiv(pname, param) {
-      switch(pname) {
-        case 0x0B66: // GL_FOG_COLOR
-          GLEmulation.fogColor[0] = (HEAP32[((param)>>2)]/2147483647)/2.0+0.5;
-          GLEmulation.fogColor[1] = (HEAP32[(((param)+(4))>>2)]/2147483647)/2.0+0.5;
-          GLEmulation.fogColor[2] = (HEAP32[(((param)+(8))>>2)]/2147483647)/2.0+0.5;
-          GLEmulation.fogColor[3] = (HEAP32[(((param)+(12))>>2)]/2147483647)/2.0+0.5;
-          break;
-        default:
-          _glFogf(pname, HEAP32[((param)>>2)]); break;
-      }
-    }
-  var _glFogx=_glFogi;
-  var _glFogxv=_glFogiv;
-  function _glPolygonMode(){}
-  function _glAlphaFunc(){}
-  function _glNormal3f(){}
-  function _glDrawRangeElements(mode, start, end, count, type, indices) {
-      _glDrawElements(mode, count, type, indices, start, end);
-    }
-  function _glEnableClientState(cap, disable) {
-      var attrib = GLEmulation.getAttributeFromCapability(cap);
-      if (attrib === null) {
-        return;
-      }
-      if (disable && GL.immediate.enabledClientAttributes[attrib]) {
-        GL.immediate.enabledClientAttributes[attrib] = false;
-        GL.immediate.totalEnabledClientAttributes--;
-        if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledClientStates[cap];
-      } else if (!disable && !GL.immediate.enabledClientAttributes[attrib]) {
-        GL.immediate.enabledClientAttributes[attrib] = true;
-        GL.immediate.totalEnabledClientAttributes++;
-        if (GLEmulation.currentVao) GLEmulation.currentVao.enabledClientStates[cap] = 1;
-      }
-      GL.immediate.modifiedClientAttributes = true;
-    }
-  function _glDisableClientState(cap) {
-      _glEnableClientState(cap, 1);
-    }
-  function _glVertexPointer(size, type, stride, pointer) {
-      GL.immediate.setClientAttribute(GL.immediate.VERTEX, size, type, stride, pointer);
-    }
-  function _glTexCoordPointer(size, type, stride, pointer) {
-      GL.immediate.setClientAttribute(GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture, size, type, stride, pointer);
-    }
-  function _glNormalPointer(type, stride, pointer) {
-      GL.immediate.setClientAttribute(GL.immediate.NORMAL, 3, type, stride, pointer);
-    }
-  function _glColorPointer(size, type, stride, pointer) {
-      GL.immediate.setClientAttribute(GL.immediate.COLOR, size, type, stride, pointer);
-    }
-  function _glClientActiveTexture(texture) {
-      GL.immediate.clientActiveTexture = texture - 0x84C0; // GL_TEXTURE0
-    }
-  function _glGenVertexArrays(n, vaos) {
-      for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GLEmulation.vaos);
-        GLEmulation.vaos[id] = {
-          id: id,
-          arrayBuffer: 0,
-          elementArrayBuffer: 0,
-          enabledVertexAttribArrays: {},
-          vertexAttribPointers: {},
-          enabledClientStates: {},
-        };
-        HEAP32[(((vaos)+(i*4))>>2)]=id;
-      }
-    }
-  function _glDeleteVertexArrays(n, vaos) {
-      for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((vaos)+(i*4))>>2)];
-        GLEmulation.vaos[id] = null;
-        if (GLEmulation.currentVao && GLEmulation.currentVao.id == id) GLEmulation.currentVao = null;
-      }
-    }
-  function _glBindVertexArray(vao) {
-      // undo vao-related things, wipe the slate clean, both for vao of 0 or an actual vao
-      GLEmulation.currentVao = null; // make sure the commands we run here are not recorded
-      if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
-      _glBindBuffer(Module.ctx.ARRAY_BUFFER, 0); // XXX if one was there before we were bound?
-      _glBindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, 0);
-      for (var vaa in GLEmulation.enabledVertexAttribArrays) {
-        Module.ctx.disableVertexAttribArray(vaa);
-      }
-      GLEmulation.enabledVertexAttribArrays = {};
-      GL.immediate.enabledClientAttributes = [0, 0];
-      GL.immediate.totalEnabledClientAttributes = 0;
-      GL.immediate.modifiedClientAttributes = true;
-      if (vao) {
-        // replay vao
-        var info = GLEmulation.vaos[vao];
-        _glBindBuffer(Module.ctx.ARRAY_BUFFER, info.arrayBuffer); // XXX overwrite current binding?
-        _glBindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, info.elementArrayBuffer);
-        for (var vaa in info.enabledVertexAttribArrays) {
-          _glEnableVertexAttribArray(vaa);
-        }
-        for (var vaa in info.vertexAttribPointers) {
-          _glVertexAttribPointer.apply(null, info.vertexAttribPointers[vaa]);
-        }
-        for (var attrib in info.enabledClientStates) {
-          _glEnableClientState(attrib|0);
-        }
-        GLEmulation.currentVao = info; // set currentVao last, so the commands we ran here were not recorded
-      }
-    }
-  function _glMatrixMode(mode) {
-      if (mode == 0x1700 /* GL_MODELVIEW */) {
-        GL.immediate.currentMatrix = 'm';
-      } else if (mode == 0x1701 /* GL_PROJECTION */) {
-        GL.immediate.currentMatrix = 'p';
-      } else if (mode == 0x1702) { // GL_TEXTURE
-        GL.immediate.useTextureMatrix = true;
-        GL.immediate.currentMatrix = 't' + GL.immediate.clientActiveTexture;
-      } else {
-        throw "Wrong mode " + mode + " passed to glMatrixMode";
-      }
-    }
-  function _glPushMatrix() {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrixStack[GL.immediate.currentMatrix].push(
-          Array.prototype.slice.call(GL.immediate.matrix[GL.immediate.currentMatrix]));
-    }
-  function _glPopMatrix() {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix[GL.immediate.currentMatrix] = GL.immediate.matrixStack[GL.immediate.currentMatrix].pop();
-    }
-  function _glLoadMatrixd(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.set(HEAPF64.subarray((matrix)>>3,(matrix+128)>>3), GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _glLoadMatrixf(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _glLoadTransposeMatrixd(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.set(HEAPF64.subarray((matrix)>>3,(matrix+128)>>3), GL.immediate.matrix[GL.immediate.currentMatrix]);
-      GL.immediate.matrix.lib.mat4.transpose(GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _glLoadTransposeMatrixf(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
-      GL.immediate.matrix.lib.mat4.transpose(GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _glMultMatrixd(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix],
-          HEAPF64.subarray((matrix)>>3,(matrix+128)>>3));
-    }
-  function _glMultMatrixf(matrix) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix],
-          HEAPF32.subarray((matrix)>>2,(matrix+64)>>2));
-    }
-  function _glMultTransposeMatrixd(matrix) {
-      GL.immediate.matricesModified = true;
-      var colMajor = GL.immediate.matrix.lib.mat4.create();
-      GL.immediate.matrix.lib.mat4.set(HEAPF64.subarray((matrix)>>3,(matrix+128)>>3), colMajor);
-      GL.immediate.matrix.lib.mat4.transpose(colMajor);
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix], colMajor);
-    }
-  function _glMultTransposeMatrixf(matrix) {
-      GL.immediate.matricesModified = true;
-      var colMajor = GL.immediate.matrix.lib.mat4.create();
-      GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), colMajor);
-      GL.immediate.matrix.lib.mat4.transpose(colMajor);
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix], colMajor);
-    }
-  function _glFrustum(left, right, bottom, top_, nearVal, farVal) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix],
-          GL.immediate.matrix.lib.mat4.frustum(left, right, bottom, top_, nearVal, farVal));
-    }
-  var _glFrustumf=_glFrustum;
-  function _glOrtho(left, right, bottom, top_, nearVal, farVal) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix],
-          GL.immediate.matrix.lib.mat4.ortho(left, right, bottom, top_, nearVal, farVal));
-    }
-  var _glOrthof=_glOrtho;
-  function _glScaled(x, y, z) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.scale(GL.immediate.matrix[GL.immediate.currentMatrix], [x, y, z]);
-    }
-  var _glScalef=_glScaled;
-  function _glTranslated(x, y, z) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.translate(GL.immediate.matrix[GL.immediate.currentMatrix], [x, y, z]);
-    }
-  var _glTranslatef=_glTranslated;
-  function _glRotated(angle, x, y, z) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.rotate(GL.immediate.matrix[GL.immediate.currentMatrix], angle*Math.PI/180, [x, y, z]);
-    }
-  var _glRotatef=_glRotated;
-  function _glDrawBuffer() { throw 'glDrawBuffer: TODO' }
-  function _glReadBuffer() { throw 'glReadBuffer: TODO' }
-  function _glLightfv() { throw 'glLightfv: TODO' }
-  function _glLightModelfv() { throw 'glLightModelfv: TODO' }
-  function _glMaterialfv() { throw 'glMaterialfv: TODO' }
-  function _glTexGeni() { throw 'glTexGeni: TODO' }
-  function _glTexGenfv() { throw 'glTexGenfv: TODO' }
-  function _glTexEnvi() { Runtime.warnOnce('glTexEnvi: TODO') }
-  function _glTexEnvf() { Runtime.warnOnce('glTexEnvf: TODO') }
-  function _glTexEnvfv() { Runtime.warnOnce('glTexEnvfv: TODO') }
-  function _glTexImage1D() { throw 'glTexImage1D: TODO' }
-  function _glTexCoord3f() { throw 'glTexCoord3f: TODO' }
-  function _glGetTexLevelParameteriv() { throw 'glGetTexLevelParameteriv: TODO' }
-  function _glShadeModel() { Runtime.warnOnce('TODO: glShadeModel') }
-  var _glGenFramebuffersOES=_glGenFramebuffers;
-  var _glGenRenderbuffersOES=_glGenRenderbuffers;
-  var _glBindFramebufferOES=_glBindFramebuffer;
-  var _glBindRenderbufferOES=_glBindRenderbuffer;
-  var _glGetRenderbufferParameterivOES=_glGetRenderbufferParameteriv;
-  var _glFramebufferRenderbufferOES=_glFramebufferRenderbuffer;
-  function _glRenderbufferStorage(x0, x1, x2, x3) { Module.ctx.renderbufferStorage(x0, x1, x2, x3) }var _glRenderbufferStorageOES=_glRenderbufferStorage;
-  function _glCheckFramebufferStatus(x0) { return Module.ctx.checkFramebufferStatus(x0) }var _glCheckFramebufferStatusOES=_glCheckFramebufferStatus;
-  var _glDeleteFramebuffersOES=_glDeleteFramebuffers;
-  var _glDeleteRenderbuffersOES=_glDeleteRenderbuffers;
-  var _glGenVertexArraysOES=_glGenVertexArrays;
-  var _glDeleteVertexArraysOES=_glDeleteVertexArrays;
-  var _glBindVertexArrayOES=_glBindVertexArray;
-  var _glFramebufferTexture2DOES=_glFramebufferTexture2D;
-  function _gluPerspective(fov, aspect, near, far) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix[GL.immediate.currentMatrix] =
-        GL.immediate.matrix.lib.mat4.perspective(fov, aspect, near, far,
-                                                 GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _gluLookAt(ex, ey, ez, cx, cy, cz, ux, uy, uz) {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.lookAt(GL.immediate.matrix[GL.immediate.currentMatrix], [ex, ey, ez],
-          [cx, cy, cz], [ux, uy, uz]);
-    }
-  function _gluProject(objX, objY, objZ, model, proj, view, winX, winY, winZ) {
-      // The algorithm for this functions comes from Mesa
-      var inVec = new Float32Array(4);
-      var outVec = new Float32Array(4);
-      GL.immediate.matrix.lib.mat4.multiplyVec4(HEAPF64.subarray((model)>>3,(model+128)>>3),
-          [objX, objY, objZ, 1.0], outVec);
-      GL.immediate.matrix.lib.mat4.multiplyVec4(HEAPF64.subarray((proj)>>3,(proj+128)>>3),
-          outVec, inVec);
-      if (inVec[3] == 0.0) {
-        return 0 /* GL_FALSE */;
-      }
-      inVec[0] /= inVec[3];
-      inVec[1] /= inVec[3];
-      inVec[2] /= inVec[3];
-      // Map x, y and z to range 0-1 */
-      inVec[0] = inVec[0] * 0.5 + 0.5;
-      inVec[1] = inVec[1] * 0.5 + 0.5;
-      inVec[2] = inVec[2] * 0.5 + 0.5;
-      // Map x, y to viewport
-      inVec[0] = inVec[0] * HEAP32[(((view)+(8))>>2)] + HEAP32[((view)>>2)];
-      inVec[1] = inVec[1] * HEAP32[(((view)+(12))>>2)] + HEAP32[(((view)+(4))>>2)];
-      HEAPF64[((winX)>>3)]=inVec[0];
-      HEAPF64[((winY)>>3)]=inVec[1];
-      HEAPF64[((winZ)>>3)]=inVec[2];
-      return 1 /* GL_TRUE */;
-    }
-  function _gluUnProject(winX, winY, winZ, model, proj, view, objX, objY, objZ) {
-      var result = GL.immediate.matrix.lib.mat4.unproject([winX, winY, winZ],
-          HEAPF64.subarray((model)>>3,(model+128)>>3),
-          HEAPF64.subarray((proj)>>3,(proj+128)>>3),
-          HEAP32.subarray((view)>>2,(view+16)>>2));
-      if (result === null) {
-        return 0 /* GL_FALSE */;
-      }
-      HEAPF64[((objX)>>3)]=result[0];
-      HEAPF64[((objY)>>3)]=result[1];
-      HEAPF64[((objZ)>>3)]=result[2];
-      return 1 /* GL_TRUE */;
-    }
-  function _gluOrtho2D(left, right, bottom, top) {
-      _glOrtho(left, right, bottom, top, -1, 1);
-    }
-  function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
-      Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
-    }
-  function _glEnableVertexAttribArray(index) {
-      Module.ctx.enableVertexAttribArray(index);
-    }
-  function _glDisableVertexAttribArray(index) {
-      Module.ctx.disableVertexAttribArray(index);
-    }
-  function _glDrawArrays(mode, first, count) {
-      Module.ctx.drawArrays(mode, first, count);
-    }
-  function _glDrawElements(mode, count, type, indices) {
-      Module.ctx.drawElements(mode, count, type, indices);
-    }
-  function _glGetError() { return Module.ctx.getError() }
-  function _glFinish() { Module.ctx.finish() }
-  function _glFlush() { Module.ctx.flush() }
-  function _glClearDepth(x0) { Module.ctx.clearDepth(x0) }
-  function _glClearDepthf(x0) { Module.ctx.clearDepth(x0) }
-  function _glDepthFunc(x0) { Module.ctx.depthFunc(x0) }
-  function _glEnable(x0) { Module.ctx.enable(x0) }
-  function _glDisable(x0) { Module.ctx.disable(x0) }
-  function _glFrontFace(x0) { Module.ctx.frontFace(x0) }
-  function _glCullFace(x0) { Module.ctx.cullFace(x0) }
-  function _glLineWidth(x0) { Module.ctx.lineWidth(x0) }
-  function _glClearStencil(x0) { Module.ctx.clearStencil(x0) }
-  function _glDepthMask(x0) { Module.ctx.depthMask(x0) }
-  function _glStencilMask(x0) { Module.ctx.stencilMask(x0) }
-  function _glGenerateMipmap(x0) { Module.ctx.generateMipmap(x0) }
-  function _glActiveTexture(x0) { Module.ctx.activeTexture(x0) }
-  function _glBlendEquation(x0) { Module.ctx.blendEquation(x0) }
-  function _glSampleCoverage(x0) { Module.ctx.sampleCoverage(x0) }
-  function _glIsEnabled(x0) { return Module.ctx.isEnabled(x0) }
-  function _glBlendFunc(x0, x1) { Module.ctx.blendFunc(x0, x1) }
-  function _glBlendEquationSeparate(x0, x1) { Module.ctx.blendEquationSeparate(x0, x1) }
-  function _glDepthRange(x0, x1) { Module.ctx.depthRange(x0, x1) }
-  function _glDepthRangef(x0, x1) { Module.ctx.depthRange(x0, x1) }
-  function _glStencilMaskSeparate(x0, x1) { Module.ctx.stencilMaskSeparate(x0, x1) }
-  function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
-  function _glPolygonOffset(x0, x1) { Module.ctx.polygonOffset(x0, x1) }
-  function _glVertexAttrib1f(x0, x1) { Module.ctx.vertexAttrib1f(x0, x1) }
-  function _glTexParameteri(x0, x1, x2) { Module.ctx.texParameteri(x0, x1, x2) }
-  function _glTexParameterf(x0, x1, x2) { Module.ctx.texParameterf(x0, x1, x2) }
-  function _glVertexAttrib2f(x0, x1, x2) { Module.ctx.vertexAttrib2f(x0, x1, x2) }
-  function _glStencilFunc(x0, x1, x2) { Module.ctx.stencilFunc(x0, x1, x2) }
-  function _glStencilOp(x0, x1, x2) { Module.ctx.stencilOp(x0, x1, x2) }
-  function _glClearColor(x0, x1, x2, x3) { Module.ctx.clearColor(x0, x1, x2, x3) }
-  function _glScissor(x0, x1, x2, x3) { Module.ctx.scissor(x0, x1, x2, x3) }
-  function _glVertexAttrib3f(x0, x1, x2, x3) { Module.ctx.vertexAttrib3f(x0, x1, x2, x3) }
-  function _glColorMask(x0, x1, x2, x3) { Module.ctx.colorMask(x0, x1, x2, x3) }
-  function _glBlendFuncSeparate(x0, x1, x2, x3) { Module.ctx.blendFuncSeparate(x0, x1, x2, x3) }
-  function _glBlendColor(x0, x1, x2, x3) { Module.ctx.blendColor(x0, x1, x2, x3) }
-  function _glStencilFuncSeparate(x0, x1, x2, x3) { Module.ctx.stencilFuncSeparate(x0, x1, x2, x3) }
-  function _glStencilOpSeparate(x0, x1, x2, x3) { Module.ctx.stencilOpSeparate(x0, x1, x2, x3) }
-  function _glVertexAttrib4f(x0, x1, x2, x3, x4) { Module.ctx.vertexAttrib4f(x0, x1, x2, x3, x4) }
-  function _glCopyTexImage2D(x0, x1, x2, x3, x4, x5, x6, x7) { Module.ctx.copyTexImage2D(x0, x1, x2, x3, x4, x5, x6, x7) }
-  function _glCopyTexSubImage2D(x0, x1, x2, x3, x4, x5, x6, x7) { Module.ctx.copyTexSubImage2D(x0, x1, x2, x3, x4, x5, x6, x7) }
-  var GLEmulation={fogStart:0,fogEnd:1,fogDensity:1,fogColor:null,fogMode:2048,fogEnabled:false,vaos:[],currentVao:null,enabledVertexAttribArrays:{},hasRunInit:false,init:function () {
-        // Do not activate immediate/emulation code (e.g. replace glDrawElements) when in FULL_ES2 mode.
-        // We do not need full emulation, we instead emulate client-side arrays etc. in FULL_ES2 code in
-        // a straightforward manner, and avoid not having a bound buffer be ambiguous between es2 emulation
-        // code and legacy gl emulation code.
-        if (GLEmulation.hasRunInit) {
-          return;
-        }
-        GLEmulation.hasRunInit = true;
-        GLEmulation.fogColor = new Float32Array(4);
-        // Add some emulation workarounds
-        Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work. (If you do not want this, build with -s DISABLE_GL_EMULATION=1)');
-        // XXX some of the capabilities we don't support may lead to incorrect rendering, if we do not emulate them in shaders
-        var validCapabilities = {
-          0x0B44: 1, // GL_CULL_FACE
-          0x0BE2: 1, // GL_BLEND
-          0x0BD0: 1, // GL_DITHER,
-          0x0B90: 1, // GL_STENCIL_TEST
-          0x0B71: 1, // GL_DEPTH_TEST
-          0x0C11: 1, // GL_SCISSOR_TEST
-          0x8037: 1, // GL_POLYGON_OFFSET_FILL
-          0x809E: 1, // GL_SAMPLE_ALPHA_TO_COVERAGE
-          0x80A0: 1  // GL_SAMPLE_COVERAGE
-        };
-        var glEnable = _glEnable;
-        _glEnable = function(cap) {
-          // Clean up the renderer on any change to the rendering state. The optimization of
-          // skipping renderer setup is aimed at the case of multiple glDraw* right after each other
-          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
-          if (cap == 0x0B60 /* GL_FOG */) {
-            GLEmulation.fogEnabled = true;
-            return;
-          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
-            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
-            // it by forwarding to glEnableClientState
-            /* Actually, let's not, for now. (This sounds exceedingly broken)
-             * This is in gl_ps_workaround2.c.
-            _glEnableClientState(cap);
-            */
-            return;
-          } else if (!(cap in validCapabilities)) {
-            return;
-          }
-          glEnable(cap);
-        };
-        var glDisable = _glDisable;
-        _glDisable = function(cap) {
-          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
-          if (cap == 0x0B60 /* GL_FOG */) {
-            GLEmulation.fogEnabled = false;
-            return;
-          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
-            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
-            // it by forwarding to glDisableClientState
-            /* Actually, let's not, for now. (This sounds exceedingly broken)
-             * This is in gl_ps_workaround2.c.
-            _glDisableClientState(cap);
-            */
-            return;
-          } else if (!(cap in validCapabilities)) {
-            return;
-          }
-          glDisable(cap);
-        };
-        _glIsEnabled = function(cap) {
-          if (cap == 0x0B60 /* GL_FOG */) {
-            return GLEmulation.fogEnabled ? 1 : 0;
-          } else if (!(cap in validCapabilities)) {
-            return 0;
-          }
-          return Module.ctx.isEnabled(cap);
-        };
-        var glGetBooleanv = _glGetBooleanv;
-        _glGetBooleanv = function(pname, p) {
-          var attrib = GLEmulation.getAttributeFromCapability(pname);
-          if (attrib !== null) {
-            var result = GL.immediate.enabledClientAttributes[attrib];
-            HEAP8[(p)]=result === true ? 1 : 0;
-            return;
-          }
-          glGetBooleanv(pname, p);
-        };
-        var glGetIntegerv = _glGetIntegerv;
-        _glGetIntegerv = function(pname, params) {
-          switch (pname) {
-            case 0x84E2: pname = Module.ctx.MAX_TEXTURE_IMAGE_UNITS /* fake it */; break; // GL_MAX_TEXTURE_UNITS
-            case 0x8B4A: { // GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB
-              var result = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_UNIFORM_VECTORS);
-              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
-              return;
-            }
-            case 0x8B49: { // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB
-              var result = Module.ctx.getParameter(Module.ctx.MAX_FRAGMENT_UNIFORM_VECTORS);
-              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
-              return;
-            }
-            case 0x8B4B: { // GL_MAX_VARYING_FLOATS_ARB
-              var result = Module.ctx.getParameter(Module.ctx.MAX_VARYING_VECTORS);
-              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
-              return;
-            }
-            case 0x8871: pname = Module.ctx.MAX_COMBINED_TEXTURE_IMAGE_UNITS /* close enough */; break; // GL_MAX_TEXTURE_COORDS
-            case 0x807A: { // GL_VERTEX_ARRAY_SIZE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
-              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
-              return;
-            }
-            case 0x807B: { // GL_VERTEX_ARRAY_TYPE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
-              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
-              return;
-            }
-            case 0x807C: { // GL_VERTEX_ARRAY_STRIDE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
-              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
-              return;
-            }
-            case 0x8081: { // GL_COLOR_ARRAY_SIZE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
-              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
-              return;
-            }
-            case 0x8082: { // GL_COLOR_ARRAY_TYPE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
-              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
-              return;
-            }
-            case 0x8083: { // GL_COLOR_ARRAY_STRIDE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
-              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
-              return;
-            }
-            case 0x8088: { // GL_TEXTURE_COORD_ARRAY_SIZE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
-              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
-              return;
-            }
-            case 0x8089: { // GL_TEXTURE_COORD_ARRAY_TYPE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
-              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
-              return;
-            }
-            case 0x808A: { // GL_TEXTURE_COORD_ARRAY_STRIDE
-              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
-              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
-              return;
-            }
-          }
-          glGetIntegerv(pname, params);
-        };
-        var glGetString = _glGetString;
-        _glGetString = function(name_) {
-          switch(name_) {
-            case 0x1F03 /* GL_EXTENSIONS */: // Add various extensions that we can support
-              return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ') +
-                     ' GL_EXT_texture_env_combine GL_ARB_texture_env_crossbar GL_ATI_texture_env_combine3 GL_NV_texture_env_combine4 GL_EXT_texture_env_dot3 GL_ARB_multitexture GL_ARB_vertex_buffer_object GL_EXT_framebuffer_object GL_ARB_vertex_program GL_ARB_fragment_program GL_ARB_shading_language_100 GL_ARB_shader_objects GL_ARB_vertex_shader GL_ARB_fragment_shader GL_ARB_texture_cube_map GL_EXT_draw_range_elements' +
-                     (GL.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
-                     (GL.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
-              ), 'i8', ALLOC_NORMAL);
-          }
-          return glGetString(name_);
-        };
-        // Do some automatic rewriting to work around GLSL differences. Note that this must be done in
-        // tandem with the rest of the program, by itself it cannot suffice.
-        // Note that we need to remember shader types for this rewriting, saving sources makes it easier to debug.
-        GL.shaderInfos = {};
-        var glCreateShader = _glCreateShader;
-        _glCreateShader = function(shaderType) {
-          var id = glCreateShader(shaderType);
-          GL.shaderInfos[id] = {
-            type: shaderType,
-            ftransform: false
-          };
-          return id;
-        };
-        var glShaderSource = _glShaderSource;
-        _glShaderSource = function(shader, count, string, length) {
-          var source = GL.getSource(shader, count, string, length);
-          // XXX We add attributes and uniforms to shaders. The program can ask for the # of them, and see the
-          // ones we generated, potentially confusing it? Perhaps we should hide them.
-          if (GL.shaderInfos[shader].type == Module.ctx.VERTEX_SHADER) {
-            // Replace ftransform() with explicit project/modelview transforms, and add position and matrix info.
-            var has_pm = source.search(/u_projection/) >= 0;
-            var has_mm = source.search(/u_modelView/) >= 0;
-            var has_pv = source.search(/a_position/) >= 0;
-            var need_pm = 0, need_mm = 0, need_pv = 0;
-            var old = source;
-            source = source.replace(/ftransform\(\)/g, '(u_projection * u_modelView * a_position)');
-            if (old != source) need_pm = need_mm = need_pv = 1;
-            old = source;
-            source = source.replace(/gl_ProjectionMatrix/g, 'u_projection');
-            if (old != source) need_pm = 1;
-            old = source;
-            source = source.replace(/gl_ModelViewMatrixTranspose\[2\]/g, 'vec4(u_modelView[0][2], u_modelView[1][2], u_modelView[2][2], u_modelView[3][2])'); // XXX extremely inefficient
-            if (old != source) need_mm = 1;
-            old = source;
-            source = source.replace(/gl_ModelViewMatrix/g, 'u_modelView');
-            if (old != source) need_mm = 1;
-            old = source;
-            source = source.replace(/gl_Vertex/g, 'a_position');
-            if (old != source) need_pv = 1;
-            old = source;
-            source = source.replace(/gl_ModelViewProjectionMatrix/g, '(u_projection * u_modelView)');
-            if (old != source) need_pm = need_mm = 1;
-            if (need_pv && !has_pv) source = 'attribute vec4 a_position; \n' + source;
-            if (need_mm && !has_mm) source = 'uniform mat4 u_modelView; \n' + source;
-            if (need_pm && !has_pm) source = 'uniform mat4 u_projection; \n' + source;
-            GL.shaderInfos[shader].ftransform = need_pm || need_mm || need_pv; // we will need to provide the fixed function stuff as attributes and uniforms
-            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-              // XXX To handle both regular texture mapping and cube mapping, we use vec4 for tex coordinates.
-              var old = source;
-              var need_vtc = source.search('v_texCoord' + i) == -1;
-              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i)
-                             .replace(new RegExp('gl_MultiTexCoord' + i, 'g'), 'a_texCoord' + i);
-              if (source != old) {
-                source = 'attribute vec4 a_texCoord' + i + '; \n' + source;
-                if (need_vtc) {
-                  source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
-                }
-              }
-              old = source;
-              source = source.replace(new RegExp('gl_TextureMatrix\\[' + i + '\\]', 'g'), 'u_textureMatrix' + i);
-              if (source != old) {
-                source = 'uniform mat4 u_textureMatrix' + i + '; \n' + source;
-              }
-            }
-            if (source.indexOf('gl_FrontColor') >= 0) {
-              source = 'varying vec4 v_color; \n' +
-                       source.replace(/gl_FrontColor/g, 'v_color');
-            }
-            if (source.indexOf('gl_Color') >= 0) {
-              source = 'attribute vec4 a_color; \n' +
-                       source.replace(/gl_Color/g, 'a_color');
-            }
-            if (source.indexOf('gl_Normal') >= 0) {
-              source = 'attribute vec3 a_normal; \n' +
-                       source.replace(/gl_Normal/g, 'a_normal');
-            }
-            // fog
-            if (source.indexOf('gl_FogFragCoord') >= 0) {
-              source = 'varying float v_fogFragCoord;   \n' +
-                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
-            }
-          } else { // Fragment shader
-            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-              var old = source;
-              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i);
-              if (source != old) {
-                source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
-              }
-            }
-            if (source.indexOf('gl_Color') >= 0) {
-              source = 'varying vec4 v_color; \n' + source.replace(/gl_Color/g, 'v_color');
-            }
-            if (source.indexOf('gl_Fog.color') >= 0) {
-              source = 'uniform vec4 u_fogColor;   \n' +
-                       source.replace(/gl_Fog.color/g, 'u_fogColor');
-            }
-            if (source.indexOf('gl_Fog.end') >= 0) {
-              source = 'uniform float u_fogEnd;   \n' +
-                       source.replace(/gl_Fog.end/g, 'u_fogEnd');
-            }
-            if (source.indexOf('gl_Fog.scale') >= 0) {
-              source = 'uniform float u_fogScale;   \n' +
-                       source.replace(/gl_Fog.scale/g, 'u_fogScale');
-            }
-            if (source.indexOf('gl_Fog.density') >= 0) {
-              source = 'uniform float u_fogDensity;   \n' +
-                       source.replace(/gl_Fog.density/g, 'u_fogDensity');
-            }
-            if (source.indexOf('gl_FogFragCoord') >= 0) {
-              source = 'varying float v_fogFragCoord;   \n' +
-                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
-            }
-            source = 'precision mediump float;\n' + source;
-          }
-          Module.ctx.shaderSource(GL.shaders[shader], source);
-        };
-        var glCompileShader = _glCompileShader;
-        _glCompileShader = function(shader) {
-          Module.ctx.compileShader(GL.shaders[shader]);
-          if (!Module.ctx.getShaderParameter(GL.shaders[shader], Module.ctx.COMPILE_STATUS)) {
-            Module.printErr('Failed to compile shader: ' + Module.ctx.getShaderInfoLog(GL.shaders[shader]));
-            Module.printErr('Info: ' + JSON.stringify(GL.shaderInfos[shader]));
-            Module.printErr('Enable GL_DEBUG to see shader source');
-          }
-        };
-        GL.programShaders = {};
-        var glAttachShader = _glAttachShader;
-        _glAttachShader = function(program, shader) {
-          if (!GL.programShaders[program]) GL.programShaders[program] = [];
-          GL.programShaders[program].push(shader);
-          glAttachShader(program, shader);
-        };
-        var glDetachShader = _glDetachShader;
-        _glDetachShader = function(program, shader) {
-          var programShader = GL.programShaders[program];
-          if (!programShader) {
-            Module.printErr('WARNING: _glDetachShader received invalid program: ' + program);
-            return;
-          }
-          var index = programShader.indexOf(shader);
-          programShader.splice(index, 1);
-          glDetachShader(program, shader);
-        };
-        var glUseProgram = _glUseProgram;
-        _glUseProgram = function(program) {
-          GL.currProgram = program;
-          glUseProgram(program);
-        }
-        var glDeleteProgram = _glDeleteProgram;
-        _glDeleteProgram = function(program) {
-          glDeleteProgram(program);
-          if (program == GL.currProgram) GL.currProgram = 0;
-        };
-        // If attribute 0 was not bound, bind it to 0 for WebGL performance reasons. Track if 0 is free for that.
-        var zeroUsedPrograms = {};
-        var glBindAttribLocation = _glBindAttribLocation;
-        _glBindAttribLocation = function(program, index, name) {
-          if (index == 0) zeroUsedPrograms[program] = true;
-          glBindAttribLocation(program, index, name);
-        };
-        var glLinkProgram = _glLinkProgram;
-        _glLinkProgram = function(program) {
-          if (!(program in zeroUsedPrograms)) {
-            Module.ctx.bindAttribLocation(GL.programs[program], 0, 'a_position');
-          }
-          glLinkProgram(program);
-        };
-        var glBindBuffer = _glBindBuffer;
-        _glBindBuffer = function(target, buffer) {
-          glBindBuffer(target, buffer);
-          if (target == Module.ctx.ARRAY_BUFFER) {
-            if (GLEmulation.currentVao) {
-              assert(GLEmulation.currentVao.arrayBuffer == buffer || GLEmulation.currentVao.arrayBuffer == 0 || buffer == 0, 'TODO: support for multiple array buffers in vao');
-              GLEmulation.currentVao.arrayBuffer = buffer;
-            }
-          } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
-            if (GLEmulation.currentVao) GLEmulation.currentVao.elementArrayBuffer = buffer;
-          }
-        };
-        var glGetFloatv = _glGetFloatv;
-        _glGetFloatv = function(pname, params) {
-          if (pname == 0x0BA6) { // GL_MODELVIEW_MATRIX
-            HEAPF32.set(GL.immediate.matrix['m'], params >> 2);
-          } else if (pname == 0x0BA7) { // GL_PROJECTION_MATRIX
-            HEAPF32.set(GL.immediate.matrix['p'], params >> 2);
-          } else if (pname == 0x0BA8) { // GL_TEXTURE_MATRIX
-            HEAPF32.set(GL.immediate.matrix['t' + GL.immediate.clientActiveTexture], params >> 2);
-          } else if (pname == 0x0B66) { // GL_FOG_COLOR
-            HEAPF32.set(GLEmulation.fogColor, params >> 2);
-          } else if (pname == 0x0B63) { // GL_FOG_START
-            HEAPF32[((params)>>2)]=GLEmulation.fogStart;
-          } else if (pname == 0x0B64) { // GL_FOG_END
-            HEAPF32[((params)>>2)]=GLEmulation.fogEnd;
-          } else if (pname == 0x0B62) { // GL_FOG_DENSITY
-            HEAPF32[((params)>>2)]=GLEmulation.fogDensity;
-          } else if (pname == 0x0B65) { // GL_FOG_MODE
-            HEAPF32[((params)>>2)]=GLEmulation.fogMode;
-          } else {
-            glGetFloatv(pname, params);
-          }
-        };
-        var glHint = _glHint;
-        _glHint = function(target, mode) {
-          if (target == 0x84EF) { // GL_TEXTURE_COMPRESSION_HINT
-            return;
-          }
-          glHint(target, mode);
-        };
-        var glEnableVertexAttribArray = _glEnableVertexAttribArray;
-        _glEnableVertexAttribArray = function(index) {
-          glEnableVertexAttribArray(index);
-          GLEmulation.enabledVertexAttribArrays[index] = 1;
-          if (GLEmulation.currentVao) GLEmulation.currentVao.enabledVertexAttribArrays[index] = 1;
-        };
-        var glDisableVertexAttribArray = _glDisableVertexAttribArray;
-        _glDisableVertexAttribArray = function(index) {
-          glDisableVertexAttribArray(index);
-          delete GLEmulation.enabledVertexAttribArrays[index];
-          if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledVertexAttribArrays[index];
-        };
-        var glVertexAttribPointer = _glVertexAttribPointer;
-        _glVertexAttribPointer = function(index, size, type, normalized, stride, pointer) {
-          glVertexAttribPointer(index, size, type, normalized, stride, pointer);
-          if (GLEmulation.currentVao) { // TODO: avoid object creation here? likely not hot though
-            GLEmulation.currentVao.vertexAttribPointers[index] = [index, size, type, normalized, stride, pointer];
-          }
-        };
-      },getAttributeFromCapability:function (cap) {
-        var attrib = null;
-        switch (cap) {
-          case 0x0de1: // GL_TEXTURE_2D - XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support it
-            // Fall through:
-          case 0x8078: // GL_TEXTURE_COORD_ARRAY
-            attrib = GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture; break;
-          case 0x8074: // GL_VERTEX_ARRAY
-            attrib = GL.immediate.VERTEX; break;
-          case 0x8075: // GL_NORMAL_ARRAY
-            attrib = GL.immediate.NORMAL; break;
-          case 0x8076: // GL_COLOR_ARRAY
-            attrib = GL.immediate.COLOR; break;
-        }
-        return attrib;
-      },getProcAddress:function (name) {
-        name = name.replace('EXT', '').replace('ARB', '');
-        // Do the translation carefully because of closure
-        var ret = 0;
-        switch (name) {
-          case 'glCreateShaderObject': case 'glCreateShader': ret = 44; break;
-          case 'glCreateProgramObject': case 'glCreateProgram': ret = 34; break;
-          case 'glAttachObject': case 'glAttachShader': ret = 132; break;
-          case 'glUseProgramObject': case 'glUseProgram': ret = 2; break;
-          case 'glDetachObject': case 'glDetachShader': ret = 140; break;
-          case 'glDeleteObject': ret = 152; break;
-          case 'glGetObjectParameteriv': ret = 192; break;
-          case 'glGetInfoLog': ret = 60; break;
-          case 'glBindProgram': ret = 164; break;
-          case 'glDrawRangeElements': ret = 268; break;
-          case 'glShaderSource': ret = 68; break;
-          case 'glCompileShader': ret = 220; break;
-          case 'glLinkProgram': ret = 258; break;
-          case 'glGetUniformLocation': ret = 264; break;
-          case 'glUniform1f': ret = 186; break;
-          case 'glUniform2f': ret = 146; break;
-          case 'glUniform3f': ret = 114; break;
-          case 'glUniform4f': ret = 58; break;
-          case 'glUniform1fv': ret = 32; break;
-          case 'glUniform2fv': ret = 22; break;
-          case 'glUniform3fv': ret = 174; break;
-          case 'glUniform4fv': ret = 270; break;
-          case 'glUniform1i': ret = 190; break;
-          case 'glUniform2i': ret = 142; break;
-          case 'glUniform3i': ret = 112; break;
-          case 'glUniform4i': ret = 56; break;
-          case 'glUniform1iv': ret = 130; break;
-          case 'glUniform2iv': ret = 208; break;
-          case 'glUniform3iv': ret = 126; break;
-          case 'glUniform4iv': ret = 286; break;
-          case 'glBindAttribLocation': ret = 274; break;
-          case 'glGetActiveUniform': ret = 210; break;
-          case 'glGenBuffers': ret = 66; break;
-          case 'glBindBuffer': ret = 30; break;
-          case 'glBufferData': ret = 234; break;
-          case 'glBufferSubData': ret = 100; break;
-          case 'glDeleteBuffers': ret = 232; break;
-          case 'glActiveTexture': ret = 214; break;
-          case 'glClientActiveTexture': ret = 294; break;
-          case 'glGetProgramiv': ret = 242; break;
-          case 'glEnableVertexAttribArray': ret = 222; break;
-          case 'glDisableVertexAttribArray': ret = 42; break;
-          case 'glVertexAttribPointer': ret = 82; break;
-          case 'glVertexAttrib1f': ret = 290; break;
-          case 'glVertexAttrib2f': ret = 272; break;
-          case 'glVertexAttrib3f': ret = 72; break;
-          case 'glVertexAttrib4f': ret = 28; break;
-          case 'glVertexAttrib1fv': ret = 216; break;
-          case 'glVertexAttrib2fv': ret = 90; break;
-          case 'glVertexAttrib3fv': ret = 196; break;
-          case 'glVertexAttrib4fv': ret = 228; break;
-          case 'glGetVertexAttribfv': ret = 76; break;
-          case 'glGetVertexAttribiv': ret = 88; break;
-          case 'glGetVertexAttribPointerv': ret = 256; break;
-          case 'glGetAttribLocation': ret = 40; break;
-          case 'glGetActiveAttrib': ret = 206; break;
-          case 'glBindRenderbuffer': ret = 92; break;
-          case 'glDeleteRenderbuffers': ret = 252; break;
-          case 'glGenRenderbuffers': ret = 20; break;
-          case 'glCompressedTexImage2D': ret = 118; break;
-          case 'glCompressedTexSubImage2D': ret = 244; break;
-          case 'glBindFramebuffer': ret = 138; break;
-          case 'glGenFramebuffers': ret = 144; break;
-          case 'glDeleteFramebuffers': ret = 158; break;
-          case 'glFramebufferRenderbuffer': ret = 70; break;
-          case 'glFramebufferTexture2D': ret = 284; break;
-          case 'glGetFramebufferAttachmentParameteriv': ret = 120; break;
-          case 'glIsFramebuffer': ret = 280; break;
-          case 'glCheckFramebufferStatus': ret = 162; break;
-          case 'glRenderbufferStorage': ret = 64; break;
-          case 'glGenVertexArrays': ret = 248; break;
-          case 'glDeleteVertexArrays': ret = 104; break;
-          case 'glBindVertexArray': ret = 226; break;
-          case 'glGetString': ret = 148; break;
-          case 'glBindTexture': ret = 178; break;
-          case 'glGetBufferParameteriv': ret = 168; break;
-          case 'glIsBuffer': ret = 46; break;
-          case 'glDeleteShader': ret = 240; break;
-          case 'glUniformMatrix2fv': ret = 8; break;
-          case 'glUniformMatrix3fv': ret = 6; break;
-          case 'glUniformMatrix4fv': ret = 16; break;
-          case 'glIsRenderbuffer': ret = 166; break;
-          case 'glBlendEquation': ret = 26; break;
-          case 'glBlendFunc': ret = 38; break;
-          case 'glBlendFuncSeparate': ret = 172; break;
-          case 'glBlendEquationSeparate': ret = 306; break;
-          case 'glDepthRangef': ret = 254; break;
-          case 'glClear': ret = 266; break;
-          case 'glGenerateMipmap': ret = 80; break;
-          case 'glBlendColor': ret = 302; break;
-          case 'glClearDepthf': ret = 176; break;
-          case 'glDeleteProgram': ret = 24; break;
-          case 'glUniformMatrix3fv': ret = 6; break;
-          case 'glClearColor': ret = 180; break;
-          case 'glGetRenderbufferParameteriv': ret = 204; break;
-          case 'glGetShaderInfoLog': ret = 134; break;
-          case 'glUniformMatrix4fv': ret = 16; break;
-          case 'glClearStencil': ret = 4; break;
-          case 'glGetProgramInfoLog': ret = 86; break;
-          case 'glGetUniformfv': ret = 170; break;
-          case 'glStencilFuncSeparate': ret = 310; break;
-          case 'glSampleCoverage': ret = 230; break;
-          case 'glColorMask': ret = 292; break;
-          case 'glGetShaderiv': ret = 262; break;
-          case 'glGetUniformiv': ret = 224; break;
-          case 'glCopyTexSubImage2D': ret = 296; break;
-          case 'glDetachShader': ret = 140; break;
-          case 'glGetShaderSource': ret = 212; break;
-          case 'glDeleteTextures': ret = 106; break;
-          case 'glGetAttachedShaders': ret = 250; break;
-          case 'glValidateProgram': ret = 78; break;
-          case 'glDepthFunc': ret = 108; break;
-          case 'glIsShader': ret = 50; break;
-          case 'glDepthMask': ret = 98; break;
-          case 'glStencilMaskSeparate': ret = 128; break;
-          case 'glIsProgram': ret = 150; break;
-          case 'glDisable': ret = 298; break;
-          case 'glStencilOpSeparate': ret = 110; break;
-          case 'glDrawArrays': ret = 198; break;
-          case 'glDrawElements': ret = 96; break;
-          case 'glEnable': ret = 282; break;
-          case 'glFinish': ret = 184; break;
-          case 'glFlush': ret = 238; break;
-          case 'glFrontFace': ret = 218; break;
-          case 'glCullFace': ret = 154; break;
-          case 'glGenTextures': ret = 122; break;
-          case 'glGetError': ret = 202; break;
-          case 'glGetIntegerv': ret = 124; break;
-          case 'glGetBooleanv': ret = 74; break;
-          case 'glGetFloatv': ret = 188; break;
-          case 'glHint': ret = 84; break;
-          case 'glIsTexture': ret = 116; break;
-          case 'glPixelStorei': ret = 276; break;
-          case 'glReadPixels': ret = 200; break;
-          case 'glScissor': ret = 246; break;
-          case 'glStencilFunc': ret = 12; break;
-          case 'glStencilMask': ret = 304; break;
-          case 'glStencilOp': ret = 52; break;
-          case 'glTexImage2D': ret = 236; break;
-          case 'glTexParameterf': ret = 308; break;
-          case 'glTexParameterfv': ret = 94; break;
-          case 'glTexParameteri': ret = 300; break;
-          case 'glTexParameteriv': ret = 14; break;
-          case 'glGetTexParameterfv': ret = 160; break;
-          case 'glGetTexParameteriv': ret = 194; break;
-          case 'glTexSubImage2D': ret = 312; break;
-          case 'glCopyTexImage2D': ret = 278; break;
-          case 'glViewport': ret = 102; break;
-          case 'glIsEnabled': ret = 182; break;
-          case 'glLineWidth': ret = 18; break;
-          case 'glPolygonOffset': ret = 48; break;
-          case 'glReleaseShaderCompiler': ret = 260; break;
-          case 'glGetShaderPrecisionFormat': ret = 54; break;
-          case 'glShaderBinary': ret = 36; break;
-        }
-        if (!ret) Module.printErr('WARNING: getProcAddress failed for ' + name);
-        return ret;
-      }};var GLImmediate={MapTreeLib:null,spawnMapTreeLib:function () {
-        /* A naive implementation of a map backed by an array, and accessed by
-         * naive iteration along the array. (hashmap with only one bucket)
-         */
-        function CNaiveListMap() {
-          var list = [];
-          this.insert = function(key, val) {
-            if (this.contains(key|0)) return false;
-            list.push([key, val]);
-            return true;
-          };
-          var __contains_i;
-          this.contains = function(key) {
-            for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
-              if (list[__contains_i][0] === key) return true;
-            }
-            return false;
-          };
-          var __get_i;
-          this.get = function(key) {
-            for (__get_i = 0; __get_i < list.length; ++__get_i) {
-              if (list[__get_i][0] === key) return list[__get_i][1];
-            }
-            return undefined;
-          };
-        };
-        /* A tree of map nodes.
-          Uses `KeyView`s to allow descending the tree without garbage.
-          Example: {
-            // Create our map object.
-            var map = new ObjTreeMap();
-            // Grab the static keyView for the map.
-            var keyView = map.GetStaticKeyView();
-            // Let's make a map for:
-            // root: <undefined>
-            //   1: <undefined>
-            //     2: <undefined>
-            //       5: "Three, sir!"
-            //       3: "Three!"
-            // Note how we can chain together `Reset` and `Next` to
-            // easily descend based on multiple key fragments.
-            keyView.Reset().Next(1).Next(2).Next(5).Set("Three, sir!");
-            keyView.Reset().Next(1).Next(2).Next(3).Set("Three!");
-          }
-        */
-        function CMapTree() {
-          function CNLNode() {
-            var map = new CNaiveListMap();
-            this.child = function(keyFrag) {
-              if (!map.contains(keyFrag|0)) {
-                map.insert(keyFrag|0, new CNLNode());
-              }
-              return map.get(keyFrag|0);
-            };
-            this.value = undefined;
-            this.get = function() {
-              return this.value;
-            };
-            this.set = function(val) {
-              this.value = val;
-            };
-          }
-          function CKeyView(root) {
-            var cur;
-            this.reset = function() {
-              cur = root;
-              return this;
-            };
-            this.reset();
-            this.next = function(keyFrag) {
-              cur = cur.child(keyFrag);
-              return this;
-            };
-            this.get = function() {
-              return cur.get();
-            };
-            this.set = function(val) {
-              cur.set(val);
-            };
-          };
-          var root;
-          var staticKeyView;
-          this.createKeyView = function() {
-            return new CKeyView(root);
-          }
-          this.clear = function() {
-            root = new CNLNode();
-            staticKeyView = this.createKeyView();
-          };
-          this.clear();
-          this.getStaticKeyView = function() {
-            staticKeyView.reset();
-            return staticKeyView;
-          };
-        };
-        // Exports:
-        return {
-          create: function() {
-            return new CMapTree();
-          },
-        };
-      },TexEnvJIT:null,spawnTexEnvJIT:function () {
-        // GL defs:
-        var GL_TEXTURE0 = 0x84C0;
-        var GL_TEXTURE_1D = 0x0DE0;
-        var GL_TEXTURE_2D = 0x0DE1;
-        var GL_TEXTURE_3D = 0x806f;
-        var GL_TEXTURE_CUBE_MAP = 0x8513;
-        var GL_TEXTURE_ENV = 0x2300;
-        var GL_TEXTURE_ENV_MODE = 0x2200;
-        var GL_TEXTURE_ENV_COLOR = 0x2201;
-        var GL_TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515;
-        var GL_TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516;
-        var GL_TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517;
-        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518;
-        var GL_TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519;
-        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A;
-        var GL_SRC0_RGB = 0x8580;
-        var GL_SRC1_RGB = 0x8581;
-        var GL_SRC2_RGB = 0x8582;
-        var GL_SRC0_ALPHA = 0x8588;
-        var GL_SRC1_ALPHA = 0x8589;
-        var GL_SRC2_ALPHA = 0x858A;
-        var GL_OPERAND0_RGB = 0x8590;
-        var GL_OPERAND1_RGB = 0x8591;
-        var GL_OPERAND2_RGB = 0x8592;
-        var GL_OPERAND0_ALPHA = 0x8598;
-        var GL_OPERAND1_ALPHA = 0x8599;
-        var GL_OPERAND2_ALPHA = 0x859A;
-        var GL_COMBINE_RGB = 0x8571;
-        var GL_COMBINE_ALPHA = 0x8572;
-        var GL_RGB_SCALE = 0x8573;
-        var GL_ALPHA_SCALE = 0x0D1C;
-        // env.mode
-        var GL_ADD      = 0x0104;
-        var GL_BLEND    = 0x0BE2;
-        var GL_REPLACE  = 0x1E01;
-        var GL_MODULATE = 0x2100;
-        var GL_DECAL    = 0x2101;
-        var GL_COMBINE  = 0x8570;
-        // env.color/alphaCombiner
-        //var GL_ADD         = 0x0104;
-        //var GL_REPLACE     = 0x1E01;
-        //var GL_MODULATE    = 0x2100;
-        var GL_SUBTRACT    = 0x84E7;
-        var GL_INTERPOLATE = 0x8575;
-        // env.color/alphaSrc
-        var GL_TEXTURE       = 0x1702;
-        var GL_CONSTANT      = 0x8576;
-        var GL_PRIMARY_COLOR = 0x8577;
-        var GL_PREVIOUS      = 0x8578;
-        // env.color/alphaOp
-        var GL_SRC_COLOR           = 0x0300;
-        var GL_ONE_MINUS_SRC_COLOR = 0x0301;
-        var GL_SRC_ALPHA           = 0x0302;
-        var GL_ONE_MINUS_SRC_ALPHA = 0x0303;
-        var GL_RGB  = 0x1907;
-        var GL_RGBA = 0x1908;
-        // Our defs:
-        var TEXENVJIT_NAMESPACE_PREFIX = "tej_";
-        // Not actually constant, as they can be changed between JIT passes:
-        var TEX_UNIT_UNIFORM_PREFIX = "uTexUnit";
-        var TEX_COORD_VARYING_PREFIX = "vTexCoord";
-        var PRIM_COLOR_VARYING = "vPrimColor";
-        var TEX_MATRIX_UNIFORM_PREFIX = "uTexMatrix";
-        // Static vars:
-        var s_texUnits = null; //[];
-        var s_activeTexture = 0;
-        var s_requiredTexUnitsForPass = [];
-        // Static funcs:
-        function abort(info) {
-          assert(false, "[TexEnvJIT] ABORT: " + info);
-        }
-        function abort_noSupport(info) {
-          abort("No support: " + info);
-        }
-        function abort_sanity(info) {
-          abort("Sanity failure: " + info);
-        }
-        function genTexUnitSampleExpr(texUnitID) {
-          var texUnit = s_texUnits[texUnitID];
-          var texType = texUnit.getTexType();
-          var func = null;
-          switch (texType) {
-            case GL_TEXTURE_1D:
-              func = "texture2D";
-              break;
-            case GL_TEXTURE_2D:
-              func = "texture2D";
-              break;
-            case GL_TEXTURE_3D:
-              return abort_noSupport("No support for 3D textures.");
-            case GL_TEXTURE_CUBE_MAP:
-              func = "textureCube";
-              break;
-            default:
-              return abort_sanity("Unknown texType: 0x" + texType.toString(16));
-          }
-          var texCoordExpr = TEX_COORD_VARYING_PREFIX + texUnitID;
-          if (TEX_MATRIX_UNIFORM_PREFIX != null) {
-            texCoordExpr = "(" + TEX_MATRIX_UNIFORM_PREFIX + texUnitID + " * " + texCoordExpr + ")";
-          }
-          return func + "(" + TEX_UNIT_UNIFORM_PREFIX + texUnitID + ", " + texCoordExpr + ".xy)";
-        }
-        function getTypeFromCombineOp(op) {
-          switch (op) {
-            case GL_SRC_COLOR:
-            case GL_ONE_MINUS_SRC_COLOR:
-              return "vec3";
-            case GL_SRC_ALPHA:
-            case GL_ONE_MINUS_SRC_ALPHA:
-              return "float";
-          }
-          return Abort_NoSupport("Unsupported combiner op: 0x" + op.toString(16));
-        }
-        function getCurTexUnit() {
-          return s_texUnits[s_activeTexture];
-        }
-        function genCombinerSourceExpr(texUnitID, constantExpr, previousVar,
-                                       src, op)
-        {
-          var srcExpr = null;
-          switch (src) {
-            case GL_TEXTURE:
-              srcExpr = genTexUnitSampleExpr(texUnitID);
-              break;
-            case GL_CONSTANT:
-              srcExpr = constantExpr;
-              break;
-            case GL_PRIMARY_COLOR:
-              srcExpr = PRIM_COLOR_VARYING;
-              break;
-            case GL_PREVIOUS:
-              srcExpr = previousVar;
-              break;
-            default:
-                return abort_noSupport("Unsupported combiner src: 0x" + src.toString(16));
-          }
-          var expr = null;
-          switch (op) {
-            case GL_SRC_COLOR:
-              expr = srcExpr + ".rgb";
-              break;
-            case GL_ONE_MINUS_SRC_COLOR:
-              expr = "(vec3(1.0) - " + srcExpr + ".rgb)";
-              break;
-            case GL_SRC_ALPHA:
-              expr = srcExpr + ".a";
-              break;
-            case GL_ONE_MINUS_SRC_ALPHA:
-              expr = "(1.0 - " + srcExpr + ".a)";
-              break;
-            default:
-              return abort_noSupport("Unsupported combiner op: 0x" + op.toString(16));
-          }
-          return expr;
-        }
-        function valToFloatLiteral(val) {
-          if (val == Math.round(val)) return val + '.0';
-          return val;
-        }
-        // Classes:
-        function CTexEnv() {
-          this.mode = GL_MODULATE;
-          this.colorCombiner = GL_MODULATE;
-          this.alphaCombiner = GL_MODULATE;
-          this.colorScale = 1;
-          this.alphaScale = 1;
-          this.envColor = [0, 0, 0, 0];
-          this.colorSrc = [
-            GL_TEXTURE,
-            GL_PREVIOUS,
-            GL_CONSTANT
-          ];
-          this.alphaSrc = [
-            GL_TEXTURE,
-            GL_PREVIOUS,
-            GL_CONSTANT
-          ];
-          this.colorOp = [
-            GL_SRC_COLOR,
-            GL_SRC_COLOR,
-            GL_SRC_ALPHA
-          ];
-          this.alphaOp = [
-            GL_SRC_ALPHA,
-            GL_SRC_ALPHA,
-            GL_SRC_ALPHA
-          ];
-          this.traverseState = function(keyView) {
-            keyView.next(this.mode);
-            keyView.next(this.colorCombiner);
-            keyView.next(this.alphaCombiner);
-            keyView.next(this.colorCombiner);
-            keyView.next(this.alphaScale);
-            keyView.next(this.envColor[0]);
-            keyView.next(this.envColor[1]);
-            keyView.next(this.envColor[2]);
-            keyView.next(this.envColor[3]);
-            keyView.next(this.colorSrc[0]);
-            keyView.next(this.colorSrc[1]);
-            keyView.next(this.colorSrc[2]);
-            keyView.next(this.alphaSrc[0]);
-            keyView.next(this.alphaSrc[1]);
-            keyView.next(this.alphaSrc[2]);
-            keyView.next(this.colorOp[0]);
-            keyView.next(this.colorOp[1]);
-            keyView.next(this.colorOp[2]);
-            keyView.next(this.alphaOp[0]);
-            keyView.next(this.alphaOp[1]);
-            keyView.next(this.alphaOp[2]);
-          };
-        }
-        function CTexUnit() {
-          this.env = new CTexEnv();
-          this.enabled_tex1D   = false;
-          this.enabled_tex2D   = false;
-          this.enabled_tex3D   = false;
-          this.enabled_texCube = false;
-          this.traverseState = function(keyView) {
-            var texUnitType = this.getTexType();
-            keyView.next(texUnitType);
-            if (!texUnitType) return;
-            this.env.traverseState(keyView);
-          };
-        };
-        // Class impls:
-        CTexUnit.prototype.enabled = function() {
-          return this.getTexType() != 0;
-        }
-        CTexUnit.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
-          if (!this.enabled()) {
-            return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
-          }
-          return this.env.genPassLines(passOutputVar, passInputVar, texUnitID);
-        }
-        CTexUnit.prototype.getTexType = function() {
-          if (this.enabled_texCube) {
-            return GL_TEXTURE_CUBE_MAP;
-          } else if (this.enabled_tex3D) {
-            return GL_TEXTURE_3D;
-          } else if (this.enabled_tex2D) {
-            return GL_TEXTURE_2D;
-          } else if (this.enabled_tex1D) {
-            return GL_TEXTURE_1D;
-          }
-          return 0;
-        }
-        CTexEnv.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
-          switch (this.mode) {
-            case GL_REPLACE: {
-              /* RGB:
-               * Cv = Cs
-               * Av = Ap // Note how this is different, and that we'll
-               *            need to track the bound texture internalFormat
-               *            to get this right.
-               *
-               * RGBA:
-               * Cv = Cs
-               * Av = As
-               */
-              return [
-                "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-              ];
-            }
-            case GL_ADD: {
-              /* RGBA:
-               * Cv = Cp + Cs
-               * Av = ApAs
-               */
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-              var texVar = prefix + "tex";
-              var colorVar = prefix + "color";
-              var alphaVar = prefix + "alpha";
-              return [
-                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-                "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
-                "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
-                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-              ];
-            }
-            case GL_MODULATE: {
-              /* RGBA:
-               * Cv = CpCs
-               * Av = ApAs
-               */
-              var line = [
-                "vec4 " + passOutputVar,
-                " = ",
-                  passInputVar,
-                  " * ",
-                  genTexUnitSampleExpr(texUnitID),
-                ";",
-              ];
-              return [line.join("")];
-            }
-            case GL_DECAL: {
-              /* RGBA:
-               * Cv = Cp(1 - As) + CsAs
-               * Av = Ap
-               */
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-              var texVar = prefix + "tex";
-              var colorVar = prefix + "color";
-              var alphaVar = prefix + "alpha";
-              return [
-                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-                [
-                  "vec3 " + colorVar + " = ",
-                    passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
-                      " + ",
-                    texVar + ".rgb * " + texVar + ".a",
-                  ";"
-                ].join(""),
-                "float " + alphaVar + " = " + passInputVar + ".a;",
-                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-              ];
-            }
-            case GL_BLEND: {
-              /* RGBA:
-               * Cv = Cp(1 - Cs) + CcCs
-               * Av = As
-               */
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-              var texVar = prefix + "tex";
-              var colorVar = prefix + "color";
-              var alphaVar = prefix + "alpha";
-              return [
-                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
-                [
-                  "vec3 " + colorVar + " = ",
-                    passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
-                      " + ",
-                    PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
-                  ";"
-                ].join(""),
-                "float " + alphaVar + " = " + texVar + ".a;",
-                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
-              ];
-            }
-            case GL_COMBINE: {
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-              var colorVar = prefix + "color";
-              var alphaVar = prefix + "alpha";
-              var colorLines = this.genCombinerLines(true, colorVar,
-                                                     passInputVar, texUnitID,
-                                                     this.colorCombiner, this.colorSrc, this.colorOp);
-              var alphaLines = this.genCombinerLines(false, alphaVar,
-                                                     passInputVar, texUnitID,
-                                                     this.alphaCombiner, this.alphaSrc, this.alphaOp);
-              var line = [
-                "vec4 " + passOutputVar,
-                " = ",
-                  "vec4(",
-                      colorVar + " * " + valToFloatLiteral(this.colorScale),
-                      ", ",
-                      alphaVar + " * " + valToFloatLiteral(this.alphaScale),
-                  ")",
-                ";",
-              ].join("");
-              return [].concat(colorLines, alphaLines, [line]);
-            }
-          }
-          return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
-        }
-        CTexEnv.prototype.genCombinerLines = function(isColor, outputVar,
-                                                      passInputVar, texUnitID,
-                                                      combiner, srcArr, opArr)
-        {
-          var argsNeeded = null;
-          switch (combiner) {
-            case GL_REPLACE:
-              argsNeeded = 1;
-              break;
-            case GL_MODULATE:
-            case GL_ADD:
-            case GL_SUBTRACT:
-              argsNeeded = 2;
-              break;
-            case GL_INTERPOLATE:
-              argsNeeded = 3;
-              break;
-            default:
-              return abort_noSupport("Unsupported combiner: 0x" + combiner.toString(16));
-          }
-          var constantExpr = [
-            "vec4(",
-              valToFloatLiteral(this.envColor[0]),
-              ", ",
-              valToFloatLiteral(this.envColor[1]),
-              ", ",
-              valToFloatLiteral(this.envColor[2]),
-              ", ",
-              valToFloatLiteral(this.envColor[3]),
-            ")",
-          ].join("");
-          var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
-                                           : null;
-          var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
-                                           : null;
-          var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
-                                           : null;
-          var outputType = isColor ? "vec3" : "float";
-          var lines = null;
-          switch (combiner) {
-            case GL_REPLACE: {
-              var line = [
-                outputType + " " + outputVar,
-                " = ",
-                  src0Expr,
-                ";",
-              ];
-              lines = [line.join("")];
-              break;
-            }
-            case GL_MODULATE: {
-              var line = [
-                outputType + " " + outputVar + " = ",
-                  src0Expr + " * " + src1Expr,
-                ";",
-              ];
-              lines = [line.join("")];
-              break;
-            }
-            case GL_ADD: {
-              var line = [
-                outputType + " " + outputVar + " = ",
-                  src0Expr + " + " + src1Expr,
-                ";",
-              ];
-              lines = [line.join("")];
-              break;
-            }
-            case GL_SUBTRACT: {
-              var line = [
-                outputType + " " + outputVar + " = ",
-                  src0Expr + " - " + src1Expr,
-                ";",
-              ];
-              lines = [line.join("")];
-              break;
-            }
-            case GL_INTERPOLATE: {
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
-              var arg2Var = prefix + "colorSrc2";
-              var arg2Line = getTypeFromCombineOp(this.colorOp[2]) + " " + arg2Var + " = " + src2Expr + ";";
-              var line = [
-                outputType + " " + outputVar,
-                " = ",
-                  src0Expr + " * " + arg2Var,
-                  " + ",
-                  src1Expr + " * (1.0 - " + arg2Var + ")",
-                ";",
-              ];
-              lines = [
-                arg2Line,
-                line.join(""),
-              ];
-              break;
-            }
-            default:
-              return abort_sanity("Unmatched TexEnv.colorCombiner?");
-          }
-          return lines;
-        }
-        return {
-          // Exports:
-          init: function(gl, specifiedMaxTextureImageUnits) {
-            var maxTexUnits = 0;
-            if (specifiedMaxTextureImageUnits) {
-              maxTexUnits = specifiedMaxTextureImageUnits;
-            } else if (gl) {
-              maxTexUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-            }
-            assert(maxTexUnits > 0);
-            s_texUnits = [];
-            for (var i = 0; i < maxTexUnits; i++) {
-              s_texUnits.push(new CTexUnit());
-            }
-          },
-          setGLSLVars: function(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix) {
-            TEX_UNIT_UNIFORM_PREFIX   = uTexUnitPrefix;
-            TEX_COORD_VARYING_PREFIX  = vTexCoordPrefix;
-            PRIM_COLOR_VARYING        = vPrimColor;
-            TEX_MATRIX_UNIFORM_PREFIX = uTexMatrixPrefix;
-          },
-          genAllPassLines: function(resultDest, indentSize) {
-            indentSize = indentSize || 0;
-            s_requiredTexUnitsForPass.length = 0; // Clear the list.
-            var lines = [];
-            var lastPassVar = PRIM_COLOR_VARYING;
-            for (var i = 0; i < s_texUnits.length; i++) {
-              if (!s_texUnits[i].enabled()) continue;
-              s_requiredTexUnitsForPass.push(i);
-              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + i + "_";
-              var passOutputVar = prefix + "result";
-              var newLines = s_texUnits[i].genPassLines(passOutputVar, lastPassVar, i);
-              lines = lines.concat(newLines, [""]);
-              lastPassVar = passOutputVar;
-            }
-            lines.push(resultDest + " = " + lastPassVar + ";");
-            var indent = "";
-            for (var i = 0; i < indentSize; i++) indent += " ";
-            var output = indent + lines.join("\n" + indent);
-            return output;
-          },
-          getUsedTexUnitList: function() {
-            return s_requiredTexUnitsForPass;
-          },
-          traverseState: function(keyView) {
-            for (var i = 0; i < s_texUnits.length; i++) {
-              var texUnit = s_texUnits[i];
-              var enabled = texUnit.enabled();
-              keyView.next(enabled);
-              if (enabled) {
-                texUnit.traverseState(keyView);
-              }
-            }
-          },
-          getTexUnitType: function(texUnitID) {
-            assert(texUnitID >= 0 &&
-                   texUnitID < s_texUnits.length);
-            return s_texUnits[texUnitID].getTexType();
-          },
-          // Hooks:
-          hook_activeTexture: function(texture) {
-            s_activeTexture = texture - GL_TEXTURE0;
-          },
-          hook_enable: function(cap) {
-            var cur = getCurTexUnit();
-            switch (cap) {
-              case GL_TEXTURE_1D:
-                cur.enabled_tex1D = true;
-                break;
-              case GL_TEXTURE_2D:
-                cur.enabled_tex2D = true;
-                break;
-              case GL_TEXTURE_3D:
-                cur.enabled_tex3D = true;
-                break;
-              case GL_TEXTURE_CUBE_MAP:
-                cur.enabled_texCube = true;
-                break;
-            }
-          },
-          hook_disable: function(cap) {
-            var cur = getCurTexUnit();
-            switch (cap) {
-              case GL_TEXTURE_1D:
-                cur.enabled_tex1D = false;
-                break;
-              case GL_TEXTURE_2D:
-                cur.enabled_tex2D = false;
-                break;
-              case GL_TEXTURE_3D:
-                cur.enabled_tex3D = false;
-                break;
-              case GL_TEXTURE_CUBE_MAP:
-                cur.enabled_texCube = false;
-                break;
-            }
-          },
-          hook_texEnvf: function(target, pname, param) {
-            if (target != GL_TEXTURE_ENV)
-              return;
-            var env = getCurTexUnit().env;
-            switch (pname) {
-              case GL_RGB_SCALE:
-                env.colorScale = param;
-                break;
-              case GL_ALPHA_SCALE:
-                env.alphaScale = param;
-                break;
-              default:
-                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvf`.');
-            }
-          },
-          hook_texEnvi: function(target, pname, param) {
-            if (target != GL_TEXTURE_ENV)
-              return;
-            var env = getCurTexUnit().env;
-            switch (pname) {
-              case GL_TEXTURE_ENV_MODE:
-                env.mode = param;
-                break;
-              case GL_COMBINE_RGB:
-                env.colorCombiner = param;
-                break;
-              case GL_COMBINE_ALPHA:
-                env.alphaCombiner = param;
-                break;
-              case GL_SRC0_RGB:
-                env.colorSrc[0] = param;
-                break;
-              case GL_SRC1_RGB:
-                env.colorSrc[1] = param;
-                break;
-              case GL_SRC2_RGB:
-                env.colorSrc[2] = param;
-                break;
-              case GL_SRC0_ALPHA:
-                env.alphaSrc[0] = param;
-                break;
-              case GL_SRC1_ALPHA:
-                env.alphaSrc[1] = param;
-                break;
-              case GL_SRC2_ALPHA:
-                env.alphaSrc[2] = param;
-                break;
-              case GL_OPERAND0_RGB:
-                env.colorOp[0] = param;
-                break;
-              case GL_OPERAND1_RGB:
-                env.colorOp[1] = param;
-                break;
-              case GL_OPERAND2_RGB:
-                env.colorOp[2] = param;
-                break;
-              case GL_OPERAND0_ALPHA:
-                env.alphaOp[0] = param;
-                break;
-              case GL_OPERAND1_ALPHA:
-                env.alphaOp[1] = param;
-                break;
-              case GL_OPERAND2_ALPHA:
-                env.alphaOp[2] = param;
-                break;
-              case GL_RGB_SCALE:
-                env.colorScale = param;
-                break;
-              case GL_ALPHA_SCALE:
-                env.alphaScale = param;
-                break;
-              default:
-                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvi`.');
-            }
-          },
-          hook_texEnvfv: function(target, pname, params) {
-            if (target != GL_TEXTURE_ENV) return;
-            var env = getCurTexUnit().env;
-            switch (pname) {
-              case GL_TEXTURE_ENV_COLOR: {
-                for (var i = 0; i < 4; i++) {
-                  var param = HEAPF32[(((params)+(i*4))>>2)];
-                  env.envColor[i] = param;
-                }
-                break
-              }
-              default:
-                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvfv`.');
-            }
-          },
-        };
-      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,MAX_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function (name, size, type, stride, pointer) {
-        var attrib = this.clientAttributes[name];
-        if (!attrib) {
-          for (var i = 0; i <= name; i++) { // keep flat
-            if (!this.clientAttributes[i]) {
-              this.clientAttributes[i] = {
-                name: name,
-                size: size,
-                type: type,
-                stride: stride,
-                pointer: pointer,
-                offset: 0
-              };
-            }
-          }
-        } else {
-          attrib.name = name;
-          attrib.size = size;
-          attrib.type = type;
-          attrib.stride = stride;
-          attrib.pointer = pointer;
-          attrib.offset = 0;
-        }
-        this.modifiedClientAttributes = true;
-      },addRendererComponent:function (name, size, type) {
-        if (!this.rendererComponents[name]) {
-          this.rendererComponents[name] = 1;
-          this.enabledClientAttributes[name] = true;
-          this.setClientAttribute(name, size, type, 0, this.rendererComponentPointer);
-          this.rendererComponentPointer += size * GL.byteSizeByType[type - GL.byteSizeByTypeRoot];
-        } else {
-          this.rendererComponents[name]++;
-        }
-      },disableBeginEndClientAttributes:function () {
-        for (var i = 0; i < this.NUM_ATTRIBUTES; i++) {
-          if (this.rendererComponents[i]) this.enabledClientAttributes[i] = false;
-        }
-      },getRenderer:function () {
-        // return a renderer object given the liveClientAttributes
-        // we maintain a cache of renderers, optimized to not generate garbage
-        var attributes = GL.immediate.liveClientAttributes;
-        var cacheMap = GL.immediate.rendererCache;
-        var temp;
-        var keyView = cacheMap.getStaticKeyView().reset();
-        // By attrib state:
-        for (var i = 0; i < attributes.length; i++) {
-          var attribute = attributes[i];
-          keyView.next(attribute.name).next(attribute.size).next(attribute.type);
-        }
-        // By fog state:
-        var fogParam = 0;
-        if (GLEmulation.fogEnabled) {
-          switch (GLEmulation.fogMode) {
-            case 0x0801: // GL_EXP2
-              fogParam = 1;
-              break;
-            case 0x2601: // GL_LINEAR
-              fogParam = 2;
-              break;
-            default: // default to GL_EXP
-              fogParam = 3;
-              break;
-          }
-        }
-        keyView.next(fogParam);
-        // By cur program:
-        keyView.next(GL.currProgram);
-        if (!GL.currProgram) {
-          GL.immediate.TexEnvJIT.traverseState(keyView);
-        }
-        // If we don't already have it, create it.
-        if (!keyView.get()) {
-          keyView.set(this.createRenderer());
-        }
-        return keyView.get();
-      },createRenderer:function (renderer) {
-        var useCurrProgram = !!GL.currProgram;
-        var hasTextures = false, textureSizes = [], textureTypes = [];
-        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-          var texAttribName = GL.immediate.TEXTURE0 + i;
-          if (!GL.immediate.enabledClientAttributes[texAttribName])
-            continue;
-          if (!useCurrProgram) {
-            assert(GL.immediate.TexEnvJIT.getTexUnitType(i) != 0, "GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
-          }
-          textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
-          textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
-          hasTextures = true;
-        }
-        var positionSize = GL.immediate.clientAttributes[GL.immediate.VERTEX].size;
-        var positionType = GL.immediate.clientAttributes[GL.immediate.VERTEX].type;
-        var colorSize = 0, colorType;
-        if (GL.immediate.enabledClientAttributes[GL.immediate.COLOR]) {
-          colorSize = GL.immediate.clientAttributes[GL.immediate.COLOR].size;
-          colorType = GL.immediate.clientAttributes[GL.immediate.COLOR].type;
-        }
-        var normalSize = 0, normalType;
-        if (GL.immediate.enabledClientAttributes[GL.immediate.NORMAL]) {
-          normalSize = GL.immediate.clientAttributes[GL.immediate.NORMAL].size;
-          normalType = GL.immediate.clientAttributes[GL.immediate.NORMAL].type;
-        }
-        var ret = {
-          init: function() {
-            // For fixed-function shader generation.
-            var uTexUnitPrefix = 'u_texUnit';
-            var aTexCoordPrefix = 'a_texCoord';
-            var vTexCoordPrefix = 'v_texCoord';
-            var vPrimColor = 'v_color';
-            var uTexMatrixPrefix = GL.immediate.useTextureMatrix ? 'u_textureMatrix' : null;
-            if (useCurrProgram) {
-              if (GL.shaderInfos[GL.programShaders[GL.currProgram][0]].type == Module.ctx.VERTEX_SHADER) {
-                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
-                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
-              } else {
-                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
-                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
-              }
-              this.program = GL.programs[GL.currProgram];
-              this.usedTexUnitList = [];
-            } else {
-              // IMPORTANT NOTE: If you parameterize the shader source based on any runtime values
-              // in order to create the least expensive shader possible based on the features being
-              // used, you should also update the code in the beginning of getRenderer to make sure
-              // that you cache the renderer based on the said parameters.
-              if (GLEmulation.fogEnabled) {
-                switch (GLEmulation.fogMode) {
-                  case 0x0801: // GL_EXP2
-                    // fog = exp(-(gl_Fog.density * gl_FogFragCoord)^2)
-                    var fogFormula = '  float fog = exp(-u_fogDensity * u_fogDensity * ecDistance * ecDistance); \n';
-                    break;
-                  case 0x2601: // GL_LINEAR
-                    // fog = (gl_Fog.end - gl_FogFragCoord) * gl_fog.scale
-                    var fogFormula = '  float fog = (u_fogEnd - ecDistance) * u_fogScale; \n';
-                    break;
-                  default: // default to GL_EXP
-                    // fog = exp(-gl_Fog.density * gl_FogFragCoord)
-                    var fogFormula = '  float fog = exp(-u_fogDensity * ecDistance); \n';
-                    break;
-                }
-              }
-              GL.immediate.TexEnvJIT.setGLSLVars(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix);
-              var fsTexEnvPass = GL.immediate.TexEnvJIT.genAllPassLines('gl_FragColor', 2);
-              var texUnitAttribList = '';
-              var texUnitVaryingList = '';
-              var texUnitUniformList = '';
-              var vsTexCoordInits = '';
-              this.usedTexUnitList = GL.immediate.TexEnvJIT.getUsedTexUnitList();
-              for (var i = 0; i < this.usedTexUnitList.length; i++) {
-                var texUnit = this.usedTexUnitList[i];
-                texUnitAttribList += 'attribute vec4 ' + aTexCoordPrefix + texUnit + ';\n';
-                texUnitVaryingList += 'varying vec4 ' + vTexCoordPrefix + texUnit + ';\n';
-                texUnitUniformList += 'uniform sampler2D ' + uTexUnitPrefix + texUnit + ';\n';
-                vsTexCoordInits += '  ' + vTexCoordPrefix + texUnit + ' = ' + aTexCoordPrefix + texUnit + ';\n';
-                if (GL.immediate.useTextureMatrix) {
-                  texUnitUniformList += 'uniform mat4 ' + uTexMatrixPrefix + texUnit + ';\n';
-                }
-              }
-              var vsFogVaryingInit = null;
-              if (GLEmulation.fogEnabled) {
-                vsFogVaryingInit = '  v_fogFragCoord = abs(ecPosition.z);\n';
-              }
-              var vsSource = [
-                'attribute vec4 a_position;',
-                'attribute vec4 a_color;',
-                'varying vec4 v_color;',
-                texUnitAttribList,
-                texUnitVaryingList,
-                (GLEmulation.fogEnabled ? 'varying float v_fogFragCoord;' : null),
-                'uniform mat4 u_modelView;',
-                'uniform mat4 u_projection;',
-                'void main()',
-                '{',
-                '  vec4 ecPosition = u_modelView * a_position;', // eye-coordinate position
-                '  gl_Position = u_projection * ecPosition;',
-                '  v_color = a_color;',
-                vsTexCoordInits,
-                vsFogVaryingInit,
-                '}',
-                ''
-              ].join('\n').replace(/\n\n+/g, '\n');
-              this.vertexShader = Module.ctx.createShader(Module.ctx.VERTEX_SHADER);
-              Module.ctx.shaderSource(this.vertexShader, vsSource);
-              Module.ctx.compileShader(this.vertexShader);
-              var fogHeaderIfNeeded = null;
-              if (GLEmulation.fogEnabled) {
-                fogHeaderIfNeeded = [
-                  '',
-                  'varying float v_fogFragCoord; ',
-                  'uniform vec4 u_fogColor;      ',
-                  'uniform float u_fogEnd;       ',
-                  'uniform float u_fogScale;     ',
-                  'uniform float u_fogDensity;   ',
-                  'float ffog(in float ecDistance) { ',
-                  fogFormula,
-                  '  fog = clamp(fog, 0.0, 1.0); ',
-                  '  return fog;                 ',
-                  '}',
-                  '',
-                ].join("\n");
-              }
-              var fogPass = null;
-              if (GLEmulation.fogEnabled) {
-                fogPass = 'gl_FragColor = vec4(mix(u_fogColor.rgb, gl_FragColor.rgb, ffog(v_fogFragCoord)), gl_FragColor.a);\n';
-              }
-              var fsSource = [
-                'precision mediump float;',
-                texUnitVaryingList,
-                texUnitUniformList,
-                'varying vec4 v_color;',
-                fogHeaderIfNeeded,
-                'void main()',
-                '{',
-                fsTexEnvPass,
-                fogPass,
-                '}',
-                ''
-              ].join("\n").replace(/\n\n+/g, '\n');
-              this.fragmentShader = Module.ctx.createShader(Module.ctx.FRAGMENT_SHADER);
-              Module.ctx.shaderSource(this.fragmentShader, fsSource);
-              Module.ctx.compileShader(this.fragmentShader);
-              this.program = Module.ctx.createProgram();
-              Module.ctx.attachShader(this.program, this.vertexShader);
-              Module.ctx.attachShader(this.program, this.fragmentShader);
-              Module.ctx.bindAttribLocation(this.program, 0, 'a_position');
-              Module.ctx.linkProgram(this.program);
-            }
-            this.positionLocation = Module.ctx.getAttribLocation(this.program, 'a_position');
-            this.texCoordLocations = [];
-            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-              if (!GL.immediate.enabledClientAttributes[GL.immediate.TEXTURE0 + i]) {
-                this.texCoordLocations[i] = -1;
-                continue;
-              }
-              if (useCurrProgram) {
-                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, 'a_texCoord' + i);
-              } else {
-                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, aTexCoordPrefix + i);
-              }
-            }
-            if (!useCurrProgram) {
-              // Temporarily switch to the program so we can set our sampler uniforms early.
-              var prevBoundProg = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
-              Module.ctx.useProgram(this.program);
-              {
-                for (var i = 0; i < this.usedTexUnitList.length; i++) {
-                  var texUnitID = this.usedTexUnitList[i];
-                  var texSamplerLoc = Module.ctx.getUniformLocation(this.program, uTexUnitPrefix + texUnitID);
-                  Module.ctx.uniform1i(texSamplerLoc, texUnitID);
-                }
-              }
-              Module.ctx.useProgram(prevBoundProg);
-            }
-            this.textureMatrixLocations = [];
-            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-              this.textureMatrixLocations[i] = Module.ctx.getUniformLocation(this.program, 'u_textureMatrix' + i);
-            }
-            this.colorLocation = Module.ctx.getAttribLocation(this.program, 'a_color');
-            this.normalLocation = Module.ctx.getAttribLocation(this.program, 'a_normal');
-            this.modelViewLocation = Module.ctx.getUniformLocation(this.program, 'u_modelView');
-            this.projectionLocation = Module.ctx.getUniformLocation(this.program, 'u_projection');
-            this.hasTextures = hasTextures;
-            this.hasNormal = normalSize > 0 && this.normalLocation >= 0;
-            this.hasColor = (this.colorLocation === 0) || this.colorLocation > 0;
-            this.floatType = Module.ctx.FLOAT; // minor optimization
-            this.fogColorLocation = Module.ctx.getUniformLocation(this.program, 'u_fogColor');
-            this.fogEndLocation = Module.ctx.getUniformLocation(this.program, 'u_fogEnd');
-            this.fogScaleLocation = Module.ctx.getUniformLocation(this.program, 'u_fogScale');
-            this.fogDensityLocation = Module.ctx.getUniformLocation(this.program, 'u_fogDensity');
-            this.hasFog = !!(this.fogColorLocation || this.fogEndLocation ||
-                             this.fogScaleLocation || this.fogDensityLocation);
-          },
-          prepare: function() {
-            // Calculate the array buffer
-            var arrayBuffer;
-            if (!GL.currArrayBuffer) {
-              var start = GL.immediate.firstVertex*GL.immediate.stride;
-              var end = GL.immediate.lastVertex*GL.immediate.stride;
-              assert(end <= GL.MAX_TEMP_BUFFER_SIZE, 'too much vertex data');
-              arrayBuffer = GL.tempVertexBuffers[GL.tempBufferIndexLookup[end]];
-              // TODO: consider using the last buffer we bound, if it was larger. downside is larger buffer, but we might avoid rebinding and preparing
-            } else {
-              arrayBuffer = GL.currArrayBuffer;
-            }
-            // If the array buffer is unchanged and the renderer as well, then we can avoid all the work here
-            // XXX We use some heuristics here, and this may not work in all cases. Try disabling GL_UNSAFE_OPTS if you
-            // have odd glitches
-            var lastRenderer = GL.immediate.lastRenderer;
-            var canSkip = this == lastRenderer &&
-                          arrayBuffer == GL.immediate.lastArrayBuffer &&
-                          (GL.currProgram || this.program) == GL.immediate.lastProgram &&
-                          GL.immediate.stride == GL.immediate.lastStride &&
-                          !GL.immediate.matricesModified;
-            if (!canSkip && lastRenderer) lastRenderer.cleanup();
-            if (!GL.currArrayBuffer) {
-              // Bind the array buffer and upload data after cleaning up the previous renderer
-              // Potentially unsafe, since lastArrayBuffer might not reflect the true array buffer in code that mixes immediate/non-immediate
-              if (arrayBuffer != GL.immediate.lastArrayBuffer) {
-                Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, arrayBuffer);
-              }
-              Module.ctx.bufferSubData(Module.ctx.ARRAY_BUFFER, start, GL.immediate.vertexData.subarray(start >> 2, end >> 2));
-            }
-            if (canSkip) return;
-            GL.immediate.lastRenderer = this;
-            GL.immediate.lastArrayBuffer = arrayBuffer;
-            GL.immediate.lastProgram = GL.currProgram || this.program;
-            GL.immediate.lastStride == GL.immediate.stride;
-            GL.immediate.matricesModified = false;
-            if (!GL.currProgram) {
-              Module.ctx.useProgram(this.program);
-              GL.immediate.fixedFunctionProgram = this.program;
-            }
-            if (this.modelViewLocation) Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
-            if (this.projectionLocation) Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
-            var clientAttributes = GL.immediate.clientAttributes;
-            Module.ctx.vertexAttribPointer(this.positionLocation, positionSize, positionType, false,
-                                           GL.immediate.stride, clientAttributes[GL.immediate.VERTEX].offset);
-            Module.ctx.enableVertexAttribArray(this.positionLocation);
-            if (this.hasTextures) {
-              //for (var i = 0; i < this.usedTexUnitList.length; i++) {
-              //  var texUnitID = this.usedTexUnitList[i];
-              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-                var texUnitID = i;
-                var attribLoc = this.texCoordLocations[texUnitID];
-                if (attribLoc === undefined || attribLoc < 0) continue;
-                if (texUnitID < textureSizes.length && textureSizes[texUnitID]) {
-                  Module.ctx.vertexAttribPointer(attribLoc, textureSizes[texUnitID], textureTypes[texUnitID], false,
-                                                 GL.immediate.stride, GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + texUnitID].offset);
-                  Module.ctx.enableVertexAttribArray(attribLoc);
-                } else {
-                  // These two might be dangerous, but let's try them.
-                  Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
-                  Module.ctx.disableVertexAttribArray(attribLoc);
-                }
-              }
-              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-                if (this.textureMatrixLocations[i]) { // XXX might we need this even without the condition we are currently in?
-                  Module.ctx.uniformMatrix4fv(this.textureMatrixLocations[i], false, GL.immediate.matrix['t' + i]);
-                }
-              }
-            }
-            if (colorSize) {
-              Module.ctx.vertexAttribPointer(this.colorLocation, colorSize, colorType, true,
-                                             GL.immediate.stride, clientAttributes[GL.immediate.COLOR].offset);
-              Module.ctx.enableVertexAttribArray(this.colorLocation);
-            } else if (this.hasColor) {
-              Module.ctx.disableVertexAttribArray(this.colorLocation);
-              Module.ctx.vertexAttrib4fv(this.colorLocation, GL.immediate.clientColor);
-            }
-            if (this.hasNormal) {
-              Module.ctx.vertexAttribPointer(this.normalLocation, normalSize, normalType, true,
-                                             GL.immediate.stride, clientAttributes[GL.immediate.NORMAL].offset);
-              Module.ctx.enableVertexAttribArray(this.normalLocation);
-            }
-            if (this.hasFog) {
-              if (this.fogColorLocation) Module.ctx.uniform4fv(this.fogColorLocation, GLEmulation.fogColor);
-              if (this.fogEndLocation) Module.ctx.uniform1f(this.fogEndLocation, GLEmulation.fogEnd);
-              if (this.fogScaleLocation) Module.ctx.uniform1f(this.fogScaleLocation, 1/(GLEmulation.fogEnd - GLEmulation.fogStart));
-              if (this.fogDensityLocation) Module.ctx.uniform1f(this.fogDensityLocation, GLEmulation.fogDensity);
-            }
-          },
-          cleanup: function() {
-            Module.ctx.disableVertexAttribArray(this.positionLocation);
-            if (this.hasTextures) {
-              for (var i = 0; i < textureSizes.length; i++) {
-                if (textureSizes[i] && this.texCoordLocations[i] >= 0) {
-                  Module.ctx.disableVertexAttribArray(this.texCoordLocations[i]);
-                }
-              }
-            }
-            if (this.hasColor) {
-              Module.ctx.disableVertexAttribArray(this.colorLocation);
-            }
-            if (this.hasNormal) {
-              Module.ctx.disableVertexAttribArray(this.normalLocation);
-            }
-            if (!GL.currProgram) {
-              Module.ctx.useProgram(null);
-            }
-            if (!GL.currArrayBuffer) {
-              Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
-            }
-            GL.immediate.lastRenderer = null;
-            GL.immediate.lastArrayBuffer = null;
-            GL.immediate.lastProgram = null;
-            GL.immediate.matricesModified = true;
-          }
-        };
-        ret.init();
-        return ret;
-      },setupFuncs:function () {
-        // Replace some functions with immediate-mode aware versions. If there are no client
-        // attributes enabled, and we use webgl-friendly modes (no GL_QUADS), then no need
-        // for emulation
-        _glDrawArrays = function(mode, first, count) {
-          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6) {
-            Module.ctx.drawArrays(mode, first, count);
-            return;
-          }
-          GL.immediate.prepareClientAttributes(count, false);
-          GL.immediate.mode = mode;
-          if (!GL.currArrayBuffer) {
-            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,(GL.immediate.vertexPointer + (first+count)*GL.immediate.stride)>>2); // XXX assuming float
-            GL.immediate.firstVertex = first;
-            GL.immediate.lastVertex = first + count;
-          }
-          GL.immediate.flush(null, first);
-          GL.immediate.mode = -1;
-        };
-        _glDrawElements = function(mode, count, type, indices, start, end) { // start, end are given if we come from glDrawRangeElements
-          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6 && GL.currElementArrayBuffer) {
-            Module.ctx.drawElements(mode, count, type, indices);
-            return;
-          }
-          if (!GL.currElementArrayBuffer) {
-            assert(type == Module.ctx.UNSIGNED_SHORT); // We can only emulate buffers of this kind, for now
-          }
-          GL.immediate.prepareClientAttributes(count, false);
-          GL.immediate.mode = mode;
-          if (!GL.currArrayBuffer) {
-            GL.immediate.firstVertex = end ? start : TOTAL_MEMORY; // if we don't know the start, set an invalid value and we will calculate it later from the indices
-            GL.immediate.lastVertex = end ? end+1 : 0;
-            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,((end ? GL.immediate.vertexPointer + (end+1)*GL.immediate.stride : TOTAL_MEMORY))>>2); // XXX assuming float
-          }
-          GL.immediate.flush(count, 0, indices);
-          GL.immediate.mode = -1;
-        };
-        // TexEnv stuff needs to be prepared early, so do it here.
-        // init() is too late for -O2, since it freezes the GL functions
-        // by that point.
-        GL.immediate.MapTreeLib = GL.immediate.spawnMapTreeLib();
-        GL.immediate.spawnMapTreeLib = null;
-        GL.immediate.TexEnvJIT = GL.immediate.spawnTexEnvJIT();
-        GL.immediate.spawnTexEnvJIT = null;
-        GL.immediate.setupHooks();
-      },setupHooks:function () {
-        if (!GLEmulation.hasRunInit) {
-          GLEmulation.init();
-        }
-        var glActiveTexture = _glActiveTexture;
-        _glActiveTexture = function(texture) {
-          GL.immediate.TexEnvJIT.hook_activeTexture(texture);
-          glActiveTexture(texture);
-        };
-        var glEnable = _glEnable;
-        _glEnable = function(cap) {
-          GL.immediate.TexEnvJIT.hook_enable(cap);
-          glEnable(cap);
-        };
-        var glDisable = _glDisable;
-        _glDisable = function(cap) {
-          GL.immediate.TexEnvJIT.hook_disable(cap);
-          glDisable(cap);
-        };
-        var glTexEnvf = (typeof(_glTexEnvf) != 'undefined') ? _glTexEnvf : function(){};
-        _glTexEnvf = function(target, pname, param) {
-          GL.immediate.TexEnvJIT.hook_texEnvf(target, pname, param);
-          // Don't call old func, since we are the implementor.
-          //glTexEnvf(target, pname, param);
-        };
-        var glTexEnvi = (typeof(_glTexEnvi) != 'undefined') ? _glTexEnvi : function(){};
-        _glTexEnvi = function(target, pname, param) {
-          GL.immediate.TexEnvJIT.hook_texEnvi(target, pname, param);
-          // Don't call old func, since we are the implementor.
-          //glTexEnvi(target, pname, param);
-        };
-        var glTexEnvfv = (typeof(_glTexEnvfv) != 'undefined') ? _glTexEnvfv : function(){};
-        _glTexEnvfv = function(target, pname, param) {
-          GL.immediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
-          // Don't call old func, since we are the implementor.
-          //glTexEnvfv(target, pname, param);
-        };
-        var glGetIntegerv = _glGetIntegerv;
-        _glGetIntegerv = function(pname, params) {
-          switch (pname) {
-            case 0x8B8D: { // GL_CURRENT_PROGRAM
-              // Just query directly so we're working with WebGL objects.
-              var cur = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
-              if (cur == GL.immediate.fixedFunctionProgram) {
-                // Pretend we're not using a program.
-                HEAP32[((params)>>2)]=0;
-                return;
-              }
-              break;
-            }
-          }
-          glGetIntegerv(pname, params);
-        };
-      },initted:false,init:function () {
-        Module.printErr('WARNING: using emscripten GL immediate mode emulation. This is very limited in what it supports');
-        GL.immediate.initted = true;
-        if (!Module.useWebGL) return; // a 2D canvas may be currently used TODO: make sure we are actually called in that case
-        this.TexEnvJIT.init(Module.ctx);
-        GL.immediate.MAX_TEXTURES = Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
-        GL.immediate.NUM_ATTRIBUTES = GL.immediate.TEXTURE0 + GL.immediate.MAX_TEXTURES;
-        GL.immediate.clientAttributes = [];
-        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
-          GL.immediate.clientAttributes.push({});
-        }
-        this.matrixStack['m'] = [];
-        this.matrixStack['p'] = [];
-        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-          this.matrixStack['t' + i] = [];
-        }
-        // Initialize matrix library
-        GL.immediate.matrix['m'] = GL.immediate.matrix.lib.mat4.create();
-        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['m']);
-        GL.immediate.matrix['p'] = GL.immediate.matrix.lib.mat4.create();
-        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['p']);
-        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-          GL.immediate.matrix['t' + i] = GL.immediate.matrix.lib.mat4.create();
-        }
-        // Renderer cache
-        this.rendererCache = this.MapTreeLib.create();
-        // Buffers for data
-        this.tempData = new Float32Array(GL.MAX_TEMP_BUFFER_SIZE >> 2);
-        this.indexData = new Uint16Array(GL.MAX_TEMP_BUFFER_SIZE >> 1);
-        this.vertexDataU8 = new Uint8Array(this.tempData.buffer);
-        GL.generateTempBuffers(true);
-        this.clientColor = new Float32Array([1, 1, 1, 1]);
-      },prepareClientAttributes:function (count, beginEnd) {
-        // If no client attributes were modified since we were last called, do nothing. Note that this
-        // does not work for glBegin/End, where we generate renderer components dynamically and then
-        // disable them ourselves, but it does help with glDrawElements/Arrays.
-        if (!this.modifiedClientAttributes) {
-          return;
-        }
-        this.modifiedClientAttributes = false;
-        var stride = 0, start;
-        var attributes = GL.immediate.liveClientAttributes;
-        attributes.length = 0;
-        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
-          if (GL.immediate.enabledClientAttributes[i]) attributes.push(GL.immediate.clientAttributes[i]);
-        }
-        attributes.sort(function(x, y) { return !x ? (!y ? 0 : 1) : (!y ? -1 : (x.pointer - y.pointer)) });
-        start = GL.currArrayBuffer ? 0 : attributes[0].pointer;
-        var multiStrides = false;
-        for (var i = 0; i < attributes.length; i++) {
-          var attribute = attributes[i];
-          if (!attribute) break;
-          if (stride != 0 && stride != attribute.stride) multiStrides = true;
-          if (attribute.stride) stride = attribute.stride;
-        }
-        if (multiStrides) stride = 0; // we will need to restride
-        var bytes = 0; // total size in bytes
-        if (!stride && !beginEnd) {
-          // beginEnd can not have stride in the attributes, that is fine. otherwise,
-          // no stride means that all attributes are in fact packed. to keep the rest of
-          // our emulation code simple, we perform unpacking/restriding here. this adds overhead, so
-          // it is a good idea to not hit this!
-          if (!GL.immediate.restrideBuffer) GL.immediate.restrideBuffer = _malloc(GL.MAX_TEMP_BUFFER_SIZE);
-          start = GL.immediate.restrideBuffer;
-          // calculate restrided offsets and total size
-          for (var i = 0; i < attributes.length; i++) {
-            var attribute = attributes[i];
-            if (!attribute) break;
-            var size = attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
-            if (size % 4 != 0) size += 4 - (size % 4); // align everything
-            attribute.offset = bytes;
-            bytes += size;
-          }
-          // copy out the data (we need to know the stride for that, and define attribute.pointer
-          for (var i = 0; i < attributes.length; i++) {
-            var attribute = attributes[i];
-            if (!attribute) break;
-            var size4 = Math.floor((attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot])/4);
-            for (var j = 0; j < count; j++) {
-              for (var k = 0; k < size4; k++) { // copy in chunks of 4 bytes, our alignment makes this possible
-                HEAP32[((start + attribute.offset + bytes*j)>>2) + k] = HEAP32[(attribute.pointer>>2) + j*size4 + k];
-              }
-            }
-            attribute.pointer = start + attribute.offset;
-          }
-        } else {
-          // normal situation, everything is strided and in the same buffer
-          for (var i = 0; i < attributes.length; i++) {
-            var attribute = attributes[i];
-            if (!attribute) break;
-            attribute.offset = attribute.pointer - start;
-            if (attribute.offset > bytes) { // ensure we start where we should
-              assert((attribute.offset - bytes)%4 == 0); // XXX assuming 4-alignment
-              bytes += attribute.offset - bytes;
-            }
-            bytes += attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
-            if (bytes % 4 != 0) bytes += 4 - (bytes % 4); // XXX assuming 4-alignment
-          }
-          assert(beginEnd || bytes <= stride); // if not begin-end, explicit stride should make sense with total byte size
-          if (bytes < stride) { // ensure the size is that of the stride
-            bytes = stride;
-          }
-        }
-        GL.immediate.stride = bytes;
-        if (!beginEnd) {
-          bytes *= count;
-          if (!GL.currArrayBuffer) {
-            GL.immediate.vertexPointer = start;
-          }
-          GL.immediate.vertexCounter = bytes / 4; // XXX assuming float
-        }
-      },flush:function (numProvidedIndexes, startIndex, ptr) {
-        startIndex = startIndex || 0;
-        ptr = ptr || 0;
-        var renderer = this.getRenderer();
-        // Generate index data in a format suitable for GLES 2.0/WebGL
-        var numVertexes = 4 * this.vertexCounter / GL.immediate.stride;
-        assert(numVertexes % 1 == 0, "`numVertexes` must be an integer.");
-        var emulatedElementArrayBuffer = false;
-        var numIndexes = 0;
-        if (numProvidedIndexes) {
-          numIndexes = numProvidedIndexes;
-          if (!GL.currArrayBuffer && GL.immediate.firstVertex > GL.immediate.lastVertex) {
-            // Figure out the first and last vertex from the index data
-            assert(!GL.currElementArrayBuffer); // If we are going to upload array buffer data, we need to find which range to
-                                                // upload based on the indices. If they are in a buffer on the GPU, that is very
-                                                // inconvenient! So if you do not have an array buffer, you should also not have
-                                                // an element array buffer. But best is to use both buffers!
-            for (var i = 0; i < numProvidedIndexes; i++) {
-              var currIndex = HEAPU16[(((ptr)+(i*2))>>1)];
-              GL.immediate.firstVertex = Math.min(GL.immediate.firstVertex, currIndex);
-              GL.immediate.lastVertex = Math.max(GL.immediate.lastVertex, currIndex+1);
-            }
-          }
-          if (!GL.currElementArrayBuffer) {
-            // If no element array buffer is bound, then indices is a literal pointer to clientside data
-            assert(numProvidedIndexes << 1 <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (a)');
-            var indexBuffer = GL.tempIndexBuffers[GL.tempBufferIndexLookup[numProvidedIndexes << 1]];
-            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, indexBuffer);
-            Module.ctx.bufferSubData(Module.ctx.ELEMENT_ARRAY_BUFFER, 0, HEAPU16.subarray((ptr)>>1,(ptr + (numProvidedIndexes << 1))>>1));
-            ptr = 0;
-            emulatedElementArrayBuffer = true;
-          }
-        } else if (GL.immediate.mode > 6) { // above GL_TRIANGLE_FAN are the non-GL ES modes
-          if (GL.immediate.mode != 7) throw 'unsupported immediate mode ' + GL.immediate.mode; // GL_QUADS
-          // GL.immediate.firstVertex is the first vertex we want. Quad indexes are in the pattern
-          // 0 1 2, 0 2 3, 4 5 6, 4 6 7, so we need to look at index firstVertex * 1.5 to see it.
-          // Then since indexes are 2 bytes each, that means 3
-          assert(GL.immediate.firstVertex % 4 == 0);
-          ptr = GL.immediate.firstVertex*3;
-          var numQuads = numVertexes / 4;
-          numIndexes = numQuads * 6; // 0 1 2, 0 2 3 pattern
-          assert(ptr + (numIndexes << 1) <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (b)');
-          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
-          emulatedElementArrayBuffer = true;
-        }
-        renderer.prepare();
-        if (numIndexes) {
-          Module.ctx.drawElements(Module.ctx.TRIANGLES, numIndexes, Module.ctx.UNSIGNED_SHORT, ptr);
-        } else {
-          Module.ctx.drawArrays(GL.immediate.mode, startIndex, numVertexes);
-        }
-        if (emulatedElementArrayBuffer) {
-          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.buffers[GL.currElementArrayBuffer] || null);
-        }
-      }};
-  GL.immediate = GLImmediate; GL.immediate.matrix.lib = (function() {
-  /**
-   * @fileoverview gl-matrix - High performance matrix and vector operations for WebGL
-   * @author Brandon Jones
-   * @version 1.2.4
-   */
-  // Modifed for emscripten: Global scoping etc.
-  /*
-   * Copyright (c) 2011 Brandon Jones
-   *
-   * This software is provided 'as-is', without any express or implied
-   * warranty. In no event will the authors be held liable for any damages
-   * arising from the use of this software.
-   *
-   * Permission is granted to anyone to use this software for any purpose,
-   * including commercial applications, and to alter it and redistribute it
-   * freely, subject to the following restrictions:
-   *
-   *    1. The origin of this software must not be misrepresented; you must not
-   *    claim that you wrote the original software. If you use this software
-   *    in a product, an acknowledgment in the product documentation would be
-   *    appreciated but is not required.
-   *
-   *    2. Altered source versions must be plainly marked as such, and must not
-   *    be misrepresented as being the original software.
-   *
-   *    3. This notice may not be removed or altered from any source
-   *    distribution.
-   */
-  /**
-   * @class 3 Dimensional Vector
-   * @name vec3
-   */
-  var vec3 = {};
-  /**
-   * @class 3x3 Matrix
-   * @name mat3
-   */
-  var mat3 = {};
-  /**
-   * @class 4x4 Matrix
-   * @name mat4
-   */
-  var mat4 = {};
-  /**
-   * @class Quaternion
-   * @name quat4
-   */
-  var quat4 = {};
-  var MatrixArray = Float32Array;
-  /*
-   * vec3
-   */
-  /**
-   * Creates a new instance of a vec3 using the default array type
-   * Any javascript array-like objects containing at least 3 numeric elements can serve as a vec3
-   *
-   * @param {vec3} [vec] vec3 containing values to initialize with
-   *
-   * @returns {vec3} New vec3
-   */
-  vec3.create = function (vec) {
-      var dest = new MatrixArray(3);
-      if (vec) {
-          dest[0] = vec[0];
-          dest[1] = vec[1];
-          dest[2] = vec[2];
-      } else {
-          dest[0] = dest[1] = dest[2] = 0;
-      }
-      return dest;
-  };
-  /**
-   * Copies the values of one vec3 to another
-   *
-   * @param {vec3} vec vec3 containing values to copy
-   * @param {vec3} dest vec3 receiving copied values
-   *
-   * @returns {vec3} dest
-   */
-  vec3.set = function (vec, dest) {
-      dest[0] = vec[0];
-      dest[1] = vec[1];
-      dest[2] = vec[2];
-      return dest;
-  };
-  /**
-   * Performs a vector addition
-   *
-   * @param {vec3} vec First operand
-   * @param {vec3} vec2 Second operand
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.add = function (vec, vec2, dest) {
-      if (!dest || vec === dest) {
-          vec[0] += vec2[0];
-          vec[1] += vec2[1];
-          vec[2] += vec2[2];
-          return vec;
-      }
-      dest[0] = vec[0] + vec2[0];
-      dest[1] = vec[1] + vec2[1];
-      dest[2] = vec[2] + vec2[2];
-      return dest;
-  };
-  /**
-   * Performs a vector subtraction
-   *
-   * @param {vec3} vec First operand
-   * @param {vec3} vec2 Second operand
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.subtract = function (vec, vec2, dest) {
-      if (!dest || vec === dest) {
-          vec[0] -= vec2[0];
-          vec[1] -= vec2[1];
-          vec[2] -= vec2[2];
-          return vec;
-      }
-      dest[0] = vec[0] - vec2[0];
-      dest[1] = vec[1] - vec2[1];
-      dest[2] = vec[2] - vec2[2];
-      return dest;
-  };
-  /**
-   * Performs a vector multiplication
-   *
-   * @param {vec3} vec First operand
-   * @param {vec3} vec2 Second operand
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.multiply = function (vec, vec2, dest) {
-      if (!dest || vec === dest) {
-          vec[0] *= vec2[0];
-          vec[1] *= vec2[1];
-          vec[2] *= vec2[2];
-          return vec;
-      }
-      dest[0] = vec[0] * vec2[0];
-      dest[1] = vec[1] * vec2[1];
-      dest[2] = vec[2] * vec2[2];
-      return dest;
-  };
-  /**
-   * Negates the components of a vec3
-   *
-   * @param {vec3} vec vec3 to negate
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.negate = function (vec, dest) {
-      if (!dest) { dest = vec; }
-      dest[0] = -vec[0];
-      dest[1] = -vec[1];
-      dest[2] = -vec[2];
-      return dest;
-  };
-  /**
-   * Multiplies the components of a vec3 by a scalar value
-   *
-   * @param {vec3} vec vec3 to scale
-   * @param {number} val Value to scale by
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.scale = function (vec, val, dest) {
-      if (!dest || vec === dest) {
-          vec[0] *= val;
-          vec[1] *= val;
-          vec[2] *= val;
-          return vec;
-      }
-      dest[0] = vec[0] * val;
-      dest[1] = vec[1] * val;
-      dest[2] = vec[2] * val;
-      return dest;
-  };
-  /**
-   * Generates a unit vector of the same direction as the provided vec3
-   * If vector length is 0, returns [0, 0, 0]
-   *
-   * @param {vec3} vec vec3 to normalize
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.normalize = function (vec, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0], y = vec[1], z = vec[2],
-          len = Math.sqrt(x * x + y * y + z * z);
-      if (!len) {
-          dest[0] = 0;
-          dest[1] = 0;
-          dest[2] = 0;
-          return dest;
-      } else if (len === 1) {
-          dest[0] = x;
-          dest[1] = y;
-          dest[2] = z;
-          return dest;
-      }
-      len = 1 / len;
-      dest[0] = x * len;
-      dest[1] = y * len;
-      dest[2] = z * len;
-      return dest;
-  };
-  /**
-   * Generates the cross product of two vec3s
-   *
-   * @param {vec3} vec First operand
-   * @param {vec3} vec2 Second operand
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.cross = function (vec, vec2, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0], y = vec[1], z = vec[2],
-          x2 = vec2[0], y2 = vec2[1], z2 = vec2[2];
-      dest[0] = y * z2 - z * y2;
-      dest[1] = z * x2 - x * z2;
-      dest[2] = x * y2 - y * x2;
-      return dest;
-  };
-  /**
-   * Caclulates the length of a vec3
-   *
-   * @param {vec3} vec vec3 to calculate length of
-   *
-   * @returns {number} Length of vec
-   */
-  vec3.length = function (vec) {
-      var x = vec[0], y = vec[1], z = vec[2];
-      return Math.sqrt(x * x + y * y + z * z);
-  };
-  /**
-   * Caclulates the dot product of two vec3s
-   *
-   * @param {vec3} vec First operand
-   * @param {vec3} vec2 Second operand
-   *
-   * @returns {number} Dot product of vec and vec2
-   */
-  vec3.dot = function (vec, vec2) {
-      return vec[0] * vec2[0] + vec[1] * vec2[1] + vec[2] * vec2[2];
-  };
-  /**
-   * Generates a unit vector pointing from one vector to another
-   *
-   * @param {vec3} vec Origin vec3
-   * @param {vec3} vec2 vec3 to point to
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.direction = function (vec, vec2, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0] - vec2[0],
-          y = vec[1] - vec2[1],
-          z = vec[2] - vec2[2],
-          len = Math.sqrt(x * x + y * y + z * z);
-      if (!len) {
-          dest[0] = 0;
-          dest[1] = 0;
-          dest[2] = 0;
-          return dest;
-      }
-      len = 1 / len;
-      dest[0] = x * len;
-      dest[1] = y * len;
-      dest[2] = z * len;
-      return dest;
-  };
-  /**
-   * Performs a linear interpolation between two vec3
-   *
-   * @param {vec3} vec First vector
-   * @param {vec3} vec2 Second vector
-   * @param {number} lerp Interpolation amount between the two inputs
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.lerp = function (vec, vec2, lerp, dest) {
-      if (!dest) { dest = vec; }
-      dest[0] = vec[0] + lerp * (vec2[0] - vec[0]);
-      dest[1] = vec[1] + lerp * (vec2[1] - vec[1]);
-      dest[2] = vec[2] + lerp * (vec2[2] - vec[2]);
-      return dest;
-  };
-  /**
-   * Calculates the euclidian distance between two vec3
-   *
-   * Params:
-   * @param {vec3} vec First vector
-   * @param {vec3} vec2 Second vector
-   *
-   * @returns {number} Distance between vec and vec2
-   */
-  vec3.dist = function (vec, vec2) {
-      var x = vec2[0] - vec[0],
-          y = vec2[1] - vec[1],
-          z = vec2[2] - vec[2];
-      return Math.sqrt(x*x + y*y + z*z);
-  };
-  /**
-   * Projects the specified vec3 from screen space into object space
-   * Based on the <a href="http://webcvs.freedesktop.org/mesa/Mesa/src/glu/mesa/project.c?revision=1.4&view=markup">Mesa gluUnProject implementation</a>
-   *
-   * @param {vec3} vec Screen-space vector to project
-   * @param {mat4} view View matrix
-   * @param {mat4} proj Projection matrix
-   * @param {vec4} viewport Viewport as given to gl.viewport [x, y, width, height]
-   * @param {vec3} [dest] vec3 receiving unprojected result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  vec3.unproject = function (vec, view, proj, viewport, dest) {
-      if (!dest) { dest = vec; }
-      var m = mat4.create();
-      var v = new MatrixArray(4);
-      v[0] = (vec[0] - viewport[0]) * 2.0 / viewport[2] - 1.0;
-      v[1] = (vec[1] - viewport[1]) * 2.0 / viewport[3] - 1.0;
-      v[2] = 2.0 * vec[2] - 1.0;
-      v[3] = 1.0;
-      mat4.multiply(proj, view, m);
-      if(!mat4.inverse(m)) { return null; }
-      mat4.multiplyVec4(m, v);
-      if(v[3] === 0.0) { return null; }
-      dest[0] = v[0] / v[3];
-      dest[1] = v[1] / v[3];
-      dest[2] = v[2] / v[3];
-      return dest;
-  };
-  /**
-   * Returns a string representation of a vector
-   *
-   * @param {vec3} vec Vector to represent as a string
-   *
-   * @returns {string} String representation of vec
-   */
-  vec3.str = function (vec) {
-      return '[' + vec[0] + ', ' + vec[1] + ', ' + vec[2] + ']';
-  };
-  /*
-   * mat3
-   */
-  /**
-   * Creates a new instance of a mat3 using the default array type
-   * Any javascript array-like object containing at least 9 numeric elements can serve as a mat3
-   *
-   * @param {mat3} [mat] mat3 containing values to initialize with
-   *
-   * @returns {mat3} New mat3
-   */
-  mat3.create = function (mat) {
-      var dest = new MatrixArray(9);
-      if (mat) {
-          dest[0] = mat[0];
-          dest[1] = mat[1];
-          dest[2] = mat[2];
-          dest[3] = mat[3];
-          dest[4] = mat[4];
-          dest[5] = mat[5];
-          dest[6] = mat[6];
-          dest[7] = mat[7];
-          dest[8] = mat[8];
-      }
-      return dest;
-  };
-  /**
-   * Copies the values of one mat3 to another
-   *
-   * @param {mat3} mat mat3 containing values to copy
-   * @param {mat3} dest mat3 receiving copied values
-   *
-   * @returns {mat3} dest
-   */
-  mat3.set = function (mat, dest) {
-      dest[0] = mat[0];
-      dest[1] = mat[1];
-      dest[2] = mat[2];
-      dest[3] = mat[3];
-      dest[4] = mat[4];
-      dest[5] = mat[5];
-      dest[6] = mat[6];
-      dest[7] = mat[7];
-      dest[8] = mat[8];
-      return dest;
-  };
-  /**
-   * Sets a mat3 to an identity matrix
-   *
-   * @param {mat3} dest mat3 to set
-   *
-   * @returns dest if specified, otherwise a new mat3
-   */
-  mat3.identity = function (dest) {
-      if (!dest) { dest = mat3.create(); }
-      dest[0] = 1;
-      dest[1] = 0;
-      dest[2] = 0;
-      dest[3] = 0;
-      dest[4] = 1;
-      dest[5] = 0;
-      dest[6] = 0;
-      dest[7] = 0;
-      dest[8] = 1;
-      return dest;
-  };
-  /**
-   * Transposes a mat3 (flips the values over the diagonal)
-   *
-   * Params:
-   * @param {mat3} mat mat3 to transpose
-   * @param {mat3} [dest] mat3 receiving transposed values. If not specified result is written to mat
-   *
-   * @returns {mat3} dest is specified, mat otherwise
-   */
-  mat3.transpose = function (mat, dest) {
-      // If we are transposing ourselves we can skip a few steps but have to cache some values
-      if (!dest || mat === dest) {
-          var a01 = mat[1], a02 = mat[2],
-              a12 = mat[5];
-          mat[1] = mat[3];
-          mat[2] = mat[6];
-          mat[3] = a01;
-          mat[5] = mat[7];
-          mat[6] = a02;
-          mat[7] = a12;
-          return mat;
-      }
-      dest[0] = mat[0];
-      dest[1] = mat[3];
-      dest[2] = mat[6];
-      dest[3] = mat[1];
-      dest[4] = mat[4];
-      dest[5] = mat[7];
-      dest[6] = mat[2];
-      dest[7] = mat[5];
-      dest[8] = mat[8];
-      return dest;
-  };
-  /**
-   * Copies the elements of a mat3 into the upper 3x3 elements of a mat4
-   *
-   * @param {mat3} mat mat3 containing values to copy
-   * @param {mat4} [dest] mat4 receiving copied values
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat3.toMat4 = function (mat, dest) {
-      if (!dest) { dest = mat4.create(); }
-      dest[15] = 1;
-      dest[14] = 0;
-      dest[13] = 0;
-      dest[12] = 0;
-      dest[11] = 0;
-      dest[10] = mat[8];
-      dest[9] = mat[7];
-      dest[8] = mat[6];
-      dest[7] = 0;
-      dest[6] = mat[5];
-      dest[5] = mat[4];
-      dest[4] = mat[3];
-      dest[3] = 0;
-      dest[2] = mat[2];
-      dest[1] = mat[1];
-      dest[0] = mat[0];
-      return dest;
-  };
-  /**
-   * Returns a string representation of a mat3
-   *
-   * @param {mat3} mat mat3 to represent as a string
-   *
-   * @param {string} String representation of mat
-   */
-  mat3.str = function (mat) {
-      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] +
-          ', ' + mat[3] + ', ' + mat[4] + ', ' + mat[5] +
-          ', ' + mat[6] + ', ' + mat[7] + ', ' + mat[8] + ']';
-  };
-  /*
-   * mat4
-   */
-  /**
-   * Creates a new instance of a mat4 using the default array type
-   * Any javascript array-like object containing at least 16 numeric elements can serve as a mat4
-   *
-   * @param {mat4} [mat] mat4 containing values to initialize with
-   *
-   * @returns {mat4} New mat4
-   */
-  mat4.create = function (mat) {
-      var dest = new MatrixArray(16);
-      if (mat) {
-          dest[0] = mat[0];
-          dest[1] = mat[1];
-          dest[2] = mat[2];
-          dest[3] = mat[3];
-          dest[4] = mat[4];
-          dest[5] = mat[5];
-          dest[6] = mat[6];
-          dest[7] = mat[7];
-          dest[8] = mat[8];
-          dest[9] = mat[9];
-          dest[10] = mat[10];
-          dest[11] = mat[11];
-          dest[12] = mat[12];
-          dest[13] = mat[13];
-          dest[14] = mat[14];
-          dest[15] = mat[15];
-      }
-      return dest;
-  };
-  /**
-   * Copies the values of one mat4 to another
-   *
-   * @param {mat4} mat mat4 containing values to copy
-   * @param {mat4} dest mat4 receiving copied values
-   *
-   * @returns {mat4} dest
-   */
-  mat4.set = function (mat, dest) {
-      dest[0] = mat[0];
-      dest[1] = mat[1];
-      dest[2] = mat[2];
-      dest[3] = mat[3];
-      dest[4] = mat[4];
-      dest[5] = mat[5];
-      dest[6] = mat[6];
-      dest[7] = mat[7];
-      dest[8] = mat[8];
-      dest[9] = mat[9];
-      dest[10] = mat[10];
-      dest[11] = mat[11];
-      dest[12] = mat[12];
-      dest[13] = mat[13];
-      dest[14] = mat[14];
-      dest[15] = mat[15];
-      return dest;
-  };
-  /**
-   * Sets a mat4 to an identity matrix
-   *
-   * @param {mat4} dest mat4 to set
-   *
-   * @returns {mat4} dest
-   */
-  mat4.identity = function (dest) {
-      if (!dest) { dest = mat4.create(); }
-      dest[0] = 1;
-      dest[1] = 0;
-      dest[2] = 0;
-      dest[3] = 0;
-      dest[4] = 0;
-      dest[5] = 1;
-      dest[6] = 0;
-      dest[7] = 0;
-      dest[8] = 0;
-      dest[9] = 0;
-      dest[10] = 1;
-      dest[11] = 0;
-      dest[12] = 0;
-      dest[13] = 0;
-      dest[14] = 0;
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Transposes a mat4 (flips the values over the diagonal)
-   *
-   * @param {mat4} mat mat4 to transpose
-   * @param {mat4} [dest] mat4 receiving transposed values. If not specified result is written to mat
-   *
-   * @param {mat4} dest is specified, mat otherwise
-   */
-  mat4.transpose = function (mat, dest) {
-      // If we are transposing ourselves we can skip a few steps but have to cache some values
-      if (!dest || mat === dest) {
-          var a01 = mat[1], a02 = mat[2], a03 = mat[3],
-              a12 = mat[6], a13 = mat[7],
-              a23 = mat[11];
-          mat[1] = mat[4];
-          mat[2] = mat[8];
-          mat[3] = mat[12];
-          mat[4] = a01;
-          mat[6] = mat[9];
-          mat[7] = mat[13];
-          mat[8] = a02;
-          mat[9] = a12;
-          mat[11] = mat[14];
-          mat[12] = a03;
-          mat[13] = a13;
-          mat[14] = a23;
-          return mat;
-      }
-      dest[0] = mat[0];
-      dest[1] = mat[4];
-      dest[2] = mat[8];
-      dest[3] = mat[12];
-      dest[4] = mat[1];
-      dest[5] = mat[5];
-      dest[6] = mat[9];
-      dest[7] = mat[13];
-      dest[8] = mat[2];
-      dest[9] = mat[6];
-      dest[10] = mat[10];
-      dest[11] = mat[14];
-      dest[12] = mat[3];
-      dest[13] = mat[7];
-      dest[14] = mat[11];
-      dest[15] = mat[15];
-      return dest;
-  };
-  /**
-   * Calculates the determinant of a mat4
-   *
-   * @param {mat4} mat mat4 to calculate determinant of
-   *
-   * @returns {number} determinant of mat
-   */
-  mat4.determinant = function (mat) {
-      // Cache the matrix values (makes for huge speed increases!)
-      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
-          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
-          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
-          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15];
-      return (a30 * a21 * a12 * a03 - a20 * a31 * a12 * a03 - a30 * a11 * a22 * a03 + a10 * a31 * a22 * a03 +
-              a20 * a11 * a32 * a03 - a10 * a21 * a32 * a03 - a30 * a21 * a02 * a13 + a20 * a31 * a02 * a13 +
-              a30 * a01 * a22 * a13 - a00 * a31 * a22 * a13 - a20 * a01 * a32 * a13 + a00 * a21 * a32 * a13 +
-              a30 * a11 * a02 * a23 - a10 * a31 * a02 * a23 - a30 * a01 * a12 * a23 + a00 * a31 * a12 * a23 +
-              a10 * a01 * a32 * a23 - a00 * a11 * a32 * a23 - a20 * a11 * a02 * a33 + a10 * a21 * a02 * a33 +
-              a20 * a01 * a12 * a33 - a00 * a21 * a12 * a33 - a10 * a01 * a22 * a33 + a00 * a11 * a22 * a33);
-  };
-  /**
-   * Calculates the inverse matrix of a mat4
-   *
-   * @param {mat4} mat mat4 to calculate inverse of
-   * @param {mat4} [dest] mat4 receiving inverse matrix. If not specified result is written to mat
-   *
-   * @param {mat4} dest is specified, mat otherwise, null if matrix cannot be inverted
-   */
-  mat4.inverse = function (mat, dest) {
-      if (!dest) { dest = mat; }
-      // Cache the matrix values (makes for huge speed increases!)
-      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
-          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
-          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
-          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
-          b00 = a00 * a11 - a01 * a10,
-          b01 = a00 * a12 - a02 * a10,
-          b02 = a00 * a13 - a03 * a10,
-          b03 = a01 * a12 - a02 * a11,
-          b04 = a01 * a13 - a03 * a11,
-          b05 = a02 * a13 - a03 * a12,
-          b06 = a20 * a31 - a21 * a30,
-          b07 = a20 * a32 - a22 * a30,
-          b08 = a20 * a33 - a23 * a30,
-          b09 = a21 * a32 - a22 * a31,
-          b10 = a21 * a33 - a23 * a31,
-          b11 = a22 * a33 - a23 * a32,
-          d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
-          invDet;
-          // Calculate the determinant
-          if (!d) { return null; }
-          invDet = 1 / d;
-      dest[0] = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
-      dest[1] = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
-      dest[2] = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
-      dest[3] = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
-      dest[4] = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
-      dest[5] = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
-      dest[6] = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
-      dest[7] = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
-      dest[8] = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
-      dest[9] = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
-      dest[10] = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
-      dest[11] = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
-      dest[12] = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
-      dest[13] = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
-      dest[14] = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
-      dest[15] = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
-      return dest;
-  };
-  /**
-   * Copies the upper 3x3 elements of a mat4 into another mat4
-   *
-   * @param {mat4} mat mat4 containing values to copy
-   * @param {mat4} [dest] mat4 receiving copied values
-   *
-   * @returns {mat4} dest is specified, a new mat4 otherwise
-   */
-  mat4.toRotationMat = function (mat, dest) {
-      if (!dest) { dest = mat4.create(); }
-      dest[0] = mat[0];
-      dest[1] = mat[1];
-      dest[2] = mat[2];
-      dest[3] = mat[3];
-      dest[4] = mat[4];
-      dest[5] = mat[5];
-      dest[6] = mat[6];
-      dest[7] = mat[7];
-      dest[8] = mat[8];
-      dest[9] = mat[9];
-      dest[10] = mat[10];
-      dest[11] = mat[11];
-      dest[12] = 0;
-      dest[13] = 0;
-      dest[14] = 0;
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Copies the upper 3x3 elements of a mat4 into a mat3
-   *
-   * @param {mat4} mat mat4 containing values to copy
-   * @param {mat3} [dest] mat3 receiving copied values
-   *
-   * @returns {mat3} dest is specified, a new mat3 otherwise
-   */
-  mat4.toMat3 = function (mat, dest) {
-      if (!dest) { dest = mat3.create(); }
-      dest[0] = mat[0];
-      dest[1] = mat[1];
-      dest[2] = mat[2];
-      dest[3] = mat[4];
-      dest[4] = mat[5];
-      dest[5] = mat[6];
-      dest[6] = mat[8];
-      dest[7] = mat[9];
-      dest[8] = mat[10];
-      return dest;
-  };
-  /**
-   * Calculates the inverse of the upper 3x3 elements of a mat4 and copies the result into a mat3
-   * The resulting matrix is useful for calculating transformed normals
-   *
-   * Params:
-   * @param {mat4} mat mat4 containing values to invert and copy
-   * @param {mat3} [dest] mat3 receiving values
-   *
-   * @returns {mat3} dest is specified, a new mat3 otherwise, null if the matrix cannot be inverted
-   */
-  mat4.toInverseMat3 = function (mat, dest) {
-      // Cache the matrix values (makes for huge speed increases!)
-      var a00 = mat[0], a01 = mat[1], a02 = mat[2],
-          a10 = mat[4], a11 = mat[5], a12 = mat[6],
-          a20 = mat[8], a21 = mat[9], a22 = mat[10],
-          b01 = a22 * a11 - a12 * a21,
-          b11 = -a22 * a10 + a12 * a20,
-          b21 = a21 * a10 - a11 * a20,
-          d = a00 * b01 + a01 * b11 + a02 * b21,
-          id;
-      if (!d) { return null; }
-      id = 1 / d;
-      if (!dest) { dest = mat3.create(); }
-      dest[0] = b01 * id;
-      dest[1] = (-a22 * a01 + a02 * a21) * id;
-      dest[2] = (a12 * a01 - a02 * a11) * id;
-      dest[3] = b11 * id;
-      dest[4] = (a22 * a00 - a02 * a20) * id;
-      dest[5] = (-a12 * a00 + a02 * a10) * id;
-      dest[6] = b21 * id;
-      dest[7] = (-a21 * a00 + a01 * a20) * id;
-      dest[8] = (a11 * a00 - a01 * a10) * id;
-      return dest;
-  };
-  /**
-   * Performs a matrix multiplication
-   *
-   * @param {mat4} mat First operand
-   * @param {mat4} mat2 Second operand
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.multiply = function (mat, mat2, dest) {
-      if (!dest) { dest = mat; }
-      // Cache the matrix values (makes for huge speed increases!)
-      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
-          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
-          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
-          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
-          b00 = mat2[0], b01 = mat2[1], b02 = mat2[2], b03 = mat2[3],
-          b10 = mat2[4], b11 = mat2[5], b12 = mat2[6], b13 = mat2[7],
-          b20 = mat2[8], b21 = mat2[9], b22 = mat2[10], b23 = mat2[11],
-          b30 = mat2[12], b31 = mat2[13], b32 = mat2[14], b33 = mat2[15];
-      dest[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
-      dest[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
-      dest[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
-      dest[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
-      dest[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
-      dest[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
-      dest[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
-      dest[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
-      dest[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
-      dest[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
-      dest[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
-      dest[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
-      dest[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
-      dest[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
-      dest[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
-      dest[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
-      return dest;
-  };
-  /**
-   * Transforms a vec3 with the given matrix
-   * 4th vector component is implicitly '1'
-   *
-   * @param {mat4} mat mat4 to transform the vector with
-   * @param {vec3} vec vec3 to transform
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec3} dest if specified, vec otherwise
-   */
-  mat4.multiplyVec3 = function (mat, vec, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0], y = vec[1], z = vec[2];
-      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
-      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
-      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
-      return dest;
-  };
-  /**
-   * Transforms a vec4 with the given matrix
-   *
-   * @param {mat4} mat mat4 to transform the vector with
-   * @param {vec4} vec vec4 to transform
-   * @param {vec4} [dest] vec4 receiving operation result. If not specified result is written to vec
-   *
-   * @returns {vec4} dest if specified, vec otherwise
-   */
-  mat4.multiplyVec4 = function (mat, vec, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
-      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12] * w;
-      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13] * w;
-      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14] * w;
-      dest[3] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15] * w;
-      return dest;
-  };
-  /**
-   * Translates a matrix by the given vector
-   *
-   * @param {mat4} mat mat4 to translate
-   * @param {vec3} vec vec3 specifying the translation
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.translate = function (mat, vec, dest) {
-      var x = vec[0], y = vec[1], z = vec[2],
-          a00, a01, a02, a03,
-          a10, a11, a12, a13,
-          a20, a21, a22, a23;
-      if (!dest || mat === dest) {
-          mat[12] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
-          mat[13] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
-          mat[14] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
-          mat[15] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15];
-          return mat;
-      }
-      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
-      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
-      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
-      dest[0] = a00; dest[1] = a01; dest[2] = a02; dest[3] = a03;
-      dest[4] = a10; dest[5] = a11; dest[6] = a12; dest[7] = a13;
-      dest[8] = a20; dest[9] = a21; dest[10] = a22; dest[11] = a23;
-      dest[12] = a00 * x + a10 * y + a20 * z + mat[12];
-      dest[13] = a01 * x + a11 * y + a21 * z + mat[13];
-      dest[14] = a02 * x + a12 * y + a22 * z + mat[14];
-      dest[15] = a03 * x + a13 * y + a23 * z + mat[15];
-      return dest;
-  };
-  /**
-   * Scales a matrix by the given vector
-   *
-   * @param {mat4} mat mat4 to scale
-   * @param {vec3} vec vec3 specifying the scale for each axis
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @param {mat4} dest if specified, mat otherwise
-   */
-  mat4.scale = function (mat, vec, dest) {
-      var x = vec[0], y = vec[1], z = vec[2];
-      if (!dest || mat === dest) {
-          mat[0] *= x;
-          mat[1] *= x;
-          mat[2] *= x;
-          mat[3] *= x;
-          mat[4] *= y;
-          mat[5] *= y;
-          mat[6] *= y;
-          mat[7] *= y;
-          mat[8] *= z;
-          mat[9] *= z;
-          mat[10] *= z;
-          mat[11] *= z;
-          return mat;
-      }
-      dest[0] = mat[0] * x;
-      dest[1] = mat[1] * x;
-      dest[2] = mat[2] * x;
-      dest[3] = mat[3] * x;
-      dest[4] = mat[4] * y;
-      dest[5] = mat[5] * y;
-      dest[6] = mat[6] * y;
-      dest[7] = mat[7] * y;
-      dest[8] = mat[8] * z;
-      dest[9] = mat[9] * z;
-      dest[10] = mat[10] * z;
-      dest[11] = mat[11] * z;
-      dest[12] = mat[12];
-      dest[13] = mat[13];
-      dest[14] = mat[14];
-      dest[15] = mat[15];
-      return dest;
-  };
-  /**
-   * Rotates a matrix by the given angle around the specified axis
-   * If rotating around a primary axis (X,Y,Z) one of the specialized rotation functions should be used instead for performance
-   *
-   * @param {mat4} mat mat4 to rotate
-   * @param {number} angle Angle (in radians) to rotate
-   * @param {vec3} axis vec3 representing the axis to rotate around 
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.rotate = function (mat, angle, axis, dest) {
-      var x = axis[0], y = axis[1], z = axis[2],
-          len = Math.sqrt(x * x + y * y + z * z),
-          s, c, t,
-          a00, a01, a02, a03,
-          a10, a11, a12, a13,
-          a20, a21, a22, a23,
-          b00, b01, b02,
-          b10, b11, b12,
-          b20, b21, b22;
-      if (!len) { return null; }
-      if (len !== 1) {
-          len = 1 / len;
-          x *= len;
-          y *= len;
-          z *= len;
-      }
-      s = Math.sin(angle);
-      c = Math.cos(angle);
-      t = 1 - c;
-      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
-      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
-      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
-      // Construct the elements of the rotation matrix
-      b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
-      b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
-      b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
-      if (!dest) {
-          dest = mat;
-      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
-          dest[12] = mat[12];
-          dest[13] = mat[13];
-          dest[14] = mat[14];
-          dest[15] = mat[15];
-      }
-      // Perform rotation-specific matrix multiplication
-      dest[0] = a00 * b00 + a10 * b01 + a20 * b02;
-      dest[1] = a01 * b00 + a11 * b01 + a21 * b02;
-      dest[2] = a02 * b00 + a12 * b01 + a22 * b02;
-      dest[3] = a03 * b00 + a13 * b01 + a23 * b02;
-      dest[4] = a00 * b10 + a10 * b11 + a20 * b12;
-      dest[5] = a01 * b10 + a11 * b11 + a21 * b12;
-      dest[6] = a02 * b10 + a12 * b11 + a22 * b12;
-      dest[7] = a03 * b10 + a13 * b11 + a23 * b12;
-      dest[8] = a00 * b20 + a10 * b21 + a20 * b22;
-      dest[9] = a01 * b20 + a11 * b21 + a21 * b22;
-      dest[10] = a02 * b20 + a12 * b21 + a22 * b22;
-      dest[11] = a03 * b20 + a13 * b21 + a23 * b22;
-      return dest;
-  };
-  /**
-   * Rotates a matrix by the given angle around the X axis
-   *
-   * @param {mat4} mat mat4 to rotate
-   * @param {number} angle Angle (in radians) to rotate
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.rotateX = function (mat, angle, dest) {
-      var s = Math.sin(angle),
-          c = Math.cos(angle),
-          a10 = mat[4],
-          a11 = mat[5],
-          a12 = mat[6],
-          a13 = mat[7],
-          a20 = mat[8],
-          a21 = mat[9],
-          a22 = mat[10],
-          a23 = mat[11];
-      if (!dest) {
-          dest = mat;
-      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
-          dest[0] = mat[0];
-          dest[1] = mat[1];
-          dest[2] = mat[2];
-          dest[3] = mat[3];
-          dest[12] = mat[12];
-          dest[13] = mat[13];
-          dest[14] = mat[14];
-          dest[15] = mat[15];
-      }
-      // Perform axis-specific matrix multiplication
-      dest[4] = a10 * c + a20 * s;
-      dest[5] = a11 * c + a21 * s;
-      dest[6] = a12 * c + a22 * s;
-      dest[7] = a13 * c + a23 * s;
-      dest[8] = a10 * -s + a20 * c;
-      dest[9] = a11 * -s + a21 * c;
-      dest[10] = a12 * -s + a22 * c;
-      dest[11] = a13 * -s + a23 * c;
-      return dest;
-  };
-  /**
-   * Rotates a matrix by the given angle around the Y axis
-   *
-   * @param {mat4} mat mat4 to rotate
-   * @param {number} angle Angle (in radians) to rotate
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.rotateY = function (mat, angle, dest) {
-      var s = Math.sin(angle),
-          c = Math.cos(angle),
-          a00 = mat[0],
-          a01 = mat[1],
-          a02 = mat[2],
-          a03 = mat[3],
-          a20 = mat[8],
-          a21 = mat[9],
-          a22 = mat[10],
-          a23 = mat[11];
-      if (!dest) {
-          dest = mat;
-      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
-          dest[4] = mat[4];
-          dest[5] = mat[5];
-          dest[6] = mat[6];
-          dest[7] = mat[7];
-          dest[12] = mat[12];
-          dest[13] = mat[13];
-          dest[14] = mat[14];
-          dest[15] = mat[15];
-      }
-      // Perform axis-specific matrix multiplication
-      dest[0] = a00 * c + a20 * -s;
-      dest[1] = a01 * c + a21 * -s;
-      dest[2] = a02 * c + a22 * -s;
-      dest[3] = a03 * c + a23 * -s;
-      dest[8] = a00 * s + a20 * c;
-      dest[9] = a01 * s + a21 * c;
-      dest[10] = a02 * s + a22 * c;
-      dest[11] = a03 * s + a23 * c;
-      return dest;
-  };
-  /**
-   * Rotates a matrix by the given angle around the Z axis
-   *
-   * @param {mat4} mat mat4 to rotate
-   * @param {number} angle Angle (in radians) to rotate
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
-   *
-   * @returns {mat4} dest if specified, mat otherwise
-   */
-  mat4.rotateZ = function (mat, angle, dest) {
-      var s = Math.sin(angle),
-          c = Math.cos(angle),
-          a00 = mat[0],
-          a01 = mat[1],
-          a02 = mat[2],
-          a03 = mat[3],
-          a10 = mat[4],
-          a11 = mat[5],
-          a12 = mat[6],
-          a13 = mat[7];
-      if (!dest) {
-          dest = mat;
-      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
-          dest[8] = mat[8];
-          dest[9] = mat[9];
-          dest[10] = mat[10];
-          dest[11] = mat[11];
-          dest[12] = mat[12];
-          dest[13] = mat[13];
-          dest[14] = mat[14];
-          dest[15] = mat[15];
-      }
-      // Perform axis-specific matrix multiplication
-      dest[0] = a00 * c + a10 * s;
-      dest[1] = a01 * c + a11 * s;
-      dest[2] = a02 * c + a12 * s;
-      dest[3] = a03 * c + a13 * s;
-      dest[4] = a00 * -s + a10 * c;
-      dest[5] = a01 * -s + a11 * c;
-      dest[6] = a02 * -s + a12 * c;
-      dest[7] = a03 * -s + a13 * c;
-      return dest;
-  };
-  /**
-   * Generates a frustum matrix with the given bounds
-   *
-   * @param {number} left Left bound of the frustum
-   * @param {number} right Right bound of the frustum
-   * @param {number} bottom Bottom bound of the frustum
-   * @param {number} top Top bound of the frustum
-   * @param {number} near Near bound of the frustum
-   * @param {number} far Far bound of the frustum
-   * @param {mat4} [dest] mat4 frustum matrix will be written into
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat4.frustum = function (left, right, bottom, top, near, far, dest) {
-      if (!dest) { dest = mat4.create(); }
-      var rl = (right - left),
-          tb = (top - bottom),
-          fn = (far - near);
-      dest[0] = (near * 2) / rl;
-      dest[1] = 0;
-      dest[2] = 0;
-      dest[3] = 0;
-      dest[4] = 0;
-      dest[5] = (near * 2) / tb;
-      dest[6] = 0;
-      dest[7] = 0;
-      dest[8] = (right + left) / rl;
-      dest[9] = (top + bottom) / tb;
-      dest[10] = -(far + near) / fn;
-      dest[11] = -1;
-      dest[12] = 0;
-      dest[13] = 0;
-      dest[14] = -(far * near * 2) / fn;
-      dest[15] = 0;
-      return dest;
-  };
-  /**
-   * Generates a perspective projection matrix with the given bounds
-   *
-   * @param {number} fovy Vertical field of view
-   * @param {number} aspect Aspect ratio. typically viewport width/height
-   * @param {number} near Near bound of the frustum
-   * @param {number} far Far bound of the frustum
-   * @param {mat4} [dest] mat4 frustum matrix will be written into
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat4.perspective = function (fovy, aspect, near, far, dest) {
-      var top = near * Math.tan(fovy * Math.PI / 360.0),
-          right = top * aspect;
-      return mat4.frustum(-right, right, -top, top, near, far, dest);
-  };
-  /**
-   * Generates a orthogonal projection matrix with the given bounds
-   *
-   * @param {number} left Left bound of the frustum
-   * @param {number} right Right bound of the frustum
-   * @param {number} bottom Bottom bound of the frustum
-   * @param {number} top Top bound of the frustum
-   * @param {number} near Near bound of the frustum
-   * @param {number} far Far bound of the frustum
-   * @param {mat4} [dest] mat4 frustum matrix will be written into
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat4.ortho = function (left, right, bottom, top, near, far, dest) {
-      if (!dest) { dest = mat4.create(); }
-      var rl = (right - left),
-          tb = (top - bottom),
-          fn = (far - near);
-      dest[0] = 2 / rl;
-      dest[1] = 0;
-      dest[2] = 0;
-      dest[3] = 0;
-      dest[4] = 0;
-      dest[5] = 2 / tb;
-      dest[6] = 0;
-      dest[7] = 0;
-      dest[8] = 0;
-      dest[9] = 0;
-      dest[10] = -2 / fn;
-      dest[11] = 0;
-      dest[12] = -(left + right) / rl;
-      dest[13] = -(top + bottom) / tb;
-      dest[14] = -(far + near) / fn;
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Generates a look-at matrix with the given eye position, focal point, and up axis
-   *
-   * @param {vec3} eye Position of the viewer
-   * @param {vec3} center Point the viewer is looking at
-   * @param {vec3} up vec3 pointing "up"
-   * @param {mat4} [dest] mat4 frustum matrix will be written into
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat4.lookAt = function (eye, center, up, dest) {
-      if (!dest) { dest = mat4.create(); }
-      var x0, x1, x2, y0, y1, y2, z0, z1, z2, len,
-          eyex = eye[0],
-          eyey = eye[1],
-          eyez = eye[2],
-          upx = up[0],
-          upy = up[1],
-          upz = up[2],
-          centerx = center[0],
-          centery = center[1],
-          centerz = center[2];
-      if (eyex === centerx && eyey === centery && eyez === centerz) {
-          return mat4.identity(dest);
-      }
-      //vec3.direction(eye, center, z);
-      z0 = eyex - centerx;
-      z1 = eyey - centery;
-      z2 = eyez - centerz;
-      // normalize (no check needed for 0 because of early return)
-      len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
-      z0 *= len;
-      z1 *= len;
-      z2 *= len;
-      //vec3.normalize(vec3.cross(up, z, x));
-      x0 = upy * z2 - upz * z1;
-      x1 = upz * z0 - upx * z2;
-      x2 = upx * z1 - upy * z0;
-      len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
-      if (!len) {
-          x0 = 0;
-          x1 = 0;
-          x2 = 0;
-      } else {
-          len = 1 / len;
-          x0 *= len;
-          x1 *= len;
-          x2 *= len;
-      }
-      //vec3.normalize(vec3.cross(z, x, y));
-      y0 = z1 * x2 - z2 * x1;
-      y1 = z2 * x0 - z0 * x2;
-      y2 = z0 * x1 - z1 * x0;
-      len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
-      if (!len) {
-          y0 = 0;
-          y1 = 0;
-          y2 = 0;
-      } else {
-          len = 1 / len;
-          y0 *= len;
-          y1 *= len;
-          y2 *= len;
-      }
-      dest[0] = x0;
-      dest[1] = y0;
-      dest[2] = z0;
-      dest[3] = 0;
-      dest[4] = x1;
-      dest[5] = y1;
-      dest[6] = z1;
-      dest[7] = 0;
-      dest[8] = x2;
-      dest[9] = y2;
-      dest[10] = z2;
-      dest[11] = 0;
-      dest[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
-      dest[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
-      dest[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Creates a matrix from a quaternion rotation and vector translation
-   * This is equivalent to (but much faster than):
-   *
-   *     mat4.identity(dest);
-   *     mat4.translate(dest, vec);
-   *     var quatMat = mat4.create();
-   *     quat4.toMat4(quat, quatMat);
-   *     mat4.multiply(dest, quatMat);
-   *
-   * @param {quat4} quat Rotation quaternion
-   * @param {vec3} vec Translation vector
-   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to a new mat4
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  mat4.fromRotationTranslation = function (quat, vec, dest) {
-      if (!dest) { dest = mat4.create(); }
-      // Quaternion math
-      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
-          x2 = x + x,
-          y2 = y + y,
-          z2 = z + z,
-          xx = x * x2,
-          xy = x * y2,
-          xz = x * z2,
-          yy = y * y2,
-          yz = y * z2,
-          zz = z * z2,
-          wx = w * x2,
-          wy = w * y2,
-          wz = w * z2;
-      dest[0] = 1 - (yy + zz);
-      dest[1] = xy + wz;
-      dest[2] = xz - wy;
-      dest[3] = 0;
-      dest[4] = xy - wz;
-      dest[5] = 1 - (xx + zz);
-      dest[6] = yz + wx;
-      dest[7] = 0;
-      dest[8] = xz + wy;
-      dest[9] = yz - wx;
-      dest[10] = 1 - (xx + yy);
-      dest[11] = 0;
-      dest[12] = vec[0];
-      dest[13] = vec[1];
-      dest[14] = vec[2];
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Returns a string representation of a mat4
-   *
-   * @param {mat4} mat mat4 to represent as a string
-   *
-   * @returns {string} String representation of mat
-   */
-  mat4.str = function (mat) {
-      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] + ', ' + mat[3] +
-          ', ' + mat[4] + ', ' + mat[5] + ', ' + mat[6] + ', ' + mat[7] +
-          ', ' + mat[8] + ', ' + mat[9] + ', ' + mat[10] + ', ' + mat[11] +
-          ', ' + mat[12] + ', ' + mat[13] + ', ' + mat[14] + ', ' + mat[15] + ']';
-  };
-  /*
-   * quat4
-   */
-  /**
-   * Creates a new instance of a quat4 using the default array type
-   * Any javascript array containing at least 4 numeric elements can serve as a quat4
-   *
-   * @param {quat4} [quat] quat4 containing values to initialize with
-   *
-   * @returns {quat4} New quat4
-   */
-  quat4.create = function (quat) {
-      var dest = new MatrixArray(4);
-      if (quat) {
-          dest[0] = quat[0];
-          dest[1] = quat[1];
-          dest[2] = quat[2];
-          dest[3] = quat[3];
-      }
-      return dest;
-  };
-  /**
-   * Copies the values of one quat4 to another
-   *
-   * @param {quat4} quat quat4 containing values to copy
-   * @param {quat4} dest quat4 receiving copied values
-   *
-   * @returns {quat4} dest
-   */
-  quat4.set = function (quat, dest) {
-      dest[0] = quat[0];
-      dest[1] = quat[1];
-      dest[2] = quat[2];
-      dest[3] = quat[3];
-      return dest;
-  };
-  /**
-   * Calculates the W component of a quat4 from the X, Y, and Z components.
-   * Assumes that quaternion is 1 unit in length. 
-   * Any existing W component will be ignored. 
-   *
-   * @param {quat4} quat quat4 to calculate W component of
-   * @param {quat4} [dest] quat4 receiving calculated values. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.calculateW = function (quat, dest) {
-      var x = quat[0], y = quat[1], z = quat[2];
-      if (!dest || quat === dest) {
-          quat[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
-          return quat;
-      }
-      dest[0] = x;
-      dest[1] = y;
-      dest[2] = z;
-      dest[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
-      return dest;
-  };
-  /**
-   * Calculates the dot product of two quaternions
-   *
-   * @param {quat4} quat First operand
-   * @param {quat4} quat2 Second operand
-   *
-   * @return {number} Dot product of quat and quat2
-   */
-  quat4.dot = function(quat, quat2){
-      return quat[0]*quat2[0] + quat[1]*quat2[1] + quat[2]*quat2[2] + quat[3]*quat2[3];
-  };
-  /**
-   * Calculates the inverse of a quat4
-   *
-   * @param {quat4} quat quat4 to calculate inverse of
-   * @param {quat4} [dest] quat4 receiving inverse values. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.inverse = function(quat, dest) {
-      var q0 = quat[0], q1 = quat[1], q2 = quat[2], q3 = quat[3],
-          dot = q0*q0 + q1*q1 + q2*q2 + q3*q3,
-          invDot = dot ? 1.0/dot : 0;
-      // TODO: Would be faster to return [0,0,0,0] immediately if dot == 0
-      if(!dest || quat === dest) {
-          quat[0] *= -invDot;
-          quat[1] *= -invDot;
-          quat[2] *= -invDot;
-          quat[3] *= invDot;
-          return quat;
-      }
-      dest[0] = -quat[0]*invDot;
-      dest[1] = -quat[1]*invDot;
-      dest[2] = -quat[2]*invDot;
-      dest[3] = quat[3]*invDot;
-      return dest;
-  };
-  /**
-   * Calculates the conjugate of a quat4
-   * If the quaternion is normalized, this function is faster than quat4.inverse and produces the same result.
-   *
-   * @param {quat4} quat quat4 to calculate conjugate of
-   * @param {quat4} [dest] quat4 receiving conjugate values. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.conjugate = function (quat, dest) {
-      if (!dest || quat === dest) {
-          quat[0] *= -1;
-          quat[1] *= -1;
-          quat[2] *= -1;
-          return quat;
-      }
-      dest[0] = -quat[0];
-      dest[1] = -quat[1];
-      dest[2] = -quat[2];
-      dest[3] = quat[3];
-      return dest;
-  };
-  /**
-   * Calculates the length of a quat4
-   *
-   * Params:
-   * @param {quat4} quat quat4 to calculate length of
-   *
-   * @returns Length of quat
-   */
-  quat4.length = function (quat) {
-      var x = quat[0], y = quat[1], z = quat[2], w = quat[3];
-      return Math.sqrt(x * x + y * y + z * z + w * w);
-  };
-  /**
-   * Generates a unit quaternion of the same direction as the provided quat4
-   * If quaternion length is 0, returns [0, 0, 0, 0]
-   *
-   * @param {quat4} quat quat4 to normalize
-   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.normalize = function (quat, dest) {
-      if (!dest) { dest = quat; }
-      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
-          len = Math.sqrt(x * x + y * y + z * z + w * w);
-      if (len === 0) {
-          dest[0] = 0;
-          dest[1] = 0;
-          dest[2] = 0;
-          dest[3] = 0;
-          return dest;
-      }
-      len = 1 / len;
-      dest[0] = x * len;
-      dest[1] = y * len;
-      dest[2] = z * len;
-      dest[3] = w * len;
-      return dest;
-  };
-  /**
-   * Performs quaternion addition
-   *
-   * @param {quat4} quat First operand
-   * @param {quat4} quat2 Second operand
-   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.add = function (quat, quat2, dest) {
-      if(!dest || quat === dest) {
-          quat[0] += quat2[0];
-          quat[1] += quat2[1];
-          quat[2] += quat2[2];
-          quat[3] += quat2[3];
-          return quat;
-      }
-      dest[0] = quat[0]+quat2[0];
-      dest[1] = quat[1]+quat2[1];
-      dest[2] = quat[2]+quat2[2];
-      dest[3] = quat[3]+quat2[3];
-      return dest;
-  };
-  /**
-   * Performs a quaternion multiplication
-   *
-   * @param {quat4} quat First operand
-   * @param {quat4} quat2 Second operand
-   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.multiply = function (quat, quat2, dest) {
-      if (!dest) { dest = quat; }
-      var qax = quat[0], qay = quat[1], qaz = quat[2], qaw = quat[3],
-          qbx = quat2[0], qby = quat2[1], qbz = quat2[2], qbw = quat2[3];
-      dest[0] = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
-      dest[1] = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
-      dest[2] = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
-      dest[3] = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
-      return dest;
-  };
-  /**
-   * Transforms a vec3 with the given quaternion
-   *
-   * @param {quat4} quat quat4 to transform the vector with
-   * @param {vec3} vec vec3 to transform
-   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
-   *
-   * @returns dest if specified, vec otherwise
-   */
-  quat4.multiplyVec3 = function (quat, vec, dest) {
-      if (!dest) { dest = vec; }
-      var x = vec[0], y = vec[1], z = vec[2],
-          qx = quat[0], qy = quat[1], qz = quat[2], qw = quat[3],
-          // calculate quat * vec
-          ix = qw * x + qy * z - qz * y,
-          iy = qw * y + qz * x - qx * z,
-          iz = qw * z + qx * y - qy * x,
-          iw = -qx * x - qy * y - qz * z;
-      // calculate result * inverse quat
-      dest[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-      dest[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-      dest[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-      return dest;
-  };
-  /**
-   * Multiplies the components of a quaternion by a scalar value
-   *
-   * @param {quat4} quat to scale
-   * @param {number} val Value to scale by
-   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.scale = function (quat, val, dest) {
-      if(!dest || quat === dest) {
-          quat[0] *= val;
-          quat[1] *= val;
-          quat[2] *= val;
-          quat[3] *= val;
-          return quat;
-      }
-      dest[0] = quat[0]*val;
-      dest[1] = quat[1]*val;
-      dest[2] = quat[2]*val;
-      dest[3] = quat[3]*val;
-      return dest;
-  };
-  /**
-   * Calculates a 3x3 matrix from the given quat4
-   *
-   * @param {quat4} quat quat4 to create matrix from
-   * @param {mat3} [dest] mat3 receiving operation result
-   *
-   * @returns {mat3} dest if specified, a new mat3 otherwise
-   */
-  quat4.toMat3 = function (quat, dest) {
-      if (!dest) { dest = mat3.create(); }
-      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
-          x2 = x + x,
-          y2 = y + y,
-          z2 = z + z,
-          xx = x * x2,
-          xy = x * y2,
-          xz = x * z2,
-          yy = y * y2,
-          yz = y * z2,
-          zz = z * z2,
-          wx = w * x2,
-          wy = w * y2,
-          wz = w * z2;
-      dest[0] = 1 - (yy + zz);
-      dest[1] = xy + wz;
-      dest[2] = xz - wy;
-      dest[3] = xy - wz;
-      dest[4] = 1 - (xx + zz);
-      dest[5] = yz + wx;
-      dest[6] = xz + wy;
-      dest[7] = yz - wx;
-      dest[8] = 1 - (xx + yy);
-      return dest;
-  };
-  /**
-   * Calculates a 4x4 matrix from the given quat4
-   *
-   * @param {quat4} quat quat4 to create matrix from
-   * @param {mat4} [dest] mat4 receiving operation result
-   *
-   * @returns {mat4} dest if specified, a new mat4 otherwise
-   */
-  quat4.toMat4 = function (quat, dest) {
-      if (!dest) { dest = mat4.create(); }
-      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
-          x2 = x + x,
-          y2 = y + y,
-          z2 = z + z,
-          xx = x * x2,
-          xy = x * y2,
-          xz = x * z2,
-          yy = y * y2,
-          yz = y * z2,
-          zz = z * z2,
-          wx = w * x2,
-          wy = w * y2,
-          wz = w * z2;
-      dest[0] = 1 - (yy + zz);
-      dest[1] = xy + wz;
-      dest[2] = xz - wy;
-      dest[3] = 0;
-      dest[4] = xy - wz;
-      dest[5] = 1 - (xx + zz);
-      dest[6] = yz + wx;
-      dest[7] = 0;
-      dest[8] = xz + wy;
-      dest[9] = yz - wx;
-      dest[10] = 1 - (xx + yy);
-      dest[11] = 0;
-      dest[12] = 0;
-      dest[13] = 0;
-      dest[14] = 0;
-      dest[15] = 1;
-      return dest;
-  };
-  /**
-   * Performs a spherical linear interpolation between two quat4
-   *
-   * @param {quat4} quat First quaternion
-   * @param {quat4} quat2 Second quaternion
-   * @param {number} slerp Interpolation amount between the two inputs
-   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
-   *
-   * @returns {quat4} dest if specified, quat otherwise
-   */
-  quat4.slerp = function (quat, quat2, slerp, dest) {
-      if (!dest) { dest = quat; }
-      var cosHalfTheta = quat[0] * quat2[0] + quat[1] * quat2[1] + quat[2] * quat2[2] + quat[3] * quat2[3],
-          halfTheta,
-          sinHalfTheta,
-          ratioA,
-          ratioB;
-      if (Math.abs(cosHalfTheta) >= 1.0) {
-          if (dest !== quat) {
-              dest[0] = quat[0];
-              dest[1] = quat[1];
-              dest[2] = quat[2];
-              dest[3] = quat[3];
-          }
-          return dest;
-      }
-      halfTheta = Math.acos(cosHalfTheta);
-      sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta);
-      if (Math.abs(sinHalfTheta) < 0.001) {
-          dest[0] = (quat[0] * 0.5 + quat2[0] * 0.5);
-          dest[1] = (quat[1] * 0.5 + quat2[1] * 0.5);
-          dest[2] = (quat[2] * 0.5 + quat2[2] * 0.5);
-          dest[3] = (quat[3] * 0.5 + quat2[3] * 0.5);
-          return dest;
-      }
-      ratioA = Math.sin((1 - slerp) * halfTheta) / sinHalfTheta;
-      ratioB = Math.sin(slerp * halfTheta) / sinHalfTheta;
-      dest[0] = (quat[0] * ratioA + quat2[0] * ratioB);
-      dest[1] = (quat[1] * ratioA + quat2[1] * ratioB);
-      dest[2] = (quat[2] * ratioA + quat2[2] * ratioB);
-      dest[3] = (quat[3] * ratioA + quat2[3] * ratioB);
-      return dest;
-  };
-  /**
-   * Returns a string representation of a quaternion
-   *
-   * @param {quat4} quat quat4 to represent as a string
-   *
-   * @returns {string} String representation of quat
-   */
-  quat4.str = function (quat) {
-      return '[' + quat[0] + ', ' + quat[1] + ', ' + quat[2] + ', ' + quat[3] + ']';
-  };
-  return {
-    vec3: vec3,
-    mat3: mat3,
-    mat4: mat4,
-    quat4: quat4
-  };
-  })();
-  ;
-  var GLImmediateSetup={};function _glLoadIdentity() {
-      GL.immediate.matricesModified = true;
-      GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix[GL.immediate.currentMatrix]);
-    }
-  function _glutInitWindowSize(width, height) {
-      Browser.setCanvasSize( GLUT.initWindowWidth = width,
-                             GLUT.initWindowHeight = height );
-    }
-  function _glutInitWindowPosition(x, y) {
-      // Ignore for now
-    }
-  function _glutInitDisplayMode(mode) {}
-  function _glutInit(argcp, argv) {
+      }};function _glutInit(argcp, argv) {
       // Ignore arguments
       GLUT.initTime = Date.now();
+      var isTouchDevice = 'ontouchstart' in document.documentElement;
       window.addEventListener("keydown", GLUT.onKeydown, true);
       window.addEventListener("keyup", GLUT.onKeyup, true);
-      window.addEventListener("mousemove", GLUT.onMousemove, true);
-      window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
-      window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
+      if (isTouchDevice) {
+        window.addEventListener("touchmove", GLUT.onMousemove, true);
+        window.addEventListener("touchstart", GLUT.onMouseButtonDown, true);
+        window.addEventListener("touchend", GLUT.onMouseButtonUp, true);
+      } else {
+        window.addEventListener("mousemove", GLUT.onMousemove, true);
+        window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
+        window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
+      }
       Browser.resizeListeners.push(function(width, height) {
         if (GLUT.reshapeFunc) {
         	Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
@@ -10554,9 +6206,15 @@ function copyTempDouble(ptr) {
       __ATEXIT__.push({ func: function() {
         window.removeEventListener("keydown", GLUT.onKeydown, true);
         window.removeEventListener("keyup", GLUT.onKeyup, true);
-        window.removeEventListener("mousemove", GLUT.onMousemove, true);
-        window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
-        window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
+        if (isTouchDevice) {
+          window.removeEventListener("touchmove", GLUT.onMousemove, true);
+          window.removeEventListener("touchstart", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("touchend", GLUT.onMouseButtonUp, true);
+        } else {
+          window.removeEventListener("mousemove", GLUT.onMousemove, true);
+          window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
+        }
         Module["canvas"].width = Module["canvas"].height = 1;
       } });
     }
@@ -10814,53 +6472,24 @@ function copyTempDouble(ptr) {
 GL.init()
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
+__ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+__ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 _fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 _fgetc.ret = allocate([0], "i8", ALLOC_STATIC);
-GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
+  Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
-GLEmulation.init();
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
-var FUNCTION_TABLE = [0,0,_glUseProgram,0,_glClearStencil,0,_glUniformMatrix3fv,0,_glUniformMatrix2fv,0,_displayFunc
-,0,_glStencilFunc,0,_glTexParameteriv,0,_glUniformMatrix4fv,0,_glLineWidth,0,_glGenRenderbuffers
-,0,_glUniform2fv,0,_glDeleteProgram,0,_glBlendEquation,0,_glVertexAttrib4f,0,_glBindBuffer
-,0,_glUniform1fv,0,_glCreateProgram,0,_glShaderBinary,0,_glBlendFunc,0,_glGetAttribLocation
-,0,_glDisableVertexAttribArray,0,_glCreateShader,0,_glIsBuffer,0,_glPolygonOffset,0,_glIsShader
-,0,_glStencilOp,0,_glGetShaderPrecisionFormat,0,_glUniform4i,0,_glUniform4f,0,_glGetInfoLog
-,0,_keyFunc,0,_glRenderbufferStorage,0,_glGenBuffers,0,_glShaderSource,0,_glFramebufferRenderbuffer
-,0,_glVertexAttrib3f,0,_glGetBooleanv,0,_glGetVertexAttribfv,0,_glValidateProgram,0,_glGenerateMipmap
-,0,_glVertexAttribPointer,0,_glHint,0,_glGetProgramInfoLog,0,_glGetVertexAttribiv,0,_glVertexAttrib2fv
-,0,_glBindRenderbuffer,0,_glTexParameterfv,0,_glDrawElements,0,_glDepthMask,0,_glBufferSubData
-,0,_glViewport,0,_glDeleteVertexArrays,0,_glDeleteTextures,0,_glDepthFunc,0,_glStencilOpSeparate
-,0,_glUniform3i,0,_glUniform3f,0,_glIsTexture,0,_glCompressedTexImage2D,0,_glGetFramebufferAttachmentParameteriv
-,0,_glGenTextures,0,_glGetIntegerv,0,_glUniform3iv,0,_glStencilMaskSeparate,0,_glUniform1iv
-,0,_glAttachShader,0,_glGetShaderInfoLog,0,_idleFunc,0,_glBindFramebuffer,0,_glDetachShader
-,0,_glUniform2i,0,_glGenFramebuffers,0,_glUniform2f,0,_glGetString,0,_glIsProgram
-,0,_glDeleteObject,0,_glCullFace,0,_reshapeFunc,0,_glDeleteFramebuffers,0,_glGetTexParameterfv
-,0,_glCheckFramebufferStatus,0,_glBindProgram,0,_glIsRenderbuffer,0,_glGetBufferParameteriv,0,_glGetUniformfv
-,0,_glBlendFuncSeparate,0,_glUniform3fv,0,_glClearDepthf,0,_glBindTexture,0,_glClearColor
-,0,_glIsEnabled,0,_glFinish,0,_glUniform1f,0,_glGetFloatv,0,_glUniform1i
-,0,_glGetObjectParameteriv,0,_glGetTexParameteriv,0,_glVertexAttrib3fv,0,_glDrawArrays,0,_glReadPixels
-,0,_glGetError,0,_glGetRenderbufferParameteriv,0,_glGetActiveAttrib,0,_glUniform2iv,0,_glGetActiveUniform
-,0,_glGetShaderSource,0,_glActiveTexture,0,_glVertexAttrib1fv,0,_glFrontFace,0,_glCompileShader
-,0,_glEnableVertexAttribArray,0,_glGetUniformiv,0,_glBindVertexArray,0,_glVertexAttrib4fv,0,_glSampleCoverage
-,0,_glDeleteBuffers,0,_glBufferData,0,_glTexImage2D,0,_glFlush,0,_glDeleteShader
-,0,_glGetProgramiv,0,_glCompressedTexSubImage2D,0,_glScissor,0,_glGenVertexArrays,0,_glGetAttachedShaders
-,0,_glDeleteRenderbuffers,0,_glDepthRangef,0,_glGetVertexAttribPointerv,0,_glLinkProgram,0,_glReleaseShaderCompiler
-,0,_glGetShaderiv,0,_glGetUniformLocation,0,_glClear,0,_glDrawRangeElements,0,_glUniform4fv
-,0,_glVertexAttrib2f,0,_glBindAttribLocation,0,_glPixelStorei,0,_glCopyTexImage2D,0,_glIsFramebuffer
-,0,_glEnable,0,_glFramebufferTexture2D,0,_glUniform4iv,0,_specialFunc,0,_glVertexAttrib1f
-,0,_glColorMask,0,_glClientActiveTexture,0,_glCopyTexSubImage2D,0,_glDisable,0,_glTexParameteri
-,0,_glBlendColor,0,_glStencilMask,0,_glBlendEquationSeparate,0,_glTexParameterf,0,_glStencilFuncSeparate,0,_glTexSubImage2D];
+var FUNCTION_TABLE = [0,0,_reshapeFunc,0,_idleFunc,0,_keyFunc,0,_specialFunc,0,_displayFunc];
 // EMSCRIPTEN_START_FUNCS
-function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+16|0;r3=r2;r4=r2+8;r5=_WallClockTime();r6=HEAP32[840];r7=_clSetKernelArg(HEAP32[836],0,4,3392);if((r7|0)!=0){_printf(3216,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],1,4,3288);if((r7|0)!=0){_printf(3176,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],2,4,3272);if((r7|0)!=0){_printf(2480,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],3,4,3400);if((r7|0)!=0){_printf(2200,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],4,4,3264);if((r7|0)!=0){_printf(1760,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],5,4,16);if((r7|0)!=0){_printf(1312,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],6,4,216);if((r7|0)!=0){_printf(912,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],7,4,3360);if((r7|0)!=0){_printf(432,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[836],8,4,3312);if((r7|0)!=0){_printf(376,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=HEAP32[840];L28:do{if((r7|0)<20){r8=Math.imul(HEAP32[54],HEAP32[4])|0;r9=r3|0;HEAP32[r9>>2]=r8;r10=HEAP32[2];if(((r8>>>0)%(r10>>>0)&-1|0)!=0){r11=Math.imul(((r8>>>0)/(r10>>>0)&-1)+1|0,r10)|0;HEAP32[r9>>2]=r11}r11=r4|0;HEAP32[r11>>2]=r10;r10=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r9,r11,0,0,0);if((r10|0)==0){HEAP32[840]=HEAP32[840]+1;break}else{_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r10,r1));STACKTOP=r1;_exit(-1)}}else{r10=r7-20|0;if((r10|0)<100){r12=r10|0}else{r12=100}r10=r12/100*.5;r11=r3|0;r9=r4|0;while(1){r8=Math.imul(HEAP32[54],HEAP32[4])|0;HEAP32[r11>>2]=r8;r13=HEAP32[2];if(((r8>>>0)%(r13>>>0)&-1|0)!=0){r14=Math.imul(((r8>>>0)/(r13>>>0)&-1)+1|0,r13)|0;HEAP32[r11>>2]=r14}HEAP32[r9>>2]=r13;r15=_clEnqueueNDRangeKernel(HEAP32[844],HEAP32[836],1,0,r11,r9,0,0,0);if((r15|0)!=0){break}_clFinish(HEAP32[844]);HEAP32[840]=HEAP32[840]+1;if(_WallClockTime()-r5>r10){break L28}}_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r15,r1));STACKTOP=r1;_exit(-1)}}while(0);r15=HEAP32[844];r4=HEAP32[828];r3=_clEnqueueReadBuffer(r15,r4,1,0,Math.imul(HEAP32[4]<<2,HEAP32[54])|0,HEAP32[826],0,0,0);if((r3|0)==0){r4=_WallClockTime()-r5;r5=HEAP32[840];r15=(Math.imul(Math.imul(r5-r6|0,HEAP32[54])|0,HEAP32[4])|0)/r4/1e3;_printf(3120,(r1=STACKTOP,STACKTOP=STACKTOP+24|0,HEAPF64[r1>>3]=r4,HEAP32[r1+8>>2]=r5,HEAPF64[r1+16>>3]=r15,r1));STACKTOP=r1;STACKTOP=r2;return}else{_printf(280,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInitScene(){var r1,r2,r3;r1=0;r2=STACKTOP;HEAP32[840]=0;r3=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[818],1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);if((r3|0)==0){STACKTOP=r2;return}else{_printf(3040,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInit(r1){var r2,r3,r4;r2=0;r3=STACKTOP;do{if((r1|0)==0){_UpdateCamera()}else{r4=_clReleaseMemObject(HEAP32[848]);if((r4|0)!=0){_printf(608,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[828]);if((r4|0)!=0){_printf(560,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[822]);if((r4|0)==0){_free(HEAP32[820]);_free(HEAP32[846]);_free(HEAP32[826]);_UpdateCamera();_AllocateBuffers();break}else{_printf(512,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}}}while(0);r1=_clEnqueueWriteBuffer(HEAP32[844],HEAP32[850],1,0,60,3408,0,0,0);if((r1|0)==0){HEAP32[840]=0;STACKTOP=r3;return}else{_printf(2968,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+872|0;r6=r5,r7=r6>>2;r8=r5+8,r9=r8>>2;r10=r5+120;r11=r5+248;r12=r5+256;r13=r5+264,r14=r13>>2;r15=r5+528;r16=r5+536;r17=r5+544;r18=r5+560;r19=r5+568,r20=r19>>2;r21=r5+832;r22=r5+840;r23=r5+848;r24=r5+856;r25=r5+864;HEAP32[868]=0;_printf(2944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;_printf(2720,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;HEAP32[52]=2672;HEAP32[4]=512;HEAP32[54]=512;_ReadScene(2632);_UpdateCamera();r26=r5+16|0;r27=r10;r28=r13;r13=r5+272|0;r29=r15;r30=r16;r31=r19;r19=r5+576|0;r32=r21;r33=r22;r34=r25;r35=_clGetPlatformIDs(0,0,r6);HEAP32[r9]=r35;if((r35|0)!=0){_puts(168);_exit(-1)}r35=HEAP32[r7];if((r35|0)==0){r36=0}else{r6=_malloc(r35<<2);r37=r6;r38=_clGetPlatformIDs(r35,r37,0);HEAP32[r9]=r38;if((r38|0)!=0){_puts(128);_exit(-1)}L81:do{if((HEAP32[r7]|0)!=0){r38=0;while(1){r35=_clGetPlatformInfo(HEAP32[r37+(r38<<2)>>2],2307,100,r26,0);HEAP32[r9]=r35;r35=_clGetPlatformIDs(HEAP32[r7],r37,0);HEAP32[r9]=r35;if((r35|0)!=0){break}_printf(2456,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r38,HEAP32[r4+8>>2]=r26,r4));STACKTOP=r4;r35=r38+1|0;if(r35>>>0<HEAP32[r7]>>>0){r38=r35}else{break L81}}_puts(128);_exit(-1)}}while(0);r7=HEAP32[r37>>2];_free(r6);r36=r7}r7=r10|0,r6=r7>>2;r37=_clGetDeviceIDs(r36,-1,0,32,r7,r11);HEAP32[r9]=r37;if((r37|0)!=0){_puts(96);_exit(-1)}if((HEAP32[r11>>2]|0)==0){r39=_puts(56);_exit(-1)}else{r40=0;r41=0}while(1){HEAP32[r14]=0;HEAP32[r14+1]=0;r37=((r41<<2)+r10|0)>>2;r42=_clGetDeviceInfo(HEAP32[r37],4096,8,r28,0);HEAP32[r9]=r42;if((r42|0)!=0){r3=65;break}r26=HEAP32[r14];r38=HEAP32[r14+1];r35=4;r43=0;r44=2;r45=0;r46=-1;r47=0;do{if(r26==1&r38==0){r48=2352;r49=r40}else if(r26==r44&r38==r45){r48=2336;r49=r40}else if(r26==r35&r38==r43){if((r40|0)!=0){r48=2320;r49=r40;break}HEAP32[r12>>2]=HEAP32[r37];r48=2320;r49=1}else if(r26==r46&r38==r47){r48=2368;r49=r40}else{r48=2304;r49=r40}}while(0);_printf(2272,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r48,r4));STACKTOP=r4;r50=_clGetDeviceInfo(HEAP32[r37],4139,256,r13,0);HEAP32[r9]=r50;if((r50|0)!=0){r3=73;break}_printf(2240,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r13,r4));STACKTOP=r4;HEAP32[r15>>2]=0;r51=_clGetDeviceInfo(HEAP32[r37],4098,4,r29,0);HEAP32[r9]=r51;if((r51|0)!=0){r3=75;break}r47=HEAP32[r15>>2];_printf(2160,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;HEAP32[r16>>2]=0;r52=_clGetDeviceInfo(HEAP32[r37],4100,4,r30,0);HEAP32[r9]=r52;if((r52|0)!=0){r3=77;break}r47=HEAP32[r16>>2];_printf(2112,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r41,HEAP32[r4+8>>2]=r47,r4));STACKTOP=r4;r47=r41+1|0;if(r47>>>0<HEAP32[r11>>2]>>>0){r40=r49;r41=r47}else{r3=79;break}}if(r3==65){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r42,r4));STACKTOP=r4;_exit(-1)}else if(r3==73){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r50,r4));STACKTOP=r4;_exit(-1)}else if(r3==75){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r51,r4));STACKTOP=r4;_exit(-1)}else if(r3==77){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r52,r4));STACKTOP=r4;_exit(-1)}else if(r3==79){if((r49|0)==0){r39=_puts(56);_exit(-1)}r39=r17|0;HEAP32[r39>>2]=4228;HEAP32[r17+4>>2]=r36;HEAP32[r17+8>>2]=0;r17=_clCreateContext((r36|0)==0?0:r39,1,r12,0,0,r8);HEAP32[842]=r17;if((HEAP32[r9]|0)!=0){_puts(24);_exit(-1)}r12=_clGetContextInfo(r17,4225,32,r27,r18);HEAP32[r9]=r12;if((r12|0)!=0){_printf(2040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r12,r4));STACKTOP=r4;_exit(-1)}L121:do{if(HEAP32[r18>>2]>>>0>3){r12=0;while(1){HEAP32[r20]=0;HEAP32[r20+1]=0;r27=((r12<<2)+r10|0)>>2;r53=_clGetDeviceInfo(HEAP32[r27],4096,8,r31,0);HEAP32[r9]=r53;if((r53|0)!=0){r3=87;break}r17=HEAP32[r20];r39=HEAP32[r20+1];r36=4;r49=0;r52=2;r51=0;r50=-1;r42=0;if(r17==1&r39==0){r54=2352}else if(r17==r52&r39==r51){r54=2336}else if(r17==r36&r39==r49){r54=2320}else if(r17==r50&r39==r42){r54=2368}else{r54=2304}_printf(2e3,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r54,r4));STACKTOP=r4;r55=_clGetDeviceInfo(HEAP32[r27],4139,256,r19,0);HEAP32[r9]=r55;if((r55|0)!=0){r3=94;break}_printf(1960,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r19,r4));STACKTOP=r4;HEAP32[r21>>2]=0;r56=_clGetDeviceInfo(HEAP32[r27],4098,4,r32,0);HEAP32[r9]=r56;if((r56|0)!=0){r3=96;break}r42=HEAP32[r21>>2];_printf(1904,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r42,r4));STACKTOP=r4;HEAP32[r22>>2]=0;r57=_clGetDeviceInfo(HEAP32[r27],4100,4,r33,0);HEAP32[r9]=r57;if((r57|0)!=0){r3=98;break}r27=HEAP32[r22>>2];_printf(1848,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r12,HEAP32[r4+8>>2]=r27,r4));STACKTOP=r4;r27=r12+1|0;if(r27>>>0<HEAP32[r18>>2]>>>2>>>0){r12=r27}else{break L121}}if(r3==87){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r53,r4));STACKTOP=r4;_exit(-1)}else if(r3==94){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}else if(r3==96){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r56,r4));STACKTOP=r4;_exit(-1)}else if(r3==98){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}}}while(0);r57=_clCreateCommandQueue(HEAP32[842],HEAP32[r6],0,0,r8);HEAP32[844]=r57;r57=HEAP32[r9];if((r57|0)!=0){_printf(1800,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clCreateBuffer(HEAP32[842],4,0,HEAP32[816]*44&-1,0,r8);HEAP32[818]=r57;r3=HEAP32[r9];if((r3|0)!=0){_printf(1712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r57,1,0,HEAP32[816]*44&-1,HEAP32[814],0,0,0);HEAP32[r9]=r3;if((r3|0)!=0){_printf(3040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clCreateBuffer(HEAP32[842],4,0,60,0,r8);HEAP32[850]=r3;r57=HEAP32[r9];if((r57|0)!=0){_printf(1664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r57=_clEnqueueWriteBuffer(HEAP32[844],r3,1,0,60,3408,0,0,0);HEAP32[r9]=r57;if((r57|0)!=0){_printf(2968,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r57=HEAP32[52];r3=_fopen(r57,1184);if((r3|0)==0){_printf(1152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r3,0,2)|0)!=0){_printf(1120,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}r56=_ftell(r3);if((r56|0)==0){_printf(1080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_rewind(r3);r55=_malloc(r56+1|0);if((r55|0)==0){_printf(1032,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r57,r4));STACKTOP=r4;_exit(-1)}_printf(992,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r56,r4));STACKTOP=r4;r53=_fread(r55,1,r56,r3);if((r53|0)!=(r56|0)){_printf(952,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r57,HEAP32[r4+8>>2]=r53,r4));STACKTOP=r4;_exit(-1)}HEAP8[r55+r56|0]=0;_fclose(r3);HEAP32[r23>>2]=r55;r55=_clCreateProgramWithSource(HEAP32[842],1,r23,0,r8);HEAP32[824]=r55;r23=HEAP32[r9];if((r23|0)!=0){_printf(1616,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}r23=_clBuildProgram(r55,1,r7,1568,0,0);HEAP32[r9]=r23;if((r23|0)==0){r7=_clCreateKernel(HEAP32[824],1392,r8);HEAP32[836]=r7;r8=HEAP32[r9];if((r8|0)!=0){_printf(1352,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}HEAP32[r25>>2]=0;r8=_clGetKernelWorkGroupInfo(r7,HEAP32[r6],4528,4,r34,0);HEAP32[r9]=r8;if((r8|0)==0){r34=HEAP32[r25>>2];HEAP32[2]=r34;_printf(1208,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_InitGlut(r1,r2,2576);_glutMainLoop();STACKTOP=r5;return 0}else{_printf(1256,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}}else{r8=HEAP32[r6];_printf(1528,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r23,HEAP32[r4+8>>2]=r8,r4));STACKTOP=r4;r8=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,0,0,r24);HEAP32[r9]=r8;if((r8|0)!=0){_printf(1480,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r8,r4));STACKTOP=r4;_exit(-1)}r8=HEAP32[r24>>2];r23=_malloc(r8+1|0);r5=_clGetProgramBuildInfo(HEAP32[824],HEAP32[r6],4483,r8,r23,0);HEAP32[r9]=r5;if((r5|0)==0){HEAP8[r23+HEAP32[r24>>2]|0]=0;_printf(1408,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r23,r4));STACKTOP=r4;_exit(-1)}else{_printf(1440,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}}function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[855]-HEAPF32[852];r2=HEAPF32[856]-HEAPF32[853];r3=HEAPF32[857]-HEAPF32[854];r4=1/Math.sqrt(r3*r3+r1*r1+r2*r2);r5=r1*r4;HEAPF32[858]=r5;r1=r4*r2;HEAPF32[859]=r1;r2=r4*r3;HEAPF32[860]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+r4*r4+r6*r6);r8=(HEAP32[4]|0)*.7853981852531433/(HEAP32[54]|0);r9=r8*r4*r3;HEAPF32[861]=r9;r4=r8*r3*r6;HEAPF32[862]=r4;r6=r8*r3*r7;HEAPF32[863]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+r7*r7+r3*r3);HEAPF32[864]=r7*r5*.7853981852531433;HEAPF32[865]=r5*r3*.7853981852531433;HEAPF32[866]=r5*r2*.7853981852531433;return}function _idleFunc(){_UpdateRendering();_glutPostRedisplay();return}function _displayFunc(){_glClear(16384);return}function _reshapeFunc(r1,r2){HEAP32[4]=r1;HEAP32[54]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7;if((r1|0)==101){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[856]-r2)*.9993908270190958+r5*-.03489949670250097;HEAPF32[855]=r3+(HEAPF32[855]-r3);HEAPF32[856]=r2+r6;HEAPF32[857]=r4+r5*.9993908270190958+ -r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==103){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r2=HEAPF32[857]-r4;r3=(HEAPF32[856]-r5)*.9993908270190958+r2*.03489949670250097;HEAPF32[855]=r6+(HEAPF32[855]-r6);HEAPF32[856]=r5+r3;HEAPF32[857]=r4+r2*.9993908270190958+ -r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==100){r3=HEAPF32[852];r2=HEAPF32[853];r4=HEAPF32[854];r5=HEAPF32[857]-r4;r6=(HEAPF32[855]-r3)*.9993908270190958-r5*-.03489949670250097;r7=r2+(HEAPF32[856]-r2);HEAPF32[855]=r3+r6;HEAPF32[856]=r7;HEAPF32[857]=r4+r5*.9993908270190958+r6*-.03489949670250097;_ReInit(0);return}else if((r1|0)==102){r6=HEAPF32[852];r5=HEAPF32[853];r4=HEAPF32[854];r7=HEAPF32[857]-r4;r3=(HEAPF32[855]-r6)*.9993908270190958-r7*.03489949670250097;r2=r5+(HEAPF32[856]-r5);HEAPF32[855]=r6+r3;HEAPF32[856]=r2;HEAPF32[857]=r4+r7*.9993908270190958+r3*.03489949670250097;_ReInit(0);return}else if((r1|0)==104){HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);return}else if((r1|0)==105){HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);return}else{return}}function _InitGlut(r1,r2,r3){var r4,r5;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;_glutInitWindowSize(HEAP32[4],HEAP32[54]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r5,r2);_glutCreateWindow(r3);_glutReshapeFunc(156);_glutKeyboardFunc(62);_glutSpecialFunc(288);_glutDisplayFunc(10);_glutIdleFunc(136);_glViewport(0,0,HEAP32[4],HEAP32[54]);_glLoadIdentity();_glOrtho(0,(HEAP32[4]|0)-1,0,(HEAP32[54]|0)-1,-1,1);STACKTOP=r4;return}function _AllocateBuffers(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2,r4=r3>>2;r5=Math.imul(HEAP32[54],HEAP32[4])|0;r6=_malloc(r5*12&-1);HEAP32[846]=r6;r6=r5<<2;r7=_malloc(r5<<3);HEAP32[820]=r7;r7=r5<<1;if((r7|0)>0){r8=0;while(1){r9=_rand();HEAP32[HEAP32[820]+(r8<<2)>>2]=r9;r9=(r8<<2)+HEAP32[820]|0;if(HEAP32[r9>>2]>>>0<2){HEAP32[r9>>2]=2}r9=r8+1|0;if((r9|0)<(r7|0)){r8=r9}else{break}}}r8=_malloc(r6);HEAP32[826]=r8;L217:do{if((r5|0)>0){r6=0;r7=r8;while(1){HEAP32[r7+(r6<<2)>>2]=r6;r9=r6+1|0;if((r9|0)>=(r5|0)){break L217}r6=r9;r7=HEAP32[826]}}}while(0);r5=Math.imul(HEAP32[4]*12&-1,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[848]=r8;r8=HEAP32[r4];if((r8|0)!=0){_printf(840,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r8,r1));STACKTOP=r1;_exit(-1)}r8=Math.imul(HEAP32[4]<<2,HEAP32[54])|0;r5=_clCreateBuffer(HEAP32[842],2,0,r8,0,r3);HEAP32[828]=r5;r5=HEAP32[r4];if((r5|0)!=0){_printf(792,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}r5=Math.imul(HEAP32[4]<<3,HEAP32[54])|0;r8=_clCreateBuffer(HEAP32[842],1,0,r5,0,r3);HEAP32[822]=r8;r3=HEAP32[r4];if((r3|0)!=0){_printf(704,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[844],r8,1,0,r5,HEAP32[820],0,0,0);HEAP32[r4]=r3;if((r3|0)==0){STACKTOP=r2;return}else{_printf(656,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReadScene(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;_fprintf(HEAP32[_stderr>>2],2520,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;r6=_fopen(r1,3016);if((r6|0)==0){_fprintf(HEAP32[_stderr>>2],2384,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,2080,(r3=STACKTOP,STACKTOP=STACKTOP+48|0,HEAP32[r3>>2]=3408,HEAP32[r3+8>>2]=3412,HEAP32[r3+16>>2]=3416,HEAP32[r3+24>>2]=3420,HEAP32[r3+32>>2]=3424,HEAP32[r3+40>>2]=3428,r3));STACKTOP=r3;if((r1|0)!=6){_fprintf(HEAP32[_stderr>>2],1576,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,1192,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=3264,r3));STACKTOP=r3;r7=HEAP32[_stderr>>2];if((r1|0)!=1){_fprintf(r7,752,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}_fprintf(r7,416,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=HEAP32[816],r3));STACKTOP=r3;r7=HEAP32[816];r1=_malloc(r7*44&-1);HEAP32[814]=r1;r1=0;r8=r7;while(1){if(r1>>>0>=r8>>>0){r2=188;break}r7=HEAP32[814],r9=r7>>2;r10=_fscanf(r6,328,(r3=STACKTOP,STACKTOP=STACKTOP+88|0,HEAP32[r3>>2]=r7+(r1*44&-1),HEAP32[r3+8>>2]=r7+(r1*44&-1)+4,HEAP32[r3+16>>2]=r7+(r1*44&-1)+8,HEAP32[r3+24>>2]=r7+(r1*44&-1)+12,HEAP32[r3+32>>2]=r7+(r1*44&-1)+16,HEAP32[r3+40>>2]=r7+(r1*44&-1)+20,HEAP32[r3+48>>2]=r7+(r1*44&-1)+24,HEAP32[r3+56>>2]=r7+(r1*44&-1)+28,HEAP32[r3+64>>2]=r7+(r1*44&-1)+32,HEAP32[r3+72>>2]=r7+(r1*44&-1)+36,HEAP32[r3+80>>2]=r5,r3));STACKTOP=r3;r11=HEAP32[r5>>2];if((r11|0)==0){HEAP32[((r1*44&-1)+40>>2)+r9]=0}else if((r11|0)==1){HEAP32[((r1*44&-1)+40>>2)+r9]=1}else if((r11|0)==2){HEAP32[((r1*44&-1)+40>>2)+r9]=2}else{r2=184;break}if((r10|0)!=11){r2=187;break}r1=r1+1|0;r8=HEAP32[816]}if(r2==184){_fprintf(HEAP32[_stderr>>2],224,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r11,r3));STACKTOP=r3;_exit(-1)}else if(r2==187){_fprintf(HEAP32[_stderr>>2],3088,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r10,r3));STACKTOP=r3;_exit(-1)}else if(r2==188){_fclose(r6);STACKTOP=r4;return}}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12;r3=0;r2=STACKTOP;r4=r1&255;if((r4|0)==114){HEAPF32[853]=HEAPF32[853]+10;HEAPF32[856]=HEAPF32[856]+10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==112){r1=_fopen(3024,2960);if((r1|0)==0){_fwrite(2904,37,1,HEAP32[_stderr>>2]);STACKTOP=r2;return}r5=HEAP32[54];_fprintf(r1,2704,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAP32[4],HEAP32[r3+8>>2]=r5,HEAP32[r3+16>>2]=255,r3));STACKTOP=r3;r5=HEAP32[54];if((r5|0)>0){r6=r5;r5=HEAP32[4];while(1){r7=r6-1|0;if((r5|0)>0){r8=HEAP32[826]+(Math.imul(r5,r7)<<2)|0;r9=0;while(1){r10=HEAPU8[r8+1|0];r11=HEAPU8[r8+2|0];_fprintf(r1,2656,(r3=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r3>>2]=HEAPU8[r8],HEAP32[r3+8>>2]=r10,HEAP32[r3+16>>2]=r11,r3));STACKTOP=r3;r11=r9+1|0;r10=HEAP32[4];if((r11|0)<(r10|0)){r8=r8+4|0;r9=r11}else{r12=r10;break}}}else{r12=r5}if((r7|0)>0){r6=r7;r5=r12}else{break}}}_fclose(r1);STACKTOP=r2;return}else if((r4|0)==27){_fwrite(2624,6,1,HEAP32[_stderr>>2]);_exit(0)}else if((r4|0)==32){_ReInit(1);STACKTOP=r2;return}else if((r4|0)==97){r1=HEAPF32[861];r12=HEAPF32[862];r5=HEAPF32[863];r6=1/Math.sqrt(r1*r1+r12*r12+r5*r5);r9=r1*r6*-10;r1=r12*r6*-10;r12=r5*r6*-10;HEAPF32[852]=HEAPF32[852]+r9;HEAPF32[853]=HEAPF32[853]+r1;HEAPF32[854]=HEAPF32[854]+r12;HEAPF32[855]=r9+HEAPF32[855];HEAPF32[856]=r1+HEAPF32[856];HEAPF32[857]=r12+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==100){r12=HEAPF32[861];r1=HEAPF32[862];r9=HEAPF32[863];r6=1/Math.sqrt(r12*r12+r1*r1+r9*r9);r5=r12*r6*10;r12=r1*r6*10;r1=r9*r6*10;HEAPF32[852]=HEAPF32[852]+r5;HEAPF32[853]=HEAPF32[853]+r12;HEAPF32[854]=HEAPF32[854]+r1;HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==119){r1=HEAPF32[858]*10;r12=HEAPF32[859]*10;r5=HEAPF32[860]*10;HEAPF32[852]=r1+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r5+HEAPF32[854];HEAPF32[855]=r1+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r5+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==115){r5=HEAPF32[858]*-10;r12=HEAPF32[859]*-10;r1=HEAPF32[860]*-10;HEAPF32[852]=r5+HEAPF32[852];HEAPF32[853]=r12+HEAPF32[853];HEAPF32[854]=r1+HEAPF32[854];HEAPF32[855]=r5+HEAPF32[855];HEAPF32[856]=r12+HEAPF32[856];HEAPF32[857]=r1+HEAPF32[857];_ReInit(0);STACKTOP=r2;return}else if((r4|0)==102){HEAPF32[853]=HEAPF32[853]-10;HEAPF32[856]=HEAPF32[856]-10;_ReInit(0);STACKTOP=r2;return}else if((r4|0)==43){r1=((HEAP32[838]+1|0)>>>0)%(HEAP32[816]>>>0)&-1;HEAP32[838]=r1;r12=HEAP32[814]>>2;r5=HEAPF32[((r1*44&-1)+4>>2)+r12];r6=HEAPF32[((r1*44&-1)+8>>2)+r12];r9=HEAPF32[((r1*44&-1)+12>>2)+r12];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r1,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r6,HEAPF64[r3+24>>3]=r9,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==45){r9=HEAP32[816];r6=((HEAP32[838]-1+r9|0)>>>0)%(r9>>>0)&-1;HEAP32[838]=r6;r9=HEAP32[814]>>2;r5=HEAPF32[((r6*44&-1)+4>>2)+r9];r1=HEAPF32[((r6*44&-1)+8>>2)+r9];r12=HEAPF32[((r6*44&-1)+12>>2)+r9];_fprintf(HEAP32[_stderr>>2],2544,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=r6,HEAPF64[r3+8>>3]=r5,HEAPF64[r3+16>>3]=r1,HEAPF64[r3+24>>3]=r12,r3));STACKTOP=r3;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==52){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==54){r3=HEAP32[814]+(HEAP32[838]*44&-1)+4|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==56){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==50){r3=HEAP32[814]+(HEAP32[838]*44&-1)+12|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==57){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]+5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==51){r3=HEAP32[814]+(HEAP32[838]*44&-1)+8|0;HEAPF32[r3>>2]=HEAPF32[r3>>2]-5;_ReInitScene();STACKTOP=r2;return}else if((r4|0)==104){HEAP32[50]=(HEAP32[50]|0)==0;STACKTOP=r2;return}else{STACKTOP=r2;return}}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[870];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=(r8<<2)+3520|0;r10=(r8+2<<2)+3520|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[870]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[872]>>>0){r15=r3,r16=r15>>2;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r17=r13>>>(r9>>>0);r13=r17>>>1&2;r18=r17>>>(r13>>>0);r17=r18>>>1&1;r19=(r10|r12|r9|r13|r17)+(r18>>>(r17>>>0))|0;r17=r19<<1;r18=(r17<<2)+3520|0;r13=(r17+2<<2)+3520|0;r17=HEAP32[r13>>2];r9=r17+8|0;r12=HEAP32[r9>>2];do{if((r18|0)==(r12|0)){HEAP32[870]=r5&~(1<<r19)}else{if(r12>>>0<HEAP32[874]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r17|0)){HEAP32[r10>>2]=r18;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r19<<3;r13=r12-r3|0;HEAP32[r17+4>>2]=r3|3;r18=r17;r5=r18+r3|0;HEAP32[r18+(r3|4)>>2]=r13|1;HEAP32[r18+r12>>2]=r13;r12=HEAP32[872];if((r12|0)!=0){r18=HEAP32[875];r4=r12>>>3;r12=r4<<1;r6=(r12<<2)+3520|0;r11=HEAP32[870];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[870]=r11|r8;r20=r6;r21=(r12+2<<2)+3520|0}else{r4=(r12+2<<2)+3520|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[874]>>>0){r20=r7;r21=r4;break}_abort()}}while(0);HEAP32[r21>>2]=r18;HEAP32[r20+12>>2]=r18;HEAP32[r18+8>>2]=r20;HEAP32[r18+12>>2]=r6}HEAP32[872]=r13;HEAP32[875]=r5;r14=r9;return r14}r12=HEAP32[871];if((r12|0)==0){r15=r3,r16=r15>>2;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r17=r11>>>(r8>>>0);r11=r17>>>2&4;r19=r17>>>(r11>>>0);r17=r19>>>1&2;r4=r19>>>(r17>>>0);r19=r4>>>1&1;r7=HEAP32[((r8|r12|r11|r17|r19)+(r4>>>(r19>>>0))<<2)+3784>>2];r19=r7;r4=r7,r17=r4>>2;r11=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r19+16>>2];if((r7|0)==0){r12=HEAP32[r19+20>>2];if((r12|0)==0){break}else{r22=r12}}else{r22=r7}r7=(HEAP32[r22+4>>2]&-8)-r3|0;r12=r7>>>0<r11>>>0;r19=r22;r4=r12?r22:r4,r17=r4>>2;r11=r12?r7:r11}r19=r4;r9=HEAP32[874];if(r19>>>0<r9>>>0){_abort()}r5=r19+r3|0;r13=r5;if(r19>>>0>=r5>>>0){_abort()}r5=HEAP32[r17+6];r6=HEAP32[r17+3];do{if((r6|0)==(r4|0)){r18=r4+20|0;r7=HEAP32[r18>>2];if((r7|0)==0){r12=r4+16|0;r8=HEAP32[r12>>2];if((r8|0)==0){r23=0,r24=r23>>2;break}else{r25=r8;r26=r12}}else{r25=r7;r26=r18}while(1){r18=r25+20|0;r7=HEAP32[r18>>2];if((r7|0)!=0){r25=r7;r26=r18;continue}r18=r25+16|0;r7=HEAP32[r18>>2];if((r7|0)==0){break}else{r25=r7;r26=r18}}if(r26>>>0<r9>>>0){_abort()}else{HEAP32[r26>>2]=0;r23=r25,r24=r23>>2;break}}else{r18=HEAP32[r17+2];if(r18>>>0<r9>>>0){_abort()}r7=r18+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r12=r6+8|0;if((HEAP32[r12>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r12>>2]=r18;r23=r6,r24=r23>>2;break}else{_abort()}}}while(0);L510:do{if((r5|0)!=0){r6=r4+28|0;r9=(HEAP32[r6>>2]<<2)+3784|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r23;if((r23|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r6>>2]);break L510}else{if(r5>>>0<HEAP32[874]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r4|0)){HEAP32[r18>>2]=r23}else{HEAP32[r5+20>>2]=r23}if((r23|0)==0){break L510}}}while(0);if(r23>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r24+6]=r5;r6=HEAP32[r17+4];do{if((r6|0)!=0){if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+4]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);r6=HEAP32[r17+5];if((r6|0)==0){break}if(r6>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r24+5]=r6;HEAP32[r6+24>>2]=r23;break}}}while(0);if(r11>>>0<16){r5=r11+r3|0;HEAP32[r17+1]=r5|3;r6=r5+(r19+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r17+1]=r3|3;HEAP32[r19+(r3|4)>>2]=r11|1;HEAP32[r19+r11+r3>>2]=r11;r6=HEAP32[872];if((r6|0)!=0){r5=HEAP32[875];r9=r6>>>3;r6=r9<<1;r18=(r6<<2)+3520|0;r12=HEAP32[870];r7=1<<r9;do{if((r12&r7|0)==0){HEAP32[870]=r12|r7;r27=r18;r28=(r6+2<<2)+3520|0}else{r9=(r6+2<<2)+3520|0;r8=HEAP32[r9>>2];if(r8>>>0>=HEAP32[874]>>>0){r27=r8;r28=r9;break}_abort()}}while(0);HEAP32[r28>>2]=r5;HEAP32[r27+12>>2]=r5;HEAP32[r5+8>>2]=r27;HEAP32[r5+12>>2]=r18}HEAP32[872]=r11;HEAP32[875]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3,r16=r15>>2;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1,r16=r15>>2;break}r6=r1+11|0;r7=r6&-8,r12=r7>>2;r19=HEAP32[871];if((r19|0)==0){r15=r7,r16=r15>>2;break}r17=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r29=0}else{if(r7>>>0>16777215){r29=31;break}r6=(r9+1048320|0)>>>16&8;r8=r9<<r6;r10=(r8+520192|0)>>>16&4;r30=r8<<r10;r8=(r30+245760|0)>>>16&2;r31=14-(r10|r6|r8)+(r30<<r8>>>15)|0;r29=r7>>>((r31+7|0)>>>0)&1|r31<<1}}while(0);r9=HEAP32[(r29<<2)+3784>>2];L318:do{if((r9|0)==0){r32=0;r33=r17;r34=0}else{if((r29|0)==31){r35=0}else{r35=25-(r29>>>1)|0}r4=0;r13=r17;r11=r9,r18=r11>>2;r5=r7<<r35;r31=0;while(1){r8=HEAP32[r18+1]&-8;r30=r8-r7|0;if(r30>>>0<r13>>>0){if((r8|0)==(r7|0)){r32=r11;r33=r30;r34=r11;break L318}else{r36=r11;r37=r30}}else{r36=r4;r37=r13}r30=HEAP32[r18+5];r8=HEAP32[((r5>>>31<<2)+16>>2)+r18];r6=(r30|0)==0|(r30|0)==(r8|0)?r31:r30;if((r8|0)==0){r32=r36;r33=r37;r34=r6;break}else{r4=r36;r13=r37;r11=r8,r18=r11>>2;r5=r5<<1;r31=r6}}}}while(0);if((r34|0)==0&(r32|0)==0){r9=2<<r29;r17=r19&(r9|-r9);if((r17|0)==0){r15=r7,r16=r15>>2;break}r9=(r17&-r17)-1|0;r17=r9>>>12&16;r31=r9>>>(r17>>>0);r9=r31>>>5&8;r5=r31>>>(r9>>>0);r31=r5>>>2&4;r11=r5>>>(r31>>>0);r5=r11>>>1&2;r18=r11>>>(r5>>>0);r11=r18>>>1&1;r38=HEAP32[((r9|r17|r31|r5|r11)+(r18>>>(r11>>>0))<<2)+3784>>2]}else{r38=r34}if((r38|0)==0){r39=r33;r40=r32,r41=r40>>2}else{r11=r38,r18=r11>>2;r5=r33;r31=r32;while(1){r17=(HEAP32[r18+1]&-8)-r7|0;r9=r17>>>0<r5>>>0;r13=r9?r17:r5;r17=r9?r11:r31;r9=HEAP32[r18+4];if((r9|0)!=0){r11=r9,r18=r11>>2;r5=r13;r31=r17;continue}r9=HEAP32[r18+5];if((r9|0)==0){r39=r13;r40=r17,r41=r40>>2;break}else{r11=r9,r18=r11>>2;r5=r13;r31=r17}}}if((r40|0)==0){r15=r7,r16=r15>>2;break}if(r39>>>0>=(HEAP32[872]-r7|0)>>>0){r15=r7,r16=r15>>2;break}r31=r40,r5=r31>>2;r11=HEAP32[874];if(r31>>>0<r11>>>0){_abort()}r18=r31+r7|0;r19=r18;if(r31>>>0>=r18>>>0){_abort()}r17=HEAP32[r41+6];r13=HEAP32[r41+3];do{if((r13|0)==(r40|0)){r9=r40+20|0;r4=HEAP32[r9>>2];if((r4|0)==0){r6=r40+16|0;r8=HEAP32[r6>>2];if((r8|0)==0){r42=0,r43=r42>>2;break}else{r44=r8;r45=r6}}else{r44=r4;r45=r9}while(1){r9=r44+20|0;r4=HEAP32[r9>>2];if((r4|0)!=0){r44=r4;r45=r9;continue}r9=r44+16|0;r4=HEAP32[r9>>2];if((r4|0)==0){break}else{r44=r4;r45=r9}}if(r45>>>0<r11>>>0){_abort()}else{HEAP32[r45>>2]=0;r42=r44,r43=r42>>2;break}}else{r9=HEAP32[r41+2];if(r9>>>0<r11>>>0){_abort()}r4=r9+12|0;if((HEAP32[r4>>2]|0)!=(r40|0)){_abort()}r6=r13+8|0;if((HEAP32[r6>>2]|0)==(r40|0)){HEAP32[r4>>2]=r13;HEAP32[r6>>2]=r9;r42=r13,r43=r42>>2;break}else{_abort()}}}while(0);L368:do{if((r17|0)!=0){r13=r40+28|0;r11=(HEAP32[r13>>2]<<2)+3784|0;do{if((r40|0)==(HEAP32[r11>>2]|0)){HEAP32[r11>>2]=r42;if((r42|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r13>>2]);break L368}else{if(r17>>>0<HEAP32[874]>>>0){_abort()}r9=r17+16|0;if((HEAP32[r9>>2]|0)==(r40|0)){HEAP32[r9>>2]=r42}else{HEAP32[r17+20>>2]=r42}if((r42|0)==0){break L368}}}while(0);if(r42>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r43+6]=r17;r13=HEAP32[r41+4];do{if((r13|0)!=0){if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+4]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);r13=HEAP32[r41+5];if((r13|0)==0){break}if(r13>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r43+5]=r13;HEAP32[r13+24>>2]=r42;break}}}while(0);do{if(r39>>>0<16){r17=r39+r7|0;HEAP32[r41+1]=r17|3;r13=r17+(r31+4)|0;HEAP32[r13>>2]=HEAP32[r13>>2]|1}else{HEAP32[r41+1]=r7|3;HEAP32[((r7|4)>>2)+r5]=r39|1;HEAP32[(r39>>2)+r5+r12]=r39;r13=r39>>>3;if(r39>>>0<256){r17=r13<<1;r11=(r17<<2)+3520|0;r9=HEAP32[870];r6=1<<r13;do{if((r9&r6|0)==0){HEAP32[870]=r9|r6;r46=r11;r47=(r17+2<<2)+3520|0}else{r13=(r17+2<<2)+3520|0;r4=HEAP32[r13>>2];if(r4>>>0>=HEAP32[874]>>>0){r46=r4;r47=r13;break}_abort()}}while(0);HEAP32[r47>>2]=r19;HEAP32[r46+12>>2]=r19;HEAP32[r12+(r5+2)]=r46;HEAP32[r12+(r5+3)]=r11;break}r17=r18;r6=r39>>>8;do{if((r6|0)==0){r48=0}else{if(r39>>>0>16777215){r48=31;break}r9=(r6+1048320|0)>>>16&8;r13=r6<<r9;r4=(r13+520192|0)>>>16&4;r8=r13<<r4;r13=(r8+245760|0)>>>16&2;r30=14-(r4|r9|r13)+(r8<<r13>>>15)|0;r48=r39>>>((r30+7|0)>>>0)&1|r30<<1}}while(0);r6=(r48<<2)+3784|0;HEAP32[r12+(r5+7)]=r48;HEAP32[r12+(r5+5)]=0;HEAP32[r12+(r5+4)]=0;r11=HEAP32[871];r30=1<<r48;if((r11&r30|0)==0){HEAP32[871]=r11|r30;HEAP32[r6>>2]=r17;HEAP32[r12+(r5+6)]=r6;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}if((r48|0)==31){r49=0}else{r49=25-(r48>>>1)|0}r30=r39<<r49;r11=HEAP32[r6>>2];while(1){if((HEAP32[r11+4>>2]&-8|0)==(r39|0)){break}r50=(r30>>>31<<2)+r11+16|0;r6=HEAP32[r50>>2];if((r6|0)==0){r2=386;break}else{r30=r30<<1;r11=r6}}if(r2==386){if(r50>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r50>>2]=r17;HEAP32[r12+(r5+6)]=r11;HEAP32[r12+(r5+3)]=r17;HEAP32[r12+(r5+2)]=r17;break}}r30=r11+8|0;r6=HEAP32[r30>>2];r13=HEAP32[874];if(r11>>>0<r13>>>0){_abort()}if(r6>>>0<r13>>>0){_abort()}else{HEAP32[r6+12>>2]=r17;HEAP32[r30>>2]=r17;HEAP32[r12+(r5+2)]=r6;HEAP32[r12+(r5+3)]=r11;HEAP32[r12+(r5+6)]=0;break}}}while(0);r5=r40+8|0;if((r5|0)==0){r15=r7,r16=r15>>2;break}else{r14=r5}return r14}}while(0);r40=HEAP32[872];if(r15>>>0<=r40>>>0){r50=r40-r15|0;r39=HEAP32[875];if(r50>>>0>15){r49=r39;HEAP32[875]=r49+r15;HEAP32[872]=r50;HEAP32[(r49+4>>2)+r16]=r50|1;HEAP32[r49+r40>>2]=r50;HEAP32[r39+4>>2]=r15|3}else{HEAP32[872]=0;HEAP32[875]=0;HEAP32[r39+4>>2]=r40|3;r50=r40+(r39+4)|0;HEAP32[r50>>2]=HEAP32[r50>>2]|1}r14=r39+8|0;return r14}r39=HEAP32[873];if(r15>>>0<r39>>>0){r50=r39-r15|0;HEAP32[873]=r50;r39=HEAP32[876];r40=r39;HEAP32[876]=r40+r15;HEAP32[(r40+4>>2)+r16]=r50|1;HEAP32[r39+4>>2]=r15|3;r14=r39+8|0;return r14}do{if((HEAP32[830]|0)==0){r39=_sysconf(8);if((r39-1&r39|0)==0){HEAP32[832]=r39;HEAP32[831]=r39;HEAP32[833]=-1;HEAP32[834]=-1;HEAP32[835]=0;HEAP32[981]=0;r39=_time(0)&-16^1431655768;HEAP32[830]=r39;break}else{_abort()}}}while(0);r39=r15+48|0;r50=HEAP32[832];r40=r15+47|0;r49=r50+r40|0;r48=-r50|0;r50=r49&r48;if(r50>>>0<=r15>>>0){r14=0;return r14}r46=HEAP32[980];do{if((r46|0)!=0){r47=HEAP32[978];r41=r47+r50|0;if(r41>>>0<=r47>>>0|r41>>>0>r46>>>0){r14=0}else{break}return r14}}while(0);L577:do{if((HEAP32[981]&4|0)==0){r46=HEAP32[876];L579:do{if((r46|0)==0){r2=416}else{r41=r46;r47=3928;while(1){r51=r47|0;r42=HEAP32[r51>>2];if(r42>>>0<=r41>>>0){r52=r47+4|0;if((r42+HEAP32[r52>>2]|0)>>>0>r41>>>0){break}}r42=HEAP32[r47+8>>2];if((r42|0)==0){r2=416;break L579}else{r47=r42}}if((r47|0)==0){r2=416;break}r41=r49-HEAP32[873]&r48;if(r41>>>0>=2147483647){r53=0;break}r11=_sbrk(r41);r17=(r11|0)==(HEAP32[r51>>2]+HEAP32[r52>>2]|0);r54=r17?r11:-1;r55=r17?r41:0;r56=r11;r57=r41;r2=425}}while(0);do{if(r2==416){r46=_sbrk(0);if((r46|0)==-1){r53=0;break}r7=r46;r41=HEAP32[831];r11=r41-1|0;if((r11&r7|0)==0){r58=r50}else{r58=r50-r7+(r11+r7&-r41)|0}r41=HEAP32[978];r7=r41+r58|0;if(!(r58>>>0>r15>>>0&r58>>>0<2147483647)){r53=0;break}r11=HEAP32[980];if((r11|0)!=0){if(r7>>>0<=r41>>>0|r7>>>0>r11>>>0){r53=0;break}}r11=_sbrk(r58);r7=(r11|0)==(r46|0);r54=r7?r46:-1;r55=r7?r58:0;r56=r11;r57=r58;r2=425}}while(0);L599:do{if(r2==425){r11=-r57|0;if((r54|0)!=-1){r59=r55,r60=r59>>2;r61=r54,r62=r61>>2;r2=436;break L577}do{if((r56|0)!=-1&r57>>>0<2147483647&r57>>>0<r39>>>0){r7=HEAP32[832];r46=r40-r57+r7&-r7;if(r46>>>0>=2147483647){r63=r57;break}if((_sbrk(r46)|0)==-1){_sbrk(r11);r53=r55;break L599}else{r63=r46+r57|0;break}}else{r63=r57}}while(0);if((r56|0)==-1){r53=r55}else{r59=r63,r60=r59>>2;r61=r56,r62=r61>>2;r2=436;break L577}}}while(0);HEAP32[981]=HEAP32[981]|4;r64=r53;r2=433}else{r64=0;r2=433}}while(0);do{if(r2==433){if(r50>>>0>=2147483647){break}r53=_sbrk(r50);r56=_sbrk(0);if(!((r56|0)!=-1&(r53|0)!=-1&r53>>>0<r56>>>0)){break}r63=r56-r53|0;r56=r63>>>0>(r15+40|0)>>>0;r55=r56?r53:-1;if((r55|0)!=-1){r59=r56?r63:r64,r60=r59>>2;r61=r55,r62=r61>>2;r2=436}}}while(0);do{if(r2==436){r64=HEAP32[978]+r59|0;HEAP32[978]=r64;if(r64>>>0>HEAP32[979]>>>0){HEAP32[979]=r64}r64=HEAP32[876],r50=r64>>2;L619:do{if((r64|0)==0){r55=HEAP32[874];if((r55|0)==0|r61>>>0<r55>>>0){HEAP32[874]=r61}HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[879]=HEAP32[830];HEAP32[878]=-1;r55=0;while(1){r63=r55<<1;r56=(r63<<2)+3520|0;HEAP32[(r63+3<<2)+3520>>2]=r56;HEAP32[(r63+2<<2)+3520>>2]=r56;r56=r55+1|0;if(r56>>>0<32){r55=r56}else{break}}r55=r61+8|0;if((r55&7|0)==0){r65=0}else{r65=-r55&7}r55=r59-40-r65|0;HEAP32[876]=r61+r65;HEAP32[873]=r55;HEAP32[(r65+4>>2)+r62]=r55|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834]}else{r55=3928,r56=r55>>2;while(1){r66=HEAP32[r56];r67=r55+4|0;r68=HEAP32[r67>>2];if((r61|0)==(r66+r68|0)){r2=448;break}r63=HEAP32[r56+2];if((r63|0)==0){break}else{r55=r63,r56=r55>>2}}do{if(r2==448){if((HEAP32[r56+3]&8|0)!=0){break}r55=r64;if(!(r55>>>0>=r66>>>0&r55>>>0<r61>>>0)){break}HEAP32[r67>>2]=r68+r59;r55=HEAP32[876];r63=HEAP32[873]+r59|0;r53=r55;r57=r55+8|0;if((r57&7|0)==0){r69=0}else{r69=-r57&7}r57=r63-r69|0;HEAP32[876]=r53+r69;HEAP32[873]=r57;HEAP32[r69+(r53+4)>>2]=r57|1;HEAP32[r63+(r53+4)>>2]=40;HEAP32[877]=HEAP32[834];break L619}}while(0);if(r61>>>0<HEAP32[874]>>>0){HEAP32[874]=r61}r56=r61+r59|0;r53=3928;while(1){r70=r53|0;if((HEAP32[r70>>2]|0)==(r56|0)){r2=458;break}r63=HEAP32[r53+8>>2];if((r63|0)==0){break}else{r53=r63}}do{if(r2==458){if((HEAP32[r53+12>>2]&8|0)!=0){break}HEAP32[r70>>2]=r61;r56=r53+4|0;HEAP32[r56>>2]=HEAP32[r56>>2]+r59;r56=r61+8|0;if((r56&7|0)==0){r71=0}else{r71=-r56&7}r56=r59+(r61+8)|0;if((r56&7|0)==0){r72=0,r73=r72>>2}else{r72=-r56&7,r73=r72>>2}r56=r61+r72+r59|0;r63=r56;r57=r71+r15|0,r55=r57>>2;r40=r61+r57|0;r57=r40;r39=r56-(r61+r71)-r15|0;HEAP32[(r71+4>>2)+r62]=r15|3;do{if((r63|0)==(HEAP32[876]|0)){r54=HEAP32[873]+r39|0;HEAP32[873]=r54;HEAP32[876]=r57;HEAP32[r55+(r62+1)]=r54|1}else{if((r63|0)==(HEAP32[875]|0)){r54=HEAP32[872]+r39|0;HEAP32[872]=r54;HEAP32[875]=r57;HEAP32[r55+(r62+1)]=r54|1;HEAP32[(r54>>2)+r62+r55]=r54;break}r54=r59+4|0;r58=HEAP32[(r54>>2)+r62+r73];if((r58&3|0)==1){r52=r58&-8;r51=r58>>>3;L664:do{if(r58>>>0<256){r48=HEAP32[((r72|8)>>2)+r62+r60];r49=HEAP32[r73+(r62+(r60+3))];r11=(r51<<3)+3520|0;do{if((r48|0)!=(r11|0)){if(r48>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r48+12>>2]|0)==(r63|0)){break}_abort()}}while(0);if((r49|0)==(r48|0)){HEAP32[870]=HEAP32[870]&~(1<<r51);break}do{if((r49|0)==(r11|0)){r74=r49+8|0}else{if(r49>>>0<HEAP32[874]>>>0){_abort()}r47=r49+8|0;if((HEAP32[r47>>2]|0)==(r63|0)){r74=r47;break}_abort()}}while(0);HEAP32[r48+12>>2]=r49;HEAP32[r74>>2]=r48}else{r11=r56;r47=HEAP32[((r72|24)>>2)+r62+r60];r46=HEAP32[r73+(r62+(r60+3))];do{if((r46|0)==(r11|0)){r7=r72|16;r41=r61+r54+r7|0;r17=HEAP32[r41>>2];if((r17|0)==0){r42=r61+r7+r59|0;r7=HEAP32[r42>>2];if((r7|0)==0){r75=0,r76=r75>>2;break}else{r77=r7;r78=r42}}else{r77=r17;r78=r41}while(1){r41=r77+20|0;r17=HEAP32[r41>>2];if((r17|0)!=0){r77=r17;r78=r41;continue}r41=r77+16|0;r17=HEAP32[r41>>2];if((r17|0)==0){break}else{r77=r17;r78=r41}}if(r78>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r78>>2]=0;r75=r77,r76=r75>>2;break}}else{r41=HEAP32[((r72|8)>>2)+r62+r60];if(r41>>>0<HEAP32[874]>>>0){_abort()}r17=r41+12|0;if((HEAP32[r17>>2]|0)!=(r11|0)){_abort()}r42=r46+8|0;if((HEAP32[r42>>2]|0)==(r11|0)){HEAP32[r17>>2]=r46;HEAP32[r42>>2]=r41;r75=r46,r76=r75>>2;break}else{_abort()}}}while(0);if((r47|0)==0){break}r46=r72+(r61+(r59+28))|0;r48=(HEAP32[r46>>2]<<2)+3784|0;do{if((r11|0)==(HEAP32[r48>>2]|0)){HEAP32[r48>>2]=r75;if((r75|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r46>>2]);break L664}else{if(r47>>>0<HEAP32[874]>>>0){_abort()}r49=r47+16|0;if((HEAP32[r49>>2]|0)==(r11|0)){HEAP32[r49>>2]=r75}else{HEAP32[r47+20>>2]=r75}if((r75|0)==0){break L664}}}while(0);if(r75>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r76+6]=r47;r11=r72|16;r46=HEAP32[(r11>>2)+r62+r60];do{if((r46|0)!=0){if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+4]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r46=HEAP32[(r54+r11>>2)+r62];if((r46|0)==0){break}if(r46>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r76+5]=r46;HEAP32[r46+24>>2]=r75;break}}}while(0);r79=r61+(r52|r72)+r59|0;r80=r52+r39|0}else{r79=r63;r80=r39}r54=r79+4|0;HEAP32[r54>>2]=HEAP32[r54>>2]&-2;HEAP32[r55+(r62+1)]=r80|1;HEAP32[(r80>>2)+r62+r55]=r80;r54=r80>>>3;if(r80>>>0<256){r51=r54<<1;r58=(r51<<2)+3520|0;r46=HEAP32[870];r47=1<<r54;do{if((r46&r47|0)==0){HEAP32[870]=r46|r47;r81=r58;r82=(r51+2<<2)+3520|0}else{r54=(r51+2<<2)+3520|0;r48=HEAP32[r54>>2];if(r48>>>0>=HEAP32[874]>>>0){r81=r48;r82=r54;break}_abort()}}while(0);HEAP32[r82>>2]=r57;HEAP32[r81+12>>2]=r57;HEAP32[r55+(r62+2)]=r81;HEAP32[r55+(r62+3)]=r58;break}r51=r40;r47=r80>>>8;do{if((r47|0)==0){r83=0}else{if(r80>>>0>16777215){r83=31;break}r46=(r47+1048320|0)>>>16&8;r52=r47<<r46;r54=(r52+520192|0)>>>16&4;r48=r52<<r54;r52=(r48+245760|0)>>>16&2;r49=14-(r54|r46|r52)+(r48<<r52>>>15)|0;r83=r80>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r83<<2)+3784|0;HEAP32[r55+(r62+7)]=r83;HEAP32[r55+(r62+5)]=0;HEAP32[r55+(r62+4)]=0;r58=HEAP32[871];r49=1<<r83;if((r58&r49|0)==0){HEAP32[871]=r58|r49;HEAP32[r47>>2]=r51;HEAP32[r55+(r62+6)]=r47;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}if((r83|0)==31){r84=0}else{r84=25-(r83>>>1)|0}r49=r80<<r84;r58=HEAP32[r47>>2];while(1){if((HEAP32[r58+4>>2]&-8|0)==(r80|0)){break}r85=(r49>>>31<<2)+r58+16|0;r47=HEAP32[r85>>2];if((r47|0)==0){r2=531;break}else{r49=r49<<1;r58=r47}}if(r2==531){if(r85>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r85>>2]=r51;HEAP32[r55+(r62+6)]=r58;HEAP32[r55+(r62+3)]=r51;HEAP32[r55+(r62+2)]=r51;break}}r49=r58+8|0;r47=HEAP32[r49>>2];r52=HEAP32[874];if(r58>>>0<r52>>>0){_abort()}if(r47>>>0<r52>>>0){_abort()}else{HEAP32[r47+12>>2]=r51;HEAP32[r49>>2]=r51;HEAP32[r55+(r62+2)]=r47;HEAP32[r55+(r62+3)]=r58;HEAP32[r55+(r62+6)]=0;break}}}while(0);r14=r61+(r71|8)|0;return r14}}while(0);r53=r64;r55=3928,r40=r55>>2;while(1){r86=HEAP32[r40];if(r86>>>0<=r53>>>0){r87=HEAP32[r40+1];r88=r86+r87|0;if(r88>>>0>r53>>>0){break}}r55=HEAP32[r40+2],r40=r55>>2}r55=r86+(r87-39)|0;if((r55&7|0)==0){r89=0}else{r89=-r55&7}r55=r86+(r87-47)+r89|0;r40=r55>>>0<(r64+16|0)>>>0?r53:r55;r55=r40+8|0,r57=r55>>2;r39=r61+8|0;if((r39&7|0)==0){r90=0}else{r90=-r39&7}r39=r59-40-r90|0;HEAP32[876]=r61+r90;HEAP32[873]=r39;HEAP32[(r90+4>>2)+r62]=r39|1;HEAP32[(r59-36>>2)+r62]=40;HEAP32[877]=HEAP32[834];HEAP32[r40+4>>2]=27;HEAP32[r57]=HEAP32[982];HEAP32[r57+1]=HEAP32[983];HEAP32[r57+2]=HEAP32[984];HEAP32[r57+3]=HEAP32[985];HEAP32[982]=r61;HEAP32[983]=r59;HEAP32[985]=0;HEAP32[984]=r55;r55=r40+28|0;HEAP32[r55>>2]=7;if((r40+32|0)>>>0<r88>>>0){r57=r55;while(1){r55=r57+4|0;HEAP32[r55>>2]=7;if((r57+8|0)>>>0<r88>>>0){r57=r55}else{break}}}if((r40|0)==(r53|0)){break}r57=r40-r64|0;r55=r57+(r53+4)|0;HEAP32[r55>>2]=HEAP32[r55>>2]&-2;HEAP32[r50+1]=r57|1;HEAP32[r53+r57>>2]=r57;r55=r57>>>3;if(r57>>>0<256){r39=r55<<1;r63=(r39<<2)+3520|0;r56=HEAP32[870];r47=1<<r55;do{if((r56&r47|0)==0){HEAP32[870]=r56|r47;r91=r63;r92=(r39+2<<2)+3520|0}else{r55=(r39+2<<2)+3520|0;r49=HEAP32[r55>>2];if(r49>>>0>=HEAP32[874]>>>0){r91=r49;r92=r55;break}_abort()}}while(0);HEAP32[r92>>2]=r64;HEAP32[r91+12>>2]=r64;HEAP32[r50+2]=r91;HEAP32[r50+3]=r63;break}r39=r64;r47=r57>>>8;do{if((r47|0)==0){r93=0}else{if(r57>>>0>16777215){r93=31;break}r56=(r47+1048320|0)>>>16&8;r53=r47<<r56;r40=(r53+520192|0)>>>16&4;r55=r53<<r40;r53=(r55+245760|0)>>>16&2;r49=14-(r40|r56|r53)+(r55<<r53>>>15)|0;r93=r57>>>((r49+7|0)>>>0)&1|r49<<1}}while(0);r47=(r93<<2)+3784|0;HEAP32[r50+7]=r93;HEAP32[r50+5]=0;HEAP32[r50+4]=0;r63=HEAP32[871];r49=1<<r93;if((r63&r49|0)==0){HEAP32[871]=r63|r49;HEAP32[r47>>2]=r39;HEAP32[r50+6]=r47;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}if((r93|0)==31){r94=0}else{r94=25-(r93>>>1)|0}r49=r57<<r94;r63=HEAP32[r47>>2];while(1){if((HEAP32[r63+4>>2]&-8|0)==(r57|0)){break}r95=(r49>>>31<<2)+r63+16|0;r47=HEAP32[r95>>2];if((r47|0)==0){r2=566;break}else{r49=r49<<1;r63=r47}}if(r2==566){if(r95>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r95>>2]=r39;HEAP32[r50+6]=r63;HEAP32[r50+3]=r64;HEAP32[r50+2]=r64;break}}r49=r63+8|0;r57=HEAP32[r49>>2];r47=HEAP32[874];if(r63>>>0<r47>>>0){_abort()}if(r57>>>0<r47>>>0){_abort()}else{HEAP32[r57+12>>2]=r39;HEAP32[r49>>2]=r39;HEAP32[r50+2]=r57;HEAP32[r50+3]=r63;HEAP32[r50+6]=0;break}}}while(0);r50=HEAP32[873];if(r50>>>0<=r15>>>0){break}r64=r50-r15|0;HEAP32[873]=r64;r50=HEAP32[876];r57=r50;HEAP32[876]=r57+r15;HEAP32[(r57+4>>2)+r16]=r64|1;HEAP32[r50+4>>2]=r15|3;r14=r50+8|0;return r14}}while(0);r15=___errno_location();HEAP32[r15>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46;r2=r1>>2;r3=0;if((r1|0)==0){return}r4=r1-8|0;r5=r4;r6=HEAP32[874];if(r4>>>0<r6>>>0){_abort()}r7=HEAP32[r1-4>>2];r8=r7&3;if((r8|0)==1){_abort()}r9=r7&-8,r10=r9>>2;r11=r1+(r9-8)|0;r12=r11;L836:do{if((r7&1|0)==0){r13=HEAP32[r4>>2];if((r8|0)==0){return}r14=-8-r13|0,r15=r14>>2;r16=r1+r14|0;r17=r16;r18=r13+r9|0;if(r16>>>0<r6>>>0){_abort()}if((r17|0)==(HEAP32[875]|0)){r19=(r1+(r9-4)|0)>>2;if((HEAP32[r19]&3|0)!=3){r20=r17,r21=r20>>2;r22=r18;break}HEAP32[872]=r18;HEAP32[r19]=HEAP32[r19]&-2;HEAP32[r15+(r2+1)]=r18|1;HEAP32[r11>>2]=r18;return}r19=r13>>>3;if(r13>>>0<256){r13=HEAP32[r15+(r2+2)];r23=HEAP32[r15+(r2+3)];r24=(r19<<3)+3520|0;do{if((r13|0)!=(r24|0)){if(r13>>>0<r6>>>0){_abort()}if((HEAP32[r13+12>>2]|0)==(r17|0)){break}_abort()}}while(0);if((r23|0)==(r13|0)){HEAP32[870]=HEAP32[870]&~(1<<r19);r20=r17,r21=r20>>2;r22=r18;break}do{if((r23|0)==(r24|0)){r25=r23+8|0}else{if(r23>>>0<r6>>>0){_abort()}r26=r23+8|0;if((HEAP32[r26>>2]|0)==(r17|0)){r25=r26;break}_abort()}}while(0);HEAP32[r13+12>>2]=r23;HEAP32[r25>>2]=r13;r20=r17,r21=r20>>2;r22=r18;break}r24=r16;r19=HEAP32[r15+(r2+6)];r26=HEAP32[r15+(r2+3)];do{if((r26|0)==(r24|0)){r27=r14+(r1+20)|0;r28=HEAP32[r27>>2];if((r28|0)==0){r29=r14+(r1+16)|0;r30=HEAP32[r29>>2];if((r30|0)==0){r31=0,r32=r31>>2;break}else{r33=r30;r34=r29}}else{r33=r28;r34=r27}while(1){r27=r33+20|0;r28=HEAP32[r27>>2];if((r28|0)!=0){r33=r28;r34=r27;continue}r27=r33+16|0;r28=HEAP32[r27>>2];if((r28|0)==0){break}else{r33=r28;r34=r27}}if(r34>>>0<r6>>>0){_abort()}else{HEAP32[r34>>2]=0;r31=r33,r32=r31>>2;break}}else{r27=HEAP32[r15+(r2+2)];if(r27>>>0<r6>>>0){_abort()}r28=r27+12|0;if((HEAP32[r28>>2]|0)!=(r24|0)){_abort()}r29=r26+8|0;if((HEAP32[r29>>2]|0)==(r24|0)){HEAP32[r28>>2]=r26;HEAP32[r29>>2]=r27;r31=r26,r32=r31>>2;break}else{_abort()}}}while(0);if((r19|0)==0){r20=r17,r21=r20>>2;r22=r18;break}r26=r14+(r1+28)|0;r16=(HEAP32[r26>>2]<<2)+3784|0;do{if((r24|0)==(HEAP32[r16>>2]|0)){HEAP32[r16>>2]=r31;if((r31|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r26>>2]);r20=r17,r21=r20>>2;r22=r18;break L836}else{if(r19>>>0<HEAP32[874]>>>0){_abort()}r13=r19+16|0;if((HEAP32[r13>>2]|0)==(r24|0)){HEAP32[r13>>2]=r31}else{HEAP32[r19+20>>2]=r31}if((r31|0)==0){r20=r17,r21=r20>>2;r22=r18;break L836}}}while(0);if(r31>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r32+6]=r19;r24=HEAP32[r15+(r2+4)];do{if((r24|0)!=0){if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+4]=r24;HEAP32[r24+24>>2]=r31;break}}}while(0);r24=HEAP32[r15+(r2+5)];if((r24|0)==0){r20=r17,r21=r20>>2;r22=r18;break}if(r24>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r32+5]=r24;HEAP32[r24+24>>2]=r31;r20=r17,r21=r20>>2;r22=r18;break}}else{r20=r5,r21=r20>>2;r22=r9}}while(0);r5=r20,r31=r5>>2;if(r5>>>0>=r11>>>0){_abort()}r5=r1+(r9-4)|0;r32=HEAP32[r5>>2];if((r32&1|0)==0){_abort()}do{if((r32&2|0)==0){if((r12|0)==(HEAP32[876]|0)){r6=HEAP32[873]+r22|0;HEAP32[873]=r6;HEAP32[876]=r20;HEAP32[r21+1]=r6|1;if((r20|0)!=(HEAP32[875]|0)){return}HEAP32[875]=0;HEAP32[872]=0;return}if((r12|0)==(HEAP32[875]|0)){r6=HEAP32[872]+r22|0;HEAP32[872]=r6;HEAP32[875]=r20;HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;return}r6=(r32&-8)+r22|0;r33=r32>>>3;L938:do{if(r32>>>0<256){r34=HEAP32[r2+r10];r25=HEAP32[((r9|4)>>2)+r2];r8=(r33<<3)+3520|0;do{if((r34|0)!=(r8|0)){if(r34>>>0<HEAP32[874]>>>0){_abort()}if((HEAP32[r34+12>>2]|0)==(r12|0)){break}_abort()}}while(0);if((r25|0)==(r34|0)){HEAP32[870]=HEAP32[870]&~(1<<r33);break}do{if((r25|0)==(r8|0)){r35=r25+8|0}else{if(r25>>>0<HEAP32[874]>>>0){_abort()}r4=r25+8|0;if((HEAP32[r4>>2]|0)==(r12|0)){r35=r4;break}_abort()}}while(0);HEAP32[r34+12>>2]=r25;HEAP32[r35>>2]=r34}else{r8=r11;r4=HEAP32[r10+(r2+4)];r7=HEAP32[((r9|4)>>2)+r2];do{if((r7|0)==(r8|0)){r24=r9+(r1+12)|0;r19=HEAP32[r24>>2];if((r19|0)==0){r26=r9+(r1+8)|0;r16=HEAP32[r26>>2];if((r16|0)==0){r36=0,r37=r36>>2;break}else{r38=r16;r39=r26}}else{r38=r19;r39=r24}while(1){r24=r38+20|0;r19=HEAP32[r24>>2];if((r19|0)!=0){r38=r19;r39=r24;continue}r24=r38+16|0;r19=HEAP32[r24>>2];if((r19|0)==0){break}else{r38=r19;r39=r24}}if(r39>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r39>>2]=0;r36=r38,r37=r36>>2;break}}else{r24=HEAP32[r2+r10];if(r24>>>0<HEAP32[874]>>>0){_abort()}r19=r24+12|0;if((HEAP32[r19>>2]|0)!=(r8|0)){_abort()}r26=r7+8|0;if((HEAP32[r26>>2]|0)==(r8|0)){HEAP32[r19>>2]=r7;HEAP32[r26>>2]=r24;r36=r7,r37=r36>>2;break}else{_abort()}}}while(0);if((r4|0)==0){break}r7=r9+(r1+20)|0;r34=(HEAP32[r7>>2]<<2)+3784|0;do{if((r8|0)==(HEAP32[r34>>2]|0)){HEAP32[r34>>2]=r36;if((r36|0)!=0){break}HEAP32[871]=HEAP32[871]&~(1<<HEAP32[r7>>2]);break L938}else{if(r4>>>0<HEAP32[874]>>>0){_abort()}r25=r4+16|0;if((HEAP32[r25>>2]|0)==(r8|0)){HEAP32[r25>>2]=r36}else{HEAP32[r4+20>>2]=r36}if((r36|0)==0){break L938}}}while(0);if(r36>>>0<HEAP32[874]>>>0){_abort()}HEAP32[r37+6]=r4;r8=HEAP32[r10+(r2+2)];do{if((r8|0)!=0){if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+4]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);r8=HEAP32[r10+(r2+3)];if((r8|0)==0){break}if(r8>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r37+5]=r8;HEAP32[r8+24>>2]=r36;break}}}while(0);HEAP32[r21+1]=r6|1;HEAP32[(r6>>2)+r31]=r6;if((r20|0)!=(HEAP32[875]|0)){r40=r6;break}HEAP32[872]=r6;return}else{HEAP32[r5>>2]=r32&-2;HEAP32[r21+1]=r22|1;HEAP32[(r22>>2)+r31]=r22;r40=r22}}while(0);r22=r40>>>3;if(r40>>>0<256){r31=r22<<1;r32=(r31<<2)+3520|0;r5=HEAP32[870];r36=1<<r22;do{if((r5&r36|0)==0){HEAP32[870]=r5|r36;r41=r32;r42=(r31+2<<2)+3520|0}else{r22=(r31+2<<2)+3520|0;r37=HEAP32[r22>>2];if(r37>>>0>=HEAP32[874]>>>0){r41=r37;r42=r22;break}_abort()}}while(0);HEAP32[r42>>2]=r20;HEAP32[r41+12>>2]=r20;HEAP32[r21+2]=r41;HEAP32[r21+3]=r32;return}r32=r20;r41=r40>>>8;do{if((r41|0)==0){r43=0}else{if(r40>>>0>16777215){r43=31;break}r42=(r41+1048320|0)>>>16&8;r31=r41<<r42;r36=(r31+520192|0)>>>16&4;r5=r31<<r36;r31=(r5+245760|0)>>>16&2;r22=14-(r36|r42|r31)+(r5<<r31>>>15)|0;r43=r40>>>((r22+7|0)>>>0)&1|r22<<1}}while(0);r41=(r43<<2)+3784|0;HEAP32[r21+7]=r43;HEAP32[r21+5]=0;HEAP32[r21+4]=0;r22=HEAP32[871];r31=1<<r43;do{if((r22&r31|0)==0){HEAP32[871]=r22|r31;HEAP32[r41>>2]=r32;HEAP32[r21+6]=r41;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20}else{if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r5=r40<<r44;r42=HEAP32[r41>>2];while(1){if((HEAP32[r42+4>>2]&-8|0)==(r40|0)){break}r45=(r5>>>31<<2)+r42+16|0;r36=HEAP32[r45>>2];if((r36|0)==0){r3=743;break}else{r5=r5<<1;r42=r36}}if(r3==743){if(r45>>>0<HEAP32[874]>>>0){_abort()}else{HEAP32[r45>>2]=r32;HEAP32[r21+6]=r42;HEAP32[r21+3]=r20;HEAP32[r21+2]=r20;break}}r5=r42+8|0;r6=HEAP32[r5>>2];r36=HEAP32[874];if(r42>>>0<r36>>>0){_abort()}if(r6>>>0<r36>>>0){_abort()}else{HEAP32[r6+12>>2]=r32;HEAP32[r5>>2]=r32;HEAP32[r21+2]=r6;HEAP32[r21+3]=r42;HEAP32[r21+6]=0;break}}}while(0);r21=HEAP32[878]-1|0;HEAP32[878]=r21;if((r21|0)==0){r46=3936}else{return}while(1){r21=HEAP32[r46>>2];if((r21|0)==0){break}else{r46=r21+8|0}}HEAP32[878]=-1;return}
+function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+16|0;r3=r2;r4=r2+8;r5=_WallClockTime();r6=HEAP32[3360>>2];r7=_clSetKernelArg(HEAP32[3344>>2],0,4,3392);if((r7|0)!=0){_printf(3216,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],1,4,3288);if((r7|0)!=0){_printf(3176,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],2,4,3272);if((r7|0)!=0){_printf(2480,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],3,4,3400);if((r7|0)!=0){_printf(2200,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],4,4,3264);if((r7|0)!=0){_printf(1760,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],5,4,16);if((r7|0)!=0){_printf(1312,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],6,4,216);if((r7|0)!=0){_printf(912,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],7,4,3360);if((r7|0)!=0){_printf(432,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=_clSetKernelArg(HEAP32[3344>>2],8,4,3312);if((r7|0)!=0){_printf(376,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=HEAP32[3360>>2];L28:do{if((r7|0)<20){r8=Math.imul(HEAP32[216>>2],HEAP32[16>>2])|0;r9=r3|0;HEAP32[r9>>2]=r8;r10=HEAP32[8>>2];if(((r8>>>0)%(r10>>>0)&-1|0)!=0){r11=Math.imul(((r8>>>0)/(r10>>>0)&-1)+1|0,r10)|0;HEAP32[r9>>2]=r11}r11=r4|0;HEAP32[r11>>2]=r10;r10=_clEnqueueNDRangeKernel(HEAP32[3376>>2],HEAP32[3344>>2],1,0,r9,r11,0,0,0);if((r10|0)==0){HEAP32[3360>>2]=HEAP32[3360>>2]+1;break}else{_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r10,r1));STACKTOP=r1;_exit(-1)}}else{r10=r7-20|0;if((r10|0)<100){r12=r10|0}else{r12=100}r10=r12/100*.5;r11=r3|0;r9=r4|0;while(1){r8=Math.imul(HEAP32[216>>2],HEAP32[16>>2])|0;HEAP32[r11>>2]=r8;r13=HEAP32[8>>2];if(((r8>>>0)%(r13>>>0)&-1|0)!=0){r14=Math.imul(((r8>>>0)/(r13>>>0)&-1)+1|0,r13)|0;HEAP32[r11>>2]=r14}HEAP32[r9>>2]=r13;r15=_clEnqueueNDRangeKernel(HEAP32[3376>>2],HEAP32[3344>>2],1,0,r11,r9,0,0,0);if((r15|0)!=0){break}_clFinish(HEAP32[3376>>2]);HEAP32[3360>>2]=HEAP32[3360>>2]+1;if(_WallClockTime()-r5>r10){break L28}}_printf(472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r15,r1));STACKTOP=r1;_exit(-1)}}while(0);r15=HEAP32[3376>>2];r4=HEAP32[3312>>2];r3=Math.imul(HEAP32[16>>2]<<2,HEAP32[216>>2])|0;r12=_clEnqueueReadBuffer(r15,r4,1,0,r3,HEAP32[3304>>2],0,0,0);if((r12|0)==0){r3=_WallClockTime()-r5;r5=HEAP32[3360>>2];r4=Math.imul(r5-r6|0,HEAP32[216>>2])|0;r6=(Math.imul(r4,HEAP32[16>>2])|0)/r3/1e3;_printf(3120,(r1=STACKTOP,STACKTOP=STACKTOP+24|0,HEAPF64[r1>>3]=r3,HEAP32[r1+8>>2]=r5,HEAPF64[r1+16>>3]=r6,r1));STACKTOP=r1;STACKTOP=r2;return}else{_printf(280,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r12,r1));STACKTOP=r1;_exit(-1)}}function _ReInitScene(){var r1,r2,r3;r1=0;r2=STACKTOP;HEAP32[3360>>2]=0;r3=_clEnqueueWriteBuffer(HEAP32[3376>>2],HEAP32[3272>>2],1,0,HEAP32[3264>>2]*44&-1,HEAP32[3256>>2],0,0,0);if((r3|0)==0){STACKTOP=r2;return}else{_printf(3040,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r3,r1));STACKTOP=r1;_exit(-1)}}function _ReInit(r1){var r2,r3,r4;r2=0;r3=STACKTOP;do{if((r1|0)==0){_UpdateCamera()}else{r4=_clReleaseMemObject(HEAP32[3392>>2]);if((r4|0)!=0){_printf(608,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[3312>>2]);if((r4|0)!=0){_printf(560,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}r4=_clReleaseMemObject(HEAP32[3288>>2]);if((r4|0)==0){_free(HEAP32[3280>>2]);_free(HEAP32[3384>>2]);_free(HEAP32[3304>>2]);_UpdateCamera();_AllocateBuffers();break}else{_printf(512,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r4,r2));STACKTOP=r2;_exit(-1)}}}while(0);r1=_clEnqueueWriteBuffer(HEAP32[3376>>2],HEAP32[3400>>2],1,0,60,3408,0,0,0);if((r1|0)==0){HEAP32[3360>>2]=0;STACKTOP=r3;return}else{_printf(2968,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+872|0;r6=r5;r7=r5+8;r8=r5+120;r9=r5+248;r10=r5+256;r11=r5+264;r12=r5+528;r13=r5+536;r14=r5+544;r15=r5+560;r16=r5+568;r17=r5+832;r18=r5+840;r19=r5+848;r20=r5+856;r21=r5+864;HEAP32[3472>>2]=0;_printf(2944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;_printf(2720,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=HEAP32[r2>>2],r4));STACKTOP=r4;HEAP32[208>>2]=2672;HEAP32[16>>2]=512;HEAP32[216>>2]=512;_ReadScene(2632);_UpdateCamera();r22=r5+16|0;r23=r8;r24=r11;r25=r5+272|0;r26=r12;r27=r13;r28=r16;r29=r5+576|0;r30=r17;r31=r18;r32=r21;r33=_clGetPlatformIDs(0,0,r6);HEAP32[r7>>2]=r33;if((r33|0)!=0){_puts(168);_exit(-1)}r33=HEAP32[r6>>2];if((r33|0)==0){r34=0}else{r35=_malloc(r33<<2);r36=r35;r37=_clGetPlatformIDs(r33,r36,0);HEAP32[r7>>2]=r37;if((r37|0)!=0){_puts(128);_exit(-1)}L81:do{if((HEAP32[r6>>2]|0)!=0){r37=0;while(1){r33=_clGetPlatformInfo(HEAP32[r36+(r37<<2)>>2],2307,100,r22,0);HEAP32[r7>>2]=r33;r33=_clGetPlatformIDs(HEAP32[r6>>2],r36,0);HEAP32[r7>>2]=r33;if((r33|0)!=0){break}_printf(2456,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r37,HEAP32[r4+8>>2]=r22,r4));STACKTOP=r4;r33=r37+1|0;if(r33>>>0<HEAP32[r6>>2]>>>0){r37=r33}else{break L81}}_puts(128);_exit(-1)}}while(0);r6=HEAP32[r36>>2];_free(r35);r34=r6}r6=r8|0;r35=_clGetDeviceIDs(r34,-1,0,32,r6,r9);HEAP32[r7>>2]=r35;if((r35|0)!=0){_puts(96);_exit(-1)}if((HEAP32[r9>>2]|0)==0){r38=_puts(56);_exit(-1)}else{r39=0;r40=0}while(1){HEAP32[r11>>2]=0;HEAP32[r11+4>>2]=0;r35=r8+(r40<<2)|0;r41=_clGetDeviceInfo(HEAP32[r35>>2],4096,8,r24,0);HEAP32[r7>>2]=r41;if((r41|0)!=0){r3=65;break}r36=HEAP32[r11>>2];r22=HEAP32[r11+4>>2];r37=4;r33=0;r42=2;r43=0;r44=-1;r45=0;do{if(r36==1&r22==0){r46=2352;r47=r39}else if(r36==r42&r22==r43){r46=2336;r47=r39}else if(r36==r37&r22==r33){if((r39|0)!=0){r46=2320;r47=r39;break}HEAP32[r10>>2]=HEAP32[r35>>2];r46=2320;r47=1}else if(r36==r44&r22==r45){r46=2368;r47=r39}else{r46=2304;r47=r39}}while(0);_printf(2272,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r40,HEAP32[r4+8>>2]=r46,r4));STACKTOP=r4;r48=_clGetDeviceInfo(HEAP32[r35>>2],4139,256,r25,0);HEAP32[r7>>2]=r48;if((r48|0)!=0){r3=73;break}_printf(2240,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r40,HEAP32[r4+8>>2]=r25,r4));STACKTOP=r4;HEAP32[r12>>2]=0;r49=_clGetDeviceInfo(HEAP32[r35>>2],4098,4,r26,0);HEAP32[r7>>2]=r49;if((r49|0)!=0){r3=75;break}r45=HEAP32[r12>>2];_printf(2160,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r40,HEAP32[r4+8>>2]=r45,r4));STACKTOP=r4;HEAP32[r13>>2]=0;r50=_clGetDeviceInfo(HEAP32[r35>>2],4100,4,r27,0);HEAP32[r7>>2]=r50;if((r50|0)!=0){r3=77;break}r45=HEAP32[r13>>2];_printf(2112,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r40,HEAP32[r4+8>>2]=r45,r4));STACKTOP=r4;r45=r40+1|0;if(r45>>>0<HEAP32[r9>>2]>>>0){r39=r47;r40=r45}else{r3=79;break}}if(r3==65){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r41,r4));STACKTOP=r4;_exit(-1)}else if(r3==73){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r48,r4));STACKTOP=r4;_exit(-1)}else if(r3==75){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r49,r4));STACKTOP=r4;_exit(-1)}else if(r3==77){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r50,r4));STACKTOP=r4;_exit(-1)}else if(r3==79){if((r47|0)==0){r38=_puts(56);_exit(-1)}r38=r14|0;HEAP32[r38>>2]=4228;HEAP32[r14+4>>2]=r34;HEAP32[r14+8>>2]=0;r14=_clCreateContext((r34|0)==0?0:r38,1,r10,0,0,r7);HEAP32[3368>>2]=r14;if((HEAP32[r7>>2]|0)!=0){_puts(24);_exit(-1)}r10=_clGetContextInfo(r14,4225,32,r23,r15);HEAP32[r7>>2]=r10;if((r10|0)!=0){_printf(2040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r10,r4));STACKTOP=r4;_exit(-1)}L121:do{if(HEAP32[r15>>2]>>>0>3){r10=0;while(1){HEAP32[r16>>2]=0;HEAP32[r16+4>>2]=0;r23=r8+(r10<<2)|0;r51=_clGetDeviceInfo(HEAP32[r23>>2],4096,8,r28,0);HEAP32[r7>>2]=r51;if((r51|0)!=0){r3=87;break}r14=HEAP32[r16>>2];r38=HEAP32[r16+4>>2];r34=4;r47=0;r50=2;r49=0;r48=-1;r41=0;if(r14==1&r38==0){r52=2352}else if(r14==r50&r38==r49){r52=2336}else if(r14==r34&r38==r47){r52=2320}else if(r14==r48&r38==r41){r52=2368}else{r52=2304}_printf(2e3,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r10,HEAP32[r4+8>>2]=r52,r4));STACKTOP=r4;r53=_clGetDeviceInfo(HEAP32[r23>>2],4139,256,r29,0);HEAP32[r7>>2]=r53;if((r53|0)!=0){r3=94;break}_printf(1960,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r10,HEAP32[r4+8>>2]=r29,r4));STACKTOP=r4;HEAP32[r17>>2]=0;r54=_clGetDeviceInfo(HEAP32[r23>>2],4098,4,r30,0);HEAP32[r7>>2]=r54;if((r54|0)!=0){r3=96;break}r41=HEAP32[r17>>2];_printf(1904,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r10,HEAP32[r4+8>>2]=r41,r4));STACKTOP=r4;HEAP32[r18>>2]=0;r55=_clGetDeviceInfo(HEAP32[r23>>2],4100,4,r31,0);HEAP32[r7>>2]=r55;if((r55|0)!=0){r3=98;break}r23=HEAP32[r18>>2];_printf(1848,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r10,HEAP32[r4+8>>2]=r23,r4));STACKTOP=r4;r23=r10+1|0;if(r23>>>0<HEAP32[r15>>2]>>>2>>>0){r10=r23}else{break L121}}if(r3==87){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r51,r4));STACKTOP=r4;_exit(-1)}else if(r3==94){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r53,r4));STACKTOP=r4;_exit(-1)}else if(r3==96){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r54,r4));STACKTOP=r4;_exit(-1)}else if(r3==98){_printf(2416,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}}}while(0);r55=_clCreateCommandQueue(HEAP32[3368>>2],HEAP32[r6>>2],0,0,r7);HEAP32[3376>>2]=r55;r55=HEAP32[r7>>2];if((r55|0)!=0){_printf(1800,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}r55=_clCreateBuffer(HEAP32[3368>>2],4,0,HEAP32[3264>>2]*44&-1,0,r7);HEAP32[3272>>2]=r55;r3=HEAP32[r7>>2];if((r3|0)!=0){_printf(1712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clEnqueueWriteBuffer(HEAP32[3376>>2],r55,1,0,HEAP32[3264>>2]*44&-1,HEAP32[3256>>2],0,0,0);HEAP32[r7>>2]=r3;if((r3|0)!=0){_printf(3040,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clCreateBuffer(HEAP32[3368>>2],4,0,60,0,r7);HEAP32[3400>>2]=r3;r55=HEAP32[r7>>2];if((r55|0)!=0){_printf(1664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}r55=_clEnqueueWriteBuffer(HEAP32[3376>>2],r3,1,0,60,3408,0,0,0);HEAP32[r7>>2]=r55;if((r55|0)!=0){_printf(2968,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r55=HEAP32[208>>2];r3=_fopen(r55,1184);if((r3|0)==0){_printf(1152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r3,0,2)|0)!=0){_printf(1120,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}r54=_ftell(r3);if((r54|0)==0){_printf(1080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}_rewind(r3);r53=_malloc(r54+1|0);if((r53|0)==0){_printf(1032,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r55,r4));STACKTOP=r4;_exit(-1)}_printf(992,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r55,HEAP32[r4+8>>2]=r54,r4));STACKTOP=r4;r51=_fread(r53,1,r54,r3);if((r51|0)!=(r54|0)){_printf(952,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r55,HEAP32[r4+8>>2]=r51,r4));STACKTOP=r4;_exit(-1)}HEAP8[r53+r54|0]=0;_fclose(r3);HEAP32[r19>>2]=r53;r53=_clCreateProgramWithSource(HEAP32[3368>>2],1,r19,0,r7);HEAP32[3296>>2]=r53;r19=HEAP32[r7>>2];if((r19|0)!=0){_printf(1616,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_exit(-1)}r19=_clBuildProgram(r53,1,r6,1568,0,0);HEAP32[r7>>2]=r19;if((r19|0)==0){r53=_clCreateKernel(HEAP32[3296>>2],1392,r7);HEAP32[3344>>2]=r53;r3=HEAP32[r7>>2];if((r3|0)!=0){_printf(1352,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}HEAP32[r21>>2]=0;r3=_clGetKernelWorkGroupInfo(r53,HEAP32[r6>>2],4528,4,r32,0);HEAP32[r7>>2]=r3;if((r3|0)==0){r32=HEAP32[r21>>2];HEAP32[8>>2]=r32;_printf(1208,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r32,r4));STACKTOP=r4;_InitGlut(r1,r2,2576);_glutMainLoop();STACKTOP=r5;return 0}else{_printf(1256,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}}else{r3=HEAP32[r6>>2];_printf(1528,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r19,HEAP32[r4+8>>2]=r3,r4));STACKTOP=r4;r3=_clGetProgramBuildInfo(HEAP32[3296>>2],HEAP32[r6>>2],4483,0,0,r20);HEAP32[r7>>2]=r3;if((r3|0)!=0){_printf(1480,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=HEAP32[r20>>2];r19=_malloc(r3+1|0);r5=_clGetProgramBuildInfo(HEAP32[3296>>2],HEAP32[r6>>2],4483,r3,r19,0);HEAP32[r7>>2]=r5;if((r5|0)==0){HEAP8[r19+HEAP32[r20>>2]|0]=0;_printf(1408,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_exit(-1)}else{_printf(1440,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}}function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[3420>>2]-HEAPF32[3408>>2];r2=HEAPF32[3424>>2]-HEAPF32[3412>>2];r3=HEAPF32[3428>>2]-HEAPF32[3416>>2];r4=1/Math.sqrt(r3*r3+(r1*r1+r2*r2));r5=r1*r4;HEAPF32[3432>>2]=r5;r1=r4*r2;HEAPF32[3436>>2]=r1;r2=r4*r3;HEAPF32[3440>>2]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+(r4*r4+r6*r6));r8=(HEAP32[16>>2]|0)*.7853981852531433/(HEAP32[216>>2]|0);r9=r8*r4*r3;HEAPF32[3444>>2]=r9;r4=r8*r3*r6;HEAPF32[3448>>2]=r4;r6=r8*r3*r7;HEAPF32[3452>>2]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+(r7*r7+r3*r3));HEAPF32[3456>>2]=r7*r5*.7853981852531433;HEAPF32[3460>>2]=r5*r3*.7853981852531433;HEAPF32[3464>>2]=r5*r2*.7853981852531433;return}function _idleFunc(){_UpdateRendering();_glutPostRedisplay();return}function _displayFunc(){_glClear(16384);return}function _reshapeFunc(r1,r2){HEAP32[16>>2]=r1;HEAP32[216>>2]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(0,(HEAP32[16>>2]|0)-1,0,(HEAP32[216>>2]|0)-1,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102;r4=0;switch(r1|0){case 101:{r5=HEAPF32[3420>>2];r6=HEAPF32[3424>>2];r7=HEAPF32[3428>>2];r8=HEAPF32[3408>>2];r9=r5-r8;r10=HEAPF32[3412>>2];r11=r6-r10;r12=HEAPF32[3416>>2];r13=r7-r12;r14=r11;r15=r14*.9993908270190958;r16=r13;r17=r16*-.03489949670250097;r18=r15+r17;r19=r18;r20=-r19;r21=r20;r22=r21*-.03489949670250097;r23=r16*.9993908270190958;r24=r23+r22;r25=r24;r26=r8+r9;r27=r10+r19;r28=r12+r25;HEAPF32[3420>>2]=r26;HEAPF32[3424>>2]=r27;HEAPF32[3428>>2]=r28;_ReInit(0);return;break};case 103:{r29=HEAPF32[3420>>2];r30=HEAPF32[3424>>2];r31=HEAPF32[3428>>2];r32=HEAPF32[3408>>2];r33=r29-r32;r34=HEAPF32[3412>>2];r35=r30-r34;r36=HEAPF32[3416>>2];r37=r31-r36;r38=r35;r39=r38*.9993908270190958;r40=r37;r41=r40*.03489949670250097;r42=r39+r41;r43=r42;r44=-r43;r45=r44;r46=r45*.03489949670250097;r47=r40*.9993908270190958;r48=r47+r46;r49=r48;r50=r32+r33;r51=r34+r43;r52=r36+r49;HEAPF32[3420>>2]=r50;HEAPF32[3424>>2]=r51;HEAPF32[3428>>2]=r52;_ReInit(0);return;break};case 100:{r53=HEAPF32[3420>>2];r54=HEAPF32[3424>>2];r55=HEAPF32[3428>>2];r56=HEAPF32[3408>>2];r57=r53-r56;r58=HEAPF32[3412>>2];r59=r54-r58;r60=HEAPF32[3416>>2];r61=r55-r60;r62=r57;r63=r62*.9993908270190958;r64=r61;r65=r64*-.03489949670250097;r66=r63-r65;r67=r66;r68=r67;r69=r68*-.03489949670250097;r70=r64*.9993908270190958;r71=r70+r69;r72=r71;r73=r56+r67;r74=r58+r59;r75=r60+r72;HEAPF32[3420>>2]=r73;HEAPF32[3424>>2]=r74;HEAPF32[3428>>2]=r75;_ReInit(0);return;break};case 102:{r76=HEAPF32[3420>>2];r77=HEAPF32[3424>>2];r78=HEAPF32[3428>>2];r79=HEAPF32[3408>>2];r80=r76-r79;r81=HEAPF32[3412>>2];r82=r77-r81;r83=HEAPF32[3416>>2];r84=r78-r83;r85=r80;r86=r85*.9993908270190958;r87=r84;r88=r87*.03489949670250097;r89=r86-r88;r90=r89;r91=r90;r92=r91*.03489949670250097;r93=r87*.9993908270190958;r94=r93+r92;r95=r94;r96=r79+r90;r97=r81+r82;r98=r83+r95;HEAPF32[3420>>2]=r96;HEAPF32[3424>>2]=r97;HEAPF32[3428>>2]=r98;_ReInit(0);return;break};case 104:{r99=HEAPF32[3424>>2];r100=r99+10;HEAPF32[3424>>2]=r100;_ReInit(0);return;break};case 105:{r101=HEAPF32[3424>>2];r102=r101-10;HEAPF32[3424>>2]=r102;_ReInit(0);return;break};default:{return}}}function _InitGlut(r1,r2,r3){var r4,r5;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;_glutInitWindowSize(HEAP32[16>>2],HEAP32[216>>2]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r5,r2);_glutCreateWindow(r3);_glutReshapeFunc(2);_glutKeyboardFunc(6);_glutSpecialFunc(8);_glutDisplayFunc(10);_glutIdleFunc(4);_glViewport(0,0,HEAP32[16>>2],HEAP32[216>>2]);_glLoadIdentity();_glOrtho(0,(HEAP32[16>>2]|0)-1,0,(HEAP32[216>>2]|0)-1,-1,1);STACKTOP=r4;return}function _AllocateBuffers(){var r1,r2,r3,r4,r5,r6,r7,r8;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2;r4=Math.imul(HEAP32[216>>2],HEAP32[16>>2])|0;r5=_malloc(r4*12&-1);HEAP32[3384>>2]=r5;r5=r4<<2;r6=_malloc(r4<<3);HEAP32[3280>>2]=r6;r6=r4<<1;if((r6|0)>0){r7=0;while(1){r8=_rand();HEAP32[HEAP32[3280>>2]+(r7<<2)>>2]=r8;r8=HEAP32[3280>>2]+(r7<<2)|0;if(HEAP32[r8>>2]>>>0<2){HEAP32[r8>>2]=2}r8=r7+1|0;if((r8|0)<(r6|0)){r7=r8}else{break}}}r7=_malloc(r5);HEAP32[3304>>2]=r7;L217:do{if((r4|0)>0){r5=0;r6=r7;while(1){HEAP32[r6+(r5<<2)>>2]=r5;r8=r5+1|0;if((r8|0)>=(r4|0)){break L217}r5=r8;r6=HEAP32[3304>>2]}}}while(0);r4=Math.imul(HEAP32[16>>2]*12&-1,HEAP32[216>>2])|0;r7=_clCreateBuffer(HEAP32[3368>>2],1,0,r4,0,r3);HEAP32[3392>>2]=r7;r7=HEAP32[r3>>2];if((r7|0)!=0){_printf(840,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r7,r1));STACKTOP=r1;_exit(-1)}r7=Math.imul(HEAP32[16>>2]<<2,HEAP32[216>>2])|0;r4=_clCreateBuffer(HEAP32[3368>>2],2,0,r7,0,r3);HEAP32[3312>>2]=r4;r4=HEAP32[r3>>2];if((r4|0)!=0){_printf(792,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r4,r1));STACKTOP=r1;_exit(-1)}r4=Math.imul(HEAP32[16>>2]<<3,HEAP32[216>>2])|0;r7=_clCreateBuffer(HEAP32[3368>>2],1,0,r4,0,r3);HEAP32[3288>>2]=r7;r6=HEAP32[r3>>2];if((r6|0)!=0){_printf(704,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r6,r1));STACKTOP=r1;_exit(-1)}r6=_clEnqueueWriteBuffer(HEAP32[3376>>2],r7,1,0,r4,HEAP32[3280>>2],0,0,0);HEAP32[r3>>2]=r6;if((r6|0)==0){STACKTOP=r2;return}else{_printf(656,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r6,r1));STACKTOP=r1;_exit(-1)}}function _ReadScene(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;_fprintf(HEAP32[_stderr>>2],2520,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;r6=_fopen(r1,3016);if((r6|0)==0){_fprintf(HEAP32[_stderr>>2],2384,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,2080,(r3=STACKTOP,STACKTOP=STACKTOP+48|0,HEAP32[r3>>2]=3408,HEAP32[r3+8>>2]=3412,HEAP32[r3+16>>2]=3416,HEAP32[r3+24>>2]=3420,HEAP32[r3+32>>2]=3424,HEAP32[r3+40>>2]=3428,r3));STACKTOP=r3;if((r1|0)!=6){_fprintf(HEAP32[_stderr>>2],1576,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}r1=_fscanf(r6,1192,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=3264,r3));STACKTOP=r3;r7=HEAP32[_stderr>>2];if((r1|0)!=1){_fprintf(r7,752,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r1,r3));STACKTOP=r3;_exit(-1)}_fprintf(r7,416,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=HEAP32[3264>>2],r3));STACKTOP=r3;r7=HEAP32[3264>>2];r1=_malloc(r7*44&-1);HEAP32[3256>>2]=r1;r1=0;r8=r7;while(1){if(r1>>>0>=r8>>>0){r2=188;break}r7=HEAP32[3256>>2];r9=_fscanf(r6,328,(r3=STACKTOP,STACKTOP=STACKTOP+88|0,HEAP32[r3>>2]=r7+(r1*44&-1),HEAP32[r3+8>>2]=r7+(r1*44&-1)+4,HEAP32[r3+16>>2]=r7+(r1*44&-1)+8,HEAP32[r3+24>>2]=r7+(r1*44&-1)+12,HEAP32[r3+32>>2]=r7+(r1*44&-1)+16,HEAP32[r3+40>>2]=r7+(r1*44&-1)+20,HEAP32[r3+48>>2]=r7+(r1*44&-1)+24,HEAP32[r3+56>>2]=r7+(r1*44&-1)+28,HEAP32[r3+64>>2]=r7+(r1*44&-1)+32,HEAP32[r3+72>>2]=r7+(r1*44&-1)+36,HEAP32[r3+80>>2]=r5,r3));STACKTOP=r3;r10=HEAP32[r5>>2];if((r10|0)==0){HEAP32[r7+(r1*44&-1)+40>>2]=0}else if((r10|0)==1){HEAP32[r7+(r1*44&-1)+40>>2]=1}else if((r10|0)==2){HEAP32[r7+(r1*44&-1)+40>>2]=2}else{r2=184;break}if((r9|0)!=11){r2=187;break}r1=r1+1|0;r8=HEAP32[3264>>2]}if(r2==184){_fprintf(HEAP32[_stderr>>2],224,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r10,r3));STACKTOP=r3;_exit(-1)}else if(r2==187){_fprintf(HEAP32[_stderr>>2],3088,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r1,HEAP32[r3+8>>2]=r9,r3));STACKTOP=r3;_exit(-1)}else if(r2==188){_fclose(r6);STACKTOP=r4;return}}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105,r106,r107,r108,r109,r110,r111,r112,r113,r114,r115,r116,r117,r118,r119,r120,r121,r122,r123,r124,r125,r126,r127,r128,r129,r130,r131,r132,r133,r134,r135,r136,r137,r138,r139,r140,r141,r142,r143,r144,r145,r146,r147,r148,r149,r150,r151,r152,r153,r154,r155,r156,r157,r158,r159,r160,r161,r162,r163,r164,r165,r166,r167,r168,r169,r170,r171,r172,r173,r174,r175,r176,r177,r178,r179,r180,r181,r182,r183,r184,r185,r186,r187,r188,r189,r190,r191,r192,r193,r194,r195,r196,r197,r198,r199,r200,r201,r202,r203,r204,r205,r206,r207,r208,r209,r210,r211,r212,r213,r214,r215;r4=0;r5=0;r6=STACKTOP;r7=r1&255;switch(r7|0){case 112:{r8=_fopen(3024,2960);r9=(r8|0)==0;if(r9){r10=HEAP32[_stderr>>2];r11=_fwrite(2904,37,1,r10);STACKTOP=r6;return}r12=HEAP32[16>>2];r13=HEAP32[216>>2];r14=_fprintf(r8,2704,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r12,HEAP32[r5+8>>2]=r13,HEAP32[r5+16>>2]=255,r5));STACKTOP=r5;r15=HEAP32[216>>2];r16=(r15|0)>0;if(r16){r17=HEAP32[16>>2];r18=r15;r19=r17;while(1){r20=r18-1|0;r21=(r19|0)>0;if(r21){r22=HEAP32[3304>>2];r23=Math.imul(r19,r20)|0;r24=r22+(r23<<2)|0;r25=r24;r26=r25;r27=0;while(1){r28=HEAP8[r26];r29=r28&255;r30=r26+1|0;r31=HEAP8[r30];r32=r31&255;r33=r26+2|0;r34=HEAP8[r33];r35=r34&255;r36=_fprintf(r8,2656,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r29,HEAP32[r5+8>>2]=r32,HEAP32[r5+16>>2]=r35,r5));STACKTOP=r5;r37=r27+1|0;r38=r26+4|0;r39=HEAP32[16>>2];r40=(r37|0)<(r39|0);if(r40){r26=r38;r27=r37}else{r41=r39;break}}}else{r41=r19}r42=(r20|0)>0;if(r42){r18=r20;r19=r41}else{break}}}r43=_fclose(r8);STACKTOP=r6;return;break};case 27:{r44=HEAP32[_stderr>>2];r45=_fwrite(2624,6,1,r44);_exit(0);break};case 32:{_ReInit(1);STACKTOP=r6;return;break};case 97:{r46=HEAPF32[3444>>2];r47=HEAPF32[3448>>2];r48=HEAPF32[3452>>2];r49=r46*r46;r50=r47*r47;r51=r49+r50;r52=r48*r48;r53=r51+r52;r54=r53;r55=Math.sqrt(r54);r56=1/r55;r57=r56;r58=r46*r57;r59=r47*r57;r60=r48*r57;r61=r58*-10;r62=r59*-10;r63=r60*-10;r64=HEAPF32[3408>>2];r65=r64+r61;HEAPF32[3408>>2]=r65;r66=HEAPF32[3412>>2];r67=r66+r62;HEAPF32[3412>>2]=r67;r68=HEAPF32[3416>>2];r69=r68+r63;HEAPF32[3416>>2]=r69;r70=HEAPF32[3420>>2];r71=r61+r70;HEAPF32[3420>>2]=r71;r72=HEAPF32[3424>>2];r73=r62+r72;HEAPF32[3424>>2]=r73;r74=HEAPF32[3428>>2];r75=r63+r74;HEAPF32[3428>>2]=r75;_ReInit(0);STACKTOP=r6;return;break};case 100:{r76=HEAPF32[3444>>2];r77=HEAPF32[3448>>2];r78=HEAPF32[3452>>2];r79=r76*r76;r80=r77*r77;r81=r79+r80;r82=r78*r78;r83=r81+r82;r84=r83;r85=Math.sqrt(r84);r86=1/r85;r87=r86;r88=r76*r87;r89=r77*r87;r90=r78*r87;r91=r88*10;r92=r89*10;r93=r90*10;r94=HEAPF32[3408>>2];r95=r94+r91;HEAPF32[3408>>2]=r95;r96=HEAPF32[3412>>2];r97=r96+r92;HEAPF32[3412>>2]=r97;r98=HEAPF32[3416>>2];r99=r98+r93;HEAPF32[3416>>2]=r99;r100=HEAPF32[3420>>2];r101=r91+r100;HEAPF32[3420>>2]=r101;r102=HEAPF32[3424>>2];r103=r92+r102;HEAPF32[3424>>2]=r103;r104=HEAPF32[3428>>2];r105=r93+r104;HEAPF32[3428>>2]=r105;_ReInit(0);STACKTOP=r6;return;break};case 119:{r106=HEAPF32[3432>>2];r107=HEAPF32[3436>>2];r108=HEAPF32[3440>>2];r109=r106*10;r110=r107*10;r111=r108*10;r112=HEAPF32[3408>>2];r113=r109+r112;HEAPF32[3408>>2]=r113;r114=HEAPF32[3412>>2];r115=r110+r114;HEAPF32[3412>>2]=r115;r116=HEAPF32[3416>>2];r117=r111+r116;HEAPF32[3416>>2]=r117;r118=HEAPF32[3420>>2];r119=r109+r118;HEAPF32[3420>>2]=r119;r120=HEAPF32[3424>>2];r121=r110+r120;HEAPF32[3424>>2]=r121;r122=HEAPF32[3428>>2];r123=r111+r122;HEAPF32[3428>>2]=r123;_ReInit(0);STACKTOP=r6;return;break};case 115:{r124=HEAPF32[3432>>2];r125=HEAPF32[3436>>2];r126=HEAPF32[3440>>2];r127=r124*-10;r128=r125*-10;r129=r126*-10;r130=HEAPF32[3408>>2];r131=r127+r130;HEAPF32[3408>>2]=r131;r132=HEAPF32[3412>>2];r133=r128+r132;HEAPF32[3412>>2]=r133;r134=HEAPF32[3416>>2];r135=r129+r134;HEAPF32[3416>>2]=r135;r136=HEAPF32[3420>>2];r137=r127+r136;HEAPF32[3420>>2]=r137;r138=HEAPF32[3424>>2];r139=r128+r138;HEAPF32[3424>>2]=r139;r140=HEAPF32[3428>>2];r141=r129+r140;HEAPF32[3428>>2]=r141;_ReInit(0);STACKTOP=r6;return;break};case 114:{r142=HEAPF32[3412>>2];r143=r142+10;HEAPF32[3412>>2]=r143;r144=HEAPF32[3424>>2];r145=r144+10;HEAPF32[3424>>2]=r145;_ReInit(0);STACKTOP=r6;return;break};case 102:{r146=HEAPF32[3412>>2];r147=r146-10;HEAPF32[3412>>2]=r147;r148=HEAPF32[3424>>2];r149=r148-10;HEAPF32[3424>>2]=r149;_ReInit(0);STACKTOP=r6;return;break};case 43:{r150=HEAP32[3352>>2];r151=r150+1|0;r152=HEAP32[3264>>2];r153=(r151>>>0)%(r152>>>0)&-1;HEAP32[3352>>2]=r153;r154=HEAP32[_stderr>>2];r155=HEAP32[3256>>2];r156=r155+(r153*44&-1)+4|0;r157=HEAPF32[r156>>2];r158=r157;r159=r155+(r153*44&-1)+8|0;r160=HEAPF32[r159>>2];r161=r160;r162=r155+(r153*44&-1)+12|0;r163=HEAPF32[r162>>2];r164=r163;r165=_fprintf(r154,2544,(r5=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r5>>2]=r153,HEAPF64[r5+8>>3]=r158,HEAPF64[r5+16>>3]=r161,HEAPF64[r5+24>>3]=r164,r5));STACKTOP=r5;_ReInitScene();STACKTOP=r6;return;break};case 45:{r166=HEAP32[3352>>2];r167=HEAP32[3264>>2];r168=r166-1|0;r169=r168+r167|0;r170=(r169>>>0)%(r167>>>0)&-1;HEAP32[3352>>2]=r170;r171=HEAP32[_stderr>>2];r172=HEAP32[3256>>2];r173=r172+(r170*44&-1)+4|0;r174=HEAPF32[r173>>2];r175=r174;r176=r172+(r170*44&-1)+8|0;r177=HEAPF32[r176>>2];r178=r177;r179=r172+(r170*44&-1)+12|0;r180=HEAPF32[r179>>2];r181=r180;r182=_fprintf(r171,2544,(r5=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r5>>2]=r170,HEAPF64[r5+8>>3]=r175,HEAPF64[r5+16>>3]=r178,HEAPF64[r5+24>>3]=r181,r5));STACKTOP=r5;_ReInitScene();STACKTOP=r6;return;break};case 52:{r183=HEAP32[3352>>2];r184=HEAP32[3256>>2];r185=r184+(r183*44&-1)+4|0;r186=HEAPF32[r185>>2];r187=r186-5;HEAPF32[r185>>2]=r187;_ReInitScene();STACKTOP=r6;return;break};case 54:{r188=HEAP32[3352>>2];r189=HEAP32[3256>>2];r190=r189+(r188*44&-1)+4|0;r191=HEAPF32[r190>>2];r192=r191+5;HEAPF32[r190>>2]=r192;_ReInitScene();STACKTOP=r6;return;break};case 56:{r193=HEAP32[3352>>2];r194=HEAP32[3256>>2];r195=r194+(r193*44&-1)+12|0;r196=HEAPF32[r195>>2];r197=r196-5;HEAPF32[r195>>2]=r197;_ReInitScene();STACKTOP=r6;return;break};case 50:{r198=HEAP32[3352>>2];r199=HEAP32[3256>>2];r200=r199+(r198*44&-1)+12|0;r201=HEAPF32[r200>>2];r202=r201+5;HEAPF32[r200>>2]=r202;_ReInitScene();STACKTOP=r6;return;break};case 57:{r203=HEAP32[3352>>2];r204=HEAP32[3256>>2];r205=r204+(r203*44&-1)+8|0;r206=HEAPF32[r205>>2];r207=r206+5;HEAPF32[r205>>2]=r207;_ReInitScene();STACKTOP=r6;return;break};case 51:{r208=HEAP32[3352>>2];r209=HEAP32[3256>>2];r210=r209+(r208*44&-1)+8|0;r211=HEAPF32[r210>>2];r212=r211-5;HEAPF32[r210>>2]=r212;_ReInitScene();STACKTOP=r6;return;break};case 104:{r213=HEAP32[200>>2];r214=(r213|0)==0;r215=r214&1;HEAP32[200>>2]=r215;STACKTOP=r6;return;break};default:{STACKTOP=r6;return}}}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[3480>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=3520+(r8<<2)|0;r10=3520+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[3480>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[3496>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[3488>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=3520+(r16<<2)|0;r13=3520+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[3480>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[3496>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[3488>>2];if((r12|0)!=0){r17=HEAP32[3500>>2];r4=r12>>>3;r12=r4<<1;r6=3520+(r12<<2)|0;r11=HEAP32[3480>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[3480>>2]=r11|r8;r19=r6;r20=3520+(r12+2<<2)|0}else{r4=3520+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[3496>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[3488>>2]=r13;HEAP32[3500>>2]=r5;r14=r9;return r14}r12=HEAP32[3484>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[3784+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[3496>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L510:do{if((r5|0)!=0){r6=r4+28|0;r9=3784+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[3484>>2]=HEAP32[3484>>2]&~(1<<HEAP32[r6>>2]);break L510}else{if(r5>>>0<HEAP32[3496>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L510}}}while(0);if(r22>>>0<HEAP32[3496>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[3488>>2];if((r6|0)!=0){r5=HEAP32[3500>>2];r9=r6>>>3;r6=r9<<1;r17=3520+(r6<<2)|0;r11=HEAP32[3480>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[3480>>2]=r11|r7;r25=r17;r26=3520+(r6+2<<2)|0}else{r9=3520+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[3496>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[3488>>2]=r16;HEAP32[3500>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[3484>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[3784+(r27<<2)>>2];L318:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L318}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[3784+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[3488>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[3496>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L368:do{if((r5|0)!=0){r9=r37+28|0;r13=3784+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[3484>>2]=HEAP32[3484>>2]&~(1<<HEAP32[r9>>2]);break L368}else{if(r5>>>0<HEAP32[3496>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L368}}}while(0);if(r38>>>0<HEAP32[3496>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=3520+(r5<<2)|0;r18=HEAP32[3480>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[3480>>2]=r18|r10;r41=r13;r42=3520+(r5+2<<2)|0}else{r9=3520+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[3496>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=3784+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[3484>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[3484>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=386;break}else{r12=r12<<1;r13=r10}}if(r2==386){if(r45>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[3496>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[3488>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[3500>>2];if(r45>>>0>15){r44=r36;HEAP32[3500>>2]=r44+r15;HEAP32[3488>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[3488>>2]=0;HEAP32[3500>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[3492>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[3492>>2]=r45;r36=HEAP32[3504>>2];r37=r36;HEAP32[3504>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[3320>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[3328>>2]=r36;HEAP32[3324>>2]=r36;HEAP32[3332>>2]=-1;HEAP32[3336>>2]=-1;HEAP32[3340>>2]=0;HEAP32[3924>>2]=0;r36=_time(0)&-16^1431655768;HEAP32[3320>>2]=r36;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[3328>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[3920>>2];do{if((r41|0)!=0){r42=HEAP32[3912>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L577:do{if((HEAP32[3924>>2]&4|0)==0){r41=HEAP32[3504>>2];L579:do{if((r41|0)==0){r2=416}else{r38=r41;r42=3928;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=416;break L579}else{r42=r39}}if((r42|0)==0){r2=416;break}r38=r44-HEAP32[3492>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=425}}while(0);do{if(r2==416){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[3324>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[3912>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[3920>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=425}}while(0);L599:do{if(r2==425){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=436;break L577}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[3328>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L599}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=436;break L577}}}while(0);HEAP32[3924>>2]=HEAP32[3924>>2]|4;r57=r48;r2=433}else{r57=0;r2=433}}while(0);do{if(r2==433){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=436}}}while(0);do{if(r2==436){r57=HEAP32[3912>>2]+r54|0;HEAP32[3912>>2]=r57;if(r57>>>0>HEAP32[3916>>2]>>>0){HEAP32[3916>>2]=r57}r57=HEAP32[3504>>2];L619:do{if((r57|0)==0){r45=HEAP32[3496>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[3496>>2]=r55}HEAP32[3928>>2]=r55;HEAP32[3932>>2]=r54;HEAP32[3940>>2]=0;HEAP32[3516>>2]=HEAP32[3320>>2];HEAP32[3512>>2]=-1;r45=0;while(1){r50=r45<<1;r56=3520+(r50<<2)|0;HEAP32[3520+(r50+3<<2)>>2]=r56;HEAP32[3520+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[3504>>2]=r55+r58;HEAP32[3492>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[3508>>2]=HEAP32[3336>>2]}else{r45=3928;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=448;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==448){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[3504>>2];r50=HEAP32[3492>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[3504>>2]=r51+r62;HEAP32[3492>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[3508>>2]=HEAP32[3336>>2];break L619}}while(0);if(r55>>>0<HEAP32[3496>>2]>>>0){HEAP32[3496>>2]=r55}r45=r55+r54|0;r50=3928;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=458;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==458){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[3504>>2]|0)){r36=HEAP32[3492>>2]+r37|0;HEAP32[3492>>2]=r36;HEAP32[3504>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[3500>>2]|0)){r36=HEAP32[3488>>2]+r37|0;HEAP32[3488>>2]=r36;HEAP32[3500>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L664:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=3520+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[3496>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[3480>>2]=HEAP32[3480>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[3496>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[3496>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=3784+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[3484>>2]=HEAP32[3484>>2]&~(1<<HEAP32[r42>>2]);break L664}else{if(r13>>>0<HEAP32[3496>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L664}}}while(0);if(r67>>>0<HEAP32[3496>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=3520+(r47<<2)|0;r42=HEAP32[3480>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[3480>>2]=r42|r13;r72=r49;r73=3520+(r47+2<<2)|0}else{r36=3520+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[3496>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=3784+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[3484>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[3484>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=531;break}else{r43=r43<<1;r49=r13}}if(r2==531){if(r76>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[3496>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=3928;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[3504>>2]=r55+r81;HEAP32[3492>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[3508>>2]=HEAP32[3336>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[3928>>2];HEAP32[r48+4>>2]=HEAP32[3932>>2];HEAP32[r48+8>>2]=HEAP32[3936>>2];HEAP32[r48+12>>2]=HEAP32[3940>>2];HEAP32[3928>>2]=r55;HEAP32[3932>>2]=r54;HEAP32[3940>>2]=0;HEAP32[3936>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=3520+(r37<<2)|0;r45=HEAP32[3480>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[3480>>2]=r45|r13;r82=r51;r83=3520+(r37+2<<2)|0}else{r48=3520+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[3496>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=3784+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[3484>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[3484>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=566;break}else{r43=r43<<1;r51=r13}}if(r2==566){if(r86>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[3496>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[3492>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[3492>>2]=r52;r57=HEAP32[3504>>2];r43=r57;HEAP32[3504>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);r15=___errno_location();HEAP32[r15>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[3496>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L836:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[3500>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[3488>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=3520+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[3480>>2]=HEAP32[3480>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=3784+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[3484>>2]=HEAP32[3484>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L836}else{if(r16>>>0<HEAP32[3496>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L836}}}while(0);if(r27>>>0<HEAP32[3496>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[3504>>2]|0)){r28=HEAP32[3492>>2]+r18|0;HEAP32[3492>>2]=r28;HEAP32[3504>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[3500>>2]|0)){return}HEAP32[3500>>2]=0;HEAP32[3488>>2]=0;return}if((r10|0)==(HEAP32[3500>>2]|0)){r28=HEAP32[3488>>2]+r18|0;HEAP32[3488>>2]=r28;HEAP32[3500>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L938:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=3520+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[3496>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[3480>>2]=HEAP32[3480>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[3496>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[3496>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=3784+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[3484>>2]=HEAP32[3484>>2]&~(1<<HEAP32[r20>>2]);break L938}else{if(r6>>>0<HEAP32[3496>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L938}}}while(0);if(r31>>>0<HEAP32[3496>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[3500>>2]|0)){r34=r28;break}HEAP32[3488>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=3520+(r4<<2)|0;r27=HEAP32[3480>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[3480>>2]=r27|r31;r35=r5;r36=3520+(r4+2<<2)|0}else{r18=3520+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[3496>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=3784+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[3484>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[3484>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=743;break}else{r27=r27<<1;r36=r31}}if(r2==743){if(r39>>>0<HEAP32[3496>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[3496>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[3512>>2]-1|0;HEAP32[3512>>2]=r17;if((r17|0)==0){r40=3936}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[3512>>2]=-1;return}
 // EMSCRIPTEN_END_FUNCS
 Module["_main"] = _main;
 Module["_malloc"] = _malloc;
@@ -10876,10 +6505,14 @@ function ExitStatus(status) {
 ExitStatus.prototype = new Error();
 ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
+var preloadStartTime = null;
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
   args = args || [];
+  if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) {
+    Module.printErr('preload time: ' + (Date.now() - preloadStartTime) + ' ms');
+  }
   ensureInitRuntime();
   var argc = args.length+1;
   function pad() {
@@ -10919,6 +6552,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
 }
 function run(args) {
   args = args || Module['arguments'];
+  if (preloadStartTime === null) preloadStartTime = Date.now();
   if (runDependencies > 0) {
     Module.printErr('run() called, but dependencies remain, so not running');
     return;
@@ -10963,6 +6597,7 @@ Module['exit'] = Module.exit = exit;
 function abort(text) {
   if (text) {
     Module.print(text);
+    Module.printErr(text);
   }
   ABORT = true;
   EXITSTATUS = 1;
@@ -10975,105 +6610,56 @@ function assert(check, msg) {
   if (!check) throw msg + new Error().stack;
 }
 Module['FS_createPath']('/', 'scenes', true, true);
-    function DataRequest() {}
+    function DataRequest(start, end, crunched, audio) {
+      this.start = start;
+      this.end = end;
+      this.crunched = crunched;
+      this.audio = audio;
+    }
     DataRequest.prototype = {
       requests: {},
       open: function(mode, name) {
+        this.name = name;
         this.requests[name] = this;
+        Module['addRunDependency']('fp ' + this.name);
       },
-      send: function() {}
+      send: function() {},
+      onload: function() {
+        var byteArray = this.byteArray.subarray(this.start, this.end);
+        if (this.crunched) {
+          var ddsHeader = byteArray.subarray(0, 128);
+          var that = this;
+          requestDecrunch(this.name, byteArray.subarray(128), function(ddsData) {
+            byteArray = new Uint8Array(ddsHeader.length + ddsData.length);
+            byteArray.set(ddsHeader, 0);
+            byteArray.set(ddsData, 128);
+            that.finish(byteArray);
+          });
+        } else {
+          this.finish(byteArray);
+        }
+      },
+      finish: function(byteArray) {
+        var that = this;
+        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
+          Module['removeRunDependency']('fp ' + that.name);
+        }, function() {
+          if (that.audio) {
+            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
+          } else {
+            Runtime.warn('Preloading file ' + that.name + ' failed');
+          }
+        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+        this.requests[this.name] = null;
+      },
     };
-    var filePreload0 = new DataRequest();
-    filePreload0.open('GET', '/rendering_kernel_custom.cl', true);
-    filePreload0.responseType = 'arraybuffer';
-    filePreload0.onload = function() {
-      var arrayBuffer = filePreload0.response;
-      assert(arrayBuffer, 'Loading file /rendering_kernel_custom.cl failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/', 'rendering_kernel_custom.cl', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /rendering_kernel_custom.cl');
-      });
-    };
-    Module['addRunDependency']('fp /rendering_kernel_custom.cl');
-    filePreload0.send(null);
-    var filePreload1 = new DataRequest();
-    filePreload1.open('GET', '/scenes/caustic.scn', true);
-    filePreload1.responseType = 'arraybuffer';
-    filePreload1.onload = function() {
-      var arrayBuffer = filePreload1.response;
-      assert(arrayBuffer, 'Loading file /scenes/caustic.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'caustic.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/caustic.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/caustic.scn');
-    filePreload1.send(null);
-    var filePreload2 = new DataRequest();
-    filePreload2.open('GET', '/scenes/caustic3.scn', true);
-    filePreload2.responseType = 'arraybuffer';
-    filePreload2.onload = function() {
-      var arrayBuffer = filePreload2.response;
-      assert(arrayBuffer, 'Loading file /scenes/caustic3.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'caustic3.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/caustic3.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/caustic3.scn');
-    filePreload2.send(null);
-    var filePreload3 = new DataRequest();
-    filePreload3.open('GET', '/scenes/complex.scn', true);
-    filePreload3.responseType = 'arraybuffer';
-    filePreload3.onload = function() {
-      var arrayBuffer = filePreload3.response;
-      assert(arrayBuffer, 'Loading file /scenes/complex.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'complex.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/complex.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/complex.scn');
-    filePreload3.send(null);
-    var filePreload4 = new DataRequest();
-    filePreload4.open('GET', '/scenes/cornell_large.scn', true);
-    filePreload4.responseType = 'arraybuffer';
-    filePreload4.onload = function() {
-      var arrayBuffer = filePreload4.response;
-      assert(arrayBuffer, 'Loading file /scenes/cornell_large.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'cornell_large.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/cornell_large.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/cornell_large.scn');
-    filePreload4.send(null);
-    var filePreload5 = new DataRequest();
-    filePreload5.open('GET', '/scenes/cornell.scn', true);
-    filePreload5.responseType = 'arraybuffer';
-    filePreload5.onload = function() {
-      var arrayBuffer = filePreload5.response;
-      assert(arrayBuffer, 'Loading file /scenes/cornell.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'cornell.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/cornell.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/cornell.scn');
-    filePreload5.send(null);
-    var filePreload6 = new DataRequest();
-    filePreload6.open('GET', '/scenes/simple.scn', true);
-    filePreload6.responseType = 'arraybuffer';
-    filePreload6.onload = function() {
-      var arrayBuffer = filePreload6.response;
-      assert(arrayBuffer, 'Loading file /scenes/simple.scn failed.');
-      var byteArray = !arrayBuffer.subarray ? new Uint8Array(arrayBuffer) : arrayBuffer;
-      Module['FS_createPreloadedFile']('/scenes', 'simple.scn', byteArray, true, true, function() {
-        Module['removeRunDependency']('fp /scenes/simple.scn');
-      });
-    };
-    Module['addRunDependency']('fp /scenes/simple.scn');
-    filePreload6.send(null);
+      new DataRequest(0, 16247, 0, 0).open('GET', '/rendering_kernel_custom.cl');
+    new DataRequest(16247, 16437, 0, 0).open('GET', '/scenes/caustic.scn');
+    new DataRequest(16437, 16730, 0, 0).open('GET', '/scenes/caustic3.scn');
+    new DataRequest(16730, 56250, 0, 0).open('GET', '/scenes/complex.scn');
+    new DataRequest(56250, 56829, 0, 0).open('GET', '/scenes/cornell_large.scn');
+    new DataRequest(56829, 57406, 0, 0).open('GET', '/scenes/cornell.scn');
+    new DataRequest(57406, 57698, 0, 0).open('GET', '/scenes/simple.scn');
     if (!Module.expectedDataFileDownloads) {
       Module.expectedDataFileDownloads = 0;
       Module.finishedDataFileDownloads = 0;
@@ -11082,7 +6668,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/smallpt.data';
     var REMOTE_PACKAGE_NAME = 'smallpt.data';
-    var PACKAGE_UUID = 'd1758688-a752-4a41-836b-ea5aefebbe8c';
+    var PACKAGE_UUID = 'c80ad378-78cc-4abd-b224-2b74ac2bb17e';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -11126,49 +6712,18 @@ Module['FS_createPath']('/', 'scenes', true, true);
       assert(arrayBuffer, 'Loading data file failed.');
       var byteArray = new Uint8Array(arrayBuffer);
       var curr;
-        curr = DataRequest.prototype.requests['/rendering_kernel_custom.cl'];
-        var data = byteArray.subarray(0, 16247);
-        var ptr = Module['_malloc'](16247);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 16247);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/caustic.scn'];
-        var data = byteArray.subarray(16247, 16437);
-        var ptr = Module['_malloc'](190);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 190);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/caustic3.scn'];
-        var data = byteArray.subarray(16437, 16730);
-        var ptr = Module['_malloc'](293);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 293);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/complex.scn'];
-        var data = byteArray.subarray(16730, 56250);
-        var ptr = Module['_malloc'](39520);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 39520);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/cornell_large.scn'];
-        var data = byteArray.subarray(56250, 56829);
-        var ptr = Module['_malloc'](579);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 579);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/cornell.scn'];
-        var data = byteArray.subarray(56829, 57406);
-        var ptr = Module['_malloc'](577);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 577);
-        curr.onload();
-        curr = DataRequest.prototype.requests['/scenes/simple.scn'];
-        var data = byteArray.subarray(57406, 57698);
-        var ptr = Module['_malloc'](292);
-        Module['HEAPU8'].set(data, ptr);
-        curr.response = Module['HEAPU8'].subarray(ptr, ptr + 292);
-        curr.onload();
-                Module['removeRunDependency']('datafile_../build/smallpt.data');
+      // copy the entire loaded file into a spot in the heap. Files will refer to slices in that. They cannot be freed though.
+      var ptr = Module['_malloc'](byteArray.length);
+      Module['HEAPU8'].set(byteArray, ptr);
+      DataRequest.prototype.byteArray = Module['HEAPU8'].subarray(ptr, ptr+byteArray.length);
+          DataRequest.prototype.requests["/rendering_kernel_custom.cl"].onload();
+          DataRequest.prototype.requests["/scenes/caustic.scn"].onload();
+          DataRequest.prototype.requests["/scenes/caustic3.scn"].onload();
+          DataRequest.prototype.requests["/scenes/complex.scn"].onload();
+          DataRequest.prototype.requests["/scenes/cornell_large.scn"].onload();
+          DataRequest.prototype.requests["/scenes/cornell.scn"].onload();
+          DataRequest.prototype.requests["/scenes/simple.scn"].onload();
+          Module['removeRunDependency']('datafile_../build/smallpt.data');
     };
     Module['addRunDependency']('datafile_../build/smallpt.data');
     function handleError(error) {

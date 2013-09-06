@@ -27,6 +27,7 @@ REDISTRIBUTION OF THIS SOFTWARE.
 #include "SDL/SDL_opengl.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
     for (int x = 0; x < n; x++) {
       int start = x*w*2;
       glBegin( GL_TRIANGLES );
-        glTexCoord2i( 1, 0 ); glVertex3f( start  ,   0, 0 );
+        glTexCoord2i( 1, 0 ); glVertex2i( start  ,   0 );
         glTexCoord2i( 0, 0 ); glVertex3f( start+w, 300, 0 );
         glTexCoord2i( 1, 1 ); glVertex3f( start-w, 300, 0 );
       glEnd();
@@ -209,5 +210,11 @@ int main(int argc, char *argv[])
 
     SDL_Quit();
 
-    return 0;
+    // check for asm compilation bug with aliased functions with different sigs
+    void (*f)(int, int) = glVertex2i;
+    if ((int)f % 16 == 4) f(5, 7);
+    void (*g)(int, int) = glVertex3f;
+    if ((int)g % 16 == 4) g(5, 7);
+    return (int)f + (int)g;
 }
+

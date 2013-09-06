@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,17 @@ typedef struct {
 
 server_t server;
 client_t client;
+
+void cleanup() {
+  if (client.fd) {
+    close(client.fd);
+    client.fd = 0;
+  }
+  if (server.fd) {
+    close(server.fd);
+    server.fd = 0;
+  }
+}
 
 void main_loop(void *arg) {
   int res;
@@ -78,7 +90,13 @@ void main_loop(void *arg) {
     }
 
     res = do_msg_read(fd, &client.msg, client.read, 0, (struct sockaddr *)&client.addr, &addrlen);
-    if (res != -1) client.read += res;
+    if (res == 0) {
+      // client disconnected
+      memset(&client, 0, sizeof(client_t));
+      return;
+    } else if (res != -1) {
+      client.read += res;
+    }
 
     // once we've read the entire message, echo it back
     if (client.read >= client.msg.length) {
@@ -91,12 +109,22 @@ void main_loop(void *arg) {
     }
 
     res = do_msg_write(fd, &client.msg, client.wrote, 0, (struct sockaddr *)&client.addr, sizeof(client.addr));
-    if (res != -1) client.wrote += res;
+    if (res == 0) {
+      // client disconnected
+      memset(&client, 0, sizeof(client_t));
+      return;
+    } else if (res != -1) {
+      client.wrote += res;
+    }
 
-    // close the client once we've echo'd back the entire message
     if (client.wrote >= client.msg.length) {
+      client.wrote = 0;
+      client.state = MSG_READ;
+
+#if CLOSE_CLIENT_AFTER_ECHO
       close(client.fd);
       memset(&client, 0, sizeof(client_t));
+#endif
     }
   }
 }
@@ -104,6 +132,9 @@ void main_loop(void *arg) {
 int main() {
   struct sockaddr_in addr;
   int res;
+
+  atexit(cleanup);
+  signal(SIGTERM, cleanup);
 
   memset(&server, 0, sizeof(server_t));
   memset(&client, 0, sizeof(client_t));

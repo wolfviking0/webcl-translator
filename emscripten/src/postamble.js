@@ -11,11 +11,17 @@ ExitStatus.prototype.constructor = ExitStatus;
 
 var initialStackTop;
 
+var preloadStartTime = null;
+
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
   args = args || [];
+
+  if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) {
+    Module.printErr('preload time: ' + (Date.now() - preloadStartTime) + ' ms');
+  }
 
   ensureInitRuntime();
 
@@ -72,6 +78,8 @@ Module['callMain'] = Module.callMain = function callMain(args) {
 function run(args) {
   args = args || Module['arguments'];
 
+  if (preloadStartTime === null) preloadStartTime = Date.now();
+
   if (runDependencies > 0) {
     Module.printErr('run() called, but dependencies remain, so not running');
     return;
@@ -127,6 +135,7 @@ Module['exit'] = Module.exit = exit;
 function abort(text) {
   if (text) {
     Module.print(text);
+    Module.printErr(text);
   }
 
   ABORT = true;

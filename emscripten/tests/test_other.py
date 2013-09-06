@@ -330,27 +330,6 @@ f.close()
           os.chdir(path_from_root('tests')) # Move away from the directory we are about to remove.
           shutil.rmtree(tempdirname)
 
-  def test_nostdincxx(self):
-    try:
-      old = os.environ.get('EMCC_LLVM_TARGET') or ''
-      for compiler in [EMCC, EMXX]:
-        for target in ['i386-pc-linux-gnu', 'le32-unknown-nacl']:
-          print compiler, target
-          os.environ['EMCC_LLVM_TARGET'] = target
-          out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v'], stdout=PIPE, stderr=PIPE).communicate()
-          out2, err2 = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v', '-nostdinc++'], stdout=PIPE, stderr=PIPE).communicate()
-          assert out == out2
-          def focus(e):
-            assert 'search starts here:' in e, e
-            assert e.count('End of search list.') == 1, e
-            return e[e.index('search starts here:'):e.index('End of search list.')+20]
-          err = focus(err)
-          err2 = focus(err2)
-          assert err == err2, err + '\n\n\n\n' + err2
-    finally:
-      if old:
-        os.environ['EMCC_LLVM_TARGET'] = old
-
   def test_failure_error_code(self):
     for compiler in [EMCC, EMXX]:
       # Test that if one file is missing from the build, then emcc shouldn't succeed, and shouldn't try to produce an output file.
@@ -802,8 +781,8 @@ f.close()
 
     for test_opts, expected_ranges in [
       ([], {
-         100: (190, 250),
-         250: (200, 330),
+         100: (190, 275),
+         250: (200, 500),
          500: (250, 500),
         1000: (230, 1000),
         2000: (380, 2000),
@@ -950,20 +929,14 @@ f.close()
     self.assertContained('libf1\nlibf2\n', run_js(os.path.join(self.get_dir(), 'a.out.js')))
 
   def test_stdin(self):
-    open('main.cpp', 'w').write(r'''
-#include <stdio.h>
-int main(int argc, char const *argv[])
-{
-  char str[10] = {0};
-  scanf("%10s", str);
-  printf("%s\n", str);
-  return 0;
-}
-''')
-    Building.emcc('main.cpp', output_filename='a.out.js')
-    open('in.txt', 'w').write('abc')
-    # node's stdin support is broken
-    self.assertContained('abc', Popen(listify(SPIDERMONKEY_ENGINE) + ['a.out.js'], stdin=open('in.txt'), stdout=PIPE, stderr=PIPE).communicate()[0])
+    Building.emcc(path_from_root('tests', 'module', 'test_stdin.c'), output_filename='a.out.js')
+    open('in.txt', 'w').write('abcdef\nghijkl')
+
+    for engine in JS_ENGINES:
+      print >> sys.stderr, engine
+      if engine == NODE_JS: continue # FIXME
+      if engine == V8_ENGINE: continue # no stdin support in v8 shell
+      self.assertContained('abcdef\nghijkl\neof', run_js(os.path.join(self.get_dir(), 'a.out.js'), engine=engine, stdin=open('in.txt')))
 
   def test_ungetc_fscanf(self):
     open('main.cpp', 'w').write(r'''
@@ -1033,7 +1006,7 @@ int main(int argc, char const *argv[])
     self.assertContained('hello from lib', run_js(os.path.join(self.get_dir(), 'a.out.js')))
 
   def test_runtimelink_multi(self):
-    return self.skip('shared libs are deprecated')
+    return self.skip('BUILD_AS_SHARED_LIB=2 is deprecated')
     if Settings.ASM_JS: return self.skip('asm does not support runtime linking yet')
 
     if SPIDERMONKEY_ENGINE not in JS_ENGINES: return self.skip('cannot run without spidermonkey due to node limitations')
@@ -1902,7 +1875,7 @@ seeked= file.
     if SPIDERMONKEY_ENGINE not in JS_ENGINES: return self.skip('cannot run without spidermonkey due to node limitations (Uint8ClampedArray etc.)')
 
     shutil.copyfile(path_from_root('tests', 'screenshot.png'), os.path.join(self.get_dir(), 'example.png'))
-    Popen([PYTHON, EMCC, path_from_root('tests', 'sdl_canvas.c'), '-s', 'HEADLESS=1']).communicate()
+    Popen([PYTHON, EMCC, path_from_root('tests', 'sdl_headless.c'), '-s', 'HEADLESS=1']).communicate()
     output = run_js('a.out.js', engine=SPIDERMONKEY_ENGINE, stderr=PIPE)
     assert '''Init: 0
 Font: 0x1
@@ -1911,3 +1884,12 @@ you should see two lines of text in different colors and a blue rectangle
 SDL_Quit called (and ignored)
 done.
 ''' in output, output
+
+  def test_preprocess(self):
+    self.clear()
+
+    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-E'], stdout=PIPE).communicate()
+    assert not os.path.exists('a.out.js')
+    assert '''tests/hello_world.c"''' in out
+    assert '''printf("hello, world!''' in out
+
