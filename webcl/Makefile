@@ -66,19 +66,19 @@ scan_sample:
 
 qjulia_sample:
 	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=0 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s LEGACY_GL_EMULATION=1  -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=0 \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/qjulia.js
 
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O2 -s ASM_JS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -O2 -s ASM_JS=0 -s LEGACY_GL_EMULATION=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 \
 	--preload-file mandelbulb_kernel.cl \
 	-o ../build/mandelbulb.js
 
 smallpt_sample:
 	$(call chdir,smallpt/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) smallptGPU.c displayfunc.c -O2 -s ASM_JS=0 -s ALLOW_MEMORY_GROWTH=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=1 -s OPENGL_DEBUG=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) smallptGPU.c displayfunc.c -O2 -s ASM_JS=0 -s LEGACY_GL_EMULATION=1 -s ALLOW_MEMORY_GROWTH=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=1 -s OPENGL_DEBUG=1 \
 	--preload-file rendering_kernel_custom.cl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
 	-o ../build/smallpt.js
 

@@ -3,6 +3,7 @@ var LibraryOpenCL = {
   $CL: {
     // Private array of chars to use
     cl_digits: '123456789'.split(''),
+    cl_bitshift: {2:1,4:2,8:3,16:4,32:5},
     cl_objects: {},
     cl_objects_size: 0,
 
@@ -13,8 +14,10 @@ var LibraryOpenCL = {
       if (obj !== undefined) {
          _id = obj.udid;
          
-         console.log("udid() : get udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined));
-      
+#if OPENCL_DEBUG         
+         console.info("udid() : get udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined));
+#endif
+
          if (_id !== undefined) {
            return _id;
          }
@@ -35,16 +38,28 @@ var LibraryOpenCL = {
 #endif
       
       // /!\ Call udid when you add inside cl_objects if you pass object in parameter
-      if (obj !== undefined) 
-      {
+      if (obj !== undefined) {
         Object.defineProperty(obj, "udid", { value : _id,writable : false });
         CL.cl_objects_size++;
         CL.cl_objects[_id]=obj;
-        
-        console.log("udid() : set udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined) + " --> Size : " + CL.cl_objects_size);
+#if OPENCL_DEBUG             
+        console.info("udid() : set udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined) + " --> Size : " + CL.cl_objects_size);
+#endif      
       }
 
       return _id;      
+    },
+
+    isFloat: function(ptr,size) {
+      var _begin  = {{{ makeGetValue('ptr', '0', 'float') }}};
+      var _middle = {{{ makeGetValue('ptr', 'size>>1', 'float') }}};
+      var _end    = {{{ makeGetValue('ptr', 'size', 'float') }}};
+
+      if ((_begin + _middle + _end).toFixed(20) > 0 ) {
+        return 1;
+      } else {
+        return 0;
+      } 
     },
 
     catchError: function(e) {
@@ -970,7 +985,104 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
-    console.error("clCreateBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateBuffer",[flags_i64_1,size,host_ptr,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _buffer = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+      var _host_ptr = null;
+
+      if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
+        _host_ptr = new ArrayBuffer(size);
+      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+        _host_ptr = new ArrayBuffer(size);
+
+        var _size = size >> 2;
+
+        if (CL.isFloat(host_ptr, _size)) {
+          for (var i = 0; i < _size; i++ ) {
+            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'float') }}};
+          }
+        } else {
+          for (var i = 0; i < _size; i++ ) {
+            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'i32') }}};
+          }
+        }
+      } else if (flags_i64_1 & ~_flags) {
+        // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
+        // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
+
+        console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".clCreateBuffer",[_flags,size,_host_ptr]);
+#endif      
+      if (_host_ptr != null)
+        _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+      else
+        _buffer = CL.cl_objects[context].createBuffer(_flags,size);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_buffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateSubBuffer: function(buffer,flags_i64_1,flags_i64_2,buffer_create_type,buffer_create_info,cl_errcode_ret) {

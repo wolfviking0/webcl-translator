@@ -355,7 +355,6 @@ RenderTexture( void *pvData )
 
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
-    gluOrtho2D( -1.0, 1.0, -1.0, 1.0 );
 
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();

@@ -442,6 +442,42 @@ int main(int argc, char** argv)
     err = clReleaseCommandQueue(queue_to_release);
     printf("%d) %d : %d\n",++counter,err,(int)queue_to_release); 
 
+    printf("\nTEST : clCreateBuffer\n");
+    printf("-----------------------\n");  
+
+    cl_mem_flags array_buffer_flags[3] = {CL_MEM_READ_WRITE,CL_MEM_WRITE_ONLY,CL_MEM_READ_ONLY};
+    cl_mem buff;
+
+    int pixelCount = 10;
+
+    float * pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
+    cl_uint sizeBytes = 3 * sizeof(float) * pixelCount;
+
+    int * pixels2 = (int *)malloc(3 * sizeof(int) * pixelCount);
+    cl_uint sizeBytes2 = 3 * sizeof(int) * pixelCount;
+
+    for(i = 0; i < pixelCount; i++) {
+        pixels[i] = rand() / (float)RAND_MAX;
+        pixels2[i] = (int)(100 * (rand() / (float)RAND_MAX));
+    }
+
+    for (int i = 0; i < 3; i++) {
+        buff = clCreateBuffer(context, array_buffer_flags[i], sizeof(cl_int), NULL, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
+
+        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_ALLOC_HOST_PTR, sizeBytes, NULL , &cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
+
+        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes ,pixels, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
+
+        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes2, pixels2, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);     
+
+        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_USE_HOST_PTR, sizeBytes2, pixels2, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);                   
+    }
+
     return end(EXIT_SUCCESS);
 }
 

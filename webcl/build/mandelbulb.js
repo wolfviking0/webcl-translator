@@ -5328,11 +5328,29 @@ function copyTempDouble(ptr) {
   function _glEnable(x0) { Module.ctx.enable(x0) }
   function _glBlendFunc(x0, x1) { Module.ctx.blendFunc(x0, x1) }
   function _glDisable(x0) { Module.ctx.disable(x0) }
-;
-  function _glBegin(){ throw 'Legacy GL function (glBegin) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
-;
-  function _glFlush() { Module.ctx.flush() }
+  function _glColor4f(r, g, b, a) {
+      r = Math.max(Math.min(r, 1), 0);
+      g = Math.max(Math.min(g, 1), 0);
+      b = Math.max(Math.min(b, 1), 0);
+      a = Math.max(Math.min(a, 1), 0);
+      // TODO: make ub the default, not f, save a few mathops
+      if (GL.immediate.mode >= 0) {
+        var start = GL.immediate.vertexCounter << 2;
+        GL.immediate.vertexDataU8[start + 0] = r * 255;
+        GL.immediate.vertexDataU8[start + 1] = g * 255;
+        GL.immediate.vertexDataU8[start + 2] = b * 255;
+        GL.immediate.vertexDataU8[start + 3] = a * 255;
+        GL.immediate.vertexCounter++;
+        GL.immediate.addRendererComponent(GL.immediate.COLOR, 4, Module.ctx.UNSIGNED_BYTE);
+      } else {
+        GL.immediate.clientColor[0] = r;
+        GL.immediate.clientColor[1] = g;
+        GL.immediate.clientColor[2] = b;
+        GL.immediate.clientColor[3] = a;
+      }
+    }function _glColor3f(r, g, b) {
+      _glColor4f(r, g, b, 1);
+    }
   var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
           Browser.mainLoop.shouldPause = true;
         },resume:function () {
@@ -5743,7 +5761,3789 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
-      }};var SDL={defaults:{width:320,height:200,copyOnLock:true},version:null,surfaces:{},canvasPool:[],events:[],fonts:[null],audios:[null],rwops:[null],music:{audio:null,volume:1},mixerFrequency:22050,mixerFormat:32784,mixerNumChannels:2,mixerChunkSize:1024,channelMinimumNumber:0,GL:false,keyboardState:null,keyboardMap:{},canRequestFullscreen:false,isRequestingFullscreen:false,textInput:false,startTime:null,buttonState:0,modState:0,DOMButtons:[0,0,0],DOMEventToSDLEvent:{},keyCodes:{16:1249,17:1248,18:1250,33:1099,34:1102,37:1104,38:1106,39:1103,40:1105,46:127,96:1112,97:1113,98:1114,99:1115,100:1116,101:1117,102:1118,103:1119,104:1120,105:1121,112:1082,113:1083,114:1084,115:1085,116:1086,117:1087,118:1088,119:1089,120:1090,121:1091,122:1092,123:1093,173:45,188:44,190:46,191:47,192:96},scanCodes:{9:43,13:40,27:41,32:44,44:54,46:55,47:56,48:39,49:30,50:31,51:32,52:33,53:34,54:35,55:36,56:37,57:38,92:49,97:4,98:5,99:6,100:7,101:8,102:9,103:10,104:11,105:12,106:13,107:14,108:15,109:16,110:17,111:18,112:19,113:20,114:21,115:22,116:23,117:24,118:25,119:26,120:27,121:28,122:29,305:224,308:226},structs:{Rect:{__size__:16,x:0,y:4,w:8,h:12},PixelFormat:{__size__:36,format:0,palette:4,BitsPerPixel:8,BytesPerPixel:9,padding1:10,padding2:11,Rmask:12,Gmask:16,Bmask:20,Amask:24,Rloss:28,Gloss:29,Bloss:30,Aloss:31,Rshift:32,Gshift:33,Bshift:34,Ashift:35},KeyboardEvent:{__size__:16,type:0,windowID:4,state:8,repeat:9,padding2:10,padding3:11,keysym:12},keysym:{__size__:16,scancode:0,sym:4,mod:8,unicode:12},TextInputEvent:{__size__:264,type:0,windowID:4,text:8},MouseMotionEvent:{__size__:28,type:0,windowID:4,state:8,padding1:9,padding2:10,padding3:11,x:12,y:16,xrel:20,yrel:24},MouseButtonEvent:{__size__:20,type:0,windowID:4,button:8,state:9,padding1:10,padding2:11,x:12,y:16},ResizeEvent:{__size__:12,type:0,w:4,h:8},AudioSpec:{__size__:24,freq:0,format:4,channels:6,silence:7,samples:8,size:12,callback:16,userdata:20},version:{__size__:3,major:0,minor:1,patch:2}},loadRect:function (rect) {
+      }};
+  function _glIsEnabled(x0) { return Module.ctx.isEnabled(x0) }
+  function _glGetBooleanv(name_, p) {
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAP8[(p)]=result != 0;
+          break;
+        case "boolean":
+          HEAP8[(p)]=result != 0;
+          break;
+        case "string":
+          throw 'Native code calling glGetBooleanv(' + name_ + ') on a name which returns a string!';
+        case "object":
+          if (result === null) {
+            HEAP8[(p)]=0;
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAP8[(((p)+(i))|0)]=result[i] != 0;
+            }
+          } else if (result instanceof WebGLBuffer ||
+                     result instanceof WebGLProgram ||
+                     result instanceof WebGLFramebuffer ||
+                     result instanceof WebGLRenderbuffer ||
+                     result instanceof WebGLTexture) {
+            HEAP8[(p)]=1; // non-zero ID is always 1!
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+            throw 'Unknown object returned from WebGL getParameter';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glGetIntegerv(name_, p) {
+      switch(name_) { // Handle a few trivial GLES values
+        case 0x8DFA: // GL_SHADER_COMPILER
+          HEAP32[((p)>>2)]=1;
+          return;
+        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+          HEAP32[((p)>>2)]=0;
+          return;
+        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+          // so implement it ourselves to allow C++ GLES2 code get the length.
+          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+          HEAP32[((p)>>2)]=formats.length;
+          return;
+      }
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAP32[((p)>>2)]=result;
+          break;
+        case "boolean":
+          HEAP8[(p)]=result ? 1 : 0;
+          break;
+        case "string":
+          throw 'Native code calling glGetIntegerv(' + name_ + ') on a name which returns a string!';
+        case "object":
+          if (result === null) {
+            HEAP32[((p)>>2)]=0;
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAP32[(((p)+(i*4))>>2)]=result[i];
+            }
+          } else if (result instanceof WebGLBuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLProgram) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLFramebuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLRenderbuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLTexture) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+          throw 'Native code calling glGetIntegerv(' + name_ + ') and it returns undefined';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glGetString(name_) {
+      switch(name_) {
+        case 0x1F00 /* GL_VENDOR */:
+        case 0x1F01 /* GL_RENDERER */:
+        case 0x1F02 /* GL_VERSION */:
+          return allocate(intArrayFromString(Module.ctx.getParameter(name_)), 'i8', ALLOC_NORMAL);
+        case 0x1F03 /* GL_EXTENSIONS */:
+          return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ')), 'i8', ALLOC_NORMAL);
+        case 0x8B8C /* GL_SHADING_LANGUAGE_VERSION */:
+          return allocate(intArrayFromString('OpenGL ES GLSL 1.00 (WebGL)'), 'i8', ALLOC_NORMAL);
+        default:
+          throw 'Failure: Invalid glGetString value: ' + name_;
+      }
+    }
+  function _glCreateShader(shaderType) {
+      var id = GL.getNewId(GL.shaders);
+      GL.shaders[id] = Module.ctx.createShader(shaderType);
+      return id;
+    }
+  function _glShaderSource(shader, count, string, length) {
+      var source = GL.getSource(shader, count, string, length);
+      Module.ctx.shaderSource(GL.shaders[shader], source);
+    }
+  function _glCompileShader(shader) {
+      Module.ctx.compileShader(GL.shaders[shader]);
+    }
+  function _glAttachShader(program, shader) {
+      Module.ctx.attachShader(GL.programs[program],
+                              GL.shaders[shader]);
+    }
+  function _glDetachShader(program, shader) {
+      Module.ctx.detachShader(GL.programs[program],
+                              GL.shaders[shader]);
+    }
+  function _glUseProgram(program) {
+      Module.ctx.useProgram(program ? GL.programs[program] : null);
+    }
+  function _glDeleteProgram(program) {
+      var program = GL.programs[program];
+      Module.ctx.deleteProgram(program);
+      program.name = 0;
+      GL.programs[program] = null;
+      GL.uniformTable[program] = null;
+    }
+  function _glBindAttribLocation(program, index, name) {
+      name = Pointer_stringify(name);
+      Module.ctx.bindAttribLocation(GL.programs[program], index, name);
+    }
+  function _glLinkProgram(program) {
+      Module.ctx.linkProgram(GL.programs[program]);
+      GL.uniformTable[program] = {}; // uniforms no longer keep the same names after linking
+    }
+  function _glBindBuffer(target, buffer) {
+      var bufferObj = buffer ? GL.buffers[buffer] : null;
+      if (target == Module.ctx.ARRAY_BUFFER) {
+        GL.currArrayBuffer = buffer;
+      } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
+        GL.currElementArrayBuffer = buffer;
+      }
+      Module.ctx.bindBuffer(target, bufferObj);
+    }
+  function _glGetFloatv(name_, p) {
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAPF32[((p)>>2)]=result;
+          break;
+        case "boolean":
+          HEAPF32[((p)>>2)]=result ? 1.0 : 0.0;
+          break;
+        case "string":
+            HEAPF32[((p)>>2)]=0;
+        case "object":
+          if (result === null) {
+            throw 'Native code calling glGetFloatv(' + name_ + ') and it returns null';
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAPF32[(((p)+(i*4))>>2)]=result[i];
+            }
+          } else if (result instanceof WebGLBuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLProgram) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLFramebuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLRenderbuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLTexture) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+          throw 'Native code calling glGetFloatv(' + name_ + ') and it returns undefined';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
+  function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
+      Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
+    }
+  function _glActiveTexture(x0) { Module.ctx.activeTexture(x0) }var GLEmulation={fogStart:0,fogEnd:1,fogDensity:1,fogColor:null,fogMode:2048,fogEnabled:false,vaos:[],currentVao:null,enabledVertexAttribArrays:{},hasRunInit:false,init:function () {
+        // Do not activate immediate/emulation code (e.g. replace glDrawElements) when in FULL_ES2 mode.
+        // We do not need full emulation, we instead emulate client-side arrays etc. in FULL_ES2 code in
+        // a straightforward manner, and avoid not having a bound buffer be ambiguous between es2 emulation
+        // code and legacy gl emulation code.
+        if (GLEmulation.hasRunInit) {
+          return;
+        }
+        GLEmulation.hasRunInit = true;
+        GLEmulation.fogColor = new Float32Array(4);
+        // Add some emulation workarounds
+        Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work.');
+        // XXX some of the capabilities we don't support may lead to incorrect rendering, if we do not emulate them in shaders
+        var validCapabilities = {
+          0x0B44: 1, // GL_CULL_FACE
+          0x0BE2: 1, // GL_BLEND
+          0x0BD0: 1, // GL_DITHER,
+          0x0B90: 1, // GL_STENCIL_TEST
+          0x0B71: 1, // GL_DEPTH_TEST
+          0x0C11: 1, // GL_SCISSOR_TEST
+          0x8037: 1, // GL_POLYGON_OFFSET_FILL
+          0x809E: 1, // GL_SAMPLE_ALPHA_TO_COVERAGE
+          0x80A0: 1  // GL_SAMPLE_COVERAGE
+        };
+        var glEnable = _glEnable;
+        _glEnable = function(cap) {
+          // Clean up the renderer on any change to the rendering state. The optimization of
+          // skipping renderer setup is aimed at the case of multiple glDraw* right after each other
+          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
+          if (cap == 0x0B60 /* GL_FOG */) {
+            GLEmulation.fogEnabled = true;
+            return;
+          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
+            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
+            // it by forwarding to glEnableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
+            _glEnableClientState(cap);
+            */
+            return;
+          } else if (!(cap in validCapabilities)) {
+            return;
+          }
+          glEnable(cap);
+        };
+        var glDisable = _glDisable;
+        _glDisable = function(cap) {
+          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
+          if (cap == 0x0B60 /* GL_FOG */) {
+            GLEmulation.fogEnabled = false;
+            return;
+          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
+            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
+            // it by forwarding to glDisableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
+            _glDisableClientState(cap);
+            */
+            return;
+          } else if (!(cap in validCapabilities)) {
+            return;
+          }
+          glDisable(cap);
+        };
+        _glIsEnabled = function(cap) {
+          if (cap == 0x0B60 /* GL_FOG */) {
+            return GLEmulation.fogEnabled ? 1 : 0;
+          } else if (!(cap in validCapabilities)) {
+            return 0;
+          }
+          return Module.ctx.isEnabled(cap);
+        };
+        var glGetBooleanv = _glGetBooleanv;
+        _glGetBooleanv = function(pname, p) {
+          var attrib = GLEmulation.getAttributeFromCapability(pname);
+          if (attrib !== null) {
+            var result = GL.immediate.enabledClientAttributes[attrib];
+            HEAP8[(p)]=result === true ? 1 : 0;
+            return;
+          }
+          glGetBooleanv(pname, p);
+        };
+        var glGetIntegerv = _glGetIntegerv;
+        _glGetIntegerv = function(pname, params) {
+          switch (pname) {
+            case 0x84E2: pname = Module.ctx.MAX_TEXTURE_IMAGE_UNITS /* fake it */; break; // GL_MAX_TEXTURE_UNITS
+            case 0x8B4A: { // GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_UNIFORM_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8B49: { // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_FRAGMENT_UNIFORM_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8B4B: { // GL_MAX_VARYING_FLOATS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_VARYING_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8871: pname = Module.ctx.MAX_COMBINED_TEXTURE_IMAGE_UNITS /* close enough */; break; // GL_MAX_TEXTURE_COORDS
+            case 0x807A: { // GL_VERTEX_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x807B: { // GL_VERTEX_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x807C: { // GL_VERTEX_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+            case 0x8081: { // GL_COLOR_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x8082: { // GL_COLOR_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x8083: { // GL_COLOR_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+            case 0x8088: { // GL_TEXTURE_COORD_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x8089: { // GL_TEXTURE_COORD_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x808A: { // GL_TEXTURE_COORD_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+          }
+          glGetIntegerv(pname, params);
+        };
+        var glGetString = _glGetString;
+        _glGetString = function(name_) {
+          switch(name_) {
+            case 0x1F03 /* GL_EXTENSIONS */: // Add various extensions that we can support
+              return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ') +
+                     ' GL_EXT_texture_env_combine GL_ARB_texture_env_crossbar GL_ATI_texture_env_combine3 GL_NV_texture_env_combine4 GL_EXT_texture_env_dot3 GL_ARB_multitexture GL_ARB_vertex_buffer_object GL_EXT_framebuffer_object GL_ARB_vertex_program GL_ARB_fragment_program GL_ARB_shading_language_100 GL_ARB_shader_objects GL_ARB_vertex_shader GL_ARB_fragment_shader GL_ARB_texture_cube_map GL_EXT_draw_range_elements' +
+                     (GL.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
+                     (GL.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
+              ), 'i8', ALLOC_NORMAL);
+          }
+          return glGetString(name_);
+        };
+        // Do some automatic rewriting to work around GLSL differences. Note that this must be done in
+        // tandem with the rest of the program, by itself it cannot suffice.
+        // Note that we need to remember shader types for this rewriting, saving sources makes it easier to debug.
+        GL.shaderInfos = {};
+        var glCreateShader = _glCreateShader;
+        _glCreateShader = function(shaderType) {
+          var id = glCreateShader(shaderType);
+          GL.shaderInfos[id] = {
+            type: shaderType,
+            ftransform: false
+          };
+          return id;
+        };
+        var glShaderSource = _glShaderSource;
+        _glShaderSource = function(shader, count, string, length) {
+          var source = GL.getSource(shader, count, string, length);
+          // XXX We add attributes and uniforms to shaders. The program can ask for the # of them, and see the
+          // ones we generated, potentially confusing it? Perhaps we should hide them.
+          if (GL.shaderInfos[shader].type == Module.ctx.VERTEX_SHADER) {
+            // Replace ftransform() with explicit project/modelview transforms, and add position and matrix info.
+            var has_pm = source.search(/u_projection/) >= 0;
+            var has_mm = source.search(/u_modelView/) >= 0;
+            var has_pv = source.search(/a_position/) >= 0;
+            var need_pm = 0, need_mm = 0, need_pv = 0;
+            var old = source;
+            source = source.replace(/ftransform\(\)/g, '(u_projection * u_modelView * a_position)');
+            if (old != source) need_pm = need_mm = need_pv = 1;
+            old = source;
+            source = source.replace(/gl_ProjectionMatrix/g, 'u_projection');
+            if (old != source) need_pm = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewMatrixTranspose\[2\]/g, 'vec4(u_modelView[0][2], u_modelView[1][2], u_modelView[2][2], u_modelView[3][2])'); // XXX extremely inefficient
+            if (old != source) need_mm = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewMatrix/g, 'u_modelView');
+            if (old != source) need_mm = 1;
+            old = source;
+            source = source.replace(/gl_Vertex/g, 'a_position');
+            if (old != source) need_pv = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewProjectionMatrix/g, '(u_projection * u_modelView)');
+            if (old != source) need_pm = need_mm = 1;
+            if (need_pv && !has_pv) source = 'attribute vec4 a_position; \n' + source;
+            if (need_mm && !has_mm) source = 'uniform mat4 u_modelView; \n' + source;
+            if (need_pm && !has_pm) source = 'uniform mat4 u_projection; \n' + source;
+            GL.shaderInfos[shader].ftransform = need_pm || need_mm || need_pv; // we will need to provide the fixed function stuff as attributes and uniforms
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              // XXX To handle both regular texture mapping and cube mapping, we use vec4 for tex coordinates.
+              var old = source;
+              var need_vtc = source.search('v_texCoord' + i) == -1;
+              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i)
+                             .replace(new RegExp('gl_MultiTexCoord' + i, 'g'), 'a_texCoord' + i);
+              if (source != old) {
+                source = 'attribute vec4 a_texCoord' + i + '; \n' + source;
+                if (need_vtc) {
+                  source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
+                }
+              }
+              old = source;
+              source = source.replace(new RegExp('gl_TextureMatrix\\[' + i + '\\]', 'g'), 'u_textureMatrix' + i);
+              if (source != old) {
+                source = 'uniform mat4 u_textureMatrix' + i + '; \n' + source;
+              }
+            }
+            if (source.indexOf('gl_FrontColor') >= 0) {
+              source = 'varying vec4 v_color; \n' +
+                       source.replace(/gl_FrontColor/g, 'v_color');
+            }
+            if (source.indexOf('gl_Color') >= 0) {
+              source = 'attribute vec4 a_color; \n' +
+                       source.replace(/gl_Color/g, 'a_color');
+            }
+            if (source.indexOf('gl_Normal') >= 0) {
+              source = 'attribute vec3 a_normal; \n' +
+                       source.replace(/gl_Normal/g, 'a_normal');
+            }
+            // fog
+            if (source.indexOf('gl_FogFragCoord') >= 0) {
+              source = 'varying float v_fogFragCoord;   \n' +
+                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
+            }
+          } else { // Fragment shader
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              var old = source;
+              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i);
+              if (source != old) {
+                source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
+              }
+            }
+            if (source.indexOf('gl_Color') >= 0) {
+              source = 'varying vec4 v_color; \n' + source.replace(/gl_Color/g, 'v_color');
+            }
+            if (source.indexOf('gl_Fog.color') >= 0) {
+              source = 'uniform vec4 u_fogColor;   \n' +
+                       source.replace(/gl_Fog.color/g, 'u_fogColor');
+            }
+            if (source.indexOf('gl_Fog.end') >= 0) {
+              source = 'uniform float u_fogEnd;   \n' +
+                       source.replace(/gl_Fog.end/g, 'u_fogEnd');
+            }
+            if (source.indexOf('gl_Fog.scale') >= 0) {
+              source = 'uniform float u_fogScale;   \n' +
+                       source.replace(/gl_Fog.scale/g, 'u_fogScale');
+            }
+            if (source.indexOf('gl_Fog.density') >= 0) {
+              source = 'uniform float u_fogDensity;   \n' +
+                       source.replace(/gl_Fog.density/g, 'u_fogDensity');
+            }
+            if (source.indexOf('gl_FogFragCoord') >= 0) {
+              source = 'varying float v_fogFragCoord;   \n' +
+                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
+            }
+            source = 'precision mediump float;\n' + source;
+          }
+          Module.ctx.shaderSource(GL.shaders[shader], source);
+        };
+        var glCompileShader = _glCompileShader;
+        _glCompileShader = function(shader) {
+          Module.ctx.compileShader(GL.shaders[shader]);
+        };
+        GL.programShaders = {};
+        var glAttachShader = _glAttachShader;
+        _glAttachShader = function(program, shader) {
+          if (!GL.programShaders[program]) GL.programShaders[program] = [];
+          GL.programShaders[program].push(shader);
+          glAttachShader(program, shader);
+        };
+        var glDetachShader = _glDetachShader;
+        _glDetachShader = function(program, shader) {
+          var programShader = GL.programShaders[program];
+          if (!programShader) {
+            Module.printErr('WARNING: _glDetachShader received invalid program: ' + program);
+            return;
+          }
+          var index = programShader.indexOf(shader);
+          programShader.splice(index, 1);
+          glDetachShader(program, shader);
+        };
+        var glUseProgram = _glUseProgram;
+        _glUseProgram = function(program) {
+          GL.currProgram = program;
+          glUseProgram(program);
+        }
+        var glDeleteProgram = _glDeleteProgram;
+        _glDeleteProgram = function(program) {
+          glDeleteProgram(program);
+          if (program == GL.currProgram) GL.currProgram = 0;
+        };
+        // If attribute 0 was not bound, bind it to 0 for WebGL performance reasons. Track if 0 is free for that.
+        var zeroUsedPrograms = {};
+        var glBindAttribLocation = _glBindAttribLocation;
+        _glBindAttribLocation = function(program, index, name) {
+          if (index == 0) zeroUsedPrograms[program] = true;
+          glBindAttribLocation(program, index, name);
+        };
+        var glLinkProgram = _glLinkProgram;
+        _glLinkProgram = function(program) {
+          if (!(program in zeroUsedPrograms)) {
+            Module.ctx.bindAttribLocation(GL.programs[program], 0, 'a_position');
+          }
+          glLinkProgram(program);
+        };
+        var glBindBuffer = _glBindBuffer;
+        _glBindBuffer = function(target, buffer) {
+          glBindBuffer(target, buffer);
+          if (target == Module.ctx.ARRAY_BUFFER) {
+            if (GLEmulation.currentVao) {
+              assert(GLEmulation.currentVao.arrayBuffer == buffer || GLEmulation.currentVao.arrayBuffer == 0 || buffer == 0, 'TODO: support for multiple array buffers in vao');
+              GLEmulation.currentVao.arrayBuffer = buffer;
+            }
+          } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
+            if (GLEmulation.currentVao) GLEmulation.currentVao.elementArrayBuffer = buffer;
+          }
+        };
+        var glGetFloatv = _glGetFloatv;
+        _glGetFloatv = function(pname, params) {
+          if (pname == 0x0BA6) { // GL_MODELVIEW_MATRIX
+            HEAPF32.set(GL.immediate.matrix['m'], params >> 2);
+          } else if (pname == 0x0BA7) { // GL_PROJECTION_MATRIX
+            HEAPF32.set(GL.immediate.matrix['p'], params >> 2);
+          } else if (pname == 0x0BA8) { // GL_TEXTURE_MATRIX
+            HEAPF32.set(GL.immediate.matrix['t' + GL.immediate.clientActiveTexture], params >> 2);
+          } else if (pname == 0x0B66) { // GL_FOG_COLOR
+            HEAPF32.set(GLEmulation.fogColor, params >> 2);
+          } else if (pname == 0x0B63) { // GL_FOG_START
+            HEAPF32[((params)>>2)]=GLEmulation.fogStart;
+          } else if (pname == 0x0B64) { // GL_FOG_END
+            HEAPF32[((params)>>2)]=GLEmulation.fogEnd;
+          } else if (pname == 0x0B62) { // GL_FOG_DENSITY
+            HEAPF32[((params)>>2)]=GLEmulation.fogDensity;
+          } else if (pname == 0x0B65) { // GL_FOG_MODE
+            HEAPF32[((params)>>2)]=GLEmulation.fogMode;
+          } else {
+            glGetFloatv(pname, params);
+          }
+        };
+        var glHint = _glHint;
+        _glHint = function(target, mode) {
+          if (target == 0x84EF) { // GL_TEXTURE_COMPRESSION_HINT
+            return;
+          }
+          glHint(target, mode);
+        };
+        var glEnableVertexAttribArray = _glEnableVertexAttribArray;
+        _glEnableVertexAttribArray = function(index) {
+          glEnableVertexAttribArray(index);
+          GLEmulation.enabledVertexAttribArrays[index] = 1;
+          if (GLEmulation.currentVao) GLEmulation.currentVao.enabledVertexAttribArrays[index] = 1;
+        };
+        var glDisableVertexAttribArray = _glDisableVertexAttribArray;
+        _glDisableVertexAttribArray = function(index) {
+          glDisableVertexAttribArray(index);
+          delete GLEmulation.enabledVertexAttribArrays[index];
+          if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledVertexAttribArrays[index];
+        };
+        var glVertexAttribPointer = _glVertexAttribPointer;
+        _glVertexAttribPointer = function(index, size, type, normalized, stride, pointer) {
+          glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+          if (GLEmulation.currentVao) { // TODO: avoid object creation here? likely not hot though
+            GLEmulation.currentVao.vertexAttribPointers[index] = [index, size, type, normalized, stride, pointer];
+          }
+        };
+      },getAttributeFromCapability:function (cap) {
+        var attrib = null;
+        switch (cap) {
+          case 0x0de1: // GL_TEXTURE_2D - XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support it
+            // Fall through:
+          case 0x8078: // GL_TEXTURE_COORD_ARRAY
+            attrib = GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture; break;
+          case 0x8074: // GL_VERTEX_ARRAY
+            attrib = GL.immediate.VERTEX; break;
+          case 0x8075: // GL_NORMAL_ARRAY
+            attrib = GL.immediate.NORMAL; break;
+          case 0x8076: // GL_COLOR_ARRAY
+            attrib = GL.immediate.COLOR; break;
+        }
+        return attrib;
+      }};var GLImmediate={MapTreeLib:null,spawnMapTreeLib:function () {
+        /* A naive implementation of a map backed by an array, and accessed by
+         * naive iteration along the array. (hashmap with only one bucket)
+         */
+        function CNaiveListMap() {
+          var list = [];
+          this.insert = function(key, val) {
+            if (this.contains(key|0)) return false;
+            list.push([key, val]);
+            return true;
+          };
+          var __contains_i;
+          this.contains = function(key) {
+            for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
+              if (list[__contains_i][0] === key) return true;
+            }
+            return false;
+          };
+          var __get_i;
+          this.get = function(key) {
+            for (__get_i = 0; __get_i < list.length; ++__get_i) {
+              if (list[__get_i][0] === key) return list[__get_i][1];
+            }
+            return undefined;
+          };
+        };
+        /* A tree of map nodes.
+          Uses `KeyView`s to allow descending the tree without garbage.
+          Example: {
+            // Create our map object.
+            var map = new ObjTreeMap();
+            // Grab the static keyView for the map.
+            var keyView = map.GetStaticKeyView();
+            // Let's make a map for:
+            // root: <undefined>
+            //   1: <undefined>
+            //     2: <undefined>
+            //       5: "Three, sir!"
+            //       3: "Three!"
+            // Note how we can chain together `Reset` and `Next` to
+            // easily descend based on multiple key fragments.
+            keyView.Reset().Next(1).Next(2).Next(5).Set("Three, sir!");
+            keyView.Reset().Next(1).Next(2).Next(3).Set("Three!");
+          }
+        */
+        function CMapTree() {
+          function CNLNode() {
+            var map = new CNaiveListMap();
+            this.child = function(keyFrag) {
+              if (!map.contains(keyFrag|0)) {
+                map.insert(keyFrag|0, new CNLNode());
+              }
+              return map.get(keyFrag|0);
+            };
+            this.value = undefined;
+            this.get = function() {
+              return this.value;
+            };
+            this.set = function(val) {
+              this.value = val;
+            };
+          }
+          function CKeyView(root) {
+            var cur;
+            this.reset = function() {
+              cur = root;
+              return this;
+            };
+            this.reset();
+            this.next = function(keyFrag) {
+              cur = cur.child(keyFrag);
+              return this;
+            };
+            this.get = function() {
+              return cur.get();
+            };
+            this.set = function(val) {
+              cur.set(val);
+            };
+          };
+          var root;
+          var staticKeyView;
+          this.createKeyView = function() {
+            return new CKeyView(root);
+          }
+          this.clear = function() {
+            root = new CNLNode();
+            staticKeyView = this.createKeyView();
+          };
+          this.clear();
+          this.getStaticKeyView = function() {
+            staticKeyView.reset();
+            return staticKeyView;
+          };
+        };
+        // Exports:
+        return {
+          create: function() {
+            return new CMapTree();
+          },
+        };
+      },TexEnvJIT:null,spawnTexEnvJIT:function () {
+        // GL defs:
+        var GL_TEXTURE0 = 0x84C0;
+        var GL_TEXTURE_1D = 0x0DE0;
+        var GL_TEXTURE_2D = 0x0DE1;
+        var GL_TEXTURE_3D = 0x806f;
+        var GL_TEXTURE_CUBE_MAP = 0x8513;
+        var GL_TEXTURE_ENV = 0x2300;
+        var GL_TEXTURE_ENV_MODE = 0x2200;
+        var GL_TEXTURE_ENV_COLOR = 0x2201;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A;
+        var GL_SRC0_RGB = 0x8580;
+        var GL_SRC1_RGB = 0x8581;
+        var GL_SRC2_RGB = 0x8582;
+        var GL_SRC0_ALPHA = 0x8588;
+        var GL_SRC1_ALPHA = 0x8589;
+        var GL_SRC2_ALPHA = 0x858A;
+        var GL_OPERAND0_RGB = 0x8590;
+        var GL_OPERAND1_RGB = 0x8591;
+        var GL_OPERAND2_RGB = 0x8592;
+        var GL_OPERAND0_ALPHA = 0x8598;
+        var GL_OPERAND1_ALPHA = 0x8599;
+        var GL_OPERAND2_ALPHA = 0x859A;
+        var GL_COMBINE_RGB = 0x8571;
+        var GL_COMBINE_ALPHA = 0x8572;
+        var GL_RGB_SCALE = 0x8573;
+        var GL_ALPHA_SCALE = 0x0D1C;
+        // env.mode
+        var GL_ADD      = 0x0104;
+        var GL_BLEND    = 0x0BE2;
+        var GL_REPLACE  = 0x1E01;
+        var GL_MODULATE = 0x2100;
+        var GL_DECAL    = 0x2101;
+        var GL_COMBINE  = 0x8570;
+        // env.color/alphaCombiner
+        //var GL_ADD         = 0x0104;
+        //var GL_REPLACE     = 0x1E01;
+        //var GL_MODULATE    = 0x2100;
+        var GL_SUBTRACT    = 0x84E7;
+        var GL_INTERPOLATE = 0x8575;
+        // env.color/alphaSrc
+        var GL_TEXTURE       = 0x1702;
+        var GL_CONSTANT      = 0x8576;
+        var GL_PRIMARY_COLOR = 0x8577;
+        var GL_PREVIOUS      = 0x8578;
+        // env.color/alphaOp
+        var GL_SRC_COLOR           = 0x0300;
+        var GL_ONE_MINUS_SRC_COLOR = 0x0301;
+        var GL_SRC_ALPHA           = 0x0302;
+        var GL_ONE_MINUS_SRC_ALPHA = 0x0303;
+        var GL_RGB  = 0x1907;
+        var GL_RGBA = 0x1908;
+        // Our defs:
+        var TEXENVJIT_NAMESPACE_PREFIX = "tej_";
+        // Not actually constant, as they can be changed between JIT passes:
+        var TEX_UNIT_UNIFORM_PREFIX = "uTexUnit";
+        var TEX_COORD_VARYING_PREFIX = "vTexCoord";
+        var PRIM_COLOR_VARYING = "vPrimColor";
+        var TEX_MATRIX_UNIFORM_PREFIX = "uTexMatrix";
+        // Static vars:
+        var s_texUnits = null; //[];
+        var s_activeTexture = 0;
+        var s_requiredTexUnitsForPass = [];
+        // Static funcs:
+        function abort(info) {
+          assert(false, "[TexEnvJIT] ABORT: " + info);
+        }
+        function abort_noSupport(info) {
+          abort("No support: " + info);
+        }
+        function abort_sanity(info) {
+          abort("Sanity failure: " + info);
+        }
+        function genTexUnitSampleExpr(texUnitID) {
+          var texUnit = s_texUnits[texUnitID];
+          var texType = texUnit.getTexType();
+          var func = null;
+          switch (texType) {
+            case GL_TEXTURE_1D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_2D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_3D:
+              return abort_noSupport("No support for 3D textures.");
+            case GL_TEXTURE_CUBE_MAP:
+              func = "textureCube";
+              break;
+            default:
+              return abort_sanity("Unknown texType: 0x" + texType.toString(16));
+          }
+          var texCoordExpr = TEX_COORD_VARYING_PREFIX + texUnitID;
+          if (TEX_MATRIX_UNIFORM_PREFIX != null) {
+            texCoordExpr = "(" + TEX_MATRIX_UNIFORM_PREFIX + texUnitID + " * " + texCoordExpr + ")";
+          }
+          return func + "(" + TEX_UNIT_UNIFORM_PREFIX + texUnitID + ", " + texCoordExpr + ".xy)";
+        }
+        function getTypeFromCombineOp(op) {
+          switch (op) {
+            case GL_SRC_COLOR:
+            case GL_ONE_MINUS_SRC_COLOR:
+              return "vec3";
+            case GL_SRC_ALPHA:
+            case GL_ONE_MINUS_SRC_ALPHA:
+              return "float";
+          }
+          return Abort_NoSupport("Unsupported combiner op: 0x" + op.toString(16));
+        }
+        function getCurTexUnit() {
+          return s_texUnits[s_activeTexture];
+        }
+        function genCombinerSourceExpr(texUnitID, constantExpr, previousVar,
+                                       src, op)
+        {
+          var srcExpr = null;
+          switch (src) {
+            case GL_TEXTURE:
+              srcExpr = genTexUnitSampleExpr(texUnitID);
+              break;
+            case GL_CONSTANT:
+              srcExpr = constantExpr;
+              break;
+            case GL_PRIMARY_COLOR:
+              srcExpr = PRIM_COLOR_VARYING;
+              break;
+            case GL_PREVIOUS:
+              srcExpr = previousVar;
+              break;
+            default:
+                return abort_noSupport("Unsupported combiner src: 0x" + src.toString(16));
+          }
+          var expr = null;
+          switch (op) {
+            case GL_SRC_COLOR:
+              expr = srcExpr + ".rgb";
+              break;
+            case GL_ONE_MINUS_SRC_COLOR:
+              expr = "(vec3(1.0) - " + srcExpr + ".rgb)";
+              break;
+            case GL_SRC_ALPHA:
+              expr = srcExpr + ".a";
+              break;
+            case GL_ONE_MINUS_SRC_ALPHA:
+              expr = "(1.0 - " + srcExpr + ".a)";
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner op: 0x" + op.toString(16));
+          }
+          return expr;
+        }
+        function valToFloatLiteral(val) {
+          if (val == Math.round(val)) return val + '.0';
+          return val;
+        }
+        // Classes:
+        function CTexEnv() {
+          this.mode = GL_MODULATE;
+          this.colorCombiner = GL_MODULATE;
+          this.alphaCombiner = GL_MODULATE;
+          this.colorScale = 1;
+          this.alphaScale = 1;
+          this.envColor = [0, 0, 0, 0];
+          this.colorSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.alphaSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.colorOp = [
+            GL_SRC_COLOR,
+            GL_SRC_COLOR,
+            GL_SRC_ALPHA
+          ];
+          this.alphaOp = [
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA
+          ];
+          this.traverseState = function(keyView) {
+            keyView.next(this.mode);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaCombiner);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaScale);
+            keyView.next(this.envColor[0]);
+            keyView.next(this.envColor[1]);
+            keyView.next(this.envColor[2]);
+            keyView.next(this.envColor[3]);
+            keyView.next(this.colorSrc[0]);
+            keyView.next(this.colorSrc[1]);
+            keyView.next(this.colorSrc[2]);
+            keyView.next(this.alphaSrc[0]);
+            keyView.next(this.alphaSrc[1]);
+            keyView.next(this.alphaSrc[2]);
+            keyView.next(this.colorOp[0]);
+            keyView.next(this.colorOp[1]);
+            keyView.next(this.colorOp[2]);
+            keyView.next(this.alphaOp[0]);
+            keyView.next(this.alphaOp[1]);
+            keyView.next(this.alphaOp[2]);
+          };
+        }
+        function CTexUnit() {
+          this.env = new CTexEnv();
+          this.enabled_tex1D   = false;
+          this.enabled_tex2D   = false;
+          this.enabled_tex3D   = false;
+          this.enabled_texCube = false;
+          this.traverseState = function(keyView) {
+            var texUnitType = this.getTexType();
+            keyView.next(texUnitType);
+            if (!texUnitType) return;
+            this.env.traverseState(keyView);
+          };
+        };
+        // Class impls:
+        CTexUnit.prototype.enabled = function() {
+          return this.getTexType() != 0;
+        }
+        CTexUnit.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          if (!this.enabled()) {
+            return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
+          }
+          return this.env.genPassLines(passOutputVar, passInputVar, texUnitID);
+        }
+        CTexUnit.prototype.getTexType = function() {
+          if (this.enabled_texCube) {
+            return GL_TEXTURE_CUBE_MAP;
+          } else if (this.enabled_tex3D) {
+            return GL_TEXTURE_3D;
+          } else if (this.enabled_tex2D) {
+            return GL_TEXTURE_2D;
+          } else if (this.enabled_tex1D) {
+            return GL_TEXTURE_1D;
+          }
+          return 0;
+        }
+        CTexEnv.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          switch (this.mode) {
+            case GL_REPLACE: {
+              /* RGB:
+               * Cv = Cs
+               * Av = Ap // Note how this is different, and that we'll
+               *            need to track the bound texture internalFormat
+               *            to get this right.
+               *
+               * RGBA:
+               * Cv = Cs
+               * Av = As
+               */
+              return [
+                "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+              ];
+            }
+            case GL_ADD: {
+              /* RGBA:
+               * Cv = Cp + Cs
+               * Av = ApAs
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
+                "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_MODULATE: {
+              /* RGBA:
+               * Cv = CpCs
+               * Av = ApAs
+               */
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  passInputVar,
+                  " * ",
+                  genTexUnitSampleExpr(texUnitID),
+                ";",
+              ];
+              return [line.join("")];
+            }
+            case GL_DECAL: {
+              /* RGBA:
+               * Cv = Cp(1 - As) + CsAs
+               * Av = Ap
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
+                      " + ",
+                    texVar + ".rgb * " + texVar + ".a",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + passInputVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_BLEND: {
+              /* RGBA:
+               * Cv = Cp(1 - Cs) + CcCs
+               * Av = As
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
+                      " + ",
+                    PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_COMBINE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              var colorLines = this.genCombinerLines(true, colorVar,
+                                                     passInputVar, texUnitID,
+                                                     this.colorCombiner, this.colorSrc, this.colorOp);
+              var alphaLines = this.genCombinerLines(false, alphaVar,
+                                                     passInputVar, texUnitID,
+                                                     this.alphaCombiner, this.alphaSrc, this.alphaOp);
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  "vec4(",
+                      colorVar + " * " + valToFloatLiteral(this.colorScale),
+                      ", ",
+                      alphaVar + " * " + valToFloatLiteral(this.alphaScale),
+                  ")",
+                ";",
+              ].join("");
+              return [].concat(colorLines, alphaLines, [line]);
+            }
+          }
+          return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
+        }
+        CTexEnv.prototype.genCombinerLines = function(isColor, outputVar,
+                                                      passInputVar, texUnitID,
+                                                      combiner, srcArr, opArr)
+        {
+          var argsNeeded = null;
+          switch (combiner) {
+            case GL_REPLACE:
+              argsNeeded = 1;
+              break;
+            case GL_MODULATE:
+            case GL_ADD:
+            case GL_SUBTRACT:
+              argsNeeded = 2;
+              break;
+            case GL_INTERPOLATE:
+              argsNeeded = 3;
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner: 0x" + combiner.toString(16));
+          }
+          var constantExpr = [
+            "vec4(",
+              valToFloatLiteral(this.envColor[0]),
+              ", ",
+              valToFloatLiteral(this.envColor[1]),
+              ", ",
+              valToFloatLiteral(this.envColor[2]),
+              ", ",
+              valToFloatLiteral(this.envColor[3]),
+            ")",
+          ].join("");
+          var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
+                                           : null;
+          var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
+                                           : null;
+          var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
+                                           : null;
+          var outputType = isColor ? "vec3" : "float";
+          var lines = null;
+          switch (combiner) {
+            case GL_REPLACE: {
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_MODULATE: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " * " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_ADD: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " + " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_SUBTRACT: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " - " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_INTERPOLATE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var arg2Var = prefix + "colorSrc2";
+              var arg2Line = getTypeFromCombineOp(this.colorOp[2]) + " " + arg2Var + " = " + src2Expr + ";";
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr + " * " + arg2Var,
+                  " + ",
+                  src1Expr + " * (1.0 - " + arg2Var + ")",
+                ";",
+              ];
+              lines = [
+                arg2Line,
+                line.join(""),
+              ];
+              break;
+            }
+            default:
+              return abort_sanity("Unmatched TexEnv.colorCombiner?");
+          }
+          return lines;
+        }
+        return {
+          // Exports:
+          init: function(gl, specifiedMaxTextureImageUnits) {
+            var maxTexUnits = 0;
+            if (specifiedMaxTextureImageUnits) {
+              maxTexUnits = specifiedMaxTextureImageUnits;
+            } else if (gl) {
+              maxTexUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+            }
+            assert(maxTexUnits > 0);
+            s_texUnits = [];
+            for (var i = 0; i < maxTexUnits; i++) {
+              s_texUnits.push(new CTexUnit());
+            }
+          },
+          setGLSLVars: function(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix) {
+            TEX_UNIT_UNIFORM_PREFIX   = uTexUnitPrefix;
+            TEX_COORD_VARYING_PREFIX  = vTexCoordPrefix;
+            PRIM_COLOR_VARYING        = vPrimColor;
+            TEX_MATRIX_UNIFORM_PREFIX = uTexMatrixPrefix;
+          },
+          genAllPassLines: function(resultDest, indentSize) {
+            indentSize = indentSize || 0;
+            s_requiredTexUnitsForPass.length = 0; // Clear the list.
+            var lines = [];
+            var lastPassVar = PRIM_COLOR_VARYING;
+            for (var i = 0; i < s_texUnits.length; i++) {
+              if (!s_texUnits[i].enabled()) continue;
+              s_requiredTexUnitsForPass.push(i);
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + i + "_";
+              var passOutputVar = prefix + "result";
+              var newLines = s_texUnits[i].genPassLines(passOutputVar, lastPassVar, i);
+              lines = lines.concat(newLines, [""]);
+              lastPassVar = passOutputVar;
+            }
+            lines.push(resultDest + " = " + lastPassVar + ";");
+            var indent = "";
+            for (var i = 0; i < indentSize; i++) indent += " ";
+            var output = indent + lines.join("\n" + indent);
+            return output;
+          },
+          getUsedTexUnitList: function() {
+            return s_requiredTexUnitsForPass;
+          },
+          traverseState: function(keyView) {
+            for (var i = 0; i < s_texUnits.length; i++) {
+              var texUnit = s_texUnits[i];
+              var enabled = texUnit.enabled();
+              keyView.next(enabled);
+              if (enabled) {
+                texUnit.traverseState(keyView);
+              }
+            }
+          },
+          getTexUnitType: function(texUnitID) {
+            assert(texUnitID >= 0 &&
+                   texUnitID < s_texUnits.length);
+            return s_texUnits[texUnitID].getTexType();
+          },
+          // Hooks:
+          hook_activeTexture: function(texture) {
+            s_activeTexture = texture - GL_TEXTURE0;
+          },
+          hook_enable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = true;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = true;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = true;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = true;
+                break;
+            }
+          },
+          hook_disable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = false;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = false;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = false;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = false;
+                break;
+            }
+          },
+          hook_texEnvf: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvf`.');
+            }
+          },
+          hook_texEnvi: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_MODE:
+                env.mode = param;
+                break;
+              case GL_COMBINE_RGB:
+                env.colorCombiner = param;
+                break;
+              case GL_COMBINE_ALPHA:
+                env.alphaCombiner = param;
+                break;
+              case GL_SRC0_RGB:
+                env.colorSrc[0] = param;
+                break;
+              case GL_SRC1_RGB:
+                env.colorSrc[1] = param;
+                break;
+              case GL_SRC2_RGB:
+                env.colorSrc[2] = param;
+                break;
+              case GL_SRC0_ALPHA:
+                env.alphaSrc[0] = param;
+                break;
+              case GL_SRC1_ALPHA:
+                env.alphaSrc[1] = param;
+                break;
+              case GL_SRC2_ALPHA:
+                env.alphaSrc[2] = param;
+                break;
+              case GL_OPERAND0_RGB:
+                env.colorOp[0] = param;
+                break;
+              case GL_OPERAND1_RGB:
+                env.colorOp[1] = param;
+                break;
+              case GL_OPERAND2_RGB:
+                env.colorOp[2] = param;
+                break;
+              case GL_OPERAND0_ALPHA:
+                env.alphaOp[0] = param;
+                break;
+              case GL_OPERAND1_ALPHA:
+                env.alphaOp[1] = param;
+                break;
+              case GL_OPERAND2_ALPHA:
+                env.alphaOp[2] = param;
+                break;
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvi`.');
+            }
+          },
+          hook_texEnvfv: function(target, pname, params) {
+            if (target != GL_TEXTURE_ENV) return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_COLOR: {
+                for (var i = 0; i < 4; i++) {
+                  var param = HEAPF32[(((params)+(i*4))>>2)];
+                  env.envColor[i] = param;
+                }
+                break
+              }
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvfv`.');
+            }
+          },
+        };
+      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,MAX_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function (name, size, type, stride, pointer) {
+        var attrib = this.clientAttributes[name];
+        if (!attrib) {
+          for (var i = 0; i <= name; i++) { // keep flat
+            if (!this.clientAttributes[i]) {
+              this.clientAttributes[i] = {
+                name: name,
+                size: size,
+                type: type,
+                stride: stride,
+                pointer: pointer,
+                offset: 0
+              };
+            }
+          }
+        } else {
+          attrib.name = name;
+          attrib.size = size;
+          attrib.type = type;
+          attrib.stride = stride;
+          attrib.pointer = pointer;
+          attrib.offset = 0;
+        }
+        this.modifiedClientAttributes = true;
+      },addRendererComponent:function (name, size, type) {
+        if (!this.rendererComponents[name]) {
+          this.rendererComponents[name] = 1;
+          this.enabledClientAttributes[name] = true;
+          this.setClientAttribute(name, size, type, 0, this.rendererComponentPointer);
+          this.rendererComponentPointer += size * GL.byteSizeByType[type - GL.byteSizeByTypeRoot];
+        } else {
+          this.rendererComponents[name]++;
+        }
+      },disableBeginEndClientAttributes:function () {
+        for (var i = 0; i < this.NUM_ATTRIBUTES; i++) {
+          if (this.rendererComponents[i]) this.enabledClientAttributes[i] = false;
+        }
+      },getRenderer:function () {
+        // return a renderer object given the liveClientAttributes
+        // we maintain a cache of renderers, optimized to not generate garbage
+        var attributes = GL.immediate.liveClientAttributes;
+        var cacheMap = GL.immediate.rendererCache;
+        var temp;
+        var keyView = cacheMap.getStaticKeyView().reset();
+        // By attrib state:
+        for (var i = 0; i < attributes.length; i++) {
+          var attribute = attributes[i];
+          keyView.next(attribute.name).next(attribute.size).next(attribute.type);
+        }
+        // By fog state:
+        var fogParam = 0;
+        if (GLEmulation.fogEnabled) {
+          switch (GLEmulation.fogMode) {
+            case 0x0801: // GL_EXP2
+              fogParam = 1;
+              break;
+            case 0x2601: // GL_LINEAR
+              fogParam = 2;
+              break;
+            default: // default to GL_EXP
+              fogParam = 3;
+              break;
+          }
+        }
+        keyView.next(fogParam);
+        // By cur program:
+        keyView.next(GL.currProgram);
+        if (!GL.currProgram) {
+          GL.immediate.TexEnvJIT.traverseState(keyView);
+        }
+        // If we don't already have it, create it.
+        if (!keyView.get()) {
+          keyView.set(this.createRenderer());
+        }
+        return keyView.get();
+      },createRenderer:function (renderer) {
+        var useCurrProgram = !!GL.currProgram;
+        var hasTextures = false, textureSizes = [], textureTypes = [];
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          var texAttribName = GL.immediate.TEXTURE0 + i;
+          if (!GL.immediate.enabledClientAttributes[texAttribName])
+            continue;
+          if (!useCurrProgram) {
+            assert(GL.immediate.TexEnvJIT.getTexUnitType(i) != 0, "GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
+          }
+          textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
+          textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
+          hasTextures = true;
+        }
+        var positionSize = GL.immediate.clientAttributes[GL.immediate.VERTEX].size;
+        var positionType = GL.immediate.clientAttributes[GL.immediate.VERTEX].type;
+        var colorSize = 0, colorType;
+        if (GL.immediate.enabledClientAttributes[GL.immediate.COLOR]) {
+          colorSize = GL.immediate.clientAttributes[GL.immediate.COLOR].size;
+          colorType = GL.immediate.clientAttributes[GL.immediate.COLOR].type;
+        }
+        var normalSize = 0, normalType;
+        if (GL.immediate.enabledClientAttributes[GL.immediate.NORMAL]) {
+          normalSize = GL.immediate.clientAttributes[GL.immediate.NORMAL].size;
+          normalType = GL.immediate.clientAttributes[GL.immediate.NORMAL].type;
+        }
+        var ret = {
+          init: function() {
+            // For fixed-function shader generation.
+            var uTexUnitPrefix = 'u_texUnit';
+            var aTexCoordPrefix = 'a_texCoord';
+            var vTexCoordPrefix = 'v_texCoord';
+            var vPrimColor = 'v_color';
+            var uTexMatrixPrefix = GL.immediate.useTextureMatrix ? 'u_textureMatrix' : null;
+            if (useCurrProgram) {
+              if (GL.shaderInfos[GL.programShaders[GL.currProgram][0]].type == Module.ctx.VERTEX_SHADER) {
+                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
+                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
+              } else {
+                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
+                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
+              }
+              this.program = GL.programs[GL.currProgram];
+              this.usedTexUnitList = [];
+            } else {
+              // IMPORTANT NOTE: If you parameterize the shader source based on any runtime values
+              // in order to create the least expensive shader possible based on the features being
+              // used, you should also update the code in the beginning of getRenderer to make sure
+              // that you cache the renderer based on the said parameters.
+              if (GLEmulation.fogEnabled) {
+                switch (GLEmulation.fogMode) {
+                  case 0x0801: // GL_EXP2
+                    // fog = exp(-(gl_Fog.density * gl_FogFragCoord)^2)
+                    var fogFormula = '  float fog = exp(-u_fogDensity * u_fogDensity * ecDistance * ecDistance); \n';
+                    break;
+                  case 0x2601: // GL_LINEAR
+                    // fog = (gl_Fog.end - gl_FogFragCoord) * gl_fog.scale
+                    var fogFormula = '  float fog = (u_fogEnd - ecDistance) * u_fogScale; \n';
+                    break;
+                  default: // default to GL_EXP
+                    // fog = exp(-gl_Fog.density * gl_FogFragCoord)
+                    var fogFormula = '  float fog = exp(-u_fogDensity * ecDistance); \n';
+                    break;
+                }
+              }
+              GL.immediate.TexEnvJIT.setGLSLVars(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix);
+              var fsTexEnvPass = GL.immediate.TexEnvJIT.genAllPassLines('gl_FragColor', 2);
+              var texUnitAttribList = '';
+              var texUnitVaryingList = '';
+              var texUnitUniformList = '';
+              var vsTexCoordInits = '';
+              this.usedTexUnitList = GL.immediate.TexEnvJIT.getUsedTexUnitList();
+              for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                var texUnit = this.usedTexUnitList[i];
+                texUnitAttribList += 'attribute vec4 ' + aTexCoordPrefix + texUnit + ';\n';
+                texUnitVaryingList += 'varying vec4 ' + vTexCoordPrefix + texUnit + ';\n';
+                texUnitUniformList += 'uniform sampler2D ' + uTexUnitPrefix + texUnit + ';\n';
+                vsTexCoordInits += '  ' + vTexCoordPrefix + texUnit + ' = ' + aTexCoordPrefix + texUnit + ';\n';
+                if (GL.immediate.useTextureMatrix) {
+                  texUnitUniformList += 'uniform mat4 ' + uTexMatrixPrefix + texUnit + ';\n';
+                }
+              }
+              var vsFogVaryingInit = null;
+              if (GLEmulation.fogEnabled) {
+                vsFogVaryingInit = '  v_fogFragCoord = abs(ecPosition.z);\n';
+              }
+              var vsSource = [
+                'attribute vec4 a_position;',
+                'attribute vec4 a_color;',
+                'varying vec4 v_color;',
+                texUnitAttribList,
+                texUnitVaryingList,
+                (GLEmulation.fogEnabled ? 'varying float v_fogFragCoord;' : null),
+                'uniform mat4 u_modelView;',
+                'uniform mat4 u_projection;',
+                'void main()',
+                '{',
+                '  vec4 ecPosition = u_modelView * a_position;', // eye-coordinate position
+                '  gl_Position = u_projection * ecPosition;',
+                '  v_color = a_color;',
+                vsTexCoordInits,
+                vsFogVaryingInit,
+                '}',
+                ''
+              ].join('\n').replace(/\n\n+/g, '\n');
+              this.vertexShader = Module.ctx.createShader(Module.ctx.VERTEX_SHADER);
+              Module.ctx.shaderSource(this.vertexShader, vsSource);
+              Module.ctx.compileShader(this.vertexShader);
+              var fogHeaderIfNeeded = null;
+              if (GLEmulation.fogEnabled) {
+                fogHeaderIfNeeded = [
+                  '',
+                  'varying float v_fogFragCoord; ',
+                  'uniform vec4 u_fogColor;      ',
+                  'uniform float u_fogEnd;       ',
+                  'uniform float u_fogScale;     ',
+                  'uniform float u_fogDensity;   ',
+                  'float ffog(in float ecDistance) { ',
+                  fogFormula,
+                  '  fog = clamp(fog, 0.0, 1.0); ',
+                  '  return fog;                 ',
+                  '}',
+                  '',
+                ].join("\n");
+              }
+              var fogPass = null;
+              if (GLEmulation.fogEnabled) {
+                fogPass = 'gl_FragColor = vec4(mix(u_fogColor.rgb, gl_FragColor.rgb, ffog(v_fogFragCoord)), gl_FragColor.a);\n';
+              }
+              var fsSource = [
+                'precision mediump float;',
+                texUnitVaryingList,
+                texUnitUniformList,
+                'varying vec4 v_color;',
+                fogHeaderIfNeeded,
+                'void main()',
+                '{',
+                fsTexEnvPass,
+                fogPass,
+                '}',
+                ''
+              ].join("\n").replace(/\n\n+/g, '\n');
+              this.fragmentShader = Module.ctx.createShader(Module.ctx.FRAGMENT_SHADER);
+              Module.ctx.shaderSource(this.fragmentShader, fsSource);
+              Module.ctx.compileShader(this.fragmentShader);
+              this.program = Module.ctx.createProgram();
+              Module.ctx.attachShader(this.program, this.vertexShader);
+              Module.ctx.attachShader(this.program, this.fragmentShader);
+              Module.ctx.bindAttribLocation(this.program, 0, 'a_position');
+              Module.ctx.linkProgram(this.program);
+            }
+            this.positionLocation = Module.ctx.getAttribLocation(this.program, 'a_position');
+            this.texCoordLocations = [];
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              if (!GL.immediate.enabledClientAttributes[GL.immediate.TEXTURE0 + i]) {
+                this.texCoordLocations[i] = -1;
+                continue;
+              }
+              if (useCurrProgram) {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, 'a_texCoord' + i);
+              } else {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, aTexCoordPrefix + i);
+              }
+            }
+            if (!useCurrProgram) {
+              // Temporarily switch to the program so we can set our sampler uniforms early.
+              var prevBoundProg = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              Module.ctx.useProgram(this.program);
+              {
+                for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                  var texUnitID = this.usedTexUnitList[i];
+                  var texSamplerLoc = Module.ctx.getUniformLocation(this.program, uTexUnitPrefix + texUnitID);
+                  Module.ctx.uniform1i(texSamplerLoc, texUnitID);
+                }
+              }
+              Module.ctx.useProgram(prevBoundProg);
+            }
+            this.textureMatrixLocations = [];
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              this.textureMatrixLocations[i] = Module.ctx.getUniformLocation(this.program, 'u_textureMatrix' + i);
+            }
+            this.colorLocation = Module.ctx.getAttribLocation(this.program, 'a_color');
+            this.normalLocation = Module.ctx.getAttribLocation(this.program, 'a_normal');
+            this.modelViewLocation = Module.ctx.getUniformLocation(this.program, 'u_modelView');
+            this.projectionLocation = Module.ctx.getUniformLocation(this.program, 'u_projection');
+            this.hasTextures = hasTextures;
+            this.hasNormal = normalSize > 0 && this.normalLocation >= 0;
+            this.hasColor = (this.colorLocation === 0) || this.colorLocation > 0;
+            this.floatType = Module.ctx.FLOAT; // minor optimization
+            this.fogColorLocation = Module.ctx.getUniformLocation(this.program, 'u_fogColor');
+            this.fogEndLocation = Module.ctx.getUniformLocation(this.program, 'u_fogEnd');
+            this.fogScaleLocation = Module.ctx.getUniformLocation(this.program, 'u_fogScale');
+            this.fogDensityLocation = Module.ctx.getUniformLocation(this.program, 'u_fogDensity');
+            this.hasFog = !!(this.fogColorLocation || this.fogEndLocation ||
+                             this.fogScaleLocation || this.fogDensityLocation);
+          },
+          prepare: function() {
+            // Calculate the array buffer
+            var arrayBuffer;
+            if (!GL.currArrayBuffer) {
+              var start = GL.immediate.firstVertex*GL.immediate.stride;
+              var end = GL.immediate.lastVertex*GL.immediate.stride;
+              assert(end <= GL.MAX_TEMP_BUFFER_SIZE, 'too much vertex data');
+              arrayBuffer = GL.tempVertexBuffers[GL.tempBufferIndexLookup[end]];
+              // TODO: consider using the last buffer we bound, if it was larger. downside is larger buffer, but we might avoid rebinding and preparing
+            } else {
+              arrayBuffer = GL.currArrayBuffer;
+            }
+            // If the array buffer is unchanged and the renderer as well, then we can avoid all the work here
+            // XXX We use some heuristics here, and this may not work in all cases. Try disabling GL_UNSAFE_OPTS if you
+            // have odd glitches
+            var lastRenderer = GL.immediate.lastRenderer;
+            var canSkip = this == lastRenderer &&
+                          arrayBuffer == GL.immediate.lastArrayBuffer &&
+                          (GL.currProgram || this.program) == GL.immediate.lastProgram &&
+                          GL.immediate.stride == GL.immediate.lastStride &&
+                          !GL.immediate.matricesModified;
+            if (!canSkip && lastRenderer) lastRenderer.cleanup();
+            if (!GL.currArrayBuffer) {
+              // Bind the array buffer and upload data after cleaning up the previous renderer
+              // Potentially unsafe, since lastArrayBuffer might not reflect the true array buffer in code that mixes immediate/non-immediate
+              if (arrayBuffer != GL.immediate.lastArrayBuffer) {
+                Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, arrayBuffer);
+              }
+              Module.ctx.bufferSubData(Module.ctx.ARRAY_BUFFER, start, GL.immediate.vertexData.subarray(start >> 2, end >> 2));
+            }
+            if (canSkip) return;
+            GL.immediate.lastRenderer = this;
+            GL.immediate.lastArrayBuffer = arrayBuffer;
+            GL.immediate.lastProgram = GL.currProgram || this.program;
+            GL.immediate.lastStride == GL.immediate.stride;
+            GL.immediate.matricesModified = false;
+            if (!GL.currProgram) {
+              Module.ctx.useProgram(this.program);
+              GL.immediate.fixedFunctionProgram = this.program;
+            }
+            if (this.modelViewLocation) Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
+            if (this.projectionLocation) Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
+            var clientAttributes = GL.immediate.clientAttributes;
+            Module.ctx.vertexAttribPointer(this.positionLocation, positionSize, positionType, false,
+                                           GL.immediate.stride, clientAttributes[GL.immediate.VERTEX].offset);
+            Module.ctx.enableVertexAttribArray(this.positionLocation);
+            if (this.hasTextures) {
+              //for (var i = 0; i < this.usedTexUnitList.length; i++) {
+              //  var texUnitID = this.usedTexUnitList[i];
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                var texUnitID = i;
+                var attribLoc = this.texCoordLocations[texUnitID];
+                if (attribLoc === undefined || attribLoc < 0) continue;
+                if (texUnitID < textureSizes.length && textureSizes[texUnitID]) {
+                  Module.ctx.vertexAttribPointer(attribLoc, textureSizes[texUnitID], textureTypes[texUnitID], false,
+                                                 GL.immediate.stride, GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + texUnitID].offset);
+                  Module.ctx.enableVertexAttribArray(attribLoc);
+                } else {
+                  // These two might be dangerous, but let's try them.
+                  Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
+                  Module.ctx.disableVertexAttribArray(attribLoc);
+                }
+              }
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                if (this.textureMatrixLocations[i]) { // XXX might we need this even without the condition we are currently in?
+                  Module.ctx.uniformMatrix4fv(this.textureMatrixLocations[i], false, GL.immediate.matrix['t' + i]);
+                }
+              }
+            }
+            if (colorSize) {
+              Module.ctx.vertexAttribPointer(this.colorLocation, colorSize, colorType, true,
+                                             GL.immediate.stride, clientAttributes[GL.immediate.COLOR].offset);
+              Module.ctx.enableVertexAttribArray(this.colorLocation);
+            } else if (this.hasColor) {
+              Module.ctx.disableVertexAttribArray(this.colorLocation);
+              Module.ctx.vertexAttrib4fv(this.colorLocation, GL.immediate.clientColor);
+            }
+            if (this.hasNormal) {
+              Module.ctx.vertexAttribPointer(this.normalLocation, normalSize, normalType, true,
+                                             GL.immediate.stride, clientAttributes[GL.immediate.NORMAL].offset);
+              Module.ctx.enableVertexAttribArray(this.normalLocation);
+            }
+            if (this.hasFog) {
+              if (this.fogColorLocation) Module.ctx.uniform4fv(this.fogColorLocation, GLEmulation.fogColor);
+              if (this.fogEndLocation) Module.ctx.uniform1f(this.fogEndLocation, GLEmulation.fogEnd);
+              if (this.fogScaleLocation) Module.ctx.uniform1f(this.fogScaleLocation, 1/(GLEmulation.fogEnd - GLEmulation.fogStart));
+              if (this.fogDensityLocation) Module.ctx.uniform1f(this.fogDensityLocation, GLEmulation.fogDensity);
+            }
+          },
+          cleanup: function() {
+            Module.ctx.disableVertexAttribArray(this.positionLocation);
+            if (this.hasTextures) {
+              for (var i = 0; i < textureSizes.length; i++) {
+                if (textureSizes[i] && this.texCoordLocations[i] >= 0) {
+                  Module.ctx.disableVertexAttribArray(this.texCoordLocations[i]);
+                }
+              }
+            }
+            if (this.hasColor) {
+              Module.ctx.disableVertexAttribArray(this.colorLocation);
+            }
+            if (this.hasNormal) {
+              Module.ctx.disableVertexAttribArray(this.normalLocation);
+            }
+            if (!GL.currProgram) {
+              Module.ctx.useProgram(null);
+            }
+            if (!GL.currArrayBuffer) {
+              Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
+            }
+            GL.immediate.lastRenderer = null;
+            GL.immediate.lastArrayBuffer = null;
+            GL.immediate.lastProgram = null;
+            GL.immediate.matricesModified = true;
+          }
+        };
+        ret.init();
+        return ret;
+      },setupFuncs:function () {
+        // Replace some functions with immediate-mode aware versions. If there are no client
+        // attributes enabled, and we use webgl-friendly modes (no GL_QUADS), then no need
+        // for emulation
+        _glDrawArrays = function(mode, first, count) {
+          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6) {
+            Module.ctx.drawArrays(mode, first, count);
+            return;
+          }
+          GL.immediate.prepareClientAttributes(count, false);
+          GL.immediate.mode = mode;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,(GL.immediate.vertexPointer + (first+count)*GL.immediate.stride)>>2); // XXX assuming float
+            GL.immediate.firstVertex = first;
+            GL.immediate.lastVertex = first + count;
+          }
+          GL.immediate.flush(null, first);
+          GL.immediate.mode = -1;
+        };
+        _glDrawElements = function(mode, count, type, indices, start, end) { // start, end are given if we come from glDrawRangeElements
+          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6 && GL.currElementArrayBuffer) {
+            Module.ctx.drawElements(mode, count, type, indices);
+            return;
+          }
+          if (!GL.currElementArrayBuffer) {
+            assert(type == Module.ctx.UNSIGNED_SHORT); // We can only emulate buffers of this kind, for now
+          }
+          GL.immediate.prepareClientAttributes(count, false);
+          GL.immediate.mode = mode;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.firstVertex = end ? start : TOTAL_MEMORY; // if we don't know the start, set an invalid value and we will calculate it later from the indices
+            GL.immediate.lastVertex = end ? end+1 : 0;
+            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,((end ? GL.immediate.vertexPointer + (end+1)*GL.immediate.stride : TOTAL_MEMORY))>>2); // XXX assuming float
+          }
+          GL.immediate.flush(count, 0, indices);
+          GL.immediate.mode = -1;
+        };
+        // TexEnv stuff needs to be prepared early, so do it here.
+        // init() is too late for -O2, since it freezes the GL functions
+        // by that point.
+        GL.immediate.MapTreeLib = GL.immediate.spawnMapTreeLib();
+        GL.immediate.spawnMapTreeLib = null;
+        GL.immediate.TexEnvJIT = GL.immediate.spawnTexEnvJIT();
+        GL.immediate.spawnTexEnvJIT = null;
+        GL.immediate.setupHooks();
+      },setupHooks:function () {
+        if (!GLEmulation.hasRunInit) {
+          GLEmulation.init();
+        }
+        var glActiveTexture = _glActiveTexture;
+        _glActiveTexture = function(texture) {
+          GL.immediate.TexEnvJIT.hook_activeTexture(texture);
+          glActiveTexture(texture);
+        };
+        var glEnable = _glEnable;
+        _glEnable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_enable(cap);
+          glEnable(cap);
+        };
+        var glDisable = _glDisable;
+        _glDisable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_disable(cap);
+          glDisable(cap);
+        };
+        var glTexEnvf = (typeof(_glTexEnvf) != 'undefined') ? _glTexEnvf : function(){};
+        _glTexEnvf = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvf(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvf(target, pname, param);
+        };
+        var glTexEnvi = (typeof(_glTexEnvi) != 'undefined') ? _glTexEnvi : function(){};
+        _glTexEnvi = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvi(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvi(target, pname, param);
+        };
+        var glTexEnvfv = (typeof(_glTexEnvfv) != 'undefined') ? _glTexEnvfv : function(){};
+        _glTexEnvfv = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvfv(target, pname, param);
+        };
+        var glGetIntegerv = _glGetIntegerv;
+        _glGetIntegerv = function(pname, params) {
+          switch (pname) {
+            case 0x8B8D: { // GL_CURRENT_PROGRAM
+              // Just query directly so we're working with WebGL objects.
+              var cur = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              if (cur == GL.immediate.fixedFunctionProgram) {
+                // Pretend we're not using a program.
+                HEAP32[((params)>>2)]=0;
+                return;
+              }
+              break;
+            }
+          }
+          glGetIntegerv(pname, params);
+        };
+      },initted:false,init:function () {
+        Module.printErr('WARNING: using emscripten GL immediate mode emulation. This is very limited in what it supports');
+        GL.immediate.initted = true;
+        if (!Module.useWebGL) return; // a 2D canvas may be currently used TODO: make sure we are actually called in that case
+        this.TexEnvJIT.init(Module.ctx);
+        GL.immediate.MAX_TEXTURES = Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
+        GL.immediate.NUM_ATTRIBUTES = GL.immediate.TEXTURE0 + GL.immediate.MAX_TEXTURES;
+        GL.immediate.clientAttributes = [];
+        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+          GL.immediate.clientAttributes.push({});
+        }
+        this.matrixStack['m'] = [];
+        this.matrixStack['p'] = [];
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          this.matrixStack['t' + i] = [];
+        }
+        // Initialize matrix library
+        GL.immediate.matrix['m'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['m']);
+        GL.immediate.matrix['p'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['p']);
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          GL.immediate.matrix['t' + i] = GL.immediate.matrix.lib.mat4.create();
+        }
+        // Renderer cache
+        this.rendererCache = this.MapTreeLib.create();
+        // Buffers for data
+        this.tempData = new Float32Array(GL.MAX_TEMP_BUFFER_SIZE >> 2);
+        this.indexData = new Uint16Array(GL.MAX_TEMP_BUFFER_SIZE >> 1);
+        this.vertexDataU8 = new Uint8Array(this.tempData.buffer);
+        GL.generateTempBuffers(true);
+        this.clientColor = new Float32Array([1, 1, 1, 1]);
+      },prepareClientAttributes:function (count, beginEnd) {
+        // If no client attributes were modified since we were last called, do nothing. Note that this
+        // does not work for glBegin/End, where we generate renderer components dynamically and then
+        // disable them ourselves, but it does help with glDrawElements/Arrays.
+        if (!this.modifiedClientAttributes) {
+          GL.immediate.vertexCounter = (GL.immediate.stride * count) / 4; // XXX assuming float
+          return;
+        }
+        this.modifiedClientAttributes = false;
+        var stride = 0, start;
+        var attributes = GL.immediate.liveClientAttributes;
+        attributes.length = 0;
+        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+          if (GL.immediate.enabledClientAttributes[i]) attributes.push(GL.immediate.clientAttributes[i]);
+        }
+        attributes.sort(function(x, y) { return !x ? (!y ? 0 : 1) : (!y ? -1 : (x.pointer - y.pointer)) });
+        start = GL.currArrayBuffer ? 0 : attributes[0].pointer;
+        var multiStrides = false;
+        for (var i = 0; i < attributes.length; i++) {
+          var attribute = attributes[i];
+          if (!attribute) break;
+          if (stride != 0 && stride != attribute.stride) multiStrides = true;
+          if (attribute.stride) stride = attribute.stride;
+        }
+        if (multiStrides) stride = 0; // we will need to restride
+        var bytes = 0; // total size in bytes
+        if (!stride && !beginEnd) {
+          // beginEnd can not have stride in the attributes, that is fine. otherwise,
+          // no stride means that all attributes are in fact packed. to keep the rest of
+          // our emulation code simple, we perform unpacking/restriding here. this adds overhead, so
+          // it is a good idea to not hit this!
+          if (!GL.immediate.restrideBuffer) GL.immediate.restrideBuffer = _malloc(GL.MAX_TEMP_BUFFER_SIZE);
+          start = GL.immediate.restrideBuffer;
+          // calculate restrided offsets and total size
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            var size = attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
+            if (size % 4 != 0) size += 4 - (size % 4); // align everything
+            attribute.offset = bytes;
+            bytes += size;
+          }
+          // copy out the data (we need to know the stride for that, and define attribute.pointer
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            var size4 = Math.floor((attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot])/4);
+            for (var j = 0; j < count; j++) {
+              for (var k = 0; k < size4; k++) { // copy in chunks of 4 bytes, our alignment makes this possible
+                HEAP32[((start + attribute.offset + bytes*j)>>2) + k] = HEAP32[(attribute.pointer>>2) + j*size4 + k];
+              }
+            }
+            attribute.pointer = start + attribute.offset;
+          }
+        } else {
+          // normal situation, everything is strided and in the same buffer
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            attribute.offset = attribute.pointer - start;
+            if (attribute.offset > bytes) { // ensure we start where we should
+              assert((attribute.offset - bytes)%4 == 0); // XXX assuming 4-alignment
+              bytes += attribute.offset - bytes;
+            }
+            bytes += attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
+            if (bytes % 4 != 0) bytes += 4 - (bytes % 4); // XXX assuming 4-alignment
+          }
+          assert(beginEnd || bytes <= stride); // if not begin-end, explicit stride should make sense with total byte size
+          if (bytes < stride) { // ensure the size is that of the stride
+            bytes = stride;
+          }
+        }
+        GL.immediate.stride = bytes;
+        if (!beginEnd) {
+          bytes *= count;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.vertexPointer = start;
+          }
+          GL.immediate.vertexCounter = bytes / 4; // XXX assuming float
+        }
+      },flush:function (numProvidedIndexes, startIndex, ptr) {
+        startIndex = startIndex || 0;
+        ptr = ptr || 0;
+        var renderer = this.getRenderer();
+        // Generate index data in a format suitable for GLES 2.0/WebGL
+        var numVertexes = 4 * this.vertexCounter / GL.immediate.stride;
+        assert(numVertexes % 1 == 0, "`numVertexes` must be an integer.");
+        var emulatedElementArrayBuffer = false;
+        var numIndexes = 0;
+        if (numProvidedIndexes) {
+          numIndexes = numProvidedIndexes;
+          if (!GL.currArrayBuffer && GL.immediate.firstVertex > GL.immediate.lastVertex) {
+            // Figure out the first and last vertex from the index data
+            assert(!GL.currElementArrayBuffer); // If we are going to upload array buffer data, we need to find which range to
+                                                // upload based on the indices. If they are in a buffer on the GPU, that is very
+                                                // inconvenient! So if you do not have an array buffer, you should also not have
+                                                // an element array buffer. But best is to use both buffers!
+            for (var i = 0; i < numProvidedIndexes; i++) {
+              var currIndex = HEAPU16[(((ptr)+(i*2))>>1)];
+              GL.immediate.firstVertex = Math.min(GL.immediate.firstVertex, currIndex);
+              GL.immediate.lastVertex = Math.max(GL.immediate.lastVertex, currIndex+1);
+            }
+          }
+          if (!GL.currElementArrayBuffer) {
+            // If no element array buffer is bound, then indices is a literal pointer to clientside data
+            assert(numProvidedIndexes << 1 <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (a)');
+            var indexBuffer = GL.tempIndexBuffers[GL.tempBufferIndexLookup[numProvidedIndexes << 1]];
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            Module.ctx.bufferSubData(Module.ctx.ELEMENT_ARRAY_BUFFER, 0, HEAPU16.subarray((ptr)>>1,(ptr + (numProvidedIndexes << 1))>>1));
+            ptr = 0;
+            emulatedElementArrayBuffer = true;
+          }
+        } else if (GL.immediate.mode > 6) { // above GL_TRIANGLE_FAN are the non-GL ES modes
+          if (GL.immediate.mode != 7) throw 'unsupported immediate mode ' + GL.immediate.mode; // GL_QUADS
+          // GL.immediate.firstVertex is the first vertex we want. Quad indexes are in the pattern
+          // 0 1 2, 0 2 3, 4 5 6, 4 6 7, so we need to look at index firstVertex * 1.5 to see it.
+          // Then since indexes are 2 bytes each, that means 3
+          assert(GL.immediate.firstVertex % 4 == 0);
+          ptr = GL.immediate.firstVertex*3;
+          var numQuads = numVertexes / 4;
+          numIndexes = numQuads * 6; // 0 1 2, 0 2 3 pattern
+          assert(ptr + (numIndexes << 1) <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (b)');
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          emulatedElementArrayBuffer = true;
+        }
+        renderer.prepare();
+        if (numIndexes) {
+          Module.ctx.drawElements(Module.ctx.TRIANGLES, numIndexes, Module.ctx.UNSIGNED_SHORT, ptr);
+        } else {
+          Module.ctx.drawArrays(GL.immediate.mode, startIndex, numVertexes);
+        }
+        if (emulatedElementArrayBuffer) {
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.buffers[GL.currElementArrayBuffer] || null);
+        }
+      }};
+  GL.immediate = GLImmediate; GL.immediate.matrix.lib = (function() {
+  /**
+   * @fileoverview gl-matrix - High performance matrix and vector operations for WebGL
+   * @author Brandon Jones
+   * @version 1.2.4
+   */
+  // Modifed for emscripten: Global scoping etc.
+  /*
+   * Copyright (c) 2011 Brandon Jones
+   *
+   * This software is provided 'as-is', without any express or implied
+   * warranty. In no event will the authors be held liable for any damages
+   * arising from the use of this software.
+   *
+   * Permission is granted to anyone to use this software for any purpose,
+   * including commercial applications, and to alter it and redistribute it
+   * freely, subject to the following restrictions:
+   *
+   *    1. The origin of this software must not be misrepresented; you must not
+   *    claim that you wrote the original software. If you use this software
+   *    in a product, an acknowledgment in the product documentation would be
+   *    appreciated but is not required.
+   *
+   *    2. Altered source versions must be plainly marked as such, and must not
+   *    be misrepresented as being the original software.
+   *
+   *    3. This notice may not be removed or altered from any source
+   *    distribution.
+   */
+  /**
+   * @class 3 Dimensional Vector
+   * @name vec3
+   */
+  var vec3 = {};
+  /**
+   * @class 3x3 Matrix
+   * @name mat3
+   */
+  var mat3 = {};
+  /**
+   * @class 4x4 Matrix
+   * @name mat4
+   */
+  var mat4 = {};
+  /**
+   * @class Quaternion
+   * @name quat4
+   */
+  var quat4 = {};
+  var MatrixArray = Float32Array;
+  /*
+   * vec3
+   */
+  /**
+   * Creates a new instance of a vec3 using the default array type
+   * Any javascript array-like objects containing at least 3 numeric elements can serve as a vec3
+   *
+   * @param {vec3} [vec] vec3 containing values to initialize with
+   *
+   * @returns {vec3} New vec3
+   */
+  vec3.create = function (vec) {
+      var dest = new MatrixArray(3);
+      if (vec) {
+          dest[0] = vec[0];
+          dest[1] = vec[1];
+          dest[2] = vec[2];
+      } else {
+          dest[0] = dest[1] = dest[2] = 0;
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one vec3 to another
+   *
+   * @param {vec3} vec vec3 containing values to copy
+   * @param {vec3} dest vec3 receiving copied values
+   *
+   * @returns {vec3} dest
+   */
+  vec3.set = function (vec, dest) {
+      dest[0] = vec[0];
+      dest[1] = vec[1];
+      dest[2] = vec[2];
+      return dest;
+  };
+  /**
+   * Performs a vector addition
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.add = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] += vec2[0];
+          vec[1] += vec2[1];
+          vec[2] += vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] + vec2[0];
+      dest[1] = vec[1] + vec2[1];
+      dest[2] = vec[2] + vec2[2];
+      return dest;
+  };
+  /**
+   * Performs a vector subtraction
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.subtract = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] -= vec2[0];
+          vec[1] -= vec2[1];
+          vec[2] -= vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] - vec2[0];
+      dest[1] = vec[1] - vec2[1];
+      dest[2] = vec[2] - vec2[2];
+      return dest;
+  };
+  /**
+   * Performs a vector multiplication
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.multiply = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] *= vec2[0];
+          vec[1] *= vec2[1];
+          vec[2] *= vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] * vec2[0];
+      dest[1] = vec[1] * vec2[1];
+      dest[2] = vec[2] * vec2[2];
+      return dest;
+  };
+  /**
+   * Negates the components of a vec3
+   *
+   * @param {vec3} vec vec3 to negate
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.negate = function (vec, dest) {
+      if (!dest) { dest = vec; }
+      dest[0] = -vec[0];
+      dest[1] = -vec[1];
+      dest[2] = -vec[2];
+      return dest;
+  };
+  /**
+   * Multiplies the components of a vec3 by a scalar value
+   *
+   * @param {vec3} vec vec3 to scale
+   * @param {number} val Value to scale by
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.scale = function (vec, val, dest) {
+      if (!dest || vec === dest) {
+          vec[0] *= val;
+          vec[1] *= val;
+          vec[2] *= val;
+          return vec;
+      }
+      dest[0] = vec[0] * val;
+      dest[1] = vec[1] * val;
+      dest[2] = vec[2] * val;
+      return dest;
+  };
+  /**
+   * Generates a unit vector of the same direction as the provided vec3
+   * If vector length is 0, returns [0, 0, 0]
+   *
+   * @param {vec3} vec vec3 to normalize
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.normalize = function (vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          len = Math.sqrt(x * x + y * y + z * z);
+      if (!len) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          return dest;
+      } else if (len === 1) {
+          dest[0] = x;
+          dest[1] = y;
+          dest[2] = z;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      return dest;
+  };
+  /**
+   * Generates the cross product of two vec3s
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.cross = function (vec, vec2, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          x2 = vec2[0], y2 = vec2[1], z2 = vec2[2];
+      dest[0] = y * z2 - z * y2;
+      dest[1] = z * x2 - x * z2;
+      dest[2] = x * y2 - y * x2;
+      return dest;
+  };
+  /**
+   * Caclulates the length of a vec3
+   *
+   * @param {vec3} vec vec3 to calculate length of
+   *
+   * @returns {number} Length of vec
+   */
+  vec3.length = function (vec) {
+      var x = vec[0], y = vec[1], z = vec[2];
+      return Math.sqrt(x * x + y * y + z * z);
+  };
+  /**
+   * Caclulates the dot product of two vec3s
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   *
+   * @returns {number} Dot product of vec and vec2
+   */
+  vec3.dot = function (vec, vec2) {
+      return vec[0] * vec2[0] + vec[1] * vec2[1] + vec[2] * vec2[2];
+  };
+  /**
+   * Generates a unit vector pointing from one vector to another
+   *
+   * @param {vec3} vec Origin vec3
+   * @param {vec3} vec2 vec3 to point to
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.direction = function (vec, vec2, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0] - vec2[0],
+          y = vec[1] - vec2[1],
+          z = vec[2] - vec2[2],
+          len = Math.sqrt(x * x + y * y + z * z);
+      if (!len) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      return dest;
+  };
+  /**
+   * Performs a linear interpolation between two vec3
+   *
+   * @param {vec3} vec First vector
+   * @param {vec3} vec2 Second vector
+   * @param {number} lerp Interpolation amount between the two inputs
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.lerp = function (vec, vec2, lerp, dest) {
+      if (!dest) { dest = vec; }
+      dest[0] = vec[0] + lerp * (vec2[0] - vec[0]);
+      dest[1] = vec[1] + lerp * (vec2[1] - vec[1]);
+      dest[2] = vec[2] + lerp * (vec2[2] - vec[2]);
+      return dest;
+  };
+  /**
+   * Calculates the euclidian distance between two vec3
+   *
+   * Params:
+   * @param {vec3} vec First vector
+   * @param {vec3} vec2 Second vector
+   *
+   * @returns {number} Distance between vec and vec2
+   */
+  vec3.dist = function (vec, vec2) {
+      var x = vec2[0] - vec[0],
+          y = vec2[1] - vec[1],
+          z = vec2[2] - vec[2];
+      return Math.sqrt(x*x + y*y + z*z);
+  };
+  /**
+   * Projects the specified vec3 from screen space into object space
+   * Based on the <a href="http://webcvs.freedesktop.org/mesa/Mesa/src/glu/mesa/project.c?revision=1.4&view=markup">Mesa gluUnProject implementation</a>
+   *
+   * @param {vec3} vec Screen-space vector to project
+   * @param {mat4} view View matrix
+   * @param {mat4} proj Projection matrix
+   * @param {vec4} viewport Viewport as given to gl.viewport [x, y, width, height]
+   * @param {vec3} [dest] vec3 receiving unprojected result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.unproject = function (vec, view, proj, viewport, dest) {
+      if (!dest) { dest = vec; }
+      var m = mat4.create();
+      var v = new MatrixArray(4);
+      v[0] = (vec[0] - viewport[0]) * 2.0 / viewport[2] - 1.0;
+      v[1] = (vec[1] - viewport[1]) * 2.0 / viewport[3] - 1.0;
+      v[2] = 2.0 * vec[2] - 1.0;
+      v[3] = 1.0;
+      mat4.multiply(proj, view, m);
+      if(!mat4.inverse(m)) { return null; }
+      mat4.multiplyVec4(m, v);
+      if(v[3] === 0.0) { return null; }
+      dest[0] = v[0] / v[3];
+      dest[1] = v[1] / v[3];
+      dest[2] = v[2] / v[3];
+      return dest;
+  };
+  /**
+   * Returns a string representation of a vector
+   *
+   * @param {vec3} vec Vector to represent as a string
+   *
+   * @returns {string} String representation of vec
+   */
+  vec3.str = function (vec) {
+      return '[' + vec[0] + ', ' + vec[1] + ', ' + vec[2] + ']';
+  };
+  /*
+   * mat3
+   */
+  /**
+   * Creates a new instance of a mat3 using the default array type
+   * Any javascript array-like object containing at least 9 numeric elements can serve as a mat3
+   *
+   * @param {mat3} [mat] mat3 containing values to initialize with
+   *
+   * @returns {mat3} New mat3
+   */
+  mat3.create = function (mat) {
+      var dest = new MatrixArray(9);
+      if (mat) {
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[8] = mat[8];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one mat3 to another
+   *
+   * @param {mat3} mat mat3 containing values to copy
+   * @param {mat3} dest mat3 receiving copied values
+   *
+   * @returns {mat3} dest
+   */
+  mat3.set = function (mat, dest) {
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      return dest;
+  };
+  /**
+   * Sets a mat3 to an identity matrix
+   *
+   * @param {mat3} dest mat3 to set
+   *
+   * @returns dest if specified, otherwise a new mat3
+   */
+  mat3.identity = function (dest) {
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = 1;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 1;
+      dest[5] = 0;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 1;
+      return dest;
+  };
+  /**
+   * Transposes a mat3 (flips the values over the diagonal)
+   *
+   * Params:
+   * @param {mat3} mat mat3 to transpose
+   * @param {mat3} [dest] mat3 receiving transposed values. If not specified result is written to mat
+   *
+   * @returns {mat3} dest is specified, mat otherwise
+   */
+  mat3.transpose = function (mat, dest) {
+      // If we are transposing ourselves we can skip a few steps but have to cache some values
+      if (!dest || mat === dest) {
+          var a01 = mat[1], a02 = mat[2],
+              a12 = mat[5];
+          mat[1] = mat[3];
+          mat[2] = mat[6];
+          mat[3] = a01;
+          mat[5] = mat[7];
+          mat[6] = a02;
+          mat[7] = a12;
+          return mat;
+      }
+      dest[0] = mat[0];
+      dest[1] = mat[3];
+      dest[2] = mat[6];
+      dest[3] = mat[1];
+      dest[4] = mat[4];
+      dest[5] = mat[7];
+      dest[6] = mat[2];
+      dest[7] = mat[5];
+      dest[8] = mat[8];
+      return dest;
+  };
+  /**
+   * Copies the elements of a mat3 into the upper 3x3 elements of a mat4
+   *
+   * @param {mat3} mat mat3 containing values to copy
+   * @param {mat4} [dest] mat4 receiving copied values
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat3.toMat4 = function (mat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[15] = 1;
+      dest[14] = 0;
+      dest[13] = 0;
+      dest[12] = 0;
+      dest[11] = 0;
+      dest[10] = mat[8];
+      dest[9] = mat[7];
+      dest[8] = mat[6];
+      dest[7] = 0;
+      dest[6] = mat[5];
+      dest[5] = mat[4];
+      dest[4] = mat[3];
+      dest[3] = 0;
+      dest[2] = mat[2];
+      dest[1] = mat[1];
+      dest[0] = mat[0];
+      return dest;
+  };
+  /**
+   * Returns a string representation of a mat3
+   *
+   * @param {mat3} mat mat3 to represent as a string
+   *
+   * @param {string} String representation of mat
+   */
+  mat3.str = function (mat) {
+      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] +
+          ', ' + mat[3] + ', ' + mat[4] + ', ' + mat[5] +
+          ', ' + mat[6] + ', ' + mat[7] + ', ' + mat[8] + ']';
+  };
+  /*
+   * mat4
+   */
+  /**
+   * Creates a new instance of a mat4 using the default array type
+   * Any javascript array-like object containing at least 16 numeric elements can serve as a mat4
+   *
+   * @param {mat4} [mat] mat4 containing values to initialize with
+   *
+   * @returns {mat4} New mat4
+   */
+  mat4.create = function (mat) {
+      var dest = new MatrixArray(16);
+      if (mat) {
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[8] = mat[8];
+          dest[9] = mat[9];
+          dest[10] = mat[10];
+          dest[11] = mat[11];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one mat4 to another
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat4} dest mat4 receiving copied values
+   *
+   * @returns {mat4} dest
+   */
+  mat4.set = function (mat, dest) {
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      dest[9] = mat[9];
+      dest[10] = mat[10];
+      dest[11] = mat[11];
+      dest[12] = mat[12];
+      dest[13] = mat[13];
+      dest[14] = mat[14];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Sets a mat4 to an identity matrix
+   *
+   * @param {mat4} dest mat4 to set
+   *
+   * @returns {mat4} dest
+   */
+  mat4.identity = function (dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[0] = 1;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = 1;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 0;
+      dest[9] = 0;
+      dest[10] = 1;
+      dest[11] = 0;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Transposes a mat4 (flips the values over the diagonal)
+   *
+   * @param {mat4} mat mat4 to transpose
+   * @param {mat4} [dest] mat4 receiving transposed values. If not specified result is written to mat
+   *
+   * @param {mat4} dest is specified, mat otherwise
+   */
+  mat4.transpose = function (mat, dest) {
+      // If we are transposing ourselves we can skip a few steps but have to cache some values
+      if (!dest || mat === dest) {
+          var a01 = mat[1], a02 = mat[2], a03 = mat[3],
+              a12 = mat[6], a13 = mat[7],
+              a23 = mat[11];
+          mat[1] = mat[4];
+          mat[2] = mat[8];
+          mat[3] = mat[12];
+          mat[4] = a01;
+          mat[6] = mat[9];
+          mat[7] = mat[13];
+          mat[8] = a02;
+          mat[9] = a12;
+          mat[11] = mat[14];
+          mat[12] = a03;
+          mat[13] = a13;
+          mat[14] = a23;
+          return mat;
+      }
+      dest[0] = mat[0];
+      dest[1] = mat[4];
+      dest[2] = mat[8];
+      dest[3] = mat[12];
+      dest[4] = mat[1];
+      dest[5] = mat[5];
+      dest[6] = mat[9];
+      dest[7] = mat[13];
+      dest[8] = mat[2];
+      dest[9] = mat[6];
+      dest[10] = mat[10];
+      dest[11] = mat[14];
+      dest[12] = mat[3];
+      dest[13] = mat[7];
+      dest[14] = mat[11];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Calculates the determinant of a mat4
+   *
+   * @param {mat4} mat mat4 to calculate determinant of
+   *
+   * @returns {number} determinant of mat
+   */
+  mat4.determinant = function (mat) {
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15];
+      return (a30 * a21 * a12 * a03 - a20 * a31 * a12 * a03 - a30 * a11 * a22 * a03 + a10 * a31 * a22 * a03 +
+              a20 * a11 * a32 * a03 - a10 * a21 * a32 * a03 - a30 * a21 * a02 * a13 + a20 * a31 * a02 * a13 +
+              a30 * a01 * a22 * a13 - a00 * a31 * a22 * a13 - a20 * a01 * a32 * a13 + a00 * a21 * a32 * a13 +
+              a30 * a11 * a02 * a23 - a10 * a31 * a02 * a23 - a30 * a01 * a12 * a23 + a00 * a31 * a12 * a23 +
+              a10 * a01 * a32 * a23 - a00 * a11 * a32 * a23 - a20 * a11 * a02 * a33 + a10 * a21 * a02 * a33 +
+              a20 * a01 * a12 * a33 - a00 * a21 * a12 * a33 - a10 * a01 * a22 * a33 + a00 * a11 * a22 * a33);
+  };
+  /**
+   * Calculates the inverse matrix of a mat4
+   *
+   * @param {mat4} mat mat4 to calculate inverse of
+   * @param {mat4} [dest] mat4 receiving inverse matrix. If not specified result is written to mat
+   *
+   * @param {mat4} dest is specified, mat otherwise, null if matrix cannot be inverted
+   */
+  mat4.inverse = function (mat, dest) {
+      if (!dest) { dest = mat; }
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
+          b00 = a00 * a11 - a01 * a10,
+          b01 = a00 * a12 - a02 * a10,
+          b02 = a00 * a13 - a03 * a10,
+          b03 = a01 * a12 - a02 * a11,
+          b04 = a01 * a13 - a03 * a11,
+          b05 = a02 * a13 - a03 * a12,
+          b06 = a20 * a31 - a21 * a30,
+          b07 = a20 * a32 - a22 * a30,
+          b08 = a20 * a33 - a23 * a30,
+          b09 = a21 * a32 - a22 * a31,
+          b10 = a21 * a33 - a23 * a31,
+          b11 = a22 * a33 - a23 * a32,
+          d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
+          invDet;
+          // Calculate the determinant
+          if (!d) { return null; }
+          invDet = 1 / d;
+      dest[0] = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
+      dest[1] = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
+      dest[2] = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
+      dest[3] = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
+      dest[4] = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
+      dest[5] = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
+      dest[6] = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
+      dest[7] = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
+      dest[8] = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
+      dest[9] = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
+      dest[10] = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
+      dest[11] = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
+      dest[12] = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
+      dest[13] = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
+      dest[14] = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
+      dest[15] = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
+      return dest;
+  };
+  /**
+   * Copies the upper 3x3 elements of a mat4 into another mat4
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat4} [dest] mat4 receiving copied values
+   *
+   * @returns {mat4} dest is specified, a new mat4 otherwise
+   */
+  mat4.toRotationMat = function (mat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      dest[9] = mat[9];
+      dest[10] = mat[10];
+      dest[11] = mat[11];
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Copies the upper 3x3 elements of a mat4 into a mat3
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat3} [dest] mat3 receiving copied values
+   *
+   * @returns {mat3} dest is specified, a new mat3 otherwise
+   */
+  mat4.toMat3 = function (mat, dest) {
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[4];
+      dest[4] = mat[5];
+      dest[5] = mat[6];
+      dest[6] = mat[8];
+      dest[7] = mat[9];
+      dest[8] = mat[10];
+      return dest;
+  };
+  /**
+   * Calculates the inverse of the upper 3x3 elements of a mat4 and copies the result into a mat3
+   * The resulting matrix is useful for calculating transformed normals
+   *
+   * Params:
+   * @param {mat4} mat mat4 containing values to invert and copy
+   * @param {mat3} [dest] mat3 receiving values
+   *
+   * @returns {mat3} dest is specified, a new mat3 otherwise, null if the matrix cannot be inverted
+   */
+  mat4.toInverseMat3 = function (mat, dest) {
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10],
+          b01 = a22 * a11 - a12 * a21,
+          b11 = -a22 * a10 + a12 * a20,
+          b21 = a21 * a10 - a11 * a20,
+          d = a00 * b01 + a01 * b11 + a02 * b21,
+          id;
+      if (!d) { return null; }
+      id = 1 / d;
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = b01 * id;
+      dest[1] = (-a22 * a01 + a02 * a21) * id;
+      dest[2] = (a12 * a01 - a02 * a11) * id;
+      dest[3] = b11 * id;
+      dest[4] = (a22 * a00 - a02 * a20) * id;
+      dest[5] = (-a12 * a00 + a02 * a10) * id;
+      dest[6] = b21 * id;
+      dest[7] = (-a21 * a00 + a01 * a20) * id;
+      dest[8] = (a11 * a00 - a01 * a10) * id;
+      return dest;
+  };
+  /**
+   * Performs a matrix multiplication
+   *
+   * @param {mat4} mat First operand
+   * @param {mat4} mat2 Second operand
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.multiply = function (mat, mat2, dest) {
+      if (!dest) { dest = mat; }
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
+          b00 = mat2[0], b01 = mat2[1], b02 = mat2[2], b03 = mat2[3],
+          b10 = mat2[4], b11 = mat2[5], b12 = mat2[6], b13 = mat2[7],
+          b20 = mat2[8], b21 = mat2[9], b22 = mat2[10], b23 = mat2[11],
+          b30 = mat2[12], b31 = mat2[13], b32 = mat2[14], b33 = mat2[15];
+      dest[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+      dest[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+      dest[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+      dest[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+      dest[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+      dest[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+      dest[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+      dest[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+      dest[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+      dest[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+      dest[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+      dest[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+      dest[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+      dest[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+      dest[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+      dest[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+      return dest;
+  };
+  /**
+   * Transforms a vec3 with the given matrix
+   * 4th vector component is implicitly '1'
+   *
+   * @param {mat4} mat mat4 to transform the vector with
+   * @param {vec3} vec vec3 to transform
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  mat4.multiplyVec3 = function (mat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2];
+      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
+      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
+      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
+      return dest;
+  };
+  /**
+   * Transforms a vec4 with the given matrix
+   *
+   * @param {mat4} mat mat4 to transform the vector with
+   * @param {vec4} vec vec4 to transform
+   * @param {vec4} [dest] vec4 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec4} dest if specified, vec otherwise
+   */
+  mat4.multiplyVec4 = function (mat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
+      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12] * w;
+      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13] * w;
+      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14] * w;
+      dest[3] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15] * w;
+      return dest;
+  };
+  /**
+   * Translates a matrix by the given vector
+   *
+   * @param {mat4} mat mat4 to translate
+   * @param {vec3} vec vec3 specifying the translation
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.translate = function (mat, vec, dest) {
+      var x = vec[0], y = vec[1], z = vec[2],
+          a00, a01, a02, a03,
+          a10, a11, a12, a13,
+          a20, a21, a22, a23;
+      if (!dest || mat === dest) {
+          mat[12] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
+          mat[13] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
+          mat[14] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
+          mat[15] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15];
+          return mat;
+      }
+      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
+      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
+      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
+      dest[0] = a00; dest[1] = a01; dest[2] = a02; dest[3] = a03;
+      dest[4] = a10; dest[5] = a11; dest[6] = a12; dest[7] = a13;
+      dest[8] = a20; dest[9] = a21; dest[10] = a22; dest[11] = a23;
+      dest[12] = a00 * x + a10 * y + a20 * z + mat[12];
+      dest[13] = a01 * x + a11 * y + a21 * z + mat[13];
+      dest[14] = a02 * x + a12 * y + a22 * z + mat[14];
+      dest[15] = a03 * x + a13 * y + a23 * z + mat[15];
+      return dest;
+  };
+  /**
+   * Scales a matrix by the given vector
+   *
+   * @param {mat4} mat mat4 to scale
+   * @param {vec3} vec vec3 specifying the scale for each axis
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @param {mat4} dest if specified, mat otherwise
+   */
+  mat4.scale = function (mat, vec, dest) {
+      var x = vec[0], y = vec[1], z = vec[2];
+      if (!dest || mat === dest) {
+          mat[0] *= x;
+          mat[1] *= x;
+          mat[2] *= x;
+          mat[3] *= x;
+          mat[4] *= y;
+          mat[5] *= y;
+          mat[6] *= y;
+          mat[7] *= y;
+          mat[8] *= z;
+          mat[9] *= z;
+          mat[10] *= z;
+          mat[11] *= z;
+          return mat;
+      }
+      dest[0] = mat[0] * x;
+      dest[1] = mat[1] * x;
+      dest[2] = mat[2] * x;
+      dest[3] = mat[3] * x;
+      dest[4] = mat[4] * y;
+      dest[5] = mat[5] * y;
+      dest[6] = mat[6] * y;
+      dest[7] = mat[7] * y;
+      dest[8] = mat[8] * z;
+      dest[9] = mat[9] * z;
+      dest[10] = mat[10] * z;
+      dest[11] = mat[11] * z;
+      dest[12] = mat[12];
+      dest[13] = mat[13];
+      dest[14] = mat[14];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the specified axis
+   * If rotating around a primary axis (X,Y,Z) one of the specialized rotation functions should be used instead for performance
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {vec3} axis vec3 representing the axis to rotate around 
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotate = function (mat, angle, axis, dest) {
+      var x = axis[0], y = axis[1], z = axis[2],
+          len = Math.sqrt(x * x + y * y + z * z),
+          s, c, t,
+          a00, a01, a02, a03,
+          a10, a11, a12, a13,
+          a20, a21, a22, a23,
+          b00, b01, b02,
+          b10, b11, b12,
+          b20, b21, b22;
+      if (!len) { return null; }
+      if (len !== 1) {
+          len = 1 / len;
+          x *= len;
+          y *= len;
+          z *= len;
+      }
+      s = Math.sin(angle);
+      c = Math.cos(angle);
+      t = 1 - c;
+      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
+      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
+      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
+      // Construct the elements of the rotation matrix
+      b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
+      b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
+      b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform rotation-specific matrix multiplication
+      dest[0] = a00 * b00 + a10 * b01 + a20 * b02;
+      dest[1] = a01 * b00 + a11 * b01 + a21 * b02;
+      dest[2] = a02 * b00 + a12 * b01 + a22 * b02;
+      dest[3] = a03 * b00 + a13 * b01 + a23 * b02;
+      dest[4] = a00 * b10 + a10 * b11 + a20 * b12;
+      dest[5] = a01 * b10 + a11 * b11 + a21 * b12;
+      dest[6] = a02 * b10 + a12 * b11 + a22 * b12;
+      dest[7] = a03 * b10 + a13 * b11 + a23 * b12;
+      dest[8] = a00 * b20 + a10 * b21 + a20 * b22;
+      dest[9] = a01 * b20 + a11 * b21 + a21 * b22;
+      dest[10] = a02 * b20 + a12 * b21 + a22 * b22;
+      dest[11] = a03 * b20 + a13 * b21 + a23 * b22;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the X axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateX = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a10 = mat[4],
+          a11 = mat[5],
+          a12 = mat[6],
+          a13 = mat[7],
+          a20 = mat[8],
+          a21 = mat[9],
+          a22 = mat[10],
+          a23 = mat[11];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[4] = a10 * c + a20 * s;
+      dest[5] = a11 * c + a21 * s;
+      dest[6] = a12 * c + a22 * s;
+      dest[7] = a13 * c + a23 * s;
+      dest[8] = a10 * -s + a20 * c;
+      dest[9] = a11 * -s + a21 * c;
+      dest[10] = a12 * -s + a22 * c;
+      dest[11] = a13 * -s + a23 * c;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the Y axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateY = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a00 = mat[0],
+          a01 = mat[1],
+          a02 = mat[2],
+          a03 = mat[3],
+          a20 = mat[8],
+          a21 = mat[9],
+          a22 = mat[10],
+          a23 = mat[11];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[0] = a00 * c + a20 * -s;
+      dest[1] = a01 * c + a21 * -s;
+      dest[2] = a02 * c + a22 * -s;
+      dest[3] = a03 * c + a23 * -s;
+      dest[8] = a00 * s + a20 * c;
+      dest[9] = a01 * s + a21 * c;
+      dest[10] = a02 * s + a22 * c;
+      dest[11] = a03 * s + a23 * c;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the Z axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateZ = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a00 = mat[0],
+          a01 = mat[1],
+          a02 = mat[2],
+          a03 = mat[3],
+          a10 = mat[4],
+          a11 = mat[5],
+          a12 = mat[6],
+          a13 = mat[7];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+          dest[8] = mat[8];
+          dest[9] = mat[9];
+          dest[10] = mat[10];
+          dest[11] = mat[11];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[0] = a00 * c + a10 * s;
+      dest[1] = a01 * c + a11 * s;
+      dest[2] = a02 * c + a12 * s;
+      dest[3] = a03 * c + a13 * s;
+      dest[4] = a00 * -s + a10 * c;
+      dest[5] = a01 * -s + a11 * c;
+      dest[6] = a02 * -s + a12 * c;
+      dest[7] = a03 * -s + a13 * c;
+      return dest;
+  };
+  /**
+   * Generates a frustum matrix with the given bounds
+   *
+   * @param {number} left Left bound of the frustum
+   * @param {number} right Right bound of the frustum
+   * @param {number} bottom Bottom bound of the frustum
+   * @param {number} top Top bound of the frustum
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.frustum = function (left, right, bottom, top, near, far, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var rl = (right - left),
+          tb = (top - bottom),
+          fn = (far - near);
+      dest[0] = (near * 2) / rl;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = (near * 2) / tb;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = (right + left) / rl;
+      dest[9] = (top + bottom) / tb;
+      dest[10] = -(far + near) / fn;
+      dest[11] = -1;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = -(far * near * 2) / fn;
+      dest[15] = 0;
+      return dest;
+  };
+  /**
+   * Generates a perspective projection matrix with the given bounds
+   *
+   * @param {number} fovy Vertical field of view
+   * @param {number} aspect Aspect ratio. typically viewport width/height
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.perspective = function (fovy, aspect, near, far, dest) {
+      var top = near * Math.tan(fovy * Math.PI / 360.0),
+          right = top * aspect;
+      return mat4.frustum(-right, right, -top, top, near, far, dest);
+  };
+  /**
+   * Generates a orthogonal projection matrix with the given bounds
+   *
+   * @param {number} left Left bound of the frustum
+   * @param {number} right Right bound of the frustum
+   * @param {number} bottom Bottom bound of the frustum
+   * @param {number} top Top bound of the frustum
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.ortho = function (left, right, bottom, top, near, far, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var rl = (right - left),
+          tb = (top - bottom),
+          fn = (far - near);
+      dest[0] = 2 / rl;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = 2 / tb;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 0;
+      dest[9] = 0;
+      dest[10] = -2 / fn;
+      dest[11] = 0;
+      dest[12] = -(left + right) / rl;
+      dest[13] = -(top + bottom) / tb;
+      dest[14] = -(far + near) / fn;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Generates a look-at matrix with the given eye position, focal point, and up axis
+   *
+   * @param {vec3} eye Position of the viewer
+   * @param {vec3} center Point the viewer is looking at
+   * @param {vec3} up vec3 pointing "up"
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.lookAt = function (eye, center, up, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var x0, x1, x2, y0, y1, y2, z0, z1, z2, len,
+          eyex = eye[0],
+          eyey = eye[1],
+          eyez = eye[2],
+          upx = up[0],
+          upy = up[1],
+          upz = up[2],
+          centerx = center[0],
+          centery = center[1],
+          centerz = center[2];
+      if (eyex === centerx && eyey === centery && eyez === centerz) {
+          return mat4.identity(dest);
+      }
+      //vec3.direction(eye, center, z);
+      z0 = eyex - centerx;
+      z1 = eyey - centery;
+      z2 = eyez - centerz;
+      // normalize (no check needed for 0 because of early return)
+      len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+      z0 *= len;
+      z1 *= len;
+      z2 *= len;
+      //vec3.normalize(vec3.cross(up, z, x));
+      x0 = upy * z2 - upz * z1;
+      x1 = upz * z0 - upx * z2;
+      x2 = upx * z1 - upy * z0;
+      len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+      if (!len) {
+          x0 = 0;
+          x1 = 0;
+          x2 = 0;
+      } else {
+          len = 1 / len;
+          x0 *= len;
+          x1 *= len;
+          x2 *= len;
+      }
+      //vec3.normalize(vec3.cross(z, x, y));
+      y0 = z1 * x2 - z2 * x1;
+      y1 = z2 * x0 - z0 * x2;
+      y2 = z0 * x1 - z1 * x0;
+      len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+      if (!len) {
+          y0 = 0;
+          y1 = 0;
+          y2 = 0;
+      } else {
+          len = 1 / len;
+          y0 *= len;
+          y1 *= len;
+          y2 *= len;
+      }
+      dest[0] = x0;
+      dest[1] = y0;
+      dest[2] = z0;
+      dest[3] = 0;
+      dest[4] = x1;
+      dest[5] = y1;
+      dest[6] = z1;
+      dest[7] = 0;
+      dest[8] = x2;
+      dest[9] = y2;
+      dest[10] = z2;
+      dest[11] = 0;
+      dest[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
+      dest[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
+      dest[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Creates a matrix from a quaternion rotation and vector translation
+   * This is equivalent to (but much faster than):
+   *
+   *     mat4.identity(dest);
+   *     mat4.translate(dest, vec);
+   *     var quatMat = mat4.create();
+   *     quat4.toMat4(quat, quatMat);
+   *     mat4.multiply(dest, quatMat);
+   *
+   * @param {quat4} quat Rotation quaternion
+   * @param {vec3} vec Translation vector
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to a new mat4
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.fromRotationTranslation = function (quat, vec, dest) {
+      if (!dest) { dest = mat4.create(); }
+      // Quaternion math
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = 0;
+      dest[4] = xy - wz;
+      dest[5] = 1 - (xx + zz);
+      dest[6] = yz + wx;
+      dest[7] = 0;
+      dest[8] = xz + wy;
+      dest[9] = yz - wx;
+      dest[10] = 1 - (xx + yy);
+      dest[11] = 0;
+      dest[12] = vec[0];
+      dest[13] = vec[1];
+      dest[14] = vec[2];
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Returns a string representation of a mat4
+   *
+   * @param {mat4} mat mat4 to represent as a string
+   *
+   * @returns {string} String representation of mat
+   */
+  mat4.str = function (mat) {
+      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] + ', ' + mat[3] +
+          ', ' + mat[4] + ', ' + mat[5] + ', ' + mat[6] + ', ' + mat[7] +
+          ', ' + mat[8] + ', ' + mat[9] + ', ' + mat[10] + ', ' + mat[11] +
+          ', ' + mat[12] + ', ' + mat[13] + ', ' + mat[14] + ', ' + mat[15] + ']';
+  };
+  /*
+   * quat4
+   */
+  /**
+   * Creates a new instance of a quat4 using the default array type
+   * Any javascript array containing at least 4 numeric elements can serve as a quat4
+   *
+   * @param {quat4} [quat] quat4 containing values to initialize with
+   *
+   * @returns {quat4} New quat4
+   */
+  quat4.create = function (quat) {
+      var dest = new MatrixArray(4);
+      if (quat) {
+          dest[0] = quat[0];
+          dest[1] = quat[1];
+          dest[2] = quat[2];
+          dest[3] = quat[3];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one quat4 to another
+   *
+   * @param {quat4} quat quat4 containing values to copy
+   * @param {quat4} dest quat4 receiving copied values
+   *
+   * @returns {quat4} dest
+   */
+  quat4.set = function (quat, dest) {
+      dest[0] = quat[0];
+      dest[1] = quat[1];
+      dest[2] = quat[2];
+      dest[3] = quat[3];
+      return dest;
+  };
+  /**
+   * Calculates the W component of a quat4 from the X, Y, and Z components.
+   * Assumes that quaternion is 1 unit in length. 
+   * Any existing W component will be ignored. 
+   *
+   * @param {quat4} quat quat4 to calculate W component of
+   * @param {quat4} [dest] quat4 receiving calculated values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.calculateW = function (quat, dest) {
+      var x = quat[0], y = quat[1], z = quat[2];
+      if (!dest || quat === dest) {
+          quat[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
+          return quat;
+      }
+      dest[0] = x;
+      dest[1] = y;
+      dest[2] = z;
+      dest[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
+      return dest;
+  };
+  /**
+   * Calculates the dot product of two quaternions
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   *
+   * @return {number} Dot product of quat and quat2
+   */
+  quat4.dot = function(quat, quat2){
+      return quat[0]*quat2[0] + quat[1]*quat2[1] + quat[2]*quat2[2] + quat[3]*quat2[3];
+  };
+  /**
+   * Calculates the inverse of a quat4
+   *
+   * @param {quat4} quat quat4 to calculate inverse of
+   * @param {quat4} [dest] quat4 receiving inverse values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.inverse = function(quat, dest) {
+      var q0 = quat[0], q1 = quat[1], q2 = quat[2], q3 = quat[3],
+          dot = q0*q0 + q1*q1 + q2*q2 + q3*q3,
+          invDot = dot ? 1.0/dot : 0;
+      // TODO: Would be faster to return [0,0,0,0] immediately if dot == 0
+      if(!dest || quat === dest) {
+          quat[0] *= -invDot;
+          quat[1] *= -invDot;
+          quat[2] *= -invDot;
+          quat[3] *= invDot;
+          return quat;
+      }
+      dest[0] = -quat[0]*invDot;
+      dest[1] = -quat[1]*invDot;
+      dest[2] = -quat[2]*invDot;
+      dest[3] = quat[3]*invDot;
+      return dest;
+  };
+  /**
+   * Calculates the conjugate of a quat4
+   * If the quaternion is normalized, this function is faster than quat4.inverse and produces the same result.
+   *
+   * @param {quat4} quat quat4 to calculate conjugate of
+   * @param {quat4} [dest] quat4 receiving conjugate values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.conjugate = function (quat, dest) {
+      if (!dest || quat === dest) {
+          quat[0] *= -1;
+          quat[1] *= -1;
+          quat[2] *= -1;
+          return quat;
+      }
+      dest[0] = -quat[0];
+      dest[1] = -quat[1];
+      dest[2] = -quat[2];
+      dest[3] = quat[3];
+      return dest;
+  };
+  /**
+   * Calculates the length of a quat4
+   *
+   * Params:
+   * @param {quat4} quat quat4 to calculate length of
+   *
+   * @returns Length of quat
+   */
+  quat4.length = function (quat) {
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3];
+      return Math.sqrt(x * x + y * y + z * z + w * w);
+  };
+  /**
+   * Generates a unit quaternion of the same direction as the provided quat4
+   * If quaternion length is 0, returns [0, 0, 0, 0]
+   *
+   * @param {quat4} quat quat4 to normalize
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.normalize = function (quat, dest) {
+      if (!dest) { dest = quat; }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          len = Math.sqrt(x * x + y * y + z * z + w * w);
+      if (len === 0) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          dest[3] = 0;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      dest[3] = w * len;
+      return dest;
+  };
+  /**
+   * Performs quaternion addition
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.add = function (quat, quat2, dest) {
+      if(!dest || quat === dest) {
+          quat[0] += quat2[0];
+          quat[1] += quat2[1];
+          quat[2] += quat2[2];
+          quat[3] += quat2[3];
+          return quat;
+      }
+      dest[0] = quat[0]+quat2[0];
+      dest[1] = quat[1]+quat2[1];
+      dest[2] = quat[2]+quat2[2];
+      dest[3] = quat[3]+quat2[3];
+      return dest;
+  };
+  /**
+   * Performs a quaternion multiplication
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.multiply = function (quat, quat2, dest) {
+      if (!dest) { dest = quat; }
+      var qax = quat[0], qay = quat[1], qaz = quat[2], qaw = quat[3],
+          qbx = quat2[0], qby = quat2[1], qbz = quat2[2], qbw = quat2[3];
+      dest[0] = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+      dest[1] = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+      dest[2] = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+      dest[3] = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+      return dest;
+  };
+  /**
+   * Transforms a vec3 with the given quaternion
+   *
+   * @param {quat4} quat quat4 to transform the vector with
+   * @param {vec3} vec vec3 to transform
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns dest if specified, vec otherwise
+   */
+  quat4.multiplyVec3 = function (quat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          qx = quat[0], qy = quat[1], qz = quat[2], qw = quat[3],
+          // calculate quat * vec
+          ix = qw * x + qy * z - qz * y,
+          iy = qw * y + qz * x - qx * z,
+          iz = qw * z + qx * y - qy * x,
+          iw = -qx * x - qy * y - qz * z;
+      // calculate result * inverse quat
+      dest[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+      dest[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+      dest[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+      return dest;
+  };
+  /**
+   * Multiplies the components of a quaternion by a scalar value
+   *
+   * @param {quat4} quat to scale
+   * @param {number} val Value to scale by
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.scale = function (quat, val, dest) {
+      if(!dest || quat === dest) {
+          quat[0] *= val;
+          quat[1] *= val;
+          quat[2] *= val;
+          quat[3] *= val;
+          return quat;
+      }
+      dest[0] = quat[0]*val;
+      dest[1] = quat[1]*val;
+      dest[2] = quat[2]*val;
+      dest[3] = quat[3]*val;
+      return dest;
+  };
+  /**
+   * Calculates a 3x3 matrix from the given quat4
+   *
+   * @param {quat4} quat quat4 to create matrix from
+   * @param {mat3} [dest] mat3 receiving operation result
+   *
+   * @returns {mat3} dest if specified, a new mat3 otherwise
+   */
+  quat4.toMat3 = function (quat, dest) {
+      if (!dest) { dest = mat3.create(); }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = xy - wz;
+      dest[4] = 1 - (xx + zz);
+      dest[5] = yz + wx;
+      dest[6] = xz + wy;
+      dest[7] = yz - wx;
+      dest[8] = 1 - (xx + yy);
+      return dest;
+  };
+  /**
+   * Calculates a 4x4 matrix from the given quat4
+   *
+   * @param {quat4} quat quat4 to create matrix from
+   * @param {mat4} [dest] mat4 receiving operation result
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  quat4.toMat4 = function (quat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = 0;
+      dest[4] = xy - wz;
+      dest[5] = 1 - (xx + zz);
+      dest[6] = yz + wx;
+      dest[7] = 0;
+      dest[8] = xz + wy;
+      dest[9] = yz - wx;
+      dest[10] = 1 - (xx + yy);
+      dest[11] = 0;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Performs a spherical linear interpolation between two quat4
+   *
+   * @param {quat4} quat First quaternion
+   * @param {quat4} quat2 Second quaternion
+   * @param {number} slerp Interpolation amount between the two inputs
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.slerp = function (quat, quat2, slerp, dest) {
+      if (!dest) { dest = quat; }
+      var cosHalfTheta = quat[0] * quat2[0] + quat[1] * quat2[1] + quat[2] * quat2[2] + quat[3] * quat2[3],
+          halfTheta,
+          sinHalfTheta,
+          ratioA,
+          ratioB;
+      if (Math.abs(cosHalfTheta) >= 1.0) {
+          if (dest !== quat) {
+              dest[0] = quat[0];
+              dest[1] = quat[1];
+              dest[2] = quat[2];
+              dest[3] = quat[3];
+          }
+          return dest;
+      }
+      halfTheta = Math.acos(cosHalfTheta);
+      sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+      if (Math.abs(sinHalfTheta) < 0.001) {
+          dest[0] = (quat[0] * 0.5 + quat2[0] * 0.5);
+          dest[1] = (quat[1] * 0.5 + quat2[1] * 0.5);
+          dest[2] = (quat[2] * 0.5 + quat2[2] * 0.5);
+          dest[3] = (quat[3] * 0.5 + quat2[3] * 0.5);
+          return dest;
+      }
+      ratioA = Math.sin((1 - slerp) * halfTheta) / sinHalfTheta;
+      ratioB = Math.sin(slerp * halfTheta) / sinHalfTheta;
+      dest[0] = (quat[0] * ratioA + quat2[0] * ratioB);
+      dest[1] = (quat[1] * ratioA + quat2[1] * ratioB);
+      dest[2] = (quat[2] * ratioA + quat2[2] * ratioB);
+      dest[3] = (quat[3] * ratioA + quat2[3] * ratioB);
+      return dest;
+  };
+  /**
+   * Returns a string representation of a quaternion
+   *
+   * @param {quat4} quat quat4 to represent as a string
+   *
+   * @returns {string} String representation of quat
+   */
+  quat4.str = function (quat) {
+      return '[' + quat[0] + ', ' + quat[1] + ', ' + quat[2] + ', ' + quat[3] + ']';
+  };
+  return {
+    vec3: vec3,
+    mat3: mat3,
+    mat4: mat4,
+    quat4: quat4
+  };
+  })();
+  ;
+  var GLImmediateSetup={};function _glBegin(mode) {
+      // Push the old state:
+      GL.immediate.enabledClientAttributes_preBegin = GL.immediate.enabledClientAttributes;
+      GL.immediate.enabledClientAttributes = [];
+      GL.immediate.clientAttributes_preBegin = GL.immediate.clientAttributes;
+      GL.immediate.clientAttributes = []
+      for (var i = 0; i < GL.immediate.clientAttributes_preBegin.length; i++) {
+        GL.immediate.clientAttributes.push({});
+      }
+      GL.immediate.mode = mode;
+      GL.immediate.vertexCounter = 0;
+      var components = GL.immediate.rendererComponents = [];
+      for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+        components[i] = 0;
+      }
+      GL.immediate.rendererComponentPointer = 0;
+      GL.immediate.vertexData = GL.immediate.tempData;
+    }
+  function _glVertex3f(x, y, z) {
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = x;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = y;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = z || 0;
+      GL.immediate.addRendererComponent(GL.immediate.VERTEX, 3, Module.ctx.FLOAT);
+    }var _glVertex2i=_glVertex3f;
+  function _glEnd() {
+      GL.immediate.prepareClientAttributes(GL.immediate.rendererComponents[GL.immediate.VERTEX], true);
+      GL.immediate.firstVertex = 0;
+      GL.immediate.lastVertex = GL.immediate.vertexCounter / (GL.immediate.stride >> 2);
+      GL.immediate.flush();
+      GL.immediate.disableBeginEndClientAttributes();
+      GL.immediate.mode = -1;
+      // Pop the old state:
+      GL.immediate.enabledClientAttributes = GL.immediate.enabledClientAttributes_preBegin;
+      GL.immediate.clientAttributes = GL.immediate.clientAttributes_preBegin;
+      GL.immediate.modifiedClientAttributes = true;
+    }
+  function _glFlush() { Module.ctx.flush() }
+  var SDL={defaults:{width:320,height:200,copyOnLock:true},version:null,surfaces:{},canvasPool:[],events:[],fonts:[null],audios:[null],rwops:[null],music:{audio:null,volume:1},mixerFrequency:22050,mixerFormat:32784,mixerNumChannels:2,mixerChunkSize:1024,channelMinimumNumber:0,GL:false,keyboardState:null,keyboardMap:{},canRequestFullscreen:false,isRequestingFullscreen:false,textInput:false,startTime:null,buttonState:0,modState:0,DOMButtons:[0,0,0],DOMEventToSDLEvent:{},keyCodes:{16:1249,17:1248,18:1250,33:1099,34:1102,37:1104,38:1106,39:1103,40:1105,46:127,96:1112,97:1113,98:1114,99:1115,100:1116,101:1117,102:1118,103:1119,104:1120,105:1121,112:1082,113:1083,114:1084,115:1085,116:1086,117:1087,118:1088,119:1089,120:1090,121:1091,122:1092,123:1093,173:45,188:44,190:46,191:47,192:96},scanCodes:{9:43,13:40,27:41,32:44,44:54,46:55,47:56,48:39,49:30,50:31,51:32,52:33,53:34,54:35,55:36,56:37,57:38,92:49,97:4,98:5,99:6,100:7,101:8,102:9,103:10,104:11,105:12,106:13,107:14,108:15,109:16,110:17,111:18,112:19,113:20,114:21,115:22,116:23,117:24,118:25,119:26,120:27,121:28,122:29,305:224,308:226},structs:{Rect:{__size__:16,x:0,y:4,w:8,h:12},PixelFormat:{__size__:36,format:0,palette:4,BitsPerPixel:8,BytesPerPixel:9,padding1:10,padding2:11,Rmask:12,Gmask:16,Bmask:20,Amask:24,Rloss:28,Gloss:29,Bloss:30,Aloss:31,Rshift:32,Gshift:33,Bshift:34,Ashift:35},KeyboardEvent:{__size__:16,type:0,windowID:4,state:8,repeat:9,padding2:10,padding3:11,keysym:12},keysym:{__size__:16,scancode:0,sym:4,mod:8,unicode:12},TextInputEvent:{__size__:264,type:0,windowID:4,text:8},MouseMotionEvent:{__size__:28,type:0,windowID:4,state:8,padding1:9,padding2:10,padding3:11,x:12,y:16,xrel:20,yrel:24},MouseButtonEvent:{__size__:20,type:0,windowID:4,button:8,state:9,padding1:10,padding2:11,x:12,y:16},ResizeEvent:{__size__:12,type:0,w:4,h:8},AudioSpec:{__size__:24,freq:0,format:4,channels:6,silence:7,samples:8,size:12,callback:16,userdata:20},version:{__size__:3,major:0,minor:1,patch:2}},loadRect:function (rect) {
         return {
           x: HEAP32[((rect + SDL.structs.Rect.x)>>2)],
           y: HEAP32[((rect + SDL.structs.Rect.y)>>2)],
@@ -6179,8 +9979,15 @@ function copyTempDouble(ptr) {
         }
       }};function _SDL_GL_SwapBuffers() {}
   function _glViewport(x0, x1, x2, x3) { Module.ctx.viewport(x0, x1, x2, x3) }
-  function _glLoadIdentity(){ throw 'Legacy GL function (glLoadIdentity) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
+  function _glLoadIdentity() {
+      GL.immediate.matricesModified = true;
+      GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix[GL.immediate.currentMatrix]);
+    }
+  function _glOrtho(left, right, bottom, top_, nearVal, farVal) {
+      GL.immediate.matricesModified = true;
+      GL.immediate.matrix.lib.mat4.multiply(GL.immediate.matrix[GL.immediate.currentMatrix],
+          GL.immediate.matrix.lib.mat4.ortho(left, right, bottom, top_, nearVal, farVal));
+    }
   function _glutGetModifiers() { return GLUT.modifiers; }
   function _glutTimerFunc(msec, func, value) {
       Browser.safeSetTimeout(function() { Runtime.dynCall('vi', func, [value]); }, msec);
@@ -6250,13 +10057,44 @@ function copyTempDouble(ptr) {
   function _glutMotionFunc(func) {
       GLUT.motionFunc = func;
     }
-  function _glMatrixMode(){ throw 'Legacy GL function (glMatrixMode) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
+  function _glMatrixMode(mode) {
+      if (mode == 0x1700 /* GL_MODELVIEW */) {
+        GL.immediate.currentMatrix = 'm';
+      } else if (mode == 0x1701 /* GL_PROJECTION */) {
+        GL.immediate.currentMatrix = 'p';
+      } else if (mode == 0x1702) { // GL_TEXTURE
+        GL.immediate.useTextureMatrix = true;
+        GL.immediate.currentMatrix = 't' + GL.immediate.clientActiveTexture;
+      } else {
+        throw "Wrong mode " + mode + " passed to glMatrixMode";
+      }
+    }
   function _glClearColor(x0, x1, x2, x3) { Module.ctx.clearColor(x0, x1, x2, x3) }
-  function _glActiveTexture(x0) { Module.ctx.activeTexture(x0) }
-;
-  function _glVertexPointer(){ throw 'Legacy GL function (glVertexPointer) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
-;
+  function _glEnableClientState(cap, disable) {
+      var attrib = GLEmulation.getAttributeFromCapability(cap);
+      if (attrib === null) {
+        return;
+      }
+      if (disable && GL.immediate.enabledClientAttributes[attrib]) {
+        GL.immediate.enabledClientAttributes[attrib] = false;
+        GL.immediate.totalEnabledClientAttributes--;
+        if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledClientStates[cap];
+      } else if (!disable && !GL.immediate.enabledClientAttributes[attrib]) {
+        GL.immediate.enabledClientAttributes[attrib] = true;
+        GL.immediate.totalEnabledClientAttributes++;
+        if (GLEmulation.currentVao) GLEmulation.currentVao.enabledClientStates[cap] = 1;
+      }
+      GL.immediate.modifiedClientAttributes = true;
+    }
+  function _glVertexPointer(size, type, stride, pointer) {
+      GL.immediate.setClientAttribute(GL.immediate.VERTEX, size, type, stride, pointer);
+    }
+  function _glClientActiveTexture(texture) {
+      GL.immediate.clientActiveTexture = texture - 0x84C0; // GL_TEXTURE0
+    }
+  function _glTexCoordPointer(size, type, stride, pointer) {
+      GL.immediate.setClientAttribute(GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture, size, type, stride, pointer);
+    }
   function _glGenTextures(n, textures) {
       for (var i = 0; i < n; i++) {
         var id = GL.getNewId(GL.textures);
@@ -6291,9 +10129,15 @@ function copyTempDouble(ptr) {
       }
       Module.ctx.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
     }
-;
-;
-;
+  function _glTexCoord2i(u, v) {
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = u;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = v;
+      GL.immediate.addRendererComponent(GL.immediate.TEXTURE0, 2, Module.ctx.FLOAT);
+    }
+  function _glLoadMatrixf(matrix) {
+      GL.immediate.matricesModified = true;
+      GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
+    }
   function _memset(ptr, value, num) {
       ptr = ptr|0; value = value|0; num = num|0;
       var stop = 0, value4 = 0, stop4 = 0, unaligned = 0;
@@ -6522,12 +10366,14 @@ FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] 
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 __ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
 __ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
+GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
+GLEmulation.init();
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
@@ -6535,7 +10381,7 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
 var FUNCTION_TABLE = [0,0,_motionFunc,0,_specialFunc,0,_reshapeFunc,0,_keyFunc,0,_displayFunc,0,_mouseFunc,0,_timerFunc];
 // EMSCRIPTEN_START_FUNCS
-function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27;r1=0;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+32|0;r4=r3;r5=r3+24;r6=_WallClockTime();r7=_clSetKernelArg(HEAP32[2256>>2],0,4,2208);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2120,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=_clSetKernelArg(HEAP32[2256>>2],1,4,2280);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=Math.imul(HEAP32[2292>>2],HEAP32[2288>>2])|0;r8=r3+8|0;HEAP32[r8>>2]=r7;r9=HEAP32[8>>2];if(((r7>>>0)%(r9>>>0)&-1|0)!=0){HEAP32[r8>>2]=Math.imul(((r7>>>0)/(r9>>>0)&-1)+1|0,r9)|0}r7=r3+16|0;HEAP32[r7>>2]=r9;r9=HEAP32[2296>>2];L11:do{if((HEAP32[2300>>2]|0)==0&(r9|0)>1){if((r9|0)>0){r10=0;r11=r9}else{break}L13:while(1){if((r11|0)>0){r12=(r10|0)+.5;r13=0;r14=r11;while(1){r15=r14|0;r16=((r13|0)+.5)/r15;r17=r12/r15;do{if((r13|r10|0)==0){_SetEnableAccumulationKernelArg(0,r16,r17);r18=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,0);if((r18|0)!=0){r1=14;break L13}}else{r15=r14-1|0;_SetEnableAccumulationKernelArg(1,r16,r17);r19=HEAP32[2408>>2];r20=HEAP32[2256>>2];if(!((r13|0)==(r15|0)&(r10|0)==(r15|0))){r21=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,0);if((r21|0)==0){break}else{r1=20;break L13}}r22=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,r4);if((r22|0)!=0){r1=17;break L13}_clFinish(HEAP32[2408>>2])}}while(0);r17=r13+1|0;r16=HEAP32[2296>>2];if((r17|0)<(r16|0)){r13=r17;r14=r16}else{r23=r16;break}}}else{r23=r11}r14=r10+1|0;if((r14|0)<(r23|0)){r10=r14;r11=r23}else{break L11}}if(r1==14){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r18,r2));STACKTOP=r2;_exit(-1)}else if(r1==17){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r22,r2));STACKTOP=r2;_exit(-1)}else if(r1==20){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}}else{_SetEnableAccumulationKernelArg(0,0,0);r14=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,r4);if((r14|0)==0){_clFinish(HEAP32[2408>>2]);break}else{_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r14,r2));STACKTOP=r2;_exit(-1)}}}while(0);r4=HEAP32[2408>>2];r7=HEAP32[2208>>2];r8=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r21=_clEnqueueReadBuffer(r4,r7,1,0,r8,HEAP32[2200>>2],0,0,r5);if((r21|0)!=0){_fprintf(HEAP32[_stderr>>2],1640,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);r21=HEAP32[2296>>2];do{if((HEAP32[2300>>2]|0)==0&(r21|0)>1){r5=1/(Math.imul(r21,r21)|0);if((Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)==0){break}else{r24=0}while(1){r8=HEAP32[2200>>2]+(r24<<2)|0;HEAPF32[r8>>2]=r5*HEAPF32[r8>>2];r8=r24+1|0;if(r8>>>0<(Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)>>>0){r24=r8}else{break}}}}while(0);r24=_WallClockTime()-r6;r6=((Math.imul(HEAP32[2288>>2],HEAP32[2292>>2])|0)>>>0)/r24;r21=HEAP32[2296>>2];if(!((HEAP32[2300>>2]|0)==0&(r21|0)>1)){r25=r6;r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}r25=r6*(Math.imul(r21,r21)|0);r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}function _ReInit(r1){var r2,r3;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+8|0;if((r1|0)==0){_UpdateCamera();r1=_clEnqueueWriteBuffer(HEAP32[2408>>2],HEAP32[2280>>2],1,0,116,2288,0,0,r3);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],824,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);STACKTOP=r3;return}r1=_clReleaseMemObject(HEAP32[2208>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],424,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}r1=_clReleaseMemObject(HEAP32[2280>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],368,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_free(HEAP32[2200>>2]);_UpdateCamera();_AllocateBuffers();STACKTOP=r3;return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+448|0;r6=r5;r7=r5+8;r8=r5+16;r9=r5+120;r10=r5+136;r11=r5+144;r12=r5+152;r13=r5+408;r14=r5+416;r15=r5+424;r16=r5+432;r17=r5+440;if((r1|0)<1|(r2|0)==0){r18=1}else{r19=0;r20=1;while(1){r21=HEAP32[r2+(r19<<2)>>2];do{if((r21|0)==0){r22=r20}else{if((_strstr(r21,416)|0)!=0){r22=0;break}r22=(_strstr(r21,216)|0)==0?r20:1}}while(0);r21=r19+1|0;if((r21|0)<(r1|0)){r19=r21;r20=r22}else{r18=r22;break}}}_printf(152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=(r18|0)==1?112:72,r4));STACKTOP=r4;HEAP8[16]=(r18|0)==0;HEAP32[2288>>2]=512;HEAP32[2292>>2]=512;HEAP32[2304>>2]=1;HEAP32[2296>>2]=2;HEAP32[2300>>2]=1;HEAP32[2308>>2]=6;HEAPF32[2312>>2]=.0010000000474974513;HEAPF32[2332>>2]=5;HEAPF32[2336>>2]=10;HEAPF32[2340>>2]=15;HEAPF32[2316>>2]=-.18799999356269836;HEAPF32[2320>>2]=.4129999876022339;HEAPF32[2324>>2]=-.2630000114440918;HEAPF32[2328>>2]=.6000000238418579;HEAPF32[2344>>2]=1;HEAPF32[2348>>2]=2;HEAPF32[2352>>2]=8;HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;_UpdateCamera();r18=r8|0;r8=r11;r22=r12|0;r12=r13;r20=r14;r19=r17;r21=_clGetPlatformIDs(0,0,r6);HEAP32[r7>>2]=r21;if((r21|0)!=0){_fwrite(1992,31,1,HEAP32[_stderr>>2]);_exit(-1)}r21=HEAP32[r6>>2];if((r21|0)==0){r23=0}else{r24=_malloc(r21<<2);r25=r24;r26=_clGetPlatformIDs(r21,r25,0);HEAP32[r7>>2]=r26;if((r26|0)!=0){_fwrite(1952,34,1,HEAP32[_stderr>>2]);_exit(-1)}L81:do{if((HEAP32[r6>>2]|0)!=0){r26=0;while(1){HEAP32[r7>>2]=_clGetPlatformInfo(HEAP32[r25+(r26<<2)>>2],2307,100,r18,0);r21=_clGetPlatformIDs(HEAP32[r6>>2],r25,0);HEAP32[r7>>2]=r21;r27=HEAP32[_stderr>>2];if((r21|0)!=0){break}_fprintf(r27,1928,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r26,HEAP32[r4+8>>2]=r18,r4));STACKTOP=r4;r21=r26+1|0;if(r21>>>0<HEAP32[r6>>2]>>>0){r26=r21}else{break L81}}_fwrite(1952,34,1,r27);_exit(-1)}}while(0);r27=HEAP32[r25>>2];_free(r24);r23=r27}r27=r9|0;HEAP32[r27>>2]=4228;HEAP32[r9+4>>2]=r23;HEAP32[r9+8>>2]=0;r9=HEAP8[16];r24=_clCreateContextFromType((r23|0)==0?0:r27,r9?2:4,r9?0:0,0,0,r7);HEAP32[2272>>2]=r24;if((HEAP32[r7>>2]|0)!=0){_fwrite(1896,30,1,HEAP32[_stderr>>2]);_exit(-1)}r9=_clGetContextInfo(r24,4225,0,0,r10);HEAP32[r7>>2]=r9;if((r9|0)!=0){_fprintf(HEAP32[_stderr>>2],1848,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r9,r4));STACKTOP=r4;_exit(-1)}r9=HEAP32[r10>>2];r24=_malloc(r9);HEAP32[2264>>2]=r24;if((r24|0)==0){_fprintf(HEAP32[_stderr>>2],1784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=0,r4));STACKTOP=r4;_exit(-1)}r27=_clGetContextInfo(HEAP32[2272>>2],4225,r9,r24,0);HEAP32[r7>>2]=r27;if((r27|0)!=0){_fprintf(HEAP32[_stderr>>2],1744,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r27,r4));STACKTOP=r4;_exit(-1)}L100:do{if(HEAP32[r10>>2]>>>0>3){r27=0;while(1){HEAP32[r11>>2]=0;HEAP32[r11+4>>2]=0;r28=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4096,8,r8,0);HEAP32[r7>>2]=r28;if((r28|0)!=0){r3=73;break}r24=HEAP32[r11>>2];r9=HEAP32[r11+4>>2];r23=4;r25=0;r6=2;r18=0;r26=-1;r21=0;if(r24==1&r9==0){r29=1624}else if(r24==r6&r9==r18){r29=1608}else if(r24==r23&r9==r25){r29=1592}else if(r24==r26&r9==r21){r29=1688}else{r29=1576}_fprintf(HEAP32[_stderr>>2],1544,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r29,r4));STACKTOP=r4;r30=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4139,256,r22,0);HEAP32[r7>>2]=r30;r31=HEAP32[_stderr>>2];if((r30|0)!=0){r3=80;break}_fprintf(r31,1512,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r22,r4));STACKTOP=r4;HEAP32[r13>>2]=0;r32=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4098,4,r12,0);HEAP32[r7>>2]=r32;r33=HEAP32[_stderr>>2];if((r32|0)!=0){r3=82;break}r21=HEAP32[r13>>2];_fprintf(r33,1432,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;HEAP32[r14>>2]=0;r34=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4100,4,r20,0);HEAP32[r7>>2]=r34;r35=HEAP32[_stderr>>2];if((r34|0)!=0){r3=84;break}r21=HEAP32[r14>>2];_fprintf(r35,1384,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;r21=r27+1|0;if(r21>>>0<HEAP32[r10>>2]>>>2>>>0){r27=r21}else{break L100}}if(r3==73){_fprintf(HEAP32[_stderr>>2],1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r28,r4));STACKTOP=r4;_exit(-1)}else if(r3==80){_fprintf(r31,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r30,r4));STACKTOP=r4;_exit(-1)}else if(r3==82){_fprintf(r33,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r32,r4));STACKTOP=r4;_exit(-1)}else if(r3==84){_fprintf(r35,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}}while(0);HEAP32[2408>>2]=_clCreateCommandQueue(HEAP32[2272>>2],HEAP32[HEAP32[2264>>2]>>2],0,0,r7);r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1336,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r34=_fopen(872,816);if((r34|0)==0){_fprintf(HEAP32[_stderr>>2],784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r34,0,2)|0)!=0){_fprintf(HEAP32[_stderr>>2],752,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}r35=_ftell(r34);if((r35|0)==0){_fprintf(HEAP32[_stderr>>2],712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_rewind(r34);r3=_malloc(r35+1|0);r32=HEAP32[_stderr>>2];if((r3|0)==0){_fprintf(r32,664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_fprintf(r32,624,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r35,r4));STACKTOP=r4;r32=_fread(r3,1,r35,r34);if((r32|0)!=(r35|0)){_fprintf(HEAP32[_stderr>>2],568,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r32,r4));STACKTOP=r4;_exit(-1)}HEAP8[r3+r35|0]=0;_fclose(r34);HEAP32[r15>>2]=r3;r3=_clCreateProgramWithSource(HEAP32[2272>>2],1,r15,0,r7);HEAP32[2192>>2]=r3;r15=HEAP32[r7>>2];if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=_clBuildProgram(r3,1,HEAP32[2264>>2],1232,0,0);HEAP32[r7>>2]=r15;if((r15|0)==0){r3=_clCreateKernel(HEAP32[2192>>2],1056,r7);HEAP32[2256>>2]=r3;r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1e3,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}HEAP32[r17>>2]=0;r34=_clGetKernelWorkGroupInfo(r3,HEAP32[HEAP32[2264>>2]>>2],4528,4,r19,0);HEAP32[r7>>2]=r34;if((r34|0)==0){r19=HEAP32[r17>>2];HEAP32[8>>2]=r19;_fprintf(HEAP32[_stderr>>2],896,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_InitGlut(r1,r2,2024);_glutMainLoop();STACKTOP=r5;return 0}else{_fprintf(HEAP32[_stderr>>2],944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}else{_fprintf(HEAP32[_stderr>>2],1192,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;r15=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,0,0,r16);HEAP32[r7>>2]=r15;if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1144,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=HEAP32[r16>>2];r34=_malloc(r15+1|0);r5=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,r15,r34,0);HEAP32[r7>>2]=r5;if((r5|0)==0){HEAP8[r34+HEAP32[r16>>2]|0]=0;_fprintf(HEAP32[_stderr>>2],1072,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}else{_fprintf(HEAP32[_stderr>>2],1104,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}function _AllocateBuffers(){var r1,r2,r3,r4,r5;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2;r4=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r5=_malloc(r4);HEAP32[2200>>2]=r5;HEAP32[2208>>2]=_clCreateBuffer(HEAP32[2272>>2],33,0,r4,r5,r3);r5=HEAP32[r3>>2];if((r5|0)!=0){_fprintf(HEAP32[_stderr>>2],520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}HEAP32[2280>>2]=_clCreateBuffer(HEAP32[2272>>2],36,0,116,2288,r3);r5=HEAP32[r3>>2];if((r5|0)==0){STACKTOP=r2;return}else{_fprintf(HEAP32[_stderr>>2],472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}}function _SetEnableAccumulationKernelArg(r1,r2,r3){var r4,r5,r6,r7,r8;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+24|0;r6=r5;r7=r5+8;r8=r5+16;HEAP32[r6>>2]=r1;HEAPF32[r7>>2]=r2;HEAPF32[r8>>2]=r3;r3=_clSetKernelArg(HEAP32[2256>>2],2,4,r6);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],3,4,r7);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],4,4,r8);if((r3|0)==0){STACKTOP=r5;return}else{_fprintf(HEAP32[_stderr>>2],248,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[2356>>2]-HEAPF32[2344>>2];r2=HEAPF32[2360>>2]-HEAPF32[2348>>2];r3=HEAPF32[2364>>2]-HEAPF32[2352>>2];r4=1/Math.sqrt(r3*r3+(r1*r1+r2*r2));r5=r1*r4;HEAPF32[2368>>2]=r5;r1=r4*r2;HEAPF32[2372>>2]=r1;r2=r4*r3;HEAPF32[2376>>2]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+(r4*r4+r6*r6));r8=(HEAP32[2288>>2]>>>0)*.5134999752044678/(HEAP32[2292>>2]>>>0);r9=r8*r4*r3;HEAPF32[2380>>2]=r9;r4=r8*r3*r6;HEAPF32[2384>>2]=r4;r6=r8*r3*r7;HEAPF32[2388>>2]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+(r7*r7+r3*r3));HEAPF32[2392>>2]=r7*r5*.5134999752044678;HEAPF32[2396>>2]=r5*r3*.5134999752044678;HEAPF32[2400>>2]=r5*r2*.5134999752044678;return}function _displayFunc(){var r1,r2,r3,r4,r5;r1=STACKTOP;STACKTOP=STACKTOP+64|0;r2=r1;_UpdateRendering();_glClear(16384);r3=HEAP32[2200>>2];_glDisable(2896);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5889);r4=r2|0;HEAPF32[r4>>2]=2/(HEAP32[2288>>2]>>>0);r5=r2+4|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+20>>2]=2/(HEAP32[2292>>2]>>>0);r5=r2+24|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+40>>2]=1;HEAPF32[r2+44>>2]=0;HEAPF32[r2+48>>2]=-1;HEAPF32[r2+52>>2]=-1;HEAPF32[r2+56>>2]=0;HEAPF32[r2+60>>2]=1;_glLoadMatrixf(r4);_glMatrixMode(5888);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[3144>>2]);if((r3|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[2288>>2],HEAP32[2292>>2],6407,5126,r3)}_glBegin(5);_glTexCoord2i(0,0);_glVertex3f(0,0,0);_glTexCoord2i(0,1);_glVertex3f(0,HEAP32[2292>>2]>>>0,0);_glTexCoord2i(1,0);_glVertex3f(HEAP32[2288>>2]>>>0,0,0);_glTexCoord2i(1,1);_glVertex3f(HEAP32[2288>>2]>>>0,HEAP32[2292>>2]>>>0,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);_glEnable(3042);_glBlendFunc(770,771);r3=HEAP32[2288>>2]-66|0;_DrawJulia(1,r3,1,HEAPF32[2316>>2],HEAPF32[2320>>2]);r4=HEAP32[2288>>2]-66|0;_DrawJulia(2,r4,66,HEAPF32[2324>>2],HEAPF32[2328>>2]);_glDisable(3042);_glColor3f(1,1,1);r2=r3+(HEAPF32[2316>>2]+1.5)*64/3&-1;r3=(HEAPF32[2320>>2]+1.5)*64/3+1&-1;_glBegin(1);_glVertex2i(r2-4|0,r3);_glVertex2i(r2+4|0,r3);_glVertex2i(r2,r3-4|0);_glVertex2i(r2,r3+4|0);_glEnd();r3=r4+(HEAPF32[2324>>2]+1.5)*64/3&-1;r4=(HEAPF32[2328>>2]+1.5)*64/3+66&-1;_glBegin(1);_glVertex2i(r3-4|0,r4);_glVertex2i(r3+4|0,r4);_glVertex2i(r3,r4-4|0);_glVertex2i(r3,r4+4|0);_glEnd();_glFlush();STACKTOP=r1;return}function _DrawJulia(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r6=STACKTOP;STACKTOP=STACKTOP+65536|0;r7=r6;r8=0;while(1){r9=(r8|0)*.046875-1.5;r10=0;while(1){r11=0;r12=r9;r13=(r10|0)*.046875-1.5;while(1){r14=r13*r13;r15=r12*r12;if(r15+r14>4){r16=r11;break}r17=r11+1|0;if((r17|0)<64){r11=r17;r12=r12*r13*2+r5;r13=r14-r15+r4}else{r16=r17;break}}HEAPF32[r7+(r10<<10)+(r8<<4)>>2]=(r16|0)*.015625;HEAPF32[r7+(r10<<10)+(r8<<4)+4>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+8>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+12>>2]=.5;r13=r10+1|0;if((r13|0)<64){r10=r13}else{break}}r10=r8+1|0;if((r10|0)<64){r8=r10}else{break}}_glEnable(3553);_glBindTexture(3553,HEAP32[3144+(r1<<2)>>2]);_glTexSubImage2D(3553,0,0,0,64,64,6408,5126,r7);_glBegin(5);_glTexCoord2i(0,0);r7=r2|0;r1=r3|0;_glVertex3f(r7,r1,0);_glTexCoord2i(0,1);r8=r3+64|0;_glVertex3f(r7,r8,0);_glTexCoord2i(1,0);r7=r2+64|0;_glVertex3f(r7,r1,0);_glTexCoord2i(1,1);_glVertex3f(r7,r8,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);STACKTOP=r6;return}function _reshapeFunc(r1,r2){HEAP32[2288>>2]=r1;HEAP32[2292>>2]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(-.5,(HEAP32[2288>>2]>>>0)-.5,-.5,(HEAP32[2292>>2]>>>0)-.5,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105;r4=0;switch(r1|0){case 101:{r5=HEAPF32[2356>>2];r6=HEAPF32[2360>>2];r7=HEAPF32[2364>>2];r8=HEAPF32[2344>>2];r9=r5-r8;r10=HEAPF32[2348>>2];r11=r6-r10;r12=HEAPF32[2352>>2];r13=r7-r12;r14=r11;r15=r14*.9993908270285325;r16=r13;r17=r16*-.03489949643226648;r18=r15+r17;r19=r18;r20=-r19;r21=r20;r22=r21*-.03489949643226648;r23=r16*.9993908270285325;r24=r23+r22;r25=r24;r26=r8+r9;r27=r10+r19;r28=r12+r25;HEAPF32[2356>>2]=r26;HEAPF32[2360>>2]=r27;HEAPF32[2364>>2]=r28;break};case 103:{r29=HEAPF32[2356>>2];r30=HEAPF32[2360>>2];r31=HEAPF32[2364>>2];r32=HEAPF32[2344>>2];r33=r29-r32;r34=HEAPF32[2348>>2];r35=r30-r34;r36=HEAPF32[2352>>2];r37=r31-r36;r38=r35;r39=r38*.9993908270285325;r40=r37;r41=r40*.03489949643226648;r42=r39+r41;r43=r42;r44=-r43;r45=r44;r46=r45*.03489949643226648;r47=r40*.9993908270285325;r48=r47+r46;r49=r48;r50=r32+r33;r51=r34+r43;r52=r36+r49;HEAPF32[2356>>2]=r50;HEAPF32[2360>>2]=r51;HEAPF32[2364>>2]=r52;break};case 100:{r53=HEAPF32[2356>>2];r54=HEAPF32[2360>>2];r55=HEAPF32[2364>>2];r56=HEAPF32[2344>>2];r57=r53-r56;r58=HEAPF32[2348>>2];r59=r54-r58;r60=HEAPF32[2352>>2];r61=r55-r60;r62=r57;r63=r62*.9993908270285325;r64=r61;r65=r64*-.03489949643226648;r66=r63-r65;r67=r66;r68=r67;r69=r68*-.03489949643226648;r70=r64*.9993908270285325;r71=r70+r69;r72=r71;r73=r56+r67;r74=r58+r59;r75=r60+r72;HEAPF32[2356>>2]=r73;HEAPF32[2360>>2]=r74;HEAPF32[2364>>2]=r75;break};case 102:{r76=HEAPF32[2356>>2];r77=HEAPF32[2360>>2];r78=HEAPF32[2364>>2];r79=HEAPF32[2344>>2];r80=r76-r79;r81=HEAPF32[2348>>2];r82=r77-r81;r83=HEAPF32[2352>>2];r84=r78-r83;r85=r80;r86=r85*.9993908270285325;r87=r84;r88=r87*.03489949643226648;r89=r86-r88;r90=r89;r91=r90;r92=r91*.03489949643226648;r93=r87*.9993908270285325;r94=r93+r92;r95=r94;r96=r79+r90;r97=r81+r82;r98=r83+r95;HEAPF32[2356>>2]=r96;HEAPF32[2360>>2]=r97;HEAPF32[2364>>2]=r98;break};case 104:{r99=HEAPF32[2360>>2];r100=r99+.5;HEAPF32[2360>>2]=r100;break};case 105:{r101=HEAPF32[2360>>2];r102=r101-.5;HEAPF32[2360>>2]=r102;break};default:{}}_ReInit(0);_glutPostRedisplay();r103=_emscripten_get_now();r104=r103|0;r105=r104/1e3;HEAPF64[64>>3]=r105;return}function _mouseFunc(r1,r2,r3,r4){var r5,r6,r7,r8;L199:do{if((r1|0)==0){if((r2|0)==1){HEAP8[56]=0;HEAP8[24]=0;HEAP8[40]=0;break}else if((r2|0)!=0){break}HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[56]=1;if((_glutGetModifiers()|0)==1){HEAP8[24]=1;break}HEAP8[24]=0;r5=HEAP32[2292>>2]-r4|0;r6=HEAP32[2288>>2];r7=r6-66|0;do{if(!((r7|0)>(r3|0)|(r6-2|0)<(r3|0))){r8=r5-2|0;if(r8>>>0<65){HEAP8[40]=1;HEAPF32[2316>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}r8=r5-67|0;if(r8>>>0>=65){break}HEAP8[40]=1;HEAPF32[2324>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}}while(0);HEAP8[40]=0}else if((r1|0)==2){if((r2|0)==0){HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[48]=1;break}else if((r2|0)==1){HEAP8[48]=0;break}else{break}}}while(0);HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105,r106,r107,r108,r109,r110,r111,r112,r113,r114,r115,r116,r117,r118,r119,r120,r121,r122,r123,r124,r125,r126,r127,r128,r129,r130,r131,r132,r133,r134,r135,r136,r137,r138,r139,r140,r141,r142,r143,r144,r145,r146,r147,r148,r149,r150,r151,r152,r153,r154,r155,r156,r157,r158,r159,r160,r161,r162,r163,r164,r165,r166,r167,r168,r169,r170,r171,r172,r173,r174,r175,r176,r177,r178,r179,r180,r181,r182,r183,r184,r185,r186,r187,r188,r189,r190,r191,r192,r193,r194,r195,r196,r197,r198,r199,r200,r201;r4=0;r5=0;r6=STACKTOP;r7=r1&255;L220:do{switch(r7|0){case 112:{r8=_fopen(232,1840);r9=(r8|0)==0;if(r9){r10=HEAP32[_stderr>>2];r11=_fwrite(1472,37,1,r10);break L220}r12=HEAP32[2288>>2];r13=HEAP32[2292>>2];r14=_fprintf(r8,1040,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r12,HEAP32[r5+8>>2]=r13,HEAP32[r5+16>>2]=255,r5));STACKTOP=r5;r15=HEAP32[2292>>2];r16=(r15|0)==0;if(!r16){r17=HEAP32[2288>>2];r18=0;r19=r17;r20=r15;while(1){r21=(r19|0)==0;if(r21){r22=0;r23=r20}else{r24=~r18;r25=0;r26=r19;r27=r20;while(1){r28=r27+r24|0;r29=Math.imul(r28,r26)|0;r30=r29+r25|0;r31=r30*3&-1;r32=HEAP32[2200>>2];r33=r32+(r31<<2)|0;r34=HEAPF32[r33>>2];r35=r34<0;do{if(r35){r36=0}else{r37=r34>1;if(r37){r36=255;break}r38=r34*255;r39=r38+.5;r40=r39&-1;r36=r40}}while(0);r41=r31+1|0;r42=r32+(r41<<2)|0;r43=HEAPF32[r42>>2];r44=r43<0;do{if(r44){r45=0}else{r46=r43>1;if(r46){r45=255;break}r47=r43*255;r48=r47+.5;r49=r48&-1;r45=r49}}while(0);r50=r31+2|0;r51=r32+(r50<<2)|0;r52=HEAPF32[r51>>2];r53=r52<0;do{if(r53){r54=0}else{r55=r52>1;if(r55){r54=255;break}r56=r52*255;r57=r56+.5;r58=r57&-1;r54=r58}}while(0);r59=_fprintf(r8,608,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r36,HEAP32[r5+8>>2]=r45,HEAP32[r5+16>>2]=r54,r5));STACKTOP=r5;r60=r25+1|0;r61=HEAP32[2288>>2];r62=r60>>>0<r61>>>0;r63=HEAP32[2292>>2];if(r62){r25=r60;r26=r61;r27=r63}else{r22=r61;r23=r63;break}}}r64=r18+1|0;r65=r64>>>0<r23>>>0;if(r65){r18=r64;r19=r22;r20=r23}else{break}}}r66=_fclose(r8);break};case 27:{r67=HEAP32[_stderr>>2];r68=_fwrite(224,6,1,r67);_exit(0);break};case 97:{r69=HEAPF32[2380>>2];r70=HEAPF32[2384>>2];r71=HEAPF32[2388>>2];r72=r69*r69;r73=r70*r70;r74=r72+r73;r75=r71*r71;r76=r74+r75;r77=r76;r78=Math.sqrt(r77);r79=1/r78;r80=r79;r81=r69*r80;r82=r70*r80;r83=r71*r80;r84=r81*-.5;r85=r82*-.5;r86=r83*-.5;r87=HEAPF32[2344>>2];r88=r87+r84;HEAPF32[2344>>2]=r88;r89=HEAPF32[2348>>2];r90=r89+r85;HEAPF32[2348>>2]=r90;r91=HEAPF32[2352>>2];r92=r91+r86;HEAPF32[2352>>2]=r92;r93=HEAPF32[2356>>2];r94=r84+r93;HEAPF32[2356>>2]=r94;r95=HEAPF32[2360>>2];r96=r85+r95;HEAPF32[2360>>2]=r96;r97=HEAPF32[2364>>2];r98=r86+r97;HEAPF32[2364>>2]=r98;break};case 100:{r99=HEAPF32[2380>>2];r100=HEAPF32[2384>>2];r101=HEAPF32[2388>>2];r102=r99*r99;r103=r100*r100;r104=r102+r103;r105=r101*r101;r106=r104+r105;r107=r106;r108=Math.sqrt(r107);r109=1/r108;r110=r109;r111=r99*r110;r112=r100*r110;r113=r101*r110;r114=r111*.5;r115=r112*.5;r116=r113*.5;r117=HEAPF32[2344>>2];r118=r117+r114;HEAPF32[2344>>2]=r118;r119=HEAPF32[2348>>2];r120=r119+r115;HEAPF32[2348>>2]=r120;r121=HEAPF32[2352>>2];r122=r121+r116;HEAPF32[2352>>2]=r122;r123=HEAPF32[2356>>2];r124=r114+r123;HEAPF32[2356>>2]=r124;r125=HEAPF32[2360>>2];r126=r115+r125;HEAPF32[2360>>2]=r126;r127=HEAPF32[2364>>2];r128=r116+r127;HEAPF32[2364>>2]=r128;break};case 119:{r129=HEAPF32[2368>>2];r130=HEAPF32[2372>>2];r131=HEAPF32[2376>>2];r132=r129*.5;r133=r130*.5;r134=r131*.5;r135=HEAPF32[2344>>2];r136=r132+r135;HEAPF32[2344>>2]=r136;r137=HEAPF32[2348>>2];r138=r133+r137;HEAPF32[2348>>2]=r138;r139=HEAPF32[2352>>2];r140=r134+r139;HEAPF32[2352>>2]=r140;r141=HEAPF32[2356>>2];r142=r132+r141;HEAPF32[2356>>2]=r142;r143=HEAPF32[2360>>2];r144=r133+r143;HEAPF32[2360>>2]=r144;r145=HEAPF32[2364>>2];r146=r134+r145;HEAPF32[2364>>2]=r146;break};case 115:{r147=HEAPF32[2368>>2];r148=HEAPF32[2372>>2];r149=HEAPF32[2376>>2];r150=r147*-.5;r151=r148*-.5;r152=r149*-.5;r153=HEAPF32[2344>>2];r154=r150+r153;HEAPF32[2344>>2]=r154;r155=HEAPF32[2348>>2];r156=r151+r155;HEAPF32[2348>>2]=r156;r157=HEAPF32[2352>>2];r158=r152+r157;HEAPF32[2352>>2]=r158;r159=HEAPF32[2356>>2];r160=r150+r159;HEAPF32[2356>>2]=r160;r161=HEAPF32[2360>>2];r162=r151+r161;HEAPF32[2360>>2]=r162;r163=HEAPF32[2364>>2];r164=r152+r163;HEAPF32[2364>>2]=r164;break};case 114:{r165=HEAPF32[2348>>2];r166=r165+.5;HEAPF32[2348>>2]=r166;r167=HEAPF32[2360>>2];r168=r167+.5;HEAPF32[2360>>2]=r168;break};case 102:{r169=HEAPF32[2348>>2];r170=r169-.5;HEAPF32[2348>>2]=r170;r171=HEAPF32[2360>>2];r172=r171-.5;HEAPF32[2360>>2]=r172;break};case 108:{r173=HEAP32[2304>>2];r174=(r173|0)==0;r175=r174&1;HEAP32[2304>>2]=r175;break};case 104:{r176=HEAP32[32>>2];r177=(r176|0)==0;r178=r177&1;HEAP32[32>>2]=r178;break};case 49:{r179=HEAPF32[2312>>2];r180=r179*.75;HEAPF32[2312>>2]=r180;break};case 50:{r181=HEAPF32[2312>>2];r182=r181*1.3333333730697632;HEAPF32[2312>>2]=r182;break};case 51:{r183=HEAP32[2308>>2];r184=r183-1|0;r185=(r184|0)==0;r186=r185?1:r184;HEAP32[2308>>2]=r186;break};case 52:{r187=HEAP32[2308>>2];r188=r187+1|0;r189=r188>>>0>12;r190=r189?12:r188;HEAP32[2308>>2]=r190;break};case 53:{r191=HEAP32[2296>>2];r192=r191-1|0;r193=(r192|0)<1;r194=r193?1:r192;HEAP32[2296>>2]=r194;break};case 54:{r195=HEAP32[2296>>2];r196=r195+1|0;r197=(r196|0)>5;r198=r197?5:r196;HEAP32[2296>>2]=r198;break};default:{}}}while(0);_ReInit(0);_glutPostRedisplay();r199=_emscripten_get_now();r200=r199|0;r201=r200/1e3;HEAPF64[64>>3]=r201;STACKTOP=r6;return}function _motionFunc(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;L264:do{if(HEAP8[56]){r3=HEAP32[2292>>2]-r2|0;r4=HEAP32[2288>>2];r5=r4-66|0;r6=HEAP8[40];do{if((r5|0)>(r1|0)|r6^1|(r4-2|0)<(r1|0)){if(r6){break L264}}else{r7=r3-2|0;if(r7>>>0<65){HEAPF32[2316>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}r7=r3-67|0;if(r7>>>0<65){HEAPF32[2324>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}else{if(r6){break L264}else{break}}}}while(0);r6=r1-HEAP32[2248>>2]|0;r5=r2-HEAP32[2240>>2]|0;if(HEAP8[24]){r3=HEAPF32[2344>>2];r4=HEAPF32[2348>>2];r7=HEAPF32[2360>>2]-r4;r8=HEAPF32[2352>>2];r9=HEAPF32[2364>>2]-r8;r10=HEAPF32[2356>>2]-r3;r11=(r6|0)*.10000000149011612*.03490658503988659;r12=Math.cos(r11);r13=r9;r9=Math.sin(r11);r11=r10*r12-r13*r9;r10=(r5|0)*.10000000149011612*.03490658503988659;r14=Math.cos(r10);r15=r8+(r12*r13+r9*r11)-r8;r9=Math.sin(r10);r10=(r4+r7-r4)*r14+r9*r15;HEAPF32[2356>>2]=r3+(r3+r11-r3);HEAPF32[2360>>2]=r4+r10;HEAPF32[2364>>2]=r8+(r14*r15+r9*-r10)}else{HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;r10=HEAPF32[2352>>2];r9=HEAPF32[2344>>2];r15=(r6|0)*.20000000298023224*.03490658503988659;r6=Math.cos(r15);r14=r10;r10=Math.sin(r15);HEAPF32[2344>>2]=r9*r6-r14*r10;r15=HEAPF32[2348>>2];r8=(r5|0)*.20000000298023224*.03490658503988659;r5=Math.cos(r8);r4=r14*r6+r9*r10;r10=Math.sin(r8);HEAPF32[2348>>2]=r15*r5+r10*r4;HEAPF32[2352>>2]=-r15*r10+r5*r4}HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0)}else{if(HEAP8[48]){r4=r1-HEAP32[2248>>2]|0;r5=HEAPF32[2336>>2];r10=HEAPF32[2340>>2];r15=(r2-HEAP32[2240>>2]|0)*-.20000000298023224*.03490658503988659;r8=Math.cos(r15);r9=r10;r10=Math.sin(r15);HEAPF32[2336>>2]=r5*r8+r9*r10;r15=HEAPF32[2332>>2];r6=(r4|0)*-.20000000298023224*.03490658503988659;r4=Math.cos(r6);r14=r9*r8+ -r5*r10;r10=Math.sin(r6);HEAPF32[2332>>2]=r15*r4-r10*r14;HEAPF32[2340>>2]=r15*r10+r4*r14;HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0);break}else{return}}}while(0);_glutPostRedisplay();HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _timerFunc(r1){r1=(_emscripten_get_now()|0)/1e3;do{if(r1-HEAPF64[64>>3]>5){if((HEAP32[2300>>2]|0)==0){break}HEAP32[2300>>2]=0;_glutPostRedisplay()}else{HEAP32[2300>>2]=1}}while(0);_glutTimerFunc(1e3,14,0);return}function _InitGlut(r1,r2,r3){var r4,r5,r6;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+8|0;r6=r5;HEAP32[r6>>2]=r1;HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;_glutInitWindowSize(HEAP32[2288>>2],HEAP32[2292>>2]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r6,r2);_glutCreateWindow(r3);_glutReshapeFunc(6);_glutKeyboardFunc(8);_glutSpecialFunc(4);_glutDisplayFunc(10);_glutMouseFunc(12);_glutMotionFunc(2);_glutTimerFunc(1e3,14,0);_glMatrixMode(5889);r3=HEAP32[2288>>2];r2=HEAP32[2292>>2];_glGenTextures(3,3144);_printf(184,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r3,HEAP32[r4+8>>2]=r2,r4));STACKTOP=r4;_printf(120,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_printf(80,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_glActiveTexture(33985);_glGenTextures(3,3144);_glBindTexture(3553,HEAP32[3144>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6407,r3,r2,0,6407,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3148>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3152>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[3184>>2]=0;HEAPF32[3188>>2]=0;r2=HEAP32[2288>>2]>>>0;HEAPF32[3176>>2]=r2;HEAPF32[3180>>2]=0;HEAPF32[3168>>2]=r2;r2=HEAP32[2292>>2]>>>0;HEAPF32[3172>>2]=r2;HEAPF32[3160>>2]=0;HEAPF32[3164>>2]=r2;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,2160);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,3160);STACKTOP=r5;return}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[2672>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2712+(r8<<2)|0;r10=2712+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[2680>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2712+(r16<<2)|0;r13=2712+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[2680>>2];if((r12|0)!=0){r17=HEAP32[2692>>2];r4=r12>>>3;r12=r4<<1;r6=2712+(r12<<2)|0;r11=HEAP32[2672>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[2672>>2]=r11|r8;r19=r6;r20=2712+(r12+2<<2)|0}else{r4=2712+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[2688>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[2680>>2]=r13;HEAP32[2692>>2]=r5;r14=r9;return r14}r12=HEAP32[2676>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2976+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[2688>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L371:do{if((r5|0)!=0){r6=r4+28|0;r9=2976+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r6>>2]);break L371}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L371}}}while(0);if(r22>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[2680>>2];if((r6|0)!=0){r5=HEAP32[2692>>2];r9=r6>>>3;r6=r9<<1;r17=2712+(r6<<2)|0;r11=HEAP32[2672>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[2672>>2]=r11|r7;r25=r17;r26=2712+(r6+2<<2)|0}else{r9=2712+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[2688>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[2680>>2]=r16;HEAP32[2692>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[2676>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2976+(r27<<2)>>2];L419:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L419}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2976+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[2680>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[2688>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L469:do{if((r5|0)!=0){r9=r37+28|0;r13=2976+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r9>>2]);break L469}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L469}}}while(0);if(r38>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2712+(r5<<2)|0;r18=HEAP32[2672>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[2672>>2]=r18|r10;r41=r13;r42=2712+(r5+2<<2)|0}else{r9=2712+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[2688>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2976+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[2676>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[2676>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=368;break}else{r12=r12<<1;r13=r10}}if(r2==368){if(r45>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[2688>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[2680>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[2692>>2];if(r45>>>0>15){r44=r36;HEAP32[2692>>2]=r44+r15;HEAP32[2680>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[2680>>2]=0;HEAP32[2692>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[2684>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[2684>>2]=r45;r36=HEAP32[2696>>2];r37=r36;HEAP32[2696>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[2216>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[2224>>2]=r36;HEAP32[2220>>2]=r36;HEAP32[2228>>2]=-1;HEAP32[2232>>2]=-1;HEAP32[2236>>2]=0;HEAP32[3116>>2]=0;HEAP32[2216>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[2224>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[3112>>2];do{if((r41|0)!=0){r42=HEAP32[3104>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L561:do{if((HEAP32[3116>>2]&4|0)==0){r41=HEAP32[2696>>2];L563:do{if((r41|0)==0){r2=398}else{r38=r41;r42=3120;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=398;break L563}else{r42=r39}}if((r42|0)==0){r2=398;break}r38=r44-HEAP32[2684>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=407}}while(0);do{if(r2==398){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[2220>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[3104>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[3112>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=407}}while(0);L583:do{if(r2==407){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=418;break L561}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[2224>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L583}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=418;break L561}}}while(0);HEAP32[3116>>2]=HEAP32[3116>>2]|4;r57=r48;r2=415}else{r57=0;r2=415}}while(0);do{if(r2==415){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=418}}}while(0);do{if(r2==418){r57=HEAP32[3104>>2]+r54|0;HEAP32[3104>>2]=r57;if(r57>>>0>HEAP32[3108>>2]>>>0){HEAP32[3108>>2]=r57}r57=HEAP32[2696>>2];L603:do{if((r57|0)==0){r45=HEAP32[2688>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[2688>>2]=r55}HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[2708>>2]=HEAP32[2216>>2];HEAP32[2704>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2712+(r50<<2)|0;HEAP32[2712+(r50+3<<2)>>2]=r56;HEAP32[2712+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[2696>>2]=r55+r58;HEAP32[2684>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2]}else{r45=3120;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=430;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==430){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[2696>>2];r50=HEAP32[2684>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[2696>>2]=r51+r62;HEAP32[2684>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];break L603}}while(0);if(r55>>>0<HEAP32[2688>>2]>>>0){HEAP32[2688>>2]=r55}r45=r55+r54|0;r50=3120;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=440;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==440){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[2696>>2]|0)){r36=HEAP32[2684>>2]+r37|0;HEAP32[2684>>2]=r36;HEAP32[2696>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[2692>>2]|0)){r36=HEAP32[2680>>2]+r37|0;HEAP32[2680>>2]=r36;HEAP32[2692>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L648:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2712+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2976+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r42>>2]);break L648}else{if(r13>>>0<HEAP32[2688>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L648}}}while(0);if(r67>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2712+(r47<<2)|0;r42=HEAP32[2672>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[2672>>2]=r42|r13;r72=r49;r73=2712+(r47+2<<2)|0}else{r36=2712+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[2688>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[2676>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[2676>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=513;break}else{r43=r43<<1;r49=r13}}if(r2==513){if(r76>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[2688>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=3120;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[2696>>2]=r55+r81;HEAP32[2684>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[3120>>2];HEAP32[r48+4>>2]=HEAP32[3124>>2];HEAP32[r48+8>>2]=HEAP32[3128>>2];HEAP32[r48+12>>2]=HEAP32[3132>>2];HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[3128>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2712+(r37<<2)|0;r45=HEAP32[2672>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[2672>>2]=r45|r13;r82=r51;r83=2712+(r37+2<<2)|0}else{r48=2712+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[2688>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[2676>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[2676>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=548;break}else{r43=r43<<1;r51=r13}}if(r2==548){if(r86>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[2688>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[2684>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[2684>>2]=r52;r57=HEAP32[2696>>2];r43=r57;HEAP32[2696>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[2688>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L820:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[2692>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[2680>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2712+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2976+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L820}else{if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L820}}}while(0);if(r27>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[2696>>2]|0)){r28=HEAP32[2684>>2]+r18|0;HEAP32[2684>>2]=r28;HEAP32[2696>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[2692>>2]|0)){return}HEAP32[2692>>2]=0;HEAP32[2680>>2]=0;return}if((r10|0)==(HEAP32[2692>>2]|0)){r28=HEAP32[2680>>2]+r18|0;HEAP32[2680>>2]=r28;HEAP32[2692>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L922:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2712+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2976+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r20>>2]);break L922}else{if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L922}}}while(0);if(r31>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[2692>>2]|0)){r34=r28;break}HEAP32[2680>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2712+(r4<<2)|0;r27=HEAP32[2672>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[2672>>2]=r27|r31;r35=r5;r36=2712+(r4+2<<2)|0}else{r18=2712+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[2688>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2976+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[2676>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[2676>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=725;break}else{r27=r27<<1;r36=r31}}if(r2==725){if(r39>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[2688>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[2704>>2]-1|0;HEAP32[2704>>2]=r17;if((r17|0)==0){r40=3128}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[2704>>2]=-1;return}
+function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27;r1=0;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+32|0;r4=r3;r5=r3+24;r6=_WallClockTime();r7=_clSetKernelArg(HEAP32[2256>>2],0,4,2208);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2120,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=_clSetKernelArg(HEAP32[2256>>2],1,4,2280);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=Math.imul(HEAP32[2292>>2],HEAP32[2288>>2])|0;r8=r3+8|0;HEAP32[r8>>2]=r7;r9=HEAP32[8>>2];if(((r7>>>0)%(r9>>>0)&-1|0)!=0){HEAP32[r8>>2]=Math.imul(((r7>>>0)/(r9>>>0)&-1)+1|0,r9)|0}r7=r3+16|0;HEAP32[r7>>2]=r9;r9=HEAP32[2296>>2];L11:do{if((HEAP32[2300>>2]|0)==0&(r9|0)>1){if((r9|0)>0){r10=0;r11=r9}else{break}L13:while(1){if((r11|0)>0){r12=(r10|0)+.5;r13=0;r14=r11;while(1){r15=r14|0;r16=((r13|0)+.5)/r15;r17=r12/r15;do{if((r13|r10|0)==0){_SetEnableAccumulationKernelArg(0,r16,r17);r18=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,0);if((r18|0)!=0){r1=14;break L13}}else{r15=r14-1|0;_SetEnableAccumulationKernelArg(1,r16,r17);r19=HEAP32[2408>>2];r20=HEAP32[2256>>2];if(!((r13|0)==(r15|0)&(r10|0)==(r15|0))){r21=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,0);if((r21|0)==0){break}else{r1=20;break L13}}r22=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,r4);if((r22|0)!=0){r1=17;break L13}_clFinish(HEAP32[2408>>2])}}while(0);r17=r13+1|0;r16=HEAP32[2296>>2];if((r17|0)<(r16|0)){r13=r17;r14=r16}else{r23=r16;break}}}else{r23=r11}r14=r10+1|0;if((r14|0)<(r23|0)){r10=r14;r11=r23}else{break L11}}if(r1==14){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r18,r2));STACKTOP=r2;_exit(-1)}else if(r1==17){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r22,r2));STACKTOP=r2;_exit(-1)}else if(r1==20){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}}else{_SetEnableAccumulationKernelArg(0,0,0);r14=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,r4);if((r14|0)==0){_clFinish(HEAP32[2408>>2]);break}else{_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r14,r2));STACKTOP=r2;_exit(-1)}}}while(0);r4=HEAP32[2408>>2];r7=HEAP32[2208>>2];r8=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r21=_clEnqueueReadBuffer(r4,r7,1,0,r8,HEAP32[2200>>2],0,0,r5);if((r21|0)!=0){_fprintf(HEAP32[_stderr>>2],1640,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);r21=HEAP32[2296>>2];do{if((HEAP32[2300>>2]|0)==0&(r21|0)>1){r5=1/(Math.imul(r21,r21)|0);if((Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)==0){break}else{r24=0}while(1){r8=HEAP32[2200>>2]+(r24<<2)|0;HEAPF32[r8>>2]=r5*HEAPF32[r8>>2];r8=r24+1|0;if(r8>>>0<(Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)>>>0){r24=r8}else{break}}}}while(0);r24=_WallClockTime()-r6;r6=((Math.imul(HEAP32[2288>>2],HEAP32[2292>>2])|0)>>>0)/r24;r21=HEAP32[2296>>2];if(!((HEAP32[2300>>2]|0)==0&(r21|0)>1)){r25=r6;r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}r25=r6*(Math.imul(r21,r21)|0);r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}function _ReInit(r1){var r2,r3;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+8|0;if((r1|0)==0){_UpdateCamera();r1=_clEnqueueWriteBuffer(HEAP32[2408>>2],HEAP32[2280>>2],1,0,116,2288,0,0,r3);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],824,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);STACKTOP=r3;return}r1=_clReleaseMemObject(HEAP32[2208>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],424,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}r1=_clReleaseMemObject(HEAP32[2280>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],368,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_free(HEAP32[2200>>2]);_UpdateCamera();_AllocateBuffers();STACKTOP=r3;return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+448|0;r6=r5;r7=r5+8;r8=r5+16;r9=r5+120;r10=r5+136;r11=r5+144;r12=r5+152;r13=r5+408;r14=r5+416;r15=r5+424;r16=r5+432;r17=r5+440;if((r1|0)<1|(r2|0)==0){r18=1}else{r19=0;r20=1;while(1){r21=HEAP32[r2+(r19<<2)>>2];do{if((r21|0)==0){r22=r20}else{if((_strstr(r21,416)|0)!=0){r22=0;break}r22=(_strstr(r21,216)|0)==0?r20:1}}while(0);r21=r19+1|0;if((r21|0)<(r1|0)){r19=r21;r20=r22}else{r18=r22;break}}}_printf(152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=(r18|0)==1?112:72,r4));STACKTOP=r4;HEAP8[16]=(r18|0)==0;HEAP32[2288>>2]=512;HEAP32[2292>>2]=512;HEAP32[2304>>2]=1;HEAP32[2296>>2]=2;HEAP32[2300>>2]=1;HEAP32[2308>>2]=6;HEAPF32[2312>>2]=.0010000000474974513;HEAPF32[2332>>2]=5;HEAPF32[2336>>2]=10;HEAPF32[2340>>2]=15;HEAPF32[2316>>2]=-.18799999356269836;HEAPF32[2320>>2]=.4129999876022339;HEAPF32[2324>>2]=-.2630000114440918;HEAPF32[2328>>2]=.6000000238418579;HEAPF32[2344>>2]=1;HEAPF32[2348>>2]=2;HEAPF32[2352>>2]=8;HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;_UpdateCamera();r18=r8|0;r8=r11;r22=r12|0;r12=r13;r20=r14;r19=r17;r21=_clGetPlatformIDs(0,0,r6);HEAP32[r7>>2]=r21;if((r21|0)!=0){_fwrite(1992,31,1,HEAP32[_stderr>>2]);_exit(-1)}r21=HEAP32[r6>>2];if((r21|0)==0){r23=0}else{r24=_malloc(r21<<2);r25=r24;r26=_clGetPlatformIDs(r21,r25,0);HEAP32[r7>>2]=r26;if((r26|0)!=0){_fwrite(1952,34,1,HEAP32[_stderr>>2]);_exit(-1)}L81:do{if((HEAP32[r6>>2]|0)!=0){r26=0;while(1){HEAP32[r7>>2]=_clGetPlatformInfo(HEAP32[r25+(r26<<2)>>2],2307,100,r18,0);r21=_clGetPlatformIDs(HEAP32[r6>>2],r25,0);HEAP32[r7>>2]=r21;r27=HEAP32[_stderr>>2];if((r21|0)!=0){break}_fprintf(r27,1928,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r26,HEAP32[r4+8>>2]=r18,r4));STACKTOP=r4;r21=r26+1|0;if(r21>>>0<HEAP32[r6>>2]>>>0){r26=r21}else{break L81}}_fwrite(1952,34,1,r27);_exit(-1)}}while(0);r27=HEAP32[r25>>2];_free(r24);r23=r27}r27=r9|0;HEAP32[r27>>2]=4228;HEAP32[r9+4>>2]=r23;HEAP32[r9+8>>2]=0;r9=HEAP8[16];r24=_clCreateContextFromType((r23|0)==0?0:r27,r9?2:4,r9?0:0,0,0,r7);HEAP32[2272>>2]=r24;if((HEAP32[r7>>2]|0)!=0){_fwrite(1896,30,1,HEAP32[_stderr>>2]);_exit(-1)}r9=_clGetContextInfo(r24,4225,0,0,r10);HEAP32[r7>>2]=r9;if((r9|0)!=0){_fprintf(HEAP32[_stderr>>2],1848,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r9,r4));STACKTOP=r4;_exit(-1)}r9=HEAP32[r10>>2];r24=_malloc(r9);HEAP32[2264>>2]=r24;if((r24|0)==0){_fprintf(HEAP32[_stderr>>2],1784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=0,r4));STACKTOP=r4;_exit(-1)}r27=_clGetContextInfo(HEAP32[2272>>2],4225,r9,r24,0);HEAP32[r7>>2]=r27;if((r27|0)!=0){_fprintf(HEAP32[_stderr>>2],1744,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r27,r4));STACKTOP=r4;_exit(-1)}L100:do{if(HEAP32[r10>>2]>>>0>3){r27=0;while(1){HEAP32[r11>>2]=0;HEAP32[r11+4>>2]=0;r28=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4096,8,r8,0);HEAP32[r7>>2]=r28;if((r28|0)!=0){r3=73;break}r24=HEAP32[r11>>2];r9=HEAP32[r11+4>>2];r23=4;r25=0;r6=2;r18=0;r26=-1;r21=0;if(r24==1&r9==0){r29=1624}else if(r24==r6&r9==r18){r29=1608}else if(r24==r23&r9==r25){r29=1592}else if(r24==r26&r9==r21){r29=1688}else{r29=1576}_fprintf(HEAP32[_stderr>>2],1544,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r29,r4));STACKTOP=r4;r30=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4139,256,r22,0);HEAP32[r7>>2]=r30;r31=HEAP32[_stderr>>2];if((r30|0)!=0){r3=80;break}_fprintf(r31,1512,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r22,r4));STACKTOP=r4;HEAP32[r13>>2]=0;r32=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4098,4,r12,0);HEAP32[r7>>2]=r32;r33=HEAP32[_stderr>>2];if((r32|0)!=0){r3=82;break}r21=HEAP32[r13>>2];_fprintf(r33,1432,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;HEAP32[r14>>2]=0;r34=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4100,4,r20,0);HEAP32[r7>>2]=r34;r35=HEAP32[_stderr>>2];if((r34|0)!=0){r3=84;break}r21=HEAP32[r14>>2];_fprintf(r35,1384,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;r21=r27+1|0;if(r21>>>0<HEAP32[r10>>2]>>>2>>>0){r27=r21}else{break L100}}if(r3==73){_fprintf(HEAP32[_stderr>>2],1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r28,r4));STACKTOP=r4;_exit(-1)}else if(r3==80){_fprintf(r31,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r30,r4));STACKTOP=r4;_exit(-1)}else if(r3==82){_fprintf(r33,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r32,r4));STACKTOP=r4;_exit(-1)}else if(r3==84){_fprintf(r35,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}}while(0);HEAP32[2408>>2]=_clCreateCommandQueue(HEAP32[2272>>2],HEAP32[HEAP32[2264>>2]>>2],0,0,r7);r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1336,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r34=_fopen(872,816);if((r34|0)==0){_fprintf(HEAP32[_stderr>>2],784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r34,0,2)|0)!=0){_fprintf(HEAP32[_stderr>>2],752,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}r35=_ftell(r34);if((r35|0)==0){_fprintf(HEAP32[_stderr>>2],712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_rewind(r34);r3=_malloc(r35+1|0);r32=HEAP32[_stderr>>2];if((r3|0)==0){_fprintf(r32,664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_fprintf(r32,624,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r35,r4));STACKTOP=r4;r32=_fread(r3,1,r35,r34);if((r32|0)!=(r35|0)){_fprintf(HEAP32[_stderr>>2],568,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r32,r4));STACKTOP=r4;_exit(-1)}HEAP8[r3+r35|0]=0;_fclose(r34);HEAP32[r15>>2]=r3;r3=_clCreateProgramWithSource(HEAP32[2272>>2],1,r15,0,r7);HEAP32[2192>>2]=r3;r15=HEAP32[r7>>2];if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=_clBuildProgram(r3,1,HEAP32[2264>>2],1232,0,0);HEAP32[r7>>2]=r15;if((r15|0)==0){r3=_clCreateKernel(HEAP32[2192>>2],1056,r7);HEAP32[2256>>2]=r3;r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1e3,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}HEAP32[r17>>2]=0;r34=_clGetKernelWorkGroupInfo(r3,HEAP32[HEAP32[2264>>2]>>2],4528,4,r19,0);HEAP32[r7>>2]=r34;if((r34|0)==0){r19=HEAP32[r17>>2];HEAP32[8>>2]=r19;_fprintf(HEAP32[_stderr>>2],896,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_InitGlut(r1,r2,2024);_glutMainLoop();STACKTOP=r5;return 0}else{_fprintf(HEAP32[_stderr>>2],944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}else{_fprintf(HEAP32[_stderr>>2],1192,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;r15=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,0,0,r16);HEAP32[r7>>2]=r15;if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1144,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=HEAP32[r16>>2];r34=_malloc(r15+1|0);r5=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,r15,r34,0);HEAP32[r7>>2]=r5;if((r5|0)==0){HEAP8[r34+HEAP32[r16>>2]|0]=0;_fprintf(HEAP32[_stderr>>2],1072,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}else{_fprintf(HEAP32[_stderr>>2],1104,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}function _AllocateBuffers(){var r1,r2,r3,r4,r5;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2;r4=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r5=_malloc(r4);HEAP32[2200>>2]=r5;HEAP32[2208>>2]=_clCreateBuffer(HEAP32[2272>>2],33,0,r4,r5,r3);r5=HEAP32[r3>>2];if((r5|0)!=0){_fprintf(HEAP32[_stderr>>2],520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}HEAP32[2280>>2]=_clCreateBuffer(HEAP32[2272>>2],36,0,116,2288,r3);r5=HEAP32[r3>>2];if((r5|0)==0){STACKTOP=r2;return}else{_fprintf(HEAP32[_stderr>>2],472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}}function _SetEnableAccumulationKernelArg(r1,r2,r3){var r4,r5,r6,r7,r8;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+24|0;r6=r5;r7=r5+8;r8=r5+16;HEAP32[r6>>2]=r1;HEAPF32[r7>>2]=r2;HEAPF32[r8>>2]=r3;r3=_clSetKernelArg(HEAP32[2256>>2],2,4,r6);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],3,4,r7);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],4,4,r8);if((r3|0)==0){STACKTOP=r5;return}else{_fprintf(HEAP32[_stderr>>2],248,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[2356>>2]-HEAPF32[2344>>2];r2=HEAPF32[2360>>2]-HEAPF32[2348>>2];r3=HEAPF32[2364>>2]-HEAPF32[2352>>2];r4=1/Math.sqrt(r3*r3+(r1*r1+r2*r2));r5=r1*r4;HEAPF32[2368>>2]=r5;r1=r4*r2;HEAPF32[2372>>2]=r1;r2=r4*r3;HEAPF32[2376>>2]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+(r4*r4+r6*r6));r8=(HEAP32[2288>>2]>>>0)*.5134999752044678/(HEAP32[2292>>2]>>>0);r9=r8*r4*r3;HEAPF32[2380>>2]=r9;r4=r8*r3*r6;HEAPF32[2384>>2]=r4;r6=r8*r3*r7;HEAPF32[2388>>2]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+(r7*r7+r3*r3));HEAPF32[2392>>2]=r7*r5*.5134999752044678;HEAPF32[2396>>2]=r5*r3*.5134999752044678;HEAPF32[2400>>2]=r5*r2*.5134999752044678;return}function _displayFunc(){var r1,r2,r3,r4,r5;r1=STACKTOP;STACKTOP=STACKTOP+64|0;r2=r1;_UpdateRendering();_glClear(16384);r3=HEAP32[2200>>2];_glDisable(2896);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5889);r4=r2|0;HEAPF32[r4>>2]=2/(HEAP32[2288>>2]>>>0);r5=r2+4|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+20>>2]=2/(HEAP32[2292>>2]>>>0);r5=r2+24|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+40>>2]=1;HEAPF32[r2+44>>2]=0;HEAPF32[r2+48>>2]=-1;HEAPF32[r2+52>>2]=-1;HEAPF32[r2+56>>2]=0;HEAPF32[r2+60>>2]=1;_glLoadMatrixf(r4);_glMatrixMode(5888);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[3144>>2]);if((r3|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[2288>>2],HEAP32[2292>>2],6407,5126,r3)}_glBegin(5);_glTexCoord2i(0,0);_glVertex3f(0,0,0);_glTexCoord2i(0,1);_glVertex3f(0,HEAP32[2292>>2]>>>0,0);_glTexCoord2i(1,0);_glVertex3f(HEAP32[2288>>2]>>>0,0,0);_glTexCoord2i(1,1);_glVertex3f(HEAP32[2288>>2]>>>0,HEAP32[2292>>2]>>>0,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);_glEnable(3042);_glBlendFunc(770,771);r3=HEAP32[2288>>2]-66|0;_DrawJulia(1,r3,1,HEAPF32[2316>>2],HEAPF32[2320>>2]);r4=HEAP32[2288>>2]-66|0;_DrawJulia(2,r4,66,HEAPF32[2324>>2],HEAPF32[2328>>2]);_glDisable(3042);_glColor3f(1,1,1);r2=r3+(HEAPF32[2316>>2]+1.5)*64/3&-1;r3=(HEAPF32[2320>>2]+1.5)*64/3+1&-1;_glBegin(1);_glVertex3f(r2-4|0,r3);_glVertex3f(r2+4|0,r3);_glVertex3f(r2,r3-4|0);_glVertex3f(r2,r3+4|0);_glEnd();r3=r4+(HEAPF32[2324>>2]+1.5)*64/3&-1;r4=(HEAPF32[2328>>2]+1.5)*64/3+66&-1;_glBegin(1);_glVertex3f(r3-4|0,r4);_glVertex3f(r3+4|0,r4);_glVertex3f(r3,r4-4|0);_glVertex3f(r3,r4+4|0);_glEnd();_glFlush();STACKTOP=r1;return}function _DrawJulia(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r6=STACKTOP;STACKTOP=STACKTOP+65536|0;r7=r6;r8=0;while(1){r9=(r8|0)*.046875-1.5;r10=0;while(1){r11=0;r12=r9;r13=(r10|0)*.046875-1.5;while(1){r14=r13*r13;r15=r12*r12;if(r15+r14>4){r16=r11;break}r17=r11+1|0;if((r17|0)<64){r11=r17;r12=r12*r13*2+r5;r13=r14-r15+r4}else{r16=r17;break}}HEAPF32[r7+(r10<<10)+(r8<<4)>>2]=(r16|0)*.015625;HEAPF32[r7+(r10<<10)+(r8<<4)+4>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+8>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+12>>2]=.5;r13=r10+1|0;if((r13|0)<64){r10=r13}else{break}}r10=r8+1|0;if((r10|0)<64){r8=r10}else{break}}_glEnable(3553);_glBindTexture(3553,HEAP32[3144+(r1<<2)>>2]);_glTexSubImage2D(3553,0,0,0,64,64,6408,5126,r7);_glBegin(5);_glTexCoord2i(0,0);r7=r2|0;r1=r3|0;_glVertex3f(r7,r1,0);_glTexCoord2i(0,1);r8=r3+64|0;_glVertex3f(r7,r8,0);_glTexCoord2i(1,0);r7=r2+64|0;_glVertex3f(r7,r1,0);_glTexCoord2i(1,1);_glVertex3f(r7,r8,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);STACKTOP=r6;return}function _reshapeFunc(r1,r2){HEAP32[2288>>2]=r1;HEAP32[2292>>2]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(-.5,(HEAP32[2288>>2]>>>0)-.5,-.5,(HEAP32[2292>>2]>>>0)-.5,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105;r4=0;switch(r1|0){case 101:{r5=HEAPF32[2356>>2];r6=HEAPF32[2360>>2];r7=HEAPF32[2364>>2];r8=HEAPF32[2344>>2];r9=r5-r8;r10=HEAPF32[2348>>2];r11=r6-r10;r12=HEAPF32[2352>>2];r13=r7-r12;r14=r11;r15=r14*.9993908270285325;r16=r13;r17=r16*-.03489949643226648;r18=r15+r17;r19=r18;r20=-r19;r21=r20;r22=r21*-.03489949643226648;r23=r16*.9993908270285325;r24=r23+r22;r25=r24;r26=r8+r9;r27=r10+r19;r28=r12+r25;HEAPF32[2356>>2]=r26;HEAPF32[2360>>2]=r27;HEAPF32[2364>>2]=r28;break};case 103:{r29=HEAPF32[2356>>2];r30=HEAPF32[2360>>2];r31=HEAPF32[2364>>2];r32=HEAPF32[2344>>2];r33=r29-r32;r34=HEAPF32[2348>>2];r35=r30-r34;r36=HEAPF32[2352>>2];r37=r31-r36;r38=r35;r39=r38*.9993908270285325;r40=r37;r41=r40*.03489949643226648;r42=r39+r41;r43=r42;r44=-r43;r45=r44;r46=r45*.03489949643226648;r47=r40*.9993908270285325;r48=r47+r46;r49=r48;r50=r32+r33;r51=r34+r43;r52=r36+r49;HEAPF32[2356>>2]=r50;HEAPF32[2360>>2]=r51;HEAPF32[2364>>2]=r52;break};case 100:{r53=HEAPF32[2356>>2];r54=HEAPF32[2360>>2];r55=HEAPF32[2364>>2];r56=HEAPF32[2344>>2];r57=r53-r56;r58=HEAPF32[2348>>2];r59=r54-r58;r60=HEAPF32[2352>>2];r61=r55-r60;r62=r57;r63=r62*.9993908270285325;r64=r61;r65=r64*-.03489949643226648;r66=r63-r65;r67=r66;r68=r67;r69=r68*-.03489949643226648;r70=r64*.9993908270285325;r71=r70+r69;r72=r71;r73=r56+r67;r74=r58+r59;r75=r60+r72;HEAPF32[2356>>2]=r73;HEAPF32[2360>>2]=r74;HEAPF32[2364>>2]=r75;break};case 102:{r76=HEAPF32[2356>>2];r77=HEAPF32[2360>>2];r78=HEAPF32[2364>>2];r79=HEAPF32[2344>>2];r80=r76-r79;r81=HEAPF32[2348>>2];r82=r77-r81;r83=HEAPF32[2352>>2];r84=r78-r83;r85=r80;r86=r85*.9993908270285325;r87=r84;r88=r87*.03489949643226648;r89=r86-r88;r90=r89;r91=r90;r92=r91*.03489949643226648;r93=r87*.9993908270285325;r94=r93+r92;r95=r94;r96=r79+r90;r97=r81+r82;r98=r83+r95;HEAPF32[2356>>2]=r96;HEAPF32[2360>>2]=r97;HEAPF32[2364>>2]=r98;break};case 104:{r99=HEAPF32[2360>>2];r100=r99+.5;HEAPF32[2360>>2]=r100;break};case 105:{r101=HEAPF32[2360>>2];r102=r101-.5;HEAPF32[2360>>2]=r102;break};default:{}}_ReInit(0);_glutPostRedisplay();r103=_emscripten_get_now();r104=r103|0;r105=r104/1e3;HEAPF64[64>>3]=r105;return}function _mouseFunc(r1,r2,r3,r4){var r5,r6,r7,r8;L199:do{if((r1|0)==0){if((r2|0)==1){HEAP8[56]=0;HEAP8[24]=0;HEAP8[40]=0;break}else if((r2|0)!=0){break}HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[56]=1;if((_glutGetModifiers()|0)==1){HEAP8[24]=1;break}HEAP8[24]=0;r5=HEAP32[2292>>2]-r4|0;r6=HEAP32[2288>>2];r7=r6-66|0;do{if(!((r7|0)>(r3|0)|(r6-2|0)<(r3|0))){r8=r5-2|0;if(r8>>>0<65){HEAP8[40]=1;HEAPF32[2316>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}r8=r5-67|0;if(r8>>>0>=65){break}HEAP8[40]=1;HEAPF32[2324>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}}while(0);HEAP8[40]=0}else if((r1|0)==2){if((r2|0)==0){HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[48]=1;break}else if((r2|0)==1){HEAP8[48]=0;break}else{break}}}while(0);HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105,r106,r107,r108,r109,r110,r111,r112,r113,r114,r115,r116,r117,r118,r119,r120,r121,r122,r123,r124,r125,r126,r127,r128,r129,r130,r131,r132,r133,r134,r135,r136,r137,r138,r139,r140,r141,r142,r143,r144,r145,r146,r147,r148,r149,r150,r151,r152,r153,r154,r155,r156,r157,r158,r159,r160,r161,r162,r163,r164,r165,r166,r167,r168,r169,r170,r171,r172,r173,r174,r175,r176,r177,r178,r179,r180,r181,r182,r183,r184,r185,r186,r187,r188,r189,r190,r191,r192,r193,r194,r195,r196,r197,r198,r199,r200,r201;r4=0;r5=0;r6=STACKTOP;r7=r1&255;L220:do{switch(r7|0){case 112:{r8=_fopen(232,1840);r9=(r8|0)==0;if(r9){r10=HEAP32[_stderr>>2];r11=_fwrite(1472,37,1,r10);break L220}r12=HEAP32[2288>>2];r13=HEAP32[2292>>2];r14=_fprintf(r8,1040,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r12,HEAP32[r5+8>>2]=r13,HEAP32[r5+16>>2]=255,r5));STACKTOP=r5;r15=HEAP32[2292>>2];r16=(r15|0)==0;if(!r16){r17=HEAP32[2288>>2];r18=0;r19=r17;r20=r15;while(1){r21=(r19|0)==0;if(r21){r22=0;r23=r20}else{r24=~r18;r25=0;r26=r19;r27=r20;while(1){r28=r27+r24|0;r29=Math.imul(r28,r26)|0;r30=r29+r25|0;r31=r30*3&-1;r32=HEAP32[2200>>2];r33=r32+(r31<<2)|0;r34=HEAPF32[r33>>2];r35=r34<0;do{if(r35){r36=0}else{r37=r34>1;if(r37){r36=255;break}r38=r34*255;r39=r38+.5;r40=r39&-1;r36=r40}}while(0);r41=r31+1|0;r42=r32+(r41<<2)|0;r43=HEAPF32[r42>>2];r44=r43<0;do{if(r44){r45=0}else{r46=r43>1;if(r46){r45=255;break}r47=r43*255;r48=r47+.5;r49=r48&-1;r45=r49}}while(0);r50=r31+2|0;r51=r32+(r50<<2)|0;r52=HEAPF32[r51>>2];r53=r52<0;do{if(r53){r54=0}else{r55=r52>1;if(r55){r54=255;break}r56=r52*255;r57=r56+.5;r58=r57&-1;r54=r58}}while(0);r59=_fprintf(r8,608,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r36,HEAP32[r5+8>>2]=r45,HEAP32[r5+16>>2]=r54,r5));STACKTOP=r5;r60=r25+1|0;r61=HEAP32[2288>>2];r62=r60>>>0<r61>>>0;r63=HEAP32[2292>>2];if(r62){r25=r60;r26=r61;r27=r63}else{r22=r61;r23=r63;break}}}r64=r18+1|0;r65=r64>>>0<r23>>>0;if(r65){r18=r64;r19=r22;r20=r23}else{break}}}r66=_fclose(r8);break};case 27:{r67=HEAP32[_stderr>>2];r68=_fwrite(224,6,1,r67);_exit(0);break};case 97:{r69=HEAPF32[2380>>2];r70=HEAPF32[2384>>2];r71=HEAPF32[2388>>2];r72=r69*r69;r73=r70*r70;r74=r72+r73;r75=r71*r71;r76=r74+r75;r77=r76;r78=Math.sqrt(r77);r79=1/r78;r80=r79;r81=r69*r80;r82=r70*r80;r83=r71*r80;r84=r81*-.5;r85=r82*-.5;r86=r83*-.5;r87=HEAPF32[2344>>2];r88=r87+r84;HEAPF32[2344>>2]=r88;r89=HEAPF32[2348>>2];r90=r89+r85;HEAPF32[2348>>2]=r90;r91=HEAPF32[2352>>2];r92=r91+r86;HEAPF32[2352>>2]=r92;r93=HEAPF32[2356>>2];r94=r84+r93;HEAPF32[2356>>2]=r94;r95=HEAPF32[2360>>2];r96=r85+r95;HEAPF32[2360>>2]=r96;r97=HEAPF32[2364>>2];r98=r86+r97;HEAPF32[2364>>2]=r98;break};case 100:{r99=HEAPF32[2380>>2];r100=HEAPF32[2384>>2];r101=HEAPF32[2388>>2];r102=r99*r99;r103=r100*r100;r104=r102+r103;r105=r101*r101;r106=r104+r105;r107=r106;r108=Math.sqrt(r107);r109=1/r108;r110=r109;r111=r99*r110;r112=r100*r110;r113=r101*r110;r114=r111*.5;r115=r112*.5;r116=r113*.5;r117=HEAPF32[2344>>2];r118=r117+r114;HEAPF32[2344>>2]=r118;r119=HEAPF32[2348>>2];r120=r119+r115;HEAPF32[2348>>2]=r120;r121=HEAPF32[2352>>2];r122=r121+r116;HEAPF32[2352>>2]=r122;r123=HEAPF32[2356>>2];r124=r114+r123;HEAPF32[2356>>2]=r124;r125=HEAPF32[2360>>2];r126=r115+r125;HEAPF32[2360>>2]=r126;r127=HEAPF32[2364>>2];r128=r116+r127;HEAPF32[2364>>2]=r128;break};case 119:{r129=HEAPF32[2368>>2];r130=HEAPF32[2372>>2];r131=HEAPF32[2376>>2];r132=r129*.5;r133=r130*.5;r134=r131*.5;r135=HEAPF32[2344>>2];r136=r132+r135;HEAPF32[2344>>2]=r136;r137=HEAPF32[2348>>2];r138=r133+r137;HEAPF32[2348>>2]=r138;r139=HEAPF32[2352>>2];r140=r134+r139;HEAPF32[2352>>2]=r140;r141=HEAPF32[2356>>2];r142=r132+r141;HEAPF32[2356>>2]=r142;r143=HEAPF32[2360>>2];r144=r133+r143;HEAPF32[2360>>2]=r144;r145=HEAPF32[2364>>2];r146=r134+r145;HEAPF32[2364>>2]=r146;break};case 115:{r147=HEAPF32[2368>>2];r148=HEAPF32[2372>>2];r149=HEAPF32[2376>>2];r150=r147*-.5;r151=r148*-.5;r152=r149*-.5;r153=HEAPF32[2344>>2];r154=r150+r153;HEAPF32[2344>>2]=r154;r155=HEAPF32[2348>>2];r156=r151+r155;HEAPF32[2348>>2]=r156;r157=HEAPF32[2352>>2];r158=r152+r157;HEAPF32[2352>>2]=r158;r159=HEAPF32[2356>>2];r160=r150+r159;HEAPF32[2356>>2]=r160;r161=HEAPF32[2360>>2];r162=r151+r161;HEAPF32[2360>>2]=r162;r163=HEAPF32[2364>>2];r164=r152+r163;HEAPF32[2364>>2]=r164;break};case 114:{r165=HEAPF32[2348>>2];r166=r165+.5;HEAPF32[2348>>2]=r166;r167=HEAPF32[2360>>2];r168=r167+.5;HEAPF32[2360>>2]=r168;break};case 102:{r169=HEAPF32[2348>>2];r170=r169-.5;HEAPF32[2348>>2]=r170;r171=HEAPF32[2360>>2];r172=r171-.5;HEAPF32[2360>>2]=r172;break};case 108:{r173=HEAP32[2304>>2];r174=(r173|0)==0;r175=r174&1;HEAP32[2304>>2]=r175;break};case 104:{r176=HEAP32[32>>2];r177=(r176|0)==0;r178=r177&1;HEAP32[32>>2]=r178;break};case 49:{r179=HEAPF32[2312>>2];r180=r179*.75;HEAPF32[2312>>2]=r180;break};case 50:{r181=HEAPF32[2312>>2];r182=r181*1.3333333730697632;HEAPF32[2312>>2]=r182;break};case 51:{r183=HEAP32[2308>>2];r184=r183-1|0;r185=(r184|0)==0;r186=r185?1:r184;HEAP32[2308>>2]=r186;break};case 52:{r187=HEAP32[2308>>2];r188=r187+1|0;r189=r188>>>0>12;r190=r189?12:r188;HEAP32[2308>>2]=r190;break};case 53:{r191=HEAP32[2296>>2];r192=r191-1|0;r193=(r192|0)<1;r194=r193?1:r192;HEAP32[2296>>2]=r194;break};case 54:{r195=HEAP32[2296>>2];r196=r195+1|0;r197=(r196|0)>5;r198=r197?5:r196;HEAP32[2296>>2]=r198;break};default:{}}}while(0);_ReInit(0);_glutPostRedisplay();r199=_emscripten_get_now();r200=r199|0;r201=r200/1e3;HEAPF64[64>>3]=r201;STACKTOP=r6;return}function _motionFunc(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;L264:do{if(HEAP8[56]){r3=HEAP32[2292>>2]-r2|0;r4=HEAP32[2288>>2];r5=r4-66|0;r6=HEAP8[40];do{if((r5|0)>(r1|0)|r6^1|(r4-2|0)<(r1|0)){if(r6){break L264}}else{r7=r3-2|0;if(r7>>>0<65){HEAPF32[2316>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}r7=r3-67|0;if(r7>>>0<65){HEAPF32[2324>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}else{if(r6){break L264}else{break}}}}while(0);r6=r1-HEAP32[2248>>2]|0;r5=r2-HEAP32[2240>>2]|0;if(HEAP8[24]){r3=HEAPF32[2344>>2];r4=HEAPF32[2348>>2];r7=HEAPF32[2360>>2]-r4;r8=HEAPF32[2352>>2];r9=HEAPF32[2364>>2]-r8;r10=HEAPF32[2356>>2]-r3;r11=(r6|0)*.10000000149011612*.03490658503988659;r12=Math.cos(r11);r13=r9;r9=Math.sin(r11);r11=r10*r12-r13*r9;r10=(r5|0)*.10000000149011612*.03490658503988659;r14=Math.cos(r10);r15=r8+(r12*r13+r9*r11)-r8;r9=Math.sin(r10);r10=(r4+r7-r4)*r14+r9*r15;HEAPF32[2356>>2]=r3+(r3+r11-r3);HEAPF32[2360>>2]=r4+r10;HEAPF32[2364>>2]=r8+(r14*r15+r9*-r10)}else{HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;r10=HEAPF32[2352>>2];r9=HEAPF32[2344>>2];r15=(r6|0)*.20000000298023224*.03490658503988659;r6=Math.cos(r15);r14=r10;r10=Math.sin(r15);HEAPF32[2344>>2]=r9*r6-r14*r10;r15=HEAPF32[2348>>2];r8=(r5|0)*.20000000298023224*.03490658503988659;r5=Math.cos(r8);r4=r14*r6+r9*r10;r10=Math.sin(r8);HEAPF32[2348>>2]=r15*r5+r10*r4;HEAPF32[2352>>2]=-r15*r10+r5*r4}HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0)}else{if(HEAP8[48]){r4=r1-HEAP32[2248>>2]|0;r5=HEAPF32[2336>>2];r10=HEAPF32[2340>>2];r15=(r2-HEAP32[2240>>2]|0)*-.20000000298023224*.03490658503988659;r8=Math.cos(r15);r9=r10;r10=Math.sin(r15);HEAPF32[2336>>2]=r5*r8+r9*r10;r15=HEAPF32[2332>>2];r6=(r4|0)*-.20000000298023224*.03490658503988659;r4=Math.cos(r6);r14=r9*r8+ -r5*r10;r10=Math.sin(r6);HEAPF32[2332>>2]=r15*r4-r10*r14;HEAPF32[2340>>2]=r15*r10+r4*r14;HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0);break}else{return}}}while(0);_glutPostRedisplay();HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _timerFunc(r1){r1=(_emscripten_get_now()|0)/1e3;do{if(r1-HEAPF64[64>>3]>5){if((HEAP32[2300>>2]|0)==0){break}HEAP32[2300>>2]=0;_glutPostRedisplay()}else{HEAP32[2300>>2]=1}}while(0);_glutTimerFunc(1e3,14,0);return}function _InitGlut(r1,r2,r3){var r4,r5,r6;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+8|0;r6=r5;HEAP32[r6>>2]=r1;HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;_glutInitWindowSize(HEAP32[2288>>2],HEAP32[2292>>2]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r6,r2);_glutCreateWindow(r3);_glutReshapeFunc(6);_glutKeyboardFunc(8);_glutSpecialFunc(4);_glutDisplayFunc(10);_glutMouseFunc(12);_glutMotionFunc(2);_glutTimerFunc(1e3,14,0);_glMatrixMode(5889);r3=HEAP32[2288>>2];r2=HEAP32[2292>>2];_glGenTextures(3,3144);_printf(184,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r3,HEAP32[r4+8>>2]=r2,r4));STACKTOP=r4;_printf(120,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_printf(80,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_glActiveTexture(33985);_glGenTextures(3,3144);_glBindTexture(3553,HEAP32[3144>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6407,r3,r2,0,6407,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3148>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3152>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[3184>>2]=0;HEAPF32[3188>>2]=0;r2=HEAP32[2288>>2]>>>0;HEAPF32[3176>>2]=r2;HEAPF32[3180>>2]=0;HEAPF32[3168>>2]=r2;r2=HEAP32[2292>>2]>>>0;HEAPF32[3172>>2]=r2;HEAPF32[3160>>2]=0;HEAPF32[3164>>2]=r2;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,2160);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,3160);STACKTOP=r5;return}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[2672>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2712+(r8<<2)|0;r10=2712+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[2680>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2712+(r16<<2)|0;r13=2712+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[2680>>2];if((r12|0)!=0){r17=HEAP32[2692>>2];r4=r12>>>3;r12=r4<<1;r6=2712+(r12<<2)|0;r11=HEAP32[2672>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[2672>>2]=r11|r8;r19=r6;r20=2712+(r12+2<<2)|0}else{r4=2712+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[2688>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[2680>>2]=r13;HEAP32[2692>>2]=r5;r14=r9;return r14}r12=HEAP32[2676>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2976+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[2688>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L371:do{if((r5|0)!=0){r6=r4+28|0;r9=2976+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r6>>2]);break L371}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L371}}}while(0);if(r22>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[2680>>2];if((r6|0)!=0){r5=HEAP32[2692>>2];r9=r6>>>3;r6=r9<<1;r17=2712+(r6<<2)|0;r11=HEAP32[2672>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[2672>>2]=r11|r7;r25=r17;r26=2712+(r6+2<<2)|0}else{r9=2712+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[2688>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[2680>>2]=r16;HEAP32[2692>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[2676>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2976+(r27<<2)>>2];L419:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L419}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2976+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[2680>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[2688>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L469:do{if((r5|0)!=0){r9=r37+28|0;r13=2976+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r9>>2]);break L469}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L469}}}while(0);if(r38>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2712+(r5<<2)|0;r18=HEAP32[2672>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[2672>>2]=r18|r10;r41=r13;r42=2712+(r5+2<<2)|0}else{r9=2712+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[2688>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2976+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[2676>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[2676>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=368;break}else{r12=r12<<1;r13=r10}}if(r2==368){if(r45>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[2688>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[2680>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[2692>>2];if(r45>>>0>15){r44=r36;HEAP32[2692>>2]=r44+r15;HEAP32[2680>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[2680>>2]=0;HEAP32[2692>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[2684>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[2684>>2]=r45;r36=HEAP32[2696>>2];r37=r36;HEAP32[2696>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[2216>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[2224>>2]=r36;HEAP32[2220>>2]=r36;HEAP32[2228>>2]=-1;HEAP32[2232>>2]=-1;HEAP32[2236>>2]=0;HEAP32[3116>>2]=0;HEAP32[2216>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[2224>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[3112>>2];do{if((r41|0)!=0){r42=HEAP32[3104>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L561:do{if((HEAP32[3116>>2]&4|0)==0){r41=HEAP32[2696>>2];L563:do{if((r41|0)==0){r2=398}else{r38=r41;r42=3120;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=398;break L563}else{r42=r39}}if((r42|0)==0){r2=398;break}r38=r44-HEAP32[2684>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=407}}while(0);do{if(r2==398){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[2220>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[3104>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[3112>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=407}}while(0);L583:do{if(r2==407){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=418;break L561}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[2224>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L583}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=418;break L561}}}while(0);HEAP32[3116>>2]=HEAP32[3116>>2]|4;r57=r48;r2=415}else{r57=0;r2=415}}while(0);do{if(r2==415){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=418}}}while(0);do{if(r2==418){r57=HEAP32[3104>>2]+r54|0;HEAP32[3104>>2]=r57;if(r57>>>0>HEAP32[3108>>2]>>>0){HEAP32[3108>>2]=r57}r57=HEAP32[2696>>2];L603:do{if((r57|0)==0){r45=HEAP32[2688>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[2688>>2]=r55}HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[2708>>2]=HEAP32[2216>>2];HEAP32[2704>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2712+(r50<<2)|0;HEAP32[2712+(r50+3<<2)>>2]=r56;HEAP32[2712+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[2696>>2]=r55+r58;HEAP32[2684>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2]}else{r45=3120;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=430;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==430){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[2696>>2];r50=HEAP32[2684>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[2696>>2]=r51+r62;HEAP32[2684>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];break L603}}while(0);if(r55>>>0<HEAP32[2688>>2]>>>0){HEAP32[2688>>2]=r55}r45=r55+r54|0;r50=3120;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=440;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==440){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[2696>>2]|0)){r36=HEAP32[2684>>2]+r37|0;HEAP32[2684>>2]=r36;HEAP32[2696>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[2692>>2]|0)){r36=HEAP32[2680>>2]+r37|0;HEAP32[2680>>2]=r36;HEAP32[2692>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L648:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2712+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2976+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r42>>2]);break L648}else{if(r13>>>0<HEAP32[2688>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L648}}}while(0);if(r67>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2712+(r47<<2)|0;r42=HEAP32[2672>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[2672>>2]=r42|r13;r72=r49;r73=2712+(r47+2<<2)|0}else{r36=2712+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[2688>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[2676>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[2676>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=513;break}else{r43=r43<<1;r49=r13}}if(r2==513){if(r76>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[2688>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=3120;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[2696>>2]=r55+r81;HEAP32[2684>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[3120>>2];HEAP32[r48+4>>2]=HEAP32[3124>>2];HEAP32[r48+8>>2]=HEAP32[3128>>2];HEAP32[r48+12>>2]=HEAP32[3132>>2];HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[3128>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2712+(r37<<2)|0;r45=HEAP32[2672>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[2672>>2]=r45|r13;r82=r51;r83=2712+(r37+2<<2)|0}else{r48=2712+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[2688>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[2676>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[2676>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=548;break}else{r43=r43<<1;r51=r13}}if(r2==548){if(r86>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[2688>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[2684>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[2684>>2]=r52;r57=HEAP32[2696>>2];r43=r57;HEAP32[2696>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[2688>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L820:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[2692>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[2680>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2712+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2976+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L820}else{if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L820}}}while(0);if(r27>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[2696>>2]|0)){r28=HEAP32[2684>>2]+r18|0;HEAP32[2684>>2]=r28;HEAP32[2696>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[2692>>2]|0)){return}HEAP32[2692>>2]=0;HEAP32[2680>>2]=0;return}if((r10|0)==(HEAP32[2692>>2]|0)){r28=HEAP32[2680>>2]+r18|0;HEAP32[2680>>2]=r28;HEAP32[2692>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L922:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2712+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2976+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r20>>2]);break L922}else{if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L922}}}while(0);if(r31>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[2692>>2]|0)){r34=r28;break}HEAP32[2680>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2712+(r4<<2)|0;r27=HEAP32[2672>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[2672>>2]=r27|r31;r35=r5;r36=2712+(r4+2<<2)|0}else{r18=2712+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[2688>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2976+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[2676>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[2676>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=725;break}else{r27=r27<<1;r36=r31}}if(r2==725){if(r39>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[2688>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[2704>>2]-1|0;HEAP32[2704>>2]=r17;if((r17|0)==0){r40=3128}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[2704>>2]=-1;return}
 // EMSCRIPTEN_END_FUNCS
 Module["_main"] = _main;
 Module["_malloc"] = _malloc;
@@ -6707,7 +10553,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '6f2c58f9-ad62-4238-93db-025c22ba2dd4';
+    var PACKAGE_UUID = '803f79a0-b819-4136-80f8-02f2d690bd63';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
