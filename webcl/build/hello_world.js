@@ -3154,13 +3154,13 @@ function copyTempDouble(ptr) {
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
       }};var CL={cl_digits:["1","2","3","4","5","6","7","8","9"],cl_objects:{},cl_objects_size:0,udid:function (obj) {
         var _id;
-        // if (obj !== undefined) {
-        //   _id = CL.getUdid(obj);
-        // 
-        //   if (_id != -1) {
-        //     return _id;
-        //   }
-        // }
+        if (obj !== undefined) {
+           _id = obj.udid;
+           console.log("udid() : get udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined));
+           if (_id !== undefined) {
+             return _id;
+           }
+        }
         var _uuid = [];
         for (var i = 0; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
         _id = _uuid.join('');
@@ -3169,11 +3169,13 @@ function copyTempDouble(ptr) {
           console.error("/!\\ UDID not unique !!!!!!");
           console.error("/!\\ **********************");        
         }
-        console.info("udid : "+_id+" - "+obj);
         // /!\ Call udid when you add inside cl_objects if you pass object in parameter
-        if (obj !== undefined) {
+        if (obj !== undefined) 
+        {
+          Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects_size++;
           CL.cl_objects[_id]=obj;
+          console.log("udid() : set udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined) + " --> Size : " + CL.cl_objects_size);
         }
         return _id;      
       },catchError:function (e) {
