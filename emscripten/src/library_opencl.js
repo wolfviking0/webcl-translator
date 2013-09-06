@@ -3,7 +3,6 @@ var LibraryOpenCL = {
   $CL: {
     // Private array of chars to use
     cl_digits: '123456789'.split(''),
-    cl_bitshift: {2:1,4:2,8:3,16:4,32:5},
     cl_objects: {},
     cl_objects_size: 0,
 
