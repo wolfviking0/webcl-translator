@@ -16,8 +16,7 @@ Need webkit-webcl from Samsung research (https://github.com/SRA-SiliconValley/we
 
 #### warning
 
-* The webcl-translator is changing, The library_opencl.js is being rewritten for more respect of the WD Khronos
-* For use the first version of the library just build your sample using in the makefile : -s OPENCL_OLD_VERSION=1
+* The webcl-translator is changing, The library_opencl.js is being rewritten for more respect of the WD Khronos, for use the first version of the library just build your sample using in the makefile : -s OPENCL_OLD_VERSION=1
 * The new implementation of the webcl-translator start to implement a stack tracer for have the stack of opencl/webcl call.
 * The library_cuda.js is not yet implemented is just an empty wrapper for experimental stuff, nothing more.
 
