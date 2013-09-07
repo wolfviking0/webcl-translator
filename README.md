@@ -8,33 +8,50 @@ WebCL inside Emscripten (https://github.com/kripken/emscripten)
 
 Experimental version of emscripten for convert OpenCL c++ code to WebCL.
 
-Need Firefox 22 and WebCL plugin from Nokia research (http://webcl.nokiaresearch.com)
+Need Firefox 23 and WebCL plugin from Nokia research (http://webcl.nokiaresearch.com)
 
 or
 
 Need webkit-webcl from Samsung research (https://github.com/SRA-SiliconValley/webkit-webcl)
 
+/!\ The webcl-translator is changing, The library_opencl.js is being rewritten for more respect of the WD Khronos
+/!\ For use the first version of the library just build your sample using in the makefile : -s OPENCL_OLD_VERSION=1
+/!\ The new implementation of the webcl-translator start to implement a stack tracer for have the stack of opencl/webcl call.
+/!\ The library_cuda.js is not yet implemented is just an empty wrapper for experimental stuff, nothing more.
+
 Patch of Emscripten :
 ---------------------
 
+	// System files
 	Add : system/include/CL/cl_ext.h
 	Add : system/include/CL/cl_gl_ext.h
 	Add : system/include/CL/cl_gl.h
 	Add : system/include/CL/cl_platform.h
 	Add : system/include/CL/cl.h
 	Add : system/include/CL/opencl.h
+	Add : system/include/cuda/cuda.h
+	Add : system/include/cuda/cudaGL.h	
+	// Src files
+	Add : src/library_old_opencl.h
 	Add : src/library_opencl.h
+	Add : src/library_cuda.h
 
 	Change : src/settings.js
-		line 180 => var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
+		line 203 => var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
+		line 204 => var OPENCL_STACK_TRACE = 0 // Print all the wecl call
+		line 205 => var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
 	Change : src/module.js
-		line 400 => var libraries = ['library.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_opencl.js'].concat(additionalLibraries);
-
+		line 429 => 
+			var library_opencl = 'library_opencl.js';
+    		if (OPENCL_OLD_VERSION) { 
+      			library_opencl = 'library_old_opencl.js';
+    		}
+			var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_memfs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_cuda.js', library_opencl].concat(additionalLibraries);
 
 Build Sample :
 --------------
 
-Call makefile inside the different sample folder
+Just use Makefile inside webcl folder, call : make [folder sample name]_sample (make reduce_sample)
 
 Launch Sample :
 ---------------
