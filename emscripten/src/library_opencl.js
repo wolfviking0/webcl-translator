@@ -399,11 +399,22 @@ var LibraryOpenCL = {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
           
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
           } else {
-            console.error("clGetDeviceInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
           }
         } else {
-          console.error("clGetDeviceInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
         }
 
       } else {
@@ -764,11 +775,22 @@ var LibraryOpenCL = {
             }
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
 
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
           } else {
-            console.error("clGetContextInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
           }
         } else {
-          console.error("clGetContextInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
         }
            
       } else {
@@ -935,6 +957,8 @@ var LibraryOpenCL = {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
           } 
 
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
         } else if(typeof(_info) == "object") {
 
           if ( (_info instanceof WebCLDevice) || (_info instanceof WebCLContext)) {
@@ -943,11 +967,22 @@ var LibraryOpenCL = {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
 
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
           } else {
-            console.error("clGetCommandQueueInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
           }
         } else {
-          console.error("clGetCommandQueueInfo : "+typeof(_info)+" not yet implemented");
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
         }
            
       } else {
@@ -1051,7 +1086,7 @@ var LibraryOpenCL = {
       }
 
 #if OPENCL_STACK_TRACE
-      CL.webclCallStackTrace( CL.cl_objects[context]+".clCreateBuffer",[_flags,size,_host_ptr]);
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
 #endif      
       if (_host_ptr != null)
         _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
@@ -1088,20 +1123,245 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
-    console.error("clCreateSubBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateSubBuffer",[buffer,flags_i64_1,buffer_create_type,buffer_create_info,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _subbuffer = null;
+
+    // Context must be created
+    if (!(buffer in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_MEM_OBJECT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"Mem object '"+buffer+"' is not a valid buffer","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+      var _flags;
+      var _origin;
+      var _sizeInBytes;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+    
+      if (flags_i64_1 & ~_flags) {
+        console.error("clCreateSubBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+      }
+
+      if (buffer_create_info != 0) {
+        _origin = {{{ makeGetValue('buffer_create_info', '0', 'i32') }}};
+        _sizeInBytes = {{{ makeGetValue('buffer_create_info', '4', 'i32') }}};
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"buffer_create_info is NULL","");
+#endif
+
+        return 0; 
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[buffer]+".createSubBuffer",[_flags,_origin,_sizeInBytes]);
+#endif      
+
+      _subbuffer = CL.cl_objects[buffer].createSubBuffer(_flags,_origin,_sizeInBytes);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_subbuffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateImage2D: function(context,flags_i64_1,flags_i64_2,image_format,image_width,image_height,image_row_pitch,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
-    console.error("clCreateImage2D: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateImage2D",[context,flags_i64_1,image_format,image_width,image_height,image_row_pitch,host_ptr,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _image = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+      var _host_ptr = null;
+      var _channel_order = webcl.RGBA;
+      var _channel_type = webcl.UNORM_INT8;
+
+      if (image_format != 0) {
+        _channel_order = {{{ makeGetValue('image_format', '0', 'i32') }}};
+        _channel_type = {{{ makeGetValue('image_format', '4', 'i32') }}};
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_IMAGE_FORMAT_DESCRIPTOR', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"image_format is NULL","");
+#endif
+
+        return 0; 
+      }
+
+      // There are no possibility to know the size of the host_ptr --> @steven What do you thing ?
+      var _sizeInByte = 0;
+      var _size = 0;
+      if (host_ptr != 0 ) {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
+#endif
+
+        return 0;
+      }
+        
+      if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
+        _host_ptr = new ArrayBuffer(_sizeInByte);
+      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+        _host_ptr = new ArrayBuffer(_sizeInByte);
+
+
+        if (CL.isFloat(host_ptr, _size)) {
+          for (var i = 0; i < _size; i++ ) {
+            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'float') }}};
+          }
+        } else {
+          for (var i = 0; i < _size; i++ ) {
+            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'i32') }}};
+          }
+        }
+      } else if (flags_i64_1 & ~_flags) {
+        // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
+        // ( Same question : clCreateBuffer )
+        // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
+
+        console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+      }
+
+      var _descriptor = {channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createImage",[_flags,_descriptor,_host_ptr]);
+#endif      
+
+      if (_host_ptr != null)
+        _image = CL.cl_objects[context].createImage(_flags,_descriptor,_host_ptr);
+      else
+        _image = CL.cl_objects[context].createImage(_flags,_descriptor);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_image);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateImage3D: function(context,flags_i64_1,flags_i64_2,image_format,image_width,image_height,image_depth,image_row_pitch,image_slice_pitch,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
+    // Doesn't exit in webcl, but that could be possible to fake it I think --> @steven Your opinion about that ??
+
     console.error("clCreateImage3D: Not yet implemented\n");
   },
 
@@ -1110,22 +1370,271 @@ var LibraryOpenCL = {
   },
 
   clReleaseMemObject: function(memobj) {
-    console.error("clReleaseMemObject: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseMemObject",[memobj]);
+#endif
+
+    try {
+
+      if (memobj in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
+#endif        
+        CL.cl_objects[memobj].release();
+        delete CL.cl_objects[memobj];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL memobj","");
+#endif
+        return webcl.INVALID_MEM_OBJECT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetSupportedImageFormats: function(context,flags_i64_1,flags_i64_2,image_type,num_entries,image_formats,num_image_formats) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetSupportedImageFormats",[context,flags_i64_1,image_type,num_entries,image_formats,num_image_formats]);
+#endif
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context '"+context+"' is not a valid context","");
+#endif
+      return webcl.INVALID_CONTEXT; 
+    }
+
+    if (image_type != webcl.MEM_OBJECT_IMAGE2D) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.CL_INVALID_VALUE],"image_type "+image_type+" are not valid","");
+#endif
+      return webcl.CL_INVALID_VALUE;       
+    }
     
-    console.error("clGetSupportedImageFormats: Not yet implemented\n");
+    try {
+
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return webcl.INVALID_VALUE; 
+      }
+
+      if (flags_i64_1 & ~_flags) {
+        console.error("clGetSupportedImageFormats : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace(CL.cl_objects[context]+".getSupportedImageFormats",[_flags]);
+#endif        
+
+      var _descriptor_list = CL.cl_objects[context].getSupportedImageFormats(_flags);
+
+      var _counter = 0;
+      for (var i = 0; i < Math.min(num_entries,_descriptor_list.length); i++) {
+        var _descriptor = _descriptor_list[i];
+
+        if (image_formats != 0) {
+          {{{ makeSetValue('image_formats', '_counter*4', '_descriptor.channelOrder', 'i32') }}};
+          _counter++;
+          {{{ makeSetValue('image_formats', '_counter*4', '_descriptor.channelType', 'i32') }}};
+          _counter++;
+        }
+      }
+
+      if (num_image_formats != 0) {
+        {{{ makeSetValue('num_image_formats', '0', '_descriptor_list.length', 'i32') }}};
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetMemObjectInfo: function(memobj,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetMemObjectInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetMemObjectInfo",[memobj,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (memobj in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[memobj].getInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "object") {
+
+          if (_info instanceof WebCLBuffer) {
+         
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+            console.error("clGetMemObjectInfo : "+typeof(_info)+" not yet implemented");
+          }
+        } else {
+          console.error("clGetMemObjectInfo : "+typeof(_info)+" not yet implemented");
+        }
+           
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"memobj are NULL","");
+#endif
+        return webcl.INVALID_MEM_OBJECT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+    
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetImageInfo: function(image,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetImageInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetImageInfo",[image,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (image in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[image].getInfo(param_name);
+
+        switch (param_name) {
+          case (webcl.IMAGE_FORMAT) :
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.channelOrder', 'i32') }}};
+            if (param_value != 0) {{{ makeSetValue('param_value', '4', '_info.channelType', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            break;
+          case (webcl.IMAGE_ELEMENT_SIZE) :
+            //  Not sure how I can know the element size ... It's depending of the channelType I suppose --> @steven Your opinion about that ??
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '4', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            break;
+          case (webcl.IMAGE_ROW_PITCH) :
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.rowPitch', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            break;
+          case (webcl.IMAGE_WIDTH) :
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.width', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            break;
+          case (webcl.IMAGE_HEIGHT) :
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.height', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            break;
+          default:
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],param_name+" not yet implemente","");
+#endif
+            return webcl.INVALID_VALUE;
+        }
+           
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
+#endif
+        return webcl.INVALID_MEM_OBJECT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+    
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clSetMemObjectDestructorCallback: function(memobj,pfn_notify,user_data) {

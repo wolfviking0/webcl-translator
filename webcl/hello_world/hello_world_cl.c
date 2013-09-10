@@ -478,6 +478,138 @@ int main(int argc, char** argv)
         printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);                   
     }
 
+    printf("\nTEST : clCreateSubBuffer\n");
+    printf("--------------------------\n");  
+
+    cl_buffer_region region1 = 
+    {
+        0 * sizeof(int), 
+        5 * sizeof(int)
+    };
+
+    cl_buffer_region region2 = 
+    {
+        -1 * sizeof(int), 
+        5 * sizeof(int)
+    };
+
+    cl_buffer_region region3 = 
+    {
+        6 * sizeof(int), 
+        2 * sizeof(int)
+    };
+
+    cl_buffer_region region4 = 
+    {
+        6 * sizeof(int), 
+        -2 * sizeof(int)
+    };
+        
+    cl_mem subbuffer = NULL;
+
+    for (int i = 0; i < 3; i++) {
+        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region2,&cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
+
+        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region3,&cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
+
+        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region4,&cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
+
+        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region3,&cl_errcode_ret);
+        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);           
+    }
+
+    printf("\nTEST : clCreateImage2D\n");
+    printf("--------------------------\n");  
+
+    cl_mem image;
+ 
+    cl_image_format img_fmt;
+    img_fmt.image_channel_order = CL_RGBA;
+    img_fmt.image_channel_data_type = CL_FLOAT;
+
+    cl_image_format img_fmt2;
+    img_fmt2.image_channel_order = CL_RGBA;
+    img_fmt2.image_channel_data_type = CL_UNORM_INT8;
+
+    cl_image_format img_fmt3;
+    img_fmt3.image_channel_order = CL_ARGB;
+    img_fmt3.image_channel_data_type = CL_UNSIGNED_INT32;
+
+    size_t width, height;
+    width = height = 10;
+ 
+    for (int i = 0; i < 3; i++) {
+        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt, width, height, 0, 0, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt.image_channel_order ,img_fmt.image_channel_data_type );           
+
+        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt3, width, height, 0, 0, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt3.image_channel_order ,img_fmt3.image_channel_data_type );           
+    
+        image = clCreateImage2D(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, &img_fmt2, width, height, 0, pixels2, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt2.image_channel_order ,img_fmt2.image_channel_data_type );    
+
+        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt2, width, height, 0, 0, &cl_errcode_ret);
+        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt2.image_channel_order ,img_fmt2.image_channel_data_type );              
+    }
+
+    printf("\nTEST : clGetMemObjectInfo\n");
+    printf("---------------------------\n");   
+
+    cl_mem_info array_mem_info[9] = {CL_MEM_TYPE,CL_MEM_FLAGS,CL_MEM_SIZE,CL_MEM_HOST_PTR,CL_MEM_MAP_COUNT,CL_MEM_REFERENCE_COUNT,CL_MEM_REFERENCE_COUNT,CL_MEM_ASSOCIATED_MEMOBJECT,CL_MEM_OFFSET};
+
+    for (int i = 0; i < 9; i++) {
+        err = clGetMemObjectInfo(subbuffer, array_mem_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_mem_info[i],err,size,value);   
+    }
+    
+    err = clGetMemObjectInfo(buff, array_mem_info[8], sizeof(cl_int), &value, &size);
+    printf("%d) %d : %d - %d => %d\n",++counter,array_mem_info[8],err,size,value);       
+
+    printf("\nTEST : clGetImageInfo\n");
+    printf("-----------------------\n");   
+
+    cl_mem_info array_img_info[7] = {CL_IMAGE_FORMAT,CL_IMAGE_ELEMENT_SIZE,CL_IMAGE_ROW_PITCH,CL_IMAGE_ROW_PITCH,CL_IMAGE_WIDTH,CL_IMAGE_HEIGHT,CL_IMAGE_DEPTH};
+
+    for (int i = 0; i < 7; i++) {
+        err = clGetImageInfo(image, array_img_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_img_info[i],err,size,value);   
+    }
+
+    printf("\nTEST : clReleaseMemObject\n");
+    printf("-----------------------\n");  
+
+    err = clReleaseMemObject(NULL);
+    printf("%d) %d : %d\n",++counter,err,0); 
+
+    err = clReleaseMemObject(subbuffer);
+    printf("%d) %d : %d\n",++counter,err,(int)subbuffer); 
+
+    err = clReleaseMemObject(image);
+    printf("%d) %d : %d\n",++counter,err,(int)image); 
+
+
+    printf("\nTEST : clGetSupportedImageFormats\n");
+    printf("-----------------------------------\n");  
+
+    cl_uint uiNumSupportedFormats = 0;
+
+    for (int i = 0; i < 3; i++) {
+        err = clGetSupportedImageFormats(context, array_buffer_flags[i] , CL_MEM_OBJECT_IMAGE2D, 0, NULL, &uiNumSupportedFormats);
+        printf("\n%d) %d : %d\n",++counter,err,(int)uiNumSupportedFormats); 
+
+        cl_image_format ImageFormats[uiNumSupportedFormats];
+
+        err = clGetSupportedImageFormats(context, array_buffer_flags[i] , CL_MEM_OBJECT_IMAGE2D, uiNumSupportedFormats, ImageFormats, NULL);
+
+        for(unsigned int i = 0; i < uiNumSupportedFormats; i++) {  
+            printf("%d) %d : (%dx%d)\n",++counter,err,(int)ImageFormats[i].image_channel_order,(int)ImageFormats[i].image_channel_data_type); 
+        }
+    }
+                
+
     return end(EXIT_SUCCESS);
 }
 
