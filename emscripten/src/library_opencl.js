@@ -1642,7 +1642,60 @@ var LibraryOpenCL = {
   },
 
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
-    console.error("clCreateSampler: Not yet implemented\n");
+    // Assume the flags is i32 
+    assert(flags_i64_2 == 0, 'Invalid flags i64');
+    
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateSampler",[context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _sampler = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createSampler",[normalized_coords,addressing_mode,filter_mode]);
+#endif      
+
+      _sampler = CL.cl_objects[context].createSampler(normalized_coords,addressing_mode,filter_mode);
+      
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_sampler);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clRetainSampler: function(sampler) {
@@ -1650,18 +1703,131 @@ var LibraryOpenCL = {
   },
 
   clReleaseSampler: function(sampler) {
-    console.error("clReleaseSampler: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseSampler",[sampler]);
+#endif
+
+    try {
+
+      if (sampler in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[sampler]+".release",[]);
+#endif        
+        CL.cl_objects[sampler].release();
+        delete CL.cl_objects[sampler];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[sampler]+" is not a valid OpenCL sampler","");
+#endif
+        return webcl.INVALID_SAMPLER;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clGetSamplerInfo: function(sampler,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetSamplerInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetSamplerInfo",[sampler,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (sampler in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[sampler]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[context].getInfo(sampler);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "boolean") {
+
+          if (param_value != 0) (_info == true) ? {{{ makeSetValue('param_value', '0', '1', 'i32') }}} : {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "object") {
+
+          if (_info instanceof WebCLContext) {
+     
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
+        }
+       
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"sampler are NULL","");
+#endif
+        return webcl.INVALID_SAMPLER;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clCreateProgramWithSource: function(context,count,strings,lengths,cl_errcode_ret) {
     console.error("clCreateProgramWithSource: Not yet implemented\n");
   },
 
-  clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,inaries,cl_binary_status,cl_errcode_ret) {
+  clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,binaries,cl_binary_status,cl_errcode_ret) {
     console.error("clCreateProgramWithBinary: Not yet implemented\n");
   },
 
