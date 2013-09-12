@@ -1360,9 +1360,7 @@ var LibraryOpenCL = {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
-    // Doesn't exit in webcl, but that could be possible to fake it I think --> @steven Your opinion about that ??
-
-    console.error("clCreateImage3D: Not yet implemented\n");
+    console.error("clCreateImage3D: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clRetainMemObject: function(memobj) {
@@ -1638,7 +1636,7 @@ var LibraryOpenCL = {
   },
 
   clSetMemObjectDestructorCallback: function(memobj,pfn_notify,user_data) {
-    console.error("clSetMemObjectDestructorCallback: Not yet implemented\n");
+    console.error("clSetMemObjectDestructorCallback: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
@@ -1879,7 +1877,7 @@ var LibraryOpenCL = {
   },
 
   clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,binaries,cl_binary_status,cl_errcode_ret) {
-    console.error("clCreateProgramWithBinary: Not yet implemented\n");
+    console.error("clCreateProgramWithBinary: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clRetainProgram: function(program) {
@@ -2055,18 +2053,18 @@ var LibraryOpenCL = {
     // Assume the map_flags is i32 
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
 
-    console.error("clEnqueueMapBuffer: Not yet implemented\n");
+    console.error("clEnqueueMapBuffer: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clEnqueueMapImage: function(command_queue,image,blocking_map,map_flags_i64_1,map_flags_i64_2,origin,region,image_row_pitch,image_slice_pitch,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
     // Assume the map_flags is i32 
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
     
-    console.error("clEnqueueMapImage: Not yet implemented\n");
+    console.error("clEnqueueMapImage: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clEnqueueUnmapMemObject: function(command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueUnmapMemObject: Not yet implemented\n");
+    console.error("clEnqueueUnmapMemObject: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clEnqueueNDRangeKernel: function(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
@@ -2074,11 +2072,11 @@ var LibraryOpenCL = {
   },
 
   clEnqueueTask: function(command_queue,kernel,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueTask: Not yet implemented\n");
+    console.error("clEnqueueTask: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clEnqueueNativeKernel: function(command_queue,user_func,args,cb_args,num_mem_objects,mem_list,args_mem_loc,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueNativeKernel: Not yet implemented\n");
+    console.error("clEnqueueNativeKernel: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
   },
 
   clEnqueueMarker: function(command_queue,event) {
