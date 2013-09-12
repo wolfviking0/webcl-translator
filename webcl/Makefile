@@ -34,7 +34,7 @@ all: \
 
 hello_world_sample:
 	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_DEBUG=1 -o ../build/hello_world.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c -O0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_DEBUG=1 -o ../build/hello_world.js
 
 hello_world_cuda_sample:
 	$(call chdir,hello_world_cuda/)

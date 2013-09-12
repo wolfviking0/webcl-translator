@@ -116,6 +116,10 @@ int end(int e) {
     return e;
 }
 
+void pfn_notify_program(cl_program program, void *user_data) {
+    printf("%d) %d : pfn_notify call\n",(int)user_data,(int)program); 
+}
+
 int main(int argc, char** argv)
 {
     cl_uint err;
@@ -663,7 +667,37 @@ int main(int argc, char** argv)
     err = clReleaseProgram(program2);
     printf("%d) %d : %d\n",++counter,err,(int)program2); 
 
-    
+    printf("\nTEST : clBuildProgram\n");
+    printf("-------------------------\n");  
+    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    printf("%d) %d : %d\n",++counter,err,(int)program); 
+
+    err = clBuildProgram(program, 1, first_device_id, NULL, NULL, NULL);
+    printf("%d) %d : %d\n",++counter,err,(int)program,(int)first_device_id); 
+
+    char* options[14];
+    options[0] = strdup("-D name");
+    options[1] = strdup("-D name=definition");
+    options[2] = strdup("-cl-opt-disable");
+    options[3] = strdup("-cl-single-precision-constant");
+    options[4] = strdup("-cl-denorms-are-zero");
+    options[5] = strdup("-cl-mad-enable");
+    options[6] = strdup("-cl-no-signed-zeros");
+    options[7] = strdup("-cl-unsafe-math-optimizations");
+    options[8] = strdup("-cl-finite-math-only");
+    options[9] = strdup("-cl-fast-relaxed-math");
+    options[10] = strdup("-W");
+    options[11] = strdup("-Werror");
+    options[12] = strdup("-cl-std=");
+
+    for (int i = 0; i < 14; i++) {
+        err = clBuildProgram(program, 1, first_device_id, options[i], NULL, NULL);
+        printf("%d) %d : %d : %s\n",++counter,err,(int)program,(int)first_device_id,options[i]); 
+    }
+
+    err = clBuildProgram(program, 1, first_device_id, NULL, pfn_notify_program,++counter);    
+    printf("%d) %d : %d : %d\n",++counter,err,(int)program,(int)first_device_id,pfn_notify_program); 
+
     return end(EXIT_SUCCESS);
 }
 

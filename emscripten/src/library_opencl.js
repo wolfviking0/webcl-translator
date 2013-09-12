@@ -74,6 +74,10 @@ var LibraryOpenCL = {
       return _error;
     },
 
+    pfn_notify: function(event, user_data) {
+      console.info("Call of pfn_notify --> event status : " + event.status + " - user_data = " + user_data );
+    },
+
 #if OPENCL_STACK_TRACE    
     stack_trace: "// Javascript webcl Stack Trace\n",
 
@@ -1926,7 +1930,64 @@ var LibraryOpenCL = {
   },
 
   clBuildProgram: function(program,num_devices,device_list,options,pfn_notify,user_data) {
-    console.error("clBuildProgram: Not yet implemented\n");
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clBuildProgram",[program,num_devices,device_list,options,pfn_notify,user_data]);
+#endif
+
+    // Program must be created
+    if (!(program in CL.cl_objects)) {
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program '"+program+"' is not a valid program","");
+#endif
+
+      return webcl.INVALID_PROGRAM; 
+    }
+
+    try {
+
+
+      var _devices = [];
+      var _option = (options == 0) ? "" : Pointer_stringify(options);
+      var _callback = null;// CL.pfn_notify;      
+
+      if (device_list != 0 && num_devices > 0 ) {
+        for (var i = 0; i < num_devices ; i++) {
+          var _device = {{{ makeGetValue('device_list', 'i*4', 'i32') }}}
+          if (_device in CL.cl_objects) {
+            _devices.push(CL.cl_objects(_device));
+          }
+        }
+      }
+
+      // Need to call this code inside the callback event WebCLCallback.
+      if (pfn_notify != 0) {
+        FUNCTION_TABLE[pfn_notify](program, user_data);
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option,_callback,user_data]);
+#endif        
+      
+      CL.cl_objects[program].build(_devices,_option,_callback,user_data);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;      
+
   },
 
   clUnloadCompiler: function() {
