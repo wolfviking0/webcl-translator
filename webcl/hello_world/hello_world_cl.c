@@ -609,7 +609,61 @@ int main(int argc, char** argv)
         }
     }
                 
+    printf("\nTEST : clCreateSampler\n");
+    printf("--------------------------\n");  
 
+    cl_addressing_mode addr[5] = {CL_ADDRESS_NONE,CL_ADDRESS_CLAMP_TO_EDGE,CL_ADDRESS_CLAMP,CL_ADDRESS_REPEAT,CL_ADDRESS_MIRRORED_REPEAT};
+    cl_filter_mode filter[2] = {CL_FILTER_NEAREST,CL_FILTER_LINEAR};
+    cl_int boolean[2] = {CL_TRUE,CL_FALSE};
+      
+    for (int i = 0; i < 5 ; i++) {
+      for (int j = 0; j < 2 ; j++) {
+        for (int k = 0; k < 2 ; k++) {
+          cl_sampler sampler = clCreateSampler ( context, boolean[k], addr[i], filter[j], &cl_errcode_ret);
+          printf("%d) %d - %d (%dx%dx%d)\n",++counter,(int)sampler,cl_errcode_ret,boolean[k], addr[i], filter[j]); 
+ 
+        } 
+      } 
+    }
+    
+    cl_sampler sampler = clCreateSampler ( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &cl_errcode_ret);
+    
+    printf("\nTEST : clGetSamplerInfo\n");
+    printf("-----------------------\n");   
+    
+    cl_sampler_info array_sampler_info[5] = {CL_SAMPLER_REFERENCE_COUNT,CL_SAMPLER_CONTEXT,CL_SAMPLER_NORMALIZED_COORDS,CL_SAMPLER_ADDRESSING_MODE,CL_SAMPLER_FILTER_MODE};
+
+    for (int i = 0; i < 5; i++) {
+        err = clGetSamplerInfo(sampler, array_sampler_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_sampler_info[i],err,size,value);   
+    }
+    
+    printf("\nTEST : clReleaseSampler\n");
+    printf("-----------------------\n");  
+
+    err = clReleaseSampler(NULL);
+    printf("%d) %d : %d\n",++counter,err,0); 
+
+    err = clReleaseSampler(sampler);
+    printf("%d) %d : %d\n",++counter,err,(int)sampler); 
+
+    printf("\nTEST : clCreateProgramWithSource\n");
+    printf("-----------------------\n");  
+    
+    cl_program program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &cl_errcode_ret);
+    printf("%d) %d - %d\n",++counter,(int)program,cl_errcode_ret); 
+    
+    printf("\nTEST : clReleaseProgram\n");
+    printf("-------------------------\n");  
+
+    cl_program program2 = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &cl_errcode_ret);
+    err = clReleaseProgram(NULL);
+    printf("%d) %d : %d\n",++counter,err,0); 
+
+    err = clReleaseProgram(program2);
+    printf("%d) %d : %d\n",++counter,err,(int)program2); 
+
+    
     return end(EXIT_SUCCESS);
 }
 

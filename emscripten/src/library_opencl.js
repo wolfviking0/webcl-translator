@@ -1642,8 +1642,6 @@ var LibraryOpenCL = {
   },
 
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
-    // Assume the flags is i32 
-    assert(flags_i64_2 == 0, 'Invalid flags i64');
     
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clCreateSampler",[context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret]);
@@ -1755,8 +1753,8 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(""+CL.cl_objects[sampler]+".getInfo",[param_name]);
 #endif        
 
-        var _info = CL.cl_objects[context].getInfo(sampler);
-
+        var _info = CL.cl_objects[sampler].getInfo(param_name);
+        
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
@@ -1824,7 +1822,60 @@ var LibraryOpenCL = {
   },
 
   clCreateProgramWithSource: function(context,count,strings,lengths,cl_errcode_ret) {
-    console.error("clCreateProgramWithSource: Not yet implemented\n");
+    
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateProgramWithSource",[context,count,strings,lengths,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _program = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+        
+    try {
+  
+      var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
+  
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
+#endif      
+
+      _program = CL.cl_objects[context].createProgram(_string);
+  
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_program);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,binaries,cl_binary_status,cl_errcode_ret) {
@@ -1836,7 +1887,44 @@ var LibraryOpenCL = {
   },
 
   clReleaseProgram: function(program) {
-    console.error("clReleaseProgram: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseProgram",[program]);
+#endif
+
+    try {
+
+      if (program in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[program]+".release",[]);
+#endif        
+        CL.cl_objects[program].release();
+        delete CL.cl_objects[program];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
+#endif
+        return webcl.INVALID_PROGRAM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
+
   },
 
   clBuildProgram: function(program,num_devices,device_list,options,pfn_notify,user_data) {
