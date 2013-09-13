@@ -388,7 +388,7 @@ int main(int argc, char** argv)
 
     cl_context_info array_context_info[5] = {CL_CONTEXT_REFERENCE_COUNT,CL_CONTEXT_NUM_DEVICES,CL_CONTEXT_DEVICES,CL_CONTEXT_PROPERTIES,CL_CONTEXT_PLATFORM};
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         err = clGetContextInfo(contextFromType, array_context_info[i], sizeof(cl_int), &value, &size);
         printf("%d) %d : %d - %d => %d\n",++counter,array_context_info[i],err,size,value);   
     }
@@ -697,6 +697,65 @@ int main(int argc, char** argv)
 
     err = clBuildProgram(program, 1, first_device_id, NULL, pfn_notify_program,++counter);    
     printf("%d) %d : %d : %d\n",++counter,err,(int)program,(int)first_device_id,pfn_notify_program); 
+
+    printf("\nTEST : clGetProgramBuildInfo\n");
+    printf("-----------------------\n");   
+    
+    size = 0;
+    value = 0;
+
+    cl_program_build_info array_program_build_info[3] = {CL_PROGRAM_BUILD_STATUS,CL_PROGRAM_BUILD_OPTIONS,CL_PROGRAM_BUILD_LOG};
+
+    for (int i = 0; i < 3; i++) {
+        err = clGetProgramBuildInfo(program, first_device_id, array_program_build_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_program_build_info[i],err,size,value);   
+    }
+
+    printf("\nTEST : clGetProgramInfo\n");
+    printf("-----------------------\n");   
+    
+    size = 0;
+    value = 0;
+
+    cl_program_info array_program_info[7] = {CL_PROGRAM_REFERENCE_COUNT,CL_PROGRAM_CONTEXT,CL_PROGRAM_NUM_DEVICES,CL_PROGRAM_DEVICES,CL_PROGRAM_SOURCE,CL_PROGRAM_BINARY_SIZES,CL_PROGRAM_BINARIES};
+
+    for (int i = 0; i < 7; i++) {
+        err = clGetProgramInfo(program, array_program_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_program_info[i],err,size,value);   
+    }
+
+    printf("\nTEST : clCreateKernel\n");
+    printf("-----------------------\n");   
+    cl_kernel kernel;
+
+    kernel = clCreateKernel(program, 0, &err);
+    printf("%d) %d : %d\n",++counter,(int)program,err);
+
+    kernel = clCreateKernel(program, "", &err);
+    printf("%d) %d : %d\n",++counter,(int)program,err);
+
+    kernel = clCreateKernel(program, "square", &err);
+    printf("%d) %d : %d\n",++counter,(int)program,err);
+
+    printf("\nTEST : clCreateKernelsInProgram\n");
+    printf("---------------------------------\n");   
+    
+    err = clCreateKernelsInProgram(program,0,NULL,&size);
+    printf("%d) %d : %d - %d\n",++counter,(int)program,err,size);
+
+    cl_kernel kernel2;
+
+    err = clCreateKernelsInProgram(program,1,&kernel2,&size);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)program,err,size,(int)kernel2);
+
+    printf("\nTEST : clReleaseKernel\n");
+    printf("-----------------------\n");   
+
+    err = clReleaseKernel(NULL);
+    printf("%d) %d : %d\n",++counter,err,0); 
+
+    err = clReleaseKernel(kernel2);
+    printf("%d) %d : %d\n",++counter,err,(int)kernel2); 
 
     return end(EXIT_SUCCESS);
 }

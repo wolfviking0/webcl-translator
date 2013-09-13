@@ -197,6 +197,7 @@ var LibraryOpenCL = {
   },
 
   clGetPlatformInfo: function(platform,param_name,param_value_size,param_value,param_value_size_ret) {
+    
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clGetPlatformInfo",[platform,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
@@ -392,7 +393,7 @@ var LibraryOpenCL = {
           
           if (_info instanceof Int32Array) {
            
-            for (var i = 0; i < _info.length; i++) {
+            for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
             }
             if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
@@ -697,6 +698,7 @@ var LibraryOpenCL = {
 
   clRetainContext: function(context) {
     console.error("clRetainContext: Not yet implemented\n");
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseContext: function(context) {
@@ -773,7 +775,7 @@ var LibraryOpenCL = {
 
           } else if (_info instanceof Array) {
 
-            for (var i = 0; i < _info.length; i++) {
+            for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
               var _id = CL.udid(_info[i]);
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_id', 'i32') }}};
             }
@@ -897,6 +899,7 @@ var LibraryOpenCL = {
 
   clRetainCommandQueue: function(command_queue) {
     console.error("clRetainCommandQueue: Not yet implemented\n");
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseCommandQueue: function(command_queue) {
@@ -1365,10 +1368,18 @@ var LibraryOpenCL = {
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
     console.error("clCreateImage3D: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+    }
+
+    return 0;
   },
 
   clRetainMemObject: function(memobj) {
     console.error("clRetainMemObject: Not yet implemented\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseMemObject: function(memobj) {
@@ -1641,6 +1652,8 @@ var LibraryOpenCL = {
 
   clSetMemObjectDestructorCallback: function(memobj,pfn_notify,user_data) {
     console.error("clSetMemObjectDestructorCallback: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
@@ -1700,6 +1713,8 @@ var LibraryOpenCL = {
 
   clRetainSampler: function(sampler) {
     console.error("clRetainSampler: Not yet implemented\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseSampler: function(sampler) {
@@ -1882,10 +1897,19 @@ var LibraryOpenCL = {
 
   clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,binaries,cl_binary_status,cl_errcode_ret) {
     console.error("clCreateProgramWithBinary: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+    
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+    }
+
+    return 0;
+
   },
 
   clRetainProgram: function(program) {
     console.error("clRetainProgram: Not yet implemented\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseProgram: function(program) {
@@ -1962,9 +1986,9 @@ var LibraryOpenCL = {
       }
 
       // Need to call this code inside the callback event WebCLCallback.
-      if (pfn_notify != 0) {
-        FUNCTION_TABLE[pfn_notify](program, user_data);
-      }
+      // if (pfn_notify != 0) {
+      //  FUNCTION_TABLE[pfn_notify](program, user_data);
+      // }
 
 #if OPENCL_STACK_TRACE
       CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option,_callback,user_data]);
@@ -1991,31 +2015,323 @@ var LibraryOpenCL = {
   },
 
   clUnloadCompiler: function() {
-    console.error("clUnloadCompiler: Not yet implemented\n");
+    console.error("clUnloadCompiler: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+    
+    return webcl.INVALID_VALUE;;
   },
 
   clGetProgramInfo: function(program,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetProgramInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetProgramInfo",[program,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (program in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[program]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[program].getInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "string") {
+          if (param_value != 0) {
+            writeStringToMemory(_info, param_value);
+          }
+        
+          if (param_value_size_ret != 0) {
+            {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+          }
+        } else if(typeof(_info) == "object") {
+
+          if (_info instanceof WebCLContext) {
+     
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info instanceof Array) {
+
+            for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+              var _id = CL.udid(_info[i]);
+              if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_id', 'i32') }}};
+            }
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
+        }
+       
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
+#endif
+        return webcl.INVALID_PROGRAM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetProgramBuildInfo: function(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetProgramBuildInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetProgramBuildInfo",[program,device,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (program in CL.cl_objects) {
+      
+        if (device in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[program]+".getBuildInfo",[device,param_name]);
+#endif        
+
+          var _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
+
+          if(typeof(_info) == "number") {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if(typeof(_info) == "string") {
+            if (param_value != 0) {
+              writeStringToMemory(_info, param_value);
+            }
+          
+            if (param_value_size_ret != 0) {
+              {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+            }
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
+#endif
+          return webcl.INVALID_DEVICE;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
+#endif
+        return webcl.INVALID_PROGRAM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clCreateKernel: function(program,kernel_name,cl_errcode_ret) {
-    console.error("clCreateKernel: Not yet implemented\n");
+    
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateKernel",[program,kernel_name,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _kernel = null;
+    var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
+
+    // program must be created
+    if (!(program in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PROGRAM', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"program '"+program+"' is not a valid program","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[program]+".createKernel",[_name]);
+#endif      
+
+      _kernel = CL.cl_objects[program].createKernel(_name);
+      
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_kernel);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateKernelsInProgram: function(program,num_kernels,kernels,num_kernels_ret) {
-    console.error("clCreateKernelsInProgram: Not yet implemented\n");
+    
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateKernelsInProgram",[program,num_kernels,kernels,num_kernels_ret]);
+#endif
+
+    // program must be created
+    if (!(program in CL.cl_objects)) {
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program '"+program+"' is not a valid program","");
+#endif
+      return webcl.INVALID_PROGRAM; 
+    }
+
+    try {
+    
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[program]+".createKernelsInProgram",[]);
+#endif      
+
+      var _kernels = CL.cl_objects[program].createKernelsInProgram();
+
+      for (var i = 0; i < Math.min(num_kernels,_kernels.length); i++) {
+        var _id = CL.udid(_kernels[i]);
+        if (kernels != 0) {{{ makeSetValue('kernels', 'i*4', '_id', 'i32') }}};
+      }
+           
+      if (num_kernels_ret != 0) {{{ makeSetValue('num_kernels_ret', '0', 'Math.min(num_kernels,_kernels.length)', 'i32') }}};
+
+    } catch (e) {
+
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+      return _error; 
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clRetainKernel: function(kernel) {
     console.error("clRetainKernel: Not yet implemented\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseKernel: function(kernel) {
-    console.error("clReleaseKernel: Not yet implemented\n");
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseKernel",[kernel]);
+#endif
+
+    try {
+
+      if (kernel in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
+#endif        
+        CL.cl_objects[kernel].release();
+        delete CL.cl_objects[kernel];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+#endif
+        return webcl.INVALID_PROGRAM;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clSetKernelArg: function(kernel,arg_index,arg_size,arg_value) {
