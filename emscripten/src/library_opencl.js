@@ -74,10 +74,6 @@ var LibraryOpenCL = {
       return _error;
     },
 
-    pfn_notify: function(event, user_data) {
-      console.info("Call of pfn_notify --> event status : " + event.status + " - user_data = " + user_data );
-    },
-
 #if OPENCL_STACK_TRACE    
     stack_trace: "// Javascript webcl Stack Trace\n",
 
@@ -1971,10 +1967,8 @@ var LibraryOpenCL = {
 
     try {
 
-
       var _devices = [];
-      var _option = (options == 0) ? "" : Pointer_stringify(options);
-      var _callback = null;// CL.pfn_notify;      
+      var _option = (options == 0) ? "" : Pointer_stringify(options); 
 
       if (device_list != 0 && num_devices > 0 ) {
         for (var i = 0; i < num_devices ; i++) {
@@ -1991,10 +1985,10 @@ var LibraryOpenCL = {
       // }
 
 #if OPENCL_STACK_TRACE
-      CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option,_callback,user_data]);
+      CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option]);
 #endif        
       
-      CL.cl_objects[program].build(_devices,_option,_callback,user_data);
+      CL.cl_objects[program].build(_devices,_option,null,null);
 
     } catch (e) {
       var _error = CL.catchError(e);
