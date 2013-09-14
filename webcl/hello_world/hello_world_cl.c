@@ -757,6 +757,60 @@ int main(int argc, char** argv)
     err = clReleaseKernel(kernel2);
     printf("%d) %d : %d\n",++counter,err,(int)kernel2); 
 
+    printf("\nTEST : clSetKernelArg\n");
+    printf("-----------------------\n");   
+
+    unsigned int count = 1024;
+    float data[count];
+    for(i = 0; i < count; i++)
+        data[i] = rand() / (float)RAND_MAX;
+
+    cl_mem input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, NULL);
+    cl_mem output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);
+
+    err = 0;
+    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 0, sizeof(cl_mem), (int)input);
+
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 1, sizeof(cl_mem), (int)output);    
+
+    err |= clSetKernelArg(kernel, 2, 1024, NULL);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 2, 1024, NULL);   
+
+    err |= clSetKernelArg(kernel, 3, 1024, NULL);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 3, sizeof(unsigned int), (int)count);    
+
+    err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &count);
+    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 2, sizeof(unsigned int), (int)count);    
+    
+    
+    printf("\nTEST : clGetKernelWorkGroupInfo\n");
+    printf("---------------------------------\n");   
+    
+    size = 0;
+    value = 0;
+
+    cl_kernel_work_group_info array_kernel_work_info[6] = {CL_KERNEL_GLOBAL_WORK_SIZE,CL_KERNEL_WORK_GROUP_SIZE,CL_KERNEL_COMPILE_WORK_GROUP_SIZE,CL_KERNEL_LOCAL_MEM_SIZE,CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,CL_KERNEL_PRIVATE_MEM_SIZE};
+
+    for (int i = 0; i < 6; i++) {
+        err = clGetKernelWorkGroupInfo(kernel, first_device_id, array_kernel_work_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_kernel_work_info[i],err,size,value);   
+    }
+
+    printf("\nTEST : clGetKernelInfo\n");
+    printf("-----------------------\n");   
+    
+    size = 0;
+    value = 0;
+
+    cl_kernel_info array_kernel_info[6] = {CL_KERNEL_FUNCTION_NAME,CL_KERNEL_NUM_ARGS,CL_KERNEL_REFERENCE_COUNT,CL_KERNEL_CONTEXT,CL_KERNEL_PROGRAM,CL_KERNEL_ATTRIBUTES};
+
+    for (int i = 0; i < 6; i++) {
+        err = clGetKernelInfo(kernel, array_kernel_info[i], sizeof(cl_int), &value, &size);
+        printf("%d) %d : %d - %d => %d\n",++counter,array_kernel_info[i],err,size,value);   
+    }
+
     return end(EXIT_SUCCESS);
 }
 

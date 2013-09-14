@@ -54,7 +54,7 @@ var LibraryOpenCL = {
       var _middle = {{{ makeGetValue('ptr', 'size>>1', 'float') }}};
       var _end    = {{{ makeGetValue('ptr', 'size', 'float') }}};
 
-      if ((_begin + _middle + _end).toFixed(20) > 0 ) {
+      if ((_begin + _middle + _end).toFixed(5) > 0 ) {
         return 1;
       } else {
         return 0;
@@ -2306,9 +2306,9 @@ var LibraryOpenCL = {
 
       } else {
 #if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
 #endif
-        return webcl.INVALID_PROGRAM;
+        return webcl.INVALID_KERNEL;
       }
 
     } catch (e) {
@@ -2329,15 +2329,272 @@ var LibraryOpenCL = {
   },
 
   clSetKernelArg: function(kernel,arg_index,arg_size,arg_value) {
-    console.error("clSetKernelArg: Not yet implemented\n");
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clSetKernelArg",[kernel,arg_index,arg_size,arg_value]);
+#endif
+
+    try {
+
+      console.info("/!\\ ***************************************************** ");
+      console.info("/!\\ clSetKernelArg, not yet fully implemented and tested. ");
+      console.info("/!\\ May be need to plug again the kernel parser.");
+      console.info("/!\\ Could be give problem with LOCAL_MEMORY_SIZE !.");
+      console.info("/!\\ ***************************************************** ");
+      console.info("");
+
+      if (kernel in CL.cl_objects) {
+
+        var _size = arg_size >> 2
+        var _type = WebCLKernelArgumentTypes;
+        var _value;
+
+        // 1 ) arg_value is not null
+        if (arg_value != 0) {
+          // 1.1 ) arg_value is an array
+          if (_size > 1) {
+            _value = new ArrayBuffer(size);
+
+            // 1.1.1 ) arg_value is an array of float
+            if (CL.isFloat(arg_value, _size)) {
+              _type = WebCLKernelArgumentTypes.FLOAT;
+
+              for (var i = 0; i < _size; i++ ) {
+                _value[i] = {{{ makeGetValue('arg_value', 'i*4', 'float') }}};
+              }
+            } 
+            // 1.1.2 ) arg_value is an array of int
+            else {
+              _type = WebCLKernelArgumentTypes.INT;
+
+              for (var i = 0; i < _size; i++ ) {
+                _value[i] = {{{ makeGetValue('arg_value', 'i*4', 'i32') }}};
+              }
+            }
+          } 
+          // 1.2 ) arg_value is a value
+          else {
+
+            // 1.2.1 ) arg_value is a float
+            if (CL.isFloat(arg_value, _size)) {
+              _type = WebCLKernelArgumentTypes.FLOAT;
+
+              _value = {{{ makeGetValue('arg_value', '0', 'float') }}};
+            } 
+            // 1.2.2 ) arg_value is a int
+            else {
+              _type = WebCLKernelArgumentTypes.INT;
+
+              _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
+            }
+          }
+
+          // 1.3 ) arg_value is may be an object .. check ...
+          if (_value in CL.cl_objects) {
+            _value = CL.cl_objects[_value];
+          
+#if OPENCL_STACK_TRACE
+            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_value]);
+#endif        
+            CL.cl_objects[kernel].setArg(arg_index,_value);
+
+          } else {
+
+#if OPENCL_STACK_TRACE
+            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_value,_type]);
+#endif        
+            CL.cl_objects[kernel].setArg(arg_index,_value,_type);
+
+          }
+        }  
+        // 2 ) arg_value is null
+        else {
+
+          _type = WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE;
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,arg_size,_type]);
+#endif     
+          CL.cl_objects[kernel].setArg(arg_index,arg_size,_type);
+        }
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+#endif
+        return webcl.INVALID_KERNEL;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clGetKernelInfo: function(kernel,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetKernelInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetKernelInfo",[kernel,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (kernel in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[kernel].getInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "string") {
+          if (param_value != 0) {
+            writeStringToMemory(_info, param_value);
+          }
+        
+          if (param_value_size_ret != 0) {
+            {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+          }
+        } else if(typeof(_info) == "object") {
+
+          if ( (_info instanceof WebCLContext) || (_info instanceof WebCLProgram) ){
+     
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_VALUE;
+        }
+       
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"kernel are NULL","");
+#endif
+        return webcl.INVALID_KERNEL;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetKernelWorkGroupInfo: function(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetKernelWorkGroupInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetKernelWorkGroupInfo",[kernel,device,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (kernel in CL.cl_objects) {
+      
+        if (device in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getWorkGroupInfo",[device,param_name]);
+#endif        
+
+          var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
+
+          if(typeof(_info) == "number") {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info instanceof Int32Array) {
+           
+            for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+              if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
+            }
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+          
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
+#endif
+          return webcl.INVALID_DEVICE;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"kernel are NULL","");
+#endif
+        return webcl.INVALID_KERNEL;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clWaitForEvents: function(num_events,event_list) {
