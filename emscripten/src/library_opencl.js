@@ -1653,7 +1653,6 @@ var LibraryOpenCL = {
   },
 
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
-    
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clCreateSampler",[context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret]);
 #endif
@@ -2598,47 +2597,515 @@ var LibraryOpenCL = {
   },
 
   clWaitForEvents: function(num_events,event_list) {
-    console.error("clWaitForEvents: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clWaitForEvents",[num_events,event_list]);
+#endif
+
+    try {
+
+      var _events = [];
+
+      for (var i = 0; i < num_events; i++) {
+        var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
+        if (_event in CL.cl_objects) {
+          _events.push(_event) 
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+          return webcl.INVALID_EVENT;    
+        }
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace(""+webcl+".waitForEvents",[_events]);
+#endif      
+      webcl.waitForEvents(_events);
+
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clGetEventInfo: function(event,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetEventInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetEventInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (event in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[event]+".getInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[event].getInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else if(typeof(_info) == "object") {
+
+          if ( (_info instanceof WebCLContext) || (_info instanceof WebCLCommandQueue) ){
+     
+            var _id = CL.udid(_info);
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else if (_info == null) {
+
+            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
+#endif
+            return webcl.INVALID_EVENT;
+          }
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_EVENT;
+        }
+       
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
+#endif
+        return webcl.INVALID_EVENT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clCreateUserEvent: function(context,cl_errcode_ret) {
-    console.error("clCreateUserEvent: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateUserEvent",[context,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _event = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
+    
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createUserEvent",[]);
+#endif      
+
+      _event = CL.cl_objects[context].createUserEvent();
+      
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_event);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
+
   },
 
   clRetainEvent: function(event) {
-    console.error("clRetainEvent: Not yet implemented\n");
+    console.error("clRetainKernel: Not yet implemented\n");
+
+    return webcl.INVALID_VALUE;
   },
 
   clReleaseEvent: function(event) {
-    console.error("clReleaseEvent: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clReleaseEvent",[event]);
+#endif
+
+    try {
+
+      if (event in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[event]+".release",[]);
+#endif        
+        CL.cl_objects[event].release();
+        delete CL.cl_objects[event];
+        CL.cl_objects_size--;
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
+#endif
+        return webcl.INVALID_EVENT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clSetUserEventStatus: function(event,execution_status) {
-    console.error("clSetUserEventStatus: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clSetUserEventStatus",[event,execution_status]);
+#endif
+
+    try {
+
+      if (event in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[event]+".setUserEventStatus",[execution_status]);
+#endif        
+
+        CL.cl_objects[event].setUserEventStatus(execution_status);
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
+#endif
+        return webcl.INVALID_EVENT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clSetEventCallback: function(event,command_exec_callback_type,pfn_notify,user_data) {
-    console.error("clSetEventCallback: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clSetEventCallback",[event,command_exec_callback_type,pfn_notify,user_data]);
+#endif
+
+    try {
+
+      if (event in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,pfn_notify,user_data]);
+#endif        
+
+        console.error("/!\\ todo clSetEventCallback not yet finish to implement");
+        CL.cl_objects[event].setCallback(command_exec_callback_type);
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
+#endif
+        return webcl.INVALID_EVENT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clGetEventProfilingInfo: function(event,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetEventProfilingInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetEventProfilingInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (event in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[event]+".getProfilingInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[event].getProfilingInfo(param_name);
+
+        if(typeof(_info) == "number") {
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
+#endif
+          return webcl.INVALID_EVENT;
+        }
+       
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
+#endif
+        return webcl.INVALID_EVENT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clFlush: function(command_queue) {
-    console.error("clFlush: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clFlush",[command_queue]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".flush",[]);
+#endif        
+
+        CL.cl_objects[command_queue].flush();
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clFinish: function(command_queue) {
-    console.error("clFinish: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clFinish",[command_queue]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".finish",[]);
+#endif        
+
+        CL.cl_objects[command_queue].finish();
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clEnqueueReadBuffer: function(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueReadBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueReadBuffer",[command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (buffer in CL.cl_objects) {
+
+          var _host_ptr = new ArrayBuffer(cb);
+          var _event_wait_list = [];
+          var _event = null;
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif        
+          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+          if (ptr) {
+            _size = cb >> 2;
+
+            console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
+            console.info(typeof(_host_ptr));
+
+            /*
+            if (CL.isFloat(ptr, _size)) {
+              for (var i = 0; i < _size; i++ ) {
+                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'float') }}};
+              }
+            } else {
+              for (var i = 0; i < _size; i++ ) {
+                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'i32') }}};
+              }
+            }
+            */
+          }
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;    
   },
 
   clEnqueueReadBufferRect: function(command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -2646,7 +3113,84 @@ var LibraryOpenCL = {
   },
 
   clEnqueueWriteBuffer: function(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueWriteBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueWriteBuffer",[command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (buffer in CL.cl_objects) {
+
+          var _host_ptr = null;
+          var _event_wait_list = [];
+          var _event;
+
+
+          if (ptr) {
+            _size = cb >> 2;
+
+            if (CL.isFloat(ptr, _size)) {
+              _host_ptr = new Float32Array(_size);
+              for (var i = 0; i < _size; i++ ) {
+                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
+              }
+            } else {
+              _host_ptr = new Int32Array(_size);
+              for (var i = 0; i < _size; i++ ) {
+                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
+              }
+            }
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr);    
+          // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
+
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
   },
 
   clEnqueueWriteBufferRect: function(command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {

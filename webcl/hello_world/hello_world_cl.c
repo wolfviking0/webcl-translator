@@ -811,6 +811,11 @@ int main(int argc, char** argv)
         printf("%d) %d : %d - %d => %d\n",++counter,array_kernel_info[i],err,size,value);   
     }
 
+    printf("\n\n\n\n\n\n\nTEST : Hello World Sample\n");
+    printf("-----------------------\n");   
+    main_2(argc,argv);
+    printf("\n\n\n\n\n\n\n");
+
     return end(EXIT_SUCCESS);
 }
 
@@ -884,13 +889,21 @@ int main_2(int argc, char** argv)
         
     printf("Call : clGetDeviceInfo ...\n");    
     err = clGetDeviceInfo(device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), vendor_name, &returned_size);
-    err|= clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, &returned_size);
-    err|= clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(device_name), &image_support, &returned_size);
-
     if (err != CL_SUCCESS)
     {
-        printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        printf("Error: Failed to retrieve device info : CL_DEVICE_VENDOR!\n");
+    }
+
+    err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, &returned_size);
+        if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to retrieve device info : CL_DEVICE_NAME!\n");
+    }
+
+    err = clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(device_name), &image_support, &returned_size);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to retrieve device info : CL_DEVICE_IMAGE_SUPPORT!\n");
     }
     
     unsigned int device_count;
