@@ -1973,7 +1973,7 @@ var LibraryOpenCL = {
         for (var i = 0; i < num_devices ; i++) {
           var _device = {{{ makeGetValue('device_list', 'i*4', 'i32') }}}
           if (_device in CL.cl_objects) {
-            _devices.push(CL.cl_objects(_device));
+            _devices.push(CL.cl_objects[_device]);
           }
         }
       }
