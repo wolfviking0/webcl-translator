@@ -3058,15 +3058,15 @@ var LibraryOpenCL = {
 #endif        
           CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
 
+          console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
+          console.info(typeof(_host_ptr));
+
+          /*
           if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
           if (ptr) {
             _size = cb >> 2;
 
-            console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
-            console.info(typeof(_host_ptr));
-
-            /*
             if (CL.isFloat(ptr, _size)) {
               for (var i = 0; i < _size; i++ ) {
                 {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'float') }}};
@@ -3076,8 +3076,8 @@ var LibraryOpenCL = {
                 {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'i32') }}};
               }
             }
-            */
           }
+          */
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -3109,7 +3109,94 @@ var LibraryOpenCL = {
   },
 
   clEnqueueReadBufferRect: function(command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueReadBufferRect: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueReadBufferRect",[command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (buffer in CL.cl_objects) {
+
+          var _host_ptr = new ArrayBuffer(cb);
+          var _event_wait_list = [];
+          var _event = null;
+          var _buffer_origin = [];
+          var _host_origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 3; i++) {
+            _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
+            _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
+#endif        
+          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+
+          console.error("/!\\ todo enqueueReadBufferRect not yet finish to implement");
+          console.info(typeof(_host_ptr));
+
+          /*
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+          if (ptr) {
+            _size = cb >> 2;
+
+            if (CL.isFloat(ptr, _size)) {
+              for (var i = 0; i < _size; i++ ) {
+                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'float') }}};
+              }
+            } else {
+              for (var i = 0; i < _size; i++ ) {
+                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'i32') }}};
+              }
+            }
+          }
+          */
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS;    
   },
 
   clEnqueueWriteBuffer: function(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -3126,7 +3213,6 @@ var LibraryOpenCL = {
           var _host_ptr = null;
           var _event_wait_list = [];
           var _event;
-
 
           if (ptr) {
             _size = cb >> 2;
@@ -3160,7 +3246,7 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr);    
+          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
@@ -3194,7 +3280,92 @@ var LibraryOpenCL = {
   },
 
   clEnqueueWriteBufferRect: function(command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueWriteBufferRect: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueWriteBufferRect",[command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (buffer in CL.cl_objects) {
+
+          var _host_ptr = null;
+          var _event_wait_list = [];
+          var _event;
+          var _buffer_origin = [];
+          var _host_origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 3; i++) {
+            _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
+            _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          if (ptr) {
+            _size = cb >> 2;
+
+            if (CL.isFloat(ptr, _size)) {
+              _host_ptr = new Float32Array(_size);
+              for (var i = 0; i < _size; i++ ) {
+                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
+              }
+            } else {
+              _host_ptr = new Int32Array(_size);
+              for (var i = 0; i < _size; i++ ) {
+                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
+              }
+            }
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
+#endif    
+
+          CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);   
+          //CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
+
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
   },
 
   clEnqueueCopyBuffer: function(command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event) {

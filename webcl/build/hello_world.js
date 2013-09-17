@@ -5715,7 +5715,7 @@ function copyTempDouble(ptr) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
             if (_device in CL.cl_objects) {
-              _devices.push(CL.cl_objects(_device));
+              _devices.push(CL.cl_objects[_device]);
             }
           }
         }
@@ -6118,7 +6118,7 @@ function copyTempDouble(ptr) {
               }
             } 
             CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
-            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr);    
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
             // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
             // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
         } else {
@@ -6176,12 +6176,12 @@ function copyTempDouble(ptr) {
             } 
             CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
             CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+            console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
+            console.info(typeof(_host_ptr));
+            /*
             if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
             if (ptr) {
               _size = cb >> 2;
-              console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
-              console.info(typeof(_host_ptr));
-              /*
               if (CL.isFloat(ptr, _size)) {
                 for (var i = 0; i < _size; i++ ) {
                   HEAPF32[(((ptr)+(i*4))>>2)]=_host_ptr[i];
@@ -6191,8 +6191,8 @@ function copyTempDouble(ptr) {
                   HEAP32[(((ptr)+(i*4))>>2)]=_host_ptr[i];
                 }
               }
-              */
             }
+            */
         } else {
             CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
             return webcl.INVALID_MEM_OBJECT;
