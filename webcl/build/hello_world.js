@@ -5191,13 +5191,11 @@ function copyTempDouble(ptr) {
           _host_ptr = new ArrayBuffer(size);
           var _size = size >> 2;
           if (CL.isFloat(host_ptr, _size)) {
-            for (var i = 0; i < _size; i++ ) {
-              _host_ptr[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
-            }
+            var _host_ptr_tmp = HEAPF32.subarray((host_ptr)>>2,(host_ptr+size)>>2);
+            _host_ptr = _host_ptr_tmp.buffer;
           } else {
-            for (var i = 0; i < _size; i++ ) {
-              _host_ptr[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
-            }
+            var _host_ptr_tmp = HEAP32.subarray((host_ptr)>>2,(host_ptr+size)>>2);
+            _host_ptr = _host_ptr_tmp.buffer;
           }
         } else if (flags_i64_1 & ~_flags) {
           // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
@@ -6118,7 +6116,7 @@ function copyTempDouble(ptr) {
               }
             } 
             CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
-            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
             // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
             // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
         } else {

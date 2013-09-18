@@ -1073,13 +1073,11 @@ var LibraryOpenCL = {
         var _size = size >> 2;
 
         if (CL.isFloat(host_ptr, _size)) {
-          for (var i = 0; i < _size; i++ ) {
-            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'float') }}};
-          }
+          var _host_ptr_tmp = {{{ makeHEAPView('F32','host_ptr','host_ptr+size') }}};
+          _host_ptr = _host_ptr_tmp.buffer;
         } else {
-          for (var i = 0; i < _size; i++ ) {
-            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'i32') }}};
-          }
+          var _host_ptr_tmp = {{{ makeHEAPView('32','host_ptr','host_ptr+size') }}};
+          _host_ptr = _host_ptr_tmp.buffer;
         }
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
