@@ -91,8 +91,6 @@ const char *KernelSource = "\n" \
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef __EMSCRIPTEN__
-extern void webclPrintStackTrace(const char * stack, int* size);
-
 void print_stack() {
     printf("\n___________________________________\n");
     int size = 0;
@@ -472,9 +470,11 @@ int main(int argc, char** argv)
         buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_ALLOC_HOST_PTR, sizeBytes, NULL , &cl_errcode_ret);
         printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
 
+        clSetTypePointer(CL_FLOAT);
         buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes ,pixels, &cl_errcode_ret);
         printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
 
+        clSetTypePointer(CL_SIGNED_INT32);
         buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes2, pixels2, &cl_errcode_ret);
         printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);     
 
@@ -813,7 +813,7 @@ int main(int argc, char** argv)
 
     printf("\n\n\n\n\n\n\nTEST : Hello World Sample\n");
     printf("-----------------------\n");   
-    main_2(argc,argv);
+    //main_2(argc,argv);
     printf("\n\n\n\n\n\n\n");
 
     return end(EXIT_SUCCESS);

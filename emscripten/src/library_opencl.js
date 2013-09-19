@@ -2,20 +2,19 @@ var LibraryOpenCL = {
   $CL__deps: ['$GL'],
   $CL: {
     // Private array of chars to use
-    cl_digits: '123456789'.split(''),
+    cl_digits: [1,2,3,4,5,6,7,8,9,0],
+    cl_pn_type: 0,
     cl_objects: {},
-    cl_objects_size: 0,
 
-    udid: function (obj) {
-      
+#if OPENCL_DEBUG
+    cl_objects_counter: 0,
+#endif
+    
+    udid: function (obj) {    
       var _id;
       
       if (obj !== undefined) {
          _id = obj.udid;
-         
-#if OPENCL_DEBUG         
-         console.info("udid() : get udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined));
-#endif
 
          if (_id !== undefined) {
            return _id;
@@ -24,7 +23,8 @@ var LibraryOpenCL = {
 
       var _uuid = [];
 
-      for (var i = 0; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+      _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
+      for (var i = 1; i < 8; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
 
       _id = _uuid.join('');
 
@@ -39,26 +39,80 @@ var LibraryOpenCL = {
       // /!\ Call udid when you add inside cl_objects if you pass object in parameter
       if (obj !== undefined) {
         Object.defineProperty(obj, "udid", { value : _id,writable : false });
-        CL.cl_objects_size++;
         CL.cl_objects[_id]=obj;
 #if OPENCL_DEBUG             
-        console.info("udid() : set udid property: "+ obj + ".udid = "+_id+ " - "+(_id !== undefined) + " --> Size : " + CL.cl_objects_size);
+        CL.cl_objects_counter++,
+        console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
 #endif      
       }
 
       return _id;      
     },
+    
+    getPointerToValue: function(ptr,size) {  
+      var _value = null;
+            
+      switch(CL.cl_pn_type) {
+        case webcl.SIGNED_INT8:
+        case webcl.UNSIGNED_INT8:          
+          _value = {{{ makeGetValue('ptr', '0', 'i8') }}}
+          break;
+        case webcl.SIGNED_INT16:
+        case webcl.UNSIGNED_INT16:
+          _value = {{{ makeGetValue('ptr', '0', 'i16') }}}
+          break;
+        case webcl.SIGNED_INT32:
+        case webcl.UNSIGNED_INT32:
+          _value = {{{ makeGetValue('ptr', '0', 'i32') }}}
+          break;
+        case webcl.FLOAT:
+          _value = {{{ makeGetValue('ptr', '0', 'float') }}}
+          break;          
+        default:
+          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+          _value = {{{ makeGetValue('ptr', '0', 'float') }}}
+          break;
+      }
+      
+      return _value;
+    },
 
-    isFloat: function(ptr,size) {
-      var _begin  = {{{ makeGetValue('ptr', '0', 'float') }}};
-      var _middle = {{{ makeGetValue('ptr', 'size>>1', 'float') }}};
-      var _end    = {{{ makeGetValue('ptr', 'size', 'float') }}};
-
-      if ((_begin + _middle + _end).toFixed(5) > 0 ) {
-        return 1;
-      } else {
-        return 0;
-      } 
+    getPointerToArray: function(ptr,size) {  
+      var _host_ptr = null;
+            
+      switch(CL.cl_pn_type) {
+        case webcl.SIGNED_INT8:
+          _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}}
+          break;
+        case webcl.SIGNED_INT16:
+          _host_ptr = {{{ makeHEAPView('16','ptr','ptr+size') }}}
+          break;
+        case webcl.SIGNED_INT32:
+          _host_ptr = {{{ makeHEAPView('32','ptr','ptr+size') }}}
+          break;
+        case webcl.UNSIGNED_INT8:
+          _host_ptr = {{{ makeHEAPView('U8','ptr','ptr+size') }}}
+          break;
+        case webcl.UNSIGNED_INT16:
+          _host_ptr = {{{ makeHEAPView('U16','ptr','ptr+size') }}}
+          break;
+        case webcl.UNSIGNED_INT32:
+          _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}}
+          break;
+        case webcl.FLOAT:
+          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}}
+          break;          
+        default:
+          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}}
+          break;
+      }
+      
+      return _host_ptr;
+    },
+    
+    getPointerToArrayBuffer: function(ptr,size) {  
+      return CL.getPointerToArray(ptr,size).buffer;
     },
 
     catchError: function(e) {
@@ -123,16 +177,49 @@ var LibraryOpenCL = {
   },
 
 #if OPENCL_STACK_TRACE
-  webclPrintStackTrace: function(stack_string,stack_size) {
-    var _size = {{{ makeGetValue('stack_size', '0', 'i32') }}} ;
+  webclPrintStackTrace: function(param_value,param_value_size) {
+    var _size = {{{ makeGetValue('param_value_size', '0', 'i32') }}} ;
     
     if (_size == 0) {
-      {{{ makeSetValue('stack_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Num of devices */;
+      {{{ makeSetValue('param_value_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Size of char stack */;
     } else {
-      writeStringToMemory(CL.stack_trace, stack_string);
+      writeStringToMemory(CL.stack_trace, param_value);
     }
+    
+    return webcl.SUCCESS;
   },
 #endif
+
+  clSetTypePointer: function(pn_type) {
+    /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
+#if OPENCL_DEBUG    
+    switch(pn_type) {
+      case webcl.SIGNED_INT8:
+        console.info("clSetTypePointer : SIGNED_INT8 - "+webcl.SIGNED_INT8);
+        break;
+      case webcl.SIGNED_INT16:
+        console.info("clSetTypePointer : SIGNED_INT16 - "+webcl.SIGNED_INT16);
+        break;
+      case webcl.SIGNED_INT32:
+        console.info("clSetTypePointer : SIGNED_INT32 - "+webcl.SIGNED_INT32);
+        break;
+      case webcl.UNSIGNED_INT8:
+        console.info("clSetTypePointer : UNSIGNED_INT8 - "+webcl.UNSIGNED_INT8);
+        break;
+      case webcl.UNSIGNED_INT16:
+        console.info("clSetTypePointer : UNSIGNED_INT16 - "+webcl.UNSIGNED_INT16);
+        break;
+      case webcl.UNSIGNED_INT32:
+        console.info("clSetTypePointer : UNSIGNED_INT32 - "+webcl.UNSIGNED_INT32);
+        break;
+      default:
+        console.info("clSetTypePointer : FLOAT - "+webcl.FLOAT);
+        break;
+    }
+#endif   
+    CL.cl_pn_type = pn_type;
+    return webcl.SUCCESS;
+  },
 
   clGetPlatformIDs: function(num_entries,platforms,num_platforms) {
 
@@ -711,7 +798,11 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[context].release();
         delete CL.cl_objects[context];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+#endif      
+
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -912,7 +1003,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[command_queue].release();
         delete CL.cl_objects[command_queue];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+#endif    
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -1068,17 +1162,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = new ArrayBuffer(size);
-
-        var _size = size >> 2;
-
-        if (CL.isFloat(host_ptr, _size)) {
-          var _host_ptr_tmp = {{{ makeHEAPView('F32','host_ptr','host_ptr+size') }}};
-          _host_ptr = _host_ptr_tmp.buffer;
-        } else {
-          var _host_ptr_tmp = {{{ makeHEAPView('32','host_ptr','host_ptr+size') }}};
-          _host_ptr = _host_ptr_tmp.buffer;
-        }
+        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
@@ -1300,18 +1384,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(_sizeInByte);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = new ArrayBuffer(_sizeInByte);
-
-
-        if (CL.isFloat(host_ptr, _size)) {
-          for (var i = 0; i < _size; i++ ) {
-            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'float') }}};
-          }
-        } else {
-          for (var i = 0; i < _size; i++ ) {
-            _host_ptr[i] = {{{ makeGetValue('host_ptr', 'i*4', 'i32') }}};
-          }
-        }
+        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // ( Same question : clCreateBuffer )
@@ -1390,7 +1463,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+#endif    
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -1724,7 +1800,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[sampler].release();
         delete CL.cl_objects[sampler];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
+#endif   
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -1919,7 +1998,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[program].release();
         delete CL.cl_objects[program];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
+#endif   
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -2299,7 +2381,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
-        CL.cl_objects_size--;
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
+#endif   
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -2344,7 +2429,7 @@ var LibraryOpenCL = {
 
         var _size = arg_size >> 2
         var _type = WebCLKernelArgumentTypes;
-        var _value;
+        var _value = null;
 
         // 1 ) arg_value is not null
         if (arg_value != 0) {
@@ -2353,7 +2438,7 @@ var LibraryOpenCL = {
             _value = new ArrayBuffer(size);
 
             // 1.1.1 ) arg_value is an array of float
-            if (CL.isFloat(arg_value, _size)) {
+            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
               _type = WebCLKernelArgumentTypes.FLOAT;
 
               for (var i = 0; i < _size; i++ ) {
@@ -2373,7 +2458,7 @@ var LibraryOpenCL = {
           else {
 
             // 1.2.1 ) arg_value is a float
-            if (CL.isFloat(arg_value, _size)) {
+            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
               _type = WebCLKernelArgumentTypes.FLOAT;
 
               _value = {{{ makeGetValue('arg_value', '0', 'float') }}};
@@ -2787,8 +2872,10 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[event].release();
         delete CL.cl_objects[event];
-        CL.cl_objects_size--;
-
+#if OPENCL_DEBUG             
+        CL.cl_objects_counter--,
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
+#endif   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
@@ -3215,7 +3302,7 @@ var LibraryOpenCL = {
           if (ptr) {
             _size = cb >> 2;
 
-            if (CL.isFloat(ptr, _size)) {
+            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
               _host_ptr = new Float32Array(_size);
               for (var i = 0; i < _size; i++ ) {
                 _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
@@ -3304,7 +3391,7 @@ var LibraryOpenCL = {
           if (ptr) {
             _size = cb >> 2;
 
-            if (CL.isFloat(ptr, _size)) {
+            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
               _host_ptr = new Float32Array(_size);
               for (var i = 0; i < _size; i++ ) {
                 _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
