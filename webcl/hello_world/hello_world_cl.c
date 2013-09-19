@@ -760,7 +760,7 @@ int main(int argc, char** argv)
     printf("\nTEST : clSetKernelArg\n");
     printf("-----------------------\n");   
 
-    unsigned int count = 1024;
+    unsigned int count = 512;
     float data[count];
     for(i = 0; i < count; i++)
         data[i] = rand() / (float)RAND_MAX;

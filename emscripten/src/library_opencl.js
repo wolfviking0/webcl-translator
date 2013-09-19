@@ -3,6 +3,9 @@ var LibraryOpenCL = {
   $CL: {
     // Private array of chars to use
     cl_digits: [1,2,3,4,5,6,7,8,9,0],
+    // Kernel parser
+    cl_kernels_sig: {},
+    // Pointer type (void*)
     cl_pn_type: 0,
     cl_objects: {},
 
@@ -47,6 +50,130 @@ var LibraryOpenCL = {
       }
 
       return _id;      
+    },
+
+    parseKernel: function(kernel_string) {
+      
+      // Experimental parse of Kernel
+      // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+      // Step 1 : Search __kernel
+      // Step 2 : Search kernel name (before the open brace)
+      // Step 3 : Search brace '(' and ')'
+      // Step 4 : Split all inside the brace by ',' after removing all space
+      // Step 5 : For each parameter search Adress Space and Data Type
+      //
+      // --------------------------------------------------------------------
+                  
+      var _kernel_struct = {};
+    
+      kernel_string = kernel_string.replace(/\n/g, " ");
+      kernel_string = kernel_string.replace(/\r/g, " ");
+      kernel_string = kernel_string.replace(/\t/g, " ");
+      
+      // Search kernel function __kernel 
+      var _kernel_start = kernel_string.indexOf("__kernel");
+
+      while (_kernel_start >= 0) {
+
+        kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
+      
+        var _brace_start = kernel_string.indexOf("(");
+        var _brace_end = kernel_string.indexOf(")");  
+      
+        var _kernels_name = "";
+        // Search kernel Name
+        for (var i = _brace_start - 1; i >= 0 ; i--) {
+          var _chara = kernel_string.charAt(i);
+
+          if (_chara == ' ' && _kernels_name.length > 0) {
+            break;
+          } else if (_chara != ' ') {
+            _kernels_name = _chara + _kernels_name;
+          }
+        }
+      
+        var _kernelsubstring = kernel_string.substr(_brace_start + 1,_brace_end - _brace_start - 1);
+        _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
+      
+        var _kernel_parameter = _kernelsubstring.split(",");
+
+        kernel_string = kernel_string.substr(_brace_end);
+        
+        var _parameter = new Array(_kernel_parameter.length)
+        for (var i = 0; i < _kernel_parameter.length; i ++) {
+
+          var _value = 0;
+          var _string = _kernel_parameter[i]
+        
+          // Adress space
+          // __global, __local, __constant, __private. 
+          if (_string.indexOf("__local") >= 0 ) {
+            _value = webcl.LOCAL;
+          } 
+          
+          // Data Type
+          // float, uchar, unsigned char, uint, unsigned int, int. 
+          else if (_string.indexOf("float") >= 0 ) {
+            _value = webcl.FLOAT;
+          } else if (_string.indexOf("uchar") >= 0 ) {
+            _value = webcl.UNSIGNED_INT8;
+          } else if (_string.indexOf("unsigned char") >= 0 ) {
+            _value = webcl.UNSIGNED_INT8;
+          } else if (_string.indexOf("uint") >= 0 ) {
+            _value = webcl.UNSIGNED_INT32;
+          } else if (_string.indexOf("unsigned int") >= 0 ) {
+            _value = webcl.UNSIGNED_INT32;
+          } else if (_string.indexOf("int") >= 0 ) {
+            _value = webcl.SIGNED_INT32;
+          } else {
+#if OPENCL_DEBUG   
+            console.error("Unknow parameter type use float by default ...");   
+#endif        
+            _value = webcl.FLOAT;
+          }
+          
+          _parameter[i] = _value;
+        }
+        
+        _kernel_struct[_kernels_name] = _parameter;
+        
+        _kernel_start = kernel_string.indexOf("__kernel");
+      }
+      
+#if OPENCL_DEBUG
+      for (var name in _kernel_struct) {
+        console.info("Kernel NAME : " + name);      
+        console.info("Kernel PARAMETER NUM : "+_kernel_struct[name].length);
+      }
+#endif 
+    
+      return _kernel_struct;
+    },
+
+    getTypeSizeBits: function(type) {  
+      var _size = null;
+            
+      switch(type) {
+        case webcl.UNSIGNED_INT8:
+        case webcl.SIGNED_INT8:
+          _size = 1;
+          break;
+        case webcl.UNSIGNED_INT16:
+        case webcl.SIGNED_INT16:
+          _size = 2;
+          break;
+        case webcl.UNSIGNED_INT32:          
+        case webcl.SIGNED_INT32:
+        case webcl.FLOAT:        
+          _size = 4;
+          break;      
+        default:
+          console.info("Use size for default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+          _size = 4;
+          break;
+      }
+      
+      return _size;
     },
     
     getPointerToValue: function(ptr,size) {  
@@ -1935,6 +2062,8 @@ var LibraryOpenCL = {
   
       var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
   
+      CL.cl_kernels_sig = CL.parseKernel(_string);
+
 #if OPENCL_STACK_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
 #endif      
@@ -2287,6 +2416,13 @@ var LibraryOpenCL = {
 
       _kernel = CL.cl_objects[program].createKernel(_name);
       
+      Object.defineProperty(_kernel, "name", { value : _name,writable : false });
+      Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
+
+#if OPENCL_DEBUG
+      console.info("clCreateKernel : Kernel '"+_kernel.name+"', has "+_kernel.sig+" parameters !!!!");
+#endif      
+      
     } catch (e) {
       var _error = CL.catchError(e);
     
@@ -2339,6 +2475,16 @@ var LibraryOpenCL = {
       for (var i = 0; i < Math.min(num_kernels,_kernels.length); i++) {
         var _id = CL.udid(_kernels[i]);
         if (kernels != 0) {{{ makeSetValue('kernels', 'i*4', '_id', 'i32') }}};
+        
+        var _name = _kernels[i].getInfo(webcl.KERNEL_FUNCTION_NAME);
+
+        Object.defineProperty(_kernels[i], "name", { value : _name,writable : false });
+        Object.defineProperty(_kernels[i], "sig", { value : CL.cl_kernels_sig[_name],writable : false });
+
+#if OPENCL_DEBUG
+        console.info("clCreateKernelsInProgram : Kernel '"+_kernels[i].name+"', has "+_kernels[i].sig+" parameters !!!!");
+#endif  
+
       }
            
       if (num_kernels_ret != 0) {{{ makeSetValue('num_kernels_ret', '0', 'Math.min(num_kernels,_kernels.length)', 'i32') }}};
@@ -2418,86 +2564,57 @@ var LibraryOpenCL = {
 
     try {
 
-      console.info("/!\\ ***************************************************** ");
-      console.info("/!\\ clSetKernelArg, not yet fully implemented and tested. ");
-      console.info("/!\\ May be need to plug again the kernel parser.");
-      console.info("/!\\ Could be give problem with LOCAL_MEMORY_SIZE !.");
-      console.info("/!\\ ***************************************************** ");
-      console.info("");
-
       if (kernel in CL.cl_objects) {
+        
+        if (CL.cl_objects[kernel].sig.length > arg_index) {
+    
+          var _sig = CL.cl_objects[kernel].sig[arg_index];
 
-        var _size = arg_size >> 2
-        var _type = WebCLKernelArgumentTypes;
-        var _value = null;
+          console.info("Arg kernel("+CL.cl_objects[kernel].name+") type : "+_sig);
 
-        // 1 ) arg_value is not null
-        if (arg_value != 0) {
-          // 1.1 ) arg_value is an array
-          if (_size > 1) {
-            _value = new ArrayBuffer(size);
+          if (_sig == webcl.LOCAL) {
 
-            // 1.1.1 ) arg_value is an array of float
-            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
-              _type = WebCLKernelArgumentTypes.FLOAT;
+            console.info("Arg is LOCAL");
 
-              for (var i = 0; i < _size; i++ ) {
-                _value[i] = {{{ makeGetValue('arg_value', 'i*4', 'float') }}};
-              }
-            } 
-            // 1.1.2 ) arg_value is an array of int
-            else {
-              _type = WebCLKernelArgumentTypes.INT;
+            var _array = new Uint32Array([arg_size]);
 
-              for (var i = 0; i < _size; i++ ) {
-                _value[i] = {{{ makeGetValue('arg_value', 'i*4', 'i32') }}};
-              }
-            }
-          } 
-          // 1.2 ) arg_value is a value
-          else {
-
-            // 1.2.1 ) arg_value is a float
-            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
-              _type = WebCLKernelArgumentTypes.FLOAT;
-
-              _value = {{{ makeGetValue('arg_value', '0', 'float') }}};
-            } 
-            // 1.2.2 ) arg_value is a int
-            else {
-              _type = WebCLKernelArgumentTypes.INT;
-
-              _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
-            }
-          }
-
-          // 1.3 ) arg_value is may be an object .. check ...
-          if (_value in CL.cl_objects) {
-            _value = CL.cl_objects[_value];
-          
 #if OPENCL_STACK_TRACE
-            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_value]);
-#endif        
-            CL.cl_objects[kernel].setArg(arg_index,_value);
+            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+#endif     
+            CL.cl_objects[kernel].setArg(arg_index,_array);
 
           } else {
 
+            var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
+
+            if (_value in CL.cl_objects) {
+
+              console.info("Arg is an MemoryObject");
+              
 #if OPENCL_STACK_TRACE
-            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_value,_type]);
+              CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
 #endif        
-            CL.cl_objects[kernel].setArg(arg_index,_value,_type);
+              CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
 
-          }
-        }  
-        // 2 ) arg_value is null
-        else {
+            } else {
 
-          _type = WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE;
+              console.info("Arg is an ArrayBufferView");
+
+              var _array = CL.getPointerToArray(arg_value,arg_size);
 
 #if OPENCL_STACK_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,arg_size,_type]);
-#endif     
-          CL.cl_objects[kernel].setArg(arg_index,arg_size,_type);
+              CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+#endif        
+              CL.cl_objects[kernel].setArg(arg_index,_array);
+            }
+            
+          }
+
+        } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
+#endif
+          return webcl.INVALID_KERNEL;          
         }
 
       } else {
