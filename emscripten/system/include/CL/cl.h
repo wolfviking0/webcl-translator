@@ -566,6 +566,15 @@ typedef struct _cl_buffer_region {
 
 /********************************************************************************************************/
 
+#ifdef __EMSCRIPTEN__
+extern CL_API_ENTRY cl_int 
+clSetTypePointer(cl_channel_type /* pn_type */);
+
+extern CL_API_ENTRY cl_int
+webclPrintStackTrace(const char * /* param_value */,
+                     cl_uint * /*param_value_size_ret*/);
+#endif
+
 /* Platform API */
 extern CL_API_ENTRY cl_int CL_API_CALL
 clGetPlatformIDs(cl_uint          /* num_entries */,
