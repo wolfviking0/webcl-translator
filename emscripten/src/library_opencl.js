@@ -176,10 +176,44 @@ var LibraryOpenCL = {
       return _size;
     },
     
-    getPointerToValue: function(ptr,size) {  
+    setPointerWithArray: function(ptr,array,type) {  
+      switch(type) {
+        case webcl.UNSIGNED_INT8:
+        case webcl.SIGNED_INT8:
+          for (var i = 0; i < array.length; i++) {
+            {{{ makeSetValue('ptr', 'i', 'array[i]', 'i8') }}};      
+          }
+          break;
+        case webcl.UNSIGNED_INT16:          
+        case webcl.SIGNED_INT16:
+          for (var i = 0; i < array.length; i++) {
+            {{{ makeSetValue('ptr', 'i*2', 'array[i]', 'i16') }}};      
+          }
+          break;
+        case webcl.UNSIGNED_INT32:
+        case webcl.SIGNED_INT32:
+          for (var i = 0; i < array.length; i++) {
+            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
+          }
+          break;
+        case webcl.FLOAT:
+          for (var i = 0; i < array.length; i++) {
+            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
+          }
+          break;        
+        default:
+          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+          for (var i = 0; i < array.length; i++) {
+            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
+          }
+          break;
+      }
+    },
+    
+    getPointerToValue: function(ptr,size,type) {  
       var _value = null;
             
-      switch(CL.cl_pn_type) {
+      switch(type) {
         case webcl.SIGNED_INT8:
         case webcl.UNSIGNED_INT8:          
           _value = {{{ makeGetValue('ptr', '0', 'i8') }}}
@@ -203,11 +237,45 @@ var LibraryOpenCL = {
       
       return _value;
     },
-
-    getPointerToArray: function(ptr,size) {  
+    
+    getPointerToEmptyArray: function(size,type) {  
       var _host_ptr = null;
             
-      switch(CL.cl_pn_type) {
+      switch(type) {
+        case webcl.SIGNED_INT8:
+          _host_ptr = new Int8Array(getTypeSizeBits(size));
+          break;
+        case webcl.SIGNED_INT16:
+          _host_ptr = new Int16Array(getTypeSizeBits(size));
+          break;
+        case webcl.SIGNED_INT32:
+          _host_ptr = new Int32Array(getTypeSizeBits(size));
+          break;
+        case webcl.UNSIGNED_INT8:
+          _host_ptr = new UInt8Array(getTypeSizeBits(size));
+          break;
+        case webcl.UNSIGNED_INT16:
+          _host_ptr = new UInt16Array(getTypeSizeBits(size));
+          break;
+        case webcl.UNSIGNED_INT32:
+          _host_ptr = new UInt32Array(getTypeSizeBits(size));
+          break;
+        case webcl.FLOAT:
+          _host_ptr = new Float32Array(getTypeSizeBits(size));
+          break;          
+        default:
+          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+          _host_ptr = new Float32Array(getTypeSizeBits(size));
+          break;
+      }
+      
+      return _host_ptr;
+    },
+
+    getPointerToArray: function(ptr,size,type) {  
+      var _host_ptr = null;
+            
+      switch(type) {
         case webcl.SIGNED_INT8:
           _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}}
           break;
@@ -238,8 +306,8 @@ var LibraryOpenCL = {
       return _host_ptr;
     },
     
-    getPointerToArrayBuffer: function(ptr,size) {  
-      return CL.getPointerToArray(ptr,size).buffer;
+    getPointerToArrayBuffer: function(ptr,size,type) {  
+      return CL.getPointerToArray(ptr,size,type).buffer;
     },
 
     catchError: function(e) {
@@ -1289,7 +1357,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size);
+        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
@@ -1511,7 +1579,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(_sizeInByte);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size);
+        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // ( Same question : clCreateBuffer )
@@ -2600,7 +2668,7 @@ var LibraryOpenCL = {
 
               console.info("Arg is an ArrayBufferView");
 
-              var _array = CL.getPointerToArray(arg_value,arg_size);
+              var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
 
 #if OPENCL_STACK_TRACE
               CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
@@ -3321,7 +3389,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = new ArrayBuffer(cb);
+          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
           var _buffer_origin = [];
@@ -3348,30 +3416,17 @@ var LibraryOpenCL = {
 
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
-#endif        
-          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+#endif     
+   
+          //CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);
 
-          console.error("/!\\ todo enqueueReadBufferRect not yet finish to implement");
-          console.info(typeof(_host_ptr));
-
-          /*
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
           if (ptr) {
-            _size = cb >> 2;
-
-            if (CL.isFloat(ptr, _size)) {
-              for (var i = 0; i < _size; i++ ) {
-                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'float') }}};
-              }
-            } else {
-              for (var i = 0; i < _size; i++ ) {
-                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'i32') }}};
-              }
-            }
+            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
           }
-          */
-
+          
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -3412,25 +3467,9 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = null;
-          var _event_wait_list = [];
           var _event;
-
-          if (ptr) {
-            _size = cb >> 2;
-
-            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
-              _host_ptr = new Float32Array(_size);
-              for (var i = 0; i < _size; i++ ) {
-                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
-              }
-            } else {
-              _host_ptr = new Int32Array(_size);
-              for (var i = 0; i < _size; i++ ) {
-                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
-              }
-            }
-          }
+          var _event_wait_list = [];
+          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -3450,7 +3489,6 @@ var LibraryOpenCL = {
   
           CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
-
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
       } else {
@@ -3492,9 +3530,11 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = null;
-          var _event_wait_list = [];
           var _event;
+          var _event_wait_list = [];
+          
+          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+
           var _buffer_origin = [];
           var _host_origin = [];
           var _region = [];
@@ -3503,22 +3543,6 @@ var LibraryOpenCL = {
             _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
             _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
-
-          if (ptr) {
-            _size = cb >> 2;
-
-            if (CL.cl_pn_type == 0 || CL.cl_pn_type == webcl.FLOAT) {
-              _host_ptr = new Float32Array(_size);
-              for (var i = 0; i < _size; i++ ) {
-                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};
-              }
-            } else {
-              _host_ptr = new Int32Array(_size);
-              for (var i = 0; i < _size; i++ ) {
-                _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};
-              }
-            }
           }
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -3541,6 +3565,10 @@ var LibraryOpenCL = {
           //CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          
+          if (ptr) {
+            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+          }        
 
       } else {
 #if OPENCL_STACK_TRACE
