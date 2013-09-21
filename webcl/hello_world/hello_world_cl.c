@@ -118,7 +118,7 @@ void pfn_notify_program(cl_program program, void *user_data) {
     printf("%d) %d : pfn_notify call\n",(int)user_data,(int)program); 
 }
 
-int main(int argc, char** argv)
+int __main(int argc, char** argv)
 {
     cl_uint err;
     cl_uint num_platforms;
@@ -819,7 +819,7 @@ int main(int argc, char** argv)
     return end(EXIT_SUCCESS);
 }
 
-int main_2(int argc, char** argv)
+int main(int argc, char** argv)
 {
     int err;                            // error code returned from api calls
       
@@ -869,7 +869,7 @@ int main_2(int argc, char** argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Create a compute context 
@@ -879,7 +879,7 @@ int main_2(int argc, char** argv)
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
     
     size_t returned_size;
@@ -914,7 +914,7 @@ int main_2(int argc, char** argv)
     if(err)
     {
         printf("Error: Failed to retrieve compute devices for context!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
     
     device_count = returned_size / sizeof(cl_device_id);
@@ -926,7 +926,7 @@ int main_2(int argc, char** argv)
     if (!commands)
     {
         printf("Error: Failed to create a command commands!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Create the compute program from the source buffer
@@ -936,7 +936,7 @@ int main_2(int argc, char** argv)
     if (!program)
     {
         printf("Error: Failed to create compute program!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Build the program executable
@@ -951,7 +951,7 @@ int main_2(int argc, char** argv)
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
-        exit(1);
+        return end(1);
     }
 
     // Create the compute kernel in the program we wish to run
@@ -961,7 +961,7 @@ int main_2(int argc, char** argv)
     if (!kernel || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute kernel!\n");
-        exit(1);
+        return end(1);
     }
 
     // Create the input and output arrays in device memory for our calculation
@@ -972,7 +972,7 @@ int main_2(int argc, char** argv)
     if (!input || !output)
     {
         printf("Error: Failed to allocate device memory!\n");
-        exit(1);
+        return end(1);
     }    
     
     // Write our data set into the input array in device memory 
@@ -982,7 +982,7 @@ int main_2(int argc, char** argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write to source array!\n");
-        exit(1);
+        return end(1);
     }
 
     // Set the arguments to our compute kernel
@@ -995,7 +995,7 @@ int main_2(int argc, char** argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to set kernel arguments! %d\n", err);
-        exit(1);
+        return end(1);
     }
 
     // Get the maximum work group size for executing the kernel on the device
@@ -1005,7 +1005,7 @@ int main_2(int argc, char** argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve kernel work group info! %d\n", err);
-        exit(1);
+        return end(1);
     }
 
     // Execute the kernel over the entire range of our 1d input data set
@@ -1017,7 +1017,7 @@ int main_2(int argc, char** argv)
     if (err)
     {
         printf("Error: Failed to execute kernel!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Wait for the command commands to get serviced before reading back results
@@ -1032,7 +1032,7 @@ int main_2(int argc, char** argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
-        exit(1);
+        return end(1);
     }
     
     // Validate our results
@@ -1063,6 +1063,6 @@ int main_2(int argc, char** argv)
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
 
-    return 0;
+    return end(EXIT_SUCCESS);
 }
 

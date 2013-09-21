@@ -2666,7 +2666,7 @@ var LibraryOpenCL = {
 
             } else {
 
-              console.info("Arg is an ArrayBufferView");
+              console.info("Arg is an ArrayBufferView : "+arg_size);
 
               var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
 
@@ -2675,9 +2675,7 @@ var LibraryOpenCL = {
 #endif        
               CL.cl_objects[kernel].setArg(arg_index,_array);
             }
-            
           }
-
         } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
@@ -4041,27 +4039,256 @@ var LibraryOpenCL = {
   },
 
   clEnqueueNDRangeKernel: function(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueNDRangeKernel: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueNDRangeKernel",[command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (kernel in CL.cl_objects) {
+
+          var _event;
+          var _event_wait_list = [];
+
+          // Workink Draft take CLuint[3]
+          var _global_work_offset = [];
+          var _global_work_size = [];
+          var _local_work_size = [];
+
+          // Webkit take UInt32Array
+          //var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+          //var _global_work_size = new Int32Array(work_dim);
+          //var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+
+          for (var i = 0; i < work_dim; i++) {
+            _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
+
+            if (global_work_offset != 0)
+              _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
+            
+            if (local_work_size != 0)
+              _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
+            
+            //_global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
+
+            //if (_global_work_offset)
+            //  _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
+            
+            //if (_local_work_size)
+            //  _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_DEBUG
+          console.info("Global [ "+ _global_work_size +" ]")
+          console.info("Local [ "+ _local_work_size +" ]")
+          console.info("Offset [ "+ _global_work_offset +" ]")          
+#endif
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
+          // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;    
+
   },
 
   clEnqueueTask: function(command_queue,kernel,num_events_in_wait_list,event_wait_list,event) {
     console.error("clEnqueueTask: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE; 
   },
 
   clEnqueueNativeKernel: function(command_queue,user_func,args,cb_args,num_mem_objects,mem_list,args_mem_loc,num_events_in_wait_list,event_wait_list,event) {
     console.error("clEnqueueNativeKernel: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE; 
   },
 
   clEnqueueMarker: function(command_queue,event) {
-    console.error("clEnqueueMarker: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueMarker",[command_queue,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (kernel in CL.cl_objects) {
+
+          var _event;
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueMarker(_event);    
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS; 
   },
 
   clEnqueueWaitForEvents: function(command_queue,num_events,event_list) {
-    console.error("clEnqueueWaitForEvents: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueWaitForEvents",[command_queue,num_events,event_list]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+  
+        var _events;
+
+        for (var i = 0; i < num_events; i++) {
+          var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
+          if (_event in CL.cl_objects) {
+            _events.push(_event);
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+            return webcl.INVALID_EVENT;    
+          }
+        } 
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWaitForEvents",[_events]);
+#endif    
+    
+        CL.cl_objects[command_queue].enqueueWaitForEvents(_events);   
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS; 
   },
 
   clEnqueueBarrier: function(command_queue) {
-    console.error("clEnqueueBarrier: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueBarrier",[command_queue]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueBarrier",[]);
+#endif    
+    
+        CL.cl_objects[command_queue].enqueueBarrier();   
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS; 
   },
 
   clGetExtensionFunctionAddress: function(func_name) {
