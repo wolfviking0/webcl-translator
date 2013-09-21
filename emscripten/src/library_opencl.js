@@ -3307,7 +3307,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = new ArrayBuffer(cb);
+          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -3328,26 +3328,11 @@ var LibraryOpenCL = {
 #endif        
           CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
 
-          console.error("/!\\ todo clEnqueueReadBuffer not yet finish to implement");
-          console.info(typeof(_host_ptr));
-
-          /*
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
           if (ptr) {
-            _size = cb >> 2;
-
-            if (CL.isFloat(ptr, _size)) {
-              for (var i = 0; i < _size; i++ ) {
-                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'float') }}};
-              }
-            } else {
-              for (var i = 0; i < _size; i++ ) {
-                {{{ makeSetValue('ptr', 'i*4', '_host_ptr[i]', 'i32') }}};
-              }
-            }
+            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
           }
-          */
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -3517,6 +3502,8 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
+
+    return webcl.SUCCESS;  
   },
 
   clEnqueueWriteBufferRect: function(command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -3533,7 +3520,7 @@ var LibraryOpenCL = {
           var _event;
           var _event_wait_list = [];
           
-          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
 
           var _buffer_origin = [];
           var _host_origin = [];
@@ -3562,13 +3549,9 @@ var LibraryOpenCL = {
 #endif    
 
           CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);   
+         
           //CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
-
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-          
-          if (ptr) {
-            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-          }        
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
 
       } else {
 #if OPENCL_STACK_TRACE
@@ -3596,30 +3579,440 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
+
+    return webcl.SUCCESS;  
   },
 
   clEnqueueCopyBuffer: function(command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueCopyBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueCopyBuffer",[command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if ((src_buffer in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
+
+          var _event;
+          var _event_wait_list = [];
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list);    
+          // CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);  
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;  
   },
 
   clEnqueueReadImage: function(command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueReadImage: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueReadImage",[command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (image in CL.cl_objects) {
+
+          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+          var _event_wait_list = [];
+          var _event = null;
+
+          var _origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 2; i++) {
+            _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }          
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif        
+          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          
+          //CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event);
+          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+          if (ptr) {
+            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+          }
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    return webcl.SUCCESS; 
   },
 
   clEnqueueWriteImage: function(command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueWriteImage: clEnqueueWriteImage: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueWriteImage",[command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if (image in CL.cl_objects) {
+
+          var _event;
+          var _event_wait_list = [];
+          
+          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+
+          var _origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 2; i++) {
+            _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif        
+          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          
+          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    return webcl.SUCCESS;  
   },
 
   clEnqueueCopyImage: function(command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueCopyImage: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueCopyImage",[command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if ((src_image in CL.cl_objects) && (dst_image in CL.cl_objects)) {
+
+          var _event;
+          var _event_wait_list = [];
+
+          var _src_origin = [];
+          var _dest_origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 2; i++) {
+            _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+            _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list);    
+          // CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;
   },
 
   clEnqueueCopyImageToBuffer: function(command_queue,src_image,dst_buffer,src_origin,region,dst_offset,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueCopyImageToBuffer: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueCopyImageToBuffer",[command_queue,src_image,dst_buffer,src_origin,region,dst_offset,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if ((src_image in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
+
+          var _event;
+          var _event_wait_list = [];
+
+          var _src_origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 2; i++) {
+            _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list);    
+          // CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;
   },
 
   clEnqueueCopyBufferToImage: function(command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueCopyBufferToImage: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueCopyBufferToImage",[command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        if ((src_buffer in CL.cl_objects) && (dst_image in CL.cl_objects)) {
+
+          var _event;
+          var _event_wait_list = [];
+
+          var _dest_origin = [];
+          var _region = [];
+
+          for (var i = 0; i < 2; i++) {
+            _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+          }
+
+          for (var i = 0; i < num_events_in_wait_list; i++) {
+            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+            if (_event_wait in CL.cl_objects) {
+              _event_wait_list.push(_event_wait);
+            } else {
+#if OPENCL_STACK_TRACE
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+              return webcl.INVALID_EVENT;    
+            }
+          } 
+
+#if OPENCL_STACK_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
+#endif    
+  
+          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
+          // CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);   
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
+#endif
+          return webcl.INVALID_MEM_OBJECT;
+        }
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;
   },
 
   clEnqueueMapBuffer: function(command_queue,buffer,blocking_map,map_flags_i64_1,map_flags_i64_2,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
@@ -3627,6 +4020,8 @@ var LibraryOpenCL = {
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
 
     console.error("clEnqueueMapBuffer: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE; 
   },
 
   clEnqueueMapImage: function(command_queue,image,blocking_map,map_flags_i64_1,map_flags_i64_2,origin,region,image_row_pitch,image_slice_pitch,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
@@ -3634,10 +4029,15 @@ var LibraryOpenCL = {
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
     
     console.error("clEnqueueMapImage: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE; 
   },
 
   clEnqueueUnmapMemObject: function(command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event) {
+    
     console.error("clEnqueueUnmapMemObject: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    return webcl.INVALID_VALUE; 
   },
 
   clEnqueueNDRangeKernel: function(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
