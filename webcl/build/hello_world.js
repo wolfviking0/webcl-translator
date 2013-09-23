@@ -3822,13 +3822,23 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_counter:0,udid:function (obj) {    
+      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_counter:0,init:function () {
+        if (typeof(webcl) === "undefined") {
+          webcl = window.WebCL;
+          if (typeof(webcl) === "undefined") {
+            console.error("This browser has not WebCL implementation !!! \n");
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+          }
+        }
+      },udid:function (obj) {    
         var _id;
         if (obj !== undefined) {
-           _id = obj.udid;
-           if (_id !== undefined) {
-             return _id;
-           }
+          //if ( obj.hasOwnProperty('udid') ) {
+          //  _id = obj.udid;
+          //  if (_id !== undefined) {
+          //    return _id;
+          //  }
+          //}
         }
         var _uuid = [];
         _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
@@ -3841,7 +3851,7 @@ function copyTempDouble(ptr) {
         }
         // /!\ Call udid when you add inside cl_objects if you pass object in parameter
         if (obj !== undefined) {
-          Object.defineProperty(obj, "udid", { value : _id,writable : false });
+          //Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects[_id]=obj;
           CL.cl_objects_counter++,
           console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
@@ -4061,10 +4071,12 @@ function copyTempDouble(ptr) {
       },catchError:function (e) {
         console.error(e);
         var _error = -1;
-        if (e instanceof WebCLException) {
-          var _str=e.message;
-          var _n=_str.lastIndexOf(" ");
-          _error = _str.substr(_n+1,_str.length-_n-1);
+        if (typeof(WebCLException) !== "undefined") {
+          if (e instanceof WebCLException) {
+            var _str=e.message;
+            var _n=_str.lastIndexOf(" ");
+            _error = _str.substr(_n+1,_str.length-_n-1);
+          }
         }
         return _error;
       },stack_trace:"// Javascript webcl Stack Trace\n",webclBeginStackTrace:function (name,parameter) {
@@ -4152,6 +4164,8 @@ function copyTempDouble(ptr) {
       // Assume the device_type is i32 
       assert(device_type_i64_2 == 0, 'Invalid device_type i64');
       CL.webclBeginStackTrace("clGetDeviceIDs",[platform,device_type_i64_1,num_entries,devices,num_devices]);
+      // Init webcl variable if necessary
+      CL.init();
       if ( num_entries == 0 && device_type_i64_1 != 0) {
         CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device_type is not NULL","");
         return webcl.INVALID_VALUE;
@@ -4341,10 +4355,12 @@ function copyTempDouble(ptr) {
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
                 // Just one is enough 
-                if (!(_webcl instanceof WebCLGL)){
-                  _sharedContext = Module.ctx;
-                  CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                if (typeof(WebCLGL) !== "undefined") {
+                  if (!(_webcl instanceof WebCLGL)){
+                    _sharedContext = Module.ctx;
+                    CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                    _webcl = webcl.getExtension("KHR_GL_SHARING");
+                  }
                 }
                 break;
               default:
@@ -4358,8 +4374,10 @@ function copyTempDouble(ptr) {
           }
         }
         var _prop;
-        if (_webcl instanceof WebCLGL) {   
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+        if (typeof(WebCLGL) !== "undefined") {
+          if (_webcl instanceof WebCLGL) {   
+            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+          }
         } else {
           _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
         }
