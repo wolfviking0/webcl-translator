@@ -118,7 +118,7 @@ void pfn_notify_program(cl_program program, void *user_data) {
     printf("%d) %d : pfn_notify call\n",(int)user_data,(int)program); 
 }
 
-int __main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     cl_uint err;
     cl_uint num_platforms;
@@ -819,7 +819,7 @@ int __main(int argc, char** argv)
     return end(EXIT_SUCCESS);
 }
 
-int main(int argc, char** argv)
+int __main(int argc, char** argv)
 {
     int err;                            // error code returned from api calls
       
