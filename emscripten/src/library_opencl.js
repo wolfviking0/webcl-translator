@@ -29,13 +29,13 @@ var LibraryOpenCL = {
 
       if (obj !== undefined) {
 
-        //if ( obj.hasOwnProperty('udid') ) {
-        //  _id = obj.udid;
+        if ( obj.hasOwnProperty('udid') ) {
+         _id = obj.udid;
 
-        //  if (_id !== undefined) {
-        //    return _id;
-        //  }
-        //}
+         if (_id !== undefined) {
+           return _id;
+         }
+        }
       }
 
       var _uuid = [];
@@ -55,7 +55,7 @@ var LibraryOpenCL = {
     
       // /!\ Call udid when you add inside cl_objects if you pass object in parameter
       if (obj !== undefined) {
-        //Object.defineProperty(obj, "udid", { value : _id,writable : false });
+        Object.defineProperty(obj, "udid", { value : _id,writable : false });
         CL.cl_objects[_id]=obj;
 #if OPENCL_DEBUG             
         CL.cl_objects_counter++,
@@ -129,14 +129,8 @@ var LibraryOpenCL = {
           // float, uchar, unsigned char, uint, unsigned int, int. 
           else if (_string.indexOf("float") >= 0 ) {
             _value = webcl.FLOAT;
-          } else if (_string.indexOf("uchar") >= 0 ) {
+          } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
             _value = webcl.UNSIGNED_INT8;
-          } else if (_string.indexOf("unsigned char") >= 0 ) {
-            _value = webcl.UNSIGNED_INT8;
-          } else if (_string.indexOf("uint") >= 0 ) {
-            _value = webcl.UNSIGNED_INT32;
-          } else if (_string.indexOf("unsigned int") >= 0 ) {
-            _value = webcl.UNSIGNED_INT32;
           } else if (_string.indexOf("int") >= 0 ) {
             _value = webcl.SIGNED_INT32;
           } else {
@@ -1124,7 +1118,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
     
       if (param_value_size_ret != 0) {
@@ -1320,7 +1314,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
     
       if (param_value_size_ret != 0) {
@@ -1853,7 +1847,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
     
       if (param_value_size_ret != 0) {
@@ -1928,7 +1922,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
     
       if (param_value_size_ret != 0) {
@@ -2118,7 +2112,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -2395,7 +2389,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -2467,7 +2461,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -2670,11 +2664,7 @@ var LibraryOpenCL = {
     
           var _sig = CL.cl_objects[kernel].sig[arg_index];
 
-          console.info("Arg kernel("+CL.cl_objects[kernel].name+") type : "+_sig);
-
           if (_sig == webcl.LOCAL) {
-
-            console.info("Arg is LOCAL");
 
             var _array = new Uint32Array([arg_size]);
 
@@ -2689,16 +2679,12 @@ var LibraryOpenCL = {
 
             if (_value in CL.cl_objects) {
 
-              console.info("Arg is an MemoryObject");
-              
 #if OPENCL_STACK_TRACE
               CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
 #endif        
               CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
 
             } else {
-
-              console.info("Arg is an ArrayBufferView : "+arg_size);
 
               var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
 
@@ -2804,7 +2790,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -2875,7 +2861,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -2993,7 +2979,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -3232,7 +3218,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
       if (param_value != 0) {
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
       }
 
       if (param_value_size_ret != 0) {
@@ -4325,57 +4311,550 @@ var LibraryOpenCL = {
 
   clGetExtensionFunctionAddress: function(func_name) {
     console.error("clGetExtensionFunctionAddress: Not yet implemented\n");
+    return webcl.INVALID_VALUE;
   },
 
-  clCreateFromGLBuffer: function(context,flags_i64_1,flags_i64_2,bufobj,errcode_ret) {
+  clCreateFromGLBuffer: function(context,flags_i64_1,flags_i64_2,bufobj,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateFromGLBuffer",[context,flags_i64_1,bufobj,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _buffer = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
     
-    console.error("clCreateFromGLBuffer: Not yet implemented\n");
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createFromGLBuffer",[_flags,GL.buffers[bufobj]]);
+#endif      
+      
+      _buffer = CL.cl_objects[context].createBuffer(_flags,GL.buffers[bufobj]);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_buffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateFromGLTexture: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateFromGLTexture",[context,flags_i64_1,target,miplevel,texture,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _buffer = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
     
-    console.error("clCreateFromGLTexture: Not yet implemented\n");
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createFromGLTexture",[_flags, target, miplevel, GL.textures[texture]]);
+#endif      
+
+      _buffer = CL.cl_objects[context].createFromGLTexture(_flags, target, miplevel, GL.textures[texture]);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_buffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateFromGLTexture2D: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateFromGLTexture2D",[context,flags_i64_1,target,miplevel,texture,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _buffer = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
     
-    console.error("clCreateFromGLTexture2D: Not yet implemented\n");
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createFromGLTexture",[_flags, target, miplevel, GL.textures[texture]]);
+#endif      
+
+      _buffer = CL.cl_objects[context].createFromGLTexture(_flags, target, miplevel, GL.textures[texture]);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_buffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;
   },
 
   clCreateFromGLTexture3D: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
-    console.error("clCreateFromGLTexture3D: Not yet implemented\n");
+    console.error("clCreateImage3D: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+    }
+
+    return 0;
+
   },
 
   clCreateFromGLRenderbuffer: function(context,flags_i64_1,flags_i64_2,renderbuffer,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clCreateFromGLRenderbuffer",[context,flags_i64_1,renderbuffer,cl_errcode_ret]);
+#endif
+
+    var _id = null;
+    var _buffer = null;
+
+    // Context must be created
+    if (!(context in CL.cl_objects)) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+#endif
+      return 0; 
+    }
+
+    try {
     
-    console.error("clCreateFromGLRenderbuffer: Not yet implemented\n");
-  },
+      var _flags;
+
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+#endif
+
+        return 0; 
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createFromGLRenderbuffer",[_flags, GL.renderbuffers[renderbuffer]]);
+#endif      
+
+      _buffer = CL.cl_objects[context].createFromGLRenderbuffer(_flags, GL.renderbuffers[renderbuffer]);
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+    
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+#endif
+      return 0; // NULL Pointer
+    }
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
+    }
+
+    _id = CL.udid(_buffer);
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+#endif
+
+    return _id;  },
 
   clGetGLObjectInfo: function(memobj,gl_object_type,gl_object_name) {
-    console.error("clGetGLObjectInfo: Not yet implemented\n");
+
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetKernelInfo",[memobj,gl_object_type,gl_object_name]);
+#endif
+
+    try { 
+
+      if (memobj in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getGLObjectInfo",[]);
+#endif        
+
+        var _info = CL.cl_objects[memobj].getGLObjectInfo();
+
+        if (gl_object_type != 0) {{{ makeSetValue('gl_object_type', '0', '_info.type', 'i32') }}};
+        if (gl_object_name != 0) {{{ makeSetValue('gl_object_name', '0', '_info.glObject', 'i32') }}};
+
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+        return webcl.INVALID_MEM_OBJECT;
+      }
+
+    } catch (e) {
+
+      var _error = CL.catchError(e);
+
+      if (gl_object_type != 0) {{{ makeSetValue('gl_object_type', '0', '0', 'i32') }}};
+      if (gl_object_name != 0) {{{ makeSetValue('gl_object_name', '0', '0', 'i32') }}};
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,gl_object_type,gl_object_name],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,gl_object_type,gl_object_name],"","");
+#endif
+
+    return webcl.SUCCESS;
   },
 
   clGetGLTextureInfo: function(memobj,param_name,param_value_size,param_value,param_value_size_ret) {
-    console.error("clGetGLTextureInfo: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clGetGLTextureInfo",[memobj,param_name,param_value_size,param_value,param_value_size_ret]);
+#endif
+
+    try { 
+
+      if (memobj in CL.cl_objects) {
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getGLTextureInfo",[param_name]);
+#endif        
+
+        var _info = CL.cl_objects[memobj].getGLTextureInfo(param_name);
+
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+     
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+#endif
+        return webcl.INVALID_MEM_OBJECT;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+      if (param_value != 0) {
+        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      }
+
+      if (param_value_size_ret != 0) {
+        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      }
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+#endif
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+#endif
+    return webcl.SUCCESS;
   },
 
   clEnqueueAcquireGLObjects: function(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueAcquireGLObjects: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueAcquireGLObjects",[command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        var _event;
+        var _event_wait_list = [];
+        var _mem_objects = [];
+
+        for (var i = 0; i < num_events_in_wait_list; i++) {
+          var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+          if (_event_wait in CL.cl_objects) {
+            _event_wait_list.push(_event_wait);
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+            return webcl.INVALID_EVENT;    
+          }
+        } 
+
+        for (var i = 0; i < num_objects; i++) {
+          var _id = {{{ makeGetValue('mem_objects', 'i*4', 'i32') }}};
+          _mem_objects.push(CL.cl_objects[_id]);
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueAcquireGLObjects",[_mem_objects,_event_wait_list,_event]);
+#endif    
+
+        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
+        // CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
+        // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;
   },
 
   clEnqueueReleaseGLObjects: function(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueReleaseGLObjects: Not yet implemented\n");
+#if OPENCL_STACK_TRACE
+    CL.webclBeginStackTrace("clEnqueueReleaseGLObjects",[command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event]);
+#endif
+
+    try { 
+
+      if (command_queue in CL.cl_objects) {
+
+        var _event;
+        var _event_wait_list = [];
+        var _mem_objects = [];
+
+        for (var i = 0; i < num_events_in_wait_list; i++) {
+          var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+          if (_event_wait in CL.cl_objects) {
+            _event_wait_list.push(_event_wait);
+          } else {
+#if OPENCL_STACK_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+#endif    
+            return webcl.INVALID_EVENT;    
+          }
+        } 
+
+        for (var i = 0; i < num_objects; i++) {
+          var _id = {{{ makeGetValue('mem_objects', 'i*4', 'i32') }}};
+          _mem_objects.push(CL.cl_objects[_id]);
+        }
+
+#if OPENCL_STACK_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReleaseGLObjects",[_mem_objects,_event_wait_list,_event]);
+#endif    
+
+        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);    
+        // CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
+        // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
+      } else {
+#if OPENCL_STACK_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+#endif
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
+
+    } catch (e) {
+      var _error = CL.catchError(e);
+
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([_error],"",e.message);
+#endif
+
+      return _error;
+    }
+
+#if OPENCL_STACK_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+    
+    return webcl.SUCCESS;
   },
 
 };
