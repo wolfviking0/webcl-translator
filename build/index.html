@@ -9,9 +9,9 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <title>webcl-emscripten by Anthony Liot</title>
+    <title>webcl-translator by Anthony Liot</title>
     <style>
-      .emscripten {
+      .translator {
         padding-right: 0;
         margin-left: auto;
         margin-right: auto;
@@ -22,11 +22,11 @@
         border: 1px solid black;
       }
           
-      textarea.emscripten {
+      textarea.translator {
         font-family: monospace; width: 90%;
       }
           
-      div.emscripten {
+      div.translator {
         text-align: center;
       }
     </style>
@@ -37,22 +37,22 @@
       <div class="inner">
 
         <header>
-          <h1>webcl-emscripten</h1>
+          <h1>webcl-translator</h1>
           <h2><script>document.write(TITLE);</script></h2>
         </header>
         
         <section id="main_content">
-          <div class="emscripten" id="status">
+          <div class="translator" id="status">
             Downloading...
           </div>
-          <div class="emscripten">
+          <div class="translator">
             <progress value="0" max="100" id="progress" hidden=1></progress>
           </div>
-          <div class="emscripten" id="renderArea">
+          <div class="translator" id="renderArea">
             <!-- we want to create canvas inside this div, using JavaScript only if sm necessary-->
           </div>
           <hr/>
-          <textarea class="emscripten" id="output" rows="10">
+          <textarea class="translator" id="output" rows="10">
           </textarea>
           <hr>
           <script type='text/javascript'>
@@ -65,8 +65,8 @@
             var div = document.getElementById('renderArea');
             div.appendChild(cnv);
 
-            // Add class attribute emscripten
-            cnv.setAttribute('class',"emscripten");  
+            // Add class attribute translator
+            cnv.setAttribute('class',"translator");  
               
             var textArea = document.getElementById ("output");
             if (USE_GL == 0) {
@@ -134,7 +134,7 @@
         </section>
 
         <footer>
-          webcl-emscripten is maintained by Anthony Liot <a href="https://github.com/wolfviking0">wolfviking0</a> and Steven Eliuk <a href="https://github.com/steveneliuk">steveneliuk</a>.
+          webcl-translator is maintained by Anthony Liot <a href="https://github.com/wolfviking0">wolfviking0</a> and Steven Eliuk <a href="https://github.com/steveneliuk">steveneliuk</a>.
         </footer>
       </div>
     </div>
