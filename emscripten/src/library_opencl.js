@@ -251,29 +251,29 @@ var LibraryOpenCL = {
             
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(getTypeSizeBits(size));
+          _host_ptr = new Int8Array(CL.getTypeSizeBits(size));
           break;
         case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(getTypeSizeBits(size));
+          _host_ptr = new Int16Array(CL.getTypeSizeBits(size));
           break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(getTypeSizeBits(size));
+          _host_ptr = new Int32Array(CL.getTypeSizeBits(size));
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new UInt8Array(getTypeSizeBits(size));
+          _host_ptr = new UInt8Array(CL.getTypeSizeBits(size));
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new UInt16Array(getTypeSizeBits(size));
+          _host_ptr = new UInt16Array(CL.getTypeSizeBits(size));
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new UInt32Array(getTypeSizeBits(size));
+          _host_ptr = new UInt32Array(CL.getTypeSizeBits(size));
           break;
         case webcl.FLOAT:
-          _host_ptr = new Float32Array(getTypeSizeBits(size));
+          _host_ptr = new Float32Array(CL.getTypeSizeBits(size));
           break;          
         default:
           console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
-          _host_ptr = new Float32Array(getTypeSizeBits(size));
+          _host_ptr = new Float32Array(CL.getTypeSizeBits(size));
           break;
       }
       
@@ -2703,19 +2703,19 @@ var LibraryOpenCL = {
               
               // WebKit -->
               console.info("/!\\ WebKit platform specific ...");
-              if ( (arg_size / getTypeSizeBits(_sig)) > 1) {
+              if ( (arg_size / CL.getTypeSizeBits(_sig)) > 1) {
                 if (_sig == webcl.FLOAT) {
-                  CL.kernels[ker].setArg(arg_index,_array,WebCLKernelArgumentTypes.FLOAT)
+                  CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.FLOAT)
                 } else {
-                  CL.kernels[ker].setArg(arg_index,_array,WebCLKernelArgumentTypes.INT)
+                  CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.INT)
                 }  
               } else {
                 if (_sig == webcl.FLOAT) {
                   var _value = {{{ makeGetValue('arg_value', '0', 'float') }}};
-                  CL.kernels[ker].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
+                  CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
                 } else {
                   var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
-                  CL.kernels[ker].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
+                  CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
                 }                
               }
             }
@@ -4148,8 +4148,8 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
-  
           CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
+          //CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
