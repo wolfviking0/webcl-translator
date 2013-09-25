@@ -1,4 +1,4 @@
-webcl-emscripten
+webcl-translator
 ================
 
 Requires Python2.7, ie sudo ln -s /usr/bin/python2.7 /usr/bin/python2
@@ -113,5 +113,5 @@ http://www.youtube.com/watch?v=bIzmZmEc32Y
 License :
 --------
 
-WebCL-Emscripten is MIT licensed, see LICENSE.txt.
+webcl-translator is MIT licensed, see LICENSE.
 
