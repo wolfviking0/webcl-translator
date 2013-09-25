@@ -3,12 +3,11 @@ webcl-translator
 
 Requires Python2.7, ie sudo ln -s /usr/bin/python2.7 /usr/bin/python2
 
+Translate OpenCL Code to WebCL
 
-WebCL inside Emscripten (https://github.com/kripken/emscripten)
+Experimental version of emscripten (https://github.com/kripken/emscripten) for convert OpenCL c++ code to WebCL.
 
-Experimental version of emscripten for convert OpenCL c++ code to WebCL.
-
-Need Firefox 23 and WebCL plugin from Nokia research (http://webcl.nokiaresearch.com)
+Need Firefox 24 and WebCL plugin from Nokia research (http://webcl.nokiaresearch.com)
 
 or
 
