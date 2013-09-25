@@ -1001,7 +1001,8 @@ var LibraryOpenCL = {
   },
 
   clRetainContext: function(context) {
-    console.error("clRetainContext: Not yet implemented\n");
+    console.error("clRetainContext: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -1206,7 +1207,8 @@ var LibraryOpenCL = {
   },
 
   clRetainCommandQueue: function(command_queue) {
-    console.error("clRetainCommandQueue: Not yet implemented\n");
+    console.error("clRetainCommandQueue: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -1665,8 +1667,8 @@ var LibraryOpenCL = {
   },
 
   clRetainMemObject: function(memobj) {
-    console.error("clRetainMemObject: Not yet implemented\n");
-
+    console.error("clRetainMemObject: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -2002,8 +2004,8 @@ var LibraryOpenCL = {
   },
 
   clRetainSampler: function(sampler) {
-    console.error("clRetainSampler: Not yet implemented\n");
-
+    console.error("clRetainSampler: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -2202,8 +2204,8 @@ var LibraryOpenCL = {
   },
 
   clRetainProgram: function(program) {
-    console.error("clRetainProgram: Not yet implemented\n");
-
+    console.error("clRetainProgram: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -2601,8 +2603,8 @@ var LibraryOpenCL = {
   },
 
   clRetainKernel: function(kernel) {
-    console.error("clRetainKernel: Not yet implemented\n");
-
+    console.error("clRetainKernel: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -2671,7 +2673,12 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
             CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif     
-            CL.cl_objects[kernel].setArg(arg_index,_array);
+            // WD --> 
+            //CL.cl_objects[kernel].setArg(arg_index,_array);
+
+            // WebKit -->
+            console.info("/!\\ WebKit platform specific ...");
+            CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
 
           } else {
 
@@ -2685,13 +2692,32 @@ var LibraryOpenCL = {
               CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
 
             } else {
-
               var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
 
 #if OPENCL_STACK_TRACE
               CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif        
-              CL.cl_objects[kernel].setArg(arg_index,_array);
+    
+              // WD --> 
+              //CL.cl_objects[kernel].setArg(arg_index,_array);
+              
+              // WebKit -->
+              console.info("/!\\ WebKit platform specific ...");
+              if ( (arg_size / getTypeSizeBits(_sig)) > 1) {
+                if (_sig == webcl.FLOAT) {
+                  CL.kernels[ker].setArg(arg_index,_array,WebCLKernelArgumentTypes.FLOAT)
+                } else {
+                  CL.kernels[ker].setArg(arg_index,_array,WebCLKernelArgumentTypes.INT)
+                }  
+              } else {
+                if (_sig == webcl.FLOAT) {
+                  var _value = {{{ makeGetValue('arg_value', '0', 'float') }}};
+                  CL.kernels[ker].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
+                } else {
+                  var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
+                  CL.kernels[ker].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
+                }                
+              }
             }
           }
         } else {
@@ -3054,8 +3080,8 @@ var LibraryOpenCL = {
   },
 
   clRetainEvent: function(event) {
-    console.error("clRetainKernel: Not yet implemented\n");
-
+    console.error("clRetainEvent: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+        
     return webcl.INVALID_VALUE;
   },
 
@@ -4070,32 +4096,35 @@ var LibraryOpenCL = {
           var _event;
           var _event_wait_list = [];
 
+          // WD --> 
           // Workink Draft take CLuint[3]
-          var _global_work_offset = [];
-          var _global_work_size = [];
-          var _local_work_size = [];
-
+          // var _global_work_offset = [];
+          // var _global_work_size = [];
+          // var _local_work_size = [];
+          
+          // WebKit -->
           // Webkit take UInt32Array
-          //var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
-          //var _global_work_size = new Int32Array(work_dim);
-          //var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+          console.info("/!\\ WebKit platform specific ...");
+          var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+          var _global_work_size = new Int32Array(work_dim);
+          var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
 
           for (var i = 0; i < work_dim; i++) {
-            _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
+            //_global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
 
-            if (global_work_offset != 0)
-              _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
+            //if (global_work_offset != 0)
+            //  _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
             
-            if (local_work_size != 0)
-              _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
+            //if (local_work_size != 0)
+            //  _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
             
-            //_global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
+            _global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
 
-            //if (_global_work_offset)
-            //  _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
+            if (_global_work_offset)
+              _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
             
-            //if (_local_work_size)
-            //  _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
+            if (_local_work_size)
+              _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
           }
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
