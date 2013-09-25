@@ -4083,10 +4083,32 @@ function copyTempDouble(ptr) {
         CL.stack_trace += ")\n";
       },webclCallParameterStackTrace:function (parameter) {
         for (var i = 0; i < parameter.length - 1 ; i++) {
-          CL.stack_trace += parameter[i] + ",";
+          if ((parameter[i] instanceof ArrayBufferView) || (parameter[i] instanceof Array)){ 
+            CL.stack_trace += "[";  
+            for (var j = 0; j < parameter[i].length - 1 ; j++) {
+              CL.stack_trace += parameter[i][j] + ",";
+            }
+            if (parameter[i].length >= 1) {
+              CL.stack_trace += parameter[i][parameter[i].length - 1];
+            }
+            CL.stack_trace += "],";
+          } else {
+            CL.stack_trace += parameter[i] + ",";  
+          }
         }
         if (parameter.length >= 1) {
-          CL.stack_trace += parameter[parameter.length - 1];
+          if ((parameter[parameter.length - 1] instanceof ArrayBufferView) || (parameter[parameter.length - 1] instanceof Array)){ 
+            CL.stack_trace += "[";  
+            for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
+              CL.stack_trace += parameter[parameter.length - 1][j] + ",";
+            }
+            if (parameter[i].length >= 1) {
+              CL.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
+            }
+            CL.stack_trace += "]";
+          } else {
+            CL.stack_trace += parameter[parameter.length - 1]; 
+          }
         }
       },webclEndStackTrace:function (result,message,exception) {
         CL.stack_trace += "\t\t=>Result (" + result[0];
@@ -4896,7 +4918,7 @@ function copyTempDouble(ptr) {
       try { 
         if (command_queue in CL.cl_objects) {
           if (buffer in CL.cl_objects) {
-            var _event;
+            var _event = null;
             var _event_wait_list = [];
             var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
             for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -4933,7 +4955,7 @@ function copyTempDouble(ptr) {
       try { 
         if (command_queue in CL.cl_objects) {
           if (kernel in CL.cl_objects) {
-            var _event;
+            var _event = null;
             var _event_wait_list = [];
             // WD --> 
             // Workink Draft take CLuint[3]
@@ -4966,12 +4988,9 @@ function copyTempDouble(ptr) {
                 CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
                 return webcl.INVALID_EVENT;    
               }
-            } 
-            console.info("Global [ "+ _global_work_size +" ]")
-            console.info("Local [ "+ _local_work_size +" ]")
-            console.info("Offset [ "+ _global_work_offset +" ]")          
+            }
             CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
-            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,null,_global_work_size,_local_work_size,_event_wait_list);    
+            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
             //CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
             // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
             // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);

@@ -354,11 +354,33 @@ var LibraryOpenCL = {
 
     webclCallParameterStackTrace: function(parameter) {
       for (var i = 0; i < parameter.length - 1 ; i++) {
-        CL.stack_trace += parameter[i] + ",";
+        if ((parameter[i] instanceof ArrayBufferView) || (parameter[i] instanceof Array)){ 
+          CL.stack_trace += "[";  
+          for (var j = 0; j < parameter[i].length - 1 ; j++) {
+            CL.stack_trace += parameter[i][j] + ",";
+          }
+          if (parameter[i].length >= 1) {
+            CL.stack_trace += parameter[i][parameter[i].length - 1];
+          }
+          CL.stack_trace += "],";
+        } else {
+          CL.stack_trace += parameter[i] + ",";  
+        }
       }
 
       if (parameter.length >= 1) {
-        CL.stack_trace += parameter[parameter.length - 1];
+        if ((parameter[parameter.length - 1] instanceof ArrayBufferView) || (parameter[parameter.length - 1] instanceof Array)){ 
+          CL.stack_trace += "[";  
+          for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
+            CL.stack_trace += parameter[parameter.length - 1][j] + ",";
+          }
+          if (parameter[i].length >= 1) {
+            CL.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
+          }
+          CL.stack_trace += "]";
+        } else {
+          CL.stack_trace += parameter[parameter.length - 1]; 
+        }
       }
     },
 
@@ -3494,7 +3516,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
           var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
 
@@ -3559,7 +3581,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
           
           var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
@@ -3636,7 +3658,7 @@ var LibraryOpenCL = {
 
         if ((src_buffer in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
 
-          var _event;
+          var _event = null; 
           var _event_wait_list = [];
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -3776,7 +3798,7 @@ var LibraryOpenCL = {
 
         if (image in CL.cl_objects) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
           
           var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
@@ -3850,7 +3872,7 @@ var LibraryOpenCL = {
 
         if ((src_image in CL.cl_objects) && (dst_image in CL.cl_objects)) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
 
           var _src_origin = [];
@@ -3924,7 +3946,7 @@ var LibraryOpenCL = {
 
         if ((src_image in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
 
           var _src_origin = [];
@@ -3996,7 +4018,7 @@ var LibraryOpenCL = {
 
         if ((src_buffer in CL.cl_objects) && (dst_image in CL.cl_objects)) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
 
           var _dest_origin = [];
@@ -4093,7 +4115,7 @@ var LibraryOpenCL = {
 
         if (kernel in CL.cl_objects) {
 
-          var _event;
+          var _event = null;
           var _event_wait_list = [];
 
           // WD --> 
@@ -4137,13 +4159,7 @@ var LibraryOpenCL = {
 #endif    
               return webcl.INVALID_EVENT;    
             }
-          } 
-
-#if OPENCL_DEBUG
-          console.info("Global [ "+ _global_work_size +" ]")
-          console.info("Local [ "+ _local_work_size +" ]")
-          console.info("Offset [ "+ _global_work_offset +" ]")          
-#endif
+          }
 
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
@@ -4207,7 +4223,7 @@ var LibraryOpenCL = {
 
         if (kernel in CL.cl_objects) {
 
-          var _event;
+          var _event = null;
 
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
@@ -4771,7 +4787,7 @@ var LibraryOpenCL = {
 
       if (command_queue in CL.cl_objects) {
 
-        var _event;
+        var _event = null;
         var _event_wait_list = [];
         var _mem_objects = [];
 
@@ -4833,7 +4849,7 @@ var LibraryOpenCL = {
 
       if (command_queue in CL.cl_objects) {
 
-        var _event;
+        var _event = null;
         var _event_wait_list = [];
         var _mem_objects = [];
 
