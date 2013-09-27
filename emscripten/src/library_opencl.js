@@ -354,7 +354,7 @@ var LibraryOpenCL = {
 
     webclCallParameterStackTrace: function(parameter) {
       for (var i = 0; i < parameter.length - 1 ; i++) {
-        if ((parameter[i] instanceof ArrayBufferView) || (parameter[i] instanceof Array)){ 
+        if ((parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
           CL.stack_trace += "[";  
           for (var j = 0; j < parameter[i].length - 1 ; j++) {
             CL.stack_trace += parameter[i][j] + ",";
@@ -369,7 +369,7 @@ var LibraryOpenCL = {
       }
 
       if (parameter.length >= 1) {
-        if ((parameter[parameter.length - 1] instanceof ArrayBufferView) || (parameter[parameter.length - 1] instanceof Array)){ 
+        if ((parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array)){ 
           CL.stack_trace += "[";  
           for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
             CL.stack_trace += parameter[parameter.length - 1][j] + ",";
@@ -484,7 +484,7 @@ var LibraryOpenCL = {
       var _platforms = webcl.getPlatforms();
 
       if (num_platforms != 0) {
-        {{{ makeSetValue('num_platforms', '0', 'Math.min(num_entries,_platforms.length)', 'i32') }}} /* Num of platforms */;
+        {{{ makeSetValue('num_platforms', '0', '_platforms.length', 'i32') }}} /* Num of platforms */;
       } 
 
       if (platforms != 0) {
