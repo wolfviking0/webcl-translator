@@ -71,7 +71,7 @@
 
 // Use a static data size for simplicity
 //
-#define DATA_SIZE (1024)
+#define DATA_SIZE (128)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ int end(int e) {
 }
 
 void pfn_notify_program(cl_program program, void *user_data) {
-    printf("%d) %d : pfn_notify call\n",(int)user_data,(int)program); 
+    printf("%d) %d : pfn_notify call\n",(size_t)user_data,(size_t)program); 
 }
 
 int __main(int argc, char** argv)
@@ -795,7 +795,8 @@ int main(int argc, char** argv)
     for(i = 0; i < count; i++)
         data[i] = rand() / (float)RAND_MAX;
     
-    printf("Call : clGetDeviceIDs ...\n");
+    printf("Call : clGetDeviceIDs ... [%d , %d , %d , %d , %d]\n",NULL, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, device_id, NULL);
+
     err = clGetDeviceIDs(NULL, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)
     {
@@ -803,44 +804,58 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
+    printf("Res : clGetDeviceIDs ... [%d , %ld]\n\n",err,(size_t)device_id);
+
     // Create a compute context 
     //
-    printf("Call : clCreateContext ...\n");    
+    printf("Call : clCreateContext ... [%d , %d , %ld , %d , %d]\n",0, 1, device_id, NULL, NULL, err);    
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");
         return end(EXIT_FAILURE);
     }
+
+    printf("Res : clCreateContext ... [%d , %ld]\n\n",err,(size_t)context);
     
     size_t returned_size;
     cl_char vendor_name[1024] = {0};
     cl_char device_name[1024] = {0};
     cl_bool image_support;
         
-    printf("Call : clGetDeviceInfo ...\n");    
+    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), vendor_name, returned_size);    
     err = clGetDeviceInfo(device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), vendor_name, &returned_size);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info : CL_DEVICE_VENDOR!\n");
     }
 
+    printf("Res : clGetDeviceInfo ... [%d , %d , %s]\n\n",err,returned_size,vendor_name);
+
+    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, returned_size);    
+
     err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, &returned_size);
-        if (err != CL_SUCCESS)
+    if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info : CL_DEVICE_NAME!\n");
     }
 
-    err = clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(device_name), &image_support, &returned_size);
+    printf("Res : clGetDeviceInfo ... [%d , %d , %s]\n\n",err,returned_size,device_name);
+
+    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(image_support), image_support, returned_size);    
+
+    err = clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(image_support), &image_support, &returned_size);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info : CL_DEVICE_IMAGE_SUPPORT!\n");
     }
+
+    printf("Res : clGetDeviceInfo ... [%d , %d , %d]\n\n",err,returned_size,image_support);
     
     unsigned int device_count;
     cl_device_id device_ids[16];
 
-    printf("Call : clGetContextInfo ...\n");    
+    printf("Call : clGetContextInfo ... [%ld , %d , %d , %d , %d]\n",context, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, returned_size);  
     err = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, &returned_size);
     if(err)
     {
@@ -848,11 +863,13 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
     
+    printf("Res : clGetContextInfo ... [%d , %d , %d]\n\n",err,returned_size,device_ids);
+
     device_count = returned_size / sizeof(cl_device_id);
     
     // Create a command commands
     //
-    printf("Call : clCreateCommandQueue ...\n");    
+    printf("Call : clCreateCommandQueue ... [%ld , %ld , %d , %d]\n",context, device_id, 0,err); 
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands)
     {
@@ -860,9 +877,11 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
+    printf("Res : clCreateCommandQueue ... [%d , %ld]\n\n",err,commands);
+
     // Create the compute program from the source buffer
     //
-    printf("Call : clCreateProgramWithSource ...\n");      
+    printf("Call : clCreateProgramWithSource ... [%ld , %d , %s , %d, %d]\n",context,1, KernelSource, 0,err);    
     program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
     if (!program)
     {
@@ -870,9 +889,11 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
+    printf("Res : clCreateProgramWithSource ... [%d , %ld]\n\n",err,program);
+
     // Build the program executable
     //
-    printf("Call : clBuildProgram ...\n");          
+    printf("Call : clBuildProgram ... [%ld , %d , %d , %d , %d , %d]\n",program, 0, NULL, NULL, NULL, NULL);          
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -885,21 +906,32 @@ int main(int argc, char** argv)
         return end(1);
     }
 
+    printf("Res : clBuildProgram ... [%d]\n\n",err);
+
     // Create the compute kernel in the program we wish to run
     //
-    printf("Call : clCreateKernel ...\n");              
+    printf("Call : clCreateKernel ... [%ld , %s , %d]\n",program, "square", err);                 
     kernel = clCreateKernel(program, "square", &err);
     if (!kernel || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute kernel!\n");
         return end(1);
     }
+   
+    printf("Res : clCreateKernel ... [%d , %ld]\n\n",err,kernel);
 
     // Create the input and output arrays in device memory for our calculation
     //
-    printf("Call : clCreateBuffer ...\n");                  
+    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_READ_ONLY, sizeof(float) * count, NULL, NULL);                     
     input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, NULL);
+
+    printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,input);
+
+    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);     
     output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);
+   
+    printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,output);
+
     if (!input || !output)
     {
         printf("Error: Failed to allocate device memory!\n");
@@ -908,21 +940,31 @@ int main(int argc, char** argv)
     
     // Write our data set into the input array in device memory 
     //
-    printf("Call : clEnqueueWriteBuffer ...\n");                      
+    printf("Call : clEnqueueWriteBuffer ... [%ld , %ld , %d , %d , %d , [%f,%f,%f ...] , %d , %d , %d]\n",commands, input, CL_TRUE, 0, sizeof(float) * count, data[0], data[1], data[2], 0, NULL, NULL);                        
     err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * count, data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write to source array!\n");
         return end(1);
     }
+    
+    printf("Res : clEnqueueWriteBuffer ... [%d]\n\n",err);
 
     // Set the arguments to our compute kernel
-    //
-    printf("Call : clSetKernelArg ...\n");                          
+    //                   
     err = 0;
+    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %ld]\n",kernel,0,sizeof(cl_mem), input);       
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
+    printf("Res : clSetKernelArg ... [%d]\n\n",err);
+
+    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %ld]\n",kernel,1,sizeof(cl_mem), output);       
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
+    printf("Res : clSetKernelArg ... [%d]\n\n",err);
+
+    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %d]\n",kernel,2,sizeof(unsigned int), count);       
     err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &count);
+    printf("Res : clSetKernelArg ... [%d]\n\n",err);
+
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to set kernel arguments! %d\n", err);
@@ -931,7 +973,8 @@ int main(int argc, char** argv)
 
     // Get the maximum work group size for executing the kernel on the device
     //
-    printf("Call : clGetKernelWorkGroupInfo ...\n");                              
+    printf("Call : clGetKernelWorkGroupInfo ... [%ld , %ld , %d , %d , %d , %d]\n",kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), local, NULL);
+
     err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
     if (err != CL_SUCCESS)
     {
@@ -939,12 +982,16 @@ int main(int argc, char** argv)
         return end(1);
     }
 
+    printf("Res : clGetKernelWorkGroupInfo ... [%d , %d]\n\n",err,local);
+
     // Execute the kernel over the entire range of our 1d input data set
     // using the maximum number of work group items for this device
     //
     global = count;
-    printf("Call : clEnqueueNDRangeKernel ...\n");                                  
+    printf("Call : clEnqueueNDRangeKernel ... [%ld , %ld , %d , %d , %d , %d, %d , %d, %d]\n",commands, kernel, 1, NULL, global, local, 0, NULL, NULL);  
     err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
+    printf("Res : clEnqueueNDRangeKernel ... [%d]\n\n",err);
+
     if (err)
     {
         printf("Error: Failed to execute kernel!\n");
@@ -955,11 +1002,14 @@ int main(int argc, char** argv)
     //
     printf("Call : clFinish ...\n");        
     clFinish(commands);
+    printf("Res : clFinish ...\n\n");        
 
     // Read back the results from the device to verify the output
     //
-    printf("Call : clEnqueueReadBuffer ...\n");            
+    printf("Call : clEnqueueReadBuffer ... [%ld , %ld , %d , %d , %d , %d , %d , %d , %d]\n",commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL);                                 
     err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL );  
+    printf("Res : clEnqueueReadBuffer ... [%d ,  [%f,%f,%f ...] ]\n\n",err, results[0], results[1], results[2]);
+    
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);

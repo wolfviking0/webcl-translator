@@ -212,7 +212,7 @@ var LibraryOpenCL = {
         default:
           console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
+            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
           }
           break;
       }
@@ -248,32 +248,32 @@ var LibraryOpenCL = {
     
     getPointerToEmptyArray: function(size,type) {  
       var _host_ptr = null;
-            
+
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(CL.getTypeSizeBits(size));
+          _host_ptr = new Int8Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(CL.getTypeSizeBits(size));
+          _host_ptr = new Int16Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(CL.getTypeSizeBits(size));
+          _host_ptr = new Int32Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new UInt8Array(CL.getTypeSizeBits(size));
+          _host_ptr = new UInt8Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new UInt16Array(CL.getTypeSizeBits(size));
+          _host_ptr = new UInt16Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new UInt32Array(CL.getTypeSizeBits(size));
+          _host_ptr = new UInt32Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.FLOAT:
-          _host_ptr = new Float32Array(CL.getTypeSizeBits(size));
+          _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
           break;          
         default:
           console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
-          _host_ptr = new Float32Array(CL.getTypeSizeBits(size));
+          _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
           break;
       }
       
@@ -354,7 +354,7 @@ var LibraryOpenCL = {
 
     webclCallParameterStackTrace: function(parameter) {
       for (var i = 0; i < parameter.length - 1 ; i++) {
-        if ((parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
+        if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[i] instanceof ArrayBufferView)) || (parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
           CL.stack_trace += "[";  
           for (var j = 0; j < parameter[i].length - 1 ; j++) {
             CL.stack_trace += parameter[i][j] + ",";
@@ -369,7 +369,7 @@ var LibraryOpenCL = {
       }
 
       if (parameter.length >= 1) {
-        if ((parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array)){ 
+        if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[parameter.length - 1] instanceof ArrayBufferView)) || (parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array) ) { 
           CL.stack_trace += "[";  
           for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
             CL.stack_trace += parameter[parameter.length - 1][j] + ",";
@@ -689,21 +689,21 @@ var LibraryOpenCL = {
 
           if (param_value_size == 8) {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i64') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '8', 'i32') }}};
           } else {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
           } 
           
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
-
         } else if(typeof(_info) == "boolean") {
 
           if (param_value != 0) (_info == true) ? {{{ makeSetValue('param_value', '0', '1', 'i32') }}} : {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "string") {
 
           if (param_value != 0) writeStringToMemory(_info, param_value);
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
           
@@ -712,18 +712,18 @@ var LibraryOpenCL = {
             for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
             }
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length * 4', 'i32') }}};
           
           } else if (_info instanceof WebCLPlatform) {
          
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
           
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -1081,12 +1081,12 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "boolean") {
 
           if (param_value != 0) (_info == true) ? {{{ makeSetValue('param_value', '0', '1', 'i32') }}} : {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
 
@@ -1094,7 +1094,7 @@ var LibraryOpenCL = {
          
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info instanceof Array) {
 
@@ -1102,12 +1102,12 @@ var LibraryOpenCL = {
               var _id = CL.udid(_info[i]);
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_id', 'i32') }}};
             }
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length*4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -1287,11 +1287,11 @@ var LibraryOpenCL = {
 
           if (param_value_size == 8) {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i64') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '8', 'i32') }}};            
           } else {
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};            
           } 
-
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
 
@@ -1299,12 +1299,12 @@ var LibraryOpenCL = {
          
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -1830,7 +1830,7 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
 
@@ -1838,12 +1838,12 @@ var LibraryOpenCL = {
          
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
             console.error("clGetMemObjectInfo : "+typeof(_info)+" not yet implemented");
@@ -1901,24 +1901,24 @@ var LibraryOpenCL = {
           case (webcl.IMAGE_FORMAT) :
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.channelOrder', 'i32') }}};
             if (param_value != 0) {{{ makeSetValue('param_value', '4', '_info.channelType', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '8', 'i32') }}};
             break;
           case (webcl.IMAGE_ELEMENT_SIZE) :
             //  Not sure how I can know the element size ... It's depending of the channelType I suppose --> @steven Your opinion about that ??
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '4', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
             break;
           case (webcl.IMAGE_ROW_PITCH) :
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.rowPitch', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
             break;
           case (webcl.IMAGE_WIDTH) :
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.width', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
             break;
           case (webcl.IMAGE_HEIGHT) :
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.height', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
             break;
           default:
 #if OPENCL_STACK_TRACE
@@ -2084,12 +2084,12 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "boolean") {
 
           if (param_value != 0) (_info == true) ? {{{ makeSetValue('param_value', '0', '1', 'i32') }}} : {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
 
@@ -2097,12 +2097,12 @@ var LibraryOpenCL = {
      
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -2350,7 +2350,7 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "string") {
           if (param_value != 0) {
@@ -2358,7 +2358,7 @@ var LibraryOpenCL = {
           }
         
           if (param_value_size_ret != 0) {
-            {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+            {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
           }
         } else if(typeof(_info) == "object") {
 
@@ -2366,7 +2366,7 @@ var LibraryOpenCL = {
      
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info instanceof Array) {
 
@@ -2374,12 +2374,12 @@ var LibraryOpenCL = {
               var _id = CL.udid(_info[i]);
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_id', 'i32') }}};
             }
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length * 4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -2444,7 +2444,7 @@ var LibraryOpenCL = {
           if(typeof(_info) == "number") {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if(typeof(_info) == "string") {
             if (param_value != 0) {
@@ -2452,7 +2452,7 @@ var LibraryOpenCL = {
             }
           
             if (param_value_size_ret != 0) {
-              {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+              {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
             }
           } else {
 #if OPENCL_STACK_TRACE
@@ -2783,7 +2783,7 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "string") {
           if (param_value != 0) {
@@ -2791,7 +2791,7 @@ var LibraryOpenCL = {
           }
         
           if (param_value_size_ret != 0) {
-            {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+            {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
           }
         } else if(typeof(_info) == "object") {
 
@@ -2799,12 +2799,12 @@ var LibraryOpenCL = {
      
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -2869,14 +2869,14 @@ var LibraryOpenCL = {
           if(typeof(_info) == "number") {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info instanceof Int32Array) {
            
             for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
               if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
             }
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size>>2,_info.length)', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length * 4', 'i32') }}};
           
           } else {
 #if OPENCL_STACK_TRACE
@@ -2980,7 +2980,7 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else if(typeof(_info) == "object") {
 
@@ -2988,12 +2988,12 @@ var LibraryOpenCL = {
      
             var _id = CL.udid(_info);
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
           } else if (_info == null) {
 
             if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
           } else {
 #if OPENCL_STACK_TRACE
@@ -3238,7 +3238,7 @@ var LibraryOpenCL = {
         if(typeof(_info) == "number") {
 
           if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
         } else {
 #if OPENCL_STACK_TRACE
@@ -3363,7 +3363,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+          var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -3382,14 +3382,13 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
 #endif        
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
-
+          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+          //CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
-          if (ptr) {
+          if (ptr)
             CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-          }
-
+         
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -3430,7 +3429,8 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 
-          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+          // /!\ _host_ptr must be init with size --> @steven how i can have it ??
+          var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
           var _buffer_origin = [];
@@ -3464,9 +3464,11 @@ var LibraryOpenCL = {
 
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
-          if (ptr) {
-            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-          }
+          //console.info("-->"+ptr);
+          console.info("-->"+_host_ptr.length);
+          //if (ptr) {
+            //CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+          //}
           
       } else {
 #if OPENCL_STACK_TRACE
@@ -3714,7 +3716,8 @@ var LibraryOpenCL = {
 
         if (image in CL.cl_objects) {
 
-          var _host_ptr = CL.getPointerToEmptyArray(CL.cl_pn_type);
+          // /!\ _host_ptr must be init with size --> @steven how i can have it ??
+          var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -4156,8 +4159,9 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
-          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
-          //CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);    
+
+          console.info("/!\\ WebKit platform specific ...");
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
           // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
@@ -4738,7 +4742,7 @@ var LibraryOpenCL = {
         var _info = CL.cl_objects[memobj].getGLTextureInfo(param_name);
 
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '1', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
      
       } else {
 #if OPENCL_STACK_TRACE
