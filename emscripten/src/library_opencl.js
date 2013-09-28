@@ -41,7 +41,7 @@ var LibraryOpenCL = {
       var _uuid = [];
 
       _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
-      for (var i = 1; i < 8; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+      for (var i = 1; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
 
       _id = _uuid.join('');
 
@@ -530,7 +530,7 @@ var LibraryOpenCL = {
         }
       
         if (param_value_size_ret != 0) {
-          {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+          {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
         }
            
       } else {
@@ -549,7 +549,7 @@ var LibraryOpenCL = {
       }
     
       if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', 'Math.min(param_value_size,_info.length)', 'i32') }}};
+        {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
       }
 
 #if OPENCL_STACK_TRACE
@@ -834,14 +834,12 @@ var LibraryOpenCL = {
               _propertiesCounter ++;
 
               // Just one is enough 
-              if (typeof(WebCLGL) !== "undefined") {
-                if (!(_webcl instanceof WebCLGL)){
-                  _sharedContext = Module.ctx;
+              if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
+                _sharedContext = Module.ctx;
 #if OPENCL_STACK_TRACE
-                  CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
 #endif              
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
-                }
+                _webcl = webcl.getExtension("KHR_GL_SHARING");
               }
               break;
 
@@ -860,11 +858,9 @@ var LibraryOpenCL = {
         }
       }
 
-      var _prop;
-      if (typeof(WebCLGL) !== "undefined") {
-        if (_webcl instanceof WebCLGL) {   
+      var _prop = null;
+      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
           _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        }
       } else {
         _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       }
@@ -954,15 +950,13 @@ var LibraryOpenCL = {
               _propertiesCounter ++;
               
               // Just one is enough
-              if (typeof(WebCLGL) !== "undefined") { 
-                if (!(_webcl instanceof WebCLGL)){
-                  _sharedContext = Module.ctx;
+              if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
+                _sharedContext = Module.ctx;
 
 #if OPENCL_STACK_TRACE
-                  CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
 #endif              
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
-                }
+                _webcl = webcl.getExtension("KHR_GL_SHARING");
               }
               break;
 
@@ -983,10 +977,8 @@ var LibraryOpenCL = {
 
       var _prop;
 
-      if (typeof(WebCLGL) !== "undefined") {
-        if (_webcl instanceof WebCLGL) {
+      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
           _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        }
       } else {
         _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       }
