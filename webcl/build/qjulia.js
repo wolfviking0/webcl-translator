@@ -4536,107 +4536,35 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,webcl_mozilla:0,webcl_webkit:0,ctx:[],ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],devices:[],devices_clean:[],platforms:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
-        // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
-        // Remove on Mozilla CL_ prefix on the EnumName
-        for (var legacyEnumName in WebCL) {
-          if (typeof WebCL[legacyEnumName] === 'number') {
-            var newEnumName = legacyEnumName;
-            if (CL.webcl_mozilla) {
-              newEnumName = legacyEnumName.slice(3);
-            }
-            CL[newEnumName] = WebCL[legacyEnumName];
-          }
-        }
-      },checkWebCL:function () {
-        // If we already check is not useful to do this again
-        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
-          return 0;
-        }
-        // Look is the browser is comaptible
-        var isWebkit = 'webkitRequestAnimationFrame' in window;
-        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        if (!isWebkit && !isFirefox) {
-          console.error("This current browser is not compatible with WebCL implementation !!! \n");
-          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-          return -1;
-        }
-        // Look is the browser have WebCL implementation
-        if (window.WebCL == undefined || isWebkit) {
+      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},init:function () {
+        if (typeof(webcl) === "undefined") {
+          webcl = window.WebCL;
           if (typeof(webcl) === "undefined") {
             console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-            return -1;
-          } else {
-            window.WebCL = webcl
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
           }
         }
-        CL.webcl_webkit = isWebkit == true ? 1 : 0;
-        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
-        CL.index_object = 2147483647;
-        CL.setupWebCLEnums();
-        // Init Device info
-        CL.device_infos = {
-          0x1000:CL.DEVICE_TYPE,
-          0x1001:CL.DEVICE_VENDOR_ID,
-          0x1002:CL.DEVICE_MAX_COMPUTE_UNITS,
-          0x1003:CL.DEVICE_MAX_WORK_ITEM_DIMENSIONS,      
-          0x1004:CL.DEVICE_MAX_WORK_GROUP_SIZE,
-          0x1005:CL.DEVICE_MAX_WORK_ITEM_SIZES,
-          0x1006:CL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
-          0x1007:CL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
-          0x1008:CL.DEVICE_PREFERRED_VECTOR_WIDTH_INT,
-          0x1009:CL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
-          0x100A:CL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
-          0x100B:CL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,      
-          0x100C:CL.DEVICE_MAX_CLOCK_FREQUENCY,
-          0x100D:CL.DEVICE_ADDRESS_BITS,    
-          0x100E:CL.DEVICE_MAX_READ_IMAGE_ARGS,    
-          0x100F:CL.DEVICE_MAX_WRITE_IMAGE_ARGS,    
-          0x1010:CL.DEVICE_MAX_MEM_ALLOC_SIZE,
-          0x1011:CL.DEVICE_IMAGE2D_MAX_WIDTH,
-          0x1012:CL.DEVICE_IMAGE2D_MAX_HEIGHT,
-          0x1013:CL.DEVICE_IMAGE3D_MAX_WIDTH,
-          0x1014:CL.DEVICE_IMAGE3D_MAX_HEIGHT,
-          0x1015:CL.DEVICE_IMAGE3D_MAX_DEPTH,
-          0x1016:CL.DEVICE_IMAGE_SUPPORT,
-          0x101F:CL.DEVICE_GLOBAL_MEM_SIZE,
-          0x1020:CL.DEVICE_MAX_CONSTANT_BUFFER_SIZE,
-          0x1022:CL.DEVICE_LOCAL_MEM_TYPE,
-          0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
-          0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
-          0x1030:CL.DEVICE_EXTENSIONS,
-          0x1031:CL.DEVICE_PLATFORM,
-          0x102A:CL.DEVICE_QUEUE_PROPERTIES,
-          0x102B:CL.DEVICE_NAME,
-          0x102C:CL.DEVICE_VENDOR,
-          0x102D:CL.DRIVER_VERSION,
-          0x102E:CL.DEVICE_PROFILE,
-          0x102F:CL.DEVICE_VERSION            
-        };
-        return 0;
-      },isFloat:function (ptr,size) {
-        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
-        console.error("But may be the kernel source is not yet parse !!! \n");
-        var v_int = HEAP32[((ptr)>>2)]; 
-        var v_float = HEAPF32[((ptr)>>2)]; 
-        // If the value is 0
-        if ( v_int == 0 ) {
-          // If is an array
-          if (size > 1) {
-            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
-          } else { 
-            // Use float by default 
-            return 1;
-          }                
+      },udid:function (obj) {    
+        var _id;
+        if (obj !== undefined) {
+          if ( obj.hasOwnProperty('udid') ) {
+           _id = obj.udid;
+           if (_id !== undefined) {
+             return _id;
+           }
+          }
         }
-        // If we read int and is float we have a very big value 1e8
-        if (Math.abs(v_int) > 100000000) {
-          return 1;
+        var _uuid = [];
+        _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
+        for (var i = 1; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+        _id = _uuid.join('');
+        // /!\ Call udid when you add inside cl_objects if you pass object in parameter
+        if (obj !== undefined) {
+          Object.defineProperty(obj, "udid", { value : _id,writable : false });
+          CL.cl_objects[_id]=obj;
         }
-        return 0;      
-      },parseKernel:function (kernelstring) {
+        return _id;      
+      },parseKernel:function (kernel_string) {
         // Experimental parse of Kernel
         // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
         // Step 1 : Search __kernel
@@ -4646,216 +4574,289 @@ function copyTempDouble(ptr) {
         // Step 5 : For each parameter search Adress Space and Data Type
         //
         // --------------------------------------------------------------------
-        //
-        // \note Work only with one kernel ....
-        var kernel_struct = {};
-        kernelstring = kernelstring.replace(/\n/g, " ");
-        kernelstring = kernelstring.replace(/\r/g, " ");
-        kernelstring = kernelstring.replace(/\t/g, " ");
+        var _kernel_struct = {};
+        kernel_string = kernel_string.replace(/\n/g, " ");
+        kernel_string = kernel_string.replace(/\r/g, " ");
+        kernel_string = kernel_string.replace(/\t/g, " ");
         // Search kernel function __kernel 
-        var kernel_start = kernelstring.indexOf("__kernel");
-        while (kernel_start >= 0) {
-          kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
-          var brace_start = kernelstring.indexOf("(");
-          var brace_end = kernelstring.indexOf(")");  
-          var kernels_name = "";
+        var _kernel_start = kernel_string.indexOf("__kernel");
+        while (_kernel_start >= 0) {
+          kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
+          var _brace_start = kernel_string.indexOf("(");
+          var _brace_end = kernel_string.indexOf(")");  
+          var _kernels_name = "";
           // Search kernel Name
-          for (var i = brace_start - 1; i >= 0 ; i--) {
-            var chara = kernelstring.charAt(i);
-            if (chara == ' ' && kernels_name.length > 0) {
+          for (var i = _brace_start - 1; i >= 0 ; i--) {
+            var _chara = kernel_string.charAt(i);
+            if (_chara == ' ' && _kernels_name.length > 0) {
               break;
-            } else if (chara != ' ') {
-              kernels_name = chara + kernels_name;
+            } else if (_chara != ' ') {
+              _kernels_name = _chara + _kernels_name;
             }
           }
-          kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
-          kernelsubstring = kernelsubstring.replace(/\ /g, "");
-          var kernel_parameter = kernelsubstring.split(",");
-          kernelstring = kernelstring.substr(brace_end);
-          var parameter = new Array(kernel_parameter.length)
-          for (var i = 0; i < kernel_parameter.length; i ++) {
-            var value = 0;
-            var string = kernel_parameter[i]
+          var _kernelsubstring = kernel_string.substr(_brace_start + 1,_brace_end - _brace_start - 1);
+          _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
+          var _kernel_parameter = _kernelsubstring.split(",");
+          kernel_string = kernel_string.substr(_brace_end);
+          var _parameter = new Array(_kernel_parameter.length)
+          for (var i = 0; i < _kernel_parameter.length; i ++) {
+            var _value = 0;
+            var _string = _kernel_parameter[i]
             // Adress space
             // __global, __local, __constant, __private. 
-            if (string.indexOf("__local") >= 0 ) {
-              value |= CL.address_space.LOCAL;
-            }
+            if (_string.indexOf("__local") >= 0 ) {
+              _value = webcl.LOCAL;
+            } 
             // Data Type
             // float, uchar, unsigned char, uint, unsigned int, int. 
-            if (string.indexOf("float") >= 0 ) {
-              value |= CL.data_type.FLOAT;
-            } else if (string.indexOf("uchar") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned char") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("uint") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned int") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("int") >= 0 ) {
-              value |= CL.data_type.INT;
+            else if (_string.indexOf("float") >= 0 ) {
+              _value = webcl.FLOAT;
+            } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
+              _value = webcl.UNSIGNED_INT8;
+            } else if (_string.indexOf("int") >= 0 ) {
+              _value = webcl.SIGNED_INT32;
             } else {
-              value |= CL.data_type.FLOAT;
+              _value = webcl.FLOAT;
             }
-            parameter[i] = value;
+            _parameter[i] = _value;
           }
-          kernel_struct[kernels_name] = parameter;
-          kernel_start = kernelstring.indexOf("__kernel");
+          _kernel_struct[_kernels_name] = _parameter;
+          _kernel_start = kernel_string.indexOf("__kernel");
         }
-        return kernel_struct;
-      },getNewId:function (id) {
-        return CL.index_object - (id + 1);
-      },getArrayId:function (id) {
-        return CL.index_object - id - 1;
-      },getDeviceName:function (type) {
-        switch (type) {
-          case 2 : return "CPU_DEVICE";
-          case 4 : return "GPU_DEVICE";
-          default : return "UNKNOW_DEVICE";
+        return _kernel_struct;
+      },getTypeSizeBits:function (type) {  
+        var _size = null;
+        switch(type) {
+          case webcl.UNSIGNED_INT8:
+          case webcl.SIGNED_INT8:
+            _size = 1;
+            break;
+          case webcl.UNSIGNED_INT16:
+          case webcl.SIGNED_INT16:
+            _size = 2;
+            break;
+          case webcl.UNSIGNED_INT32:          
+          case webcl.SIGNED_INT32:
+          case webcl.FLOAT:        
+            _size = 4;
+            break;      
+          default:
+            console.info("Use size for default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+            _size = 4;
+            break;
         }
-      },getAllDevices:function (platform) {
-        console.info("getAllDevices");
-        var res = [];
-        if (platform >= CL.platforms.length || platform < 0 ) {
-            return res; 
-        }
-        if (CL.webcl_mozilla == 1) {
-          res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
-        } else {
-          // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
-          try {
-            res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
-          } catch (e) {
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
-            } catch (e) {
+        return _size;
+      },setPointerWithArray:function (ptr,array,type) {  
+        switch(type) {
+          case webcl.UNSIGNED_INT8:
+          case webcl.SIGNED_INT8:
+            for (var i = 0; i < array.length; i++) {
+              HEAP8[(((ptr)+(i))|0)]=array[i];      
             }
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
-            } catch (e) {
+            break;
+          case webcl.UNSIGNED_INT16:          
+          case webcl.SIGNED_INT16:
+            for (var i = 0; i < array.length; i++) {
+              HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
             }
+            break;
+          case webcl.UNSIGNED_INT32:
+          case webcl.SIGNED_INT32:
+            for (var i = 0; i < array.length; i++) {
+              HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
+            }
+            break;
+          case webcl.FLOAT:
+            for (var i = 0; i < array.length; i++) {
+              HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
+            }
+            break;        
+          default:
+            console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+            for (var i = 0; i < array.length; i++) {
+              HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
+            }
+            break;
+        }
+      },getPointerToValue:function (ptr,size,type) {  
+        var _value = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+          case webcl.UNSIGNED_INT8:          
+            _value = HEAP8[(ptr)]
+            break;
+          case webcl.SIGNED_INT16:
+          case webcl.UNSIGNED_INT16:
+            _value = HEAP16[((ptr)>>1)]
+            break;
+          case webcl.SIGNED_INT32:
+          case webcl.UNSIGNED_INT32:
+            _value = HEAP32[((ptr)>>2)]
+            break;
+          case webcl.FLOAT:
+            _value = HEAPF32[((ptr)>>2)]
+            break;          
+          default:
+            console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+            _value = HEAPF32[((ptr)>>2)]
+            break;
+        }
+        return _value;
+      },getPointerToEmptyArray:function (size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new UInt8Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new UInt16Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new UInt32Array(size / CL.getTypeSizeBits(type));
+            break;
+          case webcl.FLOAT:
+            _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
+            break;          
+          default:
+            console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+            _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
+            break;
+        }
+        return _host_ptr;
+      },getPointerToArray:function (ptr,size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = HEAP8.subarray((ptr),(ptr+size))
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1)
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = HEAPU8.subarray((ptr),(ptr+size))
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1)
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;
+          case webcl.FLOAT:
+            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;          
+          default:
+            console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
+            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;
+        }
+        return _host_ptr;
+      },getPointerToArrayBuffer:function (ptr,size,type) {  
+        return CL.getPointerToArray(ptr,size,type).buffer;
+      },catchError:function (e) {
+        console.error(e);
+        var _error = -1;
+        if (typeof(WebCLException) !== "undefined") {
+          if (e instanceof WebCLException) {
+            var _str=e.message;
+            var _n=_str.lastIndexOf(" ");
+            _error = _str.substr(_n+1,_str.length-_n-1);
           }
-        }    
-        if (res.length == 0) {
-          console.error("getAllDevices: Num of all devices can't be null");
         }
-        return res;
-      },catchError:function (name,e) {
-        var message = "";
-        if (CL.webcl_webkit == 1) {
-          message = e.message;
-        } else {
-          message = e;
-        }
-        console.info(message);
-        var str=""+message;
-        var n=str.lastIndexOf(" ");
-        var error = str.substr(n+1,str.length-n-2);
-        console.error("CATCH: "+name+": "+message);
-        Module.print("/!\\"+name+": "+message);
-        return error;
+        return _error;
       }};function _clFinish(command_queue) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
+      try { 
+        if (command_queue in CL.cl_objects) {
+          CL.cl_objects[command_queue].finish();
+        } else {
+          return webcl.INVALID_COMMAND_QUEUE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      try {
-        CL.cmdQueue[queue].finish(); //Finish all the operations
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clFinish",e);
-      }
+      return webcl.SUCCESS;
     }
   function _clReleaseKernel(kernel) {
-      var ker = CL.getArrayId(kernel);  
-      if (ker >= (CL.kernels.length +  CL.kernels_clean.length) || ker < 0 ) {
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.kernels_clean.length; i++) {
-        if (CL.kernels_clean[i] < ker) {
-          offset++;
+      try {
+        if (kernel in CL.cl_objects) {
+          CL.cl_objects[kernel].release();
+          delete CL.cl_objects[kernel];
+        } else {
+          return webcl.INVALID_KERNEL;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      CL.kernels.splice(ker - offset, 1);
-      CL.kernels_clean.push(ker);
-      if (CL.kernels.length == 0) {
-        CL.kernels_clean = [];
-      }
-      return 0;/*CL_SUCCESS*/
+      return webcl.SUCCESS;
     }
   function _clReleaseProgram(program) {
-      var prog = CL.getArrayId(program);  
-      if (prog >= (CL.programs.length + CL.programs_clean.length)|| prog < 0 ) {
-        return -44; /* CL_INVALID_PROGRAM */
-      }           
-      var offset = 0;
-      for (var i = 0; i < CL.programs_clean.length; i++) {
-        if (CL.programs_clean[i] < prog) {
-          offset++;
+      try {
+        if (program in CL.cl_objects) {
+          CL.cl_objects[program].release();
+          delete CL.cl_objects[program];
+        } else {
+          return webcl.INVALID_PROGRAM;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      CL.programs.splice(prog - offset, 1);
-      CL.programs_clean.push(prog);
-      if (CL.programs.length == 0) {
-        CL.programs_clean = [];
-      }
-      return 0;/*CL_SUCCESS*/
+      return webcl.SUCCESS;
     }
   function _clReleaseCommandQueue(command_queue) {
-      var queue = CL.getArrayId(command_queue);  
-      if (queue >= (CL.cmdQueue.length + CL.cmdQueue_clean.length) || queue < 0 ) {
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.cmdQueue_clean.length; i++) {
-        if (CL.cmdQueue_clean[i] < queue) {
-          offset++;
+      try {
+        if (command_queue in CL.cl_objects) {
+          CL.cl_objects[command_queue].release();
+          delete CL.cl_objects[command_queue];
+        } else {
+          return webcl.INVALID_COMMAND_QUEUE;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      CL.cmdQueue.splice(queue - offset, 1);
-      CL.cmdQueue_clean.push(queue);
-      if (CL.cmdQueue.length == 0) {
-        CL.cmdQueue_clean = [];
-      }
-      return 0;/*CL_SUCCESS*/
+      return webcl.SUCCESS;
     }
-  function _clReleaseMemObject(memobj) { 
-      var buff = CL.getArrayId(memobj);  
-      if (buff >= (CL.buffers.length + CL.buffers_clean.length) || buff < 0 ) {
-        return -38; /* CL_INVALID_MEM_OBJECT */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.buffers_clean.length; i++) {
-        if (CL.buffers_clean[i] < buff) {
-          offset++;
+  function _clReleaseMemObject(memobj) {
+      try {
+        if (memobj in CL.cl_objects) {
+          CL.cl_objects[memobj].release();
+          delete CL.cl_objects[memobj];
+        } else {
+          return webcl.INVALID_MEM_OBJECT;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      CL.buffers.splice(buff - offset, 1);
-      CL.buffers_clean.push(buff);
-      if (CL.buffers.length == 0) {
-        CL.buffers_clean = [];
-      }
-      return 0;/*CL_SUCCESS*/
+      return webcl.SUCCESS;
     }
   function _clReleaseContext(context) {
-      var ctx = CL.getArrayId(context);  
-      if (ctx >= (CL.ctx.length + CL.ctx_clean.length) || ctx < 0 ) {
-        return -34; /* CL_INVALID_CONTEXT */
-      }        
-      var offset = 0;
-      for (var i = 0; i < CL.ctx_clean.length; i++) {
-        if (CL.ctx_clean[i] < ctx) {
-          offset++;
+      try {
+        if (context in CL.cl_objects) {
+          CL.cl_objects[context].release();
+          delete CL.cl_objects[context];
+        } else {
+          return webcl.INVALID_CONTEXT;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
-      CL.ctx.splice(ctx - offset, 1);
-      CL.ctx_clean.push(ctx);
-      if (CL.ctx.length == 0) {
-        CL.ctx_clean = [];
-      }
-      return 0;/*CL_SUCCESS*/
+      return webcl.SUCCESS;
     }
   function _glViewport(x0, x1, x2, x3) { Module.ctx.viewport(x0, x1, x2, x3) }
   function _glEnable(x0) { Module.ctx.enable(x0) }
@@ -8703,175 +8704,141 @@ function copyTempDouble(ptr) {
       GL.immediate.clientAttributes = GL.immediate.clientAttributes_preBegin;
       GL.immediate.modifiedClientAttributes = true;
     }
-  function _clSetKernelArg(kernel, arg_index, arg_size, arg_value) {
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      try {  
-        var name = CL.kernels_name[ker];
-        // \todo problem what is arg_value is buffer or just value ??? hard to say ....
-        // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
-        // not inside the buffers array size we take the value
-        if (CL.kernels_sig[name].length <= 0 && arg_index > CL.kernels_sig[name].length) {
-          return -1; /* CL_FAILED */
-        }
-        var sig = CL.kernels_sig[name];
-        var type = sig[arg_index];
-        // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
-        var isFloat = 0;
-        var isLocal = 0;    
-        if (type&CL.data_type.FLOAT) {
-          isFloat = 1;
-        } 
-        if (type&CL.address_space.LOCAL) {
-          isLocal = 1;
-        }
-        var value;
-        if (isLocal) {     
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-        } else if (arg_size > 4) {
-          value = new Array(arg_size/4);
-          for (var i = 0; i < arg_size/4; i++) {
-            if (isFloat) {
-              value[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
+  function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
+      try {
+        if (kernel in CL.cl_objects) {
+          if (CL.cl_objects[kernel].sig.length > arg_index) {
+            var _sig = CL.cl_objects[kernel].sig[arg_index];
+            if (_sig == webcl.LOCAL) {
+              var _array = new Uint32Array([arg_size]);
+              // WD --> 
+              //CL.cl_objects[kernel].setArg(arg_index,_array);
+              // WebKit -->
+              console.info("/!\\ WebKit platform specific ...");
+              CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
             } else {
-              value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
+              var _value = HEAP32[((arg_value)>>2)];
+              if (_value in CL.cl_objects) {
+                CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
+              } else {
+                var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
+                // WD --> 
+                //CL.cl_objects[kernel].setArg(arg_index,_array);
+                // WebKit -->
+                console.info("/!\\ WebKit platform specific ...");
+                if ( (arg_size / CL.getTypeSizeBits(_sig)) > 1) {
+                  if (_sig == webcl.FLOAT) {
+                    CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.FLOAT)
+                  } else {
+                    CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.INT)
+                  }  
+                } else {
+                  if (_sig == webcl.FLOAT) {
+                    var _value = HEAPF32[((arg_value)>>2)];
+                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
+                  } else {
+                    var _value = HEAP32[((arg_value)>>2)];
+                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
+                  }                
+                }
+              }
             }
-          }
-          var type;
-          if ( CL.webcl_webkit == 1 ) {
-            if (arg_size/4 == 2)
-              type = WebCLKernelArgumentTypes.VEC2;
-            if (arg_size/4 == 3)
-              type = WebCLKernelArgumentTypes.VEC3;
-            if (arg_size/4 == 4)
-              type = WebCLKernelArgumentTypes.VEC4;
-          }
-          if (isFloat) {    
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.FLOAT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
-          } else {          
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.INT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
-          } 
-        } else {     
-          var idx = CL.getArrayId(HEAP32[((arg_value)>>2)]);
-          if (idx >= 0 && idx < CL.buffers.length) {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[idx]) : CL.kernels[ker].setArg(arg_index,CL.buffers[idx]);
           } else {
-            if (isFloat) { 
-              value = HEAPF32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
-            } else {
-              value = HEAP32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
-            }            
-          }        
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clSetKernelArg",e);
-      }
-    }
-  function _clEnqueueNDRangeKernel(command_queue, kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      var value_local_work_size;
-      var value_global_work_size;
-      if (CL.webcl_mozilla == 1) {
-        value_local_work_size = [];
-        value_global_work_size = [];
-      } else {
-        value_local_work_size = new Int32Array(work_dim);
-        value_global_work_size = new Int32Array(work_dim);
-      }
-      for (var i = 0 ; i < work_dim; i++) {
-        value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
-        value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
-      }
-      try {
-        // \todo how add some event inside the array
-        if (CL.webcl_mozilla == 1) {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,value_local_work_size,[]);
-        } else {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, value_local_work_size);
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clEnqueueNDRangeKernel",e);      
-  //       try {
-  // #if OPENCL_DEBUG
-  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-  // #endif        
-  //         // empty “localWS” sometime solve
-  //         // \todo how add some event inside the array
-  //         if (CL.webcl_mozilla == 1) {
-  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-  //         } else {
-  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-  //         }
-  //         return 0;/*CL_SUCCESS*/
-  //       } catch(e) {
-  //         return CL.catchError("clEnqueueNDRangeKernel",e);
-  //       }
-      }
-    }
-  function _clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var buff = CL.getArrayId(buffer);
-      if (buff >= CL.buffers.length || buff < 0 ) {
-        return -38; /* CL_INVALID_MEM_OBJECT */
-      }
-      try {
-        var vector;
-        var isFloat = 0;
-        var isUint = 0;
-        var isInt = 0;
-        if (CL.kernels_name.length > 0) {
-          // \warning experimental stuff
-          var name = CL.kernels_name[0];
-          var sig = CL.kernels_sig[name];
-          var type = sig[buff];
-          if (type & CL.data_type.FLOAT) {
-            isFloat = 1;
-          } 
-          if (type & CL.data_type.UINT) {
-            isUint = 1;
-          } 
-          if (type & CL.data_type.INT) {
-            isInt = 1;
+            return webcl.INVALID_KERNEL;          
           }
-        }
-        if (isFloat) {
-          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-        } else if (isUint) {
-          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-        } else if (isInt) {
-          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
         } else {
+          return webcl.INVALID_KERNEL;
         }
-        CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        for (var i = 0; i < (size / 4); i++) {
-          if (isFloat) {
-            HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-          } else {
-            HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-          }         
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clEnqueueReadBuffer",e);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
+      return webcl.SUCCESS;
+    }
+  function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
+      try { 
+        if (command_queue in CL.cl_objects) {
+          if (kernel in CL.cl_objects) {
+            var _event = null;
+            var _event_wait_list = [];
+            // WD --> 
+            // Workink Draft take CLuint[3]
+            // var _global_work_offset = [];
+            // var _global_work_size = [];
+            // var _local_work_size = [];
+            // WebKit -->
+            // Webkit take UInt32Array
+            console.info("/!\\ WebKit platform specific ...");
+            var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+            var _global_work_size = new Int32Array(work_dim);
+            var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+            for (var i = 0; i < work_dim; i++) {
+              //_global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
+              //if (global_work_offset != 0)
+              //  _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
+              //if (local_work_size != 0)
+              //  _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
+              _global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
+              if (_global_work_offset)
+                _global_work_offset[i] = HEAP32[(((global_work_offset)+(i*4))>>2)];
+              if (_local_work_size)
+                _local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
+            }
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                return webcl.INVALID_EVENT;    
+              }
+            }
+            console.info("/!\\ WebKit platform specific ...");
+            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
+            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+            // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+            return webcl.INVALID_MEM_OBJECT;
+          }
+        } else {
+          return webcl.INVALID_COMMAND_QUEUE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
+      }
+      return webcl.SUCCESS;    
+    }
+  function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
+      try { 
+        if (command_queue in CL.cl_objects) {
+          if (buffer in CL.cl_objects) {
+            var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
+            var _event_wait_list = [];
+            var _event = null;
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                return webcl.INVALID_EVENT;    
+              }
+            } 
+            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+            //CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+            //if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+            if (ptr)
+              CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+        } else {
+            return webcl.INVALID_MEM_OBJECT;
+          }
+        } else {
+          return webcl.INVALID_COMMAND_QUEUE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
+      }
+      return webcl.SUCCESS;    
     }
   function _rand_r(seed) { // XXX ignores the seed
       return Math.floor(Math.random()*0x80000000);
@@ -8893,80 +8860,64 @@ function copyTempDouble(ptr) {
       }
       return _emscripten_get_now.actual();
     }
-  function _clGetDeviceInfo(device, param_name, param_value_size, param_value, param_value_size_ret) {
-      var idx = CL.getArrayId(device);
-      if (idx >= CL.devices.length || idx < 0 ) {
-        return -33; /* CL_INVALID_DEVICE */  
-      }    
-      var res;
-      var size = 0;
-      var info = CL.device_infos[param_name];
-      if (param_name in CL.device_infos) {
-        // Return string
-        if (
-          (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS               */
-          (param_name == 0x102B) || /* CL_DEVICE_NAME                     */
-          (param_name == 0x102C) || /* CL_DEVICE_VENDOR                   */
-          (param_name == 0x102D) || /* CL_DRIVER_VERSION                  */
-          (param_name == 0x102F) || /* CL_DEVICE_VERSION                  */
-          (param_name == 0x102E)    /* CL_DEVICE_PROFILE                  */
-        ) {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
+  function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
+      try { 
+        if (device in CL.cl_objects) {
+          var _object = CL.cl_objects[device];
+          if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
+            _object = webcl.getExtension("KHR_FP64");
+          }
+          if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
+            _object = webcl.getExtension("KHR_FP16");
+          }
+          var _info = _object.getInfo(param_name);
+          if(typeof(_info) == "number") {
+            if (param_value_size == 8) {
+              if (param_value != 0) (tempI64 = [_info>>>0,(Math.abs(_info) >= 1 ? (_info > 0 ? Math.min(Math.floor((_info)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((_info - +(((~~(_info)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
             } else {
-              res = "Not Visible";
-            }
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            res = "Not Visible";
-          }    
-          writeStringToMemory(res, param_value);
-          size = res.length;
-        }
-        // Return array
-        else if (
-          (param_name == 0x1005) /* CL_DEVICE_MAX_WORK_ITEM_SIZES */
-        ) {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } 
+          } else if(typeof(_info) == "boolean") {
+            if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+          } else if(typeof(_info) == "string") {
+            if (param_value != 0) writeStringToMemory(_info, param_value);
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length;
+          } else if(typeof(_info) == "object") {
+            if (_info instanceof Int32Array) {
+              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+              }
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+            } else if (_info instanceof WebCLPlatform) {
+              var _id = CL.udid(_info);
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if (_info == null) {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
             } else {
-              res = [1,1,1]; // minimum value is (1, 1, 1).
+              return webcl.INVALID_VALUE;
             }
-            for (var i = 0 ; i < 3; i++) {
-              HEAP32[(((param_value)+(i*4))>>2)]=res[i]; 
-            }
-            size = 3;            
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            for (var i = 0 ; i < 3; i++) {
-              HEAP32[(((param_value)+(i*4))>>2)]=1;
-            }
-            size = 3;
-          }         
+          } else {
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+          return webcl.INVALID_DEVICE;
         }
-        // Return int
-        else {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
-            } else {
-              res = 0;
-            }
-            HEAP32[((param_value)>>2)]=res;
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            HEAP32[((param_value)>>2)]=0;
-          }   
-          size = 1;
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
         }
-      } else {
-        HEAP32[((param_value)>>2)]=0;
-        size = 1;
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        return _error;
       }
-      HEAP32[((param_value_size_ret)>>2)]=size;
-      return 0;/*CL_SUCCESS*/  
+      return webcl.SUCCESS;
     }
   function _memset(ptr, value, num) {
       ptr = ptr|0; value = value|0; num = num|0;
@@ -8995,109 +8946,58 @@ function copyTempDouble(ptr) {
         ptr = (ptr+1)|0;
       }
     }var _llvm_memset_p0i8_i32=_memset;
-  function _clCreateBuffer(context, flags_i64_1, flags_i64_2, size, host_ptr, errcode_ret) {
+  function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
       // Assume the flags is i32 
       assert(flags_i64_2 == 0, 'Invalid flags i64');
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-        HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-        return 0; // Null pointer    
+      var _id = null;
+      var _buffer = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+        }
+        return 0; 
       }
       try {
-        var macro;
-        switch (flags_i64_1) {
-          case (1 << 0) /* CL_MEM_READ_WRITE */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_WRITE,size));
-            break;
-          case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_WRITE_ONLY,size));
-            break;
-          case (1 << 2) /* CL_MEM_READ_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_ONLY,size));
-            break;
-          case (((1 << 0)|(1 << 5))) /* CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_READ_WRITE;
-          case (((1 << 1)|(1 << 5))) /* CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_WRITE_ONLY;
-          case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_READ_ONLY;
-            if (host_ptr == 0) {
-              HEAP32[((errcode_ret)>>2)]=-37 /* CL_INVALID_HOST_PTR */;
-              return 0;     
-            }
-            var vector;
-            var isFloat = 0;
-            var isUint = 0;
-            var isInt = 0;
-            var buff = CL.buffers.length;
-            if (CL.kernels_name.length > 0) {
-              // \warning experimental stuff
-              var name = CL.kernels_name[0];
-              var sig = CL.kernels_sig[name];
-              var type = sig[buff];
-              if (type & CL.data_type.FLOAT) {
-                isFloat = 1;
-              } 
-              if (type & CL.data_type.UINT) {
-                isUint = 1;
-              } 
-              if (type & CL.data_type.INT) {
-                isInt = 1;
-              }
-            }
-            if (CL.webcl_webkit == -1) {
-              vector = new ArrayBuffer(size / ArrayBuffer.BYTES_PER_ELEMENT);
-            } else {
-              if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
-                isFloat = CL.isFloat(host_ptr,size); 
-                if (isFloat) {
-                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-                } else {
-                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-                }
-              } else {        
-                if (isFloat) {
-                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-                } else if (isUint) {
-                  vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-                } else if (isInt) {
-                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-                } else {
-                }
-              }
-            }
-            for (var i = 0; i < (size / 4); i++) {
-              if (isFloat) {
-                vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
-              } else {
-                vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
-              }
-            }
-            if (CL.webcl_webkit == -1) {
-                CL.buffers.push(CL.ctx[ctx].createBuffer(macro | CL.MEM_COPY_HOST_PTR, size, vector));
-            } else {
-              CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));              
-              if (CL.cmdQueue.length == 0) {
-                HEAP32[((errcode_ret)>>2)]=-36 /* CL_INVALID_COMMAND_QUEUE */;
-                return 0;
-              }
-              if (CL.buffers.length == 0) {
-                HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
-                return 0;
-              }    
-              CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
-            }
-            break;
-          default:
-            HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
-            return 0;
-        };
-        HEAP32[((errcode_ret)>>2)]=0 /* CL_SUCCESS */;
-        return CL.getNewId(CL.buffers.length-1);
-      } catch(e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateBuffer",e);
-        return 0;
+        var _flags;
+        if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+          _flags = webcl.MEM_READ_WRITE;
+        } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+          _flags = webcl.MEM_WRITE_ONLY;
+        } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+          _flags = webcl.MEM_READ_ONLY;
+        } else {
+          if (cl_errcode_ret != 0) {
+            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+          }
+          return 0; 
+        }
+        var _host_ptr = null;
+        if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
+          _host_ptr = new ArrayBuffer(size);
+        } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+          _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+        } else if (flags_i64_1 & ~_flags) {
+          // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
+          // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
+          console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+        }
+        if (_host_ptr != null)
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+        else
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        return 0; // NULL Pointer
       }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_buffer);
+      return _id;
     }
   function _snprintf(s, n, format, varargs) {
       // int snprintf(char *restrict s, size_t n, const char *restrict format, ...);
@@ -9121,145 +9021,157 @@ function copyTempDouble(ptr) {
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
       return _snprintf(s, undefined, format, varargs);
     }
-  function _clCreateProgramWithSource(context, count, strings, lengths, errcode_ret) {
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-        HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-        return 0; // Null pointer    
-      }
-      var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx); 
-      CL.kernels_sig = CL.parseKernel(kernel);
-      try {
-        // \todo set the properties 
-        if (CL.webcl_mozilla == 1) {
-          CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
-        } else {
-          CL.programs.push(CL.ctx[ctx].createProgram(kernel));
+  function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
+      var _id = null;
+      var _program = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
         }
-        return CL.getNewId(CL.programs.length-1);
+        return 0; 
+      }
+      try {
+        var _string = Pointer_stringify(HEAP32[((strings)>>2)]); 
+        CL.cl_kernels_sig = CL.parseKernel(_string);
+        _program = CL.cl_objects[context].createProgram(_string);
       } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateProgramWithSource",e);
-        return 0; // Null pointer
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        return 0; // NULL Pointer
       }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_program);
+      return _id;
     }
-  function _clBuildProgram(program, num_devices, device_list, options, pfn_notify, user_data) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        return -44; /* CL_INVALID_PROGRAM */
+  function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
+      // Program must be created
+      if (!(program in CL.cl_objects)) {
+        return webcl.INVALID_PROGRAM; 
       }
       try {
-        if (num_devices > CL.devices.length || CL.devices.length == 0) {
-          return -33; /* CL_INVALID_DEVICE */;  
-        }
-        var devices_tab = [];
-        if (num_devices == 0 || device_list == 0) {
-          devices_tab[0] = CL.devices[0];
-        } else {
-          for (var i = 0; i < num_devices; i++) {
-            var idx = CL.getArrayId(HEAP32[(((device_list)+(i*4))>>2)]);
-            devices_tab[i] = CL.devices[idx];
+        var _devices = [];
+        var _option = (options == 0) ? "" : Pointer_stringify(options); 
+        if (device_list != 0 && num_devices > 0 ) {
+          for (var i = 0; i < num_devices ; i++) {
+            var _device = HEAP32[(((device_list)+(i*4))>>2)]
+            if (_device in CL.cl_objects) {
+              _devices.push(CL.cl_objects[_device]);
+            }
           }
-        }    
-        var opt = "";//(options == 0) ? "" : Pointer_stringify(options);
-        if (CL.webcl_mozilla == 1) {
-          CL.programs[prog].buildProgram (devices_tab, opt);
-        } else { 
-          CL.programs[prog].build(devices_tab, opt);
         }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clBuildProgram",e);
-      }
-    }
-  function _clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, param_value_size_ret) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        return -44; /* CL_INVALID_PROGRAM */
-      }          
-      // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-      // var idx = HEAP32[((device)>>2)] - 1;
-      var idx = CL.getArrayId(device);
-      if (idx >= CL.devices.length || idx < 0 ) {
-        return -33; /* CL_INVALID_DEVICE */  
-      }
-      try {
-        var res = "";
-        switch (param_name) {
-          case 0x1181 /*CL_PROGRAM_BUILD_STATUS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_STATUS);
-          break;
-        case 0x1182 /*CL_PROGRAM_BUILD_OPTIONS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_OPTIONS);
-          break;
-        case 0x1183 /*CL_PROGRAM_BUILD_LOG*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_LOG);
-          break;
-        };
-        HEAP32[((param_value_size_ret)>>2)]=res.length;
-        writeStringToMemory(res,param_value);
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clGetProgramBuildInfo",e);
-      }
-    }
-  function _clCreateKernel(program, kernels_name, errcode_ret) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        HEAP32[((errcode_ret)>>2)]=-44;
-        return 0; // Null pointer   
-      }           
-      try {
-        var name = Pointer_stringify(kernels_name);
-        CL.kernels.push(CL.programs[prog].createKernel(name));
-        // Add the name of the kernel for search the kernel sig after...
-        CL.kernels_name.push(name);
-        return CL.getNewId(CL.kernels.length-1);
+        // Need to call this code inside the callback event WebCLCallback.
+        // if (pfn_notify != 0) {
+        //  FUNCTION_TABLE[pfn_notify](program, user_data);
+        // }
+        CL.cl_objects[program].build(_devices,_option,null,null);
       } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateKernel",e);
-        return 0; // Null pointer    
+        var _error = CL.catchError(e);
+        return _error;
       }
+      return webcl.SUCCESS;      
     }
-  function _clGetKernelWorkGroupInfo(kernel, devices, param_name, param_value_size, param_value, param_value_size_ret) {
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-      var idx = CL.getArrayId(devices);
-      if (idx >= CL.devices.length || idx < 0 ) {
-        return -33; /* CL_INVALID_DEVICE */  
-      }
-      try {        
-        var res;
-        switch (param_name) {
-          case (0x11B0) /* CL_KERNEL_WORK_GROUP_SIZE */:
-            if (CL.webcl_mozilla == 1) {
-              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_WORK_GROUP_SIZE);
+  function _clGetProgramBuildInfo(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
+      try { 
+        if (program in CL.cl_objects) {
+          if (device in CL.cl_objects) {
+            var _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
+            if(typeof(_info) == "number") {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if(typeof(_info) == "string") {
+              if (param_value != 0) {
+                writeStringToMemory(_info, param_value);
+              }
+              if (param_value_size_ret != 0) {
+                HEAP32[((param_value_size_ret)>>2)]=_info.length;
+              }
             } else {
-              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_WORK_GROUP_SIZE);
+              return webcl.INVALID_VALUE;
             }
-            break;
-          case (0x11B1) /*    CL_KERNEL_COMPILE_WORK_GROUP_SIZE    */:
-            if (CL.webcl_mozilla == 1) {
-              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
-            } else {
-              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_COMPILE_WORK_GROUP_SIZE);
-            }
-            break;
-          case (0x11B2) /*    CL_KERNEL_LOCAL_MEM_SIZE    */:
-            if (CL.webcl_mozilla == 1) {
-              res = CL.kernels[ker].getKernelWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
-            } else {
-              res = CL.kernels[ker].getWorkGroupInfo(CL.devices[idx],CL.KERNEL_LOCAL_MEM_SIZE);
-            }
-            break;
-        };
-        HEAP32[((param_value)>>2)]=res
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clGetKernelWorkGroupInfo",e);
+          } else {
+            return webcl.INVALID_DEVICE;
+          }
+        } else {
+          return webcl.INVALID_PROGRAM;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        return _error;
       }
+      return webcl.SUCCESS;
+    }
+  function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
+      var _id = null;
+      var _kernel = null;
+      var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
+      // program must be created
+      if (!(program in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PROGRAM;
+        }
+        return 0; 
+      }
+      try {
+        _kernel = CL.cl_objects[program].createKernel(_name);
+        Object.defineProperty(_kernel, "name", { value : _name,writable : false });
+        Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        return 0; // NULL Pointer
+      }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_kernel);
+      return _id;
+    }
+  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
+      try { 
+        if (kernel in CL.cl_objects) {
+          if (device in CL.cl_objects) {
+            var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
+            if(typeof(_info) == "number") {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if (_info instanceof Int32Array) {
+              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+              }
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+            } else {
+              return webcl.INVALID_VALUE;
+            }
+          } else {
+            return webcl.INVALID_DEVICE;
+          }
+        } else {
+          return webcl.INVALID_KERNEL;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        return _error;
+      }
+      return webcl.SUCCESS;
     }
   var ___dirent_struct_layout={__size__:1040,d_ino:0,d_name:4,d_off:1028,d_reclen:1032,d_type:1036};function _open(path, oflag, varargs) {
       // int open(const char *path, int oflag, ...);
@@ -9366,255 +9278,206 @@ function copyTempDouble(ptr) {
         return -1;
       }
     }
-  function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-      if (CL.checkWebCL() < 0) {
-        console.error(CL.errorMessage);
-        Module.print("/!\\"+CL.errorMessage);
-        return -1;/*WEBCL_NOT_FOUND*/;
+  function _clGetDeviceIDs(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
+      // Assume the device_type is i32 
+      assert(device_type_i64_2 == 0, 'Invalid device_type i64');
+      // Init webcl variable if necessary
+      CL.init();
+      if ( num_entries == 0 && device_type_i64_1 != 0) {
+        return webcl.INVALID_VALUE;
       }
-      // Assume the device type is i32 
-      assert(device_type_i64_2 == 0, 'Invalid flags i64');
-      try { 
-        var plat = 0;
-        // If platform is NULL, the behavior is implementation-defined
-        if (platform == 0 && CL.platforms.length == 0) {
-            // Get the platform
-            var platforms = WebCL.getPlatforms();
-            if (platforms.length > 0) {
-              CL.platforms.push(platforms[0]);
-              plat = CL.platforms.length - 1;
-            } else {
-              return -32; /* CL_INVALID_PLATFORM */ 
-            }      
-        } else {
-          plat = CL.getArrayId(platform);
-        }
-        var alldev = CL.getAllDevices(plat);
-        // If devices_ids is not NULL, the num_entries must be greater than zero.
-        if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        if ( alldev.length > 0 && device_type_i64_1 == 0) {
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        var map = {};
-        var mapcount = 0;
-        for (var i = 0 ; i < alldev.length; i++ ) {
-          var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_TYPE) : alldev[i].getInfo(CL.DEVICE_TYPE);
-          if (type == device_type_i64_1 || device_type_i64_1 == -1) { 
-             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : CL.getDeviceName(type);
-             map[name] = alldev[i];
-             mapcount ++;
-          }    
-        }
-        if (mapcount == 0) {
-  //#if OPENCL_DEBUG
-          var notfounddevice ="clGetDeviceIDs: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
-          console.error(notfounddevice);
-          Module.print("/!\\"+notfounddevice);
-  //#endif
-          var alldev = CL.getAllDevices(plat);
-          for (var i = 0 ; i < alldev.length; i++) {
-            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
-            map[name] = alldev[i];
-            mapcount ++;
-          }       
-        }
-        if (devices_ids == 0) {
-          HEAP32[((num_devices)>>2)]=mapcount /* Num of devices */;
-          return 0;/*CL_SUCCESS*/
-        }
-        for (var name in map) {
-          CL.devices.push(map[name]);
-        }
-        if (CL.devices.length == 0 ) {
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        if (num_entries > 0 && CL.devices.length > num_entries) {
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        // If devices is not null, we put the value inside
-        if (num_devices != 0) {
-          HEAP32[((num_devices)>>2)]=CL.devices.length /* Num of devices */;
-        }
-        // Add indices in array devices (+1) for don't have devices with id == 0
-        for (var i = 0; i < CL.devices.length; i++) {
-          HEAP32[(((devices_ids)+(i*4))>>2)]=CL.getNewId(i);
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch (e) {
-        return CL.catchError("clGetDeviceIDs",e);
-      }
-    }
-  function _clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
-      if (CL.checkWebCL() < 0) {
-        console.error(CL.errorMessage);
-        Module.print("/!\\"+CL.errorMessage);
-        return -1;/*WEBCL_NOT_FOUND*/;
+      if ( num_devices == 0 && device_type_i64_1 == 0) {
+        return webcl.INVALID_VALUE;
       }
       try {
-        if (CL.platforms.length == 0) {
-          // Get the platform
-          var platforms = WebCL.getPlatforms();
-          if (platforms.length > 0) {
-            CL.platforms.push(platforms[0]);
-            plat = CL.platforms.length - 1;
-          } else {
-            HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-            return 0; // Null pointer    
+        if ((platform in CL.cl_objects) || (platform == 0)) {
+          // If platform is NULL use the first platform found ...
+          if (platform == 0) {
+            var _platforms = webcl.getPlatforms();
+            if (_platforms.length == 0) {
+              return webcl.INVALID_PLATFORM;  
+            }
+            // Create a new UDID 
+            platform = CL.udid(_platforms[0]);
           } 
-        } 
-        var prop = [];
-        var plat = 0;
-        var use_gl_interop = 0;
-        var share_group = 0;
-        if (properties != 0) {
-          var i = 0;
-          while(1) {
-            var readprop = HEAP32[(((properties)+(i*4))>>2)];
-            if (readprop == 0) break;
-            switch(readprop) {
-              case (4228) /*CL_CONTEXT_PLATFORM*/ :
-                // property platform
-                prop.push(CL.CONTEXT_PLATFORM);
-                i++;
-                // get platform id
-                readprop = CL.getArrayId(HEAP32[(((properties)+(i*4))>>2)]);
-                if (readprop >= CL.platforms.length || readprop < 0 ) {
-                  HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-                  return 0; // Null pointer    
-                } else {
-                  plat = readprop;    
-                  prop.push(CL.platforms[readprop]);
-                }             
-              break;
-              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
-                use_gl_interop = 1;
-                i++;
-              break;
-              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
-                i++;
-              break;
-              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
-                use_gl_interop = 1;
-                share_group = 1;
-                i++;
-              break;
-              default:
-                HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
-                return 0; // Null pointer    
+          var _platform = CL.cl_objects[platform];
+          var _devices = _platform.getDevices(device_type_i64_1);
+          if (num_devices != 0) {
+            HEAP32[((num_devices)>>2)]=Math.min(num_entries,_devices.length) /* Num of device */;
+          } 
+          if (devices != 0) {
+            for (var i = 0; i < Math.min(num_entries,_devices.length); i++) {
+              var _id = CL.udid(_devices[i]);
+              HEAP32[(((devices)+(i*4))>>2)]=_id;
             }
-            i++;  
-          }        
-        }
-        if (prop.length == 0) {
-          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]]; 
-          plat = 0;    
-        }
-        if (CL.devices.length == 0) {
-          var alldev = CL.getAllDevices(plat);
-          var mapcount = 0;
-          for (var i = 0 ; i < alldev.length; i++ ) {
-            CL.devices.push(alldev[i]);  
           }
-        }
-        if (num_devices > CL.devices.length) {
-          HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-          return 0;
-        }
-        // \todo will be better to use the devices list in parameter ...
-        var devices_tab = [];
-        for (var i = 0; i < num_devices; i++) {
-          devices_tab[i] = CL.devices[i];
-        } 
-        if (num_devices == 0) {
-          devices_tab[0] = CL.devices[0];
-        }
-        if (CL.webcl_mozilla == 1) {
-          if (use_gl_interop) {
-            HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-            return 0;
-          }
-          CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
         } else {
-          var builder = WebCL;
-          if (use_gl_interop)
-            builder = WebCL.getExtension("KHR_GL_SHARING");
-          CL.ctx.push(builder.createContext({platform: CL.platforms[plat], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: share_group, hint: null}));
+          return webcl.INVALID_PLATFORM;       
         }
-        return CL.getNewId(CL.ctx.length-1);
-      } catch (e) {    
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateContext",e);
-        return 0; // Null pointer    
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
       }
+      return webcl.SUCCESS;
     }
-  function _clGetContextInfo(context, param_name, param_value_size, param_value, param_value_size_ret) {
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-          return -34; /* CL_INVALID_CONTEXT */ 
-      }
-      try {
-        var res;
-        var size;
-        switch (param_name) {
-          case (0x1081) /* CL_CONTEXT_DEVICES */:
-            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(CL.CONTEXT_DEVICES) : CL.ctx[ctx].getInfo(CL.CONTEXT_DEVICES) ;
-            // Must verify if size of device is same as param_value°size
-            if (param_value != 0) {
-              for (var i = 0 ; i < res.length; i++) {
-                HEAP32[(((param_value)+(i*4))>>2)]=CL.getNewId(CL.devices.length);
-                CL.devices.push(res[i]);
-              }
+  function _clCreateContext(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
+      var _id = null;
+      var _context = null;
+      try { 
+        var _webcl = webcl;
+        var _platform = null;
+        var _devices = [];
+        var _deviceType = null;
+        var _sharedContext = null;
+        // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
+        // WebCL can work using default device / platform, we check only if parameter are set.
+        for (var i = 0; i < num_devices; i++) {
+          var _idxDevice = HEAP32[(((devices)+(i*4))>>2)];
+          if (_idxDevice in CL.cl_objects) {
+            _devices.push(CL.cl_objects[_idxDevice]);
+          } else {
+            if (cl_errcode_ret != 0) {
+              HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
             }
-            size = res.length * 4;
-            break;
-          case (0x1082) /* CL_CONTEXT_PROPERTIES */:
-            res = (CL.webcl_mozilla == 1) ? CL.ctx[ctx].getContextInfo(CL.CONTEXT_PROPERTIES) : CL.ctx[ctx].getInfo(CL.CONTEXT_PROPERTIES) ;
-            // \todo add in param_value the properties list
-            size = res.length * 4;          
-            break;
-          case (0x1080) /* CL_CONTEXT_REFERENCE_COUNT */:
-            res = CL.ctx[ctx].getContextInfo(CL.CONTEXT_REFERENCE_COUNT); // return cl_uint
-            size = 1;
-            HEAP32[((param_value)>>2)]=res;
-            break;
-          default:
-            return -30; /* CL_INVALID_VALUE */ 
-        };
-        if (param_value_size < size && param_value != 0) {
-          return -30; /* CL_INVALID_VALUE */              
+            return 0;  
+          }
         }
-        HEAP32[((param_value_size_ret)>>2)]=size;
-        return 0;/*CL_SUCCESS*/
+        // Verify the property
+        if (properties != 0) {
+          var _propertiesCounter = 0;
+          while(1) {
+            var _readprop = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+            if (_readprop == 0) break;
+            switch (_readprop) {
+              case webcl.CONTEXT_PLATFORM:
+                _propertiesCounter ++;
+                var _idxPlatform = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+                if (_idxPlatform in CL.cl_objects) {
+                  _platform = CL.cl_objects[_idxPlatform];
+                } else {
+                  if (cl_errcode_ret != 0) {
+                    HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PLATFORM;
+                  }
+                  return 0;  
+                }
+                break;
+              // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree ??
+              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
+                _propertiesCounter ++;
+                // Just one is enough 
+                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
+                  _sharedContext = Module.ctx;
+                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                }
+                break;
+              default:
+                if (cl_errcode_ret != 0) {
+                  HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PROPERTY;
+                }
+                return 0; 
+            };
+            _propertiesCounter ++;
+          }
+        }
+        var _prop = null;
+        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
+            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+        } else {
+          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        }
+        _context = _webcl.createContext(_prop)
       } catch (e) {
-        return CL.catchError("clGetContextInfo",e);
-      }    
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        return 0; // NULL Pointer
+      }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_context);
+      return _id;
     }
-  function _clCreateCommandQueue(context, devices, properties, errcode_ret) {
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-          HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-          return 0; // Null pointer    
-      }
-      try {
-        var idx = CL.getArrayId(devices);//HEAP32[((devices)>>2)];
-        if (idx < 0) {
-          // Create a command-queue on the first device available if idx == 0
-          console.error("\\todo clCreateCommandQueue() : idx = 0 : Need work on that ")
-          var devices = CL.getAllDevices(0);
-          CL.devices.push(devices[0]);
+  function _clGetContextInfo(context,param_name,param_value_size,param_value,param_value_size_ret) {
+      try { 
+        if (context in CL.cl_objects) {
+          var _info = CL.cl_objects[context].getInfo(param_name);
+          if(typeof(_info) == "number") {
+            if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+          } else if(typeof(_info) == "boolean") {
+            if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+          } else if(typeof(_info) == "object") {
+            if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
+              var _id = CL.udid(_info);
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if (_info instanceof Array) {
+              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+                var _id = CL.udid(_info[i]);
+                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
+              }
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length*4;
+            } else if (_info == null) {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+            } else {
+              return webcl.INVALID_VALUE;
+            }
+          } else {
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+          return webcl.INVALID_CONTEXT;
         }
-        if (idx >= CL.devices.length) {
-          HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-          return 0; // Null pointer    
-        }
-        // \todo set the properties 
-        CL.cmdQueue.push(CL.ctx[ctx].createCommandQueue(CL.devices[idx], 0));
-        return CL.getNewId(CL.cmdQueue.length-1);
       } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateCommandQueue",e);
-        return 0; // Null pointer    
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        return _error;
       }
+      return webcl.SUCCESS;
+    }
+  function _clCreateCommandQueue(context,device,properties_1,properties_2,cl_errcode_ret) {
+      // Assume the properties is i32 
+      assert(properties_2 == 0, 'Invalid properties i64');
+      var _id = null;
+      var _command = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+        }
+        return 0; 
+      }
+      if (device == 0) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
+        }
+        return 0; 
+      }
+      try { 
+        _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        return 0; // NULL Pointer
+      }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_command);
+      return _id;
     }
   function _glEnableClientState(cap, disable) {
       var attrib = GLEmulation.getAttributeFromCapability(cap);
@@ -9920,7 +9783,7 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
 var FUNCTION_TABLE = [0,0,_Shutdown,0,_Display,0,_Idle,0,_Keyboard,0,_Reshape];
 // EMSCRIPTEN_START_FUNCS
-function _Idle(){_glutPostRedisplay();return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;if((r1|0)<1|(r2|0)==0){r6=1}else{r7=0;r8=1;while(1){r9=HEAP32[r2+(r7<<2)>>2];do{if((r9|0)==0){r10=r8}else{if((_strstr(r9,1056)|0)!=0){r10=0;break}if((_strstr(r9,776)|0)!=0){r10=1;break}if((_strstr(r9,712)|0)==0){r10=r8;break}HEAP32[2440>>2]=1;r10=r8}}while(0);r9=r7+1|0;if((r9|0)<(r1|0)){r7=r9;r8=r10}else{r6=r10;break}}}_printf(680,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=(r6|0)==1?672:664,r3));STACKTOP=r3;_glutInit(r5,r2);_glutInitDisplayMode(18);_glutInitWindowSize(HEAP32[1720>>2],HEAP32[1864>>2]);_glutInitWindowPosition(100,100);_glutCreateWindow(HEAP32[r2>>2]);if((_Initialize(r6)|0)!=0){STACKTOP=r4;return 0}_glutDisplayFunc(4);_glutIdleFunc(6);_glutReshapeFunc(10);_glutKeyboardFunc(8);_atexit(2);_puts(336);_glutMainLoop();STACKTOP=r4;return 0}function _Keyboard(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46;r4=0;r5=0;r6=STACKTOP;r7=r1&255;switch(r7|0){case 27:{_exit(0);break};case 32:{r8=HEAP32[2568>>2];r9=(r8|0)==0;r10=r9&1;HEAP32[2568>>2]=r10;r11=r9?1696:1512;r12=_printf(1704,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r5>>2]=r11,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 105:{r13=HEAP32[1800>>2];r14=(r13|0)==0;r15=r14&1;HEAP32[1800>>2]=r15;break};case 115:{r16=HEAP32[1792>>2];r17=(r16|0)==0;r18=r17&1;HEAP32[1792>>2]=r18;break};case 43:case 61:{r19=HEAPF32[1872>>2];r20=r19<.0020000000949949026;if(r20){r21=r19}else{r22=r19*.9523810148239136;HEAPF32[1872>>2]=r22;r21=r22}r23=r21;r24=_printf(1168,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r5>>3]=r23,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 45:{r25=HEAPF32[1872>>2];r26=r25<.009999999776482582;if(r26){r27=r25*1.0499999523162842;HEAPF32[1872>>2]=r27;r28=r27}else{r28=r25}r29=r28;r30=_printf(1168,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r5>>3]=r29,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 119:{r31=HEAPF32[1816>>2];r32=r31+.05000000074505806;HEAPF32[1816>>2]=r32;break};case 120:{r33=HEAPF32[1816>>2];r34=r33-.05000000074505806;HEAPF32[1816>>2]=r34;break};case 113:{r35=HEAPF32[1820>>2];r36=r35+.05000000074505806;HEAPF32[1820>>2]=r36;break};case 122:{r37=HEAPF32[1820>>2];r38=r37-.05000000074505806;HEAPF32[1820>>2]=r38;break};case 97:{r39=HEAPF32[1824>>2];r40=r39+.05000000074505806;HEAPF32[1824>>2]=r40;break};case 100:{r41=HEAPF32[1824>>2];r42=r41-.05000000074505806;HEAPF32[1824>>2]=r42;break};case 101:{r43=HEAPF32[1828>>2];r44=r43+.05000000074505806;HEAPF32[1828>>2]=r44;break};case 99:{r45=HEAPF32[1828>>2];r46=r45-.05000000074505806;HEAPF32[1828>>2]=r46;break};case 102:{_glutFullScreen();break};default:{}}HEAP8[1760]=0;_glutPostRedisplay();STACKTOP=r6;return}function _Initialize(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+4344|0;r5=r4;r6=r4+8;r7=r4+16;r8=r4+24;r9=r4+96;r10=r4+104;r11=r4+112;r12=r4+120;r13=r4+2168;r14=r4+2176;r15=r4+2184;r16=r4+2200;r17=r4+2208;r18=r4+2216;r19=r4+2280;r20=r4+4336;r21=HEAP32[1720>>2];r22=HEAP32[1864>>2];if((HEAP32[2448>>2]|0)!=0){_glDeleteTextures(1,2448)}HEAP32[2448>>2]=0;_printf(720,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r21,HEAP32[r3+8>>2]=r22,r3));STACKTOP=r3;HEAP32[1776>>2]=r21;HEAP32[1784>>2]=r22;_glActiveTexture(33985);_glGenTextures(1,2448);_glBindTexture(3553,HEAP32[2448>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,HEAP32[1776>>2],HEAP32[1784>>2],0,6408,5121,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[1720>>2],HEAP32[1864>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[2480>>2]=0;HEAPF32[2484>>2]=0;r22=HEAP32[1720>>2]|0;HEAPF32[2472>>2]=r22;HEAPF32[2476>>2]=0;HEAPF32[2464>>2]=r22;r22=HEAP32[1864>>2]|0;HEAPF32[2468>>2]=r22;HEAPF32[2456>>2]=0;HEAPF32[2460>>2]=r22;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,1728);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,2456);r22=r18;r21=r19;r23=r4+2288|0;r24=r4+3312|0;r25=(r1|0)!=0;r1=r25?4:2;r26=r25?0:0;HEAP32[2536>>2]=r1;HEAP32[2540>>2]=r26;r25=_clGetDeviceIDs(0,r1,r26,1,2544,0);HEAP32[r16>>2]=r25;do{if((r25|0)==0){r26=_clCreateContext(0,1,2544,0,0,r16);HEAP32[2552>>2]=r26;if((r26|0)==0){_puts(616);r27=1;break}r1=_clGetContextInfo(r26,4225,64,r22,r17);HEAP32[r16>>2]=r1;if((r1|0)!=0){_puts(208);r27=1;break}r1=HEAP32[r17>>2]>>>2;r26=0;while(1){if(r26>>>0>=r1>>>0){r2=47;break}r28=r18+(r26<<2)|0;_clGetDeviceInfo(HEAP32[r28>>2],4096,8,r21,0);if((HEAP32[r19>>2]|0)==(HEAP32[2536>>2]|0)&(HEAP32[r19+4>>2]|0)==(HEAP32[2540>>2]|0)){break}else{r26=r26+1|0}}if(r2==47){_puts(144);r27=1;break}r26=HEAP32[r28>>2];HEAP32[2544>>2]=r26;r1=_clCreateCommandQueue(HEAP32[2552>>2],r26,0,0,r16);HEAP32[2560>>2]=r1;if((r1|0)==0){_puts(96);r27=1;break}_memset(r23,0,1024);_memset(r24,0,1024);HEAP32[r16>>2]=_clGetDeviceInfo(HEAP32[2544>>2],4140,1024,r23,r17);r1=_clGetDeviceInfo(HEAP32[2544>>2],4139,1024,r24,r17);r26=HEAP32[r16>>2]|r1;HEAP32[r16>>2]=r26;if((r26|0)==0){_puts(264);_printf(752,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r23,HEAP32[r3+8>>2]=r24,r3));STACKTOP=r3;r27=0;break}else{_puts(488);r27=1;break}}else{_puts(144);r27=1}}while(0);if((r27|0)!=0){_printf(1464,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r27,r3));STACKTOP=r3;_exit(r27)}r27=_clGetDeviceInfo(HEAP32[2544>>2],4118,4,r20,0);if((r27|0)!=0){_printf(1416,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;_exit(r27)}if((HEAP32[r20>>2]|0)==0){_printf(1352,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;r29=-10;STACKTOP=r4;return r29}r20=r12|0;r12=r14;r27=r15;HEAP32[r9>>2]=0;r24=HEAP32[2528>>2];if((r24|0)!=0){_clReleaseKernel(r24)}HEAP32[2528>>2]=0;r24=HEAP32[2520>>2];if((r24|0)!=0){_clReleaseProgram(r24)}HEAP32[2520>>2]=0;_puts(264);_printf(1208,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r24=_open(1184,0,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;do{if((r24|0)==-1){_printf(856,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68}else{if((_fstat(r24,r8)|0)!=0){_printf(816,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68;break}r23=HEAP32[r8+28>>2];r16=_calloc(r23+1|0,1);if((_read(r24,r16,r23)|0)==0){_printf(784,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68;break}_close(r24);HEAP32[r9>>2]=0;if((r16|0)==0){r2=70;break}r23=_malloc(_strlen(r16)+1024|0);HEAP32[r10>>2]=r23;r17=HEAP32[1720>>2];r28=HEAP32[1864>>2];_sprintf(r23,1112,(r3=STACKTOP,STACKTOP=STACKTOP+40|0,HEAP32[r3>>2]=1152,HEAP32[r3+8>>2]=r17,HEAP32[r3+16>>2]=1136,HEAP32[r3+24>>2]=r28,HEAP32[r3+32>>2]=r16,r3));STACKTOP=r3;r28=_clCreateProgramWithSource(HEAP32[2552>>2],1,r10,0,r9);HEAP32[2520>>2]=r28;if(!((r28|0)!=0&(HEAP32[r9>>2]|0)==0)){_puts(8);r30=1;break}_free(r16);_free(HEAP32[r10>>2]);r16=_clBuildProgram(HEAP32[2520>>2],0,0,0,0,0);HEAP32[r9>>2]=r16;if((r16|0)!=0){_puts(568);_clGetProgramBuildInfo(HEAP32[2520>>2],HEAP32[2544>>2],4483,2048,r20,r11);_puts(r20);r30=1;break}_printf(1080,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1064,r3));STACKTOP=r3;r16=_clCreateKernel(HEAP32[2520>>2],1064,r9);HEAP32[2528>>2]=r16;if(!((r16|0)!=0&(HEAP32[r9>>2]|0)==0)){_puts(528);r30=1;break}r28=_clGetKernelWorkGroupInfo(r16,HEAP32[2544>>2],4528,4,2488,0);HEAP32[r9>>2]=r28;if((r28|0)!=0){_printf(1e3,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r28,r3));STACKTOP=r3;_exit(1)}HEAP32[r13>>2]=0;HEAP32[r14>>2]=0;r28=_clGetDeviceInfo(HEAP32[2544>>2],4100,4,r12,r13);HEAP32[r9>>2]=r28;if((r28|0)!=0){_puts(488);r30=1;break}HEAP32[r13>>2]=0;HEAP32[r9>>2]=0;r28=_clGetDeviceInfo(HEAP32[2544>>2],4101,12,r27,r13);HEAP32[r9>>2]=r28;if((r28|0)!=0){_puts(488);r30=1;break}r28=HEAP32[2488>>2];r16=r28>>>0>1?r28>>>5:r28;HEAP32[2432>>2]=r16;r17=(r28>>>0)/(r16>>>0)&-1;HEAP32[2436>>2]=r17;r28=r15|0;r23=HEAP32[r28>>2];if(r16>>>0>r23>>>0){_printf(880,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=0,HEAP32[r3+8>>2]=r16,HEAP32[r3+16>>2]=0,HEAP32[r3+24>>2]=r23,r3));STACKTOP=r3;HEAP32[2432>>2]=HEAP32[r28>>2];r31=HEAP32[2436>>2]}else{r31=r17}r17=r15+4|0;r28=HEAP32[r17>>2];if(r31>>>0>r28>>>0){_printf(880,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=1,HEAP32[r3+8>>2]=r31,HEAP32[r3+16>>2]=1,HEAP32[r3+24>>2]=r28,r3));STACKTOP=r3;HEAP32[2436>>2]=HEAP32[r17>>2]}_puts(264);r30=0}}while(0);if(r2==68){HEAP32[r9>>2]=-1;r2=70}if(r2==70){_puts(56);r30=1}if((r30|0)!=0){_printf(1304,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r30,r3));STACKTOP=r3;_exit(r30)}r30=HEAP32[2496>>2];if((r30|0)!=0){_free(r30)}_puts(432);r30=HEAP32[1776>>2];r2=HEAP32[1784>>2];r9=Math.imul(r30<<2,r2)|0;r31=_malloc(r9);HEAP32[2496>>2]=r31;if((r31|0)==0){_puts(392);r32=_printf(1256,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=-1,r3));STACKTOP=r3;_exit(-1)}_memset(r31,0,r9);r9=HEAP32[2512>>2];if((r9|0)==0){r33=r30;r34=r2}else{_clReleaseMemObject(r9);r33=HEAP32[1776>>2];r34=HEAP32[1784>>2]}HEAP32[2512>>2]=0;r9=HEAP32[2552>>2];r2=_clCreateBuffer(r9,2,0,Math.imul(r34<<2,r33)|0,0,0);HEAP32[2512>>2]=r2;if((r2|0)==0){_puts(360);r32=_printf(1256,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=-1,r3));STACKTOP=r3;_exit(-1)}else{HEAP32[r7>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1920>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1924>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1928>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1932>>2]=1;HEAP32[r6>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1904>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1908>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1912>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1916>>2]=1;HEAP32[r5>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1888>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1892>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1896>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1900>>2]=1;r29=0;STACKTOP=r4;return r29}}function _Display(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+32|0;r3=r2;r4=r2+8;r5=r2+16;r6=r2+24;HEAP32[2504>>2]=HEAP32[2504>>2]+1;r7=_emscripten_get_now()*1e6&-1;r8=r7;r9=(r7|0)<0?-1:0;_glClearColor(0,0,0,0);_glClear(16384);if((HEAP32[2568>>2]|0)!=0){HEAPF32[1808>>2]=HEAPF32[1808>>2]+.009999999776482582;HEAP32[r6>>2]=_emscripten_get_now()*1e6&-1;r7=HEAPF32[1808>>2];if(r7<1){r10=r7;r11=HEAPF32[1844>>2]}else{HEAPF32[1808>>2]=0;HEAPF32[1848>>2]=HEAPF32[1832>>2];HEAPF32[1852>>2]=HEAPF32[1836>>2];HEAPF32[1856>>2]=HEAPF32[1840>>2];HEAPF32[1860>>2]=HEAPF32[1844>>2];HEAPF32[1832>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1836>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1840>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;r7=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1844>>2]=r7;r10=HEAPF32[1808>>2];r11=r7}r7=1-r10;HEAPF32[1816>>2]=r7*HEAPF32[1848>>2]+r10*HEAPF32[1832>>2];HEAPF32[1820>>2]=r7*HEAPF32[1852>>2]+r10*HEAPF32[1836>>2];HEAPF32[1824>>2]=r7*HEAPF32[1856>>2]+r10*HEAPF32[1840>>2];HEAPF32[1828>>2]=r7*HEAPF32[1860>>2]+r10*r11;r11=HEAPF32[1880>>2]+.009999999776482582;HEAPF32[1880>>2]=r11;if(r11<1){r12=r11;r13=HEAPF32[1912>>2];r14=HEAPF32[1916>>2]}else{HEAPF32[1880>>2]=0;HEAPF32[1920>>2]=HEAPF32[1904>>2];HEAPF32[1924>>2]=HEAPF32[1908>>2];HEAPF32[1928>>2]=HEAPF32[1912>>2];HEAPF32[1932>>2]=HEAPF32[1916>>2];HEAP32[r5>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1904>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1908>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;r11=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1912>>2]=r11;HEAPF32[1916>>2]=1;r12=HEAPF32[1880>>2];r13=r11;r14=1}r11=1-r12;HEAPF32[1888>>2]=r11*HEAPF32[1920>>2]+r12*HEAPF32[1904>>2];HEAPF32[1892>>2]=r11*HEAPF32[1924>>2]+r12*HEAPF32[1908>>2];HEAPF32[1896>>2]=r11*HEAPF32[1928>>2]+r12*r13;HEAPF32[1900>>2]=r11*HEAPF32[1932>>2]+r12*r14}r14=HEAP32[2528>>2];do{if((r14|0)!=0&(HEAP32[2512>>2]|0)!=0){do{if((HEAP32[2568>>2]|0)!=0|HEAP8[1760]^1){HEAP8[1760]=1;r12=_clSetKernelArg(r14,0,4,2512);r11=_clSetKernelArg(HEAP32[2528>>2],1,16,1816)|r12;r12=r11|_clSetKernelArg(HEAP32[2528>>2],2,16,1888);if((r12|_clSetKernelArg(HEAP32[2528>>2],3,4,1872)|0)==0){r15=HEAP32[2528>>2];break}else{r16=-10;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}}else{r15=r14}}while(0);r12=HEAP32[2432>>2];r11=HEAP32[2436>>2];r13=HEAP32[1776>>2];r5=r3|0;HEAP32[r5>>2]=Math.imul((((r13|0)%(r12|0)&-1|0)!=0)+((r13|0)/(r12|0)&-1)|0,r12)|0;r13=HEAP32[1784>>2];HEAP32[r3+4>>2]=Math.imul((((r13|0)%(r11|0)&-1|0)!=0)+((r13|0)/(r11|0)&-1)|0,r11)|0;r13=r4|0;HEAP32[r13>>2]=r12;HEAP32[r4+4>>2]=r11;r11=_clEnqueueNDRangeKernel(HEAP32[2560>>2],r15,2,0,r5,r13,0,0,0);if((r11|0)!=0){_printf(1552,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r11,r1));STACKTOP=r1;r16=r11;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}r11=HEAP32[2560>>2];r13=HEAP32[2512>>2];r5=Math.imul(HEAP32[1720>>2]<<2,HEAP32[1864>>2])|0;r12=_clEnqueueReadBuffer(r11,r13,1,0,r5,HEAP32[2496>>2],0,0,0);if((r12|0)==0){break}_printf(1520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r12,r1));STACKTOP=r1;r16=1;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}}while(0);r16=HEAP32[2496>>2];_glDisable(2896);_glViewport(0,0,HEAP32[1720>>2],HEAP32[1864>>2]);_glMatrixMode(5889);_glLoadIdentity();_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5890);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[2448>>2]);if((r16|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[1776>>2],HEAP32[1784>>2],6408,5121,r16)}_glDisableClientState(32888);_glDisableClientState(32884);_glBegin(7);_glColor3f(1,1,1);_glTexCoord2i(0,0);_glVertex3f(-1,-1,0);_glColor3f(1,1,1);_glTexCoord2i(0,1);_glVertex3f(-1,1,0);_glColor3f(1,1,1);_glTexCoord2i(1,1);_glVertex3f(1,1,0);_glColor3f(1,1,1);_glTexCoord2i(1,0);_glVertex3f(1,-1,0);_glEnd();_glBindTexture(3553,0);_glDisable(3553);r16=HEAP32[1800>>2];if((r16|0)!=0){HEAP32[1800>>2]=r16>>>0>200?0:r16+1|0}_glFinish();r16=_emscripten_get_now()*1e6&-1;r17=_i64Subtract(r16,(r16|0)<0?-1:0,r8,r9);r9=HEAPF64[1768>>3]+((r17>>>0)+(tempRet0>>>0)*4294967296)*1e-9;HEAPF64[1768>>3]=r9;r17=HEAP32[2504>>2];if(!(r9!=0&(r17|0)!=0&r17>>>0>30)){STACKTOP=r2;return}r8=r9*1e3/(r17|0);r17=(HEAP32[2440>>2]|0)!=0?1592:1584;_printf(1608,(r1=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r1>>2]=(HEAP32[2536>>2]|0)==4&(HEAP32[2540>>2]|0)==0?672:664,HEAPF64[r1+8>>3]=r8,HEAPF64[r1+16>>3]=1/(r8/1e3),HEAP32[r1+24>>2]=r17,r1));STACKTOP=r1;HEAP32[2504>>2]=0;HEAPF64[1768>>3]=0;STACKTOP=r2;return}function _Reshape(r1,r2){_glViewport(0,0,r1,r2);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();_glClear(16384);do{if((HEAP32[1720>>2]<<1|0)>=(r1|0)){if((HEAP32[1864>>2]<<1|0)<(r2|0)){break}HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;return}}while(0);HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;_clFinish(HEAP32[2560>>2]);_clReleaseKernel(HEAP32[2528>>2]);_clReleaseProgram(HEAP32[2520>>2]);_clReleaseCommandQueue(HEAP32[2560>>2]);_clReleaseMemObject(HEAP32[2512>>2]);_clReleaseContext(HEAP32[2552>>2]);HEAP32[2560>>2]=0;HEAP32[2528>>2]=0;HEAP32[2520>>2]=0;HEAP32[2512>>2]=0;HEAP32[2552>>2]=0;if((_Initialize((HEAP32[2536>>2]|0)==4&(HEAP32[2540>>2]|0)==0&1)|0)==0){HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;return}else{_Shutdown()}}function _Shutdown(){_puts(264);_puts(184);_clFinish(HEAP32[2560>>2]);_clReleaseKernel(HEAP32[2528>>2]);_clReleaseProgram(HEAP32[2520>>2]);_clReleaseCommandQueue(HEAP32[2560>>2]);_clReleaseMemObject(HEAP32[2512>>2]);_clReleaseContext(HEAP32[2552>>2]);HEAP32[2560>>2]=0;HEAP32[2528>>2]=0;HEAP32[2520>>2]=0;HEAP32[2512>>2]=0;HEAP32[2552>>2]=0;_exit(0)}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[1960>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2e3+(r8<<2)|0;r10=2e3+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[1960>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[1976>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[1968>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2e3+(r16<<2)|0;r13=2e3+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[1960>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[1976>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[1968>>2];if((r12|0)!=0){r17=HEAP32[1980>>2];r4=r12>>>3;r12=r4<<1;r6=2e3+(r12<<2)|0;r11=HEAP32[1960>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[1960>>2]=r11|r8;r19=r6;r20=2e3+(r12+2<<2)|0}else{r4=2e3+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[1976>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[1968>>2]=r13;HEAP32[1980>>2]=r5;r14=r9;return r14}r12=HEAP32[1964>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2264+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[1976>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L263:do{if((r5|0)!=0){r6=r4+28|0;r9=2264+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r6>>2]);break L263}else{if(r5>>>0<HEAP32[1976>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L263}}}while(0);if(r22>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[1968>>2];if((r6|0)!=0){r5=HEAP32[1980>>2];r9=r6>>>3;r6=r9<<1;r17=2e3+(r6<<2)|0;r11=HEAP32[1960>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[1960>>2]=r11|r7;r25=r17;r26=2e3+(r6+2<<2)|0}else{r9=2e3+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[1976>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[1968>>2]=r16;HEAP32[1980>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[1964>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2264+(r27<<2)>>2];L311:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L311}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2264+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[1968>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[1976>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L361:do{if((r5|0)!=0){r9=r37+28|0;r13=2264+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r9>>2]);break L361}else{if(r5>>>0<HEAP32[1976>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L361}}}while(0);if(r38>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2e3+(r5<<2)|0;r18=HEAP32[1960>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[1960>>2]=r18|r10;r41=r13;r42=2e3+(r5+2<<2)|0}else{r9=2e3+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[1976>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2264+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[1964>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[1964>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=292;break}else{r12=r12<<1;r13=r10}}if(r2==292){if(r45>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[1976>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[1968>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[1980>>2];if(r45>>>0>15){r44=r36;HEAP32[1980>>2]=r44+r15;HEAP32[1968>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[1968>>2]=0;HEAP32[1980>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[1972>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[1972>>2]=r45;r36=HEAP32[1984>>2];r37=r36;HEAP32[1984>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[1936>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[1944>>2]=r36;HEAP32[1940>>2]=r36;HEAP32[1948>>2]=-1;HEAP32[1952>>2]=-1;HEAP32[1956>>2]=0;HEAP32[2404>>2]=0;HEAP32[1936>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[1944>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[2400>>2];do{if((r41|0)!=0){r42=HEAP32[2392>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L453:do{if((HEAP32[2404>>2]&4|0)==0){r41=HEAP32[1984>>2];L455:do{if((r41|0)==0){r2=322}else{r38=r41;r42=2408;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=322;break L455}else{r42=r39}}if((r42|0)==0){r2=322;break}r38=r44-HEAP32[1972>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=331}}while(0);do{if(r2==322){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[1940>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[2392>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[2400>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=331}}while(0);L475:do{if(r2==331){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=342;break L453}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[1944>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L475}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=342;break L453}}}while(0);HEAP32[2404>>2]=HEAP32[2404>>2]|4;r57=r48;r2=339}else{r57=0;r2=339}}while(0);do{if(r2==339){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=342}}}while(0);do{if(r2==342){r57=HEAP32[2392>>2]+r54|0;HEAP32[2392>>2]=r57;if(r57>>>0>HEAP32[2396>>2]>>>0){HEAP32[2396>>2]=r57}r57=HEAP32[1984>>2];L495:do{if((r57|0)==0){r45=HEAP32[1976>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[1976>>2]=r55}HEAP32[2408>>2]=r55;HEAP32[2412>>2]=r54;HEAP32[2420>>2]=0;HEAP32[1996>>2]=HEAP32[1936>>2];HEAP32[1992>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2e3+(r50<<2)|0;HEAP32[2e3+(r50+3<<2)>>2]=r56;HEAP32[2e3+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[1984>>2]=r55+r58;HEAP32[1972>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2]}else{r45=2408;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=354;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==354){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[1984>>2];r50=HEAP32[1972>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[1984>>2]=r51+r62;HEAP32[1972>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2];break L495}}while(0);if(r55>>>0<HEAP32[1976>>2]>>>0){HEAP32[1976>>2]=r55}r45=r55+r54|0;r50=2408;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=364;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==364){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[1984>>2]|0)){r36=HEAP32[1972>>2]+r37|0;HEAP32[1972>>2]=r36;HEAP32[1984>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[1980>>2]|0)){r36=HEAP32[1968>>2]+r37|0;HEAP32[1968>>2]=r36;HEAP32[1980>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L540:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2e3+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[1976>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[1976>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[1976>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2264+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r42>>2]);break L540}else{if(r13>>>0<HEAP32[1976>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L540}}}while(0);if(r67>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2e3+(r47<<2)|0;r42=HEAP32[1960>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[1960>>2]=r42|r13;r72=r49;r73=2e3+(r47+2<<2)|0}else{r36=2e3+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[1976>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2264+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[1964>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[1964>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=437;break}else{r43=r43<<1;r49=r13}}if(r2==437){if(r76>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[1976>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=2408;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[1984>>2]=r55+r81;HEAP32[1972>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[2408>>2];HEAP32[r48+4>>2]=HEAP32[2412>>2];HEAP32[r48+8>>2]=HEAP32[2416>>2];HEAP32[r48+12>>2]=HEAP32[2420>>2];HEAP32[2408>>2]=r55;HEAP32[2412>>2]=r54;HEAP32[2420>>2]=0;HEAP32[2416>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2e3+(r37<<2)|0;r45=HEAP32[1960>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[1960>>2]=r45|r13;r82=r51;r83=2e3+(r37+2<<2)|0}else{r48=2e3+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[1976>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2264+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[1964>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[1964>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=472;break}else{r43=r43<<1;r51=r13}}if(r2==472){if(r86>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[1976>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[1972>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[1972>>2]=r52;r57=HEAP32[1984>>2];r43=r57;HEAP32[1984>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _calloc(r1,r2){var r3,r4;do{if((r1|0)==0){r3=0}else{r4=Math.imul(r2,r1)|0;if((r2|r1)>>>0<=65535){r3=r4;break}r3=((r4>>>0)/(r1>>>0)&-1|0)==(r2|0)?r4:-1}}while(0);r2=_malloc(r3);if((r2|0)==0){return r2}if((HEAP32[r2-4>>2]&3|0)==0){return r2}_memset(r2,0,r3);return r2}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[1976>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L724:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[1980>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[1968>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2e3+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2264+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L724}else{if(r16>>>0<HEAP32[1976>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L724}}}while(0);if(r27>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[1984>>2]|0)){r28=HEAP32[1972>>2]+r18|0;HEAP32[1972>>2]=r28;HEAP32[1984>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[1980>>2]|0)){return}HEAP32[1980>>2]=0;HEAP32[1968>>2]=0;return}if((r10|0)==(HEAP32[1980>>2]|0)){r28=HEAP32[1968>>2]+r18|0;HEAP32[1968>>2]=r28;HEAP32[1980>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L826:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2e3+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[1976>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[1976>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[1976>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2264+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r20>>2]);break L826}else{if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L826}}}while(0);if(r31>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[1980>>2]|0)){r34=r28;break}HEAP32[1968>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2e3+(r4<<2)|0;r27=HEAP32[1960>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[1960>>2]=r27|r31;r35=r5;r36=2e3+(r4+2<<2)|0}else{r18=2e3+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[1976>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2264+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[1964>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[1964>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=659;break}else{r27=r27<<1;r36=r31}}if(r2==659){if(r39>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[1976>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[1992>>2]-1|0;HEAP32[1992>>2]=r17;if((r17|0)==0){r40=2416}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[1992>>2]=-1;return}function _i64Add(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1+r3>>>0;r6=r2+r4+(r5>>>0<r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _i64Subtract(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1-r3>>>0;r6=r2-r4>>>0;r6=r2-r4-(r3>>>0>r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _bitshift64Shl(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2<<r3|(r1&r4<<32-r3)>>>32-r3;return r1<<r3}tempRet0=r1<<r3-32;return 0}function _bitshift64Lshr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=0;return r2>>>r3-32|0}function _bitshift64Ashr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=(r2|0)<0?-1:0;return r2>>r3-32|0}function _llvm_ctlz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[ctlz_i8+(r1>>>24)|0];if((r2|0)<8)return r2|0;r2=HEAP8[ctlz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[ctlz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[ctlz_i8+(r1&255)|0]+24|0}var ctlz_i8=allocate([8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"i8",ALLOC_DYNAMIC);function _llvm_cttz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[cttz_i8+(r1&255)|0];if((r2|0)<8)return r2|0;r2=HEAP8[cttz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[cttz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[cttz_i8+(r1>>>24)|0]+24|0}var cttz_i8=allocate([8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0],"i8",ALLOC_DYNAMIC);function ___muldsi3(r1,r2){var r3,r4,r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=0,r4=0,r5=0,r6=0,r7=0,r8=0,r9=0;r3=r1&65535;r4=r2&65535;r5=Math.imul(r4,r3)|0;r6=r1>>>16;r7=(r5>>>16)+Math.imul(r4,r6)|0;r8=r2>>>16;r9=Math.imul(r8,r3)|0;return(tempRet0=(r7>>>16)+Math.imul(r8,r6)+(((r7&65535)+r9|0)>>>16)|0,r7+r9<<16|r5&65535|0)|0}function ___divdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r5=r2>>31|((r2|0)<0?-1:0)<<1;r6=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r7=r4>>31|((r4|0)<0?-1:0)<<1;r8=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r9=_i64Subtract(r5^r1,r6^r2,r5,r6)|0;r10=tempRet0;r11=_i64Subtract(r7^r3,r8^r4,r7,r8)|0;r12=r7^r5;r13=r8^r6;r14=___udivmoddi4(r9,r10,r11,tempRet0,0)|0;r15=_i64Subtract(r14^r12,tempRet0^r13,r12,r13)|0;return(tempRet0=tempRet0,r15)|0}function ___remdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r15=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r15|0;r6=r2>>31|((r2|0)<0?-1:0)<<1;r7=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r8=r4>>31|((r4|0)<0?-1:0)<<1;r9=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r10=_i64Subtract(r6^r1,r7^r2,r6,r7)|0;r11=tempRet0;r12=_i64Subtract(r8^r3,r9^r4,r8,r9)|0;___udivmoddi4(r10,r11,r12,tempRet0,r5)|0;r13=_i64Subtract(HEAP32[r5>>2]^r6,HEAP32[r5+4>>2]^r7,r6,r7)|0;r14=tempRet0;STACKTOP=r15;return(tempRet0=r14,r13)|0}function ___muldi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0;r5=r1;r6=r3;r7=___muldsi3(r5,r6)|0;r8=tempRet0;r9=Math.imul(r2,r6)|0;return(tempRet0=Math.imul(r4,r5)+r9+r8|r8&0,r7&-1|0)|0}function ___udivdi3(r1,r2,r3,r4){var r5;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0;r5=___udivmoddi4(r1,r2,r3,r4,0)|0;return(tempRet0=tempRet0,r5)|0}function ___uremdi3(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r6=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r6|0;___udivmoddi4(r1,r2,r3,r4,r5)|0;STACKTOP=r6;return(tempRet0=HEAP32[r5+4>>2]|0,HEAP32[r5>>2]|0)|0}function ___udivmoddi4(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=r5|0;r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0,r16=0,r17=0,r18=0,r19=0,r20=0,r21=0,r22=0,r23=0,r24=0,r25=0,r26=0,r27=0,r28=0,r29=0,r30=0,r31=0,r32=0,r33=0,r34=0,r35=0,r36=0,r37=0,r38=0,r39=0,r40=0,r41=0,r42=0,r43=0,r44=0,r45=0,r46=0,r47=0,r48=0,r49=0,r50=0,r51=0,r52=0,r53=0,r54=0,r55=0,r56=0,r57=0,r58=0,r59=0,r60=0,r61=0,r62=0,r63=0,r64=0,r65=0,r66=0,r67=0,r68=0,r69=0;r6=r1;r7=r2;r8=r7;r9=r3;r10=r4;r11=r10;if((r8|0)==0){r12=(r5|0)!=0;if((r11|0)==0){if(r12){HEAP32[r5>>2]=(r6>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r6>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}else{if(!r12){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}}r13=(r11|0)==0;do{if((r9|0)==0){if(r13){if((r5|0)!=0){HEAP32[r5>>2]=(r8>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r8>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}if((r6|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=(r8>>>0)%(r11>>>0)}r69=0;r68=(r8>>>0)/(r11>>>0)>>>0;return(tempRet0=r69,r68)|0}r14=r11-1|0;if((r14&r11|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r14&r8|r2&0}r69=0;r68=r8>>>((_llvm_cttz_i32(r11|0)|0)>>>0);return(tempRet0=r69,r68)|0}r15=_llvm_ctlz_i32(r11|0)|0;r16=r15-_llvm_ctlz_i32(r8|0)|0;if(r16>>>0<=30){r17=r16+1|0;r18=31-r16|0;r37=r17;r36=r8<<r18|r6>>>(r17>>>0);r35=r8>>>(r17>>>0);r34=0;r33=r6<<r18;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}else{if(!r13){r28=_llvm_ctlz_i32(r11|0)|0;r29=r28-_llvm_ctlz_i32(r8|0)|0;if(r29>>>0<=31){r30=r29+1|0;r31=31-r29|0;r32=r29-31>>31;r37=r30;r36=r6>>>(r30>>>0)&r32|r8<<r31;r35=r8>>>(r30>>>0)&r32;r34=0;r33=r6<<r31;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}r19=r9-1|0;if((r19&r9|0)!=0){r21=_llvm_ctlz_i32(r9|0)+33|0;r22=r21-_llvm_ctlz_i32(r8|0)|0;r23=64-r22|0;r24=32-r22|0;r25=r24>>31;r26=r22-32|0;r27=r26>>31;r37=r22;r36=r24-1>>31&r8>>>(r26>>>0)|(r8<<r24|r6>>>(r22>>>0))&r27;r35=r27&r8>>>(r22>>>0);r34=r6<<r23&r25;r33=(r8<<r23|r6>>>(r26>>>0))&r25|r6<<r24&r22-33>>31;break}if((r5|0)!=0){HEAP32[r5>>2]=r19&r6;HEAP32[r5+4>>2]=0}if((r9|0)==1){r69=r7|r2&0;r68=r1&-1|0;return(tempRet0=r69,r68)|0}else{r20=_llvm_cttz_i32(r9|0)|0;r69=r8>>>(r20>>>0)|0;r68=r8<<32-r20|r6>>>(r20>>>0)|0;return(tempRet0=r69,r68)|0}}}while(0);if((r37|0)==0){r64=r33;r63=r34;r62=r35;r61=r36;r60=0;r59=0}else{r38=r3&-1|0;r39=r10|r4&0;r40=_i64Add(r38,r39,-1,-1)|0;r41=tempRet0;r47=r33;r46=r34;r45=r35;r44=r36;r43=r37;r42=0;while(1){r48=r46>>>31|r47<<1;r49=r42|r46<<1;r50=r44<<1|r47>>>31|0;r51=r44>>>31|r45<<1|0;_i64Subtract(r40,r41,r50,r51)|0;r52=tempRet0;r53=r52>>31|((r52|0)<0?-1:0)<<1;r54=r53&1;r55=_i64Subtract(r50,r51,r53&r38,(((r52|0)<0?-1:0)>>31|((r52|0)<0?-1:0)<<1)&r39)|0;r56=r55;r57=tempRet0;r58=r43-1|0;if((r58|0)==0){break}else{r47=r48;r46=r49;r45=r57;r44=r56;r43=r58;r42=r54}}r64=r48;r63=r49;r62=r57;r61=r56;r60=0;r59=r54}r65=r63;r66=0;r67=r64|r66;if((r5|0)!=0){HEAP32[r5>>2]=r61;HEAP32[r5+4>>2]=r62}r69=(r65|0)>>>31|r67<<1|(r66<<1|r65>>>31)&0|r60;r68=(r65<<1|0>>>31)&-2|r59;return(tempRet0=r69,r68)|0}
+function _Idle(){_glutPostRedisplay();return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r4;HEAP32[r5>>2]=r1;if((r1|0)<1|(r2|0)==0){r6=1}else{r7=0;r8=1;while(1){r9=HEAP32[r2+(r7<<2)>>2];do{if((r9|0)==0){r10=r8}else{if((_strstr(r9,1056)|0)!=0){r10=0;break}if((_strstr(r9,776)|0)!=0){r10=1;break}if((_strstr(r9,712)|0)==0){r10=r8;break}HEAP32[2440>>2]=1;r10=r8}}while(0);r9=r7+1|0;if((r9|0)<(r1|0)){r7=r9;r8=r10}else{r6=r10;break}}}_printf(680,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=(r6|0)==1?672:664,r3));STACKTOP=r3;_glutInit(r5,r2);_glutInitDisplayMode(18);_glutInitWindowSize(HEAP32[1720>>2],HEAP32[1864>>2]);_glutInitWindowPosition(100,100);_glutCreateWindow(HEAP32[r2>>2]);if((_Initialize(r6)|0)!=0){STACKTOP=r4;return 0}_glutDisplayFunc(4);_glutIdleFunc(6);_glutReshapeFunc(10);_glutKeyboardFunc(8);_atexit(2);_puts(336);_glutMainLoop();STACKTOP=r4;return 0}function _Keyboard(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46;r4=0;r5=0;r6=STACKTOP;r7=r1&255;switch(r7|0){case 27:{_exit(0);break};case 32:{r8=HEAP32[2568>>2];r9=(r8|0)==0;r10=r9&1;HEAP32[2568>>2]=r10;r11=r9?1696:1512;r12=_printf(1704,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r5>>2]=r11,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 105:{r13=HEAP32[1800>>2];r14=(r13|0)==0;r15=r14&1;HEAP32[1800>>2]=r15;break};case 115:{r16=HEAP32[1792>>2];r17=(r16|0)==0;r18=r17&1;HEAP32[1792>>2]=r18;break};case 43:case 61:{r19=HEAPF32[1872>>2];r20=r19<.0020000000949949026;if(r20){r21=r19}else{r22=r19*.9523810148239136;HEAPF32[1872>>2]=r22;r21=r22}r23=r21;r24=_printf(1168,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r5>>3]=r23,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 45:{r25=HEAPF32[1872>>2];r26=r25<.009999999776482582;if(r26){r27=r25*1.0499999523162842;HEAPF32[1872>>2]=r27;r28=r27}else{r28=r25}r29=r28;r30=_printf(1168,(r5=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r5>>3]=r29,r5));STACKTOP=r5;HEAP32[1800>>2]=1;break};case 119:{r31=HEAPF32[1816>>2];r32=r31+.05000000074505806;HEAPF32[1816>>2]=r32;break};case 120:{r33=HEAPF32[1816>>2];r34=r33-.05000000074505806;HEAPF32[1816>>2]=r34;break};case 113:{r35=HEAPF32[1820>>2];r36=r35+.05000000074505806;HEAPF32[1820>>2]=r36;break};case 122:{r37=HEAPF32[1820>>2];r38=r37-.05000000074505806;HEAPF32[1820>>2]=r38;break};case 97:{r39=HEAPF32[1824>>2];r40=r39+.05000000074505806;HEAPF32[1824>>2]=r40;break};case 100:{r41=HEAPF32[1824>>2];r42=r41-.05000000074505806;HEAPF32[1824>>2]=r42;break};case 101:{r43=HEAPF32[1828>>2];r44=r43+.05000000074505806;HEAPF32[1828>>2]=r44;break};case 99:{r45=HEAPF32[1828>>2];r46=r45-.05000000074505806;HEAPF32[1828>>2]=r46;break};case 102:{_glutFullScreen();break};default:{}}HEAP8[1760]=0;_glutPostRedisplay();STACKTOP=r6;return}function _Initialize(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34;r2=0;r3=0;r4=STACKTOP;STACKTOP=STACKTOP+4344|0;r5=r4;r6=r4+8;r7=r4+16;r8=r4+24;r9=r4+96;r10=r4+104;r11=r4+112;r12=r4+120;r13=r4+2168;r14=r4+2176;r15=r4+2184;r16=r4+2200;r17=r4+2208;r18=r4+2216;r19=r4+2280;r20=r4+4336;r21=HEAP32[1720>>2];r22=HEAP32[1864>>2];if((HEAP32[2448>>2]|0)!=0){_glDeleteTextures(1,2448)}HEAP32[2448>>2]=0;_printf(720,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r21,HEAP32[r3+8>>2]=r22,r3));STACKTOP=r3;HEAP32[1776>>2]=r21;HEAP32[1784>>2]=r22;_glActiveTexture(33985);_glGenTextures(1,2448);_glBindTexture(3553,HEAP32[2448>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,HEAP32[1776>>2],HEAP32[1784>>2],0,6408,5121,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[1720>>2],HEAP32[1864>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[2480>>2]=0;HEAPF32[2484>>2]=0;r22=HEAP32[1720>>2]|0;HEAPF32[2472>>2]=r22;HEAPF32[2476>>2]=0;HEAPF32[2464>>2]=r22;r22=HEAP32[1864>>2]|0;HEAPF32[2468>>2]=r22;HEAPF32[2456>>2]=0;HEAPF32[2460>>2]=r22;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,1728);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,2456);r22=r18;r21=r19;r23=r4+2288|0;r24=r4+3312|0;r25=(r1|0)!=0;r1=r25?4:2;r26=r25?0:0;HEAP32[2536>>2]=r1;HEAP32[2540>>2]=r26;r25=_clGetDeviceIDs(0,r1,r26,1,2544,0);HEAP32[r16>>2]=r25;do{if((r25|0)==0){r26=_clCreateContext(0,1,2544,0,0,r16);HEAP32[2552>>2]=r26;if((r26|0)==0){_puts(616);r27=1;break}r1=_clGetContextInfo(r26,4225,64,r22,r17);HEAP32[r16>>2]=r1;if((r1|0)!=0){_puts(208);r27=1;break}r1=HEAP32[r17>>2]>>>2;r26=0;while(1){if(r26>>>0>=r1>>>0){r2=47;break}r28=r18+(r26<<2)|0;_clGetDeviceInfo(HEAP32[r28>>2],4096,8,r21,0);if((HEAP32[r19>>2]|0)==(HEAP32[2536>>2]|0)&(HEAP32[r19+4>>2]|0)==(HEAP32[2540>>2]|0)){break}else{r26=r26+1|0}}if(r2==47){_puts(144);r27=1;break}r26=HEAP32[r28>>2];HEAP32[2544>>2]=r26;r1=_clCreateCommandQueue(HEAP32[2552>>2],r26,0,0,r16);HEAP32[2560>>2]=r1;if((r1|0)==0){_puts(96);r27=1;break}_memset(r23,0,1024);_memset(r24,0,1024);HEAP32[r16>>2]=_clGetDeviceInfo(HEAP32[2544>>2],4140,1024,r23,r17);r1=_clGetDeviceInfo(HEAP32[2544>>2],4139,1024,r24,r17);r26=HEAP32[r16>>2]|r1;HEAP32[r16>>2]=r26;if((r26|0)!=0){_puts(488)}_puts(264);_printf(752,(r3=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r3>>2]=r23,HEAP32[r3+8>>2]=r24,r3));STACKTOP=r3;r27=0}else{_puts(144);r27=1}}while(0);if((r27|0)!=0){_printf(1464,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r27,r3));STACKTOP=r3;_exit(r27)}r27=_clGetDeviceInfo(HEAP32[2544>>2],4118,4,r20,0);if((r27|0)!=0){_printf(1416,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;_exit(r27)}if((HEAP32[r20>>2]|0)==0){_printf(1352,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;r29=-10;STACKTOP=r4;return r29}r20=r12|0;r12=r14;r27=r15;HEAP32[r9>>2]=0;r24=HEAP32[2528>>2];if((r24|0)!=0){_clReleaseKernel(r24)}HEAP32[2528>>2]=0;r24=HEAP32[2520>>2];if((r24|0)!=0){_clReleaseProgram(r24)}HEAP32[2520>>2]=0;_puts(264);_printf(1208,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r24=_open(1184,0,(r3=STACKTOP,STACKTOP=STACKTOP+1|0,STACKTOP=STACKTOP+7>>3<<3,HEAP32[r3>>2]=0,r3));STACKTOP=r3;do{if((r24|0)==-1){_printf(856,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68}else{if((_fstat(r24,r8)|0)!=0){_printf(816,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68;break}r23=HEAP32[r8+28>>2];r16=_calloc(r23+1|0,1);if((_read(r24,r16,r23)|0)==0){_printf(784,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1184,r3));STACKTOP=r3;r2=68;break}_close(r24);HEAP32[r9>>2]=0;if((r16|0)==0){r2=70;break}r23=_malloc(_strlen(r16)+1024|0);HEAP32[r10>>2]=r23;r17=HEAP32[1720>>2];r28=HEAP32[1864>>2];_sprintf(r23,1112,(r3=STACKTOP,STACKTOP=STACKTOP+40|0,HEAP32[r3>>2]=1152,HEAP32[r3+8>>2]=r17,HEAP32[r3+16>>2]=1136,HEAP32[r3+24>>2]=r28,HEAP32[r3+32>>2]=r16,r3));STACKTOP=r3;r28=_clCreateProgramWithSource(HEAP32[2552>>2],1,r10,0,r9);HEAP32[2520>>2]=r28;if(!((r28|0)!=0&(HEAP32[r9>>2]|0)==0)){_puts(8);r30=1;break}_free(r16);_free(HEAP32[r10>>2]);r16=_clBuildProgram(HEAP32[2520>>2],0,0,0,0,0);HEAP32[r9>>2]=r16;if((r16|0)!=0){_puts(568);_clGetProgramBuildInfo(HEAP32[2520>>2],HEAP32[2544>>2],4483,2048,r20,r11);_puts(r20);r30=1;break}_printf(1080,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=1064,r3));STACKTOP=r3;r16=_clCreateKernel(HEAP32[2520>>2],1064,r9);HEAP32[2528>>2]=r16;if(!((r16|0)!=0&(HEAP32[r9>>2]|0)==0)){_puts(528);r30=1;break}r28=_clGetKernelWorkGroupInfo(r16,HEAP32[2544>>2],4528,4,2488,0);HEAP32[r9>>2]=r28;if((r28|0)!=0){_printf(1e3,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r28,r3));STACKTOP=r3;_exit(1)}HEAP32[r13>>2]=0;HEAP32[r14>>2]=0;r28=_clGetDeviceInfo(HEAP32[2544>>2],4100,4,r12,r13);HEAP32[r9>>2]=r28;if((r28|0)!=0){_puts(488);r30=1;break}HEAP32[r13>>2]=0;HEAP32[r9>>2]=0;r28=_clGetDeviceInfo(HEAP32[2544>>2],4101,12,r27,r13);HEAP32[r9>>2]=r28;if((r28|0)!=0){_puts(488);r30=1;break}r28=HEAP32[2488>>2];r16=r28>>>0>1?r28>>>5:r28;HEAP32[2432>>2]=r16;r17=(r28>>>0)/(r16>>>0)&-1;HEAP32[2436>>2]=r17;r28=r15|0;r23=HEAP32[r28>>2];if(r16>>>0>r23>>>0){_printf(880,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=0,HEAP32[r3+8>>2]=r16,HEAP32[r3+16>>2]=0,HEAP32[r3+24>>2]=r23,r3));STACKTOP=r3;HEAP32[2432>>2]=HEAP32[r28>>2];r31=HEAP32[2436>>2]}else{r31=r17}r17=r15+4|0;r28=HEAP32[r17>>2];if(r31>>>0>r28>>>0){_printf(880,(r3=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r3>>2]=1,HEAP32[r3+8>>2]=r31,HEAP32[r3+16>>2]=1,HEAP32[r3+24>>2]=r28,r3));STACKTOP=r3;HEAP32[2436>>2]=HEAP32[r17>>2]}_puts(264);r30=0}}while(0);if(r2==68){HEAP32[r9>>2]=-1;r2=70}if(r2==70){_puts(56);r30=1}if((r30|0)!=0){_printf(1304,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=r30,r3));STACKTOP=r3;_exit(r30)}r30=HEAP32[2496>>2];if((r30|0)!=0){_free(r30)}_puts(432);r30=HEAP32[1776>>2];r2=HEAP32[1784>>2];r9=Math.imul(r30<<2,r2)|0;r31=_malloc(r9);HEAP32[2496>>2]=r31;if((r31|0)==0){_puts(392);r32=_printf(1256,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=-1,r3));STACKTOP=r3;_exit(-1)}_memset(r31,0,r9);r9=HEAP32[2512>>2];if((r9|0)==0){r33=r30;r34=r2}else{_clReleaseMemObject(r9);r33=HEAP32[1776>>2];r34=HEAP32[1784>>2]}HEAP32[2512>>2]=0;r9=HEAP32[2552>>2];r2=_clCreateBuffer(r9,2,0,Math.imul(r34<<2,r33)|0,0,0);HEAP32[2512>>2]=r2;if((r2|0)==0){_puts(360);r32=_printf(1256,(r3=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r3>>2]=-1,r3));STACKTOP=r3;_exit(-1)}else{HEAP32[r7>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1920>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1924>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1928>>2]=(_rand_r(r7)|0)*2*4.656612873077393e-10-1;HEAPF32[1932>>2]=1;HEAP32[r6>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1904>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1908>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1912>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1916>>2]=1;HEAP32[r5>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1888>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1892>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1896>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1900>>2]=1;r29=0;STACKTOP=r4;return r29}}function _Display(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+32|0;r3=r2;r4=r2+8;r5=r2+16;r6=r2+24;HEAP32[2504>>2]=HEAP32[2504>>2]+1;r7=_emscripten_get_now()*1e6&-1;r8=r7;r9=(r7|0)<0?-1:0;_glClearColor(0,0,0,0);_glClear(16384);if((HEAP32[2568>>2]|0)!=0){HEAPF32[1808>>2]=HEAPF32[1808>>2]+.009999999776482582;HEAP32[r6>>2]=_emscripten_get_now()*1e6&-1;r7=HEAPF32[1808>>2];if(r7<1){r10=r7;r11=HEAPF32[1844>>2]}else{HEAPF32[1808>>2]=0;HEAPF32[1848>>2]=HEAPF32[1832>>2];HEAPF32[1852>>2]=HEAPF32[1836>>2];HEAPF32[1856>>2]=HEAPF32[1840>>2];HEAPF32[1860>>2]=HEAPF32[1844>>2];HEAPF32[1832>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1836>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1840>>2]=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;r7=(_rand_r(r6)|0)*2*4.656612873077393e-10-1;HEAPF32[1844>>2]=r7;r10=HEAPF32[1808>>2];r11=r7}r7=1-r10;HEAPF32[1816>>2]=r7*HEAPF32[1848>>2]+r10*HEAPF32[1832>>2];HEAPF32[1820>>2]=r7*HEAPF32[1852>>2]+r10*HEAPF32[1836>>2];HEAPF32[1824>>2]=r7*HEAPF32[1856>>2]+r10*HEAPF32[1840>>2];HEAPF32[1828>>2]=r7*HEAPF32[1860>>2]+r10*r11;r11=HEAPF32[1880>>2]+.009999999776482582;HEAPF32[1880>>2]=r11;if(r11<1){r12=r11;r13=HEAPF32[1912>>2];r14=HEAPF32[1916>>2]}else{HEAPF32[1880>>2]=0;HEAPF32[1920>>2]=HEAPF32[1904>>2];HEAPF32[1924>>2]=HEAPF32[1908>>2];HEAPF32[1928>>2]=HEAPF32[1912>>2];HEAPF32[1932>>2]=HEAPF32[1916>>2];HEAP32[r5>>2]=_emscripten_get_now()*1e6&-1;HEAPF32[1904>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1908>>2]=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;r11=(_rand_r(r5)|0)*2*4.656612873077393e-10-1;HEAPF32[1912>>2]=r11;HEAPF32[1916>>2]=1;r12=HEAPF32[1880>>2];r13=r11;r14=1}r11=1-r12;HEAPF32[1888>>2]=r11*HEAPF32[1920>>2]+r12*HEAPF32[1904>>2];HEAPF32[1892>>2]=r11*HEAPF32[1924>>2]+r12*HEAPF32[1908>>2];HEAPF32[1896>>2]=r11*HEAPF32[1928>>2]+r12*r13;HEAPF32[1900>>2]=r11*HEAPF32[1932>>2]+r12*r14}r14=HEAP32[2528>>2];do{if((r14|0)!=0&(HEAP32[2512>>2]|0)!=0){do{if((HEAP32[2568>>2]|0)!=0|HEAP8[1760]^1){HEAP8[1760]=1;r12=_clSetKernelArg(r14,0,4,2512);r11=_clSetKernelArg(HEAP32[2528>>2],1,16,1816)|r12;r12=r11|_clSetKernelArg(HEAP32[2528>>2],2,16,1888);if((r12|_clSetKernelArg(HEAP32[2528>>2],3,4,1872)|0)==0){r15=HEAP32[2528>>2];break}else{r16=-10;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}}else{r15=r14}}while(0);r12=HEAP32[2432>>2];r11=HEAP32[2436>>2];r13=HEAP32[1776>>2];r5=r3|0;HEAP32[r5>>2]=Math.imul((((r13|0)%(r12|0)&-1|0)!=0)+((r13|0)/(r12|0)&-1)|0,r12)|0;r13=HEAP32[1784>>2];HEAP32[r3+4>>2]=Math.imul((((r13|0)%(r11|0)&-1|0)!=0)+((r13|0)/(r11|0)&-1)|0,r11)|0;r13=r4|0;HEAP32[r13>>2]=r12;HEAP32[r4+4>>2]=r11;r11=_clEnqueueNDRangeKernel(HEAP32[2560>>2],r15,2,0,r5,r13,0,0,0);if((r11|0)!=0){_printf(1552,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r11,r1));STACKTOP=r1;r16=r11;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}r11=HEAP32[2560>>2];r13=HEAP32[2512>>2];r5=Math.imul(HEAP32[1720>>2]<<2,HEAP32[1864>>2])|0;r12=_clEnqueueReadBuffer(r11,r13,1,0,r5,HEAP32[2496>>2],0,0,0);if((r12|0)==0){break}_printf(1520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r12,r1));STACKTOP=r1;r16=1;r17=_printf(1664,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r16,r1));STACKTOP=r1;_exit(1)}}while(0);r16=HEAP32[2496>>2];_glDisable(2896);_glViewport(0,0,HEAP32[1720>>2],HEAP32[1864>>2]);_glMatrixMode(5889);_glLoadIdentity();_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5890);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[2448>>2]);if((r16|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[1776>>2],HEAP32[1784>>2],6408,5121,r16)}_glDisableClientState(32888);_glDisableClientState(32884);_glBegin(7);_glColor3f(1,1,1);_glTexCoord2i(0,0);_glVertex3f(-1,-1,0);_glColor3f(1,1,1);_glTexCoord2i(0,1);_glVertex3f(-1,1,0);_glColor3f(1,1,1);_glTexCoord2i(1,1);_glVertex3f(1,1,0);_glColor3f(1,1,1);_glTexCoord2i(1,0);_glVertex3f(1,-1,0);_glEnd();_glBindTexture(3553,0);_glDisable(3553);r16=HEAP32[1800>>2];if((r16|0)!=0){HEAP32[1800>>2]=r16>>>0>200?0:r16+1|0}_glFinish();r16=_emscripten_get_now()*1e6&-1;r17=_i64Subtract(r16,(r16|0)<0?-1:0,r8,r9);r9=HEAPF64[1768>>3]+((r17>>>0)+(tempRet0>>>0)*4294967296)*1e-9;HEAPF64[1768>>3]=r9;r17=HEAP32[2504>>2];if(!(r9!=0&(r17|0)!=0&r17>>>0>30)){STACKTOP=r2;return}r8=r9*1e3/(r17|0);r17=(HEAP32[2440>>2]|0)!=0?1592:1584;_printf(1608,(r1=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r1>>2]=(HEAP32[2536>>2]|0)==4&(HEAP32[2540>>2]|0)==0?672:664,HEAPF64[r1+8>>3]=r8,HEAPF64[r1+16>>3]=1/(r8/1e3),HEAP32[r1+24>>2]=r17,r1));STACKTOP=r1;HEAP32[2504>>2]=0;HEAPF64[1768>>3]=0;STACKTOP=r2;return}function _Reshape(r1,r2){_glViewport(0,0,r1,r2);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();_glClear(16384);do{if((HEAP32[1720>>2]<<1|0)>=(r1|0)){if((HEAP32[1864>>2]<<1|0)<(r2|0)){break}HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;return}}while(0);HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;_clFinish(HEAP32[2560>>2]);_clReleaseKernel(HEAP32[2528>>2]);_clReleaseProgram(HEAP32[2520>>2]);_clReleaseCommandQueue(HEAP32[2560>>2]);_clReleaseMemObject(HEAP32[2512>>2]);_clReleaseContext(HEAP32[2552>>2]);HEAP32[2560>>2]=0;HEAP32[2528>>2]=0;HEAP32[2520>>2]=0;HEAP32[2512>>2]=0;HEAP32[2552>>2]=0;if((_Initialize((HEAP32[2536>>2]|0)==4&(HEAP32[2540>>2]|0)==0&1)|0)==0){HEAP32[1720>>2]=r1;HEAP32[1864>>2]=r2;return}else{_Shutdown()}}function _Shutdown(){_puts(264);_puts(184);_clFinish(HEAP32[2560>>2]);_clReleaseKernel(HEAP32[2528>>2]);_clReleaseProgram(HEAP32[2520>>2]);_clReleaseCommandQueue(HEAP32[2560>>2]);_clReleaseMemObject(HEAP32[2512>>2]);_clReleaseContext(HEAP32[2552>>2]);HEAP32[2560>>2]=0;HEAP32[2528>>2]=0;HEAP32[2520>>2]=0;HEAP32[2512>>2]=0;HEAP32[2552>>2]=0;_exit(0)}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[1960>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2e3+(r8<<2)|0;r10=2e3+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[1960>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[1976>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[1968>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2e3+(r16<<2)|0;r13=2e3+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[1960>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[1976>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[1968>>2];if((r12|0)!=0){r17=HEAP32[1980>>2];r4=r12>>>3;r12=r4<<1;r6=2e3+(r12<<2)|0;r11=HEAP32[1960>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[1960>>2]=r11|r8;r19=r6;r20=2e3+(r12+2<<2)|0}else{r4=2e3+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[1976>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[1968>>2]=r13;HEAP32[1980>>2]=r5;r14=r9;return r14}r12=HEAP32[1964>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2264+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[1976>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L263:do{if((r5|0)!=0){r6=r4+28|0;r9=2264+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r6>>2]);break L263}else{if(r5>>>0<HEAP32[1976>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L263}}}while(0);if(r22>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[1968>>2];if((r6|0)!=0){r5=HEAP32[1980>>2];r9=r6>>>3;r6=r9<<1;r17=2e3+(r6<<2)|0;r11=HEAP32[1960>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[1960>>2]=r11|r7;r25=r17;r26=2e3+(r6+2<<2)|0}else{r9=2e3+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[1976>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[1968>>2]=r16;HEAP32[1980>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[1964>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2264+(r27<<2)>>2];L311:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L311}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2264+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[1968>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[1976>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L361:do{if((r5|0)!=0){r9=r37+28|0;r13=2264+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r9>>2]);break L361}else{if(r5>>>0<HEAP32[1976>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L361}}}while(0);if(r38>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2e3+(r5<<2)|0;r18=HEAP32[1960>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[1960>>2]=r18|r10;r41=r13;r42=2e3+(r5+2<<2)|0}else{r9=2e3+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[1976>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2264+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[1964>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[1964>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=292;break}else{r12=r12<<1;r13=r10}}if(r2==292){if(r45>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[1976>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[1968>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[1980>>2];if(r45>>>0>15){r44=r36;HEAP32[1980>>2]=r44+r15;HEAP32[1968>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[1968>>2]=0;HEAP32[1980>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[1972>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[1972>>2]=r45;r36=HEAP32[1984>>2];r37=r36;HEAP32[1984>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[1936>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[1944>>2]=r36;HEAP32[1940>>2]=r36;HEAP32[1948>>2]=-1;HEAP32[1952>>2]=-1;HEAP32[1956>>2]=0;HEAP32[2404>>2]=0;HEAP32[1936>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[1944>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[2400>>2];do{if((r41|0)!=0){r42=HEAP32[2392>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L453:do{if((HEAP32[2404>>2]&4|0)==0){r41=HEAP32[1984>>2];L455:do{if((r41|0)==0){r2=322}else{r38=r41;r42=2408;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=322;break L455}else{r42=r39}}if((r42|0)==0){r2=322;break}r38=r44-HEAP32[1972>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=331}}while(0);do{if(r2==322){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[1940>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[2392>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[2400>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=331}}while(0);L475:do{if(r2==331){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=342;break L453}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[1944>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L475}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=342;break L453}}}while(0);HEAP32[2404>>2]=HEAP32[2404>>2]|4;r57=r48;r2=339}else{r57=0;r2=339}}while(0);do{if(r2==339){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=342}}}while(0);do{if(r2==342){r57=HEAP32[2392>>2]+r54|0;HEAP32[2392>>2]=r57;if(r57>>>0>HEAP32[2396>>2]>>>0){HEAP32[2396>>2]=r57}r57=HEAP32[1984>>2];L495:do{if((r57|0)==0){r45=HEAP32[1976>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[1976>>2]=r55}HEAP32[2408>>2]=r55;HEAP32[2412>>2]=r54;HEAP32[2420>>2]=0;HEAP32[1996>>2]=HEAP32[1936>>2];HEAP32[1992>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2e3+(r50<<2)|0;HEAP32[2e3+(r50+3<<2)>>2]=r56;HEAP32[2e3+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[1984>>2]=r55+r58;HEAP32[1972>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2]}else{r45=2408;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=354;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==354){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[1984>>2];r50=HEAP32[1972>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[1984>>2]=r51+r62;HEAP32[1972>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2];break L495}}while(0);if(r55>>>0<HEAP32[1976>>2]>>>0){HEAP32[1976>>2]=r55}r45=r55+r54|0;r50=2408;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=364;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==364){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[1984>>2]|0)){r36=HEAP32[1972>>2]+r37|0;HEAP32[1972>>2]=r36;HEAP32[1984>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[1980>>2]|0)){r36=HEAP32[1968>>2]+r37|0;HEAP32[1968>>2]=r36;HEAP32[1980>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L540:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2e3+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[1976>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[1976>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[1976>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2264+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r42>>2]);break L540}else{if(r13>>>0<HEAP32[1976>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L540}}}while(0);if(r67>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2e3+(r47<<2)|0;r42=HEAP32[1960>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[1960>>2]=r42|r13;r72=r49;r73=2e3+(r47+2<<2)|0}else{r36=2e3+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[1976>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2264+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[1964>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[1964>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=437;break}else{r43=r43<<1;r49=r13}}if(r2==437){if(r76>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[1976>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=2408;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[1984>>2]=r55+r81;HEAP32[1972>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1988>>2]=HEAP32[1952>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[2408>>2];HEAP32[r48+4>>2]=HEAP32[2412>>2];HEAP32[r48+8>>2]=HEAP32[2416>>2];HEAP32[r48+12>>2]=HEAP32[2420>>2];HEAP32[2408>>2]=r55;HEAP32[2412>>2]=r54;HEAP32[2420>>2]=0;HEAP32[2416>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2e3+(r37<<2)|0;r45=HEAP32[1960>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[1960>>2]=r45|r13;r82=r51;r83=2e3+(r37+2<<2)|0}else{r48=2e3+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[1976>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2264+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[1964>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[1964>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=472;break}else{r43=r43<<1;r51=r13}}if(r2==472){if(r86>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[1976>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[1972>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[1972>>2]=r52;r57=HEAP32[1984>>2];r43=r57;HEAP32[1984>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _calloc(r1,r2){var r3,r4;do{if((r1|0)==0){r3=0}else{r4=Math.imul(r2,r1)|0;if((r2|r1)>>>0<=65535){r3=r4;break}r3=((r4>>>0)/(r1>>>0)&-1|0)==(r2|0)?r4:-1}}while(0);r2=_malloc(r3);if((r2|0)==0){return r2}if((HEAP32[r2-4>>2]&3|0)==0){return r2}_memset(r2,0,r3);return r2}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[1976>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L724:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[1980>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[1968>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2e3+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2264+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L724}else{if(r16>>>0<HEAP32[1976>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L724}}}while(0);if(r27>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[1984>>2]|0)){r28=HEAP32[1972>>2]+r18|0;HEAP32[1972>>2]=r28;HEAP32[1984>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[1980>>2]|0)){return}HEAP32[1980>>2]=0;HEAP32[1968>>2]=0;return}if((r10|0)==(HEAP32[1980>>2]|0)){r28=HEAP32[1968>>2]+r18|0;HEAP32[1968>>2]=r28;HEAP32[1980>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L826:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2e3+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[1976>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[1960>>2]=HEAP32[1960>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[1976>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[1976>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2264+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[1964>>2]=HEAP32[1964>>2]&~(1<<HEAP32[r20>>2]);break L826}else{if(r6>>>0<HEAP32[1976>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L826}}}while(0);if(r31>>>0<HEAP32[1976>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[1980>>2]|0)){r34=r28;break}HEAP32[1968>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2e3+(r4<<2)|0;r27=HEAP32[1960>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[1960>>2]=r27|r31;r35=r5;r36=2e3+(r4+2<<2)|0}else{r18=2e3+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[1976>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2264+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[1964>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[1964>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=659;break}else{r27=r27<<1;r36=r31}}if(r2==659){if(r39>>>0<HEAP32[1976>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[1976>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[1992>>2]-1|0;HEAP32[1992>>2]=r17;if((r17|0)==0){r40=2416}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[1992>>2]=-1;return}function _i64Add(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1+r3>>>0;r6=r2+r4+(r5>>>0<r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _i64Subtract(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1-r3>>>0;r6=r2-r4>>>0;r6=r2-r4-(r3>>>0>r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _bitshift64Shl(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2<<r3|(r1&r4<<32-r3)>>>32-r3;return r1<<r3}tempRet0=r1<<r3-32;return 0}function _bitshift64Lshr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=0;return r2>>>r3-32|0}function _bitshift64Ashr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=(r2|0)<0?-1:0;return r2>>r3-32|0}function _llvm_ctlz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[ctlz_i8+(r1>>>24)|0];if((r2|0)<8)return r2|0;r2=HEAP8[ctlz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[ctlz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[ctlz_i8+(r1&255)|0]+24|0}var ctlz_i8=allocate([8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"i8",ALLOC_DYNAMIC);function _llvm_cttz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[cttz_i8+(r1&255)|0];if((r2|0)<8)return r2|0;r2=HEAP8[cttz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[cttz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[cttz_i8+(r1>>>24)|0]+24|0}var cttz_i8=allocate([8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0],"i8",ALLOC_DYNAMIC);function ___muldsi3(r1,r2){var r3,r4,r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=0,r4=0,r5=0,r6=0,r7=0,r8=0,r9=0;r3=r1&65535;r4=r2&65535;r5=Math.imul(r4,r3)|0;r6=r1>>>16;r7=(r5>>>16)+Math.imul(r4,r6)|0;r8=r2>>>16;r9=Math.imul(r8,r3)|0;return(tempRet0=(r7>>>16)+Math.imul(r8,r6)+(((r7&65535)+r9|0)>>>16)|0,r7+r9<<16|r5&65535|0)|0}function ___divdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r5=r2>>31|((r2|0)<0?-1:0)<<1;r6=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r7=r4>>31|((r4|0)<0?-1:0)<<1;r8=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r9=_i64Subtract(r5^r1,r6^r2,r5,r6)|0;r10=tempRet0;r11=_i64Subtract(r7^r3,r8^r4,r7,r8)|0;r12=r7^r5;r13=r8^r6;r14=___udivmoddi4(r9,r10,r11,tempRet0,0)|0;r15=_i64Subtract(r14^r12,tempRet0^r13,r12,r13)|0;return(tempRet0=tempRet0,r15)|0}function ___remdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r15=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r15|0;r6=r2>>31|((r2|0)<0?-1:0)<<1;r7=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r8=r4>>31|((r4|0)<0?-1:0)<<1;r9=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r10=_i64Subtract(r6^r1,r7^r2,r6,r7)|0;r11=tempRet0;r12=_i64Subtract(r8^r3,r9^r4,r8,r9)|0;___udivmoddi4(r10,r11,r12,tempRet0,r5)|0;r13=_i64Subtract(HEAP32[r5>>2]^r6,HEAP32[r5+4>>2]^r7,r6,r7)|0;r14=tempRet0;STACKTOP=r15;return(tempRet0=r14,r13)|0}function ___muldi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0;r5=r1;r6=r3;r7=___muldsi3(r5,r6)|0;r8=tempRet0;r9=Math.imul(r2,r6)|0;return(tempRet0=Math.imul(r4,r5)+r9+r8|r8&0,r7&-1|0)|0}function ___udivdi3(r1,r2,r3,r4){var r5;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0;r5=___udivmoddi4(r1,r2,r3,r4,0)|0;return(tempRet0=tempRet0,r5)|0}function ___uremdi3(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r6=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r6|0;___udivmoddi4(r1,r2,r3,r4,r5)|0;STACKTOP=r6;return(tempRet0=HEAP32[r5+4>>2]|0,HEAP32[r5>>2]|0)|0}function ___udivmoddi4(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=r5|0;r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0,r16=0,r17=0,r18=0,r19=0,r20=0,r21=0,r22=0,r23=0,r24=0,r25=0,r26=0,r27=0,r28=0,r29=0,r30=0,r31=0,r32=0,r33=0,r34=0,r35=0,r36=0,r37=0,r38=0,r39=0,r40=0,r41=0,r42=0,r43=0,r44=0,r45=0,r46=0,r47=0,r48=0,r49=0,r50=0,r51=0,r52=0,r53=0,r54=0,r55=0,r56=0,r57=0,r58=0,r59=0,r60=0,r61=0,r62=0,r63=0,r64=0,r65=0,r66=0,r67=0,r68=0,r69=0;r6=r1;r7=r2;r8=r7;r9=r3;r10=r4;r11=r10;if((r8|0)==0){r12=(r5|0)!=0;if((r11|0)==0){if(r12){HEAP32[r5>>2]=(r6>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r6>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}else{if(!r12){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}}r13=(r11|0)==0;do{if((r9|0)==0){if(r13){if((r5|0)!=0){HEAP32[r5>>2]=(r8>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r8>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}if((r6|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=(r8>>>0)%(r11>>>0)}r69=0;r68=(r8>>>0)/(r11>>>0)>>>0;return(tempRet0=r69,r68)|0}r14=r11-1|0;if((r14&r11|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r14&r8|r2&0}r69=0;r68=r8>>>((_llvm_cttz_i32(r11|0)|0)>>>0);return(tempRet0=r69,r68)|0}r15=_llvm_ctlz_i32(r11|0)|0;r16=r15-_llvm_ctlz_i32(r8|0)|0;if(r16>>>0<=30){r17=r16+1|0;r18=31-r16|0;r37=r17;r36=r8<<r18|r6>>>(r17>>>0);r35=r8>>>(r17>>>0);r34=0;r33=r6<<r18;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}else{if(!r13){r28=_llvm_ctlz_i32(r11|0)|0;r29=r28-_llvm_ctlz_i32(r8|0)|0;if(r29>>>0<=31){r30=r29+1|0;r31=31-r29|0;r32=r29-31>>31;r37=r30;r36=r6>>>(r30>>>0)&r32|r8<<r31;r35=r8>>>(r30>>>0)&r32;r34=0;r33=r6<<r31;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}r19=r9-1|0;if((r19&r9|0)!=0){r21=_llvm_ctlz_i32(r9|0)+33|0;r22=r21-_llvm_ctlz_i32(r8|0)|0;r23=64-r22|0;r24=32-r22|0;r25=r24>>31;r26=r22-32|0;r27=r26>>31;r37=r22;r36=r24-1>>31&r8>>>(r26>>>0)|(r8<<r24|r6>>>(r22>>>0))&r27;r35=r27&r8>>>(r22>>>0);r34=r6<<r23&r25;r33=(r8<<r23|r6>>>(r26>>>0))&r25|r6<<r24&r22-33>>31;break}if((r5|0)!=0){HEAP32[r5>>2]=r19&r6;HEAP32[r5+4>>2]=0}if((r9|0)==1){r69=r7|r2&0;r68=r1&-1|0;return(tempRet0=r69,r68)|0}else{r20=_llvm_cttz_i32(r9|0)|0;r69=r8>>>(r20>>>0)|0;r68=r8<<32-r20|r6>>>(r20>>>0)|0;return(tempRet0=r69,r68)|0}}}while(0);if((r37|0)==0){r64=r33;r63=r34;r62=r35;r61=r36;r60=0;r59=0}else{r38=r3&-1|0;r39=r10|r4&0;r40=_i64Add(r38,r39,-1,-1)|0;r41=tempRet0;r47=r33;r46=r34;r45=r35;r44=r36;r43=r37;r42=0;while(1){r48=r46>>>31|r47<<1;r49=r42|r46<<1;r50=r44<<1|r47>>>31|0;r51=r44>>>31|r45<<1|0;_i64Subtract(r40,r41,r50,r51)|0;r52=tempRet0;r53=r52>>31|((r52|0)<0?-1:0)<<1;r54=r53&1;r55=_i64Subtract(r50,r51,r53&r38,(((r52|0)<0?-1:0)>>31|((r52|0)<0?-1:0)<<1)&r39)|0;r56=r55;r57=tempRet0;r58=r43-1|0;if((r58|0)==0){break}else{r47=r48;r46=r49;r45=r57;r44=r56;r43=r58;r42=r54}}r64=r48;r63=r49;r62=r57;r61=r56;r60=0;r59=r54}r65=r63;r66=0;r67=r64|r66;if((r5|0)!=0){HEAP32[r5>>2]=r61;HEAP32[r5+4>>2]=r62}r69=(r65|0)>>>31|r67<<1|(r66<<1|r65>>>31)&0|r60;r68=(r65<<1|0>>>31)&-2|r59;return(tempRet0=r69,r68)|0}
 // EMSCRIPTEN_END_FUNCS
 Module["_main"] = _main;
 Module["_malloc"] = _malloc;
@@ -11499,7 +11362,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = 'a8f2829a-45fd-4232-994c-142d08c3907c';
+    var PACKAGE_UUID = 'cc145cdc-5809-4914-8285-0be222964f31';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

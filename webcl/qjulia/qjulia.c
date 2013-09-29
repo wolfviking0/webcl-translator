@@ -743,7 +743,7 @@ SetupComputeDevices(int gpu)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        //return EXIT_FAILURE;
     }
 
     printf(SEPARATOR);
