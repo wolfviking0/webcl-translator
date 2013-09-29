@@ -80,6 +80,29 @@
     #include <mach/mach_time.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+void print_stack() {
+    printf("\n___________________________________\n");
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
+#endif
+
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -539,7 +562,7 @@ Recompute(void)
     if (err != CL_SUCCESS)
     {
         printf("Failed to acquire GL object! %d\n", err);
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     size_t origin[] = { 0, 0, 0 };
@@ -550,23 +573,27 @@ Recompute(void)
     if(err != CL_SUCCESS)
     {
         printf("Failed to copy buffer to image! %d\n", err);
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
     
     err = clEnqueueReleaseGLObjects(ComputeCommands, 1, &ComputeImage, 0, 0, 0);
     if (err != CL_SUCCESS)
     {
         printf("Failed to release GL object! %d\n", err);
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
 #else
 
+    #ifdef __EMSCRIPTEN__
+        // Type of HostImageBuffer
+        clSetTypePointer(CL_UNSIGNED_INT8);
+    #endif
     err = clEnqueueReadBuffer( ComputeCommands, ComputeResult, CL_TRUE, 0, Width * Height * TextureTypeSize * 4, HostImageBuffer, 0, NULL, NULL );      
     if (err != CL_SUCCESS)
     {
         printf("Failed to read buffer! %d\n", err);
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
 #endif
@@ -664,7 +691,7 @@ SetupComputeDevices(int gpu)
     if (!ComputeContext)
     {
         printf("Error: Failed to create a compute context!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
 #else
@@ -675,7 +702,7 @@ SetupComputeDevices(int gpu)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to locate compute device!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
   
     // Create a context containing the compute device(s)
@@ -688,7 +715,7 @@ SetupComputeDevices(int gpu)
     if (!ComputeContext)
     {
         printf("Error: Failed to create a compute context!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
 #endif
@@ -700,7 +727,7 @@ SetupComputeDevices(int gpu)
     if(err)
     {
         printf("Error: Failed to retrieve compute devices for context!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
     
     device_count = returned_size / sizeof(cl_device_id);
@@ -722,7 +749,7 @@ SetupComputeDevices(int gpu)
     if(!device_found)
     {
         printf("Error: Failed to locate compute device!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
         
     // Create a command queue
@@ -731,7 +758,7 @@ SetupComputeDevices(int gpu)
     if (!ComputeCommands)
     {
         printf("Error: Failed to create a command queue!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Report the device vendor and device name
@@ -743,7 +770,7 @@ SetupComputeDevices(int gpu)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        //return EXIT_FAILURE;
+        //return end(EXIT_FAILURE);
     }
 
     printf(SEPARATOR);
@@ -774,7 +801,7 @@ SetupComputeKernel(void)
     if (!source || err)
     {
         printf("Error: Failed to load kernel source!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     const char* width_macro = "#define WIDTH";
@@ -792,7 +819,7 @@ SetupComputeKernel(void)
     if (!ComputeProgram || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute program!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
     free(source);
     free(preprocess);
@@ -808,7 +835,7 @@ SetupComputeKernel(void)
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(ComputeProgram, ComputeDeviceId, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Create the compute kernel from within the program
@@ -818,7 +845,7 @@ SetupComputeKernel(void)
     if (!ComputeKernel || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute kernel!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     // Get the maximum work group size for executing the kernel on the device
@@ -827,6 +854,7 @@ SetupComputeKernel(void)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve kernel work group info! %d\n", err);
+        end(1);
         exit(1);
     }
 
@@ -842,7 +870,7 @@ SetupComputeKernel(void)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
    
     size_t max_workgroup_item_size[3];
@@ -852,7 +880,7 @@ SetupComputeKernel(void)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        return end(EXIT_FAILURE);
     }
 
     WorkGroupSize[0] = (MaxWorkGroupSize > 1) ? (MaxWorkGroupSize / WorkGroupItems) : MaxWorkGroupSize;
@@ -898,6 +926,7 @@ Shutdown(void)
     printf(SEPARATOR);
     printf("Shutting down...\n");
     Cleanup();
+    end(0);
     exit(0);
 }
 
@@ -943,6 +972,7 @@ Initialize(int gpu)
     if (err != GL_NO_ERROR)
     {
         printf ("Failed to setup OpenGL state!");
+        end(err);
         exit (err);
     }
 
@@ -950,6 +980,7 @@ Initialize(int gpu)
     if(err != CL_SUCCESS)
     {
         printf ("Failed to connect to compute device! Error %d\n", err);
+        end(err);
         exit (err);
     }
 
@@ -958,6 +989,7 @@ Initialize(int gpu)
                           sizeof(image_support), &image_support, NULL);
     if (err != CL_SUCCESS) {
         printf("Unable to query device for image support");
+        end(err);
         exit(err);
     }
     if (image_support == CL_FALSE) {
@@ -969,6 +1001,7 @@ Initialize(int gpu)
     if (err != CL_SUCCESS)
     {
         printf ("Failed to setup compute kernel! Error %d\n", err);
+        end(err);
         exit (err);
     }
     
@@ -976,6 +1009,7 @@ Initialize(int gpu)
     if(err != CL_SUCCESS)
     {
         printf ("Failed to create compute result! Error %d\n", err);
+        end(err);
         exit (err);
     }
     
@@ -1061,6 +1095,7 @@ Display(void)
     if (err != 0)
     {
         printf("Error %d from Recompute!\n", err);
+        end(1);
         exit(1);
     }
 

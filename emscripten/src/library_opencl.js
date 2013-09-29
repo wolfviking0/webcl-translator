@@ -260,13 +260,13 @@ var LibraryOpenCL = {
           _host_ptr = new Int32Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new UInt8Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint8Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new UInt16Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint16Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new UInt32Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint32Array(size / CL.getTypeSizeBits(type));
           break;
         case webcl.FLOAT:
           _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
@@ -403,8 +403,8 @@ var LibraryOpenCL = {
 #endif
   },
 
-#if OPENCL_STACK_TRACE
   webclPrintStackTrace: function(param_value,param_value_size) {
+#if OPENCL_STACK_TRACE
     var _size = {{{ makeGetValue('param_value_size', '0', 'i32') }}} ;
     
     if (_size == 0) {
@@ -412,10 +412,12 @@ var LibraryOpenCL = {
     } else {
       writeStringToMemory(CL.stack_trace, param_value);
     }
-    
+#else
+    {{{ makeSetValue('param_value_size', '0', '0', 'i32') }}}
+#endif    
     return webcl.SUCCESS;
   },
-#endif
+
 
   clSetTypePointer: function(pn_type) {
     /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
@@ -1032,11 +1034,11 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
 #endif        
-        CL.cl_objects[context].release();
+        //CL.cl_objects[context].release();
         delete CL.cl_objects[context];
 #if OPENCL_DEBUG             
         CL.cl_objects_counter--,
-        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif      
 
 
@@ -1238,11 +1240,11 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
 #endif        
-        CL.cl_objects[command_queue].release();
+        //CL.cl_objects[command_queue].release();
         delete CL.cl_objects[command_queue];
 #if OPENCL_DEBUG             
         CL.cl_objects_counter--,
-        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif    
 
       } else {
@@ -1698,11 +1700,11 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
 #endif        
-        CL.cl_objects[memobj].release();
+        //CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
 #if OPENCL_DEBUG             
         CL.cl_objects_counter--,
-        console.info("Counter- HashMap Object : " + CL.cl_objects_counter);
+        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif    
 
       } else {
@@ -2635,7 +2637,7 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
 #endif        
-        CL.cl_objects[kernel].release();
+        //CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
 #if OPENCL_DEBUG             
         CL.cl_objects_counter--,
@@ -2691,7 +2693,9 @@ var LibraryOpenCL = {
             //CL.cl_objects[kernel].setArg(arg_index,_array);
 
             // WebKit -->
+#if OPENCL_DEBUG          
             console.info("/!\\ WebKit platform specific ...");
+#endif          
             CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
 
           } else {
@@ -2715,13 +2719,32 @@ var LibraryOpenCL = {
               // WD --> 
               //CL.cl_objects[kernel].setArg(arg_index,_array);
               
-              // WebKit -->
-              console.info("/!\\ WebKit platform specific ...");
+              // WebKit -->              
               if ( (arg_size / CL.getTypeSizeBits(_sig)) > 1) {
+                var _values = new Array((arg_size / CL.getTypeSizeBits(_sig)));
+    
+                for (var i = 0; i < _values.length; i++) {
+                
+                  if (_sig == webcl.FLOAT) {
+                    _values[i] = {{{ makeGetValue('arg_value', 'i*4', 'float') }}};   
+                  } else {
+                    _values[i] = {{{ makeGetValue('arg_value', 'i*4', 'i32') }}};
+                  }
+                }
+
+                var _type;
+                if (arg_size/CL.getTypeSizeBits(_sig) == 2) {
+                  _type = WebCLKernelArgumentTypes.VEC2;
+                } else if (arg_size/CL.getTypeSizeBits(_sig) == 3) {
+                  _type = WebCLKernelArgumentTypes.VEC3;
+                } else if (arg_size/CL.getTypeSizeBits(_sig) == 4) {
+                  _type = WebCLKernelArgumentTypes.VEC4;
+                }
+
                 if (_sig == webcl.FLOAT) {
-                  CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.FLOAT)
+                  CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.FLOAT | _type)
                 } else {
-                  CL.cl_objects[kernel].setArg(arg_index,_array,WebCLKernelArgumentTypes.INT)
+                  CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.INT | _type)
                 }  
               } else {
                 if (_sig == webcl.FLOAT) {
@@ -4121,7 +4144,9 @@ var LibraryOpenCL = {
           
           // WebKit -->
           // Webkit take UInt32Array
+#if OPENCL_DEBUG          
           console.info("/!\\ WebKit platform specific ...");
+#endif          
           var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
           var _global_work_size = new Int32Array(work_dim);
           var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
@@ -4160,7 +4185,9 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
 
+#if OPENCL_DEBUG          
           console.info("/!\\ WebKit platform specific ...");
+#endif          
           CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
           // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
