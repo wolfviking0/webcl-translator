@@ -22,6 +22,9 @@ var LibraryOpenCL = {
           console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
         }
       }
+
+      // Add webcl constant for double
+      // webcl.FLOAT64 = 0x10DF;
     },
     
     udid: function (obj) {    
@@ -129,9 +132,19 @@ var LibraryOpenCL = {
           // float, uchar, unsigned char, uint, unsigned int, int. 
           else if (_string.indexOf("float") >= 0 ) {
             _value = webcl.FLOAT;
+          // } else if (_string.indexOf("double") >= 0 ) {
+          //  _value = webcl.FLOAT64;
           } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
             _value = webcl.UNSIGNED_INT8;
-          } else if (_string.indexOf("int") >= 0 ) {
+          } else if ( _string.indexOf("char") >= 0 ) {
+            _value = webcl.SIGNED_INT8;
+          } else if ( (_string.indexOf("ushort") >= 0 ) || (_string.indexOf("unsigned short") >= 0 ) ) {
+            _value = webcl.UNSIGNED_INT16;
+          } else if ( _string.indexOf("short") >= 0 ) {
+            _value = webcl.SIGNED_INT16;                     
+          } else if ( (_string.indexOf("uint") >= 0 ) || (_string.indexOf("unsigned int") >= 0 ) ) {
+            _value = webcl.UNSIGNED_INT32;            
+          } else if ( _string.indexOf("int") >= 0 ) {
             _value = webcl.SIGNED_INT32;
           } else {
 #if OPENCL_DEBUG   
@@ -251,29 +264,29 @@ var LibraryOpenCL = {
 
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Int8Array(size);
           break;
         case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Int16Array(size>>(Int16Array.BYTES_PER_ELEMENT>>1));
           break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Int32Array(size>>(Int32Array.BYTES_PER_ELEMENT>>1));
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint8Array(size);
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint16Array(size>>(Uint16Array.BYTES_PER_ELEMENT>>1));
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
           break;
         case webcl.FLOAT:
-          _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
           break;          
         default:
           console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
-          _host_ptr = new Float32Array(size / CL.getTypeSizeBits(type));
+          _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
           break;
       }
       
@@ -2720,8 +2733,9 @@ var LibraryOpenCL = {
               //CL.cl_objects[kernel].setArg(arg_index,_array);
               
               // WebKit -->              
-              if ( (arg_size / CL.getTypeSizeBits(_sig)) > 1) {
-                var _values = new Array((arg_size / CL.getTypeSizeBits(_sig)));
+              var _size = (arg_size>>(CL.getTypeSizeBits(_sig)>>1));
+              if ( _size > 1) {
+                var _values = new Array(_size);
     
                 for (var i = 0; i < _values.length; i++) {
                 
@@ -2733,11 +2747,11 @@ var LibraryOpenCL = {
                 }
 
                 var _type;
-                if (arg_size/CL.getTypeSizeBits(_sig) == 2) {
+                if (_size == 2) {
                   _type = WebCLKernelArgumentTypes.VEC2;
-                } else if (arg_size/CL.getTypeSizeBits(_sig) == 3) {
+                } else if (_size == 3) {
                   _type = WebCLKernelArgumentTypes.VEC3;
-                } else if (arg_size/CL.getTypeSizeBits(_sig) == 4) {
+                } else if (_size == 4) {
                   _type = WebCLKernelArgumentTypes.VEC4;
                 }
 
