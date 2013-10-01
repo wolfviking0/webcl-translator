@@ -219,6 +219,7 @@ CreatePartialSumBuffers(unsigned int count)
         if (group_count > 1) 
         {
             size_t buffer_size = group_count * sizeof(float);
+            clSetTypePointer(CL_FLOAT);
             ScanPartialSums[level++] = clCreateBuffer(ComputeContext, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
         }
 
@@ -610,6 +611,10 @@ void ScanReference( float* reference, float* input, const unsigned int count)
 
 int main(int argc, char **argv)
 {
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile scan webcl");
+    #endif
+
     int i;
     uint64_t         t0 = 0;
     uint64_t         t1 = 0;
@@ -670,7 +675,7 @@ int main(int argc, char **argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        //return EXIT_FAILURE;
     }
 
     printf(SEPARATOR);
@@ -760,6 +765,7 @@ int main(int argc, char **argv)
     // Create the input buffer on the device
     //
     size_t buffer_size = sizeof(float) * count;
+    clSetTypePointer(CL_FLOAT);
     input_buffer = clCreateBuffer(ComputeContext, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!input_buffer)
     {
@@ -769,6 +775,7 @@ int main(int argc, char **argv)
 
     // Fill the input buffer with the host allocated random data
     //
+    clSetTypePointer(CL_FLOAT);
     err = clEnqueueWriteBuffer(ComputeCommands, input_buffer, CL_TRUE, 0, buffer_size, float_data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -778,6 +785,7 @@ int main(int argc, char **argv)
 
     // Create the output buffer on the device
     //
+    clSetTypePointer(CL_FLOAT);
     output_buffer = clCreateBuffer(ComputeContext, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!output_buffer)
     {
@@ -788,6 +796,7 @@ int main(int argc, char **argv)
     float* result = (float*)malloc(buffer_size);
     memset(result, 0, buffer_size);
 	
+    clSetTypePointer(CL_FLOAT);
     err = clEnqueueWriteBuffer(ComputeCommands, output_buffer, CL_TRUE, 0, buffer_size, result, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -824,6 +833,7 @@ int main(int argc, char **argv)
 
     // Read back the results that were computed on the device
     //
+    clSetTypePointer(CL_FLOAT);
     err = clEnqueueReadBuffer(ComputeCommands, output_buffer, CL_TRUE, 0, buffer_size, result, 0, NULL, NULL);
     if (err)
     {
@@ -870,7 +880,10 @@ int main(int argc, char **argv)
     free(float_data);
     free(reference);
     free(result);
-    
+
+    #ifdef __EMSCRIPTEN__
+        webclEndProfile();
+    #endif
         
     return 0;
 }

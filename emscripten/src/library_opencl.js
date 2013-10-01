@@ -182,14 +182,8 @@ var LibraryOpenCL = {
         case webcl.UNSIGNED_INT16:
         case webcl.SIGNED_INT16:
           _size = 2;
-          break;
-        case webcl.UNSIGNED_INT32:          
-        case webcl.SIGNED_INT32:
-        case webcl.FLOAT:        
-          _size = 4;
-          break;      
+          break;  
         default:
-          console.info("Use size for default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           _size = 4;
           break;
       }
@@ -216,14 +210,8 @@ var LibraryOpenCL = {
           for (var i = 0; i < array.length; i++) {
             {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
           }
-          break;
-        case webcl.FLOAT:
-          for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
-          }
-          break;        
+          break;       
         default:
-          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           for (var i = 0; i < array.length; i++) {
             {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
           }
@@ -246,12 +234,8 @@ var LibraryOpenCL = {
         case webcl.SIGNED_INT32:
         case webcl.UNSIGNED_INT32:
           _value = {{{ makeGetValue('ptr', '0', 'i32') }}}
-          break;
-        case webcl.FLOAT:
-          _value = {{{ makeGetValue('ptr', '0', 'float') }}}
-          break;          
+          break;         
         default:
-          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           _value = {{{ makeGetValue('ptr', '0', 'float') }}}
           break;
       }
@@ -280,12 +264,8 @@ var LibraryOpenCL = {
           break;
         case webcl.UNSIGNED_INT32:
           _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
-          break;
-        case webcl.FLOAT:
-          _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
-          break;          
+          break;       
         default:
-          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
           break;
       }
@@ -314,21 +294,50 @@ var LibraryOpenCL = {
           break;
         case webcl.UNSIGNED_INT32:
           _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}}
-          break;
-        case webcl.FLOAT:
-          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}}
-          break;          
+          break;         
         default:
-          console.info("Use default type FLOAT, call clSetTypePointer() for set the pointer type ...\n");
           _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}}
           break;
       }
-      
+
       return _host_ptr;
     },
     
     getPointerToArrayBuffer: function(ptr,size,type) {  
-      return CL.getPointerToArray(ptr,size,type).buffer;
+
+      var _host_ptr = new ArrayBuffer(size);
+
+      switch(type) {
+        case webcl.UNSIGNED_INT8:
+        case webcl.SIGNED_INT8:
+          
+          for (var i = 0; i < size; i++) {
+            _host_ptr[i] = {{{ makeGetValue('ptr', 'i', 'i8') }}};      
+          }
+          break;
+        case webcl.UNSIGNED_INT16:          
+        case webcl.SIGNED_INT16:
+
+          for (var i = 0; i < size>>1; i++) {
+            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*2', 'i16') }}};      
+          }
+          break;
+        case webcl.UNSIGNED_INT32:
+        case webcl.SIGNED_INT32:
+
+          for (var i = 0; i < size>>2; i++) {
+            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};      
+          }
+          break;     
+        default:
+
+          for (var i = 0; i < size>>2; i++) {
+            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};      
+          }
+          break;
+      }
+
+      return _host_ptr;
     },
 
     catchError: function(e) {
@@ -347,7 +356,7 @@ var LibraryOpenCL = {
     },
 
 #if OPENCL_STACK_TRACE    
-    stack_trace: "// Javascript webcl Stack Trace\n",
+    stack_trace: "// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",
 
     webclBeginStackTrace: function(name,parameter) {
       CL.stack_trace += "\n" + name + "("
@@ -366,6 +375,7 @@ var LibraryOpenCL = {
     },
 
     webclCallParameterStackTrace: function(parameter) {
+      
       for (var i = 0; i < parameter.length - 1 ; i++) {
         if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[i] instanceof ArrayBufferView)) || (parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
           CL.stack_trace += "[";  
@@ -414,6 +424,21 @@ var LibraryOpenCL = {
       CL.stack_trace += ") - Message (" + message + ") - Exception (" + exception + ")\n";
     },
 #endif
+  },
+
+  webclBeginProfile: function(name) {
+#if OPENCL_PROFILE
+    // start profiling
+    console.profile(name);
+#endif
+    return webcl.SUCCESS;
+  },
+
+  webclEndProfile: function() {
+#if OPENCL_PROFILE
+    console.profileEnd();
+#endif
+    return webcl.SUCCESS;
   },
 
   webclPrintStackTrace: function(param_value,param_value_size) {
@@ -531,8 +556,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (platform in CL.cl_objects) {
+#endif
 
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",[param_name]);
@@ -547,13 +573,15 @@ var LibraryOpenCL = {
         if (param_value_size_ret != 0) {
           {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
         }
-           
+
+#if OPENCL_CHECK_VALID_OBJECT           
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform are NULL","");
 #endif
         return webcl.INVALID_PLATFORM;
       }
+#endif      
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -591,16 +619,16 @@ var LibraryOpenCL = {
     // Init webcl variable if necessary
     CL.init();
 
-    if ( num_entries == 0 && device_type_i64_1 != 0) {
+    if ( num_entries == 0 && devices != 0) {
 #if OPENCL_STACK_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device_type is not NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device is not NULL","");
 #endif
       return webcl.INVALID_VALUE;
     }
 
-    if ( num_devices == 0 && device_type_i64_1 == 0) {
+    if ( num_devices == 0 && devices == 0) {
 #if OPENCL_STACK_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_devices and device_type are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_devices and device are NULL","");
 #endif
       return webcl.INVALID_VALUE;
     }
@@ -635,7 +663,7 @@ var LibraryOpenCL = {
         var _devices = _platform.getDevices(device_type_i64_1);
 
         if (num_devices != 0) {
-          {{{ makeSetValue('num_devices', '0', 'Math.min(num_entries,_devices.length)', 'i32') }}} /* Num of device */;
+          {{{ makeSetValue('num_devices', '0', '_devices.length', 'i32') }}} /* Num of device */;
         } 
 
         if (devices != 0) {
@@ -676,7 +704,9 @@ var LibraryOpenCL = {
 
     try { 
 
+#if OPENCL_CHECK_VALID_OBJECT
       if (device in CL.cl_objects) {
+#endif
 
         var _object = CL.cl_objects[device];
 
@@ -753,13 +783,14 @@ var LibraryOpenCL = {
           return webcl.INVALID_VALUE;
         }
 
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
 #endif
         return webcl.INVALID_DEVICE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -803,8 +834,11 @@ var LibraryOpenCL = {
       // WebCL can work using default device / platform, we check only if parameter are set.
       for (var i = 0; i < num_devices; i++) {
         var _idxDevice = {{{ makeGetValue('devices', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT        
         if (_idxDevice in CL.cl_objects) {
+#endif          
           _devices.push(CL.cl_objects[_idxDevice]);
+#if OPENCL_CHECK_VALID_OBJECT        
         } else {
           if (cl_errcode_ret != 0) {
             {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_DEVICE', 'i32') }}};
@@ -815,6 +849,7 @@ var LibraryOpenCL = {
 #endif
           return 0;  
         }
+#endif        
       }
 
       // Verify the property
@@ -828,8 +863,11 @@ var LibraryOpenCL = {
             case webcl.CONTEXT_PLATFORM:
               _propertiesCounter ++;
               var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT              
               if (_idxPlatform in CL.cl_objects) {
+#endif                
                 _platform = CL.cl_objects[_idxPlatform];
+#if OPENCL_CHECK_VALID_OBJECT
               } else {
                 if (cl_errcode_ret != 0) {
                   {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PLATFORM', 'i32') }}};
@@ -840,6 +878,7 @@ var LibraryOpenCL = {
 #endif
                 return 0;  
               }
+#endif              
               break;
 
             // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree ??
@@ -944,8 +983,11 @@ var LibraryOpenCL = {
             case webcl.CONTEXT_PLATFORM:
               _propertiesCounter ++;
               var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT              
               if (_idxPlatform in CL.cl_objects) {
+#endif                
                 _platform = CL.cl_objects[_idxPlatform];
+#if OPENCL_CHECK_VALID_OBJECT      
               } else {
                 if (cl_errcode_ret != 0) {
                   {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PLATFORM', 'i32') }}};
@@ -956,6 +998,7 @@ var LibraryOpenCL = {
 #endif
                 return 0;  
               }
+#endif              
               break;
 
             // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree like for the clCreateContext ??
@@ -1041,9 +1084,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (context in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
 #endif        
@@ -1054,13 +1097,14 @@ var LibraryOpenCL = {
         console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif      
 
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
 #endif
         return webcl.INVALID_CONTEXT;
       }
+#endif      
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1084,9 +1128,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (context in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[context]+".getInfo",[param_name]);
 #endif        
@@ -1136,14 +1180,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_VALUE;
         }
-           
+#if OPENCL_CHECK_VALID_OBJECT           
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context are NULL","");
 #endif
         return webcl.INVALID_CONTEXT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1179,6 +1223,7 @@ var LibraryOpenCL = {
     var _command = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -1189,6 +1234,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
+#endif    
 
     if (device == 0) {
       if (cl_errcode_ret != 0) {
@@ -1247,9 +1293,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (command_queue in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
 #endif        
@@ -1259,14 +1305,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif    
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],CL.cl_objects[command_queue]+" is not a valid OpenCL command_queue","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1289,9 +1335,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (command_queue in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".getInfo",[param_name]);
 #endif        
@@ -1333,14 +1379,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_VALUE;
         }
-           
+#if OPENCL_CHECK_VALID_OBJECT           
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1371,22 +1417,29 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clCreateBuffer",[flags_i64_1,size,host_ptr,cl_errcode_ret]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
+#endif
 
     var _id = null;
     var _buffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
       }
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -1402,6 +1455,9 @@ var LibraryOpenCL = {
           {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
         }
 
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
 #endif
@@ -1425,9 +1481,9 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
 #endif      
-      if (_host_ptr != null)
+      if (_host_ptr != null) {
         _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
-      else
+      } else
         _buffer = CL.cl_objects[context].createBuffer(_flags,size);
 
     } catch (e) {
@@ -1437,6 +1493,9 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
       }
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif      
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
 #endif
@@ -1449,6 +1508,9 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_buffer);
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif    
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
 #endif
@@ -1468,6 +1530,7 @@ var LibraryOpenCL = {
     var _subbuffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(buffer in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_MEM_OBJECT', 'i32') }}};
@@ -1478,7 +1541,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -1561,21 +1624,29 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clCreateImage2D",[context,flags_i64_1,image_format,image_width,image_height,image_row_pitch,host_ptr,cl_errcode_ret]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clCreateImage2D : you don't call clSetTypePointer for host_ptr parameter");
+#endif
 
     var _id = null;
     var _image = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
       }
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
 #endif
       return 0; 
     }
+#endif    
 
     try {
     
@@ -1592,6 +1663,9 @@ var LibraryOpenCL = {
           {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
         }
 
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
 #endif
@@ -1611,6 +1685,9 @@ var LibraryOpenCL = {
           {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_IMAGE_FORMAT_DESCRIPTOR', 'i32') }}};
         }
 
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([0,cl_errcode_ret],"image_format is NULL","");
 #endif
@@ -1626,6 +1703,9 @@ var LibraryOpenCL = {
           {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
         }
 
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
 #endif
@@ -1663,6 +1743,9 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
       }
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
 #endif
@@ -1675,6 +1758,9 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_image);
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
 #endif
@@ -1707,9 +1793,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (memobj in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
 #endif        
@@ -1719,14 +1805,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
 #endif    
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL memobj","");
 #endif
         return webcl.INVALID_MEM_OBJECT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1752,13 +1838,14 @@ var LibraryOpenCL = {
 #endif
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context '"+context+"' is not a valid context","");
 #endif
       return webcl.INVALID_CONTEXT; 
     }
-
+#endif
     if (image_type != webcl.MEM_OBJECT_IMAGE2D) {
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([webcl.CL_INVALID_VALUE],"image_type "+image_type+" are not valid","");
@@ -1833,9 +1920,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (memobj in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getInfo",[param_name]);
 #endif        
@@ -1866,14 +1953,14 @@ var LibraryOpenCL = {
         } else {
           console.error("clGetMemObjectInfo : "+typeof(_info)+" not yet implemented");
         }
-           
+#if OPENCL_CHECK_VALID_OBJECT           
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"memobj are NULL","");
 #endif
         return webcl.INVALID_MEM_OBJECT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1903,9 +1990,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (image in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[param_name]);
 #endif        
@@ -1941,13 +2028,14 @@ var LibraryOpenCL = {
 #endif
             return webcl.INVALID_VALUE;
         }
-           
+#if OPENCL_CHECK_VALID_OBJECT           
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
 #endif
         return webcl.INVALID_MEM_OBJECT;
       }
+#endif      
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1987,6 +2075,7 @@ var LibraryOpenCL = {
     var _sampler = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -1997,7 +2086,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
 #if OPENCL_STACK_TRACE
@@ -2044,9 +2133,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (sampler in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[sampler]+".release",[]);
 #endif        
@@ -2056,14 +2145,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
 #endif   
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[sampler]+" is not a valid OpenCL sampler","");
 #endif
         return webcl.INVALID_SAMPLER;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2087,9 +2176,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (sampler in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[sampler]+".getInfo",[param_name]);
 #endif        
@@ -2131,14 +2220,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_VALUE;
         }
-       
+#if OPENCL_CHECK_VALID_OBJECT       
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"sampler are NULL","");
 #endif
         return webcl.INVALID_SAMPLER;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2172,6 +2261,7 @@ var LibraryOpenCL = {
     var _program = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -2182,7 +2272,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-        
+#endif        
     try {
   
       var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
@@ -2244,9 +2334,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (program in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[program]+".release",[]);
 #endif        
@@ -2256,14 +2346,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
 #endif   
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
 #endif
         return webcl.INVALID_PROGRAM;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2287,7 +2377,7 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clBuildProgram",[program,num_devices,device_list,options,pfn_notify,user_data]);
 #endif
-
+#if OPENCL_CHECK_VALID_OBJECT
     // Program must be created
     if (!(program in CL.cl_objects)) {
 
@@ -2297,7 +2387,7 @@ var LibraryOpenCL = {
 
       return webcl.INVALID_PROGRAM; 
     }
-
+#endif
     try {
 
       var _devices = [];
@@ -2306,9 +2396,13 @@ var LibraryOpenCL = {
       if (device_list != 0 && num_devices > 0 ) {
         for (var i = 0; i < num_devices ; i++) {
           var _device = {{{ makeGetValue('device_list', 'i*4', 'i32') }}}
+#if OPENCL_CHECK_VALID_OBJECT          
           if (_device in CL.cl_objects) {
+#endif            
             _devices.push(CL.cl_objects[_device]);
+#if OPENCL_CHECK_VALID_OBJECT
           }
+#endif          
         }
       }
 
@@ -2353,9 +2447,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (program in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[program]+".getInfo",[param_name]);
 #endif        
@@ -2408,14 +2502,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_VALUE;
         }
-       
+#if OPENCL_CHECK_VALID_OBJECT       
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
 #endif
         return webcl.INVALID_PROGRAM;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2445,11 +2539,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (program in CL.cl_objects) {
       
         if (device in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[program]+".getBuildInfo",[device,param_name]);
 #endif        
@@ -2475,6 +2569,7 @@ var LibraryOpenCL = {
 #endif
             return webcl.INVALID_VALUE;
           }
+#if OPENCL_CHECK_VALID_OBJECT          
         } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
@@ -2487,7 +2582,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_PROGRAM;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2522,6 +2617,7 @@ var LibraryOpenCL = {
     var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
 
     // program must be created
+#if OPENCL_CHECK_VALID_OBJECT    
     if (!(program in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_PROGRAM', 'i32') }}};
@@ -2532,7 +2628,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
 #if OPENCL_STACK_TRACE
@@ -2581,6 +2677,7 @@ var LibraryOpenCL = {
 #endif
 
     // program must be created
+#if OPENCL_CHECK_VALID_OBJECT
     if (!(program in CL.cl_objects)) {
 
 #if OPENCL_STACK_TRACE
@@ -2588,7 +2685,7 @@ var LibraryOpenCL = {
 #endif
       return webcl.INVALID_PROGRAM; 
     }
-
+#endif
     try {
     
 #if OPENCL_STACK_TRACE
@@ -2612,7 +2709,7 @@ var LibraryOpenCL = {
 
       }
            
-      if (num_kernels_ret != 0) {{{ makeSetValue('num_kernels_ret', '0', 'Math.min(num_kernels,_kernels.length)', 'i32') }}};
+      if (num_kernels_ret != 0) {{{ makeSetValue('num_kernels_ret', '0', '_kernels.length', 'i32') }}};
 
     } catch (e) {
 
@@ -2644,9 +2741,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (kernel in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
 #endif        
@@ -2656,14 +2753,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
 #endif   
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
 #endif
         return webcl.INVALID_KERNEL;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2688,9 +2785,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (kernel in CL.cl_objects) {
-        
+#endif        
         if (CL.cl_objects[kernel].sig.length > arg_index) {
     
           var _sig = CL.cl_objects[kernel].sig[arg_index];
@@ -2706,9 +2803,6 @@ var LibraryOpenCL = {
             //CL.cl_objects[kernel].setArg(arg_index,_array);
 
             // WebKit -->
-#if OPENCL_DEBUG          
-            console.info("/!\\ WebKit platform specific ...");
-#endif          
             CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
 
           } else {
@@ -2777,14 +2871,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_KERNEL;          
         }
-
+#if OPENCL_CHECK_VALID_OBJECT
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
 #endif
         return webcl.INVALID_KERNEL;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2808,9 +2902,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT
       if (kernel in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getInfo",[param_name]);
 #endif        
@@ -2855,14 +2949,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_VALUE;
         }
-       
+#if OPENCL_CHECK_VALID_OBJECT       
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_KERNEL],"kernel are NULL","");
 #endif
         return webcl.INVALID_KERNEL;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2892,11 +2986,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT  
       if (kernel in CL.cl_objects) {
       
         if (device in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getWorkGroupInfo",[device,param_name]);
 #endif        
@@ -2921,6 +3015,7 @@ var LibraryOpenCL = {
 #endif
             return webcl.INVALID_VALUE;
           }
+#if OPENCL_CHECK_VALID_OBJECT            
         } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
@@ -2933,7 +3028,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_KERNEL;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -2968,14 +3063,18 @@ var LibraryOpenCL = {
 
       for (var i = 0; i < num_events; i++) {
         var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT          
         if (_event in CL.cl_objects) {
+#endif          
           _events.push(_event) 
+#if OPENCL_CHECK_VALID_OBJECT  
         } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
           return webcl.INVALID_EVENT;    
         }
+#endif        
       }
 
 #if OPENCL_STACK_TRACE
@@ -3005,9 +3104,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT  
       if (event in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[event]+".getInfo",[param_name]);
 #endif        
@@ -3044,14 +3143,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_EVENT;
         }
-       
+#if OPENCL_CHECK_VALID_OBJECT         
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif
         return webcl.INVALID_EVENT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3084,6 +3183,7 @@ var LibraryOpenCL = {
     var _event = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT      
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -3094,7 +3194,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
 #if OPENCL_STACK_TRACE
@@ -3142,9 +3242,9 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (event in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[event]+".release",[]);
 #endif        
@@ -3154,13 +3254,14 @@ var LibraryOpenCL = {
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
 #endif   
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
 #endif
         return webcl.INVALID_EVENT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3184,22 +3285,22 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (event in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[event]+".setUserEventStatus",[execution_status]);
 #endif        
 
         CL.cl_objects[event].setUserEventStatus(execution_status);
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
 #endif
         return webcl.INVALID_EVENT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3223,23 +3324,23 @@ var LibraryOpenCL = {
 #endif
 
     try {
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (event in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,pfn_notify,user_data]);
 #endif        
 
         console.error("/!\\ todo clSetEventCallback not yet finish to implement");
         CL.cl_objects[event].setCallback(command_exec_callback_type);
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
 #endif
         return webcl.INVALID_EVENT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3263,9 +3364,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (event in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[event]+".getProfilingInfo",[param_name]);
 #endif        
@@ -3283,14 +3384,14 @@ var LibraryOpenCL = {
 #endif
           return webcl.INVALID_EVENT;
         }
-       
+#if OPENCL_CHECK_VALID_OBJECT          
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif
         return webcl.INVALID_EVENT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3320,22 +3421,22 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".flush",[]);
 #endif        
 
         CL.cl_objects[command_queue].flush();
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3357,22 +3458,22 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".finish",[]);
 #endif        
 
         CL.cl_objects[command_queue].finish();
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3393,13 +3494,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueReadBuffer",[command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadBuffer : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (buffer in CL.cl_objects) {
-
+#endif
           var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
@@ -3409,6 +3513,10 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif              
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3416,32 +3524,43 @@ var LibraryOpenCL = {
             }
           } 
 
-#if OPENCL_STACK_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
-#endif        
+ 
           CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
           //CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+#if OPENCL_STACK_TRACE
+          // It's the only callStackTrace call after the call for have info about the read host ptr
+          CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif       
 
           if (ptr)
             CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-         
+#if OPENCL_CHECK_VALID_OBJECT            
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif                
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif                
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif        
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3449,6 +3568,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif        
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3459,13 +3581,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueReadBufferRect",[command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadBufferRect : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (buffer in CL.cl_objects) {
-
+#endif
           // /!\ _host_ptr must be init with size --> @steven how i can have it ??
           var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
           var _event_wait_list = [];
@@ -3485,6 +3610,9 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif                 
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3501,28 +3629,34 @@ var LibraryOpenCL = {
 
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
-          //console.info("-->"+ptr);
-          console.info("-->"+_host_ptr.length);
-          //if (ptr) {
-            //CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-          //}
-          
+          if (ptr)
+            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+#if OPENCL_CHECK_VALID_OBJECT             
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif           
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif           
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif   
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3530,6 +3664,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif   
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3540,13 +3677,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteBuffer",[command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteBuffer : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (buffer in CL.cl_objects) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
           var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
@@ -3556,6 +3696,9 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif               
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3570,23 +3713,32 @@ var LibraryOpenCL = {
           CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif         
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif         
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif 
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3594,6 +3746,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif 
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3605,13 +3760,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteBufferRect",[command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteBufferRect : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (buffer in CL.cl_objects) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
           
@@ -3632,6 +3790,9 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif               
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3647,23 +3808,32 @@ var LibraryOpenCL = {
          
           //CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif          
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif          
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif  
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3671,6 +3841,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif  
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3684,11 +3857,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if ((src_buffer in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
-
+#endif
           var _event = null; 
           var _event_wait_list = [];
 
@@ -3711,7 +3884,7 @@ var LibraryOpenCL = {
           CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);  
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -3724,7 +3897,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3746,13 +3919,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueReadImage",[command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadImage : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (image in CL.cl_objects) {
-
+#endif
           // /!\ _host_ptr must be init with size --> @steven how i can have it ??
           var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
           var _event_wait_list = [];
@@ -3771,6 +3947,9 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif              
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3789,23 +3968,32 @@ var LibraryOpenCL = {
           if (ptr) {
             CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
           }
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif        
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3813,6 +4001,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3823,13 +4014,16 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteImage",[command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
+#if OPENCL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteImage : you don't call clSetTypePointer for ptr parameter");
+#endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (image in CL.cl_objects) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
           
@@ -3848,6 +4042,9 @@ var LibraryOpenCL = {
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
+#if OPENCL_CHECK_SET_POINTER    
+              CL.cl_pn_type = 0;
+#endif              
 #if OPENCL_STACK_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
 #endif    
@@ -3862,23 +4059,32 @@ var LibraryOpenCL = {
           
           //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif        
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
 #endif
           return webcl.INVALID_MEM_OBJECT;
         }
       } else {
+#if OPENCL_CHECK_SET_POINTER    
+        CL.cl_pn_type = 0;
+#endif        
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -3886,6 +4092,9 @@ var LibraryOpenCL = {
       return _error;
     }
 
+#if OPENCL_CHECK_SET_POINTER    
+    CL.cl_pn_type = 0;
+#endif
 #if OPENCL_STACK_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -3899,11 +4108,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if ((src_image in CL.cl_objects) && (dst_image in CL.cl_objects)) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
 
@@ -3936,7 +4145,7 @@ var LibraryOpenCL = {
           CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -3949,7 +4158,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3973,11 +4182,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if ((src_image in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
 
@@ -4008,7 +4217,7 @@ var LibraryOpenCL = {
           CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
@@ -4021,7 +4230,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4045,11 +4254,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if ((src_buffer in CL.cl_objects) && (dst_image in CL.cl_objects)) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
 
@@ -4080,7 +4289,7 @@ var LibraryOpenCL = {
           CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);   
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
@@ -4093,7 +4302,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4142,11 +4351,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (kernel in CL.cl_objects) {
-
+#endif
           var _event = null;
           var _event_wait_list = [];
 
@@ -4157,10 +4366,7 @@ var LibraryOpenCL = {
           // var _local_work_size = [];
           
           // WebKit -->
-          // Webkit take UInt32Array
-#if OPENCL_DEBUG          
-          console.info("/!\\ WebKit platform specific ...");
-#endif          
+          // Webkit take UInt32Array     
           var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
           var _global_work_size = new Int32Array(work_dim);
           var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
@@ -4198,14 +4404,11 @@ var LibraryOpenCL = {
 #if OPENCL_STACK_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
-
-#if OPENCL_DEBUG          
-          console.info("/!\\ WebKit platform specific ...");
-#endif          
+  
           CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
           // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
@@ -4218,7 +4421,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4255,11 +4458,11 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 
         if (kernel in CL.cl_objects) {
-
+#endif
           var _event = null;
 
 #if OPENCL_STACK_TRACE
@@ -4268,7 +4471,7 @@ var LibraryOpenCL = {
   
           CL.cl_objects[command_queue].enqueueMarker(_event);    
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
@@ -4281,7 +4484,7 @@ var LibraryOpenCL = {
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4305,9 +4508,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-  
+#endif
         var _events;
 
         for (var i = 0; i < num_events; i++) {
@@ -4327,14 +4530,14 @@ var LibraryOpenCL = {
 #endif    
     
         CL.cl_objects[command_queue].enqueueWaitForEvents(_events);   
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4358,22 +4561,22 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueBarrier",[]);
 #endif    
     
         CL.cl_objects[command_queue].enqueueBarrier();   
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4408,6 +4611,7 @@ var LibraryOpenCL = {
     var _buffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT       
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -4418,7 +4622,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -4486,6 +4690,7 @@ var LibraryOpenCL = {
     var _buffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT       
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -4496,7 +4701,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -4564,6 +4769,7 @@ var LibraryOpenCL = {
     var _buffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT       
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -4574,7 +4780,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -4656,6 +4862,7 @@ var LibraryOpenCL = {
     var _buffer = null;
 
     // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT       
     if (!(context in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
@@ -4666,7 +4873,7 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
-
+#endif
     try {
     
       var _flags;
@@ -4727,9 +4934,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (memobj in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getGLObjectInfo",[]);
 #endif        
@@ -4739,14 +4946,14 @@ var LibraryOpenCL = {
         if (gl_object_type != 0) {{{ makeSetValue('gl_object_type', '0', '_info.type', 'i32') }}};
         if (gl_object_name != 0) {{{ makeSetValue('gl_object_name', '0', '_info.glObject', 'i32') }}};
 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
         return webcl.INVALID_MEM_OBJECT;
       }
-
+#endif
     } catch (e) {
 
       var _error = CL.catchError(e);
@@ -4773,9 +4980,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (memobj in CL.cl_objects) {
-
+#endif
 #if OPENCL_STACK_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getGLTextureInfo",[param_name]);
 #endif        
@@ -4784,14 +4991,14 @@ var LibraryOpenCL = {
 
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
-     
+#if OPENCL_CHECK_VALID_OBJECT    
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
         return webcl.INVALID_MEM_OBJECT;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4821,9 +5028,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-
+#endif
         var _event = null;
         var _event_wait_list = [];
         var _mem_objects = [];
@@ -4852,14 +5059,14 @@ var LibraryOpenCL = {
         CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
         // CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
         // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4883,9 +5090,9 @@ var LibraryOpenCL = {
 #endif
 
     try { 
-
+#if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
-
+#endif
         var _event = null;
         var _event_wait_list = [];
         var _mem_objects = [];
@@ -4914,14 +5121,14 @@ var LibraryOpenCL = {
         CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);    
         // CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
         // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+#if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_STACK_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-
+#endif
     } catch (e) {
       var _error = CL.catchError(e);
 

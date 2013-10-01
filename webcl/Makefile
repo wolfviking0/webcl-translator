@@ -12,6 +12,10 @@ define chdir
    $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
 endef
 
+DEBUG = -O0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
+
+NO_DEBUG = -02 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=0 -s OPENCL_DEBUG=0 -s OPENCL_STACK_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
+
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#
 # BUILD
@@ -34,35 +38,41 @@ all: \
 
 hello_world_sample:
 	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c -O0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_DEBUG=1 -o ../build/hello_world.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(NO_DEBUG) -o ../build/hello_world.js
 
 hello_world_cuda_sample:
 	$(call chdir,hello_world_cuda/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cuda.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_DEBUG=1 -o ../build/hello_world_cuda.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cuda.c $(DEBUG) -o ../build/hello_world_cuda.js
 
-hello_world_2_sample:
+# Not yet working -> issue #315
+hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(DEBUG) \
 	--preload-file hello_world_2.cl \
 	-o ../build/hello_world_2.js
 
+# Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp -O2 -s ASM_JS=0 -s ALLOW_MEMORY_GROWTH=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(DEBUG) \
 	--preload-file convolution_kernel.cl \
 	-o ../build/convolution.js
 
-reduce_sample:
-	$(call chdir,reduce/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c -O2 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s ALLOW_MEMORY_GROWTH=1 -s ASM_JS=0 -s OPENCL_DEBUG=1 \
-	--preload-file reduce_float_kernel.cl --preload-file reduce_float2_kernel.cl --preload-file reduce_float4_kernel.cl --preload-file reduce_int_kernel.cl --preload-file reduce_int2_kernel.cl --preload-file reduce_int4_kernel.cl \
-	-o ../build/reduce.js
-
+# Need memory 1024 * 1024 * 20
+# V1 :
+# V2 : OPENCL_CHECK_VALID_OBJECT=0 9.69 ms / 9.71 ms / 9.70 ms
+# V2 : OPENCL_CHECK_VALID_OBJECT=1 9.76 ms / 9.81 ms / 10.09 ms
 scan_sample:
 	$(call chdir,scan/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -O2 -s ASM_JS=0 -s ALLOW_MEMORY_GROWTH=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 -s OPENCL_DEBUG=1 \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(NO_DEBUG) \
 	--preload-file scan_kernel.cl \
 	-o ../build/scan.js
+
+reduce_sample:
+	$(call chdir,reduce/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c $(DEBUG) \
+	--preload-file reduce_float_kernel.cl --preload-file reduce_float2_kernel.cl --preload-file reduce_float4_kernel.cl --preload-file reduce_int_kernel.cl --preload-file reduce_int2_kernel.cl --preload-file reduce_int4_kernel.cl \
+	-o ../build/reduce.js
 
 qjulia_sample:
 	$(call chdir,qjulia/)

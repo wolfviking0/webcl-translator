@@ -922,12 +922,14 @@ int main(int argc, char** argv)
 
     // Create the input and output arrays in device memory for our calculation
     //
-    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_READ_ONLY, sizeof(float) * count, NULL, NULL);                     
+    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_READ_ONLY, sizeof(float) * count, NULL, NULL); 
+    clSetTypePointer(CL_FLOAT);                    
     input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, NULL);
 
     printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,input);
 
-    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);     
+    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);    
+    clSetTypePointer(CL_FLOAT); 
     output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);
    
     printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,output);
@@ -940,7 +942,8 @@ int main(int argc, char** argv)
     
     // Write our data set into the input array in device memory 
     //
-    printf("Call : clEnqueueWriteBuffer ... [%ld , %ld , %d , %d , %d , [%f,%f,%f ...] , %d , %d , %d]\n",commands, input, CL_TRUE, 0, sizeof(float) * count, data[0], data[1], data[2], 0, NULL, NULL);                        
+    printf("Call : clEnqueueWriteBuffer ... [%ld , %ld , %d , %d , %d , [%f,%f,%f ...] , %d , %d , %d]\n",commands, input, CL_TRUE, 0, sizeof(float) * count, data[0], data[1], data[2], 0, NULL, NULL);  
+    clSetTypePointer(CL_FLOAT);                      
     err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * count, data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -1006,7 +1009,8 @@ int main(int argc, char** argv)
 
     // Read back the results from the device to verify the output
     //
-    printf("Call : clEnqueueReadBuffer ... [%ld , %ld , %d , %d , %d , %d , %d , %d , %d]\n",commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL);                                 
+    printf("Call : clEnqueueReadBuffer ... [%ld , %ld , %d , %d , %d , %d , %d , %d , %d]\n",commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL);  
+    clSetTypePointer(CL_FLOAT);                               
     err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL );  
     printf("Res : clEnqueueReadBuffer ... [%d ,  [%f,%f,%f ...] ]\n\n",err, results[0], results[1], results[2]);
     

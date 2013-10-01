@@ -58,6 +58,31 @@ cl_uint mask[maskWidth][maskHeight] =
 	{1, 1, 1}, {1, 0, 1}, {1, 1, 1},
 };
 
+#ifdef __EMSCRIPTEN__
+void print_stack() {
+    printf("\n___________________________________\n");
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
+#endif
+
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
+}
+
+
 ///
 // Function to check and handle OpenCL errors
 inline void 
@@ -65,6 +90,7 @@ checkErr(cl_int err, const char * name)
 {
     if (err != CL_SUCCESS) {
         std::cerr << "ERROR: " <<  name << " (" << err << ")" << std::endl;
+        end(EXIT_FAILURE);
         exit(EXIT_FAILURE);
     }
 }
@@ -75,9 +101,10 @@ void CL_CALLBACK contextCallback(
 	size_t cb,
 	void * user_data)
 {
-	std::cout << "Error occured during context use: " << errInfo << std::endl;
+	printf("Error occured during context use: %s\n",errInfo);
 	// should really perform any clearup and so on at this point
 	// but for simplicitly just exit.
+	end(EXIT_FAILURE);
 	exit(1);
 }
 
@@ -165,6 +192,7 @@ int main(int argc, char** argv)
 	// Check to see if we found at least one CPU device, otherwise return
 	if (deviceIDs == NULL) {
 		std::cout << "No CPU device found" << std::endl;
+		end(-1);
 		exit(-1);
 	}
 
@@ -249,6 +277,7 @@ int main(int argc, char** argv)
 #endif
 
 	// Now allocate buffers
+	clSetTypePointer(CL_UNSIGNED_INT32);
 	inputSignalBuffer = clCreateBuffer(
 		context,
 		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -256,7 +285,7 @@ int main(int argc, char** argv)
 		static_cast<void *>(inputSignal),
 		&errNum);
 	checkErr(errNum, "clCreateBuffer(inputSignal)");
-
+	clSetTypePointer(CL_UNSIGNED_INT32);
 	maskBuffer = clCreateBuffer(
 		context,
 		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -264,7 +293,7 @@ int main(int argc, char** argv)
 		static_cast<void *>(mask),
 		&errNum);
 	checkErr(errNum, "clCreateBuffer(mask)");
-
+	clSetTypePointer(CL_UNSIGNED_INT32);
 	outputSignalBuffer = clCreateBuffer(
 		context,
 		CL_MEM_WRITE_ONLY,
@@ -305,7 +334,7 @@ int main(int argc, char** argv)
 		NULL, 
 		NULL);
 	checkErr(errNum, "clEnqueueNDRangeKernel");
-    
+    clSetTypePointer(CL_UNSIGNED_INT32);
 	errNum = clEnqueueReadBuffer(
 		queue, 
 		outputSignalBuffer, 
@@ -329,7 +358,8 @@ int main(int argc, char** argv)
 	}
 
     std::cout << std::endl << "Executed program succesfully." << std::endl;
-
+	
+	end(0);
 	return 0;
 }
 

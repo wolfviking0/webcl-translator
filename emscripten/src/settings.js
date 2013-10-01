@@ -202,6 +202,9 @@ var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL impleme
 
 var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
 var OPENCL_STACK_TRACE = 0 // Print all the wecl call
+var OPENCL_PROFILE = 0 // Enable console.profile
+var OPENCL_CHECK_SET_POINTER = 0 // Check if set pointer was call before function taking (void *) parameter
+var OPENCL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
 var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
 
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime

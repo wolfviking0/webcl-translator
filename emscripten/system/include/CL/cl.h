@@ -573,6 +573,12 @@ clSetTypePointer(cl_channel_type /* pn_type */);
 extern CL_API_ENTRY cl_int
 webclPrintStackTrace(const char * /* param_value */,
                      cl_uint * /*param_value_size_ret*/);
+
+extern CL_API_ENTRY cl_int
+webclBeginProfile(const char * /* profiling_name */);
+
+extern CL_API_ENTRY cl_int
+webclEndProfile();
 #endif
 
 /* Platform API */

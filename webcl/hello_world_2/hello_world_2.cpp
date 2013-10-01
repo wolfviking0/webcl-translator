@@ -23,6 +23,30 @@
 #include <CL/cl.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+void print_stack() {
+    printf("\n___________________________________\n");
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
+#endif
+
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
+}
+
 ///
 //  Constants
 //
@@ -182,10 +206,13 @@ cl_program CreateProgram(cl_context context, cl_device_id device, const char* fi
 bool CreateMemObjects(cl_context context, cl_mem memObjects[3],
                       int *a, int *b)
 {
+    clSetTypePointer(CL_SIGNED_INT32);
     memObjects[0] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                    sizeof(int) * ARRAY_SIZE, a, NULL);
+    clSetTypePointer(CL_SIGNED_INT32);
     memObjects[1] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                    sizeof(int) * ARRAY_SIZE, b, NULL);
+    clSetTypePointer(CL_SIGNED_INT32);
     memObjects[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                    sizeof(int) * ARRAY_SIZE, NULL, NULL);
 
@@ -220,7 +247,8 @@ void Cleanup(cl_context context, cl_command_queue commandQueue,
 
     if (context != 0)
         clReleaseContext(context);
-
+    
+    end(0);
 }
 
 ///
@@ -335,6 +363,7 @@ int main(int argc, char** argv)
     }
 
     // Read the output buffer back to the Host
+    clSetTypePointer(CL_SIGNED_INT32);
     errNum = clEnqueueReadBuffer(commandQueue, memObjects[2], CL_TRUE,
                                  0, ARRAY_SIZE * sizeof(int), result,
                                  0, NULL, NULL);
