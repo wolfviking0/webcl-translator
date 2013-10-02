@@ -9,8 +9,9 @@ var LibraryOpenCL = {
     // Pointer type (void*)
     cl_pn_type: 0,
     cl_objects: {},
-
-#if OPENCL_DEBUG
+    
+#if OPENCL_PROFILE
+    cl_elapsed_time: 0,
     cl_objects_counter: 0,
 #endif
 
@@ -60,7 +61,7 @@ var LibraryOpenCL = {
       if (obj !== undefined) {
         Object.defineProperty(obj, "udid", { value : _id,writable : false });
         CL.cl_objects[_id]=obj;
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter++,
         console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
 #endif      
@@ -116,8 +117,9 @@ var LibraryOpenCL = {
 
         kernel_string = kernel_string.substr(_brace_end);
         
-        var _parameter = new Array(_kernel_parameter.length)
-        for (var i = 0; i < _kernel_parameter.length; i ++) {
+        var _kernel_parameter_length = _kernel_parameter.length;
+        var _parameter = new Array(_kernel_parameter_length);
+        for (var i = 0; i < _kernel_parameter_length; i ++) {
 
           var _value = 0;
           var _string = _kernel_parameter[i]
@@ -429,14 +431,19 @@ var LibraryOpenCL = {
   webclBeginProfile: function(name) {
 #if OPENCL_PROFILE
     // start profiling
-    console.profile(name);
+    console.profile(Pointer_stringify(name));
+    cl_elapsed_time = Date.now();
 #endif
     return webcl.SUCCESS;
   },
 
   webclEndProfile: function() {
 #if OPENCL_PROFILE
+    cl_elapsed_time = Date.now() - cl_elapsed_time;
     console.profileEnd();
+    
+    console.info("Profiling : WebCL Object : " + cl_objects_counter);
+    console.info("Profiling : Elapsed Time : " + cl_elapsed_time + " ms");
 #endif
     return webcl.SUCCESS;
   },
@@ -1092,9 +1099,9 @@ var LibraryOpenCL = {
 #endif        
         //CL.cl_objects[context].release();
         delete CL.cl_objects[context];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
-        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
 #endif      
 
 #if OPENCL_CHECK_VALID_OBJECT
@@ -1301,9 +1308,9 @@ var LibraryOpenCL = {
 #endif        
         //CL.cl_objects[command_queue].release();
         delete CL.cl_objects[command_queue];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
-        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
 #endif    
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -1801,9 +1808,9 @@ var LibraryOpenCL = {
 #endif        
         //CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
-        console.info("Counter HashMap Object Size : " + CL.cl_objects_counter);
+        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
 #endif    
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -2141,7 +2148,7 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[sampler].release();
         delete CL.cl_objects[sampler];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
 #endif   
@@ -2342,7 +2349,7 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[program].release();
         delete CL.cl_objects[program];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
 #endif   
@@ -2749,7 +2756,7 @@ var LibraryOpenCL = {
 #endif        
         //CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
 #endif   
@@ -3250,7 +3257,7 @@ var LibraryOpenCL = {
 #endif        
         CL.cl_objects[event].release();
         delete CL.cl_objects[event];
-#if OPENCL_DEBUG             
+#if OPENCL_PROFILE             
         CL.cl_objects_counter--,
         console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
 #endif   
