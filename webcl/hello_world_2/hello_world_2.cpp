@@ -266,6 +266,10 @@ int main(int argc, char** argv)
 
     int i;
 
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile hello_world_2 webcl");
+    #endif
+
     // Parse command line options
     //
     int use_gpu = 1;
@@ -382,6 +386,10 @@ int main(int argc, char** argv)
     std::cout << std::endl;
     std::cout << "Executed program succesfully." << std::endl;
     Cleanup(context, commandQueue, program, kernel, memObjects);
+
+    #ifdef __EMSCRIPTEN__
+        webclEndProfile();
+    #endif
 
     return 0;
 }

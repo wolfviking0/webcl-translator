@@ -772,6 +772,11 @@ int main(int argc, char** argv)
     
     int i;
 
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile hello_world webcl");
+    #endif
+
+
     // Parse command line options
     //
     int use_gpu = 1;
@@ -1047,6 +1052,10 @@ int main(int argc, char** argv)
     clReleaseKernel(kernel);
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
+
+    #ifdef __EMSCRIPTEN__
+        webclEndProfile();
+    #endif
 
     return end(EXIT_SUCCESS);
 }

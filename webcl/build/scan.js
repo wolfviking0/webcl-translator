@@ -1266,7 +1266,7 @@ function copyTempDouble(ptr) {
         }
         var _uuid = [];
         _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
-        for (var i = 1; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+        for (var i = 1; i < 3; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
         _id = _uuid.join('');
         // /!\ Call udid when you add inside cl_objects if you pass object in parameter
         if (obj !== undefined) {
@@ -1308,8 +1308,9 @@ function copyTempDouble(ptr) {
           _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
           var _kernel_parameter = _kernelsubstring.split(",");
           kernel_string = kernel_string.substr(_brace_end);
-          var _parameter = new Array(_kernel_parameter.length)
-          for (var i = 0; i < _kernel_parameter.length; i ++) {
+          var _kernel_parameter_length = _kernel_parameter.length;
+          var _parameter = new Array(_kernel_parameter_length);
+          for (var i = 0; i < _kernel_parameter_length; i ++) {
             var _value = 0;
             var _string = _kernel_parameter[i]
             // Adress space
@@ -12800,7 +12801,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = 'b943183e-ca16-4427-a6a7-cc348be20cec';
+    var PACKAGE_UUID = '4b7bcfcd-50d6-49cf-b28d-3cce1344acfa';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

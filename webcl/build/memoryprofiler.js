@@ -8,6 +8,9 @@ var MEMORYPROFILER_DETAILED_HEAP_USAGE = true;
 // CONFIGURATION: Allocations of memory blocks larger than this threshold will get their detailed callstack captured and logged at runtime.
 // Warning: This can be extremely slow. Set to a very very large value like 1024*1024*1024*4 to disable.
 var MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE = 1*1024;
+if (typeof new Error().stack === 'undefined') { // Disable callstack tracking if stack information is not available in this browser (at least IE and Safari don't have this)
+  MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE = 1024*1024*1024*4;
+}
 
 // CONFIGURATION: If true, we hook into Runtime.stackAlloc to be able to catch better estimate of the maximum used STACK space.
 // You might only ever want to set this to false for performance reasons. Since stack allocations may occur often, this might impact
@@ -21,6 +24,11 @@ var MEMORYPROFILER_UI_UPDATE_INTERVAL = 2000;
 // _free() and decrement the tracked usage accordingly.
 // E.g. memoryprofiler_ptr_to_size[address] returns the size of the heap pointer starting at 'address'.
 var memoryprofiler_ptr_to_size = {};
+
+// Conceptually same as the above array, except this one tracks only pointers that were allocated during the application preRun step, which
+// corresponds to the data added to the VFS with --preload-file.
+var memoryprofiler_prerun_mallocs = {};
+var memoryprofiler_page_prerun_is_finished = false; // Once set to true, preRun is finished and the above array is not touched anymore.
 
 // Stores an associative array of records HEAP ptr -> function string name so that we can identify each allocated pointer 
 // by the location in code the allocation occurred in.
@@ -82,6 +90,9 @@ function memoryprofiler_add_hooks() {
     
     // Remember the size of the allocated block to know how much will be _free()d later.
     memoryprofiler_ptr_to_size[ptr] = size;
+    if (!memoryprofiler_page_prerun_is_finished) { // Also track if this was a _malloc performed at preRun time.
+      memoryprofiler_prerun_mallocs[ptr] = size;
+    }
 
     // If this is a large enough allocation, track its detailed callstack info.
     if (size > MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE) {
@@ -113,6 +124,7 @@ function memoryprofiler_add_hooks() {
       var sz = memoryprofiler_ptr_to_size[ptr];
       memoryprofiler_total_mem_allocated -= sz;
       delete memoryprofiler_ptr_to_size[ptr];
+      delete memoryprofiler_prerun_mallocs[ptr]; // Also free if this happened to be a _malloc performed at preRun time.
       memoryprofiler_stacktop_watermark = Math.max(memoryprofiler_stacktop_watermark, STACKTOP);
 
       // Decrement per-alloc stats if this was a large allocation.
@@ -131,6 +143,18 @@ function memoryprofiler_add_hooks() {
   // Inject the memoryprofiler malloc() and free() hooks.
   _malloc = hookedMalloc;
   _free = hookedFree;
+  // Also inject the same pointers in the Module object.
+  Module['_malloc'] = hookedMalloc;
+  Module['_free'] = hookedFree;
+
+  // Add a tracking mechanism to detect when VFS loading is complete.
+  function detectPreloadComplete() {
+    memoryprofiler_page_prerun_is_finished = true;
+  }
+  Module['preRun'].push(detectPreloadComplete); // This is will be the last preRun task to be run. Assuming that nobody will add new tasks to preRun after this.
+  // BUG! Looks like if there is no filesystem to preload, the above detectPreloadComplete() handler will not get run! Therefore hook into the postRun event as well!
+  // This will get run, although in that case we will mistakenly track some allocations as if they were preRun allocs, even though they aren't. TODO: Come up with a proper fix.
+  Module['postRun'].push(detectPreloadComplete); // This is will be the last preRun task to be run. Assuming that nobody will add new tasks to preRun after this.
 
   if (MEMORYPROFILER_HOOK_STACKALLOC) {
     // Inject stack allocator.
@@ -233,11 +257,17 @@ function memoryprofiler_update_ui() {
   memoryprofiler.innerHTML += '. STACK_MAX: ' + toHex(STACK_MAX, width) + '.';
   memoryprofiler.innerHTML += '<br />STACK memory area used now (should be zero): ' + formatBytes(STACKTOP-STACK_BASE) + '. STACK watermark highest seen usage (yellow, approximate lower-bound!): ' + formatBytes(memoryprofiler_stacktop_watermark-STACK_BASE);
   
-  memoryprofiler.innerHTML += '<br />DYNAMIC memory area size (light blue bar): ' + formatBytes(DYNAMICTOP-DYNAMIC_BASE);
+  memoryprofiler.innerHTML += '<br />DYNAMIC memory area size (light green bar): ' + formatBytes(DYNAMICTOP-DYNAMIC_BASE);
   memoryprofiler.innerHTML += '. DYNAMIC_BASE: ' + toHex(DYNAMIC_BASE, width);
   memoryprofiler.innerHTML += '. DYNAMICTOP: ' + toHex(DYNAMICTOP, width) + '.';
-  memoryprofiler.innerHTML += '<br />DYNAMIC memory area used: ' + formatBytes(memoryprofiler_total_mem_allocated) + ' (' + (memoryprofiler_total_mem_allocated*100.0/(TOTAL_MEMORY-DYNAMIC_BASE)).toFixed(2) + '% of all free memory)';
+  memoryprofiler.innerHTML += '<br />DYNAMIC memory area used (shades of blue): ' + formatBytes(memoryprofiler_total_mem_allocated) + ' (' + (memoryprofiler_total_mem_allocated*100.0/(TOTAL_MEMORY-DYNAMIC_BASE)).toFixed(2) + '% of all free memory)';
   
+  var preloadedMemoryUsed = 0;
+  for(i in memoryprofiler_prerun_mallocs) {
+    preloadedMemoryUsed += memoryprofiler_prerun_mallocs[i]|0;
+  }
+  memoryprofiler.innerHTML += '<br />Preloaded memory used, most likely memory reserved by files in the virtual filesystem (shades of orange): ' + formatBytes(preloadedMemoryUsed);
+
   memoryprofiler.innerHTML += '<br />Unallocated HEAP space (white bar): ' + formatBytes(TOTAL_MEMORY - DYNAMICTOP);
   memoryprofiler.innerHTML += '<br /># of total malloc()s/free()s performed in app lifetime: ' + memoryprofiler_num_allocs + '/' + memoryprofiler_num_frees + ' (delta: ' + (memoryprofiler_num_allocs-memoryprofiler_num_frees) + ')';
   
@@ -257,22 +287,27 @@ function memoryprofiler_update_ui() {
   memoryprofiler_canvas_context.fillStyle="#FF0000";
   memoryprofiler_fillLine(STACK_BASE, STACKTOP);
   
-  memoryprofiler_canvas_context.fillStyle="#C0C0FF";
+  memoryprofiler_canvas_context.fillStyle="#70FF70";
   memoryprofiler_fillLine(DYNAMIC_BASE, DYNAMICTOP);
   
   if (MEMORYPROFILER_DETAILED_HEAP_USAGE) {
     // Print accurate map of individual allocations. This will show information about 
     // memory fragmentation and allocation sizes.
     // Warning: This will walk through all allocations, so it is slow!
-    var colors = [ "#0000FF", "#00FF00", "#FF0000" ];
-    var colorIndex = 0;
-    for(var i in memoryprofiler_ptr_to_size) {
-      memoryprofiler_canvas_context.fillStyle=colors[colorIndex];
-      colorIndex = (colorIndex+1)%colors.length;
-      var start = i|0;
-      var sz = memoryprofiler_ptr_to_size[start]|0;
-      memoryprofiler_fillLine(start, start+sz);
+    function printAllocsWithCyclingColors(colors, allocs) {
+      var colorIndex = 0;
+      for(var i in allocs) {
+        memoryprofiler_canvas_context.fillStyle=colors[colorIndex];
+        colorIndex = (colorIndex+1)%colors.length;
+        var start = i|0;
+        var sz = allocs[start]|0;
+        memoryprofiler_fillLine(start, start+sz);
+      }
     }
+    
+    printAllocsWithCyclingColors([ "#6699CC", "#003366", "#0000FF" ], memoryprofiler_ptr_to_size);
+    printAllocsWithCyclingColors([ "#FF9900", "#FFDD33" ], memoryprofiler_prerun_mallocs);
+
   } else {
     // Print only a single naive blob of individual allocations. This will not be accurate, but is constant-time.
     memoryprofiler_canvas_context.fillStyle="#0000FF";

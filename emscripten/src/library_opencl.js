@@ -45,7 +45,7 @@ var LibraryOpenCL = {
       var _uuid = [];
 
       _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
-      for (var i = 1; i < 7; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+      for (var i = 1; i < 6; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
 
       _id = _uuid.join('');
 
@@ -62,8 +62,8 @@ var LibraryOpenCL = {
         Object.defineProperty(obj, "udid", { value : _id,writable : false });
         CL.cl_objects[_id]=obj;
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter++,
-        console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
+        CL.cl_objects_counter++;
+        //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
 #endif      
       }
 
@@ -432,18 +432,22 @@ var LibraryOpenCL = {
 #if OPENCL_PROFILE
     // start profiling
     console.profile(Pointer_stringify(name));
-    cl_elapsed_time = Date.now();
+    CL.cl_elapsed_time = Date.now();
 #endif
     return webcl.SUCCESS;
   },
 
   webclEndProfile: function() {
 #if OPENCL_PROFILE
-    cl_elapsed_time = Date.now() - cl_elapsed_time;
+    CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
     console.profileEnd();
     
-    console.info("Profiling : WebCL Object : " + cl_objects_counter);
-    console.info("Profiling : Elapsed Time : " + cl_elapsed_time + " ms");
+    console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
+    var count = 0;
+    for (obj in CL.cl_objects) {
+      console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
+    }
+    console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
 #endif
     return webcl.SUCCESS;
   },
@@ -1100,8 +1104,8 @@ var LibraryOpenCL = {
         //CL.cl_objects[context].release();
         delete CL.cl_objects[context];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
 #endif      
 
 #if OPENCL_CHECK_VALID_OBJECT
@@ -1309,8 +1313,8 @@ var LibraryOpenCL = {
         //CL.cl_objects[command_queue].release();
         delete CL.cl_objects[command_queue];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
 #endif    
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -1809,8 +1813,8 @@ var LibraryOpenCL = {
         //CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
 #endif    
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -2149,8 +2153,8 @@ var LibraryOpenCL = {
         CL.cl_objects[sampler].release();
         delete CL.cl_objects[sampler];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
 #endif   
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -2350,8 +2354,8 @@ var LibraryOpenCL = {
         CL.cl_objects[program].release();
         delete CL.cl_objects[program];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
 #endif   
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -2757,8 +2761,8 @@ var LibraryOpenCL = {
         //CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
 #endif   
 #if OPENCL_CHECK_VALID_OBJECT
       } else {
@@ -3258,8 +3262,8 @@ var LibraryOpenCL = {
         CL.cl_objects[event].release();
         delete CL.cl_objects[event];
 #if OPENCL_PROFILE             
-        CL.cl_objects_counter--,
-        console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
 #endif   
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
