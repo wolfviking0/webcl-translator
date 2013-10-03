@@ -227,12 +227,14 @@ var Types = {
 
   needAnalysis: {}, // Types noticed during parsing, that need analysis
 
+  hasInlineJS: false, // whether the program has inline JS anywhere
+
   // Set to true if we actually use precise i64 math: If PRECISE_I64_MATH is set, and also such math is actually
   // needed (+,-,*,/,% - we do not need it for bitops), or PRECISE_I64_MATH is 2 (forced)
   preciseI64MathUsed: (PRECISE_I64_MATH == 2)
 };
 
-var firstTableIndex = (ASM_JS ? 2*RESERVED_FUNCTION_POINTERS : 0) + 2;
+var firstTableIndex = FUNCTION_POINTER_ALIGNMENT * ((ASM_JS ? RESERVED_FUNCTION_POINTERS : 0) + 1);
 
 var Functions = {
   // All functions that will be implemented in this file. Maps id to signature
@@ -285,7 +287,7 @@ var Functions = {
       ret = this.indexedFunctions[ident];
       if (!ret) {
         ret = this.nextIndex;
-        this.nextIndex += 2; // Need to have indexes be even numbers, see |polymorph| test
+        this.nextIndex += FUNCTION_POINTER_ALIGNMENT;
         this.indexedFunctions[ident] = ret;
       }
       ret = ret.toString();
@@ -371,27 +373,17 @@ var Functions = {
           }
         }
       }
-      if (table.length > 20) {
-        // add some newlines in the table, for readability
-        var j = 10;
-        while (j+10 < table.length) {
-          table[j] += '\n';
-          j += 10;
-        }
-      }
       maxTable = Math.max(maxTable, table.length);
     }
     if (ASM_JS) maxTable = ceilPowerOfTwo(maxTable);
     for (var t in tables) {
       if (t == 'pre') continue;
       var table = tables[t];
-      if (ASM_JS) {
-        // asm function table mask must be power of two
-        // if nonaliasing, then standardize function table size, to avoid aliasing pointers through the &M mask (in a small table using a big index)
-        var fullSize = ALIASING_FUNCTION_POINTERS ? ceilPowerOfTwo(table.length) : maxTable;
-        for (var i = table.length; i < fullSize; i++) {
-          table[i] = 0;
-        }
+      // asm function table mask must be power of two, and non-asm must be aligned
+      // if nonaliasing, then standardize function table size, to avoid aliasing pointers through the &M mask (in a small table using a big index)
+      var fullSize = ASM_JS ? (ALIASING_FUNCTION_POINTERS ? ceilPowerOfTwo(table.length) : maxTable) : ((table.length+FUNCTION_POINTER_ALIGNMENT-1)&-FUNCTION_POINTER_ALIGNMENT);
+      for (var i = table.length; i < fullSize; i++) {
+        table[i] = 0;
       }
       // finalize table
       var indices = table.toString().replace('"', '');
@@ -419,14 +411,14 @@ var LibraryManager = {
 
   load: function() {
     if (this.library) return;
-
+    
     var library_opencl = 'library_opencl.js';
 
     if (OPENCL_OLD_VERSION) { 
       library_opencl = 'library_old_opencl.js';
     }
 
-    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_memfs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_cuda.js', library_opencl].concat(additionalLibraries);
+    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_idbfs.js', 'library_memfs.js', 'library_nodefs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_cuda.js', library_opencl].concat(additionalLibraries);
     for (var i = 0; i < libraries.length; i++) {
       eval(processMacros(preprocess(read(libraries[i]))));
     }
@@ -473,7 +465,10 @@ var PassManager = {
       }));
     } else if (phase == 'funcs') {
       print('\n//FORWARDED_DATA:' + JSON.stringify({
-        Types: { preciseI64MathUsed: Types.preciseI64MathUsed },
+        Types: {
+          hasInlineJS: Types.hasInlineJS,
+          preciseI64MathUsed: Types.preciseI64MathUsed
+        },
         Functions: {
           blockAddresses: Functions.blockAddresses,
           indexedFunctions: Functions.indexedFunctions,
@@ -507,5 +502,9 @@ var PassManager = {
     }));
     */
   }
+};
+
+var Framework = {
+  currItem: null
 };
 
