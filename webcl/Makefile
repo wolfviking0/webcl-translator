@@ -12,7 +12,7 @@ define chdir
    $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
 endef
 
-OLD = 0
+OLD=0
 
 ifeq ($(OLD),1)
 FOLDER=old
@@ -24,9 +24,9 @@ endif
 $(info )
 $(info )
 
-DEBUG = -O0 -s OPENCL_OLD_LIBRARY=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
+DEBUG = -O0 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
 
-NO_DEBUG = -02 -s OPENCL_OLD_LIBRARY=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=0 -s OPENCL_DEBUG=0 -s OPENCL_STACK_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
+NO_DEBUG = -02 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=0 -s OPENCL_DEBUG=0 -s OPENCL_STACK_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
 
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#
@@ -51,7 +51,7 @@ all: \
 
 hello_world_sample:
 	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(NO_DEBUG) -o ../build/$(FOLDER)/hello_world.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(DEBUG) -o ../build/$(FOLDER)/hello_world.js
 
 hello_world_cuda_sample:
 	$(call chdir,hello_world_cuda/)

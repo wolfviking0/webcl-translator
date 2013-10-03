@@ -366,11 +366,11 @@ var LibraryOpenCL = {
 
   webclPrintStackTrace: function(param_value,param_value_size) {
     {{{ makeSetValue('param_value_size', '0', '0', 'i32') }}}
-    return webcl.SUCCESS;
+    return 0;
   },
   
   clSetTypePointer: function(pn_type) {
-    return webcl.SUCCESS;
+    return 0;
   },  
   
   clGetPlatformIDs: function(num_entries,platform_ids,num_platforms) {
