@@ -135,7 +135,7 @@ static int                              WorkGroupItems = 32;
 static int Width                        = WIDTH;
 static int Height                       = HEIGHT;
 
-static int Animated                     = 0;
+static int Animated                     = 1;
 static int Update                       = 1;
 
 static float Epsilon                    = 0.003f;
@@ -194,7 +194,7 @@ static uint64_t
 GetCurrentTime()
 {
     #ifdef __EMSCRIPTEN__
-        return (emscripten_get_now() * 1000000);
+        return emscripten_get_now();
     #else
         return mach_absolute_time();
     #endif
@@ -204,7 +204,7 @@ static double
 SubtractTime( uint64_t uiEndTime, uint64_t uiStartTime )
 {
     #ifdef __EMSCRIPTEN__
-        return 1e-9 * (uiEndTime - uiStartTime);
+        return 1e-3 * (uiEndTime - uiStartTime);
     #else
         static double s_dConversion = 0.0;
         uint64_t uiDifference = uiEndTime - uiStartTime;
@@ -643,6 +643,7 @@ CreateComputeResult(void)
         clReleaseMemObject(ComputeResult);
     ComputeResult = 0;
     
+    clSetTypePointer(CL_UNSIGNED_INT8);
     ComputeResult = clCreateBuffer(ComputeContext, CL_MEM_WRITE_ONLY, TextureTypeSize * 4 * TextureWidth * TextureHeight, NULL, NULL);
     if (!ComputeResult)
     {
@@ -1073,6 +1074,7 @@ ReportStats(
 	}    
 }
 
+//int count = 500;
 static void
 Display(void)
 {
@@ -1110,6 +1112,14 @@ Display(void)
         DrawText(TextOffset[0], TextOffset[1], 1, (Animated == 0) ? "Press space to animate" : " ");
     #endif
     glutSwapBuffers();
+
+    // if (count-- == 0){
+    // #ifdef __EMSCRIPTEN__
+    //     webclEndProfile();
+    // #endif
+    //     exit(0);
+    // }
+
 }
 
 static void 
@@ -1143,6 +1153,9 @@ void Keyboard( unsigned char key, int x, int y )
    switch( key )
    {
       case 27:
+#ifdef __EMSCRIPTEN__
+         webclEndProfile();
+#endif
          exit(0);
          break;
 
@@ -1235,6 +1248,10 @@ void Idle(void)
 
 int main(int argc, char** argv)
 {
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile qjulia webcl");
+    #endif
+
     // Parse command line options
     //
     int i;
@@ -1273,9 +1290,6 @@ int main(int argc, char** argv)
       	
         printf("Starting event loop...\n");
 
-        // for (int i = 0; i < 10 ; i++) {
-        //     Display();
-        // }
         glutMainLoop();     
     }
 

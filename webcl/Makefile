@@ -26,7 +26,7 @@ $(info )
 
 DEBUG = -O0 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_STACK_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
 
-NO_DEBUG = -02 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=0 -s OPENCL_DEBUG=0 -s OPENCL_STACK_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
+NO_DEBUG = -02 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_STACK_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
 
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#
@@ -51,7 +51,7 @@ all: \
 
 hello_world_sample:
 	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(DEBUG) -o ../build/$(FOLDER)/hello_world.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(NO_DEBUG) -o ../build/$(FOLDER)/hello_world.js
 
 hello_world_cuda_sample:
 	$(call chdir,hello_world_cuda/)
@@ -72,9 +72,6 @@ convolution_sample:
 	-o ../build/$(FOLDER)/convolution.js
 
 # Need memory 1024 * 1024 * 20
-# V1 :
-# V2 : OPENCL_CHECK_VALID_OBJECT=0 9.69 ms / 9.71 ms / 9.70 ms
-# V2 : OPENCL_CHECK_VALID_OBJECT=1 9.76 ms / 9.81 ms / 10.09 ms
 scan_sample:
 	$(call chdir,scan/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(NO_DEBUG) \
@@ -89,7 +86,7 @@ reduce_sample:
 
 qjulia_sample:
 	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(NO_DEBUG) \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/$(FOLDER)/qjulia.js
 
@@ -113,7 +110,7 @@ fft_sample:
 	
 dxt_sample:
 	$(call chdir,dxtcompressor/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/dxtcompressor_worker.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc $(DEBUG) \
 	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
 	-o ../build/$(FOLDER)/dxtcompressor.js
