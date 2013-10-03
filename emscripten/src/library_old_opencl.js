@@ -3,6 +3,7 @@
 var LibraryOpenCL = {  
   $CL__deps: ['$GL'],
   $CL: {
+    cl_elapsed_time: 0,
     address_space: {GENERAL:0, GLOBAL:1, LOCAL:2, CONSTANT:4, PRIVATE:8},
     data_type: {FLOAT:16,INT:32,UINT:64},
     device_infos: {},
@@ -345,16 +346,32 @@ var LibraryOpenCL = {
     },
   },
   
-#if OPENCL_STACK_TRACE
-  webclPrintStackTrace: function(stack_string, stack_size) {
-    var size = {{{ makeGetValue('stack_size', '0', 'i32') }}} ;
-    if (size == 0) {
-      {{{ makeSetValue('stack_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Num of devices */;
-    } else {
-      writeStringToMemory(CL.stack_trace, stack_string);
-    }
-  },
+  webclBeginProfile: function(name) {
+#if OPENCL_PROFILE
+    // start profiling
+    console.profile(Pointer_stringify(name));
+    CL.cl_elapsed_time = Date.now();
 #endif
+    return webcl.SUCCESS;
+  },
+
+  webclEndProfile: function() {
+#if OPENCL_PROFILE
+    CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
+    console.profileEnd();
+    console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
+#endif
+    return webcl.SUCCESS;
+  },
+
+  webclPrintStackTrace: function(param_value,param_value_size) {
+    {{{ makeSetValue('param_value_size', '0', '0', 'i32') }}}
+    return webcl.SUCCESS;
+  },
+  
+  clSetTypePointer: function(pn_type) {
+    return webcl.SUCCESS;
+  },  
   
   clGetPlatformIDs: function(num_entries,platform_ids,num_platforms) {
     
