@@ -2,6 +2,7 @@
 var SAMPLE = 0;
 var MEMORY = 0;
 var USE_GL = 0;
+var OLD = "latest";
 var MODE = "cpu";
 var TITLE = "";
 var PARAM = [];
@@ -26,6 +27,8 @@ for (var i = 0; i < urlParts.length; i++) {
     USE_GL = eltParts[1] == "off" ? 0 : 1;
   } else if (eltParts[0].toLowerCase() == "memory") {
     MEMORY = eltParts[1] == "off" ? 0 : 1;
+  } else if (eltParts[0].toLowerCase() == "old") {
+    OLD = eltParts[1] == "off" ? "latest" : "old";    
   } else if (eltParts[0].toLowerCase() == "title") {
     TITLE = eltParts[1];
     TITLE = TITLE.replace(/%20/gi, " ");
@@ -43,7 +46,7 @@ for (var i = 0; i < urlParts.length; i++) {
 function includeJS(jsFile) {
   var fileref=document.createElement('script');
   fileref.setAttribute("type","text/javascript");
-  fileref.setAttribute("src", jsFile);
+  fileref.setAttribute("src", OLD+"/"+jsFile);
   if (typeof fileref!="undefined") {
     document.getElementsByTagName("head")[0].appendChild(fileref);
   }
