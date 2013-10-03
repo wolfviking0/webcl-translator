@@ -5931,7 +5931,7 @@ function copyTempDouble(ptr) {
       // start profiling
       console.profile(Pointer_stringify(name));
       CL.cl_elapsed_time = Date.now();
-      return webcl.SUCCESS;
+      return 0;
     }
   function _strstr(ptr1, ptr2) {
       var check = 0, start;
@@ -6199,7 +6199,7 @@ function copyTempDouble(ptr) {
         console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
       }
       console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
-      return webcl.SUCCESS;
+      return 0;
     }
   function ___cxa_call_unexpected(exception) {
       Module.printErr('Unexpected exception thrown, this is not properly supported - aborting');
@@ -68499,7 +68499,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/hello_world_2.data';
     var REMOTE_PACKAGE_NAME = 'hello_world_2.data';
-    var PACKAGE_UUID = 'f194681a-206a-4c61-8f49-f779514bcead';
+    var PACKAGE_UUID = 'eac8488b-300a-42d5-8995-56e5af92628f';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

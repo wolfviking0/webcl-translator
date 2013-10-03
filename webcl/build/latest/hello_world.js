@@ -4613,7 +4613,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _webclBeginProfile(name) {
-      return webcl.SUCCESS;
+      return 0;
     }
   function _strstr(ptr1, ptr2) {
       var check = 0, start;
@@ -5276,7 +5276,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _webclEndProfile() {
-      return webcl.SUCCESS;
+      return 0;
     }
   function _abort() {
       Module['abort']();

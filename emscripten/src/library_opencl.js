@@ -434,7 +434,7 @@ var LibraryOpenCL = {
     console.profile(Pointer_stringify(name));
     CL.cl_elapsed_time = Date.now();
 #endif
-    return webcl.SUCCESS;
+    return 0;
   },
 
   webclEndProfile: function() {
@@ -449,7 +449,7 @@ var LibraryOpenCL = {
     }
     console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
 #endif
-    return webcl.SUCCESS;
+    return 0;
   },
 
   webclPrintStackTrace: function(param_value,param_value_size) {

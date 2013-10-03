@@ -4844,7 +4844,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;    
     }
   function _webclBeginProfile(name) {
-      return webcl.SUCCESS;
+      return 0;
     }
   function _strstr(ptr1, ptr2) {
       var check = 0, start;
@@ -5273,7 +5273,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _webclEndProfile() {
-      return webcl.SUCCESS;
+      return 0;
     }
   function _open(path, oflag, varargs) {
       // int open(const char *path, int oflag, ...);
@@ -13376,7 +13376,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = 'f9a9eb63-6853-4eb9-9db6-5dd8fea884d0';
+    var PACKAGE_UUID = '449709a3-8ec1-4b71-8d3f-bbb89343a668';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
