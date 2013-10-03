@@ -1,4 +1,4 @@
-// Note: For maximum-speed code, see "Optimizing Code" on the Emscripten wiki, https://github.com/kripken/emscripten/wiki/Optimizing-Code
+// Note: Some Emscripten settings will significantly limit the speed of the generated code.
 // Note: Some Emscripten settings may limit the speed of the generated code.
 // The Module object: Our interface to the outside world. We import
 // and export values on it, and do the work to get that through
@@ -91,22 +91,25 @@ else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (typeof arguments != 'undefined') {
     Module['arguments'] = arguments;
   }
-  if (ENVIRONMENT_IS_WEB) {
+  if (typeof console !== 'undefined') {
     Module['print'] = function(x) {
       console.log(x);
     };
     Module['printErr'] = function(x) {
       console.log(x);
     };
-    this['Module'] = Module;
-  } else if (ENVIRONMENT_IS_WORKER) {
-    // We can do very little here...
+  } else {
+    // Probably a worker, and without console.log. We can do very little here...
     var TRY_USE_DUMP = false;
     Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
       dump(x);
     }) : (function(x) {
       // self.postMessage(x); // enable this if you want stdout to be sent as messages
     }));
+  }
+  if (ENVIRONMENT_IS_WEB) {
+    this['Module'] = Module;
+  } else {
     Module['load'] = importScripts;
   }
 }
@@ -161,8 +164,7 @@ var Runtime = {
     if (isNumber(target) && isNumber(quantum)) {
       return Math.ceil(target/quantum)*quantum;
     } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      var logg = log2(quantum);
-      return '((((' +target + ')+' + (quantum-1) + ')>>' + logg + ')<<' + logg + ')';
+      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
     }
     return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
   },
@@ -196,27 +198,24 @@ var Runtime = {
     var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
     return l + h;
   },
-  getNativeTypeSize: function (type, quantumSize) {
-    if (Runtime.QUANTUM_SIZE == 1) return 1;
-    var size = {
-      '%i1': 1,
-      '%i8': 1,
-      '%i16': 2,
-      '%i32': 4,
-      '%i64': 8,
-      "%float": 4,
-      "%double": 8
-    }['%'+type]; // add '%' since float and double confuse Closure compiler as keys, and also spidermonkey as a compiler will remove 's from '_i8' etc
-    if (!size) {
-      if (type.charAt(type.length-1) == '*') {
-        size = Runtime.QUANTUM_SIZE; // A pointer
-      } else if (type[0] == 'i') {
-        var bits = parseInt(type.substr(1));
-        assert(bits % 8 == 0);
-        size = bits/8;
+  getNativeTypeSize: function (type) {
+    switch (type) {
+      case 'i1': case 'i8': return 1;
+      case 'i16': return 2;
+      case 'i32': return 4;
+      case 'i64': return 8;
+      case 'float': return 4;
+      case 'double': return 8;
+      default: {
+        if (type[type.length-1] === '*') {
+          return Runtime.QUANTUM_SIZE; // A pointer
+        } else if (type[0] === 'i') {
+          var bits = parseInt(type.substr(1));
+          assert(bits % 8 === 0);
+          return bits/8;
+        }
       }
     }
-    return size;
   },
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
@@ -270,7 +269,11 @@ var Runtime = {
           // and it adds no size
           // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
           size = 0;
-          alignSize = type.alignSize || QUANTUM_SIZE;
+          if (Types.types[field]) {
+            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+          } else {
+            alignSize = type.alignSize || QUANTUM_SIZE;
+          }
         } else {
           size = Types.types[field].flatSize;
           alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
@@ -339,16 +342,19 @@ var Runtime = {
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
+      assert(args.length == sig.length-1);
       return FUNCTION_TABLE[ptr].apply(null, args);
     } else {
+      assert(sig.length == 1);
       return FUNCTION_TABLE[ptr]();
     }
   },
   addFunction: function (func) {
     var table = FUNCTION_TABLE;
     var ret = table.length;
+    assert(ret % 2 === 0);
     table.push(func);
-    table.push(0);
+    for (var i = 0; i < 2-1; i++) table.push(0);
     return ret;
   },
   removeFunction: function (index) {
@@ -425,11 +431,11 @@ var Runtime = {
       return ret;
     }
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = ((((STACKTOP)+7)>>3)<<3); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + size)|0;STATICTOP = ((((STATICTOP)+7)>>3)<<3); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + size)|0;DYNAMICTOP = ((((DYNAMICTOP)+7)>>3)<<3); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((STACKTOP|0) < (STACK_MAX|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
   alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
-  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? (((low)>>>(0))+(((high)>>>(0))*4294967296)) : (((low)>>>(0))+(((high)|(0))*4294967296))); return ret; },
+  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((low>>>0)+((high>>>0)*4294967296)) : ((low>>>0)+((high|0)*4294967296))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
   __dummy__: 0
@@ -491,11 +497,10 @@ function ccallFunc(func, returnType, argTypes, args) {
   function toC(value, type) {
     if (type == 'string') {
       if (value === null || value === undefined || value === 0) return 0; // null string
-      if (!stack) stack = Runtime.stackSave();
-      var ret = Runtime.stackAlloc(value.length+1);
-      writeStringToMemory(value, ret);
-      return ret;
-    } else if (type == 'array') {
+      value = intArrayFromString(value);
+      type = 'array';
+    }
+    if (type == 'array') {
       if (!stack) stack = Runtime.stackSave();
       var ret = Runtime.stackAlloc(value.length);
       writeArrayToMemory(value, ret);
@@ -643,6 +648,7 @@ function allocate(slab, types, allocator, ptr) {
       i++;
       continue;
     }
+    assert(type, 'Must know what type to store in allocate!');
     if (type == 'i64') type = 'i32'; // special case: we have one i32 here, and one i32 later
     setValue(ret+i, curr, type);
     // no need to look up size unless type changes, so cache it
@@ -662,6 +668,7 @@ function Pointer_stringify(ptr, /* optional */ length) {
   var t;
   var i = 0;
   while (1) {
+    assert(ptr + i < TOTAL_MEMORY);
     t = HEAPU8[(((ptr)+(i))|0)];
     if (t >= 128) hasUtf = true;
     else if (t == 0 && !length) break;
@@ -683,16 +690,83 @@ function Pointer_stringify(ptr, /* optional */ length) {
   }
   var utf8 = new Runtime.UTF8Processor();
   for (i = 0; i < length; i++) {
+    assert(ptr + i < TOTAL_MEMORY);
     t = HEAPU8[(((ptr)+(i))|0)];
     ret += utf8.processCChar(t);
   }
   return ret;
 }
 Module['Pointer_stringify'] = Pointer_stringify;
+// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF16ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var codeUnit = HEAP16[(((ptr)+(i*2))>>1)];
+    if (codeUnit == 0)
+      return str;
+    ++i;
+    // fromCharCode constructs a character from a UTF-16 code unit, so we can pass the UTF16 string right through.
+    str += String.fromCharCode(codeUnit);
+  }
+}
+Module['UTF16ToString'] = UTF16ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+function stringToUTF16(str, outPtr) {
+  for(var i = 0; i < str.length; ++i) {
+    // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
+    var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
+    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP16[(((outPtr)+(str.length*2))>>1)]=0
+}
+Module['stringToUTF16'] = stringToUTF16;
+// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF32ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var utf32 = HEAP32[(((ptr)+(i*4))>>2)];
+    if (utf32 == 0)
+      return str;
+    ++i;
+    // Gotcha: fromCharCode constructs a character from a UTF-16 encoded code (pair), not from a Unicode code point! So encode the code point to UTF-16 for constructing.
+    if (utf32 >= 0x10000) {
+      var ch = utf32 - 0x10000;
+      str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
+    } else {
+      str += String.fromCharCode(utf32);
+    }
+  }
+}
+Module['UTF32ToString'] = UTF32ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
+// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+function stringToUTF32(str, outPtr) {
+  var iChar = 0;
+  for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
+    // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code unit, not a Unicode code point of the character! We must decode the string to UTF-32 to the heap.
+    var codeUnit = str.charCodeAt(iCodeUnit); // possibly a lead surrogate
+    if (codeUnit >= 0xD800 && codeUnit <= 0xDFFF) {
+      var trailSurrogate = str.charCodeAt(++iCodeUnit);
+      codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
+    }
+    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit
+    ++iChar;
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP32[(((outPtr)+(iChar*4))>>2)]=0
+}
+Module['stringToUTF32'] = stringToUTF32;
 // Memory management
 var PAGE_SIZE = 4096;
 function alignMemoryPage(x) {
-  return ((x+4095)>>12)<<12;
+  return (x+4095)&-4096;
 }
 var HEAP;
 var HEAP8, HEAPU8, HEAP16, HEAPU16, HEAP32, HEAPU32, HEAPF32, HEAPF64;
@@ -700,29 +774,14 @@ var STATIC_BASE = 0, STATICTOP = 0, staticSealed = false; // static area
 var STACK_BASE = 0, STACKTOP = 0, STACK_MAX = 0; // stack area
 var DYNAMIC_BASE = 0, DYNAMICTOP = 0; // dynamic area handled by sbrk
 function enlargeMemory() {
-  // TOTAL_MEMORY is the current size of the actual array, and DYNAMICTOP is the new top.
-  while (TOTAL_MEMORY <= DYNAMICTOP) { // Simple heuristic. Override enlargeMemory() if your program has something more optimal for it
-    TOTAL_MEMORY = alignMemoryPage(2*TOTAL_MEMORY);
-  }
-  assert(TOTAL_MEMORY <= Math.pow(2, 30)); // 2^30==1GB is a practical maximum - 2^31 is already close to possible negative numbers etc.
-  var oldHEAP8 = HEAP8;
-  var buffer = new ArrayBuffer(TOTAL_MEMORY);
-  Module['HEAP8'] = HEAP8 = new Int8Array(buffer);
-  Module['HEAP16'] = HEAP16 = new Int16Array(buffer);
-  Module['HEAP32'] = HEAP32 = new Int32Array(buffer);
-  Module['HEAPU8'] = HEAPU8 = new Uint8Array(buffer);
-  Module['HEAPU16'] = HEAPU16 = new Uint16Array(buffer);
-  Module['HEAPU32'] = HEAPU32 = new Uint32Array(buffer);
-  Module['HEAPF32'] = HEAPF32 = new Float32Array(buffer);
-  Module['HEAPF64'] = HEAPF64 = new Float64Array(buffer);
-  HEAP8.set(oldHEAP8);
+  abort('Cannot enlarge memory arrays. Either (1) compile with -s TOTAL_MEMORY=X with X higher than the current value ' + TOTAL_MEMORY + ', (2) compile with ALLOW_MEMORY_GROWTH which adjusts the size at runtime but prevents some optimizations, or (3) set Module.TOTAL_MEMORY before the program runs.');
 }
 var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 // Initialize the runtime's memory
 // check for full engine support (use string 'subarray' to avoid closure compiler confusion)
-assert(!!Int32Array && !!Float64Array && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
+assert(typeof Int32Array !== 'undefined' && typeof Float64Array !== 'undefined' && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
        'Cannot fallback to non-typed array case: Code is too specialized');
 var buffer = new ArrayBuffer(TOTAL_MEMORY);
 HEAP8 = new Int8Array(buffer);
@@ -840,6 +899,7 @@ function intArrayToString(array) {
   for (var i = 0; i < array.length; i++) {
     var chr = array[i];
     if (chr > 0xFF) {
+        assert(false, 'Character code ' + chr + ' (' + String.fromCharCode(chr) + ')  at offset ' + i + ' not in 0x00-0xFF.');
       chr &= 0xFF;
     }
     ret.push(String.fromCharCode(chr));
@@ -864,6 +924,14 @@ function writeArrayToMemory(array, buffer) {
   }
 }
 Module['writeArrayToMemory'] = writeArrayToMemory;
+function writeAsciiToMemory(str, buffer, dontAddNull) {
+  for (var i = 0; i < str.length; i++) {
+    assert(str.charCodeAt(i) === str.charCodeAt(i)&0xff);
+    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i)
+  }
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0
+}
+Module['writeAsciiToMemory'] = writeAsciiToMemory;
 function unSign(value, bits, ignore, sig) {
   if (value >= 0) {
     return value;
@@ -901,8 +969,8 @@ Math.imul = Math['imul'];
 // the dependencies are met.
 var runDependencies = 0;
 var runDependencyTracking = {};
-var calledInit = false, calledRun = false;
 var runDependencyWatcher = null;
+var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
 function addRunDependency(id) {
   runDependencies++;
   if (Module['monitorRunDependencies']) {
@@ -911,6 +979,22 @@ function addRunDependency(id) {
   if (id) {
     assert(!runDependencyTracking[id]);
     runDependencyTracking[id] = 1;
+    if (runDependencyWatcher === null && typeof setInterval !== 'undefined') {
+      // Check for missing dependencies every few seconds
+      runDependencyWatcher = setInterval(function() {
+        var shown = false;
+        for (var dep in runDependencyTracking) {
+          if (!shown) {
+            shown = true;
+            Module.printErr('still waiting on run dependencies:');
+          }
+          Module.printErr('dependency: ' + dep);
+        }
+        if (shown) {
+          Module.printErr('(end of list)');
+        }
+      }, 10000);
+    }
   } else {
     Module.printErr('warning: run dependency added without ID');
   }
@@ -931,36 +1015,23 @@ function removeRunDependency(id) {
     if (runDependencyWatcher !== null) {
       clearInterval(runDependencyWatcher);
       runDependencyWatcher = null;
-    } 
-    // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
-    if (!calledRun && shouldRunNow) run();
+    }
+    if (dependenciesFulfilled) {
+      var callback = dependenciesFulfilled;
+      dependenciesFulfilled = null;
+      callback(); // can add another dependenciesFulfilled
+    }
   }
 }
 Module['removeRunDependency'] = removeRunDependency;
 Module["preloadedImages"] = {}; // maps url to image data
 Module["preloadedAudios"] = {}; // maps url to audio data
-function loadMemoryInitializer(filename) {
-  function applyData(data) {
-    HEAPU8.set(data, STATIC_BASE);
-  }
-  // always do this asynchronously, to keep shell and web as similar as possible
-  addOnPreRun(function() {
-    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
-      applyData(Module['readBinary'](filename));
-    } else {
-      Browser.asyncLoad(filename, function(data) {
-        applyData(data);
-      }, function(data) {
-        throw 'could not load memory initializer ' + filename;
-      });
-    }
-  });
-}
+var memoryInitializer = null;
 // === Body ===
 STATIC_BASE = 8;
-STATICTOP = STATIC_BASE + 2280;
+STATICTOP = STATIC_BASE + 2344;
 /* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } });
-/* memory initializer */ allocate([69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,0,0,0,0,0,0,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,0,0,0,0,0,0,73,110,118,97,108,105,100,32,99,104,97,110,110,101,108,32,99,111,117,110,116,32,115,112,101,99,105,102,105,101,100,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,112,97,114,116,105,97,108,32,115,117,109,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,0,0,0,0,0,0,0,35,100,101,102,105,110,101,32,79,80,69,82,65,84,73,79,78,83,0,0,0,0,0,0,35,100,101,102,105,110,101,32,71,82,79,85,80,95,83,73,90,69,0,0,0,0,0,0,71,80,85,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,105,110,116,0,0,0,0,0,105,110,116,52,0,0,0,0,114,0,0,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,102,32,33,61,32,37,102,10,0,0,0,0,105,110,116,50,0,0,0,0,69,114,114,111,114,58,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,100,32,33,61,32,37,100,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,52,0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,32,0,0,0,0,0,0,0,84,105,109,105,110,103,32,37,100,32,105,116,101,114,97,116,105,111,110,115,32,111,102,32,114,101,100,117,99,116,105,111,110,32,119,105,116,104,32,37,100,32,101,108,101,109,101,110,116,115,32,111,102,32,116,121,112,101,32,37,115,37,115,46,46,46,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,102,108,111,97,116,0,0,0,80,97,115,115,91,37,52,100,93,32,71,108,111,98,97,108,91,37,52,100,93,32,76,111,99,97,108,91,37,52,100,93,32,71,114,111,117,112,115,91,37,52,100,93,32,87,111,114,107,73,116,101,109,115,91,37,52,100,93,32,79,112,101,114,97,116,105,111,110,115,91,37,100,93,32,69,110,116,114,105,101,115,91,37,100,93,10,0,114,101,100,117,99,101,0,0,37,115,32,40,37,100,41,32,10,37,115,32,40,37,100,41,10,10,37,115,10,0,0,0,102,108,111,97,116,52,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,95,107,101,114,110,101,108,46,99,108,0,0,114,101,100,117,99,101,95,105,110,116,95,107,101,114,110,101,108,46,99,108,0,0,0,0,102,108,111,97,116,50,0,0,114,101,100,117,99,101,95,102,108,111,97,116,50,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,50,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,52,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,52,95,107,101,114,110,101,108,46,99,108,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,32,46,46,46,10,67,76,95,68,69,86,73,67,69,95,77,65,88,95,87,79,82,75,95,71,82,79,85,80,95,83,73,90,69,32,58,32,37,108,117,10,67,76,95,68,69,86,73,67,69,95,77,65,88,95,87,79,82,75,95,73,84,69,77,95,83,73,90,69,83,32,58,32,123,37,108,117,32,47,32,37,108,117,32,47,32,37,108,117,125,10,0,0,85,115,101,32,107,101,114,110,101,108,32,58,32,114,101,100,117,99,101,95,37,115,37,100,95,107,101,114,110,101,108,46,99,108,10,0,0,0,0,0,67,80,85,0,0,0,0,0,103,112,117,0,0,0,0,0,99,112,117,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
+/* memory initializer */ allocate([35,100,101,102,105,110,101,32,79,80,69,82,65,84,73,79,78,83,0,0,0,0,0,0,35,100,101,102,105,110,101,32,71,82,79,85,80,95,83,73,90,69,0,0,0,0,0,0,232,3,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,1,0,0,0,0,0,0,0,71,80,85,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,105,110,116,0,0,0,0,0,105,110,116,52,0,0,0,0,114,0,0,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,102,32,33,61,32,37,102,10,0,0,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,10,0,0,0,0,0,105,110,116,50,0,0,0,0,69,114,114,111,114,58,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,100,32,33,61,32,37,100,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,52,0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,32,0,0,0,0,0,0,0,84,105,109,105,110,103,32,37,100,32,105,116,101,114,97,116,105,111,110,115,32,111,102,32,114,101,100,117,99,116,105,111,110,32,119,105,116,104,32,37,100,32,101,108,101,109,101,110,116,115,32,111,102,32,116,121,112,101,32,37,115,37,115,46,46,46,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,102,108,111,97,116,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,10,0,80,97,115,115,91,37,52,100,93,32,71,108,111,98,97,108,91,37,52,100,93,32,76,111,99,97,108,91,37,52,100,93,32,71,114,111,117,112,115,91,37,52,100,93,32,87,111,114,107,73,116,101,109,115,91,37,52,100,93,32,79,112,101,114,97,116,105,111,110,115,91,37,100,93,32,69,110,116,114,105,101,115,91,37,100,93,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,114,101,100,117,99,101,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,10,0,0,0,0,0,0,0,37,115,10,0,0,0,0,0,37,115,32,40,37,100,41,32,10,37,115,32,40,37,100,41,10,10,37,115,10,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,102,108,111,97,116,52,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,112,97,114,116,105,97,108,32,115,117,109,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,10,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,73,110,118,97,108,105,100,32,99,104,97,110,110,101,108,32,99,111,117,110,116,32,115,112,101,99,105,102,105,101,100,33,10,0,0,0,0,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,95,107,101,114,110,101,108,46,99,108,0,0,114,101,100,117,99,101,95,105,110,116,95,107,101,114,110,101,108,46,99,108,0,0,0,0,102,108,111,97,116,50,0,0,114,101,100,117,99,101,95,102,108,111,97,116,50,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,50,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,52,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,52,95,107,101,114,110,101,108,46,99,108,0,0,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,32,46,46,46,10,67,76,95,68,69,86,73,67,69,95,77,65,88,95,87,79,82,75,95,71,82,79,85,80,95,83,73,90,69,32,58,32,37,108,117,10,67,76,95,68,69,86,73,67,69,95,77,65,88,95,87,79,82,75,95,73,84,69,77,95,83,73,90,69,83,32,58,32,123,37,108,117,32,47,32,37,108,117,32,47,32,37,108,117,125,10,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,85,115,101,32,107,101,114,110,101,108,32,58,32,114,101,100,117,99,101,95,37,115,37,100,95,107,101,114,110,101,108,46,99,108,10,0,0,0,0,0,67,80,85,0,0,0,0,0,103,112,117,0,0,0,0,0,99,112,117,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE)
 function runPostSets() {
 }
 var tempDoublePtr = Runtime.alignMemory(allocate(12, "i8", ALLOC_STATIC), 8);
@@ -1043,8 +1114,8 @@ function copyTempDouble(ptr) {
       } while (curr1);
       return 0;
     }
-  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,EDOTDOT:76,EBADMSG:77,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
-  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"No message of desired type",36:"Identifier removed",37:"Channel number out of range",38:"Level 2 not synchronized",39:"Level 3 halted",40:"Level 3 reset",41:"Link number out of range",42:"Protocol driver not attached",43:"No CSI structure available",44:"Level 2 halted",45:"Deadlock condition",46:"No record locks available",50:"Invalid exchange",51:"Invalid request descriptor",52:"Exchange full",53:"No anode",54:"Invalid request code",55:"Invalid slot",56:"File locking deadlock error",57:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",74:"Multihop attempted",76:"Cross mount point (not really error)",77:"Trying to read unreadable message",80:"Given log. name not unique",81:"f.d. invalid for this operation",82:"Remote address changed",83:"Can   access a needed shared lib",84:"Accessing a corrupted shared lib",85:".lib section in a.out corrupted",86:"Attempting to link in too many libs",87:"Attempting to exec a shared library",88:"Function not implemented",90:"Directory not empty",91:"File or path name too long",92:"Too many symbolic links",95:"Operation not supported on transport endpoint",96:"Protocol family not supported",104:"Connection reset by peer",105:"No buffer space available",106:"Address family not supported by protocol family",107:"Protocol wrong type for socket",108:"Socket operation on non-socket",109:"Protocol not available",110:"Can't send after socket shutdown",111:"Connection refused",112:"Address already in use",113:"Connection aborted",114:"Network is unreachable",115:"Network interface is not configured",116:"Connection timed out",117:"Host is down",118:"Host is unreachable",119:"Connection already in progress",120:"Socket already connected",121:"Destination address required",122:"Message too long",123:"Unknown protocol",124:"Socket type not supported",125:"Address not available",126:"Connection reset by network",127:"Socket is already connected",128:"Socket is not connected",129:"Too many references",131:"Too many users",132:"Quota exceeded",133:"Stale file handle",134:"Not supported",135:"No medium (in tape drive)",138:"Illegal byte sequence",139:"Value too large for defined data type",140:"Operation canceled",141:"State not recoverable",142:"Previous owner died",143:"Streams pipe error"};
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:42,EIDRM:43,ECHRNG:44,EL2NSYNC:45,EL3HLT:46,EL3RST:47,ELNRNG:48,EUNATCH:49,ENOCSI:50,EL2HLT:51,EDEADLK:35,ENOLCK:37,EBADE:52,EBADR:53,EXFULL:54,ENOANO:55,EBADRQC:56,EBADSLT:57,EDEADLOCK:35,EBFONT:59,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:72,EDOTDOT:73,EBADMSG:74,ENOTUNIQ:76,EBADFD:77,EREMCHG:78,ELIBACC:79,ELIBBAD:80,ELIBSCN:81,ELIBMAX:82,ELIBEXEC:83,ENOSYS:38,ENOTEMPTY:39,ENAMETOOLONG:36,ELOOP:40,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:97,EPROTOTYPE:91,ENOTSOCK:88,ENOPROTOOPT:92,ESHUTDOWN:108,ECONNREFUSED:111,EADDRINUSE:98,ECONNABORTED:103,ENETUNREACH:101,ENETDOWN:100,ETIMEDOUT:110,EHOSTDOWN:112,EHOSTUNREACH:113,EINPROGRESS:115,EALREADY:114,EDESTADDRREQ:89,EMSGSIZE:90,EPROTONOSUPPORT:93,ESOCKTNOSUPPORT:94,EADDRNOTAVAIL:99,ENETRESET:102,EISCONN:106,ENOTCONN:107,ETOOMANYREFS:109,EUSERS:87,EDQUOT:122,ESTALE:116,ENOTSUP:95,ENOMEDIUM:123,EILSEQ:84,EOVERFLOW:75,ECANCELED:125,ENOTRECOVERABLE:131,EOWNERDEAD:130,ESTRPIPE:86};
+  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"File locking deadlock error",36:"File or path name too long",37:"No record locks available",38:"Function not implemented",39:"Directory not empty",40:"Too many symbolic links",42:"No message of desired type",43:"Identifier removed",44:"Channel number out of range",45:"Level 2 not synchronized",46:"Level 3 halted",47:"Level 3 reset",48:"Link number out of range",49:"Protocol driver not attached",50:"No CSI structure available",51:"Level 2 halted",52:"Invalid exchange",53:"Invalid request descriptor",54:"Exchange full",55:"No anode",56:"Invalid request code",57:"Invalid slot",59:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",72:"Multihop attempted",73:"Cross mount point (not really error)",74:"Trying to read unreadable message",75:"Value too large for defined data type",76:"Given log. name not unique",77:"f.d. invalid for this operation",78:"Remote address changed",79:"Can   access a needed shared lib",80:"Accessing a corrupted shared lib",81:".lib section in a.out corrupted",82:"Attempting to link in too many libs",83:"Attempting to exec a shared library",84:"Illegal byte sequence",86:"Streams pipe error",87:"Too many users",88:"Socket operation on non-socket",89:"Destination address required",90:"Message too long",91:"Protocol wrong type for socket",92:"Protocol not available",93:"Unknown protocol",94:"Socket type not supported",95:"Not supported",96:"Protocol family not supported",97:"Address family not supported by protocol family",98:"Address already in use",99:"Address not available",100:"Network interface is not configured",101:"Network is unreachable",102:"Connection reset by network",103:"Connection aborted",104:"Connection reset by peer",105:"No buffer space available",106:"Socket is already connected",107:"Socket is not connected",108:"Can't send after socket shutdown",109:"Too many references",110:"Connection timed out",111:"Connection refused",112:"Host is down",113:"Host is unreachable",114:"Socket already connected",115:"Connection already in progress",116:"Stale file handle",122:"Quota exceeded",123:"No medium (in tape drive)",125:"Operation canceled",130:"Previous owner died",131:"State not recoverable"};
   var ___errno_state=0;function ___setErrNo(value) {
       // For convenient setting and returning of errno.
       HEAP32[((___errno_state)>>2)]=value
@@ -1291,15 +1362,9 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,ensureFlexible:function (node) {
-        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
-          var contents = node.contents;
-          node.contents = Array.prototype.slice.call(contents);
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
-        }
-      },mount:function (mount) {
-        return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
-      },create_node:function (parent, name, mode, dev) {
+  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+        return MEMFS.createNode(null, '/', 16384 | 0777, 0);
+      },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
           // no supported
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
@@ -1356,6 +1421,12 @@ function copyTempDouble(ptr) {
           parent.contents[name] = node;
         }
         return node;
+      },ensureFlexible:function (node) {
+        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
+          var contents = node.contents;
+          node.contents = Array.prototype.slice.call(contents);
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+        }
       },node_ops:{getattr:function (node) {
           var attr = {};
           // device numbers reuse inode numbers.
@@ -1399,7 +1470,7 @@ function copyTempDouble(ptr) {
         },lookup:function (parent, name) {
           throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
         },mknod:function (parent, name, mode, dev) {
-          return MEMFS.create_node(parent, name, mode, dev);
+          return MEMFS.createNode(parent, name, mode, dev);
         },rename:function (old_node, new_dir, new_name) {
           // if we're overwriting a directory at new_name, make sure it's empty.
           if (FS.isDir(old_node.mode)) {
@@ -1436,7 +1507,7 @@ function copyTempDouble(ptr) {
           }
           return entries;
         },symlink:function (parent, newname, oldpath) {
-          var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
+          var node = MEMFS.createNode(parent, newname, 0777 | 40960, 0);
           node.link = oldpath;
           return node;
         },readlink:function (node) {
@@ -1446,7 +1517,10 @@ function copyTempDouble(ptr) {
           return node.link;
         }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
@@ -1507,7 +1581,7 @@ function copyTempDouble(ptr) {
           var allocated;
           var contents = stream.node.contents;
           // Only make a new copy when MAP_PRIVATE is specified.
-          if ( !(flags & 0x02) &&
+          if ( !(flags & 2) &&
                 (contents.buffer === buffer || contents.buffer === buffer.buffer) ) {
             // We can't emulate MAP_SHARED when the file is not backed by the buffer
             // we're mapping to (e.g. the HEAP buffer).
@@ -1531,6 +1605,386 @@ function copyTempDouble(ptr) {
           }
           return { ptr: ptr, allocated: allocated };
         }}};
+  var IDBFS={dbs:{},indexedDB:function () {
+        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
+        return MEMFS.mount.apply(null, arguments);
+      },syncfs:function (mount, populate, callback) {
+        IDBFS.getLocalSet(mount, function(err, local) {
+          if (err) return callback(err);
+          IDBFS.getRemoteSet(mount, function(err, remote) {
+            if (err) return callback(err);
+            var src = populate ? remote : local;
+            var dst = populate ? local : remote;
+            IDBFS.reconcile(src, dst, callback);
+          });
+        });
+      },reconcile:function (src, dst, callback) {
+        var total = 0;
+        var create = {};
+        for (var key in src.files) {
+          if (!src.files.hasOwnProperty(key)) continue;
+          var e = src.files[key];
+          var e2 = dst.files[key];
+          if (!e2 || e.timestamp > e2.timestamp) {
+            create[key] = e;
+            total++;
+          }
+        }
+        var remove = {};
+        for (var key in dst.files) {
+          if (!dst.files.hasOwnProperty(key)) continue;
+          var e = dst.files[key];
+          var e2 = src.files[key];
+          if (!e2) {
+            remove[key] = e;
+            total++;
+          }
+        }
+        if (!total) {
+          // early out
+          return callback(null);
+        }
+        var completed = 0;
+        var done = function(err) {
+          if (err) return callback(err);
+          if (++completed >= total) {
+            return callback(null);
+          }
+        };
+        // create a single transaction to handle and IDB reads / writes we'll need to do
+        var db = src.type === 'remote' ? src.db : dst.db;
+        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+        transaction.onerror = function() { callback(this.error); };
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+        for (var path in create) {
+          if (!create.hasOwnProperty(path)) continue;
+          var entry = create[path];
+          if (dst.type === 'local') {
+            // save file to local
+            try {
+              if (FS.isDir(entry.mode)) {
+                FS.mkdir(path, entry.mode);
+              } else if (FS.isFile(entry.mode)) {
+                var stream = FS.open(path, 'w+', 0666);
+                FS.write(stream, entry.contents, 0, entry.contents.length, 0, true /* canOwn */);
+                FS.close(stream);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // save file to IDB
+            var req = store.put(entry, path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+        for (var path in remove) {
+          if (!remove.hasOwnProperty(path)) continue;
+          var entry = remove[path];
+          if (dst.type === 'local') {
+            // delete file from local
+            try {
+              if (FS.isDir(entry.mode)) {
+                // TODO recursive delete?
+                FS.rmdir(path);
+              } else if (FS.isFile(entry.mode)) {
+                FS.unlink(path);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // delete file from IDB
+            var req = store.delete(path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+      },getLocalSet:function (mount, callback) {
+        var files = {};
+        var isRealDir = function(p) {
+          return p !== '.' && p !== '..';
+        };
+        var toAbsolute = function(root) {
+          return function(p) {
+            return PATH.join(root, p);
+          }
+        };
+        var check = FS.readdir(mount.mountpoint)
+          .filter(isRealDir)
+          .map(toAbsolute(mount.mountpoint));
+        while (check.length) {
+          var path = check.pop();
+          var stat, node;
+          try {
+            var lookup = FS.lookupPath(path);
+            node = lookup.node;
+            stat = FS.stat(path);
+          } catch (e) {
+            return callback(e);
+          }
+          if (FS.isDir(stat.mode)) {
+            check.push.apply(check, FS.readdir(path)
+              .filter(isRealDir)
+              .map(toAbsolute(path)));
+            files[path] = { mode: stat.mode, timestamp: stat.mtime };
+          } else if (FS.isFile(stat.mode)) {
+            files[path] = { contents: node.contents, mode: stat.mode, timestamp: stat.mtime };
+          } else {
+            return callback(new Error('node type not supported'));
+          }
+        }
+        return callback(null, { type: 'local', files: files });
+      },getDB:function (name, callback) {
+        // look it up in the cache
+        var db = IDBFS.dbs[name];
+        if (db) {
+          return callback(null, db);
+        }
+        var req;
+        try {
+          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        } catch (e) {
+          return onerror(e);
+        }
+        req.onupgradeneeded = function() {
+          db = req.result;
+          db.createObjectStore(IDBFS.DB_STORE_NAME);
+        };
+        req.onsuccess = function() {
+          db = req.result;
+          // add to the cache
+          IDBFS.dbs[name] = db;
+          callback(null, db);
+        };
+        req.onerror = function() {
+          callback(this.error);
+        };
+      },getRemoteSet:function (mount, callback) {
+        var files = {};
+        IDBFS.getDB(mount.mountpoint, function(err, db) {
+          if (err) return callback(err);
+          var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+          transaction.onerror = function() { callback(this.error); };
+          var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          store.openCursor().onsuccess = function(event) {
+            var cursor = event.target.result;
+            if (!cursor) {
+              return callback(null, { type: 'remote', db: db, files: files });
+            }
+            files[cursor.key] = cursor.value;
+            cursor.continue();
+          };
+        });
+      }};
+  var NODEFS={mount:function (mount) {
+        assert(ENVIRONMENT_IS_NODE);
+        return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root), 0);
+      },createNode:function (parent, name, mode, dev) {
+        if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node = FS.createNode(parent, name, mode);
+        node.node_ops = NODEFS.node_ops;
+        node.stream_ops = NODEFS.stream_ops;
+        return node;
+      },getMode:function (path) {
+        var stat;
+        try {
+          stat = fs.lstatSync(path);
+        } catch (e) {
+          if (!e.code) throw e;
+          throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+        }
+        return stat.mode;
+      },realPath:function (node) {
+        var parts = [];
+        while (node.parent !== node) {
+          parts.push(node.name);
+          node = node.parent;
+        }
+        parts.push(node.mount.opts.root);
+        parts.reverse();
+        return PATH.join.apply(null, parts);
+      },node_ops:{getattr:function (node) {
+          var path = NODEFS.realPath(node);
+          var stat;
+          try {
+            stat = fs.lstatSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return {
+            dev: stat.dev,
+            ino: stat.ino,
+            mode: stat.mode,
+            nlink: stat.nlink,
+            uid: stat.uid,
+            gid: stat.gid,
+            rdev: stat.rdev,
+            size: stat.size,
+            atime: stat.atime,
+            mtime: stat.mtime,
+            ctime: stat.ctime,
+            blksize: stat.blksize,
+            blocks: stat.blocks
+          };
+        },setattr:function (node, attr) {
+          var path = NODEFS.realPath(node);
+          try {
+            if (attr.mode !== undefined) {
+              fs.chmodSync(path, attr.mode);
+              // update the common node structure mode as well
+              node.mode = attr.mode;
+            }
+            if (attr.timestamp !== undefined) {
+              var date = new Date(attr.timestamp);
+              fs.utimesSync(path, date, date);
+            }
+            if (attr.size !== undefined) {
+              fs.truncateSync(path, attr.size);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },lookup:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          var mode = NODEFS.getMode(path);
+          return NODEFS.createNode(parent, name, mode);
+        },mknod:function (parent, name, mode, dev) {
+          var node = NODEFS.createNode(parent, name, mode, dev);
+          // create the backing node for this in the fs root as well
+          var path = NODEFS.realPath(node);
+          try {
+            if (FS.isDir(node.mode)) {
+              fs.mkdirSync(path, node.mode);
+            } else {
+              fs.writeFileSync(path, '', { mode: node.mode });
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return node;
+        },rename:function (oldNode, newDir, newName) {
+          var oldPath = NODEFS.realPath(oldNode);
+          var newPath = PATH.join(NODEFS.realPath(newDir), newName);
+          try {
+            fs.renameSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },unlink:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.unlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },rmdir:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.rmdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readdir:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },symlink:function (parent, newName, oldPath) {
+          var newPath = PATH.join(NODEFS.realPath(parent), newName);
+          try {
+            fs.symlinkSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readlink:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        }},stream_ops:{open:function (stream) {
+          var path = NODEFS.realPath(stream.node);
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              stream.nfd = fs.openSync(path, stream.flags);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },close:function (stream) {
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              fs.closeSync(stream.nfd);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },read:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(length);
+          var res;
+          try {
+            res = fs.readSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          if (res > 0) {
+            for (var i = 0; i < res; i++) {
+              buffer[offset + i] = nbuffer[i];
+            }
+          }
+          return res;
+        },write:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(buffer.subarray(offset, offset + length));
+          var res;
+          try {
+            res = fs.writeSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return res;
+        },llseek:function (stream, offset, whence) {
+          var position = offset;
+          if (whence === 1) {  // SEEK_CUR.
+            position += stream.position;
+          } else if (whence === 2) {  // SEEK_END.
+            if (FS.isFile(stream.node.mode)) {
+              try {
+                var stat = fs.fstatSync(stream.nfd);
+                position += stat.size;
+              } catch (e) {
+                throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+              }
+            }
+          }
+          if (position < 0) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          stream.position = position;
+          return position;
+        }}};
   var _stdin=allocate(1, "i32*", ALLOC_STATIC);
   var _stdout=allocate(1, "i32*", ALLOC_STATIC);
   var _stderr=allocate(1, "i32*", ALLOC_STATIC);
@@ -1538,7 +1992,7 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
           this.errno = errno;
           for (var key in ERRNO_CODES) {
             if (ERRNO_CODES[key] === errno) {
@@ -1550,10 +2004,8 @@ function copyTempDouble(ptr) {
         },handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
         return ___setErrNo(e.errno);
-      },cwd:function () {
-        return FS.currentPath;
       },lookupPath:function (path, opts) {
-        path = PATH.resolve(FS.currentPath, path);
+        path = PATH.resolve(FS.cwd(), path);
         opts = opts || { recurse_count: 0 };
         if (opts.recurse_count > 8) {  // max recursive lookup of 8
           throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
@@ -1634,7 +2086,8 @@ function copyTempDouble(ptr) {
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
-          if (node.parent.id === parent.id && node.name === name) {
+          var nodeName = node.name;
+          if (node.parent.id === parent.id && nodeName === name) {
             return node;
           }
         }
@@ -1686,29 +2139,29 @@ function copyTempDouble(ptr) {
       },isMountpoint:function (node) {
         return node.mounted;
       },isFile:function (mode) {
-        return (mode & 0170000) === 0100000;
+        return (mode & 61440) === 32768;
       },isDir:function (mode) {
-        return (mode & 0170000) === 0040000;
+        return (mode & 61440) === 16384;
       },isLink:function (mode) {
-        return (mode & 0170000) === 0120000;
+        return (mode & 61440) === 40960;
       },isChrdev:function (mode) {
-        return (mode & 0170000) === 0020000;
+        return (mode & 61440) === 8192;
       },isBlkdev:function (mode) {
-        return (mode & 0170000) === 0060000;
+        return (mode & 61440) === 24576;
       },isFIFO:function (mode) {
-        return (mode & 0170000) === 0010000;
+        return (mode & 61440) === 4096;
       },isSocket:function (mode) {
-        return (mode & 0140000) === 0140000;
-      },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
+        return (mode & 49152) === 49152;
+      },flagModes:{"r":0,"rs":1052672,"r+":2,"w":577,"wx":705,"xw":705,"w+":578,"wx+":706,"xw+":706,"a":1089,"ax":1217,"xa":1217,"a+":1090,"ax+":1218,"xa+":1218},modeStringToFlags:function (str) {
         var flags = FS.flagModes[str];
         if (typeof flags === 'undefined') {
           throw new Error('Unknown file open mode: ' + str);
         }
         return flags;
       },flagsToPermissionString:function (flag) {
-        var accmode = flag & 3;
+        var accmode = flag & 2097155;
         var perms = ['r', 'w', 'rw'][accmode];
-        if ((flag & 1024)) {
+        if ((flag & 512)) {
           perms += 'w';
         }
         return perms;
@@ -1749,7 +2202,7 @@ function copyTempDouble(ptr) {
           if (!FS.isDir(node.mode)) {
             return ERRNO_CODES.ENOTDIR;
           }
-          if (FS.isRoot(node) || FS.getPath(node) === FS.currentPath) {
+          if (FS.isRoot(node) || FS.getPath(node) === FS.cwd()) {
             return ERRNO_CODES.EBUSY;
           }
         } else {
@@ -1765,8 +2218,8 @@ function copyTempDouble(ptr) {
         if (FS.isLink(node.mode)) {
           return ERRNO_CODES.ELOOP;
         } else if (FS.isDir(node.mode)) {
-          if ((flags & 3) !== 0 ||  // opening for write
-              (flags & 1024)) {
+          if ((flags & 2097155) !== 0 ||  // opening for write
+              (flags & 512)) {
             return ERRNO_CODES.EISDIR;
           }
         }
@@ -1792,13 +2245,13 @@ function copyTempDouble(ptr) {
             set: function(val) { stream.node = val; }
           },
           isRead: {
-            get: function() { return (stream.flags & 3) !== 1; }
+            get: function() { return (stream.flags & 2097155) !== 1; }
           },
           isWrite: {
-            get: function() { return (stream.flags & 3) !== 0; }
+            get: function() { return (stream.flags & 2097155) !== 0; }
           },
           isAppend: {
-            get: function() { return (stream.flags & 8); }
+            get: function() { return (stream.flags & 1024); }
           }
         });
         FS.streams[fd] = stream;
@@ -1825,17 +2278,42 @@ function copyTempDouble(ptr) {
         FS.devices[dev] = { stream_ops: ops };
       },getDevice:function (dev) {
         return FS.devices[dev];
+      },syncfs:function (populate, callback) {
+        if (typeof(populate) === 'function') {
+          callback = populate;
+          populate = false;
+        }
+        var completed = 0;
+        var total = FS.mounts.length;
+        var done = function(err) {
+          if (err) {
+            return callback(err);
+          }
+          if (++completed >= total) {
+            callback(null);
+          }
+        };
+        // sync all mounts
+        for (var i = 0; i < FS.mounts.length; i++) {
+          var mount = FS.mounts[i];
+          if (!mount.type.syncfs) {
+            done(null);
+            continue;
+          }
+          mount.type.syncfs(mount, populate, done);
+        }
       },mount:function (type, opts, mountpoint) {
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+          mountpoint = lookup.path;  // use the absolute path
+        }
         var mount = {
           type: type,
           opts: opts,
           mountpoint: mountpoint,
           root: null
         };
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
-        }
         // create a root node for the fs
         var root = type.mount(mount);
         root.mount = mount;
@@ -1849,6 +2327,8 @@ function copyTempDouble(ptr) {
             FS.root = mount.root;
           }
         }
+        // add to our cached list of mounts
+        FS.mounts.push(mount);
         return root;
       },lookup:function (parent, name) {
         return parent.node_ops.lookup(parent, name);
@@ -1867,19 +2347,19 @@ function copyTempDouble(ptr) {
       },create:function (path, mode) {
         mode = mode !== undefined ? mode : 0666;
         mode &= 4095;
-        mode |= 0100000;
+        mode |= 32768;
         return FS.mknod(path, mode, 0);
       },mkdir:function (path, mode) {
         mode = mode !== undefined ? mode : 0777;
-        mode &= 511 | 0001000;
-        mode |= 0040000;
+        mode &= 511 | 512;
+        mode |= 16384;
         return FS.mknod(path, mode, 0);
       },mkdev:function (path, mode, dev) {
         if (typeof(dev) === 'undefined') {
           dev = mode;
           mode = 0666;
         }
-        mode |= 0020000;
+        mode |= 8192;
         return FS.mknod(path, mode, dev);
       },symlink:function (oldpath, newpath) {
         var lookup = FS.lookupPath(newpath, { parent: true });
@@ -2112,7 +2592,7 @@ function copyTempDouble(ptr) {
         if (!stream) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
         FS.truncate(stream.node, len);
@@ -2126,26 +2606,25 @@ function copyTempDouble(ptr) {
         path = PATH.normalize(path);
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 0666 : mode;
-        if ((flags & 512)) {
-          mode = (mode & 4095) | 0100000;
+        if ((flags & 64)) {
+          mode = (mode & 4095) | 32768;
         } else {
           mode = 0;
         }
         var node;
         try {
           var lookup = FS.lookupPath(path, {
-            follow: !(flags & 0200000)
+            follow: !(flags & 131072)
           });
           node = lookup.node;
-          path = lookup.path;
         } catch (e) {
           // ignore
         }
         // perhaps we need to create the node
-        if ((flags & 512)) {
+        if ((flags & 64)) {
           if (node) {
             // if O_CREAT and O_EXCL are set, error out if the node already exists
-            if ((flags & 2048)) {
+            if ((flags & 128)) {
               throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
             }
           } else {
@@ -2158,7 +2637,7 @@ function copyTempDouble(ptr) {
         }
         // can't truncate a device
         if (FS.isChrdev(node.mode)) {
-          flags &= ~1024;
+          flags &= ~512;
         }
         // check permissions
         var err = FS.mayOpen(node, flags);
@@ -2166,13 +2645,15 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(err);
         }
         // do truncation if necessary
-        if ((flags & 1024)) {
+        if ((flags & 512)) {
           FS.truncate(node, 0);
         }
+        // we've already handled these, don't pass down to the underlying vfs
+        flags &= ~(128 | 512);
         // register the stream with the filesystem
         var stream = FS.createStream({
-          path: path,
           node: node,
+          path: FS.getPath(node),  // we want the absolute path to the node
           flags: flags,
           seekable: true,
           position: 0,
@@ -2184,6 +2665,13 @@ function copyTempDouble(ptr) {
         // call the new stream's open function
         if (stream.stream_ops.open) {
           stream.stream_ops.open(stream);
+        }
+        if (Module['logReadFiles'] && !(flags & 1)) {
+          if (!FS.readFiles) FS.readFiles = {};
+          if (!(path in FS.readFiles)) {
+            FS.readFiles[path] = 1;
+            Module['printErr']('read file: ' + path);
+          }
         }
         return stream;
       },close:function (stream) {
@@ -2205,7 +2693,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2228,7 +2716,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2244,7 +2732,7 @@ function copyTempDouble(ptr) {
         } else if (!stream.seekable) {
           throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
         }
-        if (stream.flags & 8) {
+        if (stream.flags & 1024) {
           // seek to the end before writing in append mode
           FS.llseek(stream, 0, 2);
         }
@@ -2255,7 +2743,7 @@ function copyTempDouble(ptr) {
         if (offset < 0 || length <= 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
@@ -2267,7 +2755,7 @@ function copyTempDouble(ptr) {
         stream.stream_ops.allocate(stream, offset, length);
       },mmap:function (stream, buffer, offset, length, position, prot, flags) {
         // TODO if PROT is PROT_WRITE, make sure we have write access
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
@@ -2317,6 +2805,18 @@ function copyTempDouble(ptr) {
           throw new Error('Invalid encoding type "' + opts.encoding + '"');
         }
         FS.close(stream);
+      },cwd:function () {
+        return FS.currentPath;
+      },chdir:function (path) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        if (!FS.isDir(lookup.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        var err = FS.nodePermissions(lookup.node, 'x');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        FS.currentPath = lookup.path;
       },createDefaultDirectories:function () {
         FS.mkdir('/tmp');
       },createDefaultDevices:function () {
@@ -2374,7 +2874,7 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
       },staticInit:function () {
         FS.nameTable = new Array(4096);
-        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.root = FS.createNode(null, '/', 16384 | 0777, 0);
         FS.mount(MEMFS, {}, '/');
         FS.createDefaultDirectories();
         FS.createDefaultDevices();
@@ -2674,7 +3174,10 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.EIO);
           }
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (contents.slice) { // normal array
             for (var i = 0; i < size; i++) {
               buffer[offset + i] = contents[position + i];
@@ -2796,12 +3299,7 @@ function copyTempDouble(ptr) {
         openRequest.onerror = onerror;
       }};
   var SOCKFS={mount:function (mount) {
-        return FS.createNode(null, '/', 0040000 | 0777, 0);
-      },nextname:function () {
-        if (!SOCKFS.nextname.current) {
-          SOCKFS.nextname.current = 0;
-        }
-        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+        return FS.createNode(null, '/', 16384 | 0777, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
         if (protocol) {
@@ -2820,7 +3318,7 @@ function copyTempDouble(ptr) {
         };
         // create the filesystem node to store the socket structure
         var name = SOCKFS.nextname();
-        var node = FS.createNode(SOCKFS.root, name, 0140000, 0);
+        var node = FS.createNode(SOCKFS.root, name, 49152, 0);
         node.sock = sock;
         // and the wrapping stream that enables library functions such
         // as read and write to indirectly interact with the socket
@@ -2862,7 +3360,12 @@ function copyTempDouble(ptr) {
         },close:function (stream) {
           var sock = stream.node.sock;
           sock.sock_ops.close(sock);
-        }},websocket_sock_ops:{createPeer:function (sock, addr, port) {
+        }},nextname:function () {
+        if (!SOCKFS.nextname.current) {
+          SOCKFS.nextname.current = 0;
+        }
+        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+      },websocket_sock_ops:{createPeer:function (sock, addr, port) {
           var ws;
           if (typeof addr === 'object') {
             ws = addr;
@@ -2978,7 +3481,7 @@ function copyTempDouble(ptr) {
           if (sock.type === 1 && sock.server) {
             // listen sockets should only say they're available for reading
             // if there are pending clients.
-            return sock.pending.length ? (0 /* XXX missing C define POLLRDNORM */ | 1) : 0;
+            return sock.pending.length ? (64 | 1) : 0;
           }
           var mask = 0;
           var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
@@ -2988,11 +3491,11 @@ function copyTempDouble(ptr) {
               !dest ||  // connection-less sockets are always ready to read
               (dest && dest.socket.readyState === dest.socket.CLOSING) ||
               (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
-            mask |= (0 /* XXX missing C define POLLRDNORM */ | 1);
+            mask |= (64 | 1);
           }
           if (!dest ||  // connection-less sockets are always ready to write
               (dest && dest.socket.readyState === dest.socket.OPEN)) {
-            mask |= 2;
+            mask |= 4;
           }
           if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
               (dest && dest.socket.readyState === dest.socket.CLOSED)) {
@@ -3001,7 +3504,7 @@ function copyTempDouble(ptr) {
           return mask;
         },ioctl:function (sock, request, arg) {
           switch (request) {
-            case 1:
+            case 21531:
               var bytes = 0;
               if (sock.recv_queue.length) {
                 bytes = sock.recv_queue[0].data.length;
@@ -3335,6 +3838,7 @@ function copyTempDouble(ptr) {
           var flagLeftAlign = false;
           var flagAlternative = false;
           var flagZeroPad = false;
+          var flagPadSign = false;
           flagsLoop: while (1) {
             switch (next) {
               case 43:
@@ -3353,6 +3857,9 @@ function copyTempDouble(ptr) {
                   flagZeroPad = true;
                   break;
                 }
+              case 32:
+                flagPadSign = true;
+                break;
               default:
                 break flagsLoop;
             }
@@ -3504,12 +4011,17 @@ function copyTempDouble(ptr) {
                 }
               }
               // Add sign if needed
-              if (flagAlwaysSigned) {
-                if (currArg < 0) {
-                  prefix = '-' + prefix;
-                } else {
+              if (currArg >= 0) {
+                if (flagAlwaysSigned) {
                   prefix = '+' + prefix;
+                } else if (flagPadSign) {
+                  prefix = ' ' + prefix;
                 }
+              }
+              // Move sign to prefix so we zero-pad after the sign
+              if (argText.charAt(0) == '-') {
+                prefix = '-' + prefix;
+                argText = argText.substr(1);
               }
               // Add padding.
               while (prefix.length + argText.length < width) {
@@ -3587,8 +4099,12 @@ function copyTempDouble(ptr) {
                 // Capitalize 'E' if needed.
                 if (next == 69) argText = argText.toUpperCase();
                 // Add sign.
-                if (flagAlwaysSigned && currArg >= 0) {
-                  argText = '+' + argText;
+                if (currArg >= 0) {
+                  if (flagAlwaysSigned) {
+                    argText = '+' + argText;
+                  } else if (flagPadSign) {
+                    argText = ' ' + argText;
+                  }
                 }
               }
               // Add padding.
@@ -3828,6 +4344,23 @@ function copyTempDouble(ptr) {
                 throw 'Invalid format (' + format + ')';
             }
             break;
+          case 0x1403 /* GL_UNSIGNED_SHORT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 2;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x1405 /* GL_UNSIGNED_INT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 4;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
+            sizePerPixel = 4;
+            break;
           case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
           case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
           case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
@@ -3855,6 +4388,8 @@ function copyTempDouble(ptr) {
           pixels = HEAPU8.subarray((pixels),(pixels+bytes));
         } else if (type == 0x1406 /* GL_FLOAT */) {
           pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
+        } else if (type == 0x1405 /* GL_UNSIGNED_INT */ || type == 0x84FA /* UNSIGNED_INT_24_8_WEBGL */) {
+          pixels = HEAPU32.subarray((pixels)>>2,(pixels+bytes)>>2);
         } else {
           pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
         }
@@ -3880,109 +4415,47 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,webcl_mozilla:0,webcl_webkit:0,ctx:[],ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],devices:[],devices_clean:[],platforms:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
-        // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
-        // Remove on Mozilla CL_ prefix on the EnumName
-        for (var legacyEnumName in WebCL) {
-          if (typeof WebCL[legacyEnumName] === 'number') {
-            var newEnumName = legacyEnumName;
-            if (CL.webcl_mozilla) {
-              newEnumName = legacyEnumName.slice(3);
-            }
-            CL[newEnumName] = WebCL[legacyEnumName];
-          }
-        }
-      },checkWebCL:function () {
-        // If we already check is not useful to do this again
-        if (CL.webcl_webkit == 1 || CL.webcl_mozilla == 1) {
-          return 0;
-        }
-        // Look is the browser is comaptible
-        var isWebkit = 'webkitRequestAnimationFrame' in window;
-        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        if (!isWebkit && !isFirefox) {
-          console.error("This current browser is not compatible with WebCL implementation !!! \n");
-          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-          return -1;
-        }
-        // Look is the browser have WebCL implementation
-        if (window.WebCL == undefined || isWebkit) {
+        GL.depthTextureExt = Module.ctx.getExtension("WEBGL_depth_texture") ||
+                             Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
+                             Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
+      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+        if (typeof(webcl) === "undefined") {
+          webcl = window.WebCL;
           if (typeof(webcl) === "undefined") {
             console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");            
-            return -1;
-          } else {
-            window.WebCL = webcl
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
           }
         }
-        CL.webcl_webkit = isWebkit == true ? 1 : 0;
-        CL.webcl_mozilla = isFirefox == true ? 1 : 0;
-        CL.index_object = 2147483647;
-        CL.setupWebCLEnums();
-        // Init Device info
-        CL.device_infos = {
-          0x1000:CL.DEVICE_TYPE,
-          0x1001:CL.DEVICE_VENDOR_ID,
-          0x1002:CL.DEVICE_MAX_COMPUTE_UNITS,
-          0x1003:CL.DEVICE_MAX_WORK_ITEM_DIMENSIONS,      
-          0x1004:CL.DEVICE_MAX_WORK_GROUP_SIZE,
-          0x1005:CL.DEVICE_MAX_WORK_ITEM_SIZES,
-          0x1006:CL.DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
-          0x1007:CL.DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
-          0x1008:CL.DEVICE_PREFERRED_VECTOR_WIDTH_INT,
-          0x1009:CL.DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
-          0x100A:CL.DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
-          0x100B:CL.DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,      
-          0x100C:CL.DEVICE_MAX_CLOCK_FREQUENCY,
-          0x100D:CL.DEVICE_ADDRESS_BITS,    
-          0x100E:CL.DEVICE_MAX_READ_IMAGE_ARGS,    
-          0x100F:CL.DEVICE_MAX_WRITE_IMAGE_ARGS,    
-          0x1010:CL.DEVICE_MAX_MEM_ALLOC_SIZE,
-          0x1011:CL.DEVICE_IMAGE2D_MAX_WIDTH,
-          0x1012:CL.DEVICE_IMAGE2D_MAX_HEIGHT,
-          0x1013:CL.DEVICE_IMAGE3D_MAX_WIDTH,
-          0x1014:CL.DEVICE_IMAGE3D_MAX_HEIGHT,
-          0x1015:CL.DEVICE_IMAGE3D_MAX_DEPTH,
-          0x1016:CL.DEVICE_IMAGE_SUPPORT,
-          0x101F:CL.DEVICE_GLOBAL_MEM_SIZE,
-          0x1020:CL.DEVICE_MAX_CONSTANT_BUFFER_SIZE,
-          0x1022:CL.DEVICE_LOCAL_MEM_TYPE,
-          0x1023:CL.DEVICE_LOCAL_MEM_SIZE,
-          0x1024:CL.DEVICE_ERROR_CORRECTION_SUPPORT,
-          0x1030:CL.DEVICE_EXTENSIONS,
-          0x1031:CL.DEVICE_PLATFORM,
-          0x102A:CL.DEVICE_QUEUE_PROPERTIES,
-          0x102B:CL.DEVICE_NAME,
-          0x102C:CL.DEVICE_VENDOR,
-          0x102D:CL.DRIVER_VERSION,
-          0x102E:CL.DEVICE_PROFILE,
-          0x102F:CL.DEVICE_VERSION            
-        };
-        var browser = (CL.webcl_mozilla == 1) ? "Mozilla" : "Webkit";
-        console.info("Webcl implemented for "+browser);
-        return 0;
-      },isFloat:function (ptr,size) {
-        console.error("CL.isFloat not must be called any more ... use the parse of kernel string !!! \n");
-        console.error("But may be the kernel source is not yet parse !!! \n");
-        var v_int = HEAP32[((ptr)>>2)]; 
-        var v_float = HEAPF32[((ptr)>>2)]; 
-        // If the value is 0
-        if ( v_int == 0 ) {
-          // If is an array
-          if (size > 1) {
-            v_int = HEAP32[(((ptr)+(size - 1))>>2)]; 
-            v_float = HEAPF32[(((ptr)+(size - 1))>>2)];     
-          } else { 
-            // Use float by default 
-            return 1;
-          }                
+        // Add webcl constant for double
+        // webcl.FLOAT64 = 0x10DF;
+      },udid:function (obj) {    
+        var _id;
+        if (obj !== undefined) {
+          if ( obj.hasOwnProperty('udid') ) {
+           _id = obj.udid;
+           if (_id !== undefined) {
+             return _id;
+           }
+          }
         }
-        // If we read int and is float we have a very big value 1e8
-        if (Math.abs(v_int) > 100000000) {
-          return 1;
+        var _uuid = [];
+        _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
+        for (var i = 1; i < 6; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+        _id = _uuid.join('');
+        if (_id in CL.cl_objects) {
+          console.error("/!\\ **********************");
+          console.error("/!\\ UDID not unique !!!!!!");
+          console.error("/!\\ **********************");        
         }
-        return 0;      
-      },parseKernel:function (kernelstring) {
+        // /!\ Call udid when you add inside cl_objects if you pass object in parameter
+        if (obj !== undefined) {
+          Object.defineProperty(obj, "udid", { value : _id,writable : false });
+          CL.cl_objects[_id]=obj;
+          CL.cl_objects_counter++;
+          //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
+        }
+        return _id;      
+      },parseKernel:function (kernel_string) {
         // Experimental parse of Kernel
         // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
         // Step 1 : Search __kernel
@@ -3992,611 +4465,627 @@ function copyTempDouble(ptr) {
         // Step 5 : For each parameter search Adress Space and Data Type
         //
         // --------------------------------------------------------------------
-        //
-        // \note Work only with one kernel ....
-        var kernel_struct = {};
-        kernelstring = kernelstring.replace(/\n/g, " ");
-        kernelstring = kernelstring.replace(/\r/g, " ");
-        kernelstring = kernelstring.replace(/\t/g, " ");
+        var _kernel_struct = {};
+        kernel_string = kernel_string.replace(/\n/g, " ");
+        kernel_string = kernel_string.replace(/\r/g, " ");
+        kernel_string = kernel_string.replace(/\t/g, " ");
         // Search kernel function __kernel 
-        var kernel_start = kernelstring.indexOf("__kernel");
-        while (kernel_start >= 0) {
-          kernelstring = kernelstring.substr(kernel_start,kernelstring.length-kernel_start);
-          var brace_start = kernelstring.indexOf("(");
-          var brace_end = kernelstring.indexOf(")");  
-          var kernels_name = "";
+        var _kernel_start = kernel_string.indexOf("__kernel");
+        while (_kernel_start >= 0) {
+          kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
+          var _brace_start = kernel_string.indexOf("(");
+          var _brace_end = kernel_string.indexOf(")");  
+          var _kernels_name = "";
           // Search kernel Name
-          for (var i = brace_start - 1; i >= 0 ; i--) {
-            var chara = kernelstring.charAt(i);
-            if (chara == ' ' && kernels_name.length > 0) {
+          for (var i = _brace_start - 1; i >= 0 ; i--) {
+            var _chara = kernel_string.charAt(i);
+            if (_chara == ' ' && _kernels_name.length > 0) {
               break;
-            } else if (chara != ' ') {
-              kernels_name = chara + kernels_name;
+            } else if (_chara != ' ') {
+              _kernels_name = _chara + _kernels_name;
             }
           }
-          kernelsubstring = kernelstring.substr(brace_start + 1,brace_end - brace_start - 1);
-          kernelsubstring = kernelsubstring.replace(/\ /g, "");
-          var kernel_parameter = kernelsubstring.split(",");
-          kernelstring = kernelstring.substr(brace_end);
-          var parameter = new Array(kernel_parameter.length)
-          for (var i = 0; i < kernel_parameter.length; i ++) {
-            var value = 0;
-            var string = kernel_parameter[i]
+          var _kernelsubstring = kernel_string.substr(_brace_start + 1,_brace_end - _brace_start - 1);
+          _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
+          var _kernel_parameter = _kernelsubstring.split(",");
+          kernel_string = kernel_string.substr(_brace_end);
+          var _kernel_parameter_length = _kernel_parameter.length;
+          var _parameter = new Array(_kernel_parameter_length);
+          for (var i = 0; i < _kernel_parameter_length; i ++) {
+            var _value = 0;
+            var _string = _kernel_parameter[i]
             // Adress space
             // __global, __local, __constant, __private. 
-            if (string.indexOf("__local") >= 0 ) {
-              value |= CL.address_space.LOCAL;
-            }
+            if (_string.indexOf("__local") >= 0 ) {
+              _value = webcl.LOCAL;
+            } 
             // Data Type
             // float, uchar, unsigned char, uint, unsigned int, int. 
-            if (string.indexOf("float") >= 0 ) {
-              value |= CL.data_type.FLOAT;
-            } else if (string.indexOf("uchar") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned char") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("uint") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("unsigned int") >= 0 ) {
-              value |= CL.data_type.UINT;
-            } else if (string.indexOf("int") >= 0 ) {
-              value |= CL.data_type.INT;
+            else if (_string.indexOf("float") >= 0 ) {
+              _value = webcl.FLOAT;
+            // } else if (_string.indexOf("double") >= 0 ) {
+            //  _value = webcl.FLOAT64;
+            } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
+              _value = webcl.UNSIGNED_INT8;
+            } else if ( _string.indexOf("char") >= 0 ) {
+              _value = webcl.SIGNED_INT8;
+            } else if ( (_string.indexOf("ushort") >= 0 ) || (_string.indexOf("unsigned short") >= 0 ) ) {
+              _value = webcl.UNSIGNED_INT16;
+            } else if ( _string.indexOf("short") >= 0 ) {
+              _value = webcl.SIGNED_INT16;                     
+            } else if ( (_string.indexOf("uint") >= 0 ) || (_string.indexOf("unsigned int") >= 0 ) ) {
+              _value = webcl.UNSIGNED_INT32;            
+            } else if ( _string.indexOf("int") >= 0 ) {
+              _value = webcl.SIGNED_INT32;
             } else {
               console.error("Unknow parameter type use float by default ...");   
-              value |= CL.data_type.FLOAT;
+              _value = webcl.FLOAT;
             }
-            parameter[i] = value;
+            _parameter[i] = _value;
           }
-          kernel_struct[kernels_name] = parameter;
-          kernel_start = kernelstring.indexOf("__kernel");
+          _kernel_struct[_kernels_name] = _parameter;
+          _kernel_start = kernel_string.indexOf("__kernel");
         }
-        for (var name in kernel_struct) {
+        for (var name in _kernel_struct) {
           console.info("Kernel NAME : " + name);      
-          console.info("Kernel PARAMETER NUM : "+kernel_struct[name].length);
+          console.info("Kernel PARAMETER NUM : "+_kernel_struct[name].length);
         }
-        return kernel_struct;
-      },getNewId:function (id) {
-        return CL.index_object - (id + 1);
-      },getArrayId:function (id) {
-        return CL.index_object - id - 1;
-      },getDeviceName:function (type) {
-        switch (type) {
-          case 2 : return "CPU_DEVICE";
-          case 4 : return "GPU_DEVICE";
-          default : return "UNKNOW_DEVICE";
+        return _kernel_struct;
+      },getTypeSizeBits:function (type) {  
+        var _size = null;
+        switch(type) {
+          case webcl.UNSIGNED_INT8:
+          case webcl.SIGNED_INT8:
+            _size = 1;
+            break;
+          case webcl.UNSIGNED_INT16:
+          case webcl.SIGNED_INT16:
+            _size = 2;
+            break;  
+          default:
+            _size = 4;
+            break;
         }
-      },getAllDevices:function (platform) {
-        console.info("getAllDevices");
-        var res = [];
-        if (platform >= CL.platforms.length || platform < 0 ) {
-            console.error("getAllDevices: Invalid platform : "+plat);
-            return res; 
-        }
-        if (CL.webcl_mozilla == 1) {
-          res = CL.platforms[platform].getDeviceIDs(CL.DEVICE_TYPE_ALL);
-        } else {
-          // Webkit doesn't support DEVICE_TYPE_ALL ... but just in case i add try catch
-          try {
-            res = CL.platforms[platform].getDevices(CL.DEVICE_TYPE_ALL);
-          } catch (e) {
-            console.error("getAllDevices: Exception WebKit DEVICE_TYPE_ALL");
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_CPU));  
-            } catch (e) {
-              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_CPU");
+        return _size;
+      },setPointerWithArray:function (ptr,array,type) {  
+        switch(type) {
+          case webcl.UNSIGNED_INT8:
+          case webcl.SIGNED_INT8:
+            for (var i = 0; i < array.length; i++) {
+              HEAP8[(((ptr)+(i))|0)]=array[i];      
             }
-            try {
-              res = res.concat(CL.platforms[platform].getDevices(CL.DEVICE_TYPE_GPU));  
-            } catch (e) {
-              console.error("getAllDevices: Exception WebKit DEVICE_TYPE_GPU");
+            break;
+          case webcl.UNSIGNED_INT16:          
+          case webcl.SIGNED_INT16:
+            for (var i = 0; i < array.length; i++) {
+              HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
             }
+            break;
+          case webcl.UNSIGNED_INT32:
+          case webcl.SIGNED_INT32:
+            for (var i = 0; i < array.length; i++) {
+              HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
+            }
+            break;       
+          default:
+            for (var i = 0; i < array.length; i++) {
+              HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
+            }
+            break;
+        }
+      },getPointerToValue:function (ptr,size,type) {  
+        var _value = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+          case webcl.UNSIGNED_INT8:          
+            _value = HEAP8[(ptr)]
+            break;
+          case webcl.SIGNED_INT16:
+          case webcl.UNSIGNED_INT16:
+            _value = HEAP16[((ptr)>>1)]
+            break;
+          case webcl.SIGNED_INT32:
+          case webcl.UNSIGNED_INT32:
+            _value = HEAP32[((ptr)>>2)]
+            break;         
+          default:
+            _value = HEAPF32[((ptr)>>2)]
+            break;
+        }
+        return _value;
+      },getPointerToEmptyArray:function (size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array(size);
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array(size>>(Int16Array.BYTES_PER_ELEMENT>>1));
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array(size>>(Int32Array.BYTES_PER_ELEMENT>>1));
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array(size);
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array(size>>(Uint16Array.BYTES_PER_ELEMENT>>1));
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
+            break;       
+          default:
+            _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
+            break;
+        }
+        return _host_ptr;
+      },getPointerToArray:function (ptr,size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = HEAP8.subarray((ptr),(ptr+size))
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1)
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = HEAPU8.subarray((ptr),(ptr+size))
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1)
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;         
+          default:
+            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2)
+            break;
+        }
+        return _host_ptr;
+      },getPointerToArrayBuffer:function (ptr,size,type) {  
+        var _host_ptr = new ArrayBuffer(size);
+        switch(type) {
+          case webcl.UNSIGNED_INT8:
+          case webcl.SIGNED_INT8:
+            for (var i = 0; i < size; i++) {
+              _host_ptr[i] = HEAP8[(((ptr)+(i))|0)];      
+            }
+            break;
+          case webcl.UNSIGNED_INT16:          
+          case webcl.SIGNED_INT16:
+            for (var i = 0; i < size>>1; i++) {
+              _host_ptr[i] = HEAP16[(((ptr)+(i*2))>>1)];      
+            }
+            break;
+          case webcl.UNSIGNED_INT32:
+          case webcl.SIGNED_INT32:
+            for (var i = 0; i < size>>2; i++) {
+              _host_ptr[i] = HEAP32[(((ptr)+(i*4))>>2)];      
+            }
+            break;     
+          default:
+            for (var i = 0; i < size>>2; i++) {
+              _host_ptr[i] = HEAPF32[(((ptr)+(i*4))>>2)];      
+            }
+            break;
+        }
+        return _host_ptr;
+      },catchError:function (e) {
+        console.error(e);
+        var _error = -1;
+        if (typeof(WebCLException) !== "undefined") {
+          if (e instanceof WebCLException) {
+            var _str=e.message;
+            var _n=_str.lastIndexOf(" ");
+            _error = _str.substr(_n+1,_str.length-_n-1);
           }
-        }    
-        console.info("CL.getAllDevices: "+res.length);
-        if (res.length == 0) {
-          console.error("getAllDevices: Num of all devices can't be null");
         }
-        return res;
-      },catchError:function (name,e) {
-        var message = "";
-        if (CL.webcl_webkit == 1) {
-          message = e.message;
-        } else {
-          message = e;
-        }
-        console.info(message);
-        var str=""+message;
-        var n=str.lastIndexOf(" ");
-        var error = str.substr(n+1,str.length-n-2);
-        console.error("CATCH: "+name+": "+message);
-        Module.print("/!\\"+name+": "+message);
-        return error;
-      }};function _clGetDeviceIDs(platform, device_type_i64_1, device_type_i64_2, num_entries, devices_ids, num_devices) {
-      if (CL.checkWebCL() < 0) {
-        console.error(CL.errorMessage);
-        Module.print("/!\\"+CL.errorMessage);
-        return -1;/*WEBCL_NOT_FOUND*/;
-      }
-      // Assume the device type is i32 
-      assert(device_type_i64_2 == 0, 'Invalid flags i64');
-      try { 
-        var plat = 0;
-        // If platform is NULL, the behavior is implementation-defined
-        if (platform == 0 && CL.platforms.length == 0) {
-            // Get the platform
-            var platforms = WebCL.getPlatforms();
-            if (platforms.length > 0) {
-              CL.platforms.push(platforms[0]);
-              plat = CL.platforms.length - 1;
-            } else {
-              console.error("clGetDeviceIDs: Invalid platform : "+platform);
-              return -32; /* CL_INVALID_PLATFORM */ 
-            }      
-        } else {
-          plat = CL.getArrayId(platform);
-        }
-        var alldev = CL.getAllDevices(plat);
-        // If devices_ids is not NULL, the num_entries must be greater than zero.
-        if ((num_entries == 0 && device_type_i64_1 == 0) || (alldev.length == 0 && device_type_i64_1 == 0)) {
-          console.error("clGetDeviceIDs: Invalid value : "+num_entries);
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        if ( alldev.length > 0 && device_type_i64_1 == 0) {
-          console.error("clGetDeviceIDs: Invalid device type : "+device_type_i64_1);
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        var map = {};
-        var mapcount = 0;
-        for (var i = 0 ; i < alldev.length; i++ ) {
-          var type = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_TYPE) : alldev[i].getInfo(CL.DEVICE_TYPE);
-          if (type == device_type_i64_1 || device_type_i64_1 == -1) { 
-             var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : CL.getDeviceName(type);
-             map[name] = alldev[i];
-             mapcount ++;
-          }    
-        }
-        if (mapcount == 0) {
-  //#if OPENCL_DEBUG
-          var notfounddevice ="clGetDeviceIDs: It seems you don't have '"+CL.getDeviceName(device_type_i64_1)+"' device, use default device";
-          console.error(notfounddevice);
-          Module.print("/!\\"+notfounddevice);
-  //#endif
-          var alldev = CL.getAllDevices(plat);
-          for (var i = 0 ; i < alldev.length; i++) {
-            var name = (CL.webcl_mozilla == 1) ? alldev[i].getDeviceInfo(CL.DEVICE_NAME) : /*alldev[i].getInfo(CL.DEVICE_NAME) ;*/CL.getDeviceName(alldev[i].getInfo(CL.DEVICE_TYPE));
-            map[name] = alldev[i];
-            mapcount ++;
-          }       
-        }
-        if (devices_ids == 0) {
-          HEAP32[((num_devices)>>2)]=mapcount /* Num of devices */;
-          return 0;/*CL_SUCCESS*/
-        }
-        console.info("clGetDeviceIDs: Devices:");
-        for (var name in map) {
-          CL.devices.push(map[name]);
-          console.info("\t"+CL.devices.length-1+": name: " + name);
-        }
-        if (CL.devices.length == 0 ) {
-          return -31;/*CL_INVALID_DEVICE_TYPE*/
-        }
-        if (num_entries > 0 && CL.devices.length > num_entries) {
-          return -30;/*CL_INVALID_VALUE*/
-        }
-        // If devices is not null, we put the value inside
-        if (num_devices != 0) {
-          HEAP32[((num_devices)>>2)]=CL.devices.length /* Num of devices */;
-        }
-        // Add indices in array devices (+1) for don't have devices with id == 0
-        for (var i = 0; i < CL.devices.length; i++) {
-          HEAP32[(((devices_ids)+(i*4))>>2)]=CL.getNewId(i);
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch (e) {
-        return CL.catchError("clGetDeviceIDs",e);
-      }
-    }
-  function _clGetDeviceInfo(device, param_name, param_value_size, param_value, param_value_size_ret) {
-      var idx = CL.getArrayId(device);
-      if (idx >= CL.devices.length || idx < 0 ) {
-        console.error("clGetDeviceInfo: Invalid device : "+idx);
-        return -33; /* CL_INVALID_DEVICE */  
-      }    
-      var res;
-      var size = 0;
-      var info = CL.device_infos[param_name];
-      if (param_name in CL.device_infos) {
-        // Return string
-        if (
-          (param_name == 0x1030) || /* CL_DEVICE_EXTENSIONS               */
-          (param_name == 0x102B) || /* CL_DEVICE_NAME                     */
-          (param_name == 0x102C) || /* CL_DEVICE_VENDOR                   */
-          (param_name == 0x102D) || /* CL_DRIVER_VERSION                  */
-          (param_name == 0x102F) || /* CL_DEVICE_VERSION                  */
-          (param_name == 0x102E)    /* CL_DEVICE_PROFILE                  */
-        ) {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
-            } else {
-              res = "Not Visible";
+        return _error;
+      },stack_trace:"// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",webclBeginStackTrace:function (name,parameter) {
+        CL.stack_trace += "\n" + name + "("
+        CL.webclCallParameterStackTrace(parameter);
+        CL.stack_trace += ")\n";
+      },webclCallStackTrace:function (name,parameter) {
+        CL.stack_trace += "\t->" + name + "("
+        CL.webclCallParameterStackTrace(parameter);
+        CL.stack_trace += ")\n";
+      },webclCallParameterStackTrace:function (parameter) {
+        for (var i = 0; i < parameter.length - 1 ; i++) {
+          if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[i] instanceof ArrayBufferView)) || (parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
+            CL.stack_trace += "[";  
+            for (var j = 0; j < parameter[i].length - 1 ; j++) {
+              CL.stack_trace += parameter[i][j] + ",";
             }
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            res = "Not Visible";
-          }    
-          writeStringToMemory(res, param_value);
-          size = res.length;
-        }
-        // Return array
-        else if (
-          (param_name == 0x1005) /* CL_DEVICE_MAX_WORK_ITEM_SIZES */
-        ) {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
-            } else {
-              res = [1,1,1]; // minimum value is (1, 1, 1).
+            if (parameter[i].length >= 1) {
+              CL.stack_trace += parameter[i][parameter[i].length - 1];
             }
-            for (var i = 0 ; i < 3; i++) {
-              HEAP32[(((param_value)+(i*4))>>2)]=res[i]; 
-            }
-            size = 3;            
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            for (var i = 0 ; i < 3; i++) {
-              HEAP32[(((param_value)+(i*4))>>2)]=1;
-            }
-            size = 3;
-          }         
-        }
-        // Return int
-        else {
-          try {
-            if (info != undefined) {
-              res = (CL.webcl_mozilla == 1) ? CL.devices[idx].getDeviceInfo(info) : CL.devices[idx].getInfo(info);
-            } else {
-              res = 0;
-            }
-            HEAP32[((param_value)>>2)]=res;
-          } catch (e) {
-            CL.catchError("clGetDeviceInfo",e);
-            HEAP32[((param_value)>>2)]=0;
-          }   
-          size = 1;
-        }
-      } else {
-        console.error("clGetDeviceInfo: Unknow param info : "+param_name);
-        HEAP32[((param_value)>>2)]=0;
-        size = 1;
-      }
-      HEAP32[((param_value_size_ret)>>2)]=size;
-      return 0;/*CL_SUCCESS*/  
-    }
-  function _clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret) {
-      if (CL.checkWebCL() < 0) {
-        console.error(CL.errorMessage);
-        Module.print("/!\\"+CL.errorMessage);
-        return -1;/*WEBCL_NOT_FOUND*/;
-      }
-      try {
-        if (CL.platforms.length == 0) {
-          // Get the platform
-          var platforms = WebCL.getPlatforms();
-          if (platforms.length > 0) {
-            CL.platforms.push(platforms[0]);
-            plat = CL.platforms.length - 1;
+            CL.stack_trace += "],";
           } else {
-            console.error("clGetDeviceIDs: Invalid platform : "+platform);
-            HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-            return 0; // Null pointer    
-          } 
-        } 
-        var prop = [];
-        var plat = 0;
-        var use_gl_interop = 0;
-        var share_group = 0;
-        if (properties != 0) {
-          var i = 0;
-          while(1) {
-            var readprop = HEAP32[(((properties)+(i*4))>>2)];
-            if (readprop == 0) break;
-            switch(readprop) {
-              case (4228) /*CL_CONTEXT_PLATFORM*/ :
-                // property platform
-                prop.push(CL.CONTEXT_PLATFORM);
-                i++;
-                // get platform id
-                readprop = CL.getArrayId(HEAP32[(((properties)+(i*4))>>2)]);
-                if (readprop >= CL.platforms.length || readprop < 0 ) {
-                  console.error("clCreateContext: Invalid context : "+ctx);
-                  HEAP32[((errcode_ret)>>2)]=-32 /* CL_INVALID_PLATFORM */;
-                  return 0; // Null pointer    
-                } else {
-                  plat = readprop;    
-                  prop.push(CL.platforms[readprop]);
-                }             
-              break;
-              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
-                use_gl_interop = 1;
-                i++;
-              break;
-              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
-                i++;
-              break;
-              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
-                use_gl_interop = 1;
-                share_group = 1;
-                i++;
-              break;
-              default:
-                console.error("clCreateContext : Param not yet implemented or unknow : "+readprop);
-                HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
-                return 0; // Null pointer    
+            CL.stack_trace += parameter[i] + ",";  
+          }
+        }
+        if (parameter.length >= 1) {
+          if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[parameter.length - 1] instanceof ArrayBufferView)) || (parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array) ) { 
+            CL.stack_trace += "[";  
+            for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
+              CL.stack_trace += parameter[parameter.length - 1][j] + ",";
             }
-            i++;  
-          }        
-        }
-        if (prop.length == 0) {
-          prop = [CL.CONTEXT_PLATFORM, CL.platforms[0]]; 
-          plat = 0;    
-        }
-        if (CL.devices.length == 0) {
-          var alldev = CL.getAllDevices(plat);
-          var mapcount = 0;
-          for (var i = 0 ; i < alldev.length; i++ ) {
-            CL.devices.push(alldev[i]);  
+            if (parameter[i].length >= 1) {
+              CL.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
+            }
+            CL.stack_trace += "]";
+          } else {
+            CL.stack_trace += parameter[parameter.length - 1]; 
           }
         }
-        if (num_devices > CL.devices.length) {
-          console.error("clCreateContext: Invalid num devices : "+num_devices);
-          HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-          return 0;
+      },webclEndStackTrace:function (result,message,exception) {
+        CL.stack_trace += "\t\t=>Result (" + result[0];
+        if (result.length >= 2) {
+          CL.stack_trace += " : ";
         }
-        // \todo will be better to use the devices list in parameter ...
-        var devices_tab = [];
-        for (var i = 0; i < num_devices; i++) {
-          devices_tab[i] = CL.devices[i];
-        } 
-        if (num_devices == 0) {
-          devices_tab[0] = CL.devices[0];
+        for (var i = 1; i < result.length - 1 ; i++) {
+          CL.stack_trace += ( result[i] == 0 ? '0' : HEAP32[((result[i])>>2)] ) + " - ";
         }
-        if (CL.webcl_mozilla == 1) {
-          if (use_gl_interop) {
-            console.error("clCreateContext: GL Interop not yet supported by Firefox");
-            HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-            return 0;
-          }
-          CL.ctx.push(WebCL.createContext(prop, devices_tab/*[CL.devices[0],CL.devices[1]]*/));  
-        } else {
-          var builder = WebCL;
-          if (use_gl_interop)
-            builder = WebCL.getExtension("KHR_GL_SHARING");
-          CL.ctx.push(builder.createContext({platform: CL.platforms[plat], devices: devices_tab, deviceType: devices_tab[0].getInfo(CL.DEVICE_TYPE), shareGroup: share_group, hint: null}));
+        if (result.length >= 2) {
+          CL.stack_trace +=  ( result[result.length - 1] == 0 ? '0' : HEAP32[((result[result.length - 1])>>2)] );
         }
-        return CL.getNewId(CL.ctx.length-1);
-      } catch (e) {    
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateContext",e);
-        return 0; // Null pointer    
+        CL.stack_trace += ") - Message (" + message + ") - Exception (" + exception + ")\n";
+      }};function _clGetDeviceIDs(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
+      // Assume the device_type is i32 
+      assert(device_type_i64_2 == 0, 'Invalid device_type i64');
+      CL.webclBeginStackTrace("clGetDeviceIDs",[platform,device_type_i64_1,num_entries,devices,num_devices]);
+      // Init webcl variable if necessary
+      CL.init();
+      if ( num_entries == 0 && devices != 0) {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],"num_entries is equal to zero and device is not NULL","");
+        return webcl.INVALID_VALUE;
       }
-    }
-  function _clCreateCommandQueue(context, devices, properties, errcode_ret) {
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-          console.error("clCreateCommandQueue: Invalid context : "+ctx);
-          HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-          return 0; // Null pointer    
+      if ( num_devices == 0 && devices == 0) {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],"both num_devices and device are NULL","");
+        return webcl.INVALID_VALUE;
       }
       try {
-        var idx = CL.getArrayId(devices);//HEAP32[((devices)>>2)];
-        if (idx < 0) {
-          // Create a command-queue on the first device available if idx == 0
-          console.error("\\todo clCreateCommandQueue() : idx = 0 : Need work on that ")
-          var devices = CL.getAllDevices(0);
-          CL.devices.push(devices[0]);
+        if ((platform in CL.cl_objects) || (platform == 0)) {
+          // If platform is NULL use the first platform found ...
+          if (platform == 0) {
+            CL.webclCallStackTrace(webcl+".getPlatforms",[]);
+            var _platforms = webcl.getPlatforms();
+            if (_platforms.length == 0) {
+              CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform is not a valid platform","");
+              return webcl.INVALID_PLATFORM;  
+            }
+            // Create a new UDID 
+            platform = CL.udid(_platforms[0]);
+          } 
+          var _platform = CL.cl_objects[platform];
+          CL.webclCallStackTrace(_platform+".getDevices",[device_type_i64_1]);
+          var _devices = _platform.getDevices(device_type_i64_1);
+          if (num_devices != 0) {
+            HEAP32[((num_devices)>>2)]=_devices.length /* Num of device */;
+          } 
+          if (devices != 0) {
+            for (var i = 0; i < Math.min(num_entries,_devices.length); i++) {
+              var _id = CL.udid(_devices[i]);
+              HEAP32[(((devices)+(i*4))>>2)]=_id;
+            }
+          }
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform is not a valid platform","");
+          return webcl.INVALID_PLATFORM;       
         }
-        if (idx >= CL.devices.length) {
-          console.error("clCreateCommandQueue: Invalid device : "+idx);
-          HEAP32[((errcode_ret)>>2)]=-33 /* CL_INVALID_DEVICE */;  
-          return 0; // Null pointer    
-        }
-        // \todo set the properties 
-        CL.cmdQueue.push(CL.ctx[ctx].createCommandQueue(CL.devices[idx], 0));
-        return CL.getNewId(CL.cmdQueue.length-1);
       } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateCommandQueue",e);
-        return 0; // Null pointer    
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error,devices,num_devices],"",e.message);
+        return _error;
       }
+      CL.webclEndStackTrace([webcl.SUCCESS,devices,num_devices],"","");
+      return webcl.SUCCESS;
     }
-  function _clCreateBuffer(context, flags_i64_1, flags_i64_2, size, host_ptr, errcode_ret) {
+  function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
+      CL.webclBeginStackTrace("clGetDeviceInfo",[device,param_name,param_value_size,param_value,param_value_size_ret]);
+      try { 
+        if (device in CL.cl_objects) {
+          var _object = CL.cl_objects[device];
+          if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
+            CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP64"]);
+            _object = webcl.getExtension("KHR_FP64");
+          }
+          if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
+            CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP16"]);
+            _object = webcl.getExtension("KHR_FP16");
+          }
+          CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
+          var _info = _object.getInfo(param_name);
+          if(typeof(_info) == "number") {
+            if (param_value_size == 8) {
+              if (param_value != 0) (tempI64 = [_info>>>0,(Math.abs(_info) >= 1 ? (_info > 0 ? Math.min(Math.floor((_info)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((_info - +(((~~(_info)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
+            } else {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } 
+          } else if(typeof(_info) == "boolean") {
+            if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+          } else if(typeof(_info) == "string") {
+            if (param_value != 0) writeStringToMemory(_info, param_value);
+            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length;
+          } else if(typeof(_info) == "object") {
+            if (_info instanceof Int32Array) {
+              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+              }
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+            } else if (_info instanceof WebCLPlatform) {
+              var _id = CL.udid(_info);
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if (_info == null) {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+            } else {
+              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+              return webcl.INVALID_VALUE;
+            }
+          } else {
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+            return webcl.INVALID_VALUE;
+          }
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
+          return webcl.INVALID_DEVICE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+        return _error;
+      }
+      CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+      return webcl.SUCCESS;
+    }
+  function _clCreateContext(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
+      CL.webclBeginStackTrace("clCreateContext",[properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret]);
+      var _id = null;
+      var _context = null;
+      try { 
+        var _webcl = webcl;
+        var _platform = null;
+        var _devices = [];
+        var _deviceType = null;
+        var _sharedContext = null;
+        // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
+        // WebCL can work using default device / platform, we check only if parameter are set.
+        for (var i = 0; i < num_devices; i++) {
+          var _idxDevice = HEAP32[(((devices)+(i*4))>>2)];
+          if (_idxDevice in CL.cl_objects) {
+            _devices.push(CL.cl_objects[_idxDevice]);
+          } else {
+            if (cl_errcode_ret != 0) {
+              HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
+            }
+            CL.webclEndStackTrace([0,cl_errcode_ret],"devices contains an invalid device","");
+            return 0;  
+          }
+        }
+        // Verify the property
+        if (properties != 0) {
+          var _propertiesCounter = 0;
+          while(1) {
+            var _readprop = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+            if (_readprop == 0) break;
+            switch (_readprop) {
+              case webcl.CONTEXT_PLATFORM:
+                _propertiesCounter ++;
+                var _idxPlatform = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+                if (_idxPlatform in CL.cl_objects) {
+                  _platform = CL.cl_objects[_idxPlatform];
+                } else {
+                  if (cl_errcode_ret != 0) {
+                    HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PLATFORM;
+                  }
+                  CL.webclEndStackTrace([0,cl_errcode_ret],"platform value specified in properties is not a valid platform","");
+                  return 0;  
+                }
+                break;
+              // /!\ This part, it's for the CL_GL_Interop --> @steven can you check if you are agree ??
+              case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
+              case (0x2008) /*CL_GL_CONTEXT_KHR*/:
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
+                _propertiesCounter ++;
+                // Just one is enough 
+                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
+                  _sharedContext = Module.ctx;
+                  CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                }
+                break;
+              default:
+                if (cl_errcode_ret != 0) {
+                  HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PROPERTY;
+                }
+                CL.webclEndStackTrace([0,cl_errcode_ret],"context property name '"+_readprop+"' in properties is not a supported property name","");
+                return 0; 
+            };
+            _propertiesCounter ++;
+          }
+        }
+        var _prop = null;
+        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
+            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
+        } else {
+          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        }
+        CL.webclCallStackTrace(_webcl+".createContext",[_prop]);
+        _context = _webcl.createContext(_prop)
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+        return 0; // NULL Pointer
+      }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_context);
+      CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+      return _id;
+    }
+  function _clCreateCommandQueue(context,device,properties_1,properties_2,cl_errcode_ret) {
+      // Assume the properties is i32 
+      assert(properties_2 == 0, 'Invalid properties i64');
+      CL.webclBeginStackTrace("clCreateCommandQueue",[context,device,properties_1,cl_errcode_ret]);
+      var _id = null;
+      var _command = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+        return 0; 
+      }
+      if (device == 0) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"device '"+device+"' is not a valid device","");
+        return 0; 
+      }
+      try { 
+        CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[properties_1]);
+        _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+        return 0; // NULL Pointer
+      }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_command);
+      CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+      return _id;
+    }
+  function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
       // Assume the flags is i32 
       assert(flags_i64_2 == 0, 'Invalid flags i64');
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-        console.error("clCreateBuffer: Invalid context : "+ctx);
-        HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-        return 0; // Null pointer    
+      CL.webclBeginStackTrace("clCreateBuffer",[flags_i64_1,size,host_ptr,cl_errcode_ret]);
+      if (CL.cl_pn_type == 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
+      var _id = null;
+      var _buffer = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+        }
+        CL.cl_pn_type = 0;
+        CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+        return 0; 
       }
       try {
-        var macro;
-        switch (flags_i64_1) {
-          case (1 << 0) /* CL_MEM_READ_WRITE */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_WRITE,size));
-            break;
-          case (1 << 1) /* CL_MEM_WRITE_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_WRITE_ONLY,size));
-            break;
-          case (1 << 2) /* CL_MEM_READ_ONLY */:
-            CL.buffers.push(CL.ctx[ctx].createBuffer(CL.MEM_READ_ONLY,size));
-            break;
-          case (((1 << 0)|(1 << 5))) /* CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_READ_WRITE;
-          case (((1 << 1)|(1 << 5))) /* CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_WRITE_ONLY;
-          case (((1 << 2)|(1 << 5))) /* CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR */:
-            macro = CL.MEM_READ_ONLY;
-            if (host_ptr == 0) {
-              console.error("clCreateBuffer: CL_MEM_COPY_HOST_PTR can't be use with null host_ptr parameter");
-              HEAP32[((errcode_ret)>>2)]=-37 /* CL_INVALID_HOST_PTR */;
-              return 0;     
-            }
-            var vector;
-            var isFloat = 0;
-            var isUint = 0;
-            var isInt = 0;
-            var buff = CL.buffers.length;
-            if (CL.kernels_name.length > 0) {
-              // \warning experimental stuff
-              console.info("/!\\ clCreateBuffer: Need to find how detect the array type");
-              var name = CL.kernels_name[0];
-              console.info("/!\\ clCreateBuffer: use '"+name+"' kernel name ...");
-              var sig = CL.kernels_sig[name];
-              var type = sig[buff];
-              if (type & CL.data_type.FLOAT) {
-                isFloat = 1;
-              } 
-              if (type & CL.data_type.UINT) {
-                isUint = 1;
-              } 
-              if (type & CL.data_type.INT) {
-                isInt = 1;
-              }
-            }
-            if (CL.webcl_webkit == -1) {
-              vector = new ArrayBuffer(size / ArrayBuffer.BYTES_PER_ELEMENT);
-            } else {
-              if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
-                isFloat = CL.isFloat(host_ptr,size); 
-                if (isFloat) {
-                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-                } else {
-                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-                }
-              } else {        
-                if (isFloat) {
-                  vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-                } else if (isUint) {
-                  vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-                } else if (isInt) {
-                  vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-                } else {
-                  console.error("clCreateBuffer: Unknow ouptut type : "+sig[buff]);
-                }
-              }
-            }
-            if (isFloat) {
-              console.info("/!\\ clCreateBuffer: use FLOAT output type ...");
-            } else if (isUint) {
-              console.info("/!\\ clCreateBuffer: use UINT output type ...");
-            } else if (isInt) {
-              console.info("/!\\ clCreateBuffer: use INT output type ...");
-            } 
-            for (var i = 0; i < (size / 4); i++) {
-              if (isFloat) {
-                vector[i] = HEAPF32[(((host_ptr)+(i*4))>>2)];
-              } else {
-                vector[i] = HEAP32[(((host_ptr)+(i*4))>>2)];
-              }
-            }
-            //console.info(vector);
-            if (CL.webcl_webkit == -1) {
-                CL.buffers.push(CL.ctx[ctx].createBuffer(macro | CL.MEM_COPY_HOST_PTR, size, vector));
-            } else {
-              CL.buffers.push(CL.ctx[ctx].createBuffer(macro,size));              
-              if (CL.cmdQueue.length == 0) {
-                console.error("clCreateBuffer: Invalid command queue : "+CL.cmdQueue.length);
-                HEAP32[((errcode_ret)>>2)]=-36 /* CL_INVALID_COMMAND_QUEUE */;
-                return 0;
-              }
-              if (CL.buffers.length == 0) {
-                console.error("clCreateBuffer: Invalid buffers : "+CL.buffers.length);
-                HEAP32[((errcode_ret)>>2)]=-38 /* CL_INVALID_MEM_OBJECT */;
-                return 0;
-              }    
-              CL.cmdQueue[CL.cmdQueue.length-1].enqueueWriteBuffer(CL.buffers[CL.buffers.length-1], 1, 0, size, vector , []);    
-            }
-            break;
-          default:
-            console.error("clCreateBuffer: flag not yet implemented "+flags_i64_1);
-            HEAP32[((errcode_ret)>>2)]=-30 /* CL_INVALID_VALUE */;
-            return 0;
-        };
-        HEAP32[((errcode_ret)>>2)]=0 /* CL_SUCCESS */;
-        return CL.getNewId(CL.buffers.length-1);
-      } catch(e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateBuffer",e);
-        return 0;
+        var _flags;
+        if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+          _flags = webcl.MEM_READ_WRITE;
+        } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+          _flags = webcl.MEM_WRITE_ONLY;
+        } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+          _flags = webcl.MEM_READ_ONLY;
+        } else {
+          if (cl_errcode_ret != 0) {
+            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+          }
+          CL.cl_pn_type = 0;
+          CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+          return 0; 
+        }
+        var _host_ptr = null;
+        if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
+          _host_ptr = new ArrayBuffer(size);
+        } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+          _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+        } else if (flags_i64_1 & ~_flags) {
+          // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
+          // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
+          console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+        }
+        CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
+        if (_host_ptr != null) {
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+        } else
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        CL.cl_pn_type = 0;
+        CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+        return 0; // NULL Pointer
       }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_buffer);
+      CL.cl_pn_type = 0;
+      CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+      return _id;
     }
-  function _clEnqueueWriteBuffer(command_queue, buffer, blocking_write, offset, size, ptr, num_events_in_wait_list, event_wait_list, event) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        console.error("clEnqueueWriteBuffer: Invalid command queue : "+queue);
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var buff = CL.getArrayId(buffer);
-      if (buff >= CL.buffers.length || buff < 0 ) {
-        console.error("clEnqueueWriteBuffer: Invalid command queue : "+buff);
-        return -38; /* CL_INVALID_MEM_OBJECT */
-      }
-      var vector;
-      var isFloat = 0;
-      var isUint = 0;
-      var isInt = 0;
-      if (CL.kernels_name.length > 0) {
-        // \warning experimental stuff
-        console.info("/!\\ clEnqueueWriteBuffer: Need to find how detect the array type");
-        var name = CL.kernels_name[0];
-        console.info("/!\\ clEnqueueWriteBuffer: use '"+name+"' kernel name ...");
-        var sig = CL.kernels_sig[name];
-        var type = sig[buff];
-        if (type & CL.data_type.FLOAT) {
-          isFloat = 1;
-        } 
-        if (type & CL.data_type.UINT) {
-          isUint = 1;
-        } 
-        if (type & CL.data_type.INT) {
-          isInt = 1;
-        }
-      }
-      if ( isFloat == 0 && isUint == 0 && isInt == 0 ) {
-        isFloat = CL.isFloat(ptr,size); 
-        if (isFloat) {
-          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
+  function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
+      CL.webclBeginStackTrace("clEnqueueWriteBuffer",[command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
+      if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteBuffer : you don't call clSetTypePointer for ptr parameter");
+      try { 
+        if (command_queue in CL.cl_objects) {
+          if (buffer in CL.cl_objects) {
+            var _event = null;
+            var _event_wait_list = [];
+            var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                CL.cl_pn_type = 0;
+                CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+                return webcl.INVALID_EVENT;    
+              }
+            } 
+            CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
+            // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
+            // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
         } else {
-          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");        
-        }
-      } else {        
-        if (isFloat) {
-          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueWriteBuffer: use FLOAT output type ...");
-        } else if (isUint) {
-          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueWriteBuffer: use UINT output type ...");
-        } else if (isInt) {
-          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueWriteBuffer: use INT output type ...");
+            CL.cl_pn_type = 0;
+            CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+            return webcl.INVALID_MEM_OBJECT;
+          }
         } else {
-          console.error("clEnqueueWriteBuffer: Unknow ouptut type : "+sig[buff]);
+          CL.cl_pn_type = 0;
+          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+          return webcl.INVALID_COMMAND_QUEUE;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.cl_pn_type = 0;
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      for (var i = 0; i < (size / 4); i++) {
-        if (isFloat) {
-          vector[i] = HEAPF32[(((ptr)+(i*4))>>2)];
-        } else {
-          vector[i] = HEAP32[(((ptr)+(i*4))>>2)];
-        }
-      }
-      //console.info(vector);
-      try {
-        CL.cmdQueue[queue].enqueueWriteBuffer (CL.buffers[buff], blocking_write, offset, size, vector , []);
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clEnqueueWriteBuffer",e);
-      }
+      CL.cl_pn_type = 0;
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;  
     }
   function _snprintf(s, n, format, varargs) {
       // int snprintf(char *restrict s, size_t n, const char *restrict format, ...);
@@ -4620,410 +5109,450 @@ function copyTempDouble(ptr) {
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
       return _snprintf(s, undefined, format, varargs);
     }
-  function _clCreateProgramWithSource(context, count, strings, lengths, errcode_ret) {
-      var ctx = CL.getArrayId(context);
-      if (ctx >= CL.ctx.length || ctx < 0 ) {
-        console.error("clCreateProgramWithSource: Invalid context : "+ctx);
-        HEAP32[((errcode_ret)>>2)]=-34 /* CL_INVALID_CONTEXT */;
-        return 0; // Null pointer    
-      }
-      var sourceIdx = HEAP32[((strings)>>2)]
-      var kernel = Pointer_stringify(sourceIdx); 
-      CL.kernels_sig = CL.parseKernel(kernel);
-      try {
-        // \todo set the properties 
-        if (CL.webcl_mozilla == 1) {
-          CL.programs.push(CL.ctx[ctx].createProgramWithSource(kernel));
-        } else {
-          CL.programs.push(CL.ctx[ctx].createProgram(kernel));
+  function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
+      CL.webclBeginStackTrace("clCreateProgramWithSource",[context,count,strings,lengths,cl_errcode_ret]);
+      var _id = null;
+      var _program = null;
+      // Context must be created
+      if (!(context in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
         }
-        return CL.getNewId(CL.programs.length-1);
+        CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+        return 0; 
+      }
+      try {
+        var _string = Pointer_stringify(HEAP32[((strings)>>2)]); 
+        CL.cl_kernels_sig = CL.parseKernel(_string);
+        CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
+        _program = CL.cl_objects[context].createProgram(_string);
       } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateProgramWithSource",e);
-        return 0; // Null pointer
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+        return 0; // NULL Pointer
       }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_program);
+      CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+      return _id;
     }
-  function _clBuildProgram(program, num_devices, device_list, options, pfn_notify, user_data) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        console.error("clBuildProgram: Invalid program : "+prog);
-        return -44; /* CL_INVALID_PROGRAM */
+  function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
+      CL.webclBeginStackTrace("clBuildProgram",[program,num_devices,device_list,options,pfn_notify,user_data]);
+      // Program must be created
+      if (!(program in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program '"+program+"' is not a valid program","");
+        return webcl.INVALID_PROGRAM; 
       }
       try {
-        if (num_devices > CL.devices.length || CL.devices.length == 0) {
-          console.error("clBuildProgram: Invalid num devices : "+num_devices);
-          return -33; /* CL_INVALID_DEVICE */;  
-        }
-        var devices_tab = [];
-        if (num_devices == 0 || device_list == 0) {
-          devices_tab[0] = CL.devices[0];
-        } else {
-          for (var i = 0; i < num_devices; i++) {
-            var idx = CL.getArrayId(HEAP32[(((device_list)+(i*4))>>2)]);
-            devices_tab[i] = CL.devices[idx];
-          }
-        }    
-        var opt = "";//(options == 0) ? "" : Pointer_stringify(options);
-        if (CL.webcl_mozilla == 1) {
-          CL.programs[prog].buildProgram (devices_tab, opt);
-        } else { 
-          CL.programs[prog].build(devices_tab, opt);
-        }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clBuildProgram",e);
-      }
-    }
-  function _clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, param_value_size_ret) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        console.error("clGetProgramBuildInfo: Invalid program : "+prog);
-        return -44; /* CL_INVALID_PROGRAM */
-      }          
-      // \todo the type is a number but why i except have a Array ??? Will must be an array ???
-      // var idx = HEAP32[((device)>>2)] - 1;
-      var idx = CL.getArrayId(device);
-      if (idx >= CL.devices.length || idx < 0 ) {
-        console.error("clGetProgramBuildInfo: Invalid device : "+idx);
-        return -33; /* CL_INVALID_DEVICE */  
-      }
-      try {
-        var res = "";
-        switch (param_name) {
-          case 0x1181 /*CL_PROGRAM_BUILD_STATUS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_STATUS);
-          break;
-        case 0x1182 /*CL_PROGRAM_BUILD_OPTIONS*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_OPTIONS);
-          break;
-        case 0x1183 /*CL_PROGRAM_BUILD_LOG*/:
-          res = CL.programs[prog].getProgramBuildInfo (CL.devices[idx], CL.PROGRAM_BUILD_LOG);
-          break;
-        };
-        HEAP32[((param_value_size_ret)>>2)]=res.length;
-        writeStringToMemory(res,param_value);
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clGetProgramBuildInfo",e);
-      }
-    }
-  function _clCreateKernel(program, kernels_name, errcode_ret) {
-      var prog = CL.getArrayId(program);
-      if (prog >= CL.programs.length || prog < 0 ) {
-        console.error("clCreateKernel: Invalid program : "+prog);
-        HEAP32[((errcode_ret)>>2)]=-44;
-        return 0; // Null pointer   
-      }           
-      try {
-        var name = Pointer_stringify(kernels_name);
-        CL.kernels.push(CL.programs[prog].createKernel(name));
-        // Add the name of the kernel for search the kernel sig after...
-        CL.kernels_name.push(name);
-        console.info("Kernel '"+name+"', has "+CL.kernels_sig[name]+" parameters !!!!");
-        return CL.getNewId(CL.kernels.length-1);
-      } catch (e) {
-        HEAP32[((errcode_ret)>>2)]=CL.catchError("clCreateKernel",e);
-        return 0; // Null pointer    
-      }
-    }
-  function _clSetKernelArg(kernel, arg_index, arg_size, arg_value) {
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        console.error("clSetKernelArg: Invalid kernel : "+ker);
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      try {  
-        var name = CL.kernels_name[ker];
-        // \todo problem what is arg_value is buffer or just value ??? hard to say ....
-        // \todo i suppose the arg_index correspond with the order of the buffer creation if is 
-        // not inside the buffers array size we take the value
-        if (CL.kernels_sig[name].length <= 0 && arg_index > CL.kernels_sig[name].length) {
-          console.error("clSetKernelArg: Invalid signature : "+CL.kernels_sig[name].length);
-          return -1; /* CL_FAILED */
-        }
-        var sig = CL.kernels_sig[name];
-        var type = sig[arg_index];
-        // \todo this syntax give a very bad crash ... why ??? (type & CL.data_type.FLOAT) ? 1 : 0;
-        var isFloat = 0;
-        var isLocal = 0;    
-        if (type&CL.data_type.FLOAT) {
-          isFloat = 1;
-        } 
-        if (type&CL.address_space.LOCAL) {
-          isLocal = 1;
-        }
-        var value;
-        if (isLocal) {     
-          ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArgLocal(arg_index,arg_size) : CL.kernels[ker].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-        } else if (arg_size > 4) {
-          value = new Array(arg_size/4);
-          for (var i = 0; i < arg_size/4; i++) {
-            if (isFloat) {
-              value[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
-            } else {
-              value[i] = HEAP32[(((arg_value)+(i*4))>>2)];
+        var _devices = [];
+        var _option = (options == 0) ? "" : Pointer_stringify(options); 
+        if (device_list != 0 && num_devices > 0 ) {
+          for (var i = 0; i < num_devices ; i++) {
+            var _device = HEAP32[(((device_list)+(i*4))>>2)]
+            if (_device in CL.cl_objects) {
+              _devices.push(CL.cl_objects[_device]);
             }
           }
-          var type;
-          if ( CL.webcl_webkit == 1 ) {
-            if (arg_size/4 == 2)
-              type = WebCLKernelArgumentTypes.VEC2;
-            if (arg_size/4 == 3)
-              type = WebCLKernelArgumentTypes.VEC3;
-            if (arg_size/4 == 4)
-              type = WebCLKernelArgumentTypes.VEC4;
-          }
-          if (isFloat) {    
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.FLOAT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT | type);
-          } else {          
-            //CL.kernels[ker].setKernelArg(arg_index,value,CL.types.INT_V)
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT_V) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT | type);
-          } 
-        } else {     
-          var idx = CL.getArrayId(HEAP32[((arg_value)>>2)]);
-          if (idx >= 0 && idx < CL.buffers.length) {
-            ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,CL.buffers[idx]) : CL.kernels[ker].setArg(arg_index,CL.buffers[idx]);
-          } else {
-            if (isFloat) { 
-              value = HEAPF32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.FLOAT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.FLOAT);
-            } else {
-              value = HEAP32[((arg_value)>>2)];
-              ( CL.webcl_mozilla == 1 ) ? CL.kernels[ker].setKernelArg(arg_index,value,WebCL.types.INT) : CL.kernels[ker].setArg(arg_index,value,WebCLKernelArgumentTypes.INT);
-            }            
-          }        
         }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clSetKernelArg",e);
+        // Need to call this code inside the callback event WebCLCallback.
+        // if (pfn_notify != 0) {
+        //  FUNCTION_TABLE[pfn_notify](program, user_data);
+        // }
+        CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option]);
+        CL.cl_objects[program].build(_devices,_option,null,null);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;      
     }
-  function _clEnqueueNDRangeKernel(command_queue, kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        console.error("clEnqueueNDRangeKernel: Invalid command queue : "+queue);
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
+  function _clGetProgramBuildInfo(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
+      CL.webclBeginStackTrace("clGetProgramBuildInfo",[program,device,param_name,param_value_size,param_value,param_value_size_ret]);
+      try { 
+        if (program in CL.cl_objects) {
+          if (device in CL.cl_objects) {
+            CL.webclCallStackTrace(""+CL.cl_objects[program]+".getBuildInfo",[device,param_name]);
+            var _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
+            if(typeof(_info) == "number") {
+              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+            } else if(typeof(_info) == "string") {
+              if (param_value != 0) {
+                writeStringToMemory(_info, param_value);
+              }
+              if (param_value_size_ret != 0) {
+                HEAP32[((param_value_size_ret)>>2)]=_info.length;
+              }
+            } else {
+              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+              return webcl.INVALID_VALUE;
+            }
+          } else {
+            CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
+            return webcl.INVALID_DEVICE;
+          }
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
+          return webcl.INVALID_PROGRAM;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+        CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
+        return _error;
       }
-      var ker = CL.getArrayId(kernel);
-      if (ker >= CL.kernels.length || ker < 0 ) {
-        console.error("clEnqueueNDRangeKernel: Invalid kernel : "+ker);
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      var value_local_work_size;
-      var value_global_work_size;
-      if (CL.webcl_mozilla == 1) {
-        value_local_work_size = [];
-        value_global_work_size = [];
-      } else {
-        value_local_work_size = new Int32Array(work_dim);
-        value_global_work_size = new Int32Array(work_dim);
-      }
-      for (var i = 0 ; i < work_dim; i++) {
-        value_local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
-        value_global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
+      CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
+      return webcl.SUCCESS;
+    }
+  function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
+      CL.webclBeginStackTrace("clCreateKernel",[program,kernel_name,cl_errcode_ret]);
+      var _id = null;
+      var _kernel = null;
+      var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
+      // program must be created
+      if (!(program in CL.cl_objects)) {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PROGRAM;
+        }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"program '"+program+"' is not a valid program","");
+        return 0; 
       }
       try {
-        // \todo how add some event inside the array
-        if (CL.webcl_mozilla == 1) {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,value_local_work_size,[]);
-        } else {
-          CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, value_local_work_size);
+        CL.webclCallStackTrace( CL.cl_objects[program]+".createKernel",[_name]);
+        _kernel = CL.cl_objects[program].createKernel(_name);
+        Object.defineProperty(_kernel, "name", { value : _name,writable : false });
+        Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
+        console.info("clCreateKernel : Kernel '"+_kernel.name+"', has "+_kernel.sig+" parameters !!!!");
+      } catch (e) {
+        var _error = CL.catchError(e);
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
         }
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clEnqueueNDRangeKernel",e);      
-  //       try {
-  // #if OPENCL_DEBUG
-  //         console.error("clEnqueueNDRangeKernel: enqueueNDRangeKernel catch an exception try with null value local work size");
-  // #endif        
-  //         // empty “localWS” sometime solve
-  //         // \todo how add some event inside the array
-  //         if (CL.webcl_mozilla == 1) {
-  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker],work_dim,/*global_work_offset*/[],value_global_work_size,[],[]);
-  //         } else {
-  //           CL.cmdQueue[queue].enqueueNDRangeKernel(CL.kernels[ker], /*global_work_offset*/ null, value_global_work_size, null);
-  //         }
-  //         return 0;/*CL_SUCCESS*/
-  //       } catch(e) {
-  //         return CL.catchError("clEnqueueNDRangeKernel",e);
-  //       }
+        CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
+        return 0; // NULL Pointer
       }
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+      _id = CL.udid(_kernel);
+      CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
+      return _id;
+    }
+  function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
+      CL.webclBeginStackTrace("clSetKernelArg",[kernel,arg_index,arg_size,arg_value]);
+      try {
+        if (kernel in CL.cl_objects) {
+          if (CL.cl_objects[kernel].sig.length > arg_index) {
+            var _sig = CL.cl_objects[kernel].sig[arg_index];
+            if (_sig == webcl.LOCAL) {
+              var _array = new Uint32Array([arg_size]);
+              CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+              // WD --> 
+              //CL.cl_objects[kernel].setArg(arg_index,_array);
+              // WebKit -->
+              CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+            } else {
+              var _value = HEAP32[((arg_value)>>2)];
+              if (_value in CL.cl_objects) {
+                CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
+                CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
+              } else {
+                var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
+                CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+                // WD --> 
+                //CL.cl_objects[kernel].setArg(arg_index,_array);
+                // WebKit -->              
+                var _size = (arg_size>>(CL.getTypeSizeBits(_sig)>>1));
+                if ( _size > 1) {
+                  var _values = new Array(_size);
+                  for (var i = 0; i < _values.length; i++) {
+                    if (_sig == webcl.FLOAT) {
+                      _values[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
+                    } else {
+                      _values[i] = HEAP32[(((arg_value)+(i*4))>>2)];
+                    }
+                  }
+                  var _type;
+                  if (_size == 2) {
+                    _type = WebCLKernelArgumentTypes.VEC2;
+                  } else if (_size == 3) {
+                    _type = WebCLKernelArgumentTypes.VEC3;
+                  } else if (_size == 4) {
+                    _type = WebCLKernelArgumentTypes.VEC4;
+                  }
+                  if (_sig == webcl.FLOAT) {
+                    CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.FLOAT | _type)
+                  } else {
+                    CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.INT | _type)
+                  }  
+                } else {
+                  if (_sig == webcl.FLOAT) {
+                    var _value = HEAPF32[((arg_value)>>2)];
+                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
+                  } else {
+                    var _value = HEAP32[((arg_value)>>2)];
+                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
+                  }                
+                }
+              }
+            }
+          } else {
+            CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
+            return webcl.INVALID_KERNEL;          
+          }
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+          return webcl.INVALID_KERNEL;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
+      }
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
+    }
+  function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
+      CL.webclBeginStackTrace("clEnqueueNDRangeKernel",[command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event]);
+      try { 
+        if (command_queue in CL.cl_objects) {
+          if (kernel in CL.cl_objects) {
+            var _event = null;
+            var _event_wait_list = [];
+            // WD --> 
+            // Workink Draft take CLuint[3]
+            // var _global_work_offset = [];
+            // var _global_work_size = [];
+            // var _local_work_size = [];
+            // WebKit -->
+            // Webkit take UInt32Array     
+            var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+            var _global_work_size = new Int32Array(work_dim);
+            var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+            for (var i = 0; i < work_dim; i++) {
+              //_global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
+              //if (global_work_offset != 0)
+              //  _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
+              //if (local_work_size != 0)
+              //  _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
+              _global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
+              if (_global_work_offset)
+                _global_work_offset[i] = HEAP32[(((global_work_offset)+(i*4))>>2)];
+              if (_local_work_size)
+                _local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
+            }
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+                return webcl.INVALID_EVENT;    
+              }
+            }
+            CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
+            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
+            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+            // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+            CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
+            return webcl.INVALID_MEM_OBJECT;
+          }
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+          return webcl.INVALID_COMMAND_QUEUE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
+      }
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;    
     }
   function _clFinish(command_queue) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        console.error("clFinish: Invalid command queue : "+queue);
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      try {
-        CL.cmdQueue[queue].finish(); //Finish all the operations
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clFinish",e);
-      }
-    }
-  function _clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset, size, results, num_events_in_wait_list, event_wait_list, event) {
-      var queue = CL.getArrayId(command_queue);
-      if (queue >= CL.cmdQueue.length || queue < 0 ) {
-        console.error("clEnqueueReadBuffer: Invalid command queue : "+queue);
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var buff = CL.getArrayId(buffer);
-      if (buff >= CL.buffers.length || buff < 0 ) {
-        console.error("clEnqueueReadBuffer: Invalid buffer : "+buff);
-        return -38; /* CL_INVALID_MEM_OBJECT */
-      }
-      try {
-        var vector;
-        var isFloat = 0;
-        var isUint = 0;
-        var isInt = 0;
-        if (CL.kernels_name.length > 0) {
-          // \warning experimental stuff
-          console.info("/!\\ clEnqueueReadBuffer: Need to find how detect the array type");
-          var name = CL.kernels_name[0];
-          console.info("/!\\ clEnqueueReadBuffer: use '"+name+"' kernel name ...");
-          var sig = CL.kernels_sig[name];
-          var type = sig[buff];
-          if (type & CL.data_type.FLOAT) {
-            isFloat = 1;
-          } 
-          if (type & CL.data_type.UINT) {
-            isUint = 1;
-          } 
-          if (type & CL.data_type.INT) {
-            isInt = 1;
-          }
-        }
-        if (isFloat) {
-          vector = new Float32Array(size / Float32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueReadBuffer: use FLOAT output type ...");
-        } else if (isUint) {
-          vector = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueReadBuffer: use UINT output type ...");
-        } else if (isInt) {
-          vector = new Int32Array(size / Int32Array.BYTES_PER_ELEMENT);
-          console.info("/!\\ clEnqueueReadBuffer: use INT output type ...");
+      CL.webclBeginStackTrace("clFinish",[command_queue]);
+      try { 
+        if (command_queue in CL.cl_objects) {
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".finish",[]);
+          CL.cl_objects[command_queue].finish();
         } else {
-          console.error("clEnqueueReadBuffer: Unknow ouptut type : "+sig[buff]);
+          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+          return webcl.INVALID_COMMAND_QUEUE;
         }
-        CL.cmdQueue[queue].enqueueReadBuffer (CL.buffers[buff], blocking_read == 1 ? true : false, offset, size, vector, []);
-        for (var i = 0; i < (size / 4); i++) {
-          if (isFloat) {
-            HEAPF32[(((results)+(i*4))>>2)]=vector[i];  
-          } else {
-            HEAP32[(((results)+(i*4))>>2)]=vector[i];  
-          }         
-        }
-        //console.info(vector);
-        return 0;/*CL_SUCCESS*/
-      } catch(e) {
-        return CL.catchError("clEnqueueReadBuffer",e);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
+    }
+  function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
+      CL.webclBeginStackTrace("clEnqueueReadBuffer",[command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
+      if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadBuffer : you don't call clSetTypePointer for ptr parameter");
+      try { 
+        if (command_queue in CL.cl_objects) {
+          if (buffer in CL.cl_objects) {
+            var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
+            var _event_wait_list = [];
+            var _event = null;
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                CL.cl_pn_type = 0;
+                CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+                return webcl.INVALID_EVENT;    
+              }
+            } 
+            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+            //CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+            //if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+            // It's the only callStackTrace call after the call for have info about the read host ptr
+            CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
+            if (ptr)
+              CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
+        } else {
+            CL.cl_pn_type = 0;
+            CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+            return webcl.INVALID_MEM_OBJECT;
+          }
+        } else {
+          CL.cl_pn_type = 0;
+          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+          return webcl.INVALID_COMMAND_QUEUE;
+        }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.cl_pn_type = 0;
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
+      }
+      CL.cl_pn_type = 0;
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;    
     }
   var _fabs=Math.abs;
   function _clReleaseKernel(kernel) {
-      var ker = CL.getArrayId(kernel);  
-      if (ker >= (CL.kernels.length +  CL.kernels_clean.length) || ker < 0 ) {
-        console.error("clReleaseKernel: Invalid kernel : "+ker);
-        return -48; /* CL_INVALID_KERNEL */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.kernels_clean.length; i++) {
-        if (CL.kernels_clean[i] < ker) {
-          offset++;
+      CL.webclBeginStackTrace("clReleaseKernel",[kernel]);
+      try {
+        if (kernel in CL.cl_objects) {
+          CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
+          //CL.cl_objects[kernel].release();
+          delete CL.cl_objects[kernel];
+          CL.cl_objects_counter--;
+          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+          return webcl.INVALID_KERNEL;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      CL.kernels.splice(ker - offset, 1);
-      CL.kernels_clean.push(ker);
-      if (CL.kernels.length == 0) {
-        CL.kernels_clean = [];
-      }
-      console.info("clReleaseKernel: Release kernel : "+ker);
-      return 0;/*CL_SUCCESS*/
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
     }
   function _clReleaseProgram(program) {
-      var prog = CL.getArrayId(program);  
-      if (prog >= (CL.programs.length + CL.programs_clean.length)|| prog < 0 ) {
-        console.error("clReleaseProgram: Invalid program : "+prog);
-        return -44; /* CL_INVALID_PROGRAM */
-      }           
-      var offset = 0;
-      for (var i = 0; i < CL.programs_clean.length; i++) {
-        if (CL.programs_clean[i] < prog) {
-          offset++;
+      CL.webclBeginStackTrace("clReleaseProgram",[program]);
+      try {
+        if (program in CL.cl_objects) {
+          CL.webclCallStackTrace(CL.cl_objects[program]+".release",[]);
+          CL.cl_objects[program].release();
+          delete CL.cl_objects[program];
+          CL.cl_objects_counter--;
+          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
+          return webcl.INVALID_PROGRAM;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      CL.programs.splice(prog - offset, 1);
-      CL.programs_clean.push(prog);
-      if (CL.programs.length == 0) {
-        CL.programs_clean = [];
-      }
-      console.info("clReleaseProgram: Release program : "+prog);
-      return 0;/*CL_SUCCESS*/
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
     }
-  function _clReleaseMemObject(memobj) { 
-      var buff = CL.getArrayId(memobj);  
-      if (buff >= (CL.buffers.length + CL.buffers_clean.length) || buff < 0 ) {
-        console.error("clReleaseMemObject: Invalid Memory Object : "+buff);
-        return -38; /* CL_INVALID_MEM_OBJECT */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.buffers_clean.length; i++) {
-        if (CL.buffers_clean[i] < buff) {
-          offset++;
+  function _clReleaseMemObject(memobj) {
+      CL.webclBeginStackTrace("clReleaseMemObject",[memobj]);
+      try {
+        if (memobj in CL.cl_objects) {
+          CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
+          //CL.cl_objects[memobj].release();
+          delete CL.cl_objects[memobj];
+          CL.cl_objects_counter--;
+          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL memobj","");
+          return webcl.INVALID_MEM_OBJECT;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      CL.buffers.splice(buff - offset, 1);
-      CL.buffers_clean.push(buff);
-      if (CL.buffers.length == 0) {
-        CL.buffers_clean = [];
-      }
-      console.info("clReleaseMemObject: Release Memory Object : "+buff);
-      return 0;/*CL_SUCCESS*/
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
     }
   function _clReleaseCommandQueue(command_queue) {
-      var queue = CL.getArrayId(command_queue);  
-      if (queue >= (CL.cmdQueue.length + CL.cmdQueue_clean.length) || queue < 0 ) {
-        console.error("clReleaseCommandQueue: Invalid command queue : "+queue);
-        return -36; /* CL_INVALID_COMMAND_QUEUE */
-      }
-      var offset = 0;
-      for (var i = 0; i < CL.cmdQueue_clean.length; i++) {
-        if (CL.cmdQueue_clean[i] < queue) {
-          offset++;
+      CL.webclBeginStackTrace("clReleaseCommandQueue",[command_queue]);
+      try {
+        if (command_queue in CL.cl_objects) {
+          CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
+          //CL.cl_objects[command_queue].release();
+          delete CL.cl_objects[command_queue];
+          CL.cl_objects_counter--;
+          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],CL.cl_objects[command_queue]+" is not a valid OpenCL command_queue","");
+          return webcl.INVALID_COMMAND_QUEUE;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      CL.cmdQueue.splice(queue - offset, 1);
-      CL.cmdQueue_clean.push(queue);
-      if (CL.cmdQueue.length == 0) {
-        CL.cmdQueue_clean = [];
-      }
-      console.info("clReleaseCommandQueue: Release command queue : "+queue);
-      return 0;/*CL_SUCCESS*/
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
     }
   function _clReleaseContext(context) {
-      var ctx = CL.getArrayId(context);  
-      if (ctx >= (CL.ctx.length + CL.ctx_clean.length) || ctx < 0 ) {
-        console.error("clReleaseContext: Invalid context : "+ctx);
-        return -34; /* CL_INVALID_CONTEXT */
-      }        
-      var offset = 0;
-      for (var i = 0; i < CL.ctx_clean.length; i++) {
-        if (CL.ctx_clean[i] < ctx) {
-          offset++;
+      CL.webclBeginStackTrace("clReleaseContext",[context]);
+      try {
+        if (context in CL.cl_objects) {
+          CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
+          //CL.cl_objects[context].release();
+          delete CL.cl_objects[context];
+          CL.cl_objects_counter--;
+          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
+          return webcl.INVALID_CONTEXT;
         }
+      } catch (e) {
+        var _error = CL.catchError(e);
+        CL.webclEndStackTrace([_error],"",e.message);
+        return _error;
       }
-      CL.ctx.splice(ctx - offset, 1);
-      CL.ctx_clean.push(ctx);
-      if (CL.ctx.length == 0) {
-        CL.ctx_clean = [];
-      }
-      console.info("clReleaseContext: Release context : "+ctx);
-      return 0;/*CL_SUCCESS*/
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+      return webcl.SUCCESS;
     }
-  var ___dirent_struct_layout={__size__:1040,d_ino:0,d_name:4,d_off:1028,d_reclen:1032,d_type:1036};function _open(path, oflag, varargs) {
+  function _open(path, oflag, varargs) {
       // int open(const char *path, int oflag, ...);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/open.html
       var mode = HEAP32[((varargs)>>2)];
@@ -5052,16 +5581,16 @@ function copyTempDouble(ptr) {
         } else {
           flags = 1;
         }
+        flags |= 64;
         flags |= 512;
-        flags |= 1024;
       } else if (mode[0] == 'a') {
         if (mode.indexOf('+') != -1) {
           flags = 2;
         } else {
           flags = 1;
         }
-        flags |= 512;
-        flags |= 8;
+        flags |= 64;
+        flags |= 1024;
       } else {
         ___setErrNo(ERRNO_CODES.EINVAL);
         return 0;
@@ -5069,7 +5598,7 @@ function copyTempDouble(ptr) {
       var ret = _open(filename, flags, allocate([0x1FF, 0, 0, 0], 'i32', ALLOC_STACK));  // All creation permissions.
       return (ret == -1) ? 0 : ret;
     }
-  var ___stat_struct_layout={__size__:68,st_dev:0,st_ino:4,st_mode:8,st_nlink:12,st_uid:16,st_gid:20,st_rdev:24,st_size:28,st_atime:32,st_spare1:36,st_mtime:40,st_spare2:44,st_ctime:48,st_spare3:52,st_blksize:56,st_blocks:60,st_spare4:64};function _stat(path, buf, dontResolveLastLink) {
+  function _stat(path, buf, dontResolveLastLink) {
       // http://pubs.opengroup.org/onlinepubs/7908799/xsh/stat.html
       // int stat(const char *path, struct stat *buf);
       // NOTE: dontResolveLastLink is a shortcut for lstat(). It should never be
@@ -5077,19 +5606,25 @@ function copyTempDouble(ptr) {
       path = typeof path !== 'string' ? Pointer_stringify(path) : path;
       try {
         var stat = dontResolveLastLink ? FS.lstat(path) : FS.stat(path);
-        HEAP32[(((buf)+(___stat_struct_layout.st_dev))>>2)]=stat.dev;
-        HEAP32[(((buf)+(___stat_struct_layout.st_ino))>>2)]=stat.ino
-        HEAP32[(((buf)+(___stat_struct_layout.st_mode))>>2)]=stat.mode
-        HEAP32[(((buf)+(___stat_struct_layout.st_nlink))>>2)]=stat.nlink
-        HEAP32[(((buf)+(___stat_struct_layout.st_uid))>>2)]=stat.uid
-        HEAP32[(((buf)+(___stat_struct_layout.st_gid))>>2)]=stat.gid
-        HEAP32[(((buf)+(___stat_struct_layout.st_rdev))>>2)]=stat.rdev
-        HEAP32[(((buf)+(___stat_struct_layout.st_size))>>2)]=stat.size
-        HEAP32[(((buf)+(___stat_struct_layout.st_atime))>>2)]=Math.floor(stat.atime.getTime() / 1000)
-        HEAP32[(((buf)+(___stat_struct_layout.st_mtime))>>2)]=Math.floor(stat.mtime.getTime() / 1000)
-        HEAP32[(((buf)+(___stat_struct_layout.st_ctime))>>2)]=Math.floor(stat.ctime.getTime() / 1000)
-        HEAP32[(((buf)+(___stat_struct_layout.st_blksize))>>2)]=4096
-        HEAP32[(((buf)+(___stat_struct_layout.st_blocks))>>2)]=stat.blocks
+        HEAP32[((buf)>>2)]=stat.dev;
+        HEAP32[(((buf)+(4))>>2)]=0;
+        HEAP32[(((buf)+(8))>>2)]=stat.ino;
+        HEAP32[(((buf)+(12))>>2)]=stat.mode
+        HEAP32[(((buf)+(16))>>2)]=stat.nlink
+        HEAP32[(((buf)+(20))>>2)]=stat.uid
+        HEAP32[(((buf)+(24))>>2)]=stat.gid
+        HEAP32[(((buf)+(28))>>2)]=stat.rdev
+        HEAP32[(((buf)+(32))>>2)]=0;
+        HEAP32[(((buf)+(36))>>2)]=stat.size
+        HEAP32[(((buf)+(40))>>2)]=4096
+        HEAP32[(((buf)+(44))>>2)]=stat.blocks
+        HEAP32[(((buf)+(48))>>2)]=Math.floor(stat.atime.getTime() / 1000)
+        HEAP32[(((buf)+(52))>>2)]=0
+        HEAP32[(((buf)+(56))>>2)]=Math.floor(stat.mtime.getTime() / 1000)
+        HEAP32[(((buf)+(60))>>2)]=0
+        HEAP32[(((buf)+(64))>>2)]=Math.floor(stat.ctime.getTime() / 1000)
+        HEAP32[(((buf)+(68))>>2)]=0
+        HEAP32[(((buf)+(72))>>2)]=stat.ino
         return 0;
       } catch (e) {
         FS.handleFSError(e);
@@ -5158,46 +5693,12 @@ function copyTempDouble(ptr) {
       if (bytesRead < bytesToRead) streamObj.eof = true;
       return Math.floor(bytesRead / size);
     }
-  function _llvm_lifetime_start() {}
-  function _llvm_lifetime_end() {}
-  function _fputs(s, stream) {
-      // int fputs(const char *restrict s, FILE *restrict stream);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fputs.html
-      return _write(stream, s, _strlen(s));
-    }
-  function _fputc(c, stream) {
-      // int fputc(int c, FILE *stream);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fputc.html
-      var chr = unSign(c & 0xFF);
-      HEAP8[((_fputc.ret)|0)]=chr
-      var ret = _write(stream, _fputc.ret, 1);
-      if (ret == -1) {
-        var streamObj = FS.getStream(stream);
-        if (streamObj) streamObj.error = true;
-        return -1;
-      } else {
-        return chr;
-      }
-    }function _puts(s) {
-      // int puts(const char *s);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/puts.html
-      // NOTE: puts() always writes an extra newline.
-      var stdout = HEAP32[((_stdout)>>2)];
-      var ret = _fputs(s, stdout);
-      if (ret < 0) {
-        return ret;
-      } else {
-        var newlineRet = _fputc(10, stdout);
-        return (newlineRet < 0) ? -1 : ret + 1;
-      }
-    }
-  var _fabsf=Math.abs;
   function _abort() {
       Module['abort']();
     }
   function ___errno_location() {
       return ___errno_state;
-    }var ___errno=___errno_location;
+    }
   function _memcpy(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
       var ret = 0;
@@ -5246,137 +5747,137 @@ function copyTempDouble(ptr) {
       // long sysconf(int name);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/sysconf.html
       switch(name) {
-        case 8: return PAGE_SIZE;
-        case 54:
-        case 56:
+        case 30: return PAGE_SIZE;
+        case 132:
+        case 133:
+        case 12:
+        case 137:
+        case 138:
+        case 15:
+        case 235:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 149:
+        case 13:
+        case 10:
+        case 236:
+        case 153:
+        case 9:
         case 21:
-        case 61:
-        case 63:
         case 22:
+        case 159:
+        case 154:
+        case 14:
+        case 77:
+        case 78:
+        case 139:
+        case 80:
+        case 81:
+        case 79:
+        case 82:
+        case 68:
         case 67:
+        case 164:
+        case 11:
+        case 29:
+        case 47:
+        case 48:
+        case 95:
+        case 52:
+        case 51:
+        case 46:
+          return 200809;
+        case 27:
+        case 246:
+        case 127:
+        case 128:
         case 23:
         case 24:
-        case 25:
-        case 26:
-        case 27:
-        case 69:
-        case 28:
-        case 101:
-        case 70:
-        case 71:
-        case 29:
-        case 30:
-        case 199:
-        case 75:
+        case 160:
+        case 161:
+        case 181:
+        case 182:
+        case 242:
+        case 183:
+        case 184:
+        case 243:
+        case 244:
+        case 245:
+        case 165:
+        case 178:
+        case 179:
+        case 49:
+        case 50:
+        case 168:
+        case 169:
+        case 175:
+        case 170:
+        case 171:
+        case 172:
+        case 97:
         case 76:
         case 32:
-        case 43:
-        case 44:
-        case 80:
-        case 46:
-        case 47:
-        case 45:
-        case 48:
-        case 49:
-        case 42:
-        case 82:
-        case 33:
-        case 7:
-        case 108:
-        case 109:
-        case 107:
-        case 112:
-        case 119:
-        case 121:
-          return 200809;
-        case 13:
-        case 104:
-        case 94:
-        case 95:
-        case 34:
+        case 173:
         case 35:
-        case 77:
-        case 81:
-        case 83:
-        case 84:
-        case 85:
-        case 86:
-        case 87:
-        case 88:
-        case 89:
-        case 90:
-        case 91:
-        case 94:
-        case 95:
-        case 110:
-        case 111:
-        case 113:
-        case 114:
-        case 115:
-        case 116:
-        case 117:
-        case 118:
-        case 120:
-        case 40:
-        case 16:
-        case 79:
-        case 19:
           return -1;
+        case 176:
+        case 177:
+        case 7:
+        case 155:
+        case 8:
+        case 157:
+        case 125:
+        case 126:
         case 92:
         case 93:
-        case 5:
-        case 72:
-        case 6:
-        case 74:
-        case 92:
-        case 93:
-        case 96:
-        case 97:
-        case 98:
-        case 99:
-        case 102:
-        case 103:
-        case 105:
+        case 129:
+        case 130:
+        case 131:
+        case 94:
+        case 91:
           return 1;
-        case 38:
-        case 66:
-        case 50:
-        case 51:
+        case 74:
+        case 60:
+        case 69:
+        case 70:
         case 4:
           return 1024;
-        case 15:
-        case 64:
-        case 41:
+        case 31:
+        case 42:
+        case 72:
           return 32;
-        case 55:
-        case 37:
-        case 17:
+        case 87:
+        case 26:
+        case 33:
           return 2147483647;
-        case 18:
+        case 34:
         case 1:
           return 47839;
-        case 59:
-        case 57:
+        case 38:
+        case 36:
           return 99;
-        case 68:
-        case 58:
+        case 43:
+        case 37:
           return 2048;
         case 0: return 2097152;
         case 3: return 65536;
-        case 14: return 32768;
-        case 73: return 32767;
-        case 39: return 16384;
-        case 60: return 1000;
-        case 106: return 700;
-        case 52: return 256;
-        case 62: return 255;
+        case 28: return 32768;
+        case 44: return 32767;
+        case 75: return 16384;
+        case 39: return 1000;
+        case 89: return 700;
+        case 71: return 256;
+        case 40: return 255;
         case 2: return 100;
-        case 65: return 64;
-        case 36: return 20;
-        case 100: return 16;
-        case 20: return 6;
-        case 53: return 4;
-        case 10: return 1;
+        case 180: return 64;
+        case 25: return 20;
+        case 5: return 16;
+        case 6: return 6;
+        case 73: return 4;
+        case 84: return 1;
       }
       ___setErrNo(ERRNO_CODES.EINVAL);
       return -1;
@@ -5458,6 +5959,7 @@ function copyTempDouble(ptr) {
             b = bb.getBlob();
           }
           var url = Browser.URLObject.createObjectURL(b);
+          assert(typeof url == 'string', 'createObjectURL must return a url as a string');
           var img = new Image();
           img.onload = function() {
             assert(img.complete, 'Image ' + name + ' could not be decoded');
@@ -5502,6 +6004,7 @@ function copyTempDouble(ptr) {
               return fail();
             }
             var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
+            assert(typeof url == 'string', 'createObjectURL must return a url as a string');
             var audio = new Audio();
             audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
             audio.onerror = function(event) {
@@ -5802,9 +6305,9 @@ function copyTempDouble(ptr) {
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 __ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); }
 __ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 GL.init()
-_fputc.ret = allocate([0], "i8", ALLOC_STATIC);
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
   Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
@@ -5818,11 +6321,6034 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
 var FUNCTION_TABLE = [0, 0];
 // EMSCRIPTEN_START_FUNCS
-function _create_reduction_pass_counts(r1,r2,r3,r4,r5,r6,r7,r8,r9){var r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22;r10=r4<<1;if((r10|0)>(r1|0)){r11=(r1|0)/2&-1}else{r11=r4}r12=(r1|0)<1?1:r11;r11=(r1|0)/(r12<<1|0)&-1;r13=(r11|0)>(r3|0)?r3:r11;r11=(r13|0)>1;if(r11){r14=r13;r15=1;while(1){if((r14|0)<(r10|0)){r16=(r14|0)/2&-1}else{r16=r4}r17=(r14|0)/(r16<<1|0)&-1;r18=r15+1|0;if((r17|0)>1){r14=r17;r15=r18}else{r19=r18;break}}}else{r19=1}r15=r19<<2;r14=_malloc(r15);HEAP32[r6>>2]=r14;r14=_malloc(r15);HEAP32[r7>>2]=r14;r14=_malloc(r15);HEAP32[r8>>2]=r14;r14=_malloc(r15);HEAP32[r9>>2]=r14;HEAP32[r5>>2]=r19;HEAP32[HEAP32[r6>>2]>>2]=r13;HEAP32[HEAP32[r7>>2]>>2]=r12;HEAP32[HEAP32[r8>>2]>>2]=1;HEAP32[HEAP32[r9>>2]>>2]=r1;if((r12|0)>(r2|0)){HEAP32[HEAP32[r8>>2]>>2]=r12;HEAP32[HEAP32[r7>>2]>>2]=r2}if(r11){r20=r13;r21=1}else{return}while(1){if((r20|0)<(r10|0)){r22=(r20|0)/2&-1}else{r22=r4}r13=(r20|0)/(r22<<1|0)&-1;HEAP32[HEAP32[r6>>2]+(r21<<2)>>2]=(r13|0)>(r3|0)?r3:r13;HEAP32[HEAP32[r7>>2]+(r21<<2)>>2]=r22;HEAP32[HEAP32[r8>>2]+(r21<<2)>>2]=1;HEAP32[HEAP32[r9>>2]+(r21<<2)>>2]=r20;if((r22|0)>(r2|0)){HEAP32[HEAP32[r8>>2]+(r21<<2)>>2]=r22;HEAP32[HEAP32[r7>>2]+(r21<<2)>>2]=r2}if((r13|0)>1){r20=r13;r21=r21+1|0}else{break}}return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+4392|0;r6=r5;r7=r5+72;r8=r5+80;r9=r5+88;r10=r5+96;r11=r5+104;r12=r5+112;r13=r5+120;r14=r5+128;r15=r5+136;r16=r5+144;r17=r5+160;r18=r5+1184;r19=r5+2208;r20=r5+2216;r21=r5+2224;r22=r5+4272;r23=r5+4280;r24=r5+4288;r25=r5+4296;r26=r5+4304;r27=r5+4312;r28=r5+4320;r29=r5+4328;r30=r5+4344;r31=r5+4360;r32=r5+4376;HEAP32[r9>>2]=0;HEAP32[r10>>2]=0;HEAP32[r11>>2]=0;HEAP32[r12>>2]=0;HEAP32[r13>>2]=0;if((r1|0)<1|(r2|0)==0){r33=1;r34=1;r35=1}else{r36=1;r37=1;r38=0;r39=1;while(1){r40=HEAP32[r2+(r38<<2)>>2];do{if((r40|0)==0){r41=r39;r42=r37;r43=r36}else{if((_strstr(r40,1784)|0)!=0){r41=0;r42=r37;r43=r36;break}if((_strstr(r40,1776)|0)!=0){r41=1;r42=r37;r43=r36;break}if((_strstr(r40,1512)|0)!=0){r41=r39;r42=0;r43=2;break}if((_strstr(r40,1424)|0)!=0){r41=r39;r42=0;r43=4;break}if((_strstr(r40,1296)|0)!=0){r41=r39;r42=0;r43=1;break}if((_strstr(r40,1e3)|0)!=0){r41=r39;r42=1;r43=2;break}if((_strstr(r40,960)|0)!=0){r41=r39;r42=1;r43=4;break}r44=(_strstr(r40,952)|0)==0;r41=r39;r42=r44?r37:1;r43=r44?r36:1}}while(0);r40=r38+1|0;if((r40|0)<(r1|0)){r36=r43;r37=r42;r38=r40;r39=r41}else{r33=r43;r34=r42;r35=r41;break}}}_printf(920,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=(r35|0)==1?912:1768,r4));STACKTOP=r4;r41=r34&1;r34=r41<<24>>24!=0;r42=r34?952:1296;_printf(1728,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r42,HEAP32[r4+8>>2]=r33,r4));STACKTOP=r4;r43=r33<<20;r39=r33<<22;r38=_malloc(r39);r37=r38;r36=_malloc(r39);r1=r36;if((r43|0)>0){r2=0;while(1){r40=(_rand()|0)*4.656612873077393e-10;HEAPF32[r37+(r2<<2)>>2]=r40;HEAP32[r1+(r2<<2)>>2]=r40*255&-1;r40=r2+1|0;if((r40|0)<(r43|0)){r2=r40}else{break}}}r2=(r35|0)!=0;r35=_clGetDeviceIDs(0,r2?4:2,r2?0:0,1,r8,0);HEAP32[r7>>2]=r35;if((r35|0)!=0){_puts(816);r45=1;STACKTOP=r5;return r45}HEAP32[r14>>2]=0;HEAP32[r15>>2]=0;r35=_clGetDeviceInfo(HEAP32[r8>>2],4100,4,r15,r14);HEAP32[r7>>2]=r35;if((r35|0)!=0){_puts(184);r45=1;STACKTOP=r5;return r45}HEAP32[r14>>2]=0;HEAP32[r7>>2]=0;r35=_clGetDeviceInfo(HEAP32[r8>>2],4101,12,r16,r14);HEAP32[r7>>2]=r35;if((r35|0)!=0){_puts(184);r45=1;STACKTOP=r5;return r45}r35=r17|0;_memset(r35,0,1024);r17=r18|0;_memset(r17,0,1024);r18=_clGetDeviceInfo(HEAP32[r8>>2],4140,1024,r35,r14);HEAP32[r7>>2]=r18;r18=_clGetDeviceInfo(HEAP32[r8>>2],4139,1024,r17,r14);r14=HEAP32[r7>>2]|r18;HEAP32[r7>>2]=r14;if((r14|0)!=0){_puts(184);r45=1;STACKTOP=r5;return r45}_puts(112);r14=HEAP32[r15>>2];r18=HEAP32[r16>>2];r2=HEAP32[r16+4>>2];r43=HEAP32[r16+8>>2];_printf(1616,(r4=STACKTOP,STACKTOP=STACKTOP+48|0,HEAP32[r4>>2]=r35,HEAP32[r4+8>>2]=r17,HEAP32[r4+16>>2]=r14,HEAP32[r4+24>>2]=r18,HEAP32[r4+32>>2]=r2,HEAP32[r4+40>>2]=r43,r4));STACKTOP=r4;if((r33|0)==4){r46=r34?1592:1568}else if((r33|0)==2){r46=r34?1544:1520}else if((r33|0)==1){r46=r34?1488:1464}else{_puts(248);r45=1;STACKTOP=r5;return r45}_puts(112);_printf(1432,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r46,r4));STACKTOP=r4;_puts(112);r34=_fopen(r46,968);do{if((r34|0)!=0){_stat(r46,r6);r43=HEAP32[r6+28>>2];r2=_malloc(r43+1|0);_fread(r2,r43,1,r34);HEAP8[r2+r43|0]=0;if((r2|0)==0){break}r43=_clCreateContext(0,1,r8,0,0,r7);if((r43|0)==0){_puts(8);r45=1;STACKTOP=r5;return r45}r18=_clCreateCommandQueue(r43,HEAP32[r8>>2],0,0,r7);if((r18|0)==0){_puts(768);r45=1;STACKTOP=r5;return r45}r14=_clCreateBuffer(r43,1,0,r39,0,0);if((r14|0)==0){_puts(712);r45=1;STACKTOP=r5;return r45}r17=r41<<24>>24==0;r35=_clEnqueueWriteBuffer(r18,r14,1,0,r39,r17?r38:r36,0,0,0);HEAP32[r7>>2]=r35;if((r35|0)!=0){_puts(672);r45=1;STACKTOP=r5;return r45}r35=_clCreateBuffer(r43,1,0,r39,0,0);if((r35|0)==0){_puts(616);r45=1;STACKTOP=r5;return r45}r16=_clCreateBuffer(r43,1,0,r39,0,0);if((r16|0)==0){_puts(560);r45=1;STACKTOP=r5;return r45}_create_reduction_pass_counts(1048576,HEAP32[r15>>2],64,64,r9,r10,r11,r12,r13);r40=HEAP32[r9>>2];r44=r40<<2;r47=_malloc(r44);r48=r47;_memset(r47,0,r44);r47=_malloc(r44);r49=r47;_memset(r47,0,r44);r44=(r40|0)>0;r50=HEAP32[r10>>2];r51=HEAP32[r12>>2];L94:do{if(r44){r52=0;while(1){r53=_malloc(_strlen(r2)+1024|0);HEAP32[r19>>2]=r53;_memset(r53,0,_strlen(r2)+1024|0);r54=HEAP32[r50+(r52<<2)>>2];r55=HEAP32[r51+(r52<<2)>>2];_sprintf(r53,1400,(r4=STACKTOP,STACKTOP=STACKTOP+40|0,HEAP32[r4>>2]=888,HEAP32[r4+8>>2]=r54,HEAP32[r4+16>>2]=864,HEAP32[r4+24>>2]=r55,HEAP32[r4+32>>2]=r2,r4));STACKTOP=r4;r56=_clCreateProgramWithSource(r43,1,r19,0,r7);HEAP32[r48+(r52<<2)>>2]=r56;if(!((r56|0)!=0&(HEAP32[r7>>2]|0)==0)){r3=61;break}r55=_clBuildProgram(r56,0,0,0,0,0);HEAP32[r7>>2]=r55;if((r55|0)!=0){r3=63;break}r55=_clCreateKernel(r56,1392,r7);HEAP32[r49+(r52<<2)>>2]=r55;if(!((r55|0)!=0&(HEAP32[r7>>2]|0)==0)){r3=65;break}_free(HEAP32[r19>>2]);r55=r52+1|0;if((r55|0)<(r40|0)){r52=r55}else{break L94}}if(r3==61){_puts(HEAP32[r19>>2]);_puts(512);r45=1;STACKTOP=r5;return r45}else if(r3==63){_puts(HEAP32[r19>>2]);_puts(464);r52=r21|0;_clGetProgramBuildInfo(r56,HEAP32[r8>>2],4483,2048,r52,r20);_puts(r52);r45=1;STACKTOP=r5;return r45}else if(r3==65){_puts(424);r45=1;STACKTOP=r5;return r45}}}while(0);HEAP32[r22>>2]=r16;HEAP32[r23>>2]=r14;r2=HEAP32[r11>>2];r52=HEAP32[r13>>2];r55=r33<<2;r54=r23;r53=r22;r57=r26;r58=0;while(1){if((r58|0)>=(r40|0)){r3=75;break}r59=r50+(r58<<2)|0;r60=r2+(r58<<2)|0;r61=Math.imul(HEAP32[r60>>2],HEAP32[r59>>2])|0;HEAP32[r24>>2]=r61;r62=HEAP32[r60>>2];HEAP32[r25>>2]=r62;r63=HEAP32[r51+(r58<<2)>>2];r64=HEAP32[r52+(r58<<2)>>2];HEAP32[r26>>2]=r64;r65=Math.imul(Math.imul(r55,r63)|0,r62)|0;r66=HEAP32[r59>>2];r59=HEAP32[r60>>2];_printf(1304,(r4=STACKTOP,STACKTOP=STACKTOP+56|0,HEAP32[r4>>2]=r58,HEAP32[r4+8>>2]=r61,HEAP32[r4+16>>2]=r62,HEAP32[r4+24>>2]=r66,HEAP32[r4+32>>2]=r59,HEAP32[r4+40>>2]=r63,HEAP32[r4+48>>2]=r64,r4));STACKTOP=r4;r64=HEAP32[r22>>2];HEAP32[r22>>2]=HEAP32[r23>>2];HEAP32[r23>>2]=r64;HEAP32[r7>>2]=0;r64=HEAP32[r49+(r58<<2)>>2];r63=_clSetKernelArg(r64,0,4,r54);HEAP32[r7>>2]=HEAP32[r7>>2]|r63;r63=_clSetKernelArg(r64,1,4,r53);HEAP32[r7>>2]=HEAP32[r7>>2]|r63;r63=_clSetKernelArg(r64,2,r65,0);HEAP32[r7>>2]=HEAP32[r7>>2]|r63;r63=_clSetKernelArg(r64,3,4,r57);r65=HEAP32[r7>>2]|r63;HEAP32[r7>>2]=r65;if((r65|0)!=0){r3=70;break}if((HEAP32[r22>>2]|0)==(r14|0)){HEAP32[r22>>2]=r35}HEAP32[r7>>2]=0;r65=_clEnqueueNDRangeKernel(r18,r64,1,0,r24,r25,0,0,0);r64=HEAP32[r7>>2]|r65;HEAP32[r7>>2]=r64;if((r64|0)==0){r58=r58+1|0}else{r3=74;break}}if(r3==70){_puts(384);r45=1;STACKTOP=r5;return r45}else if(r3==74){_puts(344);r45=1;STACKTOP=r5;return r45}else if(r3==75){r58=_clFinish(r18);HEAP32[r7>>2]=r58;if((r58|0)!=0){_printf(1240,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r58,r4));STACKTOP=r4;r45=1;STACKTOP=r5;return r45}_puts(112);if((r33|0)<2){r67=1160}else{r67=(r33|0)==2?1152:1144}_printf(1168,(r4=STACKTOP,STACKTOP=STACKTOP+32|0,HEAP32[r4>>2]=1e3,HEAP32[r4+8>>2]=1048576,HEAP32[r4+16>>2]=r42,HEAP32[r4+24>>2]=r67,r4));STACKTOP=r4;_puts(112);HEAP32[r7>>2]=0;r58=_emscripten_get_now();r57=r58>>>0;r53=Math.abs(r58)>=1?r58>0?Math.min(Math.floor(r58/4294967296),4294967295)>>>0:~~Math.ceil((r58- +(~~r58>>>0))/4294967296)>>>0:0;r58=0;L128:while(1){r54=0;while(1){if((r54|0)>=(r40|0)){break}r64=r2+(r54<<2)|0;r65=Math.imul(HEAP32[r64>>2],HEAP32[r50+(r54<<2)>>2])|0;HEAP32[r27>>2]=r65;HEAP32[r28>>2]=HEAP32[r64>>2];r64=_clEnqueueNDRangeKernel(r18,HEAP32[r49+(r54<<2)>>2],1,0,r27,r28,0,0,0);HEAP32[r7>>2]=r64;if((r64|0)==0){r54=r54+1|0}else{r3=83;break L128}}r54=r58+1|0;if((r54|0)<1e3){r58=r54}else{break}}if(r3==83){_puts(344);r45=1;STACKTOP=r5;return r45}r58=_clFinish(r18);HEAP32[r7>>2]=r58;if((r58|0)!=0){_printf(1240,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r58,r4));STACKTOP=r4;r45=1;STACKTOP=r5;return r45}r58=_emscripten_get_now();r54=_i64Subtract(r58>>>0,Math.abs(r58)>=1?r58>0?Math.min(Math.floor(r58/4294967296),4294967295)>>>0:~~Math.ceil((r58- +(~~r58>>>0))/4294967296)>>>0:0,r57,r53);r58=((r54>>>0)+(tempRet0>>>0)*4294967296)/1e3;_printf(1120,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r4>>3]=r58*1e3/1e3,r4));STACKTOP=r4;_printf(1088,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r4>>3]=(r39>>>0)*1e-9*1e3/r58,r4));STACKTOP=r4;_puts(112);r58=_malloc(r55);_memset(r58,0,r55);r54=_clEnqueueReadBuffer(r18,HEAP32[r23>>2],1,0,r55,r58,0,0,0);HEAP32[r7>>2]=r54;if((r54|0)!=0){_puts(288);r45=1;STACKTOP=r5;return r45}if(r17){r54=r31;HEAP32[r54>>2]=0;HEAP32[r54+4>>2]=0;HEAP32[r54+8>>2]=0;HEAP32[r54+12>>2]=0;if((r33|0)==4){r54=r31|0;r64=HEAPF32[r37>>2];HEAPF32[r54>>2]=r64;r65=HEAPF32[r38+4>>2];r63=r31+4|0;HEAPF32[r63>>2]=r65;r59=HEAPF32[r38+8>>2];r66=r31+8|0;HEAPF32[r66>>2]=r59;r62=HEAPF32[r38+12>>2];r61=r31+12|0;HEAPF32[r61>>2]=r62;r60=0;r68=0;r69=0;r70=0;r71=1;r72=r64;r64=r65;r65=r59;r59=r62;while(1){r62=r71<<2;r73=HEAPF32[r37+(r62<<2)>>2]-r60;r74=HEAPF32[r37+((r62|1)<<2)>>2]-r68;r75=HEAPF32[r37+((r62|2)<<2)>>2]-r69;r76=HEAPF32[r37+((r62|3)<<2)>>2]-r70;r77=r72+r73;r78=r64+r74;r79=r65+r75;r80=r59+r76;r62=r71+1|0;if((r62|0)<1048576){r60=r77-r72-r73;r68=r78-r64-r74;r69=r79-r65-r75;r70=r80-r59-r76;r71=r62;r72=r77;r64=r78;r65=r79;r59=r80}else{break}}HEAPF32[r54>>2]=r77;HEAPF32[r63>>2]=r78;HEAPF32[r66>>2]=r79;HEAPF32[r61>>2]=r80;r81=r77}else if((r33|0)==2){r59=r31|0;r65=HEAPF32[r37>>2];HEAPF32[r59>>2]=r65;r64=HEAPF32[r38+4>>2];r72=r31+4|0;HEAPF32[r72>>2]=r64;r71=0;r70=0;r69=1;r68=r65;r65=r64;while(1){r64=r69<<1;r60=HEAPF32[r37+(r64<<2)>>2]-r71;r17=HEAPF32[r37+((r64|1)<<2)>>2]-r70;r82=r68+r60;r83=r65+r17;r64=r69+1|0;if((r64|0)<1048576){r71=r82-r68-r60;r70=r83-r65-r17;r69=r64;r68=r82;r65=r83}else{break}}HEAPF32[r59>>2]=r82;HEAPF32[r72>>2]=r83;r81=r82}else if((r33|0)==1){r65=0;r68=HEAPF32[r37>>2];r69=1;while(1){r70=HEAPF32[r37+(r69<<2)>>2]-r65;r84=r68+r70;r71=r69+1|0;if((r71|0)<1048576){r65=r84-r68-r70;r68=r84;r69=r71}else{break}}HEAPF32[r31>>2]=r84;r81=r84}else{_puts(248);r45=1;STACKTOP=r5;return r45}r69=r32;HEAP32[r69>>2]=0;HEAP32[r69+4>>2]=0;HEAP32[r69+8>>2]=0;HEAP32[r69+12>>2]=0;r69=(r33|0)>0;do{if(r69){r68=r58;r65=0;while(1){r72=r32+(r65<<2)|0;HEAPF32[r72>>2]=HEAPF32[r68+(r65<<2)>>2]+HEAPF32[r72>>2];r72=r65+1|0;if((r72|0)<(r33|0)){r65=r72}else{break}}if(r69){r85=0;r86=0;r87=r81}else{break}while(1){r65=Math.abs(r87-HEAPF32[r32+(r85<<2)>>2]);r88=r65>r86?r65:r86;r65=r85+1|0;if((r65|0)>=(r33|0)){break}r85=r65;r86=r88;r87=HEAPF32[r31+(r65<<2)>>2]}r65=r88;if(r65<=1e-7){break}L208:do{if(r69){r68=0;r72=r81;while(1){r59=HEAPF32[r32+(r68<<2)>>2];_printf(976,(r4=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r4>>2]=r68,HEAPF64[r4+8>>3]=r72,HEAPF64[r4+16>>3]=r59,r4));STACKTOP=r4;r59=r68+1|0;if((r59|0)>=(r33|0)){break L208}r68=r59;r72=HEAPF32[r31+(r59<<2)>>2]}}}while(0);_printf(1008,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r4>>3]=r65,r4));STACKTOP=r4;r45=1;STACKTOP=r5;return r45}}while(0);_puts(224);_puts(112)}else{r69=r29;HEAP32[r69>>2]=0;HEAP32[r69+4>>2]=0;HEAP32[r69+8>>2]=0;HEAP32[r69+12>>2]=0;if((r33|0)==4){r69=r29|0;r72=HEAP32[r1>>2];HEAP32[r69>>2]=r72;r68=HEAP32[r36+4>>2];r59=r29+4|0;HEAP32[r59>>2]=r68;r71=HEAP32[r36+8>>2];r70=r29+8|0;HEAP32[r70>>2]=r71;r61=HEAP32[r36+12>>2];r66=r29+12|0;HEAP32[r66>>2]=r61;r63=1;r54=r72;r72=r68;r68=r71;r71=r61;while(1){r61=r63<<2;r89=HEAP32[r1+(r61<<2)>>2]+r54|0;r90=HEAP32[r1+((r61|1)<<2)>>2]+r72|0;r91=HEAP32[r1+((r61|2)<<2)>>2]+r68|0;r92=HEAP32[r1+((r61|3)<<2)>>2]+r71|0;r61=r63+1|0;if((r61|0)<1048576){r63=r61;r54=r89;r72=r90;r68=r91;r71=r92}else{break}}HEAP32[r69>>2]=r89;HEAP32[r59>>2]=r90;HEAP32[r70>>2]=r91;HEAP32[r66>>2]=r92;r93=r89}else if((r33|0)==2){r71=r29|0;r68=HEAP32[r1>>2];HEAP32[r71>>2]=r68;r72=HEAP32[r36+4>>2];r54=r29+4|0;HEAP32[r54>>2]=r72;r63=1;r61=r68;r68=r72;while(1){r72=r63<<1;r94=HEAP32[r1+(r72<<2)>>2]+r61|0;r95=HEAP32[r1+((r72|1)<<2)>>2]+r68|0;r72=r63+1|0;if((r72|0)<1048576){r63=r72;r61=r94;r68=r95}else{break}}HEAP32[r71>>2]=r94;HEAP32[r54>>2]=r95;r93=r94}else if((r33|0)==1){r68=HEAP32[r1>>2];r61=1;while(1){r96=HEAP32[r1+(r61<<2)>>2]+r68|0;r63=r61+1|0;if((r63|0)<1048576){r68=r96;r61=r63}else{break}}HEAP32[r29>>2]=r96;r93=r96}else{_puts(248);r45=1;STACKTOP=r5;return r45}r61=r30;HEAP32[r61>>2]=0;HEAP32[r61+4>>2]=0;HEAP32[r61+8>>2]=0;HEAP32[r61+12>>2]=0;r61=(r33|0)>0;do{if(r61){r68=r58;r54=0;while(1){r71=r30+(r54<<2)|0;HEAP32[r71>>2]=HEAP32[r71>>2]+HEAP32[r68+(r54<<2)>>2];r71=r54+1|0;if((r71|0)<(r33|0)){r54=r71}else{break}}if(r61){r97=0;r98=0;r99=r93}else{break}while(1){r54=Math.abs(r99-HEAP32[r30+(r97<<2)>>2]|0);r100=r54>r98?r54:r98;r54=r97+1|0;if((r54|0)>=(r33|0)){break}r97=r54;r98=r100;r99=HEAP32[r29+(r54<<2)>>2]}r54=r100;if(r54<=1e-7){break}L174:do{if(r61){r68=0;r65=r93;while(1){r71=HEAP32[r30+(r68<<2)>>2];_printf(1064,(r4=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r4>>2]=r68,HEAP32[r4+8>>2]=r65,HEAP32[r4+16>>2]=r71,r4));STACKTOP=r4;r71=r68+1|0;if((r71|0)>=(r33|0)){break L174}r68=r71;r65=HEAP32[r29+(r71<<2)>>2]}}}while(0);_printf(1008,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAPF64[r4>>3]=r54,r4));STACKTOP=r4;r45=1;STACKTOP=r5;return r45}}while(0);_puts(224);_puts(112)}if(r44){r61=0;while(1){_clReleaseKernel(HEAP32[r49+(r61<<2)>>2]);_clReleaseProgram(HEAP32[r48+(r61<<2)>>2]);r65=r61+1|0;if((r65|0)<(r40|0)){r61=r65}else{break}}}_clReleaseMemObject(r14);_clReleaseMemObject(r16);_clReleaseMemObject(r35);_clReleaseCommandQueue(r18);_clReleaseContext(r43);_free(r50);_free(r2);_free(r51);_free(r52);_free(r58);_free(r47);_free(r38);_free(r36);r45=0;STACKTOP=r5;return r45}}}while(0);_puts(56);r45=1;STACKTOP=r5;return r45}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[1816>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=1856+(r8<<2)|0;r10=1856+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[1816>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[1832>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[1824>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=1856+(r16<<2)|0;r13=1856+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[1816>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[1832>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[1824>>2];if((r12|0)!=0){r17=HEAP32[1836>>2];r4=r12>>>3;r12=r4<<1;r6=1856+(r12<<2)|0;r11=HEAP32[1816>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[1816>>2]=r11|r8;r19=r6;r20=1856+(r12+2<<2)|0}else{r4=1856+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[1832>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[1824>>2]=r13;HEAP32[1836>>2]=r5;r14=r9;return r14}r12=HEAP32[1820>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2120+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[1832>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L424:do{if((r5|0)!=0){r6=r4+28|0;r9=2120+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[1820>>2]=HEAP32[1820>>2]&~(1<<HEAP32[r6>>2]);break L424}else{if(r5>>>0<HEAP32[1832>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L424}}}while(0);if(r22>>>0<HEAP32[1832>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[1824>>2];if((r6|0)!=0){r5=HEAP32[1836>>2];r9=r6>>>3;r6=r9<<1;r17=1856+(r6<<2)|0;r11=HEAP32[1816>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[1816>>2]=r11|r7;r25=r17;r26=1856+(r6+2<<2)|0}else{r9=1856+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[1832>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[1824>>2]=r16;HEAP32[1836>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[1820>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2120+(r27<<2)>>2];L232:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L232}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2120+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[1824>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[1832>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L282:do{if((r5|0)!=0){r9=r37+28|0;r13=2120+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[1820>>2]=HEAP32[1820>>2]&~(1<<HEAP32[r9>>2]);break L282}else{if(r5>>>0<HEAP32[1832>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L282}}}while(0);if(r38>>>0<HEAP32[1832>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=1856+(r5<<2)|0;r18=HEAP32[1816>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[1816>>2]=r18|r10;r41=r13;r42=1856+(r5+2<<2)|0}else{r9=1856+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[1832>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2120+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[1820>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[1820>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=316;break}else{r12=r12<<1;r13=r10}}if(r2==316){if(r45>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[1832>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[1824>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[1836>>2];if(r45>>>0>15){r44=r36;HEAP32[1836>>2]=r44+r15;HEAP32[1824>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[1824>>2]=0;HEAP32[1836>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[1828>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[1828>>2]=r45;r36=HEAP32[1840>>2];r37=r36;HEAP32[1840>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[1792>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[1800>>2]=r36;HEAP32[1796>>2]=r36;HEAP32[1804>>2]=-1;HEAP32[1808>>2]=-1;HEAP32[1812>>2]=0;HEAP32[2260>>2]=0;r36=_time(0)&-16^1431655768;HEAP32[1792>>2]=r36;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[1800>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[2256>>2];do{if((r41|0)!=0){r42=HEAP32[2248>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L491:do{if((HEAP32[2260>>2]&4|0)==0){r41=HEAP32[1840>>2];L493:do{if((r41|0)==0){r2=346}else{r38=r41;r42=2264;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=346;break L493}else{r42=r39}}if((r42|0)==0){r2=346;break}r38=r44-HEAP32[1828>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=355}}while(0);do{if(r2==346){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[1796>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[2248>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[2256>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=355}}while(0);L513:do{if(r2==355){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=366;break L491}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[1800>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L513}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=366;break L491}}}while(0);HEAP32[2260>>2]=HEAP32[2260>>2]|4;r57=r48;r2=363}else{r57=0;r2=363}}while(0);do{if(r2==363){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=366}}}while(0);do{if(r2==366){r57=HEAP32[2248>>2]+r54|0;HEAP32[2248>>2]=r57;if(r57>>>0>HEAP32[2252>>2]>>>0){HEAP32[2252>>2]=r57}r57=HEAP32[1840>>2];L533:do{if((r57|0)==0){r45=HEAP32[1832>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[1832>>2]=r55}HEAP32[2264>>2]=r55;HEAP32[2268>>2]=r54;HEAP32[2276>>2]=0;HEAP32[1852>>2]=HEAP32[1792>>2];HEAP32[1848>>2]=-1;r45=0;while(1){r50=r45<<1;r56=1856+(r50<<2)|0;HEAP32[1856+(r50+3<<2)>>2]=r56;HEAP32[1856+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[1840>>2]=r55+r58;HEAP32[1828>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1844>>2]=HEAP32[1808>>2]}else{r45=2264;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=378;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==378){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[1840>>2];r50=HEAP32[1828>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[1840>>2]=r51+r62;HEAP32[1828>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[1844>>2]=HEAP32[1808>>2];break L533}}while(0);if(r55>>>0<HEAP32[1832>>2]>>>0){HEAP32[1832>>2]=r55}r45=r55+r54|0;r50=2264;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=388;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==388){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[1840>>2]|0)){r36=HEAP32[1828>>2]+r37|0;HEAP32[1828>>2]=r36;HEAP32[1840>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[1836>>2]|0)){r36=HEAP32[1824>>2]+r37|0;HEAP32[1824>>2]=r36;HEAP32[1836>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L578:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=1856+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[1832>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[1816>>2]=HEAP32[1816>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[1832>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[1832>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2120+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[1820>>2]=HEAP32[1820>>2]&~(1<<HEAP32[r42>>2]);break L578}else{if(r13>>>0<HEAP32[1832>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L578}}}while(0);if(r67>>>0<HEAP32[1832>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=1856+(r47<<2)|0;r42=HEAP32[1816>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[1816>>2]=r42|r13;r72=r49;r73=1856+(r47+2<<2)|0}else{r36=1856+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[1832>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2120+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[1820>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[1820>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=461;break}else{r43=r43<<1;r49=r13}}if(r2==461){if(r76>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[1832>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=2264;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[1840>>2]=r55+r81;HEAP32[1828>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[1844>>2]=HEAP32[1808>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[2264>>2];HEAP32[r48+4>>2]=HEAP32[2268>>2];HEAP32[r48+8>>2]=HEAP32[2272>>2];HEAP32[r48+12>>2]=HEAP32[2276>>2];HEAP32[2264>>2]=r55;HEAP32[2268>>2]=r54;HEAP32[2276>>2]=0;HEAP32[2272>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=1856+(r37<<2)|0;r45=HEAP32[1816>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[1816>>2]=r45|r13;r82=r51;r83=1856+(r37+2<<2)|0}else{r48=1856+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[1832>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2120+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[1820>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[1820>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=496;break}else{r43=r43<<1;r51=r13}}if(r2==496){if(r86>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[1832>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[1828>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[1828>>2]=r52;r57=HEAP32[1840>>2];r43=r57;HEAP32[1840>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);r15=___errno_location();HEAP32[r15>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[1832>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L750:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[1836>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[1824>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=1856+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[1816>>2]=HEAP32[1816>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2120+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[1820>>2]=HEAP32[1820>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L750}else{if(r16>>>0<HEAP32[1832>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L750}}}while(0);if(r27>>>0<HEAP32[1832>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[1840>>2]|0)){r28=HEAP32[1828>>2]+r18|0;HEAP32[1828>>2]=r28;HEAP32[1840>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[1836>>2]|0)){return}HEAP32[1836>>2]=0;HEAP32[1824>>2]=0;return}if((r10|0)==(HEAP32[1836>>2]|0)){r28=HEAP32[1824>>2]+r18|0;HEAP32[1824>>2]=r28;HEAP32[1836>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L852:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=1856+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[1832>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[1816>>2]=HEAP32[1816>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[1832>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[1832>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2120+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[1820>>2]=HEAP32[1820>>2]&~(1<<HEAP32[r20>>2]);break L852}else{if(r6>>>0<HEAP32[1832>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L852}}}while(0);if(r31>>>0<HEAP32[1832>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[1836>>2]|0)){r34=r28;break}HEAP32[1824>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=1856+(r4<<2)|0;r27=HEAP32[1816>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[1816>>2]=r27|r31;r35=r5;r36=1856+(r4+2<<2)|0}else{r18=1856+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[1832>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2120+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[1820>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[1820>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=673;break}else{r27=r27<<1;r36=r31}}if(r2==673){if(r39>>>0<HEAP32[1832>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[1832>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[1848>>2]-1|0;HEAP32[1848>>2]=r17;if((r17|0)==0){r40=2272}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[1848>>2]=-1;return}function _i64Add(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1+r3>>>0;r6=r2+r4+(r5>>>0<r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _i64Subtract(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r5=r1-r3>>>0;r6=r2-r4>>>0;r6=r2-r4-(r3>>>0>r1>>>0|0)>>>0;return tempRet0=r6,r5|0}function _bitshift64Shl(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2<<r3|(r1&r4<<32-r3)>>>32-r3;return r1<<r3}tempRet0=r1<<r3-32;return 0}function _bitshift64Lshr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=0;return r2>>>r3-32|0}function _bitshift64Ashr(r1,r2,r3){var r4;r1=r1|0;r2=r2|0;r3=r3|0;r4=0;if((r3|0)<32){r4=(1<<r3)-1|0;tempRet0=r2>>r3;return r1>>>r3|(r2&r4)<<32-r3}tempRet0=(r2|0)<0?-1:0;return r2>>r3-32|0}function _llvm_ctlz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[ctlz_i8+(r1>>>24)|0];if((r2|0)<8)return r2|0;r2=HEAP8[ctlz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[ctlz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[ctlz_i8+(r1&255)|0]+24|0}var ctlz_i8=allocate([8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"i8",ALLOC_DYNAMIC);function _llvm_cttz_i32(r1){var r2;r1=r1|0;r2=0;r2=HEAP8[cttz_i8+(r1&255)|0];if((r2|0)<8)return r2|0;r2=HEAP8[cttz_i8+(r1>>8&255)|0];if((r2|0)<8)return r2+8|0;r2=HEAP8[cttz_i8+(r1>>16&255)|0];if((r2|0)<8)return r2+16|0;return HEAP8[cttz_i8+(r1>>>24)|0]+24|0}var cttz_i8=allocate([8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0],"i8",ALLOC_DYNAMIC);function ___muldsi3(r1,r2){var r3,r4,r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=0,r4=0,r5=0,r6=0,r7=0,r8=0,r9=0;r3=r1&65535;r4=r2&65535;r5=Math.imul(r4,r3)|0;r6=r1>>>16;r7=(r5>>>16)+Math.imul(r4,r6)|0;r8=r2>>>16;r9=Math.imul(r8,r3)|0;return(tempRet0=(r7>>>16)+Math.imul(r8,r6)+(((r7&65535)+r9|0)>>>16)|0,r7+r9<<16|r5&65535|0)|0}function ___divdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r5=r2>>31|((r2|0)<0?-1:0)<<1;r6=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r7=r4>>31|((r4|0)<0?-1:0)<<1;r8=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r9=_i64Subtract(r5^r1,r6^r2,r5,r6)|0;r10=tempRet0;r11=_i64Subtract(r7^r3,r8^r4,r7,r8)|0;r12=r7^r5;r13=r8^r6;r14=___udivmoddi4(r9,r10,r11,tempRet0,0)|0;r15=_i64Subtract(r14^r12,tempRet0^r13,r12,r13)|0;return(tempRet0=tempRet0,r15)|0}function ___remdi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0;r15=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r15|0;r6=r2>>31|((r2|0)<0?-1:0)<<1;r7=((r2|0)<0?-1:0)>>31|((r2|0)<0?-1:0)<<1;r8=r4>>31|((r4|0)<0?-1:0)<<1;r9=((r4|0)<0?-1:0)>>31|((r4|0)<0?-1:0)<<1;r10=_i64Subtract(r6^r1,r7^r2,r6,r7)|0;r11=tempRet0;r12=_i64Subtract(r8^r3,r9^r4,r8,r9)|0;___udivmoddi4(r10,r11,r12,tempRet0,r5)|0;r13=_i64Subtract(HEAP32[r5>>2]^r6,HEAP32[r5+4>>2]^r7,r6,r7)|0;r14=tempRet0;STACKTOP=r15;return(tempRet0=r14,r13)|0}function ___muldi3(r1,r2,r3,r4){var r5,r6,r7,r8,r9;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0,r7=0,r8=0,r9=0;r5=r1;r6=r3;r7=___muldsi3(r5,r6)|0;r8=tempRet0;r9=Math.imul(r2,r6)|0;return(tempRet0=Math.imul(r4,r5)+r9+r8|r8&0,r7&-1|0)|0}function ___udivdi3(r1,r2,r3,r4){var r5;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0;r5=___udivmoddi4(r1,r2,r3,r4,0)|0;return(tempRet0=tempRet0,r5)|0}function ___uremdi3(r1,r2,r3,r4){var r5,r6;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=0,r6=0;r6=STACKTOP;STACKTOP=STACKTOP+8|0;r5=r6|0;___udivmoddi4(r1,r2,r3,r4,r5)|0;STACKTOP=r6;return(tempRet0=HEAP32[r5+4>>2]|0,HEAP32[r5>>2]|0)|0}function ___udivmoddi4(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69;r1=r1|0;r2=r2|0;r3=r3|0;r4=r4|0;r5=r5|0;r6=0,r7=0,r8=0,r9=0,r10=0,r11=0,r12=0,r13=0,r14=0,r15=0,r16=0,r17=0,r18=0,r19=0,r20=0,r21=0,r22=0,r23=0,r24=0,r25=0,r26=0,r27=0,r28=0,r29=0,r30=0,r31=0,r32=0,r33=0,r34=0,r35=0,r36=0,r37=0,r38=0,r39=0,r40=0,r41=0,r42=0,r43=0,r44=0,r45=0,r46=0,r47=0,r48=0,r49=0,r50=0,r51=0,r52=0,r53=0,r54=0,r55=0,r56=0,r57=0,r58=0,r59=0,r60=0,r61=0,r62=0,r63=0,r64=0,r65=0,r66=0,r67=0,r68=0,r69=0;r6=r1;r7=r2;r8=r7;r9=r3;r10=r4;r11=r10;if((r8|0)==0){r12=(r5|0)!=0;if((r11|0)==0){if(r12){HEAP32[r5>>2]=(r6>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r6>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}else{if(!r12){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}}r13=(r11|0)==0;do{if((r9|0)==0){if(r13){if((r5|0)!=0){HEAP32[r5>>2]=(r8>>>0)%(r9>>>0);HEAP32[r5+4>>2]=0}r69=0;r68=(r8>>>0)/(r9>>>0)>>>0;return(tempRet0=r69,r68)|0}if((r6|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=(r8>>>0)%(r11>>>0)}r69=0;r68=(r8>>>0)/(r11>>>0)>>>0;return(tempRet0=r69,r68)|0}r14=r11-1|0;if((r14&r11|0)==0){if((r5|0)!=0){HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r14&r8|r2&0}r69=0;r68=r8>>>((_llvm_cttz_i32(r11|0)|0)>>>0);return(tempRet0=r69,r68)|0}r15=_llvm_ctlz_i32(r11|0)|0;r16=r15-_llvm_ctlz_i32(r8|0)|0;if(r16>>>0<=30){r17=r16+1|0;r18=31-r16|0;r37=r17;r36=r8<<r18|r6>>>(r17>>>0);r35=r8>>>(r17>>>0);r34=0;r33=r6<<r18;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}else{if(!r13){r28=_llvm_ctlz_i32(r11|0)|0;r29=r28-_llvm_ctlz_i32(r8|0)|0;if(r29>>>0<=31){r30=r29+1|0;r31=31-r29|0;r32=r29-31>>31;r37=r30;r36=r6>>>(r30>>>0)&r32|r8<<r31;r35=r8>>>(r30>>>0)&r32;r34=0;r33=r6<<r31;break}if((r5|0)==0){r69=0;r68=0;return(tempRet0=r69,r68)|0}HEAP32[r5>>2]=r1&-1;HEAP32[r5+4>>2]=r7|r2&0;r69=0;r68=0;return(tempRet0=r69,r68)|0}r19=r9-1|0;if((r19&r9|0)!=0){r21=_llvm_ctlz_i32(r9|0)+33|0;r22=r21-_llvm_ctlz_i32(r8|0)|0;r23=64-r22|0;r24=32-r22|0;r25=r24>>31;r26=r22-32|0;r27=r26>>31;r37=r22;r36=r24-1>>31&r8>>>(r26>>>0)|(r8<<r24|r6>>>(r22>>>0))&r27;r35=r27&r8>>>(r22>>>0);r34=r6<<r23&r25;r33=(r8<<r23|r6>>>(r26>>>0))&r25|r6<<r24&r22-33>>31;break}if((r5|0)!=0){HEAP32[r5>>2]=r19&r6;HEAP32[r5+4>>2]=0}if((r9|0)==1){r69=r7|r2&0;r68=r1&-1|0;return(tempRet0=r69,r68)|0}else{r20=_llvm_cttz_i32(r9|0)|0;r69=r8>>>(r20>>>0)|0;r68=r8<<32-r20|r6>>>(r20>>>0)|0;return(tempRet0=r69,r68)|0}}}while(0);if((r37|0)==0){r64=r33;r63=r34;r62=r35;r61=r36;r60=0;r59=0}else{r38=r3&-1|0;r39=r10|r4&0;r40=_i64Add(r38,r39,-1,-1)|0;r41=tempRet0;r47=r33;r46=r34;r45=r35;r44=r36;r43=r37;r42=0;while(1){r48=r46>>>31|r47<<1;r49=r42|r46<<1;r50=r44<<1|r47>>>31|0;r51=r44>>>31|r45<<1|0;_i64Subtract(r40,r41,r50,r51)|0;r52=tempRet0;r53=r52>>31|((r52|0)<0?-1:0)<<1;r54=r53&1;r55=_i64Subtract(r50,r51,r53&r38,(((r52|0)<0?-1:0)>>31|((r52|0)<0?-1:0)<<1)&r39)|0;r56=r55;r57=tempRet0;r58=r43-1|0;if((r58|0)==0){break}else{r47=r48;r46=r49;r45=r57;r44=r56;r43=r58;r42=r54}}r64=r48;r63=r49;r62=r57;r61=r56;r60=0;r59=r54}r65=r63;r66=0;r67=r64|r66;if((r5|0)!=0){HEAP32[r5>>2]=r61;HEAP32[r5+4>>2]=r62}r69=(r65|0)>>>31|r67<<1|(r66<<1|r65>>>31)&0|r60;r68=(r65<<1|0>>>31)&-2|r59;return(tempRet0=r69,r68)|0}
-// EMSCRIPTEN_END_FUNCS
+function _current_time() {
+ var label = 0;
+ var $call=_emscripten_get_now();
+ var $conv$0 = $call>>>0; var $conv$1 = (Math.abs($call) >= 1 ? ($call > 0 ? Math.min(Math.floor(($call)/4294967296), 4294967295)>>>0 : (~~(Math.ceil(($call - +(((~~($call)))>>>0))/4294967296)))>>>0) : 0);
+ return (tempRet0=$conv$1,$conv$0);
+}
+function _subtract_time_in_seconds($endtime$0, $endtime$1, $starttime$0, $starttime$1) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 16)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ var $endtime_addr=sp;
+ var $starttime_addr=(sp)+(8);
+ var $st$0$0=(($endtime_addr)|0);
+ HEAP32[(($st$0$0)>>2)]=$endtime$0;
+ var $st$1$1=(($endtime_addr+4)|0);
+ HEAP32[(($st$1$1)>>2)]=$endtime$1;
+ var $st$2$0=(($starttime_addr)|0);
+ HEAP32[(($st$2$0)>>2)]=$starttime$0;
+ var $st$3$1=(($starttime_addr+4)|0);
+ HEAP32[(($st$3$1)>>2)]=$starttime$1;
+ var $ld$4$0=(($endtime_addr)|0);
+ var $0$0=HEAP32[(($ld$4$0)>>2)];
+ var $ld$5$1=(($endtime_addr+4)|0);
+ var $0$1=HEAP32[(($ld$5$1)>>2)];
+ var $ld$6$0=(($starttime_addr)|0);
+ var $1$0=HEAP32[(($ld$6$0)>>2)];
+ var $ld$7$1=(($starttime_addr+4)|0);
+ var $1$1=HEAP32[(($ld$7$1)>>2)];
+ var $sub$0 = _i64Subtract($0$0,$0$1,$1$0,$1$1); var $sub$1 = tempRet0;
+ var $conv=(($sub$0>>>0)+(($sub$1>>>0)*4294967296));
+ var $div=($conv)/(1000);
+ STACKTOP = sp;
+ return $div;
+}
+function _reduce_validate_float($data, $size, $result) {
+ var label = 0;
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $sum;
+   var $c;
+   var $y;
+   var $t;
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$data_addr;
+   var $arrayidx=(($0)|0);
+   var $1=HEAPF32[(($arrayidx)>>2)];
+   $sum=$1;
+   $c=0;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $2=$i;
+   var $3=$size_addr;
+   var $cmp=($2|0) < ($3|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $4=$i;
+   var $5=$data_addr;
+   var $arrayidx1=(($5+($4<<2))|0);
+   var $6=HEAPF32[(($arrayidx1)>>2)];
+   var $7=$c;
+   var $sub=($6)-($7);
+   $y=$sub;
+   var $8=$sum;
+   var $9=$y;
+   var $add=($8)+($9);
+   $t=$add;
+   var $10=$t;
+   var $11=$sum;
+   var $sub2=($10)-($11);
+   var $12=$y;
+   var $sub3=($sub2)-($12);
+   $c=$sub3;
+   var $13=$t;
+   $sum=$13;
+   label = 4; break;
+  case 4: 
+   var $14=$i;
+   var $inc=((($14)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   var $15=$sum;
+   var $16=$result_addr;
+   var $arrayidx4=(($16)|0);
+   HEAPF32[(($arrayidx4)>>2)]=$15;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _reduce_validate_float2($data, $size, $result) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 24)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $c=sp;
+   var $y=(sp)+(8);
+   var $t=(sp)+(16);
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$c;
+   HEAP32[(($0)>>2)]=0; HEAP32[((($0)+(4))>>2)]=0;
+   var $1=$data_addr;
+   var $arrayidx=(($1)|0);
+   var $2=HEAPF32[(($arrayidx)>>2)];
+   var $3=$result_addr;
+   var $arrayidx1=(($3)|0);
+   HEAPF32[(($arrayidx1)>>2)]=$2;
+   var $4=$data_addr;
+   var $arrayidx2=(($4+4)|0);
+   var $5=HEAPF32[(($arrayidx2)>>2)];
+   var $6=$result_addr;
+   var $arrayidx3=(($6+4)|0);
+   HEAPF32[(($arrayidx3)>>2)]=$5;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $7=$i;
+   var $8=$size_addr;
+   var $cmp=($7|0) < ($8|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $arrayinit_begin=(($y)|0);
+   var $9=$i;
+   var $mul=($9<<1);
+   var $add=(($mul)|0);
+   var $10=$data_addr;
+   var $arrayidx4=(($10+($add<<2))|0);
+   var $11=HEAPF32[(($arrayidx4)>>2)];
+   var $arrayidx5=(($c)|0);
+   var $12=HEAPF32[(($arrayidx5)>>2)];
+   var $sub=($11)-($12);
+   HEAPF32[(($arrayinit_begin)>>2)]=$sub;
+   var $arrayinit_element=(($arrayinit_begin+4)|0);
+   var $13=$i;
+   var $mul6=($13<<1);
+   var $add7=((($mul6)+(1))|0);
+   var $14=$data_addr;
+   var $arrayidx8=(($14+($add7<<2))|0);
+   var $15=HEAPF32[(($arrayidx8)>>2)];
+   var $arrayidx9=(($c+4)|0);
+   var $16=HEAPF32[(($arrayidx9)>>2)];
+   var $sub10=($15)-($16);
+   HEAPF32[(($arrayinit_element)>>2)]=$sub10;
+   var $arrayinit_begin11=(($t)|0);
+   var $17=$result_addr;
+   var $arrayidx12=(($17)|0);
+   var $18=HEAPF32[(($arrayidx12)>>2)];
+   var $arrayidx13=(($y)|0);
+   var $19=HEAPF32[(($arrayidx13)>>2)];
+   var $add14=($18)+($19);
+   HEAPF32[(($arrayinit_begin11)>>2)]=$add14;
+   var $arrayinit_element15=(($arrayinit_begin11+4)|0);
+   var $20=$result_addr;
+   var $arrayidx16=(($20+4)|0);
+   var $21=HEAPF32[(($arrayidx16)>>2)];
+   var $arrayidx17=(($y+4)|0);
+   var $22=HEAPF32[(($arrayidx17)>>2)];
+   var $add18=($21)+($22);
+   HEAPF32[(($arrayinit_element15)>>2)]=$add18;
+   var $arrayidx19=(($t)|0);
+   var $23=HEAPF32[(($arrayidx19)>>2)];
+   var $24=$result_addr;
+   var $arrayidx20=(($24)|0);
+   var $25=HEAPF32[(($arrayidx20)>>2)];
+   var $sub21=($23)-($25);
+   var $arrayidx22=(($y)|0);
+   var $26=HEAPF32[(($arrayidx22)>>2)];
+   var $sub23=($sub21)-($26);
+   var $arrayidx24=(($c)|0);
+   HEAPF32[(($arrayidx24)>>2)]=$sub23;
+   var $arrayidx25=(($t+4)|0);
+   var $27=HEAPF32[(($arrayidx25)>>2)];
+   var $28=$result_addr;
+   var $arrayidx26=(($28+4)|0);
+   var $29=HEAPF32[(($arrayidx26)>>2)];
+   var $sub27=($27)-($29);
+   var $arrayidx28=(($y+4)|0);
+   var $30=HEAPF32[(($arrayidx28)>>2)];
+   var $sub29=($sub27)-($30);
+   var $arrayidx30=(($c+4)|0);
+   HEAPF32[(($arrayidx30)>>2)]=$sub29;
+   var $arrayidx31=(($t)|0);
+   var $31=HEAPF32[(($arrayidx31)>>2)];
+   var $32=$result_addr;
+   var $arrayidx32=(($32)|0);
+   HEAPF32[(($arrayidx32)>>2)]=$31;
+   var $arrayidx33=(($t+4)|0);
+   var $33=HEAPF32[(($arrayidx33)>>2)];
+   var $34=$result_addr;
+   var $arrayidx34=(($34+4)|0);
+   HEAPF32[(($arrayidx34)>>2)]=$33;
+   label = 4; break;
+  case 4: 
+   var $35=$i;
+   var $inc=((($35)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   STACKTOP = sp;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _reduce_validate_float4($data, $size, $result) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 48)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $c=sp;
+   var $y=(sp)+(16);
+   var $t=(sp)+(32);
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$c;
+   HEAP32[(($0)>>2)]=0; HEAP32[((($0)+(4))>>2)]=0; HEAP32[((($0)+(8))>>2)]=0; HEAP32[((($0)+(12))>>2)]=0;
+   var $1=$data_addr;
+   var $arrayidx=(($1)|0);
+   var $2=HEAPF32[(($arrayidx)>>2)];
+   var $3=$result_addr;
+   var $arrayidx1=(($3)|0);
+   HEAPF32[(($arrayidx1)>>2)]=$2;
+   var $4=$data_addr;
+   var $arrayidx2=(($4+4)|0);
+   var $5=HEAPF32[(($arrayidx2)>>2)];
+   var $6=$result_addr;
+   var $arrayidx3=(($6+4)|0);
+   HEAPF32[(($arrayidx3)>>2)]=$5;
+   var $7=$data_addr;
+   var $arrayidx4=(($7+8)|0);
+   var $8=HEAPF32[(($arrayidx4)>>2)];
+   var $9=$result_addr;
+   var $arrayidx5=(($9+8)|0);
+   HEAPF32[(($arrayidx5)>>2)]=$8;
+   var $10=$data_addr;
+   var $arrayidx6=(($10+12)|0);
+   var $11=HEAPF32[(($arrayidx6)>>2)];
+   var $12=$result_addr;
+   var $arrayidx7=(($12+12)|0);
+   HEAPF32[(($arrayidx7)>>2)]=$11;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $13=$i;
+   var $14=$size_addr;
+   var $cmp=($13|0) < ($14|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $arrayinit_begin=(($y)|0);
+   var $15=$i;
+   var $mul=($15<<2);
+   var $add=(($mul)|0);
+   var $16=$data_addr;
+   var $arrayidx8=(($16+($add<<2))|0);
+   var $17=HEAPF32[(($arrayidx8)>>2)];
+   var $arrayidx9=(($c)|0);
+   var $18=HEAPF32[(($arrayidx9)>>2)];
+   var $sub=($17)-($18);
+   HEAPF32[(($arrayinit_begin)>>2)]=$sub;
+   var $arrayinit_element=(($arrayinit_begin+4)|0);
+   var $19=$i;
+   var $mul10=($19<<2);
+   var $add11=((($mul10)+(1))|0);
+   var $20=$data_addr;
+   var $arrayidx12=(($20+($add11<<2))|0);
+   var $21=HEAPF32[(($arrayidx12)>>2)];
+   var $arrayidx13=(($c+4)|0);
+   var $22=HEAPF32[(($arrayidx13)>>2)];
+   var $sub14=($21)-($22);
+   HEAPF32[(($arrayinit_element)>>2)]=$sub14;
+   var $arrayinit_element15=(($arrayinit_element+4)|0);
+   var $23=$i;
+   var $mul16=($23<<2);
+   var $add17=((($mul16)+(2))|0);
+   var $24=$data_addr;
+   var $arrayidx18=(($24+($add17<<2))|0);
+   var $25=HEAPF32[(($arrayidx18)>>2)];
+   var $arrayidx19=(($c+8)|0);
+   var $26=HEAPF32[(($arrayidx19)>>2)];
+   var $sub20=($25)-($26);
+   HEAPF32[(($arrayinit_element15)>>2)]=$sub20;
+   var $arrayinit_element21=(($arrayinit_element15+4)|0);
+   var $27=$i;
+   var $mul22=($27<<2);
+   var $add23=((($mul22)+(3))|0);
+   var $28=$data_addr;
+   var $arrayidx24=(($28+($add23<<2))|0);
+   var $29=HEAPF32[(($arrayidx24)>>2)];
+   var $arrayidx25=(($c+12)|0);
+   var $30=HEAPF32[(($arrayidx25)>>2)];
+   var $sub26=($29)-($30);
+   HEAPF32[(($arrayinit_element21)>>2)]=$sub26;
+   var $arrayinit_begin27=(($t)|0);
+   var $31=$result_addr;
+   var $arrayidx28=(($31)|0);
+   var $32=HEAPF32[(($arrayidx28)>>2)];
+   var $arrayidx29=(($y)|0);
+   var $33=HEAPF32[(($arrayidx29)>>2)];
+   var $add30=($32)+($33);
+   HEAPF32[(($arrayinit_begin27)>>2)]=$add30;
+   var $arrayinit_element31=(($arrayinit_begin27+4)|0);
+   var $34=$result_addr;
+   var $arrayidx32=(($34+4)|0);
+   var $35=HEAPF32[(($arrayidx32)>>2)];
+   var $arrayidx33=(($y+4)|0);
+   var $36=HEAPF32[(($arrayidx33)>>2)];
+   var $add34=($35)+($36);
+   HEAPF32[(($arrayinit_element31)>>2)]=$add34;
+   var $arrayinit_element35=(($arrayinit_element31+4)|0);
+   var $37=$result_addr;
+   var $arrayidx36=(($37+8)|0);
+   var $38=HEAPF32[(($arrayidx36)>>2)];
+   var $arrayidx37=(($y+8)|0);
+   var $39=HEAPF32[(($arrayidx37)>>2)];
+   var $add38=($38)+($39);
+   HEAPF32[(($arrayinit_element35)>>2)]=$add38;
+   var $arrayinit_element39=(($arrayinit_element35+4)|0);
+   var $40=$result_addr;
+   var $arrayidx40=(($40+12)|0);
+   var $41=HEAPF32[(($arrayidx40)>>2)];
+   var $arrayidx41=(($y+12)|0);
+   var $42=HEAPF32[(($arrayidx41)>>2)];
+   var $add42=($41)+($42);
+   HEAPF32[(($arrayinit_element39)>>2)]=$add42;
+   var $arrayidx43=(($t)|0);
+   var $43=HEAPF32[(($arrayidx43)>>2)];
+   var $44=$result_addr;
+   var $arrayidx44=(($44)|0);
+   var $45=HEAPF32[(($arrayidx44)>>2)];
+   var $sub45=($43)-($45);
+   var $arrayidx46=(($y)|0);
+   var $46=HEAPF32[(($arrayidx46)>>2)];
+   var $sub47=($sub45)-($46);
+   var $arrayidx48=(($c)|0);
+   HEAPF32[(($arrayidx48)>>2)]=$sub47;
+   var $arrayidx49=(($t+4)|0);
+   var $47=HEAPF32[(($arrayidx49)>>2)];
+   var $48=$result_addr;
+   var $arrayidx50=(($48+4)|0);
+   var $49=HEAPF32[(($arrayidx50)>>2)];
+   var $sub51=($47)-($49);
+   var $arrayidx52=(($y+4)|0);
+   var $50=HEAPF32[(($arrayidx52)>>2)];
+   var $sub53=($sub51)-($50);
+   var $arrayidx54=(($c+4)|0);
+   HEAPF32[(($arrayidx54)>>2)]=$sub53;
+   var $arrayidx55=(($t+8)|0);
+   var $51=HEAPF32[(($arrayidx55)>>2)];
+   var $52=$result_addr;
+   var $arrayidx56=(($52+8)|0);
+   var $53=HEAPF32[(($arrayidx56)>>2)];
+   var $sub57=($51)-($53);
+   var $arrayidx58=(($y+8)|0);
+   var $54=HEAPF32[(($arrayidx58)>>2)];
+   var $sub59=($sub57)-($54);
+   var $arrayidx60=(($c+8)|0);
+   HEAPF32[(($arrayidx60)>>2)]=$sub59;
+   var $arrayidx61=(($t+12)|0);
+   var $55=HEAPF32[(($arrayidx61)>>2)];
+   var $56=$result_addr;
+   var $arrayidx62=(($56+12)|0);
+   var $57=HEAPF32[(($arrayidx62)>>2)];
+   var $sub63=($55)-($57);
+   var $arrayidx64=(($y+12)|0);
+   var $58=HEAPF32[(($arrayidx64)>>2)];
+   var $sub65=($sub63)-($58);
+   var $arrayidx66=(($c+12)|0);
+   HEAPF32[(($arrayidx66)>>2)]=$sub65;
+   var $arrayidx67=(($t)|0);
+   var $59=HEAPF32[(($arrayidx67)>>2)];
+   var $60=$result_addr;
+   var $arrayidx68=(($60)|0);
+   HEAPF32[(($arrayidx68)>>2)]=$59;
+   var $arrayidx69=(($t+4)|0);
+   var $61=HEAPF32[(($arrayidx69)>>2)];
+   var $62=$result_addr;
+   var $arrayidx70=(($62+4)|0);
+   HEAPF32[(($arrayidx70)>>2)]=$61;
+   var $arrayidx71=(($t+8)|0);
+   var $63=HEAPF32[(($arrayidx71)>>2)];
+   var $64=$result_addr;
+   var $arrayidx72=(($64+8)|0);
+   HEAPF32[(($arrayidx72)>>2)]=$63;
+   var $arrayidx73=(($t+12)|0);
+   var $65=HEAPF32[(($arrayidx73)>>2)];
+   var $66=$result_addr;
+   var $arrayidx74=(($66+12)|0);
+   HEAPF32[(($arrayidx74)>>2)]=$65;
+   label = 4; break;
+  case 4: 
+   var $67=$i;
+   var $inc=((($67)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   STACKTOP = sp;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _reduce_validate_int($data, $size, $result) {
+ var label = 0;
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $sum;
+   var $c;
+   var $y;
+   var $t;
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$data_addr;
+   var $arrayidx=(($0)|0);
+   var $1=HEAP32[(($arrayidx)>>2)];
+   $sum=$1;
+   $c=0;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $2=$i;
+   var $3=$size_addr;
+   var $cmp=($2|0) < ($3|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $4=$i;
+   var $5=$data_addr;
+   var $arrayidx1=(($5+($4<<2))|0);
+   var $6=HEAP32[(($arrayidx1)>>2)];
+   var $7=$c;
+   var $sub=((($6)-($7))|0);
+   $y=$sub;
+   var $8=$sum;
+   var $9=$y;
+   var $add=((($8)+($9))|0);
+   $t=$add;
+   var $10=$t;
+   var $11=$sum;
+   var $sub2=((($10)-($11))|0);
+   var $12=$y;
+   var $sub3=((($sub2)-($12))|0);
+   $c=$sub3;
+   var $13=$t;
+   $sum=$13;
+   label = 4; break;
+  case 4: 
+   var $14=$i;
+   var $inc=((($14)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   var $15=$sum;
+   var $16=$result_addr;
+   var $arrayidx4=(($16)|0);
+   HEAP32[(($arrayidx4)>>2)]=$15;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _reduce_validate_int2($data, $size, $result) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 24)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $c=sp;
+   var $y=(sp)+(8);
+   var $t=(sp)+(16);
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$c;
+   HEAP32[(($0)>>2)]=0; HEAP32[((($0)+(4))>>2)]=0;
+   var $1=$data_addr;
+   var $arrayidx=(($1)|0);
+   var $2=HEAP32[(($arrayidx)>>2)];
+   var $3=$result_addr;
+   var $arrayidx1=(($3)|0);
+   HEAP32[(($arrayidx1)>>2)]=$2;
+   var $4=$data_addr;
+   var $arrayidx2=(($4+4)|0);
+   var $5=HEAP32[(($arrayidx2)>>2)];
+   var $6=$result_addr;
+   var $arrayidx3=(($6+4)|0);
+   HEAP32[(($arrayidx3)>>2)]=$5;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $7=$i;
+   var $8=$size_addr;
+   var $cmp=($7|0) < ($8|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $arrayinit_begin=(($y)|0);
+   var $9=$i;
+   var $mul=($9<<1);
+   var $add=(($mul)|0);
+   var $10=$data_addr;
+   var $arrayidx4=(($10+($add<<2))|0);
+   var $11=HEAP32[(($arrayidx4)>>2)];
+   var $arrayidx5=(($c)|0);
+   var $12=HEAP32[(($arrayidx5)>>2)];
+   var $sub=((($11)-($12))|0);
+   HEAP32[(($arrayinit_begin)>>2)]=$sub;
+   var $arrayinit_element=(($arrayinit_begin+4)|0);
+   var $13=$i;
+   var $mul6=($13<<1);
+   var $add7=((($mul6)+(1))|0);
+   var $14=$data_addr;
+   var $arrayidx8=(($14+($add7<<2))|0);
+   var $15=HEAP32[(($arrayidx8)>>2)];
+   var $arrayidx9=(($c+4)|0);
+   var $16=HEAP32[(($arrayidx9)>>2)];
+   var $sub10=((($15)-($16))|0);
+   HEAP32[(($arrayinit_element)>>2)]=$sub10;
+   var $arrayinit_begin11=(($t)|0);
+   var $17=$result_addr;
+   var $arrayidx12=(($17)|0);
+   var $18=HEAP32[(($arrayidx12)>>2)];
+   var $arrayidx13=(($y)|0);
+   var $19=HEAP32[(($arrayidx13)>>2)];
+   var $add14=((($18)+($19))|0);
+   HEAP32[(($arrayinit_begin11)>>2)]=$add14;
+   var $arrayinit_element15=(($arrayinit_begin11+4)|0);
+   var $20=$result_addr;
+   var $arrayidx16=(($20+4)|0);
+   var $21=HEAP32[(($arrayidx16)>>2)];
+   var $arrayidx17=(($y+4)|0);
+   var $22=HEAP32[(($arrayidx17)>>2)];
+   var $add18=((($21)+($22))|0);
+   HEAP32[(($arrayinit_element15)>>2)]=$add18;
+   var $arrayidx19=(($t)|0);
+   var $23=HEAP32[(($arrayidx19)>>2)];
+   var $24=$result_addr;
+   var $arrayidx20=(($24)|0);
+   var $25=HEAP32[(($arrayidx20)>>2)];
+   var $sub21=((($23)-($25))|0);
+   var $arrayidx22=(($y)|0);
+   var $26=HEAP32[(($arrayidx22)>>2)];
+   var $sub23=((($sub21)-($26))|0);
+   var $arrayidx24=(($c)|0);
+   HEAP32[(($arrayidx24)>>2)]=$sub23;
+   var $arrayidx25=(($t+4)|0);
+   var $27=HEAP32[(($arrayidx25)>>2)];
+   var $28=$result_addr;
+   var $arrayidx26=(($28+4)|0);
+   var $29=HEAP32[(($arrayidx26)>>2)];
+   var $sub27=((($27)-($29))|0);
+   var $arrayidx28=(($y+4)|0);
+   var $30=HEAP32[(($arrayidx28)>>2)];
+   var $sub29=((($sub27)-($30))|0);
+   var $arrayidx30=(($c+4)|0);
+   HEAP32[(($arrayidx30)>>2)]=$sub29;
+   var $arrayidx31=(($t)|0);
+   var $31=HEAP32[(($arrayidx31)>>2)];
+   var $32=$result_addr;
+   var $arrayidx32=(($32)|0);
+   HEAP32[(($arrayidx32)>>2)]=$31;
+   var $arrayidx33=(($t+4)|0);
+   var $33=HEAP32[(($arrayidx33)>>2)];
+   var $34=$result_addr;
+   var $arrayidx34=(($34+4)|0);
+   HEAP32[(($arrayidx34)>>2)]=$33;
+   label = 4; break;
+  case 4: 
+   var $35=$i;
+   var $inc=((($35)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   STACKTOP = sp;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _reduce_validate_int4($data, $size, $result) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 48)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $data_addr;
+   var $size_addr;
+   var $result_addr;
+   var $i;
+   var $c=sp;
+   var $y=(sp)+(16);
+   var $t=(sp)+(32);
+   $data_addr=$data;
+   $size_addr=$size;
+   $result_addr=$result;
+   var $0=$c;
+   HEAP32[(($0)>>2)]=0; HEAP32[((($0)+(4))>>2)]=0; HEAP32[((($0)+(8))>>2)]=0; HEAP32[((($0)+(12))>>2)]=0;
+   var $1=$data_addr;
+   var $arrayidx=(($1)|0);
+   var $2=HEAP32[(($arrayidx)>>2)];
+   var $3=$result_addr;
+   var $arrayidx1=(($3)|0);
+   HEAP32[(($arrayidx1)>>2)]=$2;
+   var $4=$data_addr;
+   var $arrayidx2=(($4+4)|0);
+   var $5=HEAP32[(($arrayidx2)>>2)];
+   var $6=$result_addr;
+   var $arrayidx3=(($6+4)|0);
+   HEAP32[(($arrayidx3)>>2)]=$5;
+   var $7=$data_addr;
+   var $arrayidx4=(($7+8)|0);
+   var $8=HEAP32[(($arrayidx4)>>2)];
+   var $9=$result_addr;
+   var $arrayidx5=(($9+8)|0);
+   HEAP32[(($arrayidx5)>>2)]=$8;
+   var $10=$data_addr;
+   var $arrayidx6=(($10+12)|0);
+   var $11=HEAP32[(($arrayidx6)>>2)];
+   var $12=$result_addr;
+   var $arrayidx7=(($12+12)|0);
+   HEAP32[(($arrayidx7)>>2)]=$11;
+   $i=1;
+   label = 2; break;
+  case 2: 
+   var $13=$i;
+   var $14=$size_addr;
+   var $cmp=($13|0) < ($14|0);
+   if ($cmp) { label = 3; break; } else { label = 5; break; }
+  case 3: 
+   var $arrayinit_begin=(($y)|0);
+   var $15=$i;
+   var $mul=($15<<2);
+   var $add=(($mul)|0);
+   var $16=$data_addr;
+   var $arrayidx8=(($16+($add<<2))|0);
+   var $17=HEAP32[(($arrayidx8)>>2)];
+   var $arrayidx9=(($c)|0);
+   var $18=HEAP32[(($arrayidx9)>>2)];
+   var $sub=((($17)-($18))|0);
+   HEAP32[(($arrayinit_begin)>>2)]=$sub;
+   var $arrayinit_element=(($arrayinit_begin+4)|0);
+   var $19=$i;
+   var $mul10=($19<<2);
+   var $add11=((($mul10)+(1))|0);
+   var $20=$data_addr;
+   var $arrayidx12=(($20+($add11<<2))|0);
+   var $21=HEAP32[(($arrayidx12)>>2)];
+   var $arrayidx13=(($c+4)|0);
+   var $22=HEAP32[(($arrayidx13)>>2)];
+   var $sub14=((($21)-($22))|0);
+   HEAP32[(($arrayinit_element)>>2)]=$sub14;
+   var $arrayinit_element15=(($arrayinit_element+4)|0);
+   var $23=$i;
+   var $mul16=($23<<2);
+   var $add17=((($mul16)+(2))|0);
+   var $24=$data_addr;
+   var $arrayidx18=(($24+($add17<<2))|0);
+   var $25=HEAP32[(($arrayidx18)>>2)];
+   var $arrayidx19=(($c+8)|0);
+   var $26=HEAP32[(($arrayidx19)>>2)];
+   var $sub20=((($25)-($26))|0);
+   HEAP32[(($arrayinit_element15)>>2)]=$sub20;
+   var $arrayinit_element21=(($arrayinit_element15+4)|0);
+   var $27=$i;
+   var $mul22=($27<<2);
+   var $add23=((($mul22)+(3))|0);
+   var $28=$data_addr;
+   var $arrayidx24=(($28+($add23<<2))|0);
+   var $29=HEAP32[(($arrayidx24)>>2)];
+   var $arrayidx25=(($c+12)|0);
+   var $30=HEAP32[(($arrayidx25)>>2)];
+   var $sub26=((($29)-($30))|0);
+   HEAP32[(($arrayinit_element21)>>2)]=$sub26;
+   var $arrayinit_begin27=(($t)|0);
+   var $31=$result_addr;
+   var $arrayidx28=(($31)|0);
+   var $32=HEAP32[(($arrayidx28)>>2)];
+   var $arrayidx29=(($y)|0);
+   var $33=HEAP32[(($arrayidx29)>>2)];
+   var $add30=((($32)+($33))|0);
+   HEAP32[(($arrayinit_begin27)>>2)]=$add30;
+   var $arrayinit_element31=(($arrayinit_begin27+4)|0);
+   var $34=$result_addr;
+   var $arrayidx32=(($34+4)|0);
+   var $35=HEAP32[(($arrayidx32)>>2)];
+   var $arrayidx33=(($y+4)|0);
+   var $36=HEAP32[(($arrayidx33)>>2)];
+   var $add34=((($35)+($36))|0);
+   HEAP32[(($arrayinit_element31)>>2)]=$add34;
+   var $arrayinit_element35=(($arrayinit_element31+4)|0);
+   var $37=$result_addr;
+   var $arrayidx36=(($37+8)|0);
+   var $38=HEAP32[(($arrayidx36)>>2)];
+   var $arrayidx37=(($y+8)|0);
+   var $39=HEAP32[(($arrayidx37)>>2)];
+   var $add38=((($38)+($39))|0);
+   HEAP32[(($arrayinit_element35)>>2)]=$add38;
+   var $arrayinit_element39=(($arrayinit_element35+4)|0);
+   var $40=$result_addr;
+   var $arrayidx40=(($40+12)|0);
+   var $41=HEAP32[(($arrayidx40)>>2)];
+   var $arrayidx41=(($y+12)|0);
+   var $42=HEAP32[(($arrayidx41)>>2)];
+   var $add42=((($41)+($42))|0);
+   HEAP32[(($arrayinit_element39)>>2)]=$add42;
+   var $arrayidx43=(($t)|0);
+   var $43=HEAP32[(($arrayidx43)>>2)];
+   var $44=$result_addr;
+   var $arrayidx44=(($44)|0);
+   var $45=HEAP32[(($arrayidx44)>>2)];
+   var $sub45=((($43)-($45))|0);
+   var $arrayidx46=(($y)|0);
+   var $46=HEAP32[(($arrayidx46)>>2)];
+   var $sub47=((($sub45)-($46))|0);
+   var $arrayidx48=(($c)|0);
+   HEAP32[(($arrayidx48)>>2)]=$sub47;
+   var $arrayidx49=(($t+4)|0);
+   var $47=HEAP32[(($arrayidx49)>>2)];
+   var $48=$result_addr;
+   var $arrayidx50=(($48+4)|0);
+   var $49=HEAP32[(($arrayidx50)>>2)];
+   var $sub51=((($47)-($49))|0);
+   var $arrayidx52=(($y+4)|0);
+   var $50=HEAP32[(($arrayidx52)>>2)];
+   var $sub53=((($sub51)-($50))|0);
+   var $arrayidx54=(($c+4)|0);
+   HEAP32[(($arrayidx54)>>2)]=$sub53;
+   var $arrayidx55=(($t+8)|0);
+   var $51=HEAP32[(($arrayidx55)>>2)];
+   var $52=$result_addr;
+   var $arrayidx56=(($52+8)|0);
+   var $53=HEAP32[(($arrayidx56)>>2)];
+   var $sub57=((($51)-($53))|0);
+   var $arrayidx58=(($y+8)|0);
+   var $54=HEAP32[(($arrayidx58)>>2)];
+   var $sub59=((($sub57)-($54))|0);
+   var $arrayidx60=(($c+8)|0);
+   HEAP32[(($arrayidx60)>>2)]=$sub59;
+   var $arrayidx61=(($t+12)|0);
+   var $55=HEAP32[(($arrayidx61)>>2)];
+   var $56=$result_addr;
+   var $arrayidx62=(($56+12)|0);
+   var $57=HEAP32[(($arrayidx62)>>2)];
+   var $sub63=((($55)-($57))|0);
+   var $arrayidx64=(($y+12)|0);
+   var $58=HEAP32[(($arrayidx64)>>2)];
+   var $sub65=((($sub63)-($58))|0);
+   var $arrayidx66=(($c+12)|0);
+   HEAP32[(($arrayidx66)>>2)]=$sub65;
+   var $arrayidx67=(($t)|0);
+   var $59=HEAP32[(($arrayidx67)>>2)];
+   var $60=$result_addr;
+   var $arrayidx68=(($60)|0);
+   HEAP32[(($arrayidx68)>>2)]=$59;
+   var $arrayidx69=(($t+4)|0);
+   var $61=HEAP32[(($arrayidx69)>>2)];
+   var $62=$result_addr;
+   var $arrayidx70=(($62+4)|0);
+   HEAP32[(($arrayidx70)>>2)]=$61;
+   var $arrayidx71=(($t+8)|0);
+   var $63=HEAP32[(($arrayidx71)>>2)];
+   var $64=$result_addr;
+   var $arrayidx72=(($64+8)|0);
+   HEAP32[(($arrayidx72)>>2)]=$63;
+   var $arrayidx73=(($t+12)|0);
+   var $65=HEAP32[(($arrayidx73)>>2)];
+   var $66=$result_addr;
+   var $arrayidx74=(($66+12)|0);
+   HEAP32[(($arrayidx74)>>2)]=$65;
+   label = 4; break;
+  case 4: 
+   var $67=$i;
+   var $inc=((($67)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 5: 
+   STACKTOP = sp;
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _create_reduction_pass_counts($count, $max_group_size, $max_groups, $max_work_items, $pass_count, $group_counts, $work_item_counts, $operation_counts, $entry_counts) {
+ var label = 0;
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $count_addr;
+   var $max_group_size_addr;
+   var $max_groups_addr;
+   var $max_work_items_addr;
+   var $pass_count_addr;
+   var $group_counts_addr;
+   var $work_item_counts_addr;
+   var $operation_counts_addr;
+   var $entry_counts_addr;
+   var $work_items;
+   var $groups;
+   var $max_levels;
+   var $s;
+   var $work_items10;
+   var $level;
+   var $work_items38;
+   var $groups46;
+   $count_addr=$count;
+   $max_group_size_addr=$max_group_size;
+   $max_groups_addr=$max_groups;
+   $max_work_items_addr=$max_work_items;
+   $pass_count_addr=$pass_count;
+   $group_counts_addr=$group_counts;
+   $work_item_counts_addr=$work_item_counts;
+   $operation_counts_addr=$operation_counts;
+   $entry_counts_addr=$entry_counts;
+   var $0=$count_addr;
+   var $1=$max_work_items_addr;
+   var $mul=($1<<1);
+   var $cmp=($0|0) < ($mul|0);
+   if ($cmp) { label = 2; break; } else { label = 3; break; }
+  case 2: 
+   var $2=$count_addr;
+   var $div=(((($2|0))/(2))&-1);
+   var $cond = $div;label = 4; break;
+  case 3: 
+   var $3=$max_work_items_addr;
+   var $cond = $3;label = 4; break;
+  case 4: 
+   var $cond;
+   $work_items=$cond;
+   var $4=$count_addr;
+   var $cmp1=($4|0) < 1;
+   if ($cmp1) { label = 5; break; } else { label = 6; break; }
+  case 5: 
+   $work_items=1;
+   label = 6; break;
+  case 6: 
+   var $5=$count_addr;
+   var $6=$work_items;
+   var $mul2=($6<<1);
+   var $div3=(((($5|0))/(($mul2|0)))&-1);
+   $groups=$div3;
+   var $7=$max_groups_addr;
+   var $8=$groups;
+   var $cmp4=($7|0) < ($8|0);
+   if ($cmp4) { label = 7; break; } else { label = 8; break; }
+  case 7: 
+   var $9=$max_groups_addr;
+   var $cond8 = $9;label = 9; break;
+  case 8: 
+   var $10=$groups;
+   var $cond8 = $10;label = 9; break;
+  case 9: 
+   var $cond8;
+   $groups=$cond8;
+   $max_levels=1;
+   var $11=$groups;
+   $s=$11;
+   label = 10; break;
+  case 10: 
+   var $12=$s;
+   var $cmp9=($12|0) > 1;
+   if ($cmp9) { label = 11; break; } else { label = 15; break; }
+  case 11: 
+   var $13=$s;
+   var $14=$max_work_items_addr;
+   var $mul11=($14<<1);
+   var $cmp12=($13|0) < ($mul11|0);
+   if ($cmp12) { label = 12; break; } else { label = 13; break; }
+  case 12: 
+   var $15=$s;
+   var $div14=(((($15|0))/(2))&-1);
+   var $cond17 = $div14;label = 14; break;
+  case 13: 
+   var $16=$max_work_items_addr;
+   var $cond17 = $16;label = 14; break;
+  case 14: 
+   var $cond17;
+   $work_items10=$cond17;
+   var $17=$s;
+   var $18=$work_items10;
+   var $mul18=($18<<1);
+   var $div19=(((($17|0))/(($mul18|0)))&-1);
+   $s=$div19;
+   var $19=$max_levels;
+   var $inc=((($19)+(1))|0);
+   $max_levels=$inc;
+   label = 10; break;
+  case 15: 
+   var $20=$max_levels;
+   var $mul20=($20<<2);
+   var $call=_malloc($mul20);
+   var $21=$call;
+   var $22=$group_counts_addr;
+   HEAP32[(($22)>>2)]=$21;
+   var $23=$max_levels;
+   var $mul21=($23<<2);
+   var $call22=_malloc($mul21);
+   var $24=$call22;
+   var $25=$work_item_counts_addr;
+   HEAP32[(($25)>>2)]=$24;
+   var $26=$max_levels;
+   var $mul23=($26<<2);
+   var $call24=_malloc($mul23);
+   var $27=$call24;
+   var $28=$operation_counts_addr;
+   HEAP32[(($28)>>2)]=$27;
+   var $29=$max_levels;
+   var $mul25=($29<<2);
+   var $call26=_malloc($mul25);
+   var $30=$call26;
+   var $31=$entry_counts_addr;
+   HEAP32[(($31)>>2)]=$30;
+   var $32=$max_levels;
+   var $33=$pass_count_addr;
+   HEAP32[(($33)>>2)]=$32;
+   var $34=$groups;
+   var $35=$group_counts_addr;
+   var $36=HEAP32[(($35)>>2)];
+   var $arrayidx=(($36)|0);
+   HEAP32[(($arrayidx)>>2)]=$34;
+   var $37=$work_items;
+   var $38=$work_item_counts_addr;
+   var $39=HEAP32[(($38)>>2)];
+   var $arrayidx27=(($39)|0);
+   HEAP32[(($arrayidx27)>>2)]=$37;
+   var $40=$operation_counts_addr;
+   var $41=HEAP32[(($40)>>2)];
+   var $arrayidx28=(($41)|0);
+   HEAP32[(($arrayidx28)>>2)]=1;
+   var $42=$count_addr;
+   var $43=$entry_counts_addr;
+   var $44=HEAP32[(($43)>>2)];
+   var $arrayidx29=(($44)|0);
+   HEAP32[(($arrayidx29)>>2)]=$42;
+   var $45=$max_group_size_addr;
+   var $46=$work_items;
+   var $cmp30=($45|0) < ($46|0);
+   if ($cmp30) { label = 16; break; } else { label = 17; break; }
+  case 16: 
+   var $47=$work_items;
+   var $48=$operation_counts_addr;
+   var $49=HEAP32[(($48)>>2)];
+   var $arrayidx32=(($49)|0);
+   HEAP32[(($arrayidx32)>>2)]=$47;
+   var $50=$max_group_size_addr;
+   var $51=$work_item_counts_addr;
+   var $52=HEAP32[(($51)>>2)];
+   var $arrayidx33=(($52)|0);
+   HEAP32[(($arrayidx33)>>2)]=$50;
+   label = 17; break;
+  case 17: 
+   var $53=$groups;
+   $s=$53;
+   $level=1;
+   label = 18; break;
+  case 18: 
+   var $54=$s;
+   var $cmp36=($54|0) > 1;
+   if ($cmp36) { label = 19; break; } else { label = 28; break; }
+  case 19: 
+   var $55=$s;
+   var $56=$max_work_items_addr;
+   var $mul39=($56<<1);
+   var $cmp40=($55|0) < ($mul39|0);
+   if ($cmp40) { label = 20; break; } else { label = 21; break; }
+  case 20: 
+   var $57=$s;
+   var $div42=(((($57|0))/(2))&-1);
+   var $cond45 = $div42;label = 22; break;
+  case 21: 
+   var $58=$max_work_items_addr;
+   var $cond45 = $58;label = 22; break;
+  case 22: 
+   var $cond45;
+   $work_items38=$cond45;
+   var $59=$s;
+   var $60=$work_items38;
+   var $mul47=($60<<1);
+   var $div48=(((($59|0))/(($mul47|0)))&-1);
+   $groups46=$div48;
+   var $61=$max_groups_addr;
+   var $62=$groups46;
+   var $cmp49=($61|0) < ($62|0);
+   if ($cmp49) { label = 23; break; } else { label = 24; break; }
+  case 23: 
+   var $63=$max_groups_addr;
+   var $cond53 = $63;label = 25; break;
+  case 24: 
+   var $64=$groups46;
+   var $cond53 = $64;label = 25; break;
+  case 25: 
+   var $cond53;
+   $groups46=$cond53;
+   var $65=$groups46;
+   var $66=$level;
+   var $67=$group_counts_addr;
+   var $68=HEAP32[(($67)>>2)];
+   var $arrayidx54=(($68+($66<<2))|0);
+   HEAP32[(($arrayidx54)>>2)]=$65;
+   var $69=$work_items38;
+   var $70=$level;
+   var $71=$work_item_counts_addr;
+   var $72=HEAP32[(($71)>>2)];
+   var $arrayidx55=(($72+($70<<2))|0);
+   HEAP32[(($arrayidx55)>>2)]=$69;
+   var $73=$level;
+   var $74=$operation_counts_addr;
+   var $75=HEAP32[(($74)>>2)];
+   var $arrayidx56=(($75+($73<<2))|0);
+   HEAP32[(($arrayidx56)>>2)]=1;
+   var $76=$s;
+   var $77=$level;
+   var $78=$entry_counts_addr;
+   var $79=HEAP32[(($78)>>2)];
+   var $arrayidx57=(($79+($77<<2))|0);
+   HEAP32[(($arrayidx57)>>2)]=$76;
+   var $80=$max_group_size_addr;
+   var $81=$work_items38;
+   var $cmp58=($80|0) < ($81|0);
+   if ($cmp58) { label = 26; break; } else { label = 27; break; }
+  case 26: 
+   var $82=$work_items38;
+   var $83=$level;
+   var $84=$operation_counts_addr;
+   var $85=HEAP32[(($84)>>2)];
+   var $arrayidx60=(($85+($83<<2))|0);
+   HEAP32[(($arrayidx60)>>2)]=$82;
+   var $86=$max_group_size_addr;
+   var $87=$level;
+   var $88=$work_item_counts_addr;
+   var $89=HEAP32[(($88)>>2)];
+   var $arrayidx61=(($89+($87<<2))|0);
+   HEAP32[(($arrayidx61)>>2)]=$86;
+   label = 27; break;
+  case 27: 
+   var $90=$s;
+   var $91=$work_items38;
+   var $mul63=($91<<1);
+   var $div64=(((($90|0))/(($mul63|0)))&-1);
+   $s=$div64;
+   var $92=$level;
+   var $inc65=((($92)+(1))|0);
+   $level=$inc65;
+   label = 18; break;
+  case 28: 
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _main($argc, $argv) {
+ var label = 0;
+ var tempVarArgs = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 4336)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $retval;
+   var $argc_addr;
+   var $argv_addr;
+   var $t1=sp;
+   var $t2=(sp)+(8);
+   var $err=(sp)+(16);
+   var $device_id=(sp)+(24);
+   var $commands;
+   var $context;
+   var $output_buffer;
+   var $input_buffer;
+   var $partials_buffer;
+   var $typesize;
+   var $pass_count=(sp)+(32);
+   var $group_counts=(sp)+(40);
+   var $work_item_counts=(sp)+(48);
+   var $operation_counts=(sp)+(56);
+   var $entry_counts=(sp)+(64);
+   var $use_gpu;
+   var $i;
+   var $c;
+   var $float_data;
+   var $integer_data;
+   var $returned_size=(sp)+(72);
+   var $max_workgroup_size=(sp)+(80);
+   var $max_workgroup_item_size=(sp)+(88);
+   var $vendor_name=(sp)+(104);
+   var $device_name=(sp)+(1128);
+   var $filename;
+   var $source;
+   var $buffer_size;
+   var $input_data;
+   var $programs;
+   var $kernels;
+   var $block_source=(sp)+(2152);
+   var $source_length;
+   var $length=(sp)+(2160);
+   var $build_log=(sp)+(2168);
+   var $pass_swap;
+   var $pass_input=(sp)+(4216);
+   var $pass_output=(sp)+(4224);
+   var $global=(sp)+(4232);
+   var $local=(sp)+(4240);
+   var $operations;
+   var $entries=(sp)+(4248);
+   var $shared_size;
+   var $k;
+   var $global301=(sp)+(4256);
+   var $local305=(sp)+(4264);
+   var $t;
+   var $computed_result;
+   var $reference=(sp)+(4272);
+   var $result=(sp)+(4288);
+   var $v;
+   var $error;
+   var $diff;
+   var $reference408=(sp)+(4304);
+   var $result418=(sp)+(4320);
+   var $v423;
+   var $error430;
+   var $diff431;
+   $retval=0;
+   $argc_addr=$argc;
+   $argv_addr=$argv;
+   var $$etemp$0$0=0;
+   var $$etemp$0$1=0;
+   var $st$1$0=(($t1)|0);
+   HEAP32[(($st$1$0)>>2)]=$$etemp$0$0;
+   var $st$2$1=(($t1+4)|0);
+   HEAP32[(($st$2$1)>>2)]=$$etemp$0$1;
+   var $$etemp$3$0=0;
+   var $$etemp$3$1=0;
+   var $st$4$0=(($t2)|0);
+   HEAP32[(($st$4$0)>>2)]=$$etemp$3$0;
+   var $st$5$1=(($t2+4)|0);
+   HEAP32[(($st$5$1)>>2)]=$$etemp$3$1;
+   HEAP32[(($pass_count)>>2)]=0;
+   HEAP32[(($group_counts)>>2)]=0;
+   HEAP32[(($work_item_counts)>>2)]=0;
+   HEAP32[(($operation_counts)>>2)]=0;
+   HEAP32[(($entry_counts)>>2)]=0;
+   $use_gpu=1;
+   $i=0;
+   label = 2; break;
+  case 2: 
+   var $0=$i;
+   var $1=$argc_addr;
+   var $cmp=($0|0) < ($1|0);
+   if ($cmp) { label = 3; break; } else { var $3 = 0;label = 4; break; }
+  case 3: 
+   var $2=$argv_addr;
+   var $tobool=($2|0)!=0;
+   var $3 = $tobool;label = 4; break;
+  case 4: 
+   var $3;
+   if ($3) { label = 5; break; } else { label = 32; break; }
+  case 5: 
+   var $4=$i;
+   var $5=$argv_addr;
+   var $arrayidx=(($5+($4<<2))|0);
+   var $6=HEAP32[(($arrayidx)>>2)];
+   var $tobool1=($6|0)!=0;
+   if ($tobool1) { label = 7; break; } else { label = 6; break; }
+  case 6: 
+   label = 31; break;
+  case 7: 
+   var $7=$i;
+   var $8=$argv_addr;
+   var $arrayidx2=(($8+($7<<2))|0);
+   var $9=HEAP32[(($arrayidx2)>>2)];
+   var $call=_strstr($9, ((1848)|0));
+   var $tobool3=($call|0)!=0;
+   if ($tobool3) { label = 8; break; } else { label = 9; break; }
+  case 8: 
+   $use_gpu=0;
+   label = 30; break;
+  case 9: 
+   var $10=$i;
+   var $11=$argv_addr;
+   var $arrayidx5=(($11+($10<<2))|0);
+   var $12=HEAP32[(($arrayidx5)>>2)];
+   var $call6=_strstr($12, ((1840)|0));
+   var $tobool7=($call6|0)!=0;
+   if ($tobool7) { label = 10; break; } else { label = 11; break; }
+  case 10: 
+   $use_gpu=1;
+   label = 29; break;
+  case 11: 
+   var $13=$i;
+   var $14=$argv_addr;
+   var $arrayidx10=(($14+($13<<2))|0);
+   var $15=HEAP32[(($arrayidx10)>>2)];
+   var $call11=_strstr($15, ((1416)|0));
+   var $tobool12=($call11|0)!=0;
+   if ($tobool12) { label = 12; break; } else { label = 13; break; }
+  case 12: 
+   HEAP8[(64)]=0;
+   HEAP32[((80)>>2)]=2;
+   label = 28; break;
+  case 13: 
+   var $16=$i;
+   var $17=$argv_addr;
+   var $arrayidx15=(($17+($16<<2))|0);
+   var $18=HEAP32[(($arrayidx15)>>2)];
+   var $call16=_strstr($18, ((968)|0));
+   var $tobool17=($call16|0)!=0;
+   if ($tobool17) { label = 14; break; } else { label = 15; break; }
+  case 14: 
+   HEAP8[(64)]=0;
+   HEAP32[((80)>>2)]=4;
+   label = 27; break;
+  case 15: 
+   var $19=$i;
+   var $20=$argv_addr;
+   var $arrayidx20=(($20+($19<<2))|0);
+   var $21=HEAP32[(($arrayidx20)>>2)];
+   var $call21=_strstr($21, ((552)|0));
+   var $tobool22=($call21|0)!=0;
+   if ($tobool22) { label = 16; break; } else { label = 17; break; }
+  case 16: 
+   HEAP8[(64)]=0;
+   HEAP32[((80)>>2)]=1;
+   label = 26; break;
+  case 17: 
+   var $22=$i;
+   var $23=$argv_addr;
+   var $arrayidx25=(($23+($22<<2))|0);
+   var $24=HEAP32[(($arrayidx25)>>2)];
+   var $call26=_strstr($24, ((200)|0));
+   var $tobool27=($call26|0)!=0;
+   if ($tobool27) { label = 18; break; } else { label = 19; break; }
+  case 18: 
+   HEAP8[(64)]=1;
+   HEAP32[((80)>>2)]=2;
+   label = 25; break;
+  case 19: 
+   var $25=$i;
+   var $26=$argv_addr;
+   var $arrayidx30=(($26+($25<<2))|0);
+   var $27=HEAP32[(($arrayidx30)>>2)];
+   var $call31=_strstr($27, ((136)|0));
+   var $tobool32=($call31|0)!=0;
+   if ($tobool32) { label = 20; break; } else { label = 21; break; }
+  case 20: 
+   HEAP8[(64)]=1;
+   HEAP32[((80)>>2)]=4;
+   label = 24; break;
+  case 21: 
+   var $28=$i;
+   var $29=$argv_addr;
+   var $arrayidx35=(($29+($28<<2))|0);
+   var $30=HEAP32[(($arrayidx35)>>2)];
+   var $call36=_strstr($30, ((128)|0));
+   var $tobool37=($call36|0)!=0;
+   if ($tobool37) { label = 22; break; } else { label = 23; break; }
+  case 22: 
+   HEAP8[(64)]=1;
+   HEAP32[((80)>>2)]=1;
+   label = 23; break;
+  case 23: 
+   label = 24; break;
+  case 24: 
+   label = 25; break;
+  case 25: 
+   label = 26; break;
+  case 26: 
+   label = 27; break;
+  case 27: 
+   label = 28; break;
+  case 28: 
+   label = 29; break;
+  case 29: 
+   label = 30; break;
+  case 30: 
+   label = 31; break;
+  case 31: 
+   var $31=$i;
+   var $inc=((($31)+(1))|0);
+   $i=$inc;
+   label = 2; break;
+  case 32: 
+   var $32=$use_gpu;
+   var $cmp47=($32|0)==1;
+   var $cond=$cmp47 ? (((88)|0)) : (((1832)|0));
+   var $call48=_printf(((96)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$cond,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $33=HEAP8[(64)];
+   var $tobool49=(($33) & 1);
+   var $conv=($tobool49&1);
+   var $cmp50=($conv|0)==1;
+   var $cond52=$cmp50 ? (((128)|0)) : (((552)|0));
+   var $34=HEAP32[((80)>>2)];
+   var $call53=_printf(((1792)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$cond52,HEAP32[(((tempVarArgs)+(8))>>2)]=$34,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $35=HEAP32[((72)>>2)];
+   var $36=HEAP32[((80)>>2)];
+   var $mul=(Math.imul($35,$36)|0);
+   var $mul54=($mul<<2);
+   var $call55=_malloc($mul54);
+   var $37=$call55;
+   $float_data=$37;
+   var $38=HEAP32[((72)>>2)];
+   var $39=HEAP32[((80)>>2)];
+   var $mul56=(Math.imul($38,$39)|0);
+   var $mul57=($mul56<<2);
+   var $call58=_malloc($mul57);
+   var $40=$call58;
+   $integer_data=$40;
+   $i=0;
+   label = 33; break;
+  case 33: 
+   var $41=$i;
+   var $42=HEAP32[((72)>>2)];
+   var $43=HEAP32[((80)>>2)];
+   var $mul60=(Math.imul($42,$43)|0);
+   var $cmp61=($41|0) < ($mul60|0);
+   if ($cmp61) { label = 34; break; } else { label = 36; break; }
+  case 34: 
+   var $call64=_rand();
+   var $conv65=($call64|0);
+   var $div=($conv65)/(2147483648);
+   var $44=$i;
+   var $45=$float_data;
+   var $arrayidx66=(($45+($44<<2))|0);
+   HEAPF32[(($arrayidx66)>>2)]=$div;
+   var $46=$i;
+   var $47=$float_data;
+   var $arrayidx67=(($47+($46<<2))|0);
+   var $48=HEAPF32[(($arrayidx67)>>2)];
+   var $mul68=($48)*(255);
+   var $conv69=(($mul68)&-1);
+   var $49=$i;
+   var $50=$integer_data;
+   var $arrayidx70=(($50+($49<<2))|0);
+   HEAP32[(($arrayidx70)>>2)]=$conv69;
+   label = 35; break;
+  case 35: 
+   var $51=$i;
+   var $inc72=((($51)+(1))|0);
+   $i=$inc72;
+   label = 33; break;
+  case 36: 
+   var $52=$use_gpu;
+   var $tobool74=($52|0)!=0;
+   var $cond75=$tobool74 ? 4 : 2;
+   var $conv76$0=$cond75;
+   var $conv76$1=(($cond75|0) < 0 ? -1 : 0);
+   var $call77=_clGetDeviceIDs(0, $conv76$0, $conv76$1, 1, $device_id, 0);
+   HEAP32[(($err)>>2)]=$call77;
+   var $53=HEAP32[(($err)>>2)];
+   var $cmp78=($53|0)!=0;
+   if ($cmp78) { label = 37; break; } else { label = 38; break; }
+  case 37: 
+   var $call81=_printf(((1744)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 38: 
+   HEAP32[(($returned_size)>>2)]=0;
+   HEAP32[(($max_workgroup_size)>>2)]=0;
+   var $54=HEAP32[(($device_id)>>2)];
+   var $55=$max_workgroup_size;
+   var $call83=_clGetDeviceInfo($54, 4100, 4, $55, $returned_size);
+   HEAP32[(($err)>>2)]=$call83;
+   var $56=HEAP32[(($err)>>2)];
+   var $cmp84=($56|0)!=0;
+   if ($cmp84) { label = 39; break; } else { label = 40; break; }
+  case 39: 
+   var $call87=_printf(((1704)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 40: 
+   HEAP32[(($returned_size)>>2)]=0;
+   HEAP32[(($err)>>2)]=0;
+   var $57=HEAP32[(($device_id)>>2)];
+   var $58=$max_workgroup_item_size;
+   var $call89=_clGetDeviceInfo($57, 4101, 12, $58, $returned_size);
+   HEAP32[(($err)>>2)]=$call89;
+   var $59=HEAP32[(($err)>>2)];
+   var $cmp90=($59|0)!=0;
+   if ($cmp90) { label = 41; break; } else { label = 42; break; }
+  case 41: 
+   var $call93=_printf(((1704)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 42: 
+   var $60=$vendor_name;
+   _memset($60, 0, 1024);
+   var $61=$device_name;
+   _memset($61, 0, 1024);
+   var $62=HEAP32[(($device_id)>>2)];
+   var $arraydecay=(($vendor_name)|0);
+   var $call95=_clGetDeviceInfo($62, 4140, 1024, $arraydecay, $returned_size);
+   HEAP32[(($err)>>2)]=$call95;
+   var $63=HEAP32[(($device_id)>>2)];
+   var $arraydecay96=(($device_name)|0);
+   var $call97=_clGetDeviceInfo($63, 4139, 1024, $arraydecay96, $returned_size);
+   var $64=HEAP32[(($err)>>2)];
+   var $or=$64 | $call97;
+   HEAP32[(($err)>>2)]=$or;
+   var $65=HEAP32[(($err)>>2)];
+   var $cmp98=($65|0)!=0;
+   if ($cmp98) { label = 43; break; } else { label = 44; break; }
+  case 43: 
+   var $call101=_printf(((1704)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 44: 
+   var $call103=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $arraydecay104=(($vendor_name)|0);
+   var $arraydecay105=(($device_name)|0);
+   var $66=HEAP32[(($max_workgroup_size)>>2)];
+   var $arrayidx106=(($max_workgroup_item_size)|0);
+   var $67=HEAP32[(($arrayidx106)>>2)];
+   var $arrayidx107=(($max_workgroup_item_size+4)|0);
+   var $68=HEAP32[(($arrayidx107)>>2)];
+   var $arrayidx108=(($max_workgroup_item_size+8)|0);
+   var $69=HEAP32[(($arrayidx108)>>2)];
+   var $call109=_printf(((1520)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 48)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$arraydecay104,HEAP32[(((tempVarArgs)+(8))>>2)]=$arraydecay105,HEAP32[(((tempVarArgs)+(16))>>2)]=$66,HEAP32[(((tempVarArgs)+(24))>>2)]=$67,HEAP32[(((tempVarArgs)+(32))>>2)]=$68,HEAP32[(((tempVarArgs)+(40))>>2)]=$69,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $70=HEAP8[(64)];
+   var $tobool110=(($70) & 1);
+   var $cond112=$tobool110 ? 4 : 4;
+   $typesize=$cond112;
+   $filename=0;
+   var $71=HEAP32[((80)>>2)];
+   if (($71|0)==4) {
+    label = 45; break;
+   }
+   else if (($71|0)==2) {
+    label = 46; break;
+   }
+   else if (($71|0)==1) {
+    label = 47; break;
+   }
+   else {
+   label = 48; break;
+   }
+  case 45: 
+   var $72=HEAP8[(64)];
+   var $tobool113=(($72) & 1);
+   var $cond115=$tobool113 ? (((1496)|0)) : (((1472)|0));
+   $filename=$cond115;
+   label = 49; break;
+  case 46: 
+   var $73=HEAP8[(64)];
+   var $tobool117=(($73) & 1);
+   var $cond119=$tobool117 ? (((1448)|0)) : (((1424)|0));
+   $filename=$cond119;
+   label = 49; break;
+  case 47: 
+   var $74=HEAP8[(64)];
+   var $tobool121=(($74) & 1);
+   var $cond123=$tobool121 ? (((1392)|0)) : (((1368)|0));
+   $filename=$cond123;
+   label = 49; break;
+  case 48: 
+   var $call124=_printf(((1328)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 49: 
+   var $call125=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $75=$filename;
+   var $call126=_printf(((1296)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$75,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call127=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $76=$filename;
+   var $call128=_load_program_source($76);
+   $source=$call128;
+   var $77=$source;
+   var $tobool129=($77|0)!=0;
+   if ($tobool129) { label = 51; break; } else { label = 50; break; }
+  case 50: 
+   var $call131=_printf(((1240)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 51: 
+   var $call133=_clCreateContext(0, 1, $device_id, 0, 0, $err);
+   $context=$call133;
+   var $78=$context;
+   var $tobool134=($78|0)!=0;
+   if ($tobool134) { label = 53; break; } else { label = 52; break; }
+  case 52: 
+   var $call136=_printf(((1192)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 53: 
+   var $79=$context;
+   var $80=HEAP32[(($device_id)>>2)];
+   var $$etemp$6$0=0;
+   var $$etemp$6$1=0;
+   var $call138=_clCreateCommandQueue($79, $80, $$etemp$6$0, $$etemp$6$1, $err);
+   $commands=$call138;
+   var $81=$commands;
+   var $tobool139=($81|0)!=0;
+   if ($tobool139) { label = 55; break; } else { label = 54; break; }
+  case 54: 
+   var $call141=_printf(((1144)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 55: 
+   var $82=$typesize;
+   var $83=HEAP32[((72)>>2)];
+   var $mul143=(Math.imul($82,$83)|0);
+   var $84=HEAP32[((80)>>2)];
+   var $mul144=(Math.imul($mul143,$84)|0);
+   $buffer_size=$mul144;
+   var $85=$context;
+   var $86=$buffer_size;
+   var $$etemp$7$0=1;
+   var $$etemp$7$1=0;
+   var $call145=_clCreateBuffer($85, $$etemp$7$0, $$etemp$7$1, $86, 0, 0);
+   $input_buffer=$call145;
+   var $87=$input_buffer;
+   var $tobool146=($87|0)!=0;
+   if ($tobool146) { label = 57; break; } else { label = 56; break; }
+  case 56: 
+   var $call148=_printf(((1088)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 57: 
+   var $88=HEAP8[(64)];
+   var $tobool150=(($88) & 1);
+   if ($tobool150) { label = 58; break; } else { label = 59; break; }
+  case 58: 
+   var $89=$integer_data;
+   var $90=$89;
+   var $cond152 = $90;label = 60; break;
+  case 59: 
+   var $91=$float_data;
+   var $92=$91;
+   var $cond152 = $92;label = 60; break;
+  case 60: 
+   var $cond152;
+   $input_data=$cond152;
+   var $93=$commands;
+   var $94=$input_buffer;
+   var $95=$buffer_size;
+   var $96=$input_data;
+   var $call153=_clEnqueueWriteBuffer($93, $94, 1, 0, $95, $96, 0, 0, 0);
+   HEAP32[(($err)>>2)]=$call153;
+   var $97=HEAP32[(($err)>>2)];
+   var $cmp154=($97|0)!=0;
+   if ($cmp154) { label = 61; break; } else { label = 62; break; }
+  case 61: 
+   var $call157=_printf(((1040)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 62: 
+   var $98=$context;
+   var $99=$buffer_size;
+   var $$etemp$8$0=1;
+   var $$etemp$8$1=0;
+   var $call159=_clCreateBuffer($98, $$etemp$8$0, $$etemp$8$1, $99, 0, 0);
+   $partials_buffer=$call159;
+   var $100=$partials_buffer;
+   var $tobool160=($100|0)!=0;
+   if ($tobool160) { label = 64; break; } else { label = 63; break; }
+  case 63: 
+   var $call162=_printf(((976)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 64: 
+   var $101=$context;
+   var $102=$buffer_size;
+   var $$etemp$9$0=1;
+   var $$etemp$9$1=0;
+   var $call164=_clCreateBuffer($101, $$etemp$9$0, $$etemp$9$1, $102, 0, 0);
+   $output_buffer=$call164;
+   var $103=$output_buffer;
+   var $tobool165=($103|0)!=0;
+   if ($tobool165) { label = 66; break; } else { label = 65; break; }
+  case 65: 
+   var $call167=_printf(((912)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 66: 
+   var $104=HEAP32[((72)>>2)];
+   var $105=HEAP32[(($max_workgroup_size)>>2)];
+   _create_reduction_pass_counts($104, $105, 64, 64, $pass_count, $group_counts, $work_item_counts, $operation_counts, $entry_counts);
+   var $106=HEAP32[(($pass_count)>>2)];
+   var $mul169=($106<<2);
+   var $call170=_malloc($mul169);
+   var $107=$call170;
+   $programs=$107;
+   var $108=$programs;
+   var $109=$108;
+   var $110=HEAP32[(($pass_count)>>2)];
+   var $mul171=($110<<2);
+   _memset($109, 0, $mul171);
+   var $111=HEAP32[(($pass_count)>>2)];
+   var $mul172=($111<<2);
+   var $call173=_malloc($mul172);
+   var $112=$call173;
+   $kernels=$112;
+   var $113=$kernels;
+   var $114=$113;
+   var $115=HEAP32[(($pass_count)>>2)];
+   var $mul174=($115<<2);
+   _memset($114, 0, $mul174);
+   $i=0;
+   label = 67; break;
+  case 67: 
+   var $116=$i;
+   var $117=HEAP32[(($pass_count)>>2)];
+   var $cmp176=($116|0) < ($117|0);
+   if ($cmp176) { label = 68; break; } else { label = 78; break; }
+  case 68: 
+   var $118=$source;
+   var $call179=_strlen($118);
+   var $add=((($call179)+(1024))|0);
+   var $call180=_malloc($add);
+   HEAP32[(($block_source)>>2)]=$call180;
+   var $119=$source;
+   var $call181=_strlen($119);
+   var $add182=((($call181)+(1024))|0);
+   $source_length=$add182;
+   var $120=HEAP32[(($block_source)>>2)];
+   var $121=$source_length;
+   _memset($120, 0, $121);
+   var $122=HEAP32[(($block_source)>>2)];
+   var $123=$i;
+   var $124=HEAP32[(($group_counts)>>2)];
+   var $arrayidx183=(($124+($123<<2))|0);
+   var $125=HEAP32[(($arrayidx183)>>2)];
+   var $126=$i;
+   var $127=HEAP32[(($operation_counts)>>2)];
+   var $arrayidx184=(($127+($126<<2))|0);
+   var $128=HEAP32[(($arrayidx184)>>2)];
+   var $129=$source;
+   var $call185=_sprintf($122, ((888)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 40)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=((32)|0),HEAP32[(((tempVarArgs)+(8))>>2)]=$125,HEAP32[(((tempVarArgs)+(16))>>2)]=((8)|0),HEAP32[(((tempVarArgs)+(24))>>2)]=$128,HEAP32[(((tempVarArgs)+(32))>>2)]=$129,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $130=$context;
+   var $call186=_clCreateProgramWithSource($130, 1, $block_source, 0, $err);
+   var $131=$i;
+   var $132=$programs;
+   var $arrayidx187=(($132+($131<<2))|0);
+   HEAP32[(($arrayidx187)>>2)]=$call186;
+   var $133=$i;
+   var $134=$programs;
+   var $arrayidx188=(($134+($133<<2))|0);
+   var $135=HEAP32[(($arrayidx188)>>2)];
+   var $tobool189=($135|0)!=0;
+   if ($tobool189) { label = 69; break; } else { label = 70; break; }
+  case 69: 
+   var $136=HEAP32[(($err)>>2)];
+   var $cmp190=($136|0)!=0;
+   if ($cmp190) { label = 70; break; } else { label = 71; break; }
+  case 70: 
+   var $137=HEAP32[(($block_source)>>2)];
+   var $call193=_printf(((880)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$137,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call194=_printf(((832)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 71: 
+   var $138=$i;
+   var $139=$programs;
+   var $arrayidx196=(($139+($138<<2))|0);
+   var $140=HEAP32[(($arrayidx196)>>2)];
+   var $call197=_clBuildProgram($140, 0, 0, 0, 0, 0);
+   HEAP32[(($err)>>2)]=$call197;
+   var $141=HEAP32[(($err)>>2)];
+   var $cmp198=($141|0)!=0;
+   if ($cmp198) { label = 72; break; } else { label = 73; break; }
+  case 72: 
+   var $142=HEAP32[(($block_source)>>2)];
+   var $call201=_printf(((880)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$142,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call202=_printf(((784)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $143=$i;
+   var $144=$programs;
+   var $arrayidx203=(($144+($143<<2))|0);
+   var $145=HEAP32[(($arrayidx203)>>2)];
+   var $146=HEAP32[(($device_id)>>2)];
+   var $arraydecay204=(($build_log)|0);
+   var $call205=_clGetProgramBuildInfo($145, $146, 4483, 2048, $arraydecay204, $length);
+   var $arraydecay206=(($build_log)|0);
+   var $call207=_printf(((880)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$arraydecay206,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 73: 
+   var $147=$i;
+   var $148=$programs;
+   var $arrayidx209=(($148+($147<<2))|0);
+   var $149=HEAP32[(($arrayidx209)>>2)];
+   var $call210=_clCreateKernel($149, ((776)|0), $err);
+   var $150=$i;
+   var $151=$kernels;
+   var $arrayidx211=(($151+($150<<2))|0);
+   HEAP32[(($arrayidx211)>>2)]=$call210;
+   var $152=$i;
+   var $153=$kernels;
+   var $arrayidx212=(($153+($152<<2))|0);
+   var $154=HEAP32[(($arrayidx212)>>2)];
+   var $tobool213=($154|0)!=0;
+   if ($tobool213) { label = 74; break; } else { label = 75; break; }
+  case 74: 
+   var $155=HEAP32[(($err)>>2)];
+   var $cmp215=($155|0)!=0;
+   if ($cmp215) { label = 75; break; } else { label = 76; break; }
+  case 75: 
+   var $call218=_printf(((728)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 76: 
+   var $156=HEAP32[(($block_source)>>2)];
+   _free($156);
+   label = 77; break;
+  case 77: 
+   var $157=$i;
+   var $inc221=((($157)+(1))|0);
+   $i=$inc221;
+   label = 67; break;
+  case 78: 
+   var $158=$output_buffer;
+   HEAP32[(($pass_input)>>2)]=$158;
+   var $159=$input_buffer;
+   HEAP32[(($pass_output)>>2)]=$159;
+   $i=0;
+   label = 79; break;
+  case 79: 
+   var $160=$i;
+   var $161=HEAP32[(($pass_count)>>2)];
+   var $cmp224=($160|0) < ($161|0);
+   if ($cmp224) { label = 80; break; } else { label = 88; break; }
+  case 80: 
+   var $162=$i;
+   var $163=HEAP32[(($group_counts)>>2)];
+   var $arrayidx227=(($163+($162<<2))|0);
+   var $164=HEAP32[(($arrayidx227)>>2)];
+   var $165=$i;
+   var $166=HEAP32[(($work_item_counts)>>2)];
+   var $arrayidx228=(($166+($165<<2))|0);
+   var $167=HEAP32[(($arrayidx228)>>2)];
+   var $mul229=(Math.imul($164,$167)|0);
+   HEAP32[(($global)>>2)]=$mul229;
+   var $168=$i;
+   var $169=HEAP32[(($work_item_counts)>>2)];
+   var $arrayidx230=(($169+($168<<2))|0);
+   var $170=HEAP32[(($arrayidx230)>>2)];
+   HEAP32[(($local)>>2)]=$170;
+   var $171=$i;
+   var $172=HEAP32[(($operation_counts)>>2)];
+   var $arrayidx231=(($172+($171<<2))|0);
+   var $173=HEAP32[(($arrayidx231)>>2)];
+   $operations=$173;
+   var $174=$i;
+   var $175=HEAP32[(($entry_counts)>>2)];
+   var $arrayidx232=(($175+($174<<2))|0);
+   var $176=HEAP32[(($arrayidx232)>>2)];
+   HEAP32[(($entries)>>2)]=$176;
+   var $177=$typesize;
+   var $178=HEAP32[((80)>>2)];
+   var $mul233=(Math.imul($177,$178)|0);
+   var $179=HEAP32[(($local)>>2)];
+   var $mul234=(Math.imul($mul233,$179)|0);
+   var $180=$operations;
+   var $mul235=(Math.imul($mul234,$180)|0);
+   $shared_size=$mul235;
+   var $181=$i;
+   var $182=HEAP32[(($global)>>2)];
+   var $183=HEAP32[(($local)>>2)];
+   var $184=$i;
+   var $185=HEAP32[(($group_counts)>>2)];
+   var $arrayidx236=(($185+($184<<2))|0);
+   var $186=HEAP32[(($arrayidx236)>>2)];
+   var $187=$i;
+   var $188=HEAP32[(($work_item_counts)>>2)];
+   var $arrayidx237=(($188+($187<<2))|0);
+   var $189=HEAP32[(($arrayidx237)>>2)];
+   var $190=$operations;
+   var $191=HEAP32[(($entries)>>2)];
+   var $call238=_printf(((640)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 56)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$181,HEAP32[(((tempVarArgs)+(8))>>2)]=$182,HEAP32[(((tempVarArgs)+(16))>>2)]=$183,HEAP32[(((tempVarArgs)+(24))>>2)]=$186,HEAP32[(((tempVarArgs)+(32))>>2)]=$189,HEAP32[(((tempVarArgs)+(40))>>2)]=$190,HEAP32[(((tempVarArgs)+(48))>>2)]=$191,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $192=HEAP32[(($pass_input)>>2)];
+   $pass_swap=$192;
+   var $193=HEAP32[(($pass_output)>>2)];
+   HEAP32[(($pass_input)>>2)]=$193;
+   var $194=$pass_swap;
+   HEAP32[(($pass_output)>>2)]=$194;
+   HEAP32[(($err)>>2)]=0;
+   var $195=$i;
+   var $196=$kernels;
+   var $arrayidx239=(($196+($195<<2))|0);
+   var $197=HEAP32[(($arrayidx239)>>2)];
+   var $198=$pass_output;
+   var $call240=_clSetKernelArg($197, 0, 4, $198);
+   var $199=HEAP32[(($err)>>2)];
+   var $or241=$199 | $call240;
+   HEAP32[(($err)>>2)]=$or241;
+   var $200=$i;
+   var $201=$kernels;
+   var $arrayidx242=(($201+($200<<2))|0);
+   var $202=HEAP32[(($arrayidx242)>>2)];
+   var $203=$pass_input;
+   var $call243=_clSetKernelArg($202, 1, 4, $203);
+   var $204=HEAP32[(($err)>>2)];
+   var $or244=$204 | $call243;
+   HEAP32[(($err)>>2)]=$or244;
+   var $205=$i;
+   var $206=$kernels;
+   var $arrayidx245=(($206+($205<<2))|0);
+   var $207=HEAP32[(($arrayidx245)>>2)];
+   var $208=$shared_size;
+   var $call246=_clSetKernelArg($207, 2, $208, 0);
+   var $209=HEAP32[(($err)>>2)];
+   var $or247=$209 | $call246;
+   HEAP32[(($err)>>2)]=$or247;
+   var $210=$i;
+   var $211=$kernels;
+   var $arrayidx248=(($211+($210<<2))|0);
+   var $212=HEAP32[(($arrayidx248)>>2)];
+   var $213=$entries;
+   var $call249=_clSetKernelArg($212, 3, 4, $213);
+   var $214=HEAP32[(($err)>>2)];
+   var $or250=$214 | $call249;
+   HEAP32[(($err)>>2)]=$or250;
+   var $215=HEAP32[(($err)>>2)];
+   var $cmp251=($215|0)!=0;
+   if ($cmp251) { label = 81; break; } else { label = 82; break; }
+  case 81: 
+   var $call254=_printf(((600)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 82: 
+   var $216=HEAP32[(($pass_input)>>2)];
+   var $217=$input_buffer;
+   var $cmp256=($216|0)==($217|0);
+   if ($cmp256) { label = 83; break; } else { label = 84; break; }
+  case 83: 
+   var $218=$partials_buffer;
+   HEAP32[(($pass_input)>>2)]=$218;
+   label = 84; break;
+  case 84: 
+   HEAP32[(($err)>>2)]=0;
+   var $219=$commands;
+   var $220=$i;
+   var $221=$kernels;
+   var $arrayidx260=(($221+($220<<2))|0);
+   var $222=HEAP32[(($arrayidx260)>>2)];
+   var $call261=_clEnqueueNDRangeKernel($219, $222, 1, 0, $global, $local, 0, 0, 0);
+   var $223=HEAP32[(($err)>>2)];
+   var $or262=$223 | $call261;
+   HEAP32[(($err)>>2)]=$or262;
+   var $224=HEAP32[(($err)>>2)];
+   var $cmp263=($224|0)!=0;
+   if ($cmp263) { label = 85; break; } else { label = 86; break; }
+  case 85: 
+   var $call266=_printf(((560)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 86: 
+   label = 87; break;
+  case 87: 
+   var $225=$i;
+   var $inc269=((($225)+(1))|0);
+   $i=$inc269;
+   label = 79; break;
+  case 88: 
+   var $226=$commands;
+   var $call271=_clFinish($226);
+   HEAP32[(($err)>>2)]=$call271;
+   var $227=HEAP32[(($err)>>2)];
+   var $cmp272=($227|0)!=0;
+   if ($cmp272) { label = 89; break; } else { label = 90; break; }
+  case 89: 
+   var $228=HEAP32[(($err)>>2)];
+   var $call275=_printf(((496)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$228,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 90: 
+   var $call277=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $229=HEAP32[((56)>>2)];
+   var $230=HEAP32[((72)>>2)];
+   var $231=HEAP8[(64)];
+   var $tobool278=(($231) & 1);
+   var $cond280=$tobool278 ? (((128)|0)) : (((552)|0));
+   var $232=HEAP32[((80)>>2)];
+   var $cmp281=($232|0) <= 1;
+   if ($cmp281) { label = 91; break; } else { label = 92; break; }
+  case 91: 
+   var $cond289 = ((416)|0);label = 93; break;
+  case 92: 
+   var $233=HEAP32[((80)>>2)];
+   var $cmp285=($233|0)==2;
+   var $cond287=$cmp285 ? (((408)|0)) : (((400)|0));
+   var $cond289 = $cond287;label = 93; break;
+  case 93: 
+   var $cond289;
+   var $call290=_printf(((424)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$229,HEAP32[(((tempVarArgs)+(8))>>2)]=$230,HEAP32[(((tempVarArgs)+(16))>>2)]=$cond280,HEAP32[(((tempVarArgs)+(24))>>2)]=$cond289,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call291=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   HEAP32[(($err)>>2)]=0;
+   var $call292$0=_current_time();
+   var $call292$1=tempRet0;
+   var $st$10$0=(($t1)|0);
+   HEAP32[(($st$10$0)>>2)]=$call292$0;
+   var $st$11$1=(($t1+4)|0);
+   HEAP32[(($st$11$1)>>2)]=$call292$1;
+   $k=0;
+   label = 94; break;
+  case 94: 
+   var $234=$k;
+   var $235=HEAP32[((56)>>2)];
+   var $cmp294=($234|0) < ($235|0);
+   if ($cmp294) { label = 95; break; } else { label = 103; break; }
+  case 95: 
+   $i=0;
+   label = 96; break;
+  case 96: 
+   var $236=$i;
+   var $237=HEAP32[(($pass_count)>>2)];
+   var $cmp298=($236|0) < ($237|0);
+   if ($cmp298) { label = 97; break; } else { label = 101; break; }
+  case 97: 
+   var $238=$i;
+   var $239=HEAP32[(($group_counts)>>2)];
+   var $arrayidx302=(($239+($238<<2))|0);
+   var $240=HEAP32[(($arrayidx302)>>2)];
+   var $241=$i;
+   var $242=HEAP32[(($work_item_counts)>>2)];
+   var $arrayidx303=(($242+($241<<2))|0);
+   var $243=HEAP32[(($arrayidx303)>>2)];
+   var $mul304=(Math.imul($240,$243)|0);
+   HEAP32[(($global301)>>2)]=$mul304;
+   var $244=$i;
+   var $245=HEAP32[(($work_item_counts)>>2)];
+   var $arrayidx306=(($245+($244<<2))|0);
+   var $246=HEAP32[(($arrayidx306)>>2)];
+   HEAP32[(($local305)>>2)]=$246;
+   var $247=$commands;
+   var $248=$i;
+   var $249=$kernels;
+   var $arrayidx307=(($249+($248<<2))|0);
+   var $250=HEAP32[(($arrayidx307)>>2)];
+   var $call308=_clEnqueueNDRangeKernel($247, $250, 1, 0, $global301, $local305, 0, 0, 0);
+   HEAP32[(($err)>>2)]=$call308;
+   var $251=HEAP32[(($err)>>2)];
+   var $cmp309=($251|0)!=0;
+   if ($cmp309) { label = 98; break; } else { label = 99; break; }
+  case 98: 
+   var $call312=_printf(((560)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 99: 
+   label = 100; break;
+  case 100: 
+   var $252=$i;
+   var $inc315=((($252)+(1))|0);
+   $i=$inc315;
+   label = 96; break;
+  case 101: 
+   label = 102; break;
+  case 102: 
+   var $253=$k;
+   var $inc318=((($253)+(1))|0);
+   $k=$inc318;
+   label = 94; break;
+  case 103: 
+   var $254=$commands;
+   var $call320=_clFinish($254);
+   HEAP32[(($err)>>2)]=$call320;
+   var $255=HEAP32[(($err)>>2)];
+   var $cmp321=($255|0)!=0;
+   if ($cmp321) { label = 104; break; } else { label = 105; break; }
+  case 104: 
+   var $256=HEAP32[(($err)>>2)];
+   var $call324=_printf(((496)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$256,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 105: 
+   var $call326$0=_current_time();
+   var $call326$1=tempRet0;
+   var $st$12$0=(($t2)|0);
+   HEAP32[(($st$12$0)>>2)]=$call326$0;
+   var $st$13$1=(($t2+4)|0);
+   HEAP32[(($st$13$1)>>2)]=$call326$1;
+   var $ld$14$0=(($t2)|0);
+   var $257$0=HEAP32[(($ld$14$0)>>2)];
+   var $ld$15$1=(($t2+4)|0);
+   var $257$1=HEAP32[(($ld$15$1)>>2)];
+   var $ld$16$0=(($t1)|0);
+   var $258$0=HEAP32[(($ld$16$0)>>2)];
+   var $ld$17$1=(($t1+4)|0);
+   var $258$1=HEAP32[(($ld$17$1)>>2)];
+   var $call327=_subtract_time_in_seconds($257$0, $257$1, $258$0, $258$1);
+   $t=$call327;
+   var $259=$t;
+   var $mul328=($259)*(1000);
+   var $260=HEAP32[((56)>>2)];
+   var $conv329=($260|0);
+   var $div330=($mul328)/($conv329);
+   var $call331=_printf(((376)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$div330,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $261=$buffer_size;
+   var $conv332=($261>>>0);
+   var $mul333=((1e-9))*($conv332);
+   var $262=HEAP32[((56)>>2)];
+   var $conv334=($262|0);
+   var $mul335=($mul333)*($conv334);
+   var $263=$t;
+   var $div336=($mul335)/($263);
+   var $call337=_printf(((344)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$div336,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call338=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $264=$typesize;
+   var $265=HEAP32[((80)>>2)];
+   var $mul339=(Math.imul($264,$265)|0);
+   var $call340=_malloc($mul339);
+   $computed_result=$call340;
+   var $266=$computed_result;
+   var $267=$typesize;
+   var $268=HEAP32[((80)>>2)];
+   var $mul341=(Math.imul($267,$268)|0);
+   _memset($266, 0, $mul341);
+   var $269=$commands;
+   var $270=HEAP32[(($pass_output)>>2)];
+   var $271=$typesize;
+   var $272=HEAP32[((80)>>2)];
+   var $mul342=(Math.imul($271,$272)|0);
+   var $273=$computed_result;
+   var $call343=_clEnqueueReadBuffer($269, $270, 1, 0, $mul342, $273, 0, 0, 0);
+   HEAP32[(($err)>>2)]=$call343;
+   var $274=HEAP32[(($err)>>2)];
+   var $tobool344=($274|0)!=0;
+   if ($tobool344) { label = 106; break; } else { label = 107; break; }
+  case 106: 
+   var $call346=_printf(((288)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 107: 
+   var $275=HEAP8[(64)];
+   var $tobool348=(($275) & 1);
+   if ($tobool348) { label = 108; break; } else { label = 132; break; }
+  case 108: 
+   var $276=$reference;
+   HEAP32[(($276)>>2)]=0; HEAP32[((($276)+(4))>>2)]=0; HEAP32[((($276)+(8))>>2)]=0; HEAP32[((($276)+(12))>>2)]=0;
+   var $277=HEAP32[((80)>>2)];
+   if (($277|0)==4) {
+    label = 109; break;
+   }
+   else if (($277|0)==2) {
+    label = 110; break;
+   }
+   else if (($277|0)==1) {
+    label = 111; break;
+   }
+   else {
+   label = 112; break;
+   }
+  case 109: 
+   var $278=$integer_data;
+   var $279=HEAP32[((72)>>2)];
+   var $arraydecay351=(($reference)|0);
+   _reduce_validate_int4($278, $279, $arraydecay351);
+   label = 113; break;
+  case 110: 
+   var $280=$integer_data;
+   var $281=HEAP32[((72)>>2)];
+   var $arraydecay353=(($reference)|0);
+   _reduce_validate_int2($280, $281, $arraydecay353);
+   label = 113; break;
+  case 111: 
+   var $282=$integer_data;
+   var $283=HEAP32[((72)>>2)];
+   var $arraydecay355=(($reference)|0);
+   _reduce_validate_int($282, $283, $arraydecay355);
+   label = 113; break;
+  case 112: 
+   var $call357=_printf(((1328)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 113: 
+   var $284=$result;
+   HEAP32[(($284)>>2)]=0; HEAP32[((($284)+(4))>>2)]=0; HEAP32[((($284)+(8))>>2)]=0; HEAP32[((($284)+(12))>>2)]=0;
+   $c=0;
+   label = 114; break;
+  case 114: 
+   var $285=$c;
+   var $286=HEAP32[((80)>>2)];
+   var $cmp360=($285|0) < ($286|0);
+   if ($cmp360) { label = 115; break; } else { label = 117; break; }
+  case 115: 
+   var $287=$c;
+   var $288=$computed_result;
+   var $289=$288;
+   var $arrayidx363=(($289+($287<<2))|0);
+   var $290=HEAP32[(($arrayidx363)>>2)];
+   $v=$290;
+   var $291=$v;
+   var $292=$c;
+   var $arrayidx364=(($result+($292<<2))|0);
+   var $293=HEAP32[(($arrayidx364)>>2)];
+   var $add365=((($293)+($291))|0);
+   HEAP32[(($arrayidx364)>>2)]=$add365;
+   label = 116; break;
+  case 116: 
+   var $294=$c;
+   var $inc367=((($294)+(1))|0);
+   $c=$inc367;
+   label = 114; break;
+  case 117: 
+   $error=0;
+   $diff=0;
+   $c=0;
+   label = 118; break;
+  case 118: 
+   var $295=$c;
+   var $296=HEAP32[((80)>>2)];
+   var $cmp370=($295|0) < ($296|0);
+   if ($cmp370) { label = 119; break; } else { label = 124; break; }
+  case 119: 
+   var $297=$c;
+   var $arrayidx373=(($reference+($297<<2))|0);
+   var $298=HEAP32[(($arrayidx373)>>2)];
+   var $299=$c;
+   var $arrayidx374=(($result+($299<<2))|0);
+   var $300=HEAP32[(($arrayidx374)>>2)];
+   var $sub=((($298)-($300))|0);
+   var $conv375=($sub|0);
+   var $call376=Math.abs($conv375);
+   var $conv377=$call376;
+   $diff=$conv377;
+   var $301=$diff;
+   var $302=$error;
+   var $cmp378=$301 > $302;
+   if ($cmp378) { label = 120; break; } else { label = 121; break; }
+  case 120: 
+   var $303=$diff;
+   var $cond383 = $303;label = 122; break;
+  case 121: 
+   var $304=$error;
+   var $cond383 = $304;label = 122; break;
+  case 122: 
+   var $cond383;
+   $error=$cond383;
+   label = 123; break;
+  case 123: 
+   var $305=$c;
+   var $inc385=((($305)+(1))|0);
+   $c=$inc385;
+   label = 118; break;
+  case 124: 
+   var $306=$error;
+   var $conv387=$306;
+   var $cmp388=$conv387 > (1e-7);
+   if ($cmp388) { label = 125; break; } else { label = 130; break; }
+  case 125: 
+   $c=0;
+   label = 126; break;
+  case 126: 
+   var $307=$c;
+   var $308=HEAP32[((80)>>2)];
+   var $cmp392=($307|0) < ($308|0);
+   if ($cmp392) { label = 127; break; } else { label = 129; break; }
+  case 127: 
+   var $309=$c;
+   var $310=$c;
+   var $arrayidx395=(($reference+($310<<2))|0);
+   var $311=HEAP32[(($arrayidx395)>>2)];
+   var $312=$c;
+   var $arrayidx396=(($result+($312<<2))|0);
+   var $313=HEAP32[(($arrayidx396)>>2)];
+   var $call397=_printf(((264)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 24)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$309,HEAP32[(((tempVarArgs)+(8))>>2)]=$311,HEAP32[(((tempVarArgs)+(16))>>2)]=$313,tempVarArgs)); STACKTOP=tempVarArgs;
+   label = 128; break;
+  case 128: 
+   var $314=$c;
+   var $inc399=((($314)+(1))|0);
+   $c=$inc399;
+   label = 126; break;
+  case 129: 
+   var $315=$error;
+   var $conv401=$315;
+   var $call402=_printf(((208)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$conv401,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 130: 
+   var $call404=_printf(((176)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call405=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   label = 131; break;
+  case 131: 
+   label = 156; break;
+  case 132: 
+   var $316=$reference408;
+   HEAP32[(($316)>>2)]=0; HEAP32[((($316)+(4))>>2)]=0; HEAP32[((($316)+(8))>>2)]=0; HEAP32[((($316)+(12))>>2)]=0;
+   var $317=HEAP32[((80)>>2)];
+   if (($317|0)==4) {
+    label = 133; break;
+   }
+   else if (($317|0)==2) {
+    label = 134; break;
+   }
+   else if (($317|0)==1) {
+    label = 135; break;
+   }
+   else {
+   label = 136; break;
+   }
+  case 133: 
+   var $318=$float_data;
+   var $319=HEAP32[((72)>>2)];
+   var $arraydecay410=(($reference408)|0);
+   _reduce_validate_float4($318, $319, $arraydecay410);
+   label = 137; break;
+  case 134: 
+   var $320=$float_data;
+   var $321=HEAP32[((72)>>2)];
+   var $arraydecay412=(($reference408)|0);
+   _reduce_validate_float2($320, $321, $arraydecay412);
+   label = 137; break;
+  case 135: 
+   var $322=$float_data;
+   var $323=HEAP32[((72)>>2)];
+   var $arraydecay414=(($reference408)|0);
+   _reduce_validate_float($322, $323, $arraydecay414);
+   label = 137; break;
+  case 136: 
+   var $call416=_printf(((1328)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 137: 
+   var $324=$result418;
+   HEAP32[(($324)>>2)]=0; HEAP32[((($324)+(4))>>2)]=0; HEAP32[((($324)+(8))>>2)]=0; HEAP32[((($324)+(12))>>2)]=0;
+   $c=0;
+   label = 138; break;
+  case 138: 
+   var $325=$c;
+   var $326=HEAP32[((80)>>2)];
+   var $cmp420=($325|0) < ($326|0);
+   if ($cmp420) { label = 139; break; } else { label = 141; break; }
+  case 139: 
+   var $327=$c;
+   var $328=$computed_result;
+   var $329=$328;
+   var $arrayidx424=(($329+($327<<2))|0);
+   var $330=HEAPF32[(($arrayidx424)>>2)];
+   $v423=$330;
+   var $331=$v423;
+   var $332=$c;
+   var $arrayidx425=(($result418+($332<<2))|0);
+   var $333=HEAPF32[(($arrayidx425)>>2)];
+   var $add426=($333)+($331);
+   HEAPF32[(($arrayidx425)>>2)]=$add426;
+   label = 140; break;
+  case 140: 
+   var $334=$c;
+   var $inc428=((($334)+(1))|0);
+   $c=$inc428;
+   label = 138; break;
+  case 141: 
+   $error430=0;
+   $diff431=0;
+   $c=0;
+   label = 142; break;
+  case 142: 
+   var $335=$c;
+   var $336=HEAP32[((80)>>2)];
+   var $cmp433=($335|0) < ($336|0);
+   if ($cmp433) { label = 143; break; } else { label = 148; break; }
+  case 143: 
+   var $337=$c;
+   var $arrayidx436=(($reference408+($337<<2))|0);
+   var $338=HEAPF32[(($arrayidx436)>>2)];
+   var $339=$c;
+   var $arrayidx437=(($result418+($339<<2))|0);
+   var $340=HEAPF32[(($arrayidx437)>>2)];
+   var $sub438=($338)-($340);
+   var $conv439=$sub438;
+   var $call440=Math.abs($conv439);
+   var $conv441=$call440;
+   $diff431=$conv441;
+   var $341=$diff431;
+   var $342=$error430;
+   var $cmp442=$341 > $342;
+   if ($cmp442) { label = 144; break; } else { label = 145; break; }
+  case 144: 
+   var $343=$diff431;
+   var $cond447 = $343;label = 146; break;
+  case 145: 
+   var $344=$error430;
+   var $cond447 = $344;label = 146; break;
+  case 146: 
+   var $cond447;
+   $error430=$cond447;
+   label = 147; break;
+  case 147: 
+   var $345=$c;
+   var $inc449=((($345)+(1))|0);
+   $c=$inc449;
+   label = 142; break;
+  case 148: 
+   var $346=$error430;
+   var $conv451=$346;
+   var $cmp452=$conv451 > (1e-7);
+   if ($cmp452) { label = 149; break; } else { label = 154; break; }
+  case 149: 
+   $c=0;
+   label = 150; break;
+  case 150: 
+   var $347=$c;
+   var $348=HEAP32[((80)>>2)];
+   var $cmp456=($347|0) < ($348|0);
+   if ($cmp456) { label = 151; break; } else { label = 153; break; }
+  case 151: 
+   var $349=$c;
+   var $350=$c;
+   var $arrayidx459=(($reference408+($350<<2))|0);
+   var $351=HEAPF32[(($arrayidx459)>>2)];
+   var $conv460=$351;
+   var $352=$c;
+   var $arrayidx461=(($result418+($352<<2))|0);
+   var $353=HEAPF32[(($arrayidx461)>>2)];
+   var $conv462=$353;
+   var $call463=_printf(((152)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 24)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$349,HEAPF64[(((tempVarArgs)+(8))>>3)]=$conv460,HEAPF64[(((tempVarArgs)+(16))>>3)]=$conv462,tempVarArgs)); STACKTOP=tempVarArgs;
+   label = 152; break;
+  case 152: 
+   var $354=$c;
+   var $inc465=((($354)+(1))|0);
+   $c=$inc465;
+   label = 150; break;
+  case 153: 
+   var $355=$error430;
+   var $conv467=$355;
+   var $call468=_printf(((208)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$conv467,tempVarArgs)); STACKTOP=tempVarArgs;
+   $retval=1;
+   label = 161; break;
+  case 154: 
+   var $call470=_printf(((176)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $call471=_printf(((1632)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   label = 155; break;
+  case 155: 
+   label = 156; break;
+  case 156: 
+   $i=0;
+   label = 157; break;
+  case 157: 
+   var $356=$i;
+   var $357=HEAP32[(($pass_count)>>2)];
+   var $cmp475=($356|0) < ($357|0);
+   if ($cmp475) { label = 158; break; } else { label = 160; break; }
+  case 158: 
+   var $358=$i;
+   var $359=$kernels;
+   var $arrayidx478=(($359+($358<<2))|0);
+   var $360=HEAP32[(($arrayidx478)>>2)];
+   var $call479=_clReleaseKernel($360);
+   var $361=$i;
+   var $362=$programs;
+   var $arrayidx480=(($362+($361<<2))|0);
+   var $363=HEAP32[(($arrayidx480)>>2)];
+   var $call481=_clReleaseProgram($363);
+   label = 159; break;
+  case 159: 
+   var $364=$i;
+   var $inc483=((($364)+(1))|0);
+   $i=$inc483;
+   label = 157; break;
+  case 160: 
+   var $365=$input_buffer;
+   var $call485=_clReleaseMemObject($365);
+   var $366=$output_buffer;
+   var $call486=_clReleaseMemObject($366);
+   var $367=$partials_buffer;
+   var $call487=_clReleaseMemObject($367);
+   var $368=$commands;
+   var $call488=_clReleaseCommandQueue($368);
+   var $369=$context;
+   var $call489=_clReleaseContext($369);
+   var $370=HEAP32[(($group_counts)>>2)];
+   var $371=$370;
+   _free($371);
+   var $372=HEAP32[(($work_item_counts)>>2)];
+   var $373=$372;
+   _free($373);
+   var $374=HEAP32[(($operation_counts)>>2)];
+   var $375=$374;
+   _free($375);
+   var $376=HEAP32[(($entry_counts)>>2)];
+   var $377=$376;
+   _free($377);
+   var $378=$computed_result;
+   _free($378);
+   var $379=$kernels;
+   var $380=$379;
+   _free($380);
+   var $381=$float_data;
+   var $382=$381;
+   _free($382);
+   var $383=$integer_data;
+   var $384=$383;
+   _free($384);
+   $retval=0;
+   label = 161; break;
+  case 161: 
+   var $385=$retval;
+   STACKTOP = sp;
+   return $385;
+  default: assert(0, "bad label: " + label);
+ }
+}
 Module["_main"] = _main;
+function _load_program_source($filename) {
+ var label = 0;
+ var sp  = STACKTOP; STACKTOP = (STACKTOP + 80)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $retval;
+   var $filename_addr;
+   var $statbuf=sp;
+   var $fh;
+   var $source;
+   $filename_addr=$filename;
+   var $0=$filename_addr;
+   var $call=_fopen($0, ((144)|0));
+   $fh=$call;
+   var $1=$fh;
+   var $cmp=($1|0)==0;
+   if ($cmp) { label = 2; break; } else { label = 3; break; }
+  case 2: 
+   $retval=0;
+   label = 4; break;
+  case 3: 
+   var $2=$filename_addr;
+   var $call1=_stat($2, $statbuf);
+   var $st_size=(($statbuf+36)|0);
+   var $3=HEAP32[(($st_size)>>2)];
+   var $add=((($3)+(1))|0);
+   var $call2=_malloc($add);
+   $source=$call2;
+   var $4=$source;
+   var $st_size3=(($statbuf+36)|0);
+   var $5=HEAP32[(($st_size3)>>2)];
+   var $6=$fh;
+   var $call4=_fread($4, $5, 1, $6);
+   var $st_size5=(($statbuf+36)|0);
+   var $7=HEAP32[(($st_size5)>>2)];
+   var $8=$source;
+   var $arrayidx=(($8+$7)|0);
+   HEAP8[($arrayidx)]=0;
+   var $9=$source;
+   $retval=$9;
+   label = 4; break;
+  case 4: 
+   var $10=$retval;
+   STACKTOP = sp;
+   return $10;
+  default: assert(0, "bad label: " + label);
+ }
+}
+function _malloc($bytes) {
+ var label = 0;
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $cmp=($bytes>>>0) < 245;
+   if ($cmp) { label = 2; break; } else { label = 78; break; }
+  case 2: 
+   var $cmp1=($bytes>>>0) < 11;
+   if ($cmp1) { var $cond = 16;label = 4; break; } else { label = 3; break; }
+  case 3: 
+   var $add2=((($bytes)+(11))|0);
+   var $and=$add2 & -8;
+   var $cond = $and;label = 4; break;
+  case 4: 
+   var $cond;
+   var $shr=$cond >>> 3;
+   var $0=HEAP32[((((1880)|0))>>2)];
+   var $shr3=$0 >>> ($shr>>>0);
+   var $and4=$shr3 & 3;
+   var $cmp5=($and4|0)==0;
+   if ($cmp5) { label = 12; break; } else { label = 5; break; }
+  case 5: 
+   var $neg=$shr3 & 1;
+   var $and7=$neg ^ 1;
+   var $add8=((($and7)+($shr))|0);
+   var $shl=$add8 << 1;
+   var $arrayidx=((1920+($shl<<2))|0);
+   var $1=$arrayidx;
+   var $arrayidx_sum=((($shl)+(2))|0);
+   var $2=((1920+($arrayidx_sum<<2))|0);
+   var $3=HEAP32[(($2)>>2)];
+   var $fd9=(($3+8)|0);
+   var $4=HEAP32[(($fd9)>>2)];
+   var $cmp10=($1|0)==($4|0);
+   if ($cmp10) { label = 6; break; } else { label = 7; break; }
+  case 6: 
+   var $shl12=1 << $add8;
+   var $neg13=$shl12 ^ -1;
+   var $and14=$0 & $neg13;
+   HEAP32[((((1880)|0))>>2)]=$and14;
+   label = 11; break;
+  case 7: 
+   var $5=$4;
+   var $6=HEAP32[((((1896)|0))>>2)];
+   var $cmp15=($5>>>0) < ($6>>>0);
+   if ($cmp15) { label = 10; break; } else { label = 8; break; }
+  case 8: 
+   var $bk=(($4+12)|0);
+   var $7=HEAP32[(($bk)>>2)];
+   var $cmp16=($7|0)==($3|0);
+   if ($cmp16) { label = 9; break; } else { label = 10; break; }
+  case 9: 
+   HEAP32[(($bk)>>2)]=$1;
+   HEAP32[(($2)>>2)]=$4;
+   label = 11; break;
+  case 10: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 11: 
+   var $shl22=$add8 << 3;
+   var $or23=$shl22 | 3;
+   var $head=(($3+4)|0);
+   HEAP32[(($head)>>2)]=$or23;
+   var $8=$3;
+   var $add_ptr_sum106=$shl22 | 4;
+   var $head25=(($8+$add_ptr_sum106)|0);
+   var $9=$head25;
+   var $10=HEAP32[(($9)>>2)];
+   var $or26=$10 | 1;
+   HEAP32[(($9)>>2)]=$or26;
+   var $11=$fd9;
+   var $mem_0 = $11;label = 341; break;
+  case 12: 
+   var $12=HEAP32[((((1888)|0))>>2)];
+   var $cmp29=($cond>>>0) > ($12>>>0);
+   if ($cmp29) { label = 13; break; } else { var $nb_0 = $cond;label = 160; break; }
+  case 13: 
+   var $cmp31=($shr3|0)==0;
+   if ($cmp31) { label = 27; break; } else { label = 14; break; }
+  case 14: 
+   var $shl35=$shr3 << $shr;
+   var $shl37=2 << $shr;
+   var $sub=(((-$shl37))|0);
+   var $or40=$shl37 | $sub;
+   var $and41=$shl35 & $or40;
+   var $sub42=(((-$and41))|0);
+   var $and43=$and41 & $sub42;
+   var $sub44=((($and43)-(1))|0);
+   var $shr45=$sub44 >>> 12;
+   var $and46=$shr45 & 16;
+   var $shr47=$sub44 >>> ($and46>>>0);
+   var $shr48=$shr47 >>> 5;
+   var $and49=$shr48 & 8;
+   var $add50=$and49 | $and46;
+   var $shr51=$shr47 >>> ($and49>>>0);
+   var $shr52=$shr51 >>> 2;
+   var $and53=$shr52 & 4;
+   var $add54=$add50 | $and53;
+   var $shr55=$shr51 >>> ($and53>>>0);
+   var $shr56=$shr55 >>> 1;
+   var $and57=$shr56 & 2;
+   var $add58=$add54 | $and57;
+   var $shr59=$shr55 >>> ($and57>>>0);
+   var $shr60=$shr59 >>> 1;
+   var $and61=$shr60 & 1;
+   var $add62=$add58 | $and61;
+   var $shr63=$shr59 >>> ($and61>>>0);
+   var $add64=((($add62)+($shr63))|0);
+   var $shl65=$add64 << 1;
+   var $arrayidx66=((1920+($shl65<<2))|0);
+   var $13=$arrayidx66;
+   var $arrayidx66_sum=((($shl65)+(2))|0);
+   var $14=((1920+($arrayidx66_sum<<2))|0);
+   var $15=HEAP32[(($14)>>2)];
+   var $fd69=(($15+8)|0);
+   var $16=HEAP32[(($fd69)>>2)];
+   var $cmp70=($13|0)==($16|0);
+   if ($cmp70) { label = 15; break; } else { label = 16; break; }
+  case 15: 
+   var $shl72=1 << $add64;
+   var $neg73=$shl72 ^ -1;
+   var $and74=$0 & $neg73;
+   HEAP32[((((1880)|0))>>2)]=$and74;
+   label = 20; break;
+  case 16: 
+   var $17=$16;
+   var $18=HEAP32[((((1896)|0))>>2)];
+   var $cmp76=($17>>>0) < ($18>>>0);
+   if ($cmp76) { label = 19; break; } else { label = 17; break; }
+  case 17: 
+   var $bk78=(($16+12)|0);
+   var $19=HEAP32[(($bk78)>>2)];
+   var $cmp79=($19|0)==($15|0);
+   if ($cmp79) { label = 18; break; } else { label = 19; break; }
+  case 18: 
+   HEAP32[(($bk78)>>2)]=$13;
+   HEAP32[(($14)>>2)]=$16;
+   label = 20; break;
+  case 19: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 20: 
+   var $shl90=$add64 << 3;
+   var $sub91=((($shl90)-($cond))|0);
+   var $or93=$cond | 3;
+   var $head94=(($15+4)|0);
+   HEAP32[(($head94)>>2)]=$or93;
+   var $20=$15;
+   var $add_ptr95=(($20+$cond)|0);
+   var $21=$add_ptr95;
+   var $or96=$sub91 | 1;
+   var $add_ptr95_sum103=$cond | 4;
+   var $head97=(($20+$add_ptr95_sum103)|0);
+   var $22=$head97;
+   HEAP32[(($22)>>2)]=$or96;
+   var $add_ptr98=(($20+$shl90)|0);
+   var $prev_foot=$add_ptr98;
+   HEAP32[(($prev_foot)>>2)]=$sub91;
+   var $23=HEAP32[((((1888)|0))>>2)];
+   var $cmp99=($23|0)==0;
+   if ($cmp99) { label = 26; break; } else { label = 21; break; }
+  case 21: 
+   var $24=HEAP32[((((1900)|0))>>2)];
+   var $shr101=$23 >>> 3;
+   var $shl102=$shr101 << 1;
+   var $arrayidx103=((1920+($shl102<<2))|0);
+   var $25=$arrayidx103;
+   var $26=HEAP32[((((1880)|0))>>2)];
+   var $shl105=1 << $shr101;
+   var $and106=$26 & $shl105;
+   var $tobool107=($and106|0)==0;
+   if ($tobool107) { label = 22; break; } else { label = 23; break; }
+  case 22: 
+   var $or110=$26 | $shl105;
+   HEAP32[((((1880)|0))>>2)]=$or110;
+   var $arrayidx103_sum_pre=((($shl102)+(2))|0);
+   var $_pre=((1920+($arrayidx103_sum_pre<<2))|0);
+   var $F104_0 = $25;var $_pre_phi = $_pre;label = 25; break;
+  case 23: 
+   var $arrayidx103_sum104=((($shl102)+(2))|0);
+   var $27=((1920+($arrayidx103_sum104<<2))|0);
+   var $28=HEAP32[(($27)>>2)];
+   var $29=$28;
+   var $30=HEAP32[((((1896)|0))>>2)];
+   var $cmp113=($29>>>0) < ($30>>>0);
+   if ($cmp113) { label = 24; break; } else { var $F104_0 = $28;var $_pre_phi = $27;label = 25; break; }
+  case 24: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 25: 
+   var $_pre_phi;
+   var $F104_0;
+   HEAP32[(($_pre_phi)>>2)]=$24;
+   var $bk122=(($F104_0+12)|0);
+   HEAP32[(($bk122)>>2)]=$24;
+   var $fd123=(($24+8)|0);
+   HEAP32[(($fd123)>>2)]=$F104_0;
+   var $bk124=(($24+12)|0);
+   HEAP32[(($bk124)>>2)]=$25;
+   label = 26; break;
+  case 26: 
+   HEAP32[((((1888)|0))>>2)]=$sub91;
+   HEAP32[((((1900)|0))>>2)]=$21;
+   var $31=$fd69;
+   var $mem_0 = $31;label = 341; break;
+  case 27: 
+   var $32=HEAP32[((((1884)|0))>>2)];
+   var $cmp128=($32|0)==0;
+   if ($cmp128) { var $nb_0 = $cond;label = 160; break; } else { label = 28; break; }
+  case 28: 
+   var $sub_i=(((-$32))|0);
+   var $and_i=$32 & $sub_i;
+   var $sub2_i=((($and_i)-(1))|0);
+   var $shr_i=$sub2_i >>> 12;
+   var $and3_i=$shr_i & 16;
+   var $shr4_i=$sub2_i >>> ($and3_i>>>0);
+   var $shr5_i=$shr4_i >>> 5;
+   var $and6_i=$shr5_i & 8;
+   var $add_i=$and6_i | $and3_i;
+   var $shr7_i=$shr4_i >>> ($and6_i>>>0);
+   var $shr8_i=$shr7_i >>> 2;
+   var $and9_i=$shr8_i & 4;
+   var $add10_i=$add_i | $and9_i;
+   var $shr11_i=$shr7_i >>> ($and9_i>>>0);
+   var $shr12_i=$shr11_i >>> 1;
+   var $and13_i=$shr12_i & 2;
+   var $add14_i=$add10_i | $and13_i;
+   var $shr15_i=$shr11_i >>> ($and13_i>>>0);
+   var $shr16_i=$shr15_i >>> 1;
+   var $and17_i=$shr16_i & 1;
+   var $add18_i=$add14_i | $and17_i;
+   var $shr19_i=$shr15_i >>> ($and17_i>>>0);
+   var $add20_i=((($add18_i)+($shr19_i))|0);
+   var $arrayidx_i=((2184+($add20_i<<2))|0);
+   var $33=HEAP32[(($arrayidx_i)>>2)];
+   var $head_i=(($33+4)|0);
+   var $34=HEAP32[(($head_i)>>2)];
+   var $and21_i=$34 & -8;
+   var $sub22_i=((($and21_i)-($cond))|0);
+   var $t_0_i = $33;var $v_0_i = $33;var $rsize_0_i = $sub22_i;label = 29; break;
+  case 29: 
+   var $rsize_0_i;
+   var $v_0_i;
+   var $t_0_i;
+   var $arrayidx23_i=(($t_0_i+16)|0);
+   var $35=HEAP32[(($arrayidx23_i)>>2)];
+   var $cmp_i=($35|0)==0;
+   if ($cmp_i) { label = 30; break; } else { var $cond7_i = $35;label = 31; break; }
+  case 30: 
+   var $arrayidx27_i=(($t_0_i+20)|0);
+   var $36=HEAP32[(($arrayidx27_i)>>2)];
+   var $cmp28_i=($36|0)==0;
+   if ($cmp28_i) { label = 32; break; } else { var $cond7_i = $36;label = 31; break; }
+  case 31: 
+   var $cond7_i;
+   var $head29_i=(($cond7_i+4)|0);
+   var $37=HEAP32[(($head29_i)>>2)];
+   var $and30_i=$37 & -8;
+   var $sub31_i=((($and30_i)-($cond))|0);
+   var $cmp32_i=($sub31_i>>>0) < ($rsize_0_i>>>0);
+   var $sub31_rsize_0_i=$cmp32_i ? $sub31_i : $rsize_0_i;
+   var $cond_v_0_i=$cmp32_i ? $cond7_i : $v_0_i;
+   var $t_0_i = $cond7_i;var $v_0_i = $cond_v_0_i;var $rsize_0_i = $sub31_rsize_0_i;label = 29; break;
+  case 32: 
+   var $38=$v_0_i;
+   var $39=HEAP32[((((1896)|0))>>2)];
+   var $cmp33_i=($38>>>0) < ($39>>>0);
+   if ($cmp33_i) { label = 76; break; } else { label = 33; break; }
+  case 33: 
+   var $add_ptr_i=(($38+$cond)|0);
+   var $40=$add_ptr_i;
+   var $cmp35_i=($38>>>0) < ($add_ptr_i>>>0);
+   if ($cmp35_i) { label = 34; break; } else { label = 76; break; }
+  case 34: 
+   var $parent_i=(($v_0_i+24)|0);
+   var $41=HEAP32[(($parent_i)>>2)];
+   var $bk_i=(($v_0_i+12)|0);
+   var $42=HEAP32[(($bk_i)>>2)];
+   var $cmp40_i=($42|0)==($v_0_i|0);
+   if ($cmp40_i) { label = 40; break; } else { label = 35; break; }
+  case 35: 
+   var $fd_i=(($v_0_i+8)|0);
+   var $43=HEAP32[(($fd_i)>>2)];
+   var $44=$43;
+   var $cmp45_i=($44>>>0) < ($39>>>0);
+   if ($cmp45_i) { label = 39; break; } else { label = 36; break; }
+  case 36: 
+   var $bk47_i=(($43+12)|0);
+   var $45=HEAP32[(($bk47_i)>>2)];
+   var $cmp48_i=($45|0)==($v_0_i|0);
+   if ($cmp48_i) { label = 37; break; } else { label = 39; break; }
+  case 37: 
+   var $fd50_i=(($42+8)|0);
+   var $46=HEAP32[(($fd50_i)>>2)];
+   var $cmp51_i=($46|0)==($v_0_i|0);
+   if ($cmp51_i) { label = 38; break; } else { label = 39; break; }
+  case 38: 
+   HEAP32[(($bk47_i)>>2)]=$42;
+   HEAP32[(($fd50_i)>>2)]=$43;
+   var $R_1_i = $42;label = 47; break;
+  case 39: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 40: 
+   var $arrayidx61_i=(($v_0_i+20)|0);
+   var $47=HEAP32[(($arrayidx61_i)>>2)];
+   var $cmp62_i=($47|0)==0;
+   if ($cmp62_i) { label = 41; break; } else { var $R_0_i = $47;var $RP_0_i = $arrayidx61_i;label = 42; break; }
+  case 41: 
+   var $arrayidx65_i=(($v_0_i+16)|0);
+   var $48=HEAP32[(($arrayidx65_i)>>2)];
+   var $cmp66_i=($48|0)==0;
+   if ($cmp66_i) { var $R_1_i = 0;label = 47; break; } else { var $R_0_i = $48;var $RP_0_i = $arrayidx65_i;label = 42; break; }
+  case 42: 
+   var $RP_0_i;
+   var $R_0_i;
+   var $arrayidx71_i=(($R_0_i+20)|0);
+   var $49=HEAP32[(($arrayidx71_i)>>2)];
+   var $cmp72_i=($49|0)==0;
+   if ($cmp72_i) { label = 43; break; } else { var $R_0_i = $49;var $RP_0_i = $arrayidx71_i;label = 42; break; }
+  case 43: 
+   var $arrayidx75_i=(($R_0_i+16)|0);
+   var $50=HEAP32[(($arrayidx75_i)>>2)];
+   var $cmp76_i=($50|0)==0;
+   if ($cmp76_i) { label = 44; break; } else { var $R_0_i = $50;var $RP_0_i = $arrayidx75_i;label = 42; break; }
+  case 44: 
+   var $51=$RP_0_i;
+   var $cmp81_i=($51>>>0) < ($39>>>0);
+   if ($cmp81_i) { label = 46; break; } else { label = 45; break; }
+  case 45: 
+   HEAP32[(($RP_0_i)>>2)]=0;
+   var $R_1_i = $R_0_i;label = 47; break;
+  case 46: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 47: 
+   var $R_1_i;
+   var $cmp90_i=($41|0)==0;
+   if ($cmp90_i) { label = 67; break; } else { label = 48; break; }
+  case 48: 
+   var $index_i=(($v_0_i+28)|0);
+   var $52=HEAP32[(($index_i)>>2)];
+   var $arrayidx94_i=((2184+($52<<2))|0);
+   var $53=HEAP32[(($arrayidx94_i)>>2)];
+   var $cmp95_i=($v_0_i|0)==($53|0);
+   if ($cmp95_i) { label = 49; break; } else { label = 51; break; }
+  case 49: 
+   HEAP32[(($arrayidx94_i)>>2)]=$R_1_i;
+   var $cond5_i=($R_1_i|0)==0;
+   if ($cond5_i) { label = 50; break; } else { label = 57; break; }
+  case 50: 
+   var $54=HEAP32[(($index_i)>>2)];
+   var $shl_i=1 << $54;
+   var $neg_i=$shl_i ^ -1;
+   var $55=HEAP32[((((1884)|0))>>2)];
+   var $and103_i=$55 & $neg_i;
+   HEAP32[((((1884)|0))>>2)]=$and103_i;
+   label = 67; break;
+  case 51: 
+   var $56=$41;
+   var $57=HEAP32[((((1896)|0))>>2)];
+   var $cmp107_i=($56>>>0) < ($57>>>0);
+   if ($cmp107_i) { label = 55; break; } else { label = 52; break; }
+  case 52: 
+   var $arrayidx113_i=(($41+16)|0);
+   var $58=HEAP32[(($arrayidx113_i)>>2)];
+   var $cmp114_i=($58|0)==($v_0_i|0);
+   if ($cmp114_i) { label = 53; break; } else { label = 54; break; }
+  case 53: 
+   HEAP32[(($arrayidx113_i)>>2)]=$R_1_i;
+   label = 56; break;
+  case 54: 
+   var $arrayidx121_i=(($41+20)|0);
+   HEAP32[(($arrayidx121_i)>>2)]=$R_1_i;
+   label = 56; break;
+  case 55: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 56: 
+   var $cmp126_i=($R_1_i|0)==0;
+   if ($cmp126_i) { label = 67; break; } else { label = 57; break; }
+  case 57: 
+   var $59=$R_1_i;
+   var $60=HEAP32[((((1896)|0))>>2)];
+   var $cmp130_i=($59>>>0) < ($60>>>0);
+   if ($cmp130_i) { label = 66; break; } else { label = 58; break; }
+  case 58: 
+   var $parent135_i=(($R_1_i+24)|0);
+   HEAP32[(($parent135_i)>>2)]=$41;
+   var $arrayidx137_i=(($v_0_i+16)|0);
+   var $61=HEAP32[(($arrayidx137_i)>>2)];
+   var $cmp138_i=($61|0)==0;
+   if ($cmp138_i) { label = 62; break; } else { label = 59; break; }
+  case 59: 
+   var $62=$61;
+   var $63=HEAP32[((((1896)|0))>>2)];
+   var $cmp142_i=($62>>>0) < ($63>>>0);
+   if ($cmp142_i) { label = 61; break; } else { label = 60; break; }
+  case 60: 
+   var $arrayidx148_i=(($R_1_i+16)|0);
+   HEAP32[(($arrayidx148_i)>>2)]=$61;
+   var $parent149_i=(($61+24)|0);
+   HEAP32[(($parent149_i)>>2)]=$R_1_i;
+   label = 62; break;
+  case 61: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 62: 
+   var $arrayidx154_i=(($v_0_i+20)|0);
+   var $64=HEAP32[(($arrayidx154_i)>>2)];
+   var $cmp155_i=($64|0)==0;
+   if ($cmp155_i) { label = 67; break; } else { label = 63; break; }
+  case 63: 
+   var $65=$64;
+   var $66=HEAP32[((((1896)|0))>>2)];
+   var $cmp159_i=($65>>>0) < ($66>>>0);
+   if ($cmp159_i) { label = 65; break; } else { label = 64; break; }
+  case 64: 
+   var $arrayidx165_i=(($R_1_i+20)|0);
+   HEAP32[(($arrayidx165_i)>>2)]=$64;
+   var $parent166_i=(($64+24)|0);
+   HEAP32[(($parent166_i)>>2)]=$R_1_i;
+   label = 67; break;
+  case 65: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 66: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 67: 
+   var $cmp174_i=($rsize_0_i>>>0) < 16;
+   if ($cmp174_i) { label = 68; break; } else { label = 69; break; }
+  case 68: 
+   var $add177_i=((($rsize_0_i)+($cond))|0);
+   var $or178_i=$add177_i | 3;
+   var $head179_i=(($v_0_i+4)|0);
+   HEAP32[(($head179_i)>>2)]=$or178_i;
+   var $add_ptr181_sum_i=((($add177_i)+(4))|0);
+   var $head182_i=(($38+$add_ptr181_sum_i)|0);
+   var $67=$head182_i;
+   var $68=HEAP32[(($67)>>2)];
+   var $or183_i=$68 | 1;
+   HEAP32[(($67)>>2)]=$or183_i;
+   label = 77; break;
+  case 69: 
+   var $or186_i=$cond | 3;
+   var $head187_i=(($v_0_i+4)|0);
+   HEAP32[(($head187_i)>>2)]=$or186_i;
+   var $or188_i=$rsize_0_i | 1;
+   var $add_ptr_sum_i175=$cond | 4;
+   var $head189_i=(($38+$add_ptr_sum_i175)|0);
+   var $69=$head189_i;
+   HEAP32[(($69)>>2)]=$or188_i;
+   var $add_ptr_sum1_i=((($rsize_0_i)+($cond))|0);
+   var $add_ptr190_i=(($38+$add_ptr_sum1_i)|0);
+   var $prev_foot_i=$add_ptr190_i;
+   HEAP32[(($prev_foot_i)>>2)]=$rsize_0_i;
+   var $70=HEAP32[((((1888)|0))>>2)];
+   var $cmp191_i=($70|0)==0;
+   if ($cmp191_i) { label = 75; break; } else { label = 70; break; }
+  case 70: 
+   var $71=HEAP32[((((1900)|0))>>2)];
+   var $shr194_i=$70 >>> 3;
+   var $shl195_i=$shr194_i << 1;
+   var $arrayidx196_i=((1920+($shl195_i<<2))|0);
+   var $72=$arrayidx196_i;
+   var $73=HEAP32[((((1880)|0))>>2)];
+   var $shl198_i=1 << $shr194_i;
+   var $and199_i=$73 & $shl198_i;
+   var $tobool200_i=($and199_i|0)==0;
+   if ($tobool200_i) { label = 71; break; } else { label = 72; break; }
+  case 71: 
+   var $or204_i=$73 | $shl198_i;
+   HEAP32[((((1880)|0))>>2)]=$or204_i;
+   var $arrayidx196_sum_pre_i=((($shl195_i)+(2))|0);
+   var $_pre_i=((1920+($arrayidx196_sum_pre_i<<2))|0);
+   var $F197_0_i = $72;var $_pre_phi_i = $_pre_i;label = 74; break;
+  case 72: 
+   var $arrayidx196_sum2_i=((($shl195_i)+(2))|0);
+   var $74=((1920+($arrayidx196_sum2_i<<2))|0);
+   var $75=HEAP32[(($74)>>2)];
+   var $76=$75;
+   var $77=HEAP32[((((1896)|0))>>2)];
+   var $cmp208_i=($76>>>0) < ($77>>>0);
+   if ($cmp208_i) { label = 73; break; } else { var $F197_0_i = $75;var $_pre_phi_i = $74;label = 74; break; }
+  case 73: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 74: 
+   var $_pre_phi_i;
+   var $F197_0_i;
+   HEAP32[(($_pre_phi_i)>>2)]=$71;
+   var $bk218_i=(($F197_0_i+12)|0);
+   HEAP32[(($bk218_i)>>2)]=$71;
+   var $fd219_i=(($71+8)|0);
+   HEAP32[(($fd219_i)>>2)]=$F197_0_i;
+   var $bk220_i=(($71+12)|0);
+   HEAP32[(($bk220_i)>>2)]=$72;
+   label = 75; break;
+  case 75: 
+   HEAP32[((((1888)|0))>>2)]=$rsize_0_i;
+   HEAP32[((((1900)|0))>>2)]=$40;
+   label = 77; break;
+  case 76: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 77: 
+   var $add_ptr225_i=(($v_0_i+8)|0);
+   var $78=$add_ptr225_i;
+   var $cmp130=($add_ptr225_i|0)==0;
+   if ($cmp130) { var $nb_0 = $cond;label = 160; break; } else { var $mem_0 = $78;label = 341; break; }
+  case 78: 
+   var $cmp138=($bytes>>>0) > 4294967231;
+   if ($cmp138) { var $nb_0 = -1;label = 160; break; } else { label = 79; break; }
+  case 79: 
+   var $add143=((($bytes)+(11))|0);
+   var $and144=$add143 & -8;
+   var $79=HEAP32[((((1884)|0))>>2)];
+   var $cmp145=($79|0)==0;
+   if ($cmp145) { var $nb_0 = $and144;label = 160; break; } else { label = 80; break; }
+  case 80: 
+   var $sub_i107=(((-$and144))|0);
+   var $shr_i108=$add143 >>> 8;
+   var $cmp_i109=($shr_i108|0)==0;
+   if ($cmp_i109) { var $idx_0_i = 0;label = 83; break; } else { label = 81; break; }
+  case 81: 
+   var $cmp1_i=($and144>>>0) > 16777215;
+   if ($cmp1_i) { var $idx_0_i = 31;label = 83; break; } else { label = 82; break; }
+  case 82: 
+   var $sub4_i=((($shr_i108)+(1048320))|0);
+   var $shr5_i111=$sub4_i >>> 16;
+   var $and_i112=$shr5_i111 & 8;
+   var $shl_i113=$shr_i108 << $and_i112;
+   var $sub6_i=((($shl_i113)+(520192))|0);
+   var $shr7_i114=$sub6_i >>> 16;
+   var $and8_i=$shr7_i114 & 4;
+   var $add_i115=$and8_i | $and_i112;
+   var $shl9_i=$shl_i113 << $and8_i;
+   var $sub10_i=((($shl9_i)+(245760))|0);
+   var $shr11_i116=$sub10_i >>> 16;
+   var $and12_i=$shr11_i116 & 2;
+   var $add13_i=$add_i115 | $and12_i;
+   var $sub14_i=(((14)-($add13_i))|0);
+   var $shl15_i=$shl9_i << $and12_i;
+   var $shr16_i117=$shl15_i >>> 15;
+   var $add17_i=((($sub14_i)+($shr16_i117))|0);
+   var $shl18_i=$add17_i << 1;
+   var $add19_i=((($add17_i)+(7))|0);
+   var $shr20_i=$and144 >>> ($add19_i>>>0);
+   var $and21_i118=$shr20_i & 1;
+   var $add22_i=$and21_i118 | $shl18_i;
+   var $idx_0_i = $add22_i;label = 83; break;
+  case 83: 
+   var $idx_0_i;
+   var $arrayidx_i119=((2184+($idx_0_i<<2))|0);
+   var $80=HEAP32[(($arrayidx_i119)>>2)];
+   var $cmp24_i=($80|0)==0;
+   if ($cmp24_i) { var $v_2_i = 0;var $rsize_2_i = $sub_i107;var $t_1_i = 0;label = 90; break; } else { label = 84; break; }
+  case 84: 
+   var $cmp26_i=($idx_0_i|0)==31;
+   if ($cmp26_i) { var $cond_i = 0;label = 86; break; } else { label = 85; break; }
+  case 85: 
+   var $shr27_i=$idx_0_i >>> 1;
+   var $sub30_i=(((25)-($shr27_i))|0);
+   var $cond_i = $sub30_i;label = 86; break;
+  case 86: 
+   var $cond_i;
+   var $shl31_i=$and144 << $cond_i;
+   var $v_0_i123 = 0;var $rsize_0_i122 = $sub_i107;var $t_0_i121 = $80;var $sizebits_0_i = $shl31_i;var $rst_0_i = 0;label = 87; break;
+  case 87: 
+   var $rst_0_i;
+   var $sizebits_0_i;
+   var $t_0_i121;
+   var $rsize_0_i122;
+   var $v_0_i123;
+   var $head_i124=(($t_0_i121+4)|0);
+   var $81=HEAP32[(($head_i124)>>2)];
+   var $and32_i=$81 & -8;
+   var $sub33_i=((($and32_i)-($and144))|0);
+   var $cmp34_i=($sub33_i>>>0) < ($rsize_0_i122>>>0);
+   if ($cmp34_i) { label = 88; break; } else { var $v_1_i = $v_0_i123;var $rsize_1_i = $rsize_0_i122;label = 89; break; }
+  case 88: 
+   var $cmp36_i=($and32_i|0)==($and144|0);
+   if ($cmp36_i) { var $v_2_i = $t_0_i121;var $rsize_2_i = $sub33_i;var $t_1_i = $t_0_i121;label = 90; break; } else { var $v_1_i = $t_0_i121;var $rsize_1_i = $sub33_i;label = 89; break; }
+  case 89: 
+   var $rsize_1_i;
+   var $v_1_i;
+   var $arrayidx40_i=(($t_0_i121+20)|0);
+   var $82=HEAP32[(($arrayidx40_i)>>2)];
+   var $shr41_i=$sizebits_0_i >>> 31;
+   var $arrayidx44_i=(($t_0_i121+16+($shr41_i<<2))|0);
+   var $83=HEAP32[(($arrayidx44_i)>>2)];
+   var $cmp45_i125=($82|0)==0;
+   var $cmp46_i=($82|0)==($83|0);
+   var $or_cond_i=$cmp45_i125 | $cmp46_i;
+   var $rst_1_i=$or_cond_i ? $rst_0_i : $82;
+   var $cmp49_i=($83|0)==0;
+   var $shl52_i=$sizebits_0_i << 1;
+   if ($cmp49_i) { var $v_2_i = $v_1_i;var $rsize_2_i = $rsize_1_i;var $t_1_i = $rst_1_i;label = 90; break; } else { var $v_0_i123 = $v_1_i;var $rsize_0_i122 = $rsize_1_i;var $t_0_i121 = $83;var $sizebits_0_i = $shl52_i;var $rst_0_i = $rst_1_i;label = 87; break; }
+  case 90: 
+   var $t_1_i;
+   var $rsize_2_i;
+   var $v_2_i;
+   var $cmp54_i=($t_1_i|0)==0;
+   var $cmp56_i=($v_2_i|0)==0;
+   var $or_cond18_i=$cmp54_i & $cmp56_i;
+   if ($or_cond18_i) { label = 91; break; } else { var $t_2_ph_i = $t_1_i;label = 93; break; }
+  case 91: 
+   var $shl59_i=2 << $idx_0_i;
+   var $sub62_i=(((-$shl59_i))|0);
+   var $or_i=$shl59_i | $sub62_i;
+   var $and63_i=$79 & $or_i;
+   var $cmp64_i=($and63_i|0)==0;
+   if ($cmp64_i) { var $nb_0 = $and144;label = 160; break; } else { label = 92; break; }
+  case 92: 
+   var $sub66_i=(((-$and63_i))|0);
+   var $and67_i=$and63_i & $sub66_i;
+   var $sub69_i=((($and67_i)-(1))|0);
+   var $shr71_i=$sub69_i >>> 12;
+   var $and72_i=$shr71_i & 16;
+   var $shr74_i=$sub69_i >>> ($and72_i>>>0);
+   var $shr75_i=$shr74_i >>> 5;
+   var $and76_i=$shr75_i & 8;
+   var $add77_i=$and76_i | $and72_i;
+   var $shr78_i=$shr74_i >>> ($and76_i>>>0);
+   var $shr79_i=$shr78_i >>> 2;
+   var $and80_i=$shr79_i & 4;
+   var $add81_i=$add77_i | $and80_i;
+   var $shr82_i=$shr78_i >>> ($and80_i>>>0);
+   var $shr83_i=$shr82_i >>> 1;
+   var $and84_i=$shr83_i & 2;
+   var $add85_i=$add81_i | $and84_i;
+   var $shr86_i=$shr82_i >>> ($and84_i>>>0);
+   var $shr87_i=$shr86_i >>> 1;
+   var $and88_i=$shr87_i & 1;
+   var $add89_i=$add85_i | $and88_i;
+   var $shr90_i=$shr86_i >>> ($and88_i>>>0);
+   var $add91_i=((($add89_i)+($shr90_i))|0);
+   var $arrayidx93_i=((2184+($add91_i<<2))|0);
+   var $84=HEAP32[(($arrayidx93_i)>>2)];
+   var $t_2_ph_i = $84;label = 93; break;
+  case 93: 
+   var $t_2_ph_i;
+   var $cmp9623_i=($t_2_ph_i|0)==0;
+   if ($cmp9623_i) { var $rsize_3_lcssa_i = $rsize_2_i;var $v_3_lcssa_i = $v_2_i;label = 96; break; } else { var $t_224_i = $t_2_ph_i;var $rsize_325_i = $rsize_2_i;var $v_326_i = $v_2_i;label = 94; break; }
+  case 94: 
+   var $v_326_i;
+   var $rsize_325_i;
+   var $t_224_i;
+   var $head98_i=(($t_224_i+4)|0);
+   var $85=HEAP32[(($head98_i)>>2)];
+   var $and99_i=$85 & -8;
+   var $sub100_i=((($and99_i)-($and144))|0);
+   var $cmp101_i=($sub100_i>>>0) < ($rsize_325_i>>>0);
+   var $sub100_rsize_3_i=$cmp101_i ? $sub100_i : $rsize_325_i;
+   var $t_2_v_3_i=$cmp101_i ? $t_224_i : $v_326_i;
+   var $arrayidx105_i=(($t_224_i+16)|0);
+   var $86=HEAP32[(($arrayidx105_i)>>2)];
+   var $cmp106_i=($86|0)==0;
+   if ($cmp106_i) { label = 95; break; } else { var $t_224_i = $86;var $rsize_325_i = $sub100_rsize_3_i;var $v_326_i = $t_2_v_3_i;label = 94; break; }
+  case 95: 
+   var $arrayidx112_i=(($t_224_i+20)|0);
+   var $87=HEAP32[(($arrayidx112_i)>>2)];
+   var $cmp96_i=($87|0)==0;
+   if ($cmp96_i) { var $rsize_3_lcssa_i = $sub100_rsize_3_i;var $v_3_lcssa_i = $t_2_v_3_i;label = 96; break; } else { var $t_224_i = $87;var $rsize_325_i = $sub100_rsize_3_i;var $v_326_i = $t_2_v_3_i;label = 94; break; }
+  case 96: 
+   var $v_3_lcssa_i;
+   var $rsize_3_lcssa_i;
+   var $cmp115_i=($v_3_lcssa_i|0)==0;
+   if ($cmp115_i) { var $nb_0 = $and144;label = 160; break; } else { label = 97; break; }
+  case 97: 
+   var $88=HEAP32[((((1888)|0))>>2)];
+   var $sub117_i=((($88)-($and144))|0);
+   var $cmp118_i=($rsize_3_lcssa_i>>>0) < ($sub117_i>>>0);
+   if ($cmp118_i) { label = 98; break; } else { var $nb_0 = $and144;label = 160; break; }
+  case 98: 
+   var $89=$v_3_lcssa_i;
+   var $90=HEAP32[((((1896)|0))>>2)];
+   var $cmp120_i=($89>>>0) < ($90>>>0);
+   if ($cmp120_i) { label = 158; break; } else { label = 99; break; }
+  case 99: 
+   var $add_ptr_i128=(($89+$and144)|0);
+   var $91=$add_ptr_i128;
+   var $cmp122_i=($89>>>0) < ($add_ptr_i128>>>0);
+   if ($cmp122_i) { label = 100; break; } else { label = 158; break; }
+  case 100: 
+   var $parent_i129=(($v_3_lcssa_i+24)|0);
+   var $92=HEAP32[(($parent_i129)>>2)];
+   var $bk_i130=(($v_3_lcssa_i+12)|0);
+   var $93=HEAP32[(($bk_i130)>>2)];
+   var $cmp127_i=($93|0)==($v_3_lcssa_i|0);
+   if ($cmp127_i) { label = 106; break; } else { label = 101; break; }
+  case 101: 
+   var $fd_i131=(($v_3_lcssa_i+8)|0);
+   var $94=HEAP32[(($fd_i131)>>2)];
+   var $95=$94;
+   var $cmp132_i=($95>>>0) < ($90>>>0);
+   if ($cmp132_i) { label = 105; break; } else { label = 102; break; }
+  case 102: 
+   var $bk135_i=(($94+12)|0);
+   var $96=HEAP32[(($bk135_i)>>2)];
+   var $cmp136_i=($96|0)==($v_3_lcssa_i|0);
+   if ($cmp136_i) { label = 103; break; } else { label = 105; break; }
+  case 103: 
+   var $fd138_i=(($93+8)|0);
+   var $97=HEAP32[(($fd138_i)>>2)];
+   var $cmp139_i=($97|0)==($v_3_lcssa_i|0);
+   if ($cmp139_i) { label = 104; break; } else { label = 105; break; }
+  case 104: 
+   HEAP32[(($bk135_i)>>2)]=$93;
+   HEAP32[(($fd138_i)>>2)]=$94;
+   var $R_1_i139 = $93;label = 113; break;
+  case 105: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 106: 
+   var $arrayidx150_i=(($v_3_lcssa_i+20)|0);
+   var $98=HEAP32[(($arrayidx150_i)>>2)];
+   var $cmp151_i=($98|0)==0;
+   if ($cmp151_i) { label = 107; break; } else { var $R_0_i137 = $98;var $RP_0_i136 = $arrayidx150_i;label = 108; break; }
+  case 107: 
+   var $arrayidx154_i133=(($v_3_lcssa_i+16)|0);
+   var $99=HEAP32[(($arrayidx154_i133)>>2)];
+   var $cmp155_i134=($99|0)==0;
+   if ($cmp155_i134) { var $R_1_i139 = 0;label = 113; break; } else { var $R_0_i137 = $99;var $RP_0_i136 = $arrayidx154_i133;label = 108; break; }
+  case 108: 
+   var $RP_0_i136;
+   var $R_0_i137;
+   var $arrayidx160_i=(($R_0_i137+20)|0);
+   var $100=HEAP32[(($arrayidx160_i)>>2)];
+   var $cmp161_i=($100|0)==0;
+   if ($cmp161_i) { label = 109; break; } else { var $R_0_i137 = $100;var $RP_0_i136 = $arrayidx160_i;label = 108; break; }
+  case 109: 
+   var $arrayidx164_i=(($R_0_i137+16)|0);
+   var $101=HEAP32[(($arrayidx164_i)>>2)];
+   var $cmp165_i=($101|0)==0;
+   if ($cmp165_i) { label = 110; break; } else { var $R_0_i137 = $101;var $RP_0_i136 = $arrayidx164_i;label = 108; break; }
+  case 110: 
+   var $102=$RP_0_i136;
+   var $cmp170_i=($102>>>0) < ($90>>>0);
+   if ($cmp170_i) { label = 112; break; } else { label = 111; break; }
+  case 111: 
+   HEAP32[(($RP_0_i136)>>2)]=0;
+   var $R_1_i139 = $R_0_i137;label = 113; break;
+  case 112: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 113: 
+   var $R_1_i139;
+   var $cmp179_i=($92|0)==0;
+   if ($cmp179_i) { label = 133; break; } else { label = 114; break; }
+  case 114: 
+   var $index_i140=(($v_3_lcssa_i+28)|0);
+   var $103=HEAP32[(($index_i140)>>2)];
+   var $arrayidx183_i=((2184+($103<<2))|0);
+   var $104=HEAP32[(($arrayidx183_i)>>2)];
+   var $cmp184_i=($v_3_lcssa_i|0)==($104|0);
+   if ($cmp184_i) { label = 115; break; } else { label = 117; break; }
+  case 115: 
+   HEAP32[(($arrayidx183_i)>>2)]=$R_1_i139;
+   var $cond20_i=($R_1_i139|0)==0;
+   if ($cond20_i) { label = 116; break; } else { label = 123; break; }
+  case 116: 
+   var $105=HEAP32[(($index_i140)>>2)];
+   var $shl191_i=1 << $105;
+   var $neg_i141=$shl191_i ^ -1;
+   var $106=HEAP32[((((1884)|0))>>2)];
+   var $and193_i=$106 & $neg_i141;
+   HEAP32[((((1884)|0))>>2)]=$and193_i;
+   label = 133; break;
+  case 117: 
+   var $107=$92;
+   var $108=HEAP32[((((1896)|0))>>2)];
+   var $cmp197_i=($107>>>0) < ($108>>>0);
+   if ($cmp197_i) { label = 121; break; } else { label = 118; break; }
+  case 118: 
+   var $arrayidx203_i=(($92+16)|0);
+   var $109=HEAP32[(($arrayidx203_i)>>2)];
+   var $cmp204_i=($109|0)==($v_3_lcssa_i|0);
+   if ($cmp204_i) { label = 119; break; } else { label = 120; break; }
+  case 119: 
+   HEAP32[(($arrayidx203_i)>>2)]=$R_1_i139;
+   label = 122; break;
+  case 120: 
+   var $arrayidx211_i=(($92+20)|0);
+   HEAP32[(($arrayidx211_i)>>2)]=$R_1_i139;
+   label = 122; break;
+  case 121: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 122: 
+   var $cmp216_i=($R_1_i139|0)==0;
+   if ($cmp216_i) { label = 133; break; } else { label = 123; break; }
+  case 123: 
+   var $110=$R_1_i139;
+   var $111=HEAP32[((((1896)|0))>>2)];
+   var $cmp220_i=($110>>>0) < ($111>>>0);
+   if ($cmp220_i) { label = 132; break; } else { label = 124; break; }
+  case 124: 
+   var $parent225_i=(($R_1_i139+24)|0);
+   HEAP32[(($parent225_i)>>2)]=$92;
+   var $arrayidx227_i=(($v_3_lcssa_i+16)|0);
+   var $112=HEAP32[(($arrayidx227_i)>>2)];
+   var $cmp228_i=($112|0)==0;
+   if ($cmp228_i) { label = 128; break; } else { label = 125; break; }
+  case 125: 
+   var $113=$112;
+   var $114=HEAP32[((((1896)|0))>>2)];
+   var $cmp232_i=($113>>>0) < ($114>>>0);
+   if ($cmp232_i) { label = 127; break; } else { label = 126; break; }
+  case 126: 
+   var $arrayidx238_i=(($R_1_i139+16)|0);
+   HEAP32[(($arrayidx238_i)>>2)]=$112;
+   var $parent239_i=(($112+24)|0);
+   HEAP32[(($parent239_i)>>2)]=$R_1_i139;
+   label = 128; break;
+  case 127: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 128: 
+   var $arrayidx244_i=(($v_3_lcssa_i+20)|0);
+   var $115=HEAP32[(($arrayidx244_i)>>2)];
+   var $cmp245_i=($115|0)==0;
+   if ($cmp245_i) { label = 133; break; } else { label = 129; break; }
+  case 129: 
+   var $116=$115;
+   var $117=HEAP32[((((1896)|0))>>2)];
+   var $cmp249_i=($116>>>0) < ($117>>>0);
+   if ($cmp249_i) { label = 131; break; } else { label = 130; break; }
+  case 130: 
+   var $arrayidx255_i=(($R_1_i139+20)|0);
+   HEAP32[(($arrayidx255_i)>>2)]=$115;
+   var $parent256_i=(($115+24)|0);
+   HEAP32[(($parent256_i)>>2)]=$R_1_i139;
+   label = 133; break;
+  case 131: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 132: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 133: 
+   var $cmp264_i=($rsize_3_lcssa_i>>>0) < 16;
+   if ($cmp264_i) { label = 134; break; } else { label = 135; break; }
+  case 134: 
+   var $add267_i=((($rsize_3_lcssa_i)+($and144))|0);
+   var $or269_i=$add267_i | 3;
+   var $head270_i=(($v_3_lcssa_i+4)|0);
+   HEAP32[(($head270_i)>>2)]=$or269_i;
+   var $add_ptr272_sum_i=((($add267_i)+(4))|0);
+   var $head273_i=(($89+$add_ptr272_sum_i)|0);
+   var $118=$head273_i;
+   var $119=HEAP32[(($118)>>2)];
+   var $or274_i=$119 | 1;
+   HEAP32[(($118)>>2)]=$or274_i;
+   label = 159; break;
+  case 135: 
+   var $or277_i=$and144 | 3;
+   var $head278_i=(($v_3_lcssa_i+4)|0);
+   HEAP32[(($head278_i)>>2)]=$or277_i;
+   var $or279_i=$rsize_3_lcssa_i | 1;
+   var $add_ptr_sum_i143174=$and144 | 4;
+   var $head280_i=(($89+$add_ptr_sum_i143174)|0);
+   var $120=$head280_i;
+   HEAP32[(($120)>>2)]=$or279_i;
+   var $add_ptr_sum1_i144=((($rsize_3_lcssa_i)+($and144))|0);
+   var $add_ptr281_i=(($89+$add_ptr_sum1_i144)|0);
+   var $prev_foot_i145=$add_ptr281_i;
+   HEAP32[(($prev_foot_i145)>>2)]=$rsize_3_lcssa_i;
+   var $shr282_i=$rsize_3_lcssa_i >>> 3;
+   var $cmp283_i=($rsize_3_lcssa_i>>>0) < 256;
+   if ($cmp283_i) { label = 136; break; } else { label = 141; break; }
+  case 136: 
+   var $shl287_i=$shr282_i << 1;
+   var $arrayidx288_i=((1920+($shl287_i<<2))|0);
+   var $121=$arrayidx288_i;
+   var $122=HEAP32[((((1880)|0))>>2)];
+   var $shl290_i=1 << $shr282_i;
+   var $and291_i=$122 & $shl290_i;
+   var $tobool292_i=($and291_i|0)==0;
+   if ($tobool292_i) { label = 137; break; } else { label = 138; break; }
+  case 137: 
+   var $or296_i=$122 | $shl290_i;
+   HEAP32[((((1880)|0))>>2)]=$or296_i;
+   var $arrayidx288_sum_pre_i=((($shl287_i)+(2))|0);
+   var $_pre_i146=((1920+($arrayidx288_sum_pre_i<<2))|0);
+   var $F289_0_i = $121;var $_pre_phi_i147 = $_pre_i146;label = 140; break;
+  case 138: 
+   var $arrayidx288_sum16_i=((($shl287_i)+(2))|0);
+   var $123=((1920+($arrayidx288_sum16_i<<2))|0);
+   var $124=HEAP32[(($123)>>2)];
+   var $125=$124;
+   var $126=HEAP32[((((1896)|0))>>2)];
+   var $cmp300_i=($125>>>0) < ($126>>>0);
+   if ($cmp300_i) { label = 139; break; } else { var $F289_0_i = $124;var $_pre_phi_i147 = $123;label = 140; break; }
+  case 139: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 140: 
+   var $_pre_phi_i147;
+   var $F289_0_i;
+   HEAP32[(($_pre_phi_i147)>>2)]=$91;
+   var $bk310_i=(($F289_0_i+12)|0);
+   HEAP32[(($bk310_i)>>2)]=$91;
+   var $add_ptr_sum14_i=((($and144)+(8))|0);
+   var $fd311_i=(($89+$add_ptr_sum14_i)|0);
+   var $127=$fd311_i;
+   HEAP32[(($127)>>2)]=$F289_0_i;
+   var $add_ptr_sum15_i=((($and144)+(12))|0);
+   var $bk312_i=(($89+$add_ptr_sum15_i)|0);
+   var $128=$bk312_i;
+   HEAP32[(($128)>>2)]=$121;
+   label = 159; break;
+  case 141: 
+   var $129=$add_ptr_i128;
+   var $shr317_i=$rsize_3_lcssa_i >>> 8;
+   var $cmp318_i=($shr317_i|0)==0;
+   if ($cmp318_i) { var $I315_0_i = 0;label = 144; break; } else { label = 142; break; }
+  case 142: 
+   var $cmp322_i=($rsize_3_lcssa_i>>>0) > 16777215;
+   if ($cmp322_i) { var $I315_0_i = 31;label = 144; break; } else { label = 143; break; }
+  case 143: 
+   var $sub328_i=((($shr317_i)+(1048320))|0);
+   var $shr329_i=$sub328_i >>> 16;
+   var $and330_i=$shr329_i & 8;
+   var $shl332_i=$shr317_i << $and330_i;
+   var $sub333_i=((($shl332_i)+(520192))|0);
+   var $shr334_i=$sub333_i >>> 16;
+   var $and335_i=$shr334_i & 4;
+   var $add336_i=$and335_i | $and330_i;
+   var $shl337_i=$shl332_i << $and335_i;
+   var $sub338_i=((($shl337_i)+(245760))|0);
+   var $shr339_i=$sub338_i >>> 16;
+   var $and340_i=$shr339_i & 2;
+   var $add341_i=$add336_i | $and340_i;
+   var $sub342_i=(((14)-($add341_i))|0);
+   var $shl343_i=$shl337_i << $and340_i;
+   var $shr344_i=$shl343_i >>> 15;
+   var $add345_i=((($sub342_i)+($shr344_i))|0);
+   var $shl346_i=$add345_i << 1;
+   var $add347_i=((($add345_i)+(7))|0);
+   var $shr348_i=$rsize_3_lcssa_i >>> ($add347_i>>>0);
+   var $and349_i=$shr348_i & 1;
+   var $add350_i=$and349_i | $shl346_i;
+   var $I315_0_i = $add350_i;label = 144; break;
+  case 144: 
+   var $I315_0_i;
+   var $arrayidx354_i=((2184+($I315_0_i<<2))|0);
+   var $add_ptr_sum2_i=((($and144)+(28))|0);
+   var $index355_i=(($89+$add_ptr_sum2_i)|0);
+   var $130=$index355_i;
+   HEAP32[(($130)>>2)]=$I315_0_i;
+   var $add_ptr_sum3_i=((($and144)+(16))|0);
+   var $child356_i=(($89+$add_ptr_sum3_i)|0);
+   var $child356_sum_i=((($and144)+(20))|0);
+   var $arrayidx357_i=(($89+$child356_sum_i)|0);
+   var $131=$arrayidx357_i;
+   HEAP32[(($131)>>2)]=0;
+   var $arrayidx359_i=$child356_i;
+   HEAP32[(($arrayidx359_i)>>2)]=0;
+   var $132=HEAP32[((((1884)|0))>>2)];
+   var $shl361_i=1 << $I315_0_i;
+   var $and362_i=$132 & $shl361_i;
+   var $tobool363_i=($and362_i|0)==0;
+   if ($tobool363_i) { label = 145; break; } else { label = 146; break; }
+  case 145: 
+   var $or367_i=$132 | $shl361_i;
+   HEAP32[((((1884)|0))>>2)]=$or367_i;
+   HEAP32[(($arrayidx354_i)>>2)]=$129;
+   var $133=$arrayidx354_i;
+   var $add_ptr_sum4_i=((($and144)+(24))|0);
+   var $parent368_i=(($89+$add_ptr_sum4_i)|0);
+   var $134=$parent368_i;
+   HEAP32[(($134)>>2)]=$133;
+   var $add_ptr_sum5_i=((($and144)+(12))|0);
+   var $bk369_i=(($89+$add_ptr_sum5_i)|0);
+   var $135=$bk369_i;
+   HEAP32[(($135)>>2)]=$129;
+   var $add_ptr_sum6_i=((($and144)+(8))|0);
+   var $fd370_i=(($89+$add_ptr_sum6_i)|0);
+   var $136=$fd370_i;
+   HEAP32[(($136)>>2)]=$129;
+   label = 159; break;
+  case 146: 
+   var $137=HEAP32[(($arrayidx354_i)>>2)];
+   var $cmp373_i=($I315_0_i|0)==31;
+   if ($cmp373_i) { var $cond382_i = 0;label = 148; break; } else { label = 147; break; }
+  case 147: 
+   var $shr377_i=$I315_0_i >>> 1;
+   var $sub380_i=(((25)-($shr377_i))|0);
+   var $cond382_i = $sub380_i;label = 148; break;
+  case 148: 
+   var $cond382_i;
+   var $shl383_i=$rsize_3_lcssa_i << $cond382_i;
+   var $K372_0_i = $shl383_i;var $T_0_i = $137;label = 149; break;
+  case 149: 
+   var $T_0_i;
+   var $K372_0_i;
+   var $head385_i=(($T_0_i+4)|0);
+   var $138=HEAP32[(($head385_i)>>2)];
+   var $and386_i=$138 & -8;
+   var $cmp387_i=($and386_i|0)==($rsize_3_lcssa_i|0);
+   if ($cmp387_i) { label = 154; break; } else { label = 150; break; }
+  case 150: 
+   var $shr390_i=$K372_0_i >>> 31;
+   var $arrayidx393_i=(($T_0_i+16+($shr390_i<<2))|0);
+   var $139=HEAP32[(($arrayidx393_i)>>2)];
+   var $cmp395_i=($139|0)==0;
+   var $shl394_i=$K372_0_i << 1;
+   if ($cmp395_i) { label = 151; break; } else { var $K372_0_i = $shl394_i;var $T_0_i = $139;label = 149; break; }
+  case 151: 
+   var $140=$arrayidx393_i;
+   var $141=HEAP32[((((1896)|0))>>2)];
+   var $cmp400_i=($140>>>0) < ($141>>>0);
+   if ($cmp400_i) { label = 153; break; } else { label = 152; break; }
+  case 152: 
+   HEAP32[(($arrayidx393_i)>>2)]=$129;
+   var $add_ptr_sum11_i=((($and144)+(24))|0);
+   var $parent405_i=(($89+$add_ptr_sum11_i)|0);
+   var $142=$parent405_i;
+   HEAP32[(($142)>>2)]=$T_0_i;
+   var $add_ptr_sum12_i=((($and144)+(12))|0);
+   var $bk406_i=(($89+$add_ptr_sum12_i)|0);
+   var $143=$bk406_i;
+   HEAP32[(($143)>>2)]=$129;
+   var $add_ptr_sum13_i=((($and144)+(8))|0);
+   var $fd407_i=(($89+$add_ptr_sum13_i)|0);
+   var $144=$fd407_i;
+   HEAP32[(($144)>>2)]=$129;
+   label = 159; break;
+  case 153: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 154: 
+   var $fd412_i=(($T_0_i+8)|0);
+   var $145=HEAP32[(($fd412_i)>>2)];
+   var $146=$T_0_i;
+   var $147=HEAP32[((((1896)|0))>>2)];
+   var $cmp414_i=($146>>>0) < ($147>>>0);
+   if ($cmp414_i) { label = 157; break; } else { label = 155; break; }
+  case 155: 
+   var $148=$145;
+   var $cmp418_i=($148>>>0) < ($147>>>0);
+   if ($cmp418_i) { label = 157; break; } else { label = 156; break; }
+  case 156: 
+   var $bk425_i=(($145+12)|0);
+   HEAP32[(($bk425_i)>>2)]=$129;
+   HEAP32[(($fd412_i)>>2)]=$129;
+   var $add_ptr_sum8_i=((($and144)+(8))|0);
+   var $fd427_i=(($89+$add_ptr_sum8_i)|0);
+   var $149=$fd427_i;
+   HEAP32[(($149)>>2)]=$145;
+   var $add_ptr_sum9_i=((($and144)+(12))|0);
+   var $bk428_i=(($89+$add_ptr_sum9_i)|0);
+   var $150=$bk428_i;
+   HEAP32[(($150)>>2)]=$T_0_i;
+   var $add_ptr_sum10_i=((($and144)+(24))|0);
+   var $parent429_i=(($89+$add_ptr_sum10_i)|0);
+   var $151=$parent429_i;
+   HEAP32[(($151)>>2)]=0;
+   label = 159; break;
+  case 157: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 158: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 159: 
+   var $add_ptr436_i=(($v_3_lcssa_i+8)|0);
+   var $152=$add_ptr436_i;
+   var $cmp149=($add_ptr436_i|0)==0;
+   if ($cmp149) { var $nb_0 = $and144;label = 160; break; } else { var $mem_0 = $152;label = 341; break; }
+  case 160: 
+   var $nb_0;
+   var $153=HEAP32[((((1888)|0))>>2)];
+   var $cmp155=($nb_0>>>0) > ($153>>>0);
+   if ($cmp155) { label = 165; break; } else { label = 161; break; }
+  case 161: 
+   var $sub159=((($153)-($nb_0))|0);
+   var $154=HEAP32[((((1900)|0))>>2)];
+   var $cmp161=($sub159>>>0) > 15;
+   if ($cmp161) { label = 162; break; } else { label = 163; break; }
+  case 162: 
+   var $155=$154;
+   var $add_ptr165=(($155+$nb_0)|0);
+   var $156=$add_ptr165;
+   HEAP32[((((1900)|0))>>2)]=$156;
+   HEAP32[((((1888)|0))>>2)]=$sub159;
+   var $or166=$sub159 | 1;
+   var $add_ptr165_sum=((($nb_0)+(4))|0);
+   var $head167=(($155+$add_ptr165_sum)|0);
+   var $157=$head167;
+   HEAP32[(($157)>>2)]=$or166;
+   var $add_ptr168=(($155+$153)|0);
+   var $prev_foot169=$add_ptr168;
+   HEAP32[(($prev_foot169)>>2)]=$sub159;
+   var $or171=$nb_0 | 3;
+   var $head172=(($154+4)|0);
+   HEAP32[(($head172)>>2)]=$or171;
+   label = 164; break;
+  case 163: 
+   HEAP32[((((1888)|0))>>2)]=0;
+   HEAP32[((((1900)|0))>>2)]=0;
+   var $or175=$153 | 3;
+   var $head176=(($154+4)|0);
+   HEAP32[(($head176)>>2)]=$or175;
+   var $158=$154;
+   var $add_ptr177_sum=((($153)+(4))|0);
+   var $head178=(($158+$add_ptr177_sum)|0);
+   var $159=$head178;
+   var $160=HEAP32[(($159)>>2)];
+   var $or179=$160 | 1;
+   HEAP32[(($159)>>2)]=$or179;
+   label = 164; break;
+  case 164: 
+   var $add_ptr181=(($154+8)|0);
+   var $161=$add_ptr181;
+   var $mem_0 = $161;label = 341; break;
+  case 165: 
+   var $162=HEAP32[((((1892)|0))>>2)];
+   var $cmp183=($nb_0>>>0) < ($162>>>0);
+   if ($cmp183) { label = 166; break; } else { label = 167; break; }
+  case 166: 
+   var $sub187=((($162)-($nb_0))|0);
+   HEAP32[((((1892)|0))>>2)]=$sub187;
+   var $163=HEAP32[((((1904)|0))>>2)];
+   var $164=$163;
+   var $add_ptr190=(($164+$nb_0)|0);
+   var $165=$add_ptr190;
+   HEAP32[((((1904)|0))>>2)]=$165;
+   var $or191=$sub187 | 1;
+   var $add_ptr190_sum=((($nb_0)+(4))|0);
+   var $head192=(($164+$add_ptr190_sum)|0);
+   var $166=$head192;
+   HEAP32[(($166)>>2)]=$or191;
+   var $or194=$nb_0 | 3;
+   var $head195=(($163+4)|0);
+   HEAP32[(($head195)>>2)]=$or194;
+   var $add_ptr196=(($163+8)|0);
+   var $167=$add_ptr196;
+   var $mem_0 = $167;label = 341; break;
+  case 167: 
+   var $168=HEAP32[((((1856)|0))>>2)];
+   var $cmp_i148=($168|0)==0;
+   if ($cmp_i148) { label = 168; break; } else { label = 171; break; }
+  case 168: 
+   var $call_i_i=_sysconf(30);
+   var $sub_i_i=((($call_i_i)-(1))|0);
+   var $and_i_i=$sub_i_i & $call_i_i;
+   var $cmp1_i_i=($and_i_i|0)==0;
+   if ($cmp1_i_i) { label = 170; break; } else { label = 169; break; }
+  case 169: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 170: 
+   HEAP32[((((1864)|0))>>2)]=$call_i_i;
+   HEAP32[((((1860)|0))>>2)]=$call_i_i;
+   HEAP32[((((1868)|0))>>2)]=-1;
+   HEAP32[((((1872)|0))>>2)]=-1;
+   HEAP32[((((1876)|0))>>2)]=0;
+   HEAP32[((((2324)|0))>>2)]=0;
+   var $call6_i_i=_time(0);
+   var $xor_i_i=$call6_i_i & -16;
+   var $and7_i_i=$xor_i_i ^ 1431655768;
+   HEAP32[((((1856)|0))>>2)]=$and7_i_i;
+   label = 171; break;
+  case 171: 
+   var $add_i149=((($nb_0)+(48))|0);
+   var $169=HEAP32[((((1864)|0))>>2)];
+   var $sub_i150=((($nb_0)+(47))|0);
+   var $add9_i=((($169)+($sub_i150))|0);
+   var $neg_i151=(((-$169))|0);
+   var $and11_i=$add9_i & $neg_i151;
+   var $cmp12_i=($and11_i>>>0) > ($nb_0>>>0);
+   if ($cmp12_i) { label = 172; break; } else { var $mem_0 = 0;label = 341; break; }
+  case 172: 
+   var $170=HEAP32[((((2320)|0))>>2)];
+   var $cmp15_i=($170|0)==0;
+   if ($cmp15_i) { label = 174; break; } else { label = 173; break; }
+  case 173: 
+   var $171=HEAP32[((((2312)|0))>>2)];
+   var $add17_i152=((($171)+($and11_i))|0);
+   var $cmp19_i=($add17_i152>>>0) <= ($171>>>0);
+   var $cmp21_i=($add17_i152>>>0) > ($170>>>0);
+   var $or_cond1_i=$cmp19_i | $cmp21_i;
+   if ($or_cond1_i) { var $mem_0 = 0;label = 341; break; } else { label = 174; break; }
+  case 174: 
+   var $172=HEAP32[((((2324)|0))>>2)];
+   var $and26_i=$172 & 4;
+   var $tobool27_i=($and26_i|0)==0;
+   if ($tobool27_i) { label = 175; break; } else { var $tsize_1_i = 0;label = 198; break; }
+  case 175: 
+   var $173=HEAP32[((((1904)|0))>>2)];
+   var $cmp29_i=($173|0)==0;
+   if ($cmp29_i) { label = 181; break; } else { label = 176; break; }
+  case 176: 
+   var $174=$173;
+   var $sp_0_i_i = ((2328)|0);label = 177; break;
+  case 177: 
+   var $sp_0_i_i;
+   var $base_i_i=(($sp_0_i_i)|0);
+   var $175=HEAP32[(($base_i_i)>>2)];
+   var $cmp_i9_i=($175>>>0) > ($174>>>0);
+   if ($cmp_i9_i) { label = 179; break; } else { label = 178; break; }
+  case 178: 
+   var $size_i_i=(($sp_0_i_i+4)|0);
+   var $176=HEAP32[(($size_i_i)>>2)];
+   var $add_ptr_i_i=(($175+$176)|0);
+   var $cmp2_i_i=($add_ptr_i_i>>>0) > ($174>>>0);
+   if ($cmp2_i_i) { label = 180; break; } else { label = 179; break; }
+  case 179: 
+   var $next_i_i=(($sp_0_i_i+8)|0);
+   var $177=HEAP32[(($next_i_i)>>2)];
+   var $cmp3_i_i=($177|0)==0;
+   if ($cmp3_i_i) { label = 181; break; } else { var $sp_0_i_i = $177;label = 177; break; }
+  case 180: 
+   var $cmp32_i154=($sp_0_i_i|0)==0;
+   if ($cmp32_i154) { label = 181; break; } else { label = 188; break; }
+  case 181: 
+   var $call34_i=_sbrk(0);
+   var $cmp35_i156=($call34_i|0)==-1;
+   if ($cmp35_i156) { var $tsize_0758385_i = 0;label = 197; break; } else { label = 182; break; }
+  case 182: 
+   var $178=$call34_i;
+   var $179=HEAP32[((((1860)|0))>>2)];
+   var $sub38_i=((($179)-(1))|0);
+   var $and39_i=$sub38_i & $178;
+   var $cmp40_i157=($and39_i|0)==0;
+   if ($cmp40_i157) { var $ssize_0_i = $and11_i;label = 184; break; } else { label = 183; break; }
+  case 183: 
+   var $add43_i=((($sub38_i)+($178))|0);
+   var $neg45_i=(((-$179))|0);
+   var $and46_i=$add43_i & $neg45_i;
+   var $sub47_i=((($and11_i)-($178))|0);
+   var $add48_i=((($sub47_i)+($and46_i))|0);
+   var $ssize_0_i = $add48_i;label = 184; break;
+  case 184: 
+   var $ssize_0_i;
+   var $180=HEAP32[((((2312)|0))>>2)];
+   var $add51_i=((($180)+($ssize_0_i))|0);
+   var $cmp52_i=($ssize_0_i>>>0) > ($nb_0>>>0);
+   var $cmp54_i158=($ssize_0_i>>>0) < 2147483647;
+   var $or_cond_i159=$cmp52_i & $cmp54_i158;
+   if ($or_cond_i159) { label = 185; break; } else { var $tsize_0758385_i = 0;label = 197; break; }
+  case 185: 
+   var $181=HEAP32[((((2320)|0))>>2)];
+   var $cmp57_i=($181|0)==0;
+   if ($cmp57_i) { label = 187; break; } else { label = 186; break; }
+  case 186: 
+   var $cmp60_i=($add51_i>>>0) <= ($180>>>0);
+   var $cmp63_i=($add51_i>>>0) > ($181>>>0);
+   var $or_cond2_i=$cmp60_i | $cmp63_i;
+   if ($or_cond2_i) { var $tsize_0758385_i = 0;label = 197; break; } else { label = 187; break; }
+  case 187: 
+   var $call65_i=_sbrk($ssize_0_i);
+   var $cmp66_i160=($call65_i|0)==($call34_i|0);
+   var $ssize_0__i=$cmp66_i160 ? $ssize_0_i : 0;
+   var $call34__i=$cmp66_i160 ? $call34_i : -1;
+   var $tbase_0_i = $call34__i;var $tsize_0_i = $ssize_0__i;var $br_0_i = $call65_i;var $ssize_1_i = $ssize_0_i;label = 190; break;
+  case 188: 
+   var $182=HEAP32[((((1892)|0))>>2)];
+   var $add74_i=((($add9_i)-($182))|0);
+   var $and77_i=$add74_i & $neg_i151;
+   var $cmp78_i=($and77_i>>>0) < 2147483647;
+   if ($cmp78_i) { label = 189; break; } else { var $tsize_0758385_i = 0;label = 197; break; }
+  case 189: 
+   var $call80_i=_sbrk($and77_i);
+   var $183=HEAP32[(($base_i_i)>>2)];
+   var $184=HEAP32[(($size_i_i)>>2)];
+   var $add_ptr_i162=(($183+$184)|0);
+   var $cmp82_i=($call80_i|0)==($add_ptr_i162|0);
+   var $and77__i=$cmp82_i ? $and77_i : 0;
+   var $call80__i=$cmp82_i ? $call80_i : -1;
+   var $tbase_0_i = $call80__i;var $tsize_0_i = $and77__i;var $br_0_i = $call80_i;var $ssize_1_i = $and77_i;label = 190; break;
+  case 190: 
+   var $ssize_1_i;
+   var $br_0_i;
+   var $tsize_0_i;
+   var $tbase_0_i;
+   var $sub109_i=(((-$ssize_1_i))|0);
+   var $cmp86_i=($tbase_0_i|0)==-1;
+   if ($cmp86_i) { label = 191; break; } else { var $tsize_291_i = $tsize_0_i;var $tbase_292_i = $tbase_0_i;label = 201; break; }
+  case 191: 
+   var $cmp88_i=($br_0_i|0)!=-1;
+   var $cmp90_i163=($ssize_1_i>>>0) < 2147483647;
+   var $or_cond3_i=$cmp88_i & $cmp90_i163;
+   var $cmp93_i=($ssize_1_i>>>0) < ($add_i149>>>0);
+   var $or_cond4_i=$or_cond3_i & $cmp93_i;
+   if ($or_cond4_i) { label = 192; break; } else { var $ssize_2_i = $ssize_1_i;label = 196; break; }
+  case 192: 
+   var $185=HEAP32[((((1864)|0))>>2)];
+   var $sub96_i=((($sub_i150)-($ssize_1_i))|0);
+   var $add98_i=((($sub96_i)+($185))|0);
+   var $neg100_i=(((-$185))|0);
+   var $and101_i=$add98_i & $neg100_i;
+   var $cmp102_i=($and101_i>>>0) < 2147483647;
+   if ($cmp102_i) { label = 193; break; } else { var $ssize_2_i = $ssize_1_i;label = 196; break; }
+  case 193: 
+   var $call104_i=_sbrk($and101_i);
+   var $cmp105_i=($call104_i|0)==-1;
+   if ($cmp105_i) { label = 195; break; } else { label = 194; break; }
+  case 194: 
+   var $add107_i=((($and101_i)+($ssize_1_i))|0);
+   var $ssize_2_i = $add107_i;label = 196; break;
+  case 195: 
+   var $call110_i=_sbrk($sub109_i);
+   var $tsize_0758385_i = $tsize_0_i;label = 197; break;
+  case 196: 
+   var $ssize_2_i;
+   var $cmp115_i164=($br_0_i|0)==-1;
+   if ($cmp115_i164) { var $tsize_0758385_i = $tsize_0_i;label = 197; break; } else { var $tsize_291_i = $ssize_2_i;var $tbase_292_i = $br_0_i;label = 201; break; }
+  case 197: 
+   var $tsize_0758385_i;
+   var $186=HEAP32[((((2324)|0))>>2)];
+   var $or_i165=$186 | 4;
+   HEAP32[((((2324)|0))>>2)]=$or_i165;
+   var $tsize_1_i = $tsize_0758385_i;label = 198; break;
+  case 198: 
+   var $tsize_1_i;
+   var $cmp124_i=($and11_i>>>0) < 2147483647;
+   if ($cmp124_i) { label = 199; break; } else { label = 340; break; }
+  case 199: 
+   var $call128_i=_sbrk($and11_i);
+   var $call129_i=_sbrk(0);
+   var $notlhs_i=($call128_i|0)!=-1;
+   var $notrhs_i=($call129_i|0)!=-1;
+   var $or_cond6_not_i=$notrhs_i & $notlhs_i;
+   var $cmp134_i=($call128_i>>>0) < ($call129_i>>>0);
+   var $or_cond7_i=$or_cond6_not_i & $cmp134_i;
+   if ($or_cond7_i) { label = 200; break; } else { label = 340; break; }
+  case 200: 
+   var $sub_ptr_lhs_cast_i=$call129_i;
+   var $sub_ptr_rhs_cast_i=$call128_i;
+   var $sub_ptr_sub_i=((($sub_ptr_lhs_cast_i)-($sub_ptr_rhs_cast_i))|0);
+   var $add137_i=((($nb_0)+(40))|0);
+   var $cmp138_i166=($sub_ptr_sub_i>>>0) > ($add137_i>>>0);
+   var $sub_ptr_sub_tsize_1_i=$cmp138_i166 ? $sub_ptr_sub_i : $tsize_1_i;
+   var $call128_tbase_1_i=$cmp138_i166 ? $call128_i : -1;
+   var $cmp144_i=($call128_tbase_1_i|0)==-1;
+   if ($cmp144_i) { label = 340; break; } else { var $tsize_291_i = $sub_ptr_sub_tsize_1_i;var $tbase_292_i = $call128_tbase_1_i;label = 201; break; }
+  case 201: 
+   var $tbase_292_i;
+   var $tsize_291_i;
+   var $187=HEAP32[((((2312)|0))>>2)];
+   var $add147_i=((($187)+($tsize_291_i))|0);
+   HEAP32[((((2312)|0))>>2)]=$add147_i;
+   var $188=HEAP32[((((2316)|0))>>2)];
+   var $cmp148_i=($add147_i>>>0) > ($188>>>0);
+   if ($cmp148_i) { label = 202; break; } else { label = 203; break; }
+  case 202: 
+   HEAP32[((((2316)|0))>>2)]=$add147_i;
+   label = 203; break;
+  case 203: 
+   var $189=HEAP32[((((1904)|0))>>2)];
+   var $cmp154_i=($189|0)==0;
+   if ($cmp154_i) { label = 204; break; } else { var $sp_0105_i = ((2328)|0);label = 211; break; }
+  case 204: 
+   var $190=HEAP32[((((1896)|0))>>2)];
+   var $cmp156_i=($190|0)==0;
+   var $cmp159_i168=($tbase_292_i>>>0) < ($190>>>0);
+   var $or_cond8_i=$cmp156_i | $cmp159_i168;
+   if ($or_cond8_i) { label = 205; break; } else { label = 206; break; }
+  case 205: 
+   HEAP32[((((1896)|0))>>2)]=$tbase_292_i;
+   label = 206; break;
+  case 206: 
+   HEAP32[((((2328)|0))>>2)]=$tbase_292_i;
+   HEAP32[((((2332)|0))>>2)]=$tsize_291_i;
+   HEAP32[((((2340)|0))>>2)]=0;
+   var $191=HEAP32[((((1856)|0))>>2)];
+   HEAP32[((((1916)|0))>>2)]=$191;
+   HEAP32[((((1912)|0))>>2)]=-1;
+   var $i_02_i_i = 0;label = 207; break;
+  case 207: 
+   var $i_02_i_i;
+   var $shl_i_i=$i_02_i_i << 1;
+   var $arrayidx_i_i=((1920+($shl_i_i<<2))|0);
+   var $192=$arrayidx_i_i;
+   var $arrayidx_sum_i_i=((($shl_i_i)+(3))|0);
+   var $193=((1920+($arrayidx_sum_i_i<<2))|0);
+   HEAP32[(($193)>>2)]=$192;
+   var $arrayidx_sum1_i_i=((($shl_i_i)+(2))|0);
+   var $194=((1920+($arrayidx_sum1_i_i<<2))|0);
+   HEAP32[(($194)>>2)]=$192;
+   var $inc_i_i=((($i_02_i_i)+(1))|0);
+   var $cmp_i11_i=($inc_i_i>>>0) < 32;
+   if ($cmp_i11_i) { var $i_02_i_i = $inc_i_i;label = 207; break; } else { label = 208; break; }
+  case 208: 
+   var $sub169_i=((($tsize_291_i)-(40))|0);
+   var $add_ptr_i12_i=(($tbase_292_i+8)|0);
+   var $195=$add_ptr_i12_i;
+   var $and_i13_i=$195 & 7;
+   var $cmp_i14_i=($and_i13_i|0)==0;
+   if ($cmp_i14_i) { var $cond_i_i = 0;label = 210; break; } else { label = 209; break; }
+  case 209: 
+   var $196=(((-$195))|0);
+   var $and3_i_i=$196 & 7;
+   var $cond_i_i = $and3_i_i;label = 210; break;
+  case 210: 
+   var $cond_i_i;
+   var $add_ptr4_i_i=(($tbase_292_i+$cond_i_i)|0);
+   var $197=$add_ptr4_i_i;
+   var $sub5_i_i=((($sub169_i)-($cond_i_i))|0);
+   HEAP32[((((1904)|0))>>2)]=$197;
+   HEAP32[((((1892)|0))>>2)]=$sub5_i_i;
+   var $or_i_i=$sub5_i_i | 1;
+   var $add_ptr4_sum_i_i=((($cond_i_i)+(4))|0);
+   var $head_i_i=(($tbase_292_i+$add_ptr4_sum_i_i)|0);
+   var $198=$head_i_i;
+   HEAP32[(($198)>>2)]=$or_i_i;
+   var $add_ptr6_sum_i_i=((($tsize_291_i)-(36))|0);
+   var $head7_i_i=(($tbase_292_i+$add_ptr6_sum_i_i)|0);
+   var $199=$head7_i_i;
+   HEAP32[(($199)>>2)]=40;
+   var $200=HEAP32[((((1872)|0))>>2)];
+   HEAP32[((((1908)|0))>>2)]=$200;
+   label = 338; break;
+  case 211: 
+   var $sp_0105_i;
+   var $base184_i=(($sp_0105_i)|0);
+   var $201=HEAP32[(($base184_i)>>2)];
+   var $size185_i=(($sp_0105_i+4)|0);
+   var $202=HEAP32[(($size185_i)>>2)];
+   var $add_ptr186_i=(($201+$202)|0);
+   var $cmp187_i=($tbase_292_i|0)==($add_ptr186_i|0);
+   if ($cmp187_i) { label = 213; break; } else { label = 212; break; }
+  case 212: 
+   var $next_i=(($sp_0105_i+8)|0);
+   var $203=HEAP32[(($next_i)>>2)];
+   var $cmp183_i=($203|0)==0;
+   if ($cmp183_i) { label = 218; break; } else { var $sp_0105_i = $203;label = 211; break; }
+  case 213: 
+   var $sflags190_i=(($sp_0105_i+12)|0);
+   var $204=HEAP32[(($sflags190_i)>>2)];
+   var $and191_i=$204 & 8;
+   var $tobool192_i=($and191_i|0)==0;
+   if ($tobool192_i) { label = 214; break; } else { label = 218; break; }
+  case 214: 
+   var $205=$189;
+   var $cmp200_i=($205>>>0) >= ($201>>>0);
+   var $cmp206_i=($205>>>0) < ($tbase_292_i>>>0);
+   var $or_cond94_i=$cmp200_i & $cmp206_i;
+   if ($or_cond94_i) { label = 215; break; } else { label = 218; break; }
+  case 215: 
+   var $add209_i=((($202)+($tsize_291_i))|0);
+   HEAP32[(($size185_i)>>2)]=$add209_i;
+   var $206=HEAP32[((((1904)|0))>>2)];
+   var $207=HEAP32[((((1892)|0))>>2)];
+   var $add212_i=((($207)+($tsize_291_i))|0);
+   var $208=$206;
+   var $add_ptr_i23_i=(($206+8)|0);
+   var $209=$add_ptr_i23_i;
+   var $and_i24_i=$209 & 7;
+   var $cmp_i25_i=($and_i24_i|0)==0;
+   if ($cmp_i25_i) { var $cond_i28_i = 0;label = 217; break; } else { label = 216; break; }
+  case 216: 
+   var $210=(((-$209))|0);
+   var $and3_i26_i=$210 & 7;
+   var $cond_i28_i = $and3_i26_i;label = 217; break;
+  case 217: 
+   var $cond_i28_i;
+   var $add_ptr4_i29_i=(($208+$cond_i28_i)|0);
+   var $211=$add_ptr4_i29_i;
+   var $sub5_i30_i=((($add212_i)-($cond_i28_i))|0);
+   HEAP32[((((1904)|0))>>2)]=$211;
+   HEAP32[((((1892)|0))>>2)]=$sub5_i30_i;
+   var $or_i31_i=$sub5_i30_i | 1;
+   var $add_ptr4_sum_i32_i=((($cond_i28_i)+(4))|0);
+   var $head_i33_i=(($208+$add_ptr4_sum_i32_i)|0);
+   var $212=$head_i33_i;
+   HEAP32[(($212)>>2)]=$or_i31_i;
+   var $add_ptr6_sum_i34_i=((($add212_i)+(4))|0);
+   var $head7_i35_i=(($208+$add_ptr6_sum_i34_i)|0);
+   var $213=$head7_i35_i;
+   HEAP32[(($213)>>2)]=40;
+   var $214=HEAP32[((((1872)|0))>>2)];
+   HEAP32[((((1908)|0))>>2)]=$214;
+   label = 338; break;
+  case 218: 
+   var $215=HEAP32[((((1896)|0))>>2)];
+   var $cmp215_i=($tbase_292_i>>>0) < ($215>>>0);
+   if ($cmp215_i) { label = 219; break; } else { label = 220; break; }
+  case 219: 
+   HEAP32[((((1896)|0))>>2)]=$tbase_292_i;
+   label = 220; break;
+  case 220: 
+   var $add_ptr224_i=(($tbase_292_i+$tsize_291_i)|0);
+   var $sp_1101_i = ((2328)|0);label = 221; break;
+  case 221: 
+   var $sp_1101_i;
+   var $base223_i=(($sp_1101_i)|0);
+   var $216=HEAP32[(($base223_i)>>2)];
+   var $cmp225_i=($216|0)==($add_ptr224_i|0);
+   if ($cmp225_i) { label = 223; break; } else { label = 222; break; }
+  case 222: 
+   var $next228_i=(($sp_1101_i+8)|0);
+   var $217=HEAP32[(($next228_i)>>2)];
+   var $cmp221_i=($217|0)==0;
+   if ($cmp221_i) { label = 304; break; } else { var $sp_1101_i = $217;label = 221; break; }
+  case 223: 
+   var $sflags232_i=(($sp_1101_i+12)|0);
+   var $218=HEAP32[(($sflags232_i)>>2)];
+   var $and233_i=$218 & 8;
+   var $tobool234_i=($and233_i|0)==0;
+   if ($tobool234_i) { label = 224; break; } else { label = 304; break; }
+  case 224: 
+   HEAP32[(($base223_i)>>2)]=$tbase_292_i;
+   var $size242_i=(($sp_1101_i+4)|0);
+   var $219=HEAP32[(($size242_i)>>2)];
+   var $add243_i=((($219)+($tsize_291_i))|0);
+   HEAP32[(($size242_i)>>2)]=$add243_i;
+   var $add_ptr_i38_i=(($tbase_292_i+8)|0);
+   var $220=$add_ptr_i38_i;
+   var $and_i39_i=$220 & 7;
+   var $cmp_i40_i=($and_i39_i|0)==0;
+   if ($cmp_i40_i) { var $cond_i43_i = 0;label = 226; break; } else { label = 225; break; }
+  case 225: 
+   var $221=(((-$220))|0);
+   var $and3_i41_i=$221 & 7;
+   var $cond_i43_i = $and3_i41_i;label = 226; break;
+  case 226: 
+   var $cond_i43_i;
+   var $add_ptr4_i44_i=(($tbase_292_i+$cond_i43_i)|0);
+   var $add_ptr224_sum_i=((($tsize_291_i)+(8))|0);
+   var $add_ptr5_i_i=(($tbase_292_i+$add_ptr224_sum_i)|0);
+   var $222=$add_ptr5_i_i;
+   var $and6_i45_i=$222 & 7;
+   var $cmp7_i_i=($and6_i45_i|0)==0;
+   if ($cmp7_i_i) { var $cond15_i_i = 0;label = 228; break; } else { label = 227; break; }
+  case 227: 
+   var $223=(((-$222))|0);
+   var $and13_i_i=$223 & 7;
+   var $cond15_i_i = $and13_i_i;label = 228; break;
+  case 228: 
+   var $cond15_i_i;
+   var $add_ptr224_sum122_i=((($cond15_i_i)+($tsize_291_i))|0);
+   var $add_ptr16_i_i=(($tbase_292_i+$add_ptr224_sum122_i)|0);
+   var $224=$add_ptr16_i_i;
+   var $sub_ptr_lhs_cast_i47_i=$add_ptr16_i_i;
+   var $sub_ptr_rhs_cast_i48_i=$add_ptr4_i44_i;
+   var $sub_ptr_sub_i49_i=((($sub_ptr_lhs_cast_i47_i)-($sub_ptr_rhs_cast_i48_i))|0);
+   var $add_ptr4_sum_i50_i=((($cond_i43_i)+($nb_0))|0);
+   var $add_ptr17_i_i=(($tbase_292_i+$add_ptr4_sum_i50_i)|0);
+   var $225=$add_ptr17_i_i;
+   var $sub18_i_i=((($sub_ptr_sub_i49_i)-($nb_0))|0);
+   var $or19_i_i=$nb_0 | 3;
+   var $add_ptr4_sum1_i_i=((($cond_i43_i)+(4))|0);
+   var $head_i51_i=(($tbase_292_i+$add_ptr4_sum1_i_i)|0);
+   var $226=$head_i51_i;
+   HEAP32[(($226)>>2)]=$or19_i_i;
+   var $227=HEAP32[((((1904)|0))>>2)];
+   var $cmp20_i_i=($224|0)==($227|0);
+   if ($cmp20_i_i) { label = 229; break; } else { label = 230; break; }
+  case 229: 
+   var $228=HEAP32[((((1892)|0))>>2)];
+   var $add_i_i=((($228)+($sub18_i_i))|0);
+   HEAP32[((((1892)|0))>>2)]=$add_i_i;
+   HEAP32[((((1904)|0))>>2)]=$225;
+   var $or22_i_i=$add_i_i | 1;
+   var $add_ptr17_sum39_i_i=((($add_ptr4_sum_i50_i)+(4))|0);
+   var $head23_i_i=(($tbase_292_i+$add_ptr17_sum39_i_i)|0);
+   var $229=$head23_i_i;
+   HEAP32[(($229)>>2)]=$or22_i_i;
+   label = 303; break;
+  case 230: 
+   var $230=HEAP32[((((1900)|0))>>2)];
+   var $cmp24_i_i=($224|0)==($230|0);
+   if ($cmp24_i_i) { label = 231; break; } else { label = 232; break; }
+  case 231: 
+   var $231=HEAP32[((((1888)|0))>>2)];
+   var $add26_i_i=((($231)+($sub18_i_i))|0);
+   HEAP32[((((1888)|0))>>2)]=$add26_i_i;
+   HEAP32[((((1900)|0))>>2)]=$225;
+   var $or28_i_i=$add26_i_i | 1;
+   var $add_ptr17_sum37_i_i=((($add_ptr4_sum_i50_i)+(4))|0);
+   var $head29_i_i=(($tbase_292_i+$add_ptr17_sum37_i_i)|0);
+   var $232=$head29_i_i;
+   HEAP32[(($232)>>2)]=$or28_i_i;
+   var $add_ptr17_sum38_i_i=((($add26_i_i)+($add_ptr4_sum_i50_i))|0);
+   var $add_ptr30_i53_i=(($tbase_292_i+$add_ptr17_sum38_i_i)|0);
+   var $prev_foot_i54_i=$add_ptr30_i53_i;
+   HEAP32[(($prev_foot_i54_i)>>2)]=$add26_i_i;
+   label = 303; break;
+  case 232: 
+   var $add_ptr16_sum_i_i=((($tsize_291_i)+(4))|0);
+   var $add_ptr224_sum123_i=((($add_ptr16_sum_i_i)+($cond15_i_i))|0);
+   var $head32_i_i=(($tbase_292_i+$add_ptr224_sum123_i)|0);
+   var $233=$head32_i_i;
+   var $234=HEAP32[(($233)>>2)];
+   var $and33_i_i=$234 & 3;
+   var $cmp34_i_i=($and33_i_i|0)==1;
+   if ($cmp34_i_i) { label = 233; break; } else { var $oldfirst_0_i_i = $224;var $qsize_0_i_i = $sub18_i_i;label = 280; break; }
+  case 233: 
+   var $and37_i_i=$234 & -8;
+   var $shr_i55_i=$234 >>> 3;
+   var $cmp38_i_i=($234>>>0) < 256;
+   if ($cmp38_i_i) { label = 234; break; } else { label = 246; break; }
+  case 234: 
+   var $add_ptr16_sum3233_i_i=$cond15_i_i | 8;
+   var $add_ptr224_sum133_i=((($add_ptr16_sum3233_i_i)+($tsize_291_i))|0);
+   var $fd_i_i=(($tbase_292_i+$add_ptr224_sum133_i)|0);
+   var $235=$fd_i_i;
+   var $236=HEAP32[(($235)>>2)];
+   var $add_ptr16_sum34_i_i=((($tsize_291_i)+(12))|0);
+   var $add_ptr224_sum134_i=((($add_ptr16_sum34_i_i)+($cond15_i_i))|0);
+   var $bk_i56_i=(($tbase_292_i+$add_ptr224_sum134_i)|0);
+   var $237=$bk_i56_i;
+   var $238=HEAP32[(($237)>>2)];
+   var $shl_i57_i=$shr_i55_i << 1;
+   var $arrayidx_i58_i=((1920+($shl_i57_i<<2))|0);
+   var $239=$arrayidx_i58_i;
+   var $cmp41_i_i=($236|0)==($239|0);
+   if ($cmp41_i_i) { label = 237; break; } else { label = 235; break; }
+  case 235: 
+   var $240=$236;
+   var $241=HEAP32[((((1896)|0))>>2)];
+   var $cmp42_i_i=($240>>>0) < ($241>>>0);
+   if ($cmp42_i_i) { label = 245; break; } else { label = 236; break; }
+  case 236: 
+   var $bk43_i_i=(($236+12)|0);
+   var $242=HEAP32[(($bk43_i_i)>>2)];
+   var $cmp44_i_i=($242|0)==($224|0);
+   if ($cmp44_i_i) { label = 237; break; } else { label = 245; break; }
+  case 237: 
+   var $cmp46_i60_i=($238|0)==($236|0);
+   if ($cmp46_i60_i) { label = 238; break; } else { label = 239; break; }
+  case 238: 
+   var $shl48_i_i=1 << $shr_i55_i;
+   var $neg_i_i=$shl48_i_i ^ -1;
+   var $243=HEAP32[((((1880)|0))>>2)];
+   var $and49_i_i=$243 & $neg_i_i;
+   HEAP32[((((1880)|0))>>2)]=$and49_i_i;
+   label = 279; break;
+  case 239: 
+   var $cmp54_i_i=($238|0)==($239|0);
+   if ($cmp54_i_i) { label = 240; break; } else { label = 241; break; }
+  case 240: 
+   var $fd68_pre_i_i=(($238+8)|0);
+   var $fd68_pre_phi_i_i = $fd68_pre_i_i;label = 243; break;
+  case 241: 
+   var $244=$238;
+   var $245=HEAP32[((((1896)|0))>>2)];
+   var $cmp57_i_i=($244>>>0) < ($245>>>0);
+   if ($cmp57_i_i) { label = 244; break; } else { label = 242; break; }
+  case 242: 
+   var $fd59_i_i=(($238+8)|0);
+   var $246=HEAP32[(($fd59_i_i)>>2)];
+   var $cmp60_i_i=($246|0)==($224|0);
+   if ($cmp60_i_i) { var $fd68_pre_phi_i_i = $fd59_i_i;label = 243; break; } else { label = 244; break; }
+  case 243: 
+   var $fd68_pre_phi_i_i;
+   var $bk67_i_i=(($236+12)|0);
+   HEAP32[(($bk67_i_i)>>2)]=$238;
+   HEAP32[(($fd68_pre_phi_i_i)>>2)]=$236;
+   label = 279; break;
+  case 244: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 245: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 246: 
+   var $247=$add_ptr16_i_i;
+   var $add_ptr16_sum23_i_i=$cond15_i_i | 24;
+   var $add_ptr224_sum124_i=((($add_ptr16_sum23_i_i)+($tsize_291_i))|0);
+   var $parent_i62_i=(($tbase_292_i+$add_ptr224_sum124_i)|0);
+   var $248=$parent_i62_i;
+   var $249=HEAP32[(($248)>>2)];
+   var $add_ptr16_sum4_i_i=((($tsize_291_i)+(12))|0);
+   var $add_ptr224_sum125_i=((($add_ptr16_sum4_i_i)+($cond15_i_i))|0);
+   var $bk74_i_i=(($tbase_292_i+$add_ptr224_sum125_i)|0);
+   var $250=$bk74_i_i;
+   var $251=HEAP32[(($250)>>2)];
+   var $cmp75_i_i=($251|0)==($247|0);
+   if ($cmp75_i_i) { label = 252; break; } else { label = 247; break; }
+  case 247: 
+   var $add_ptr16_sum2930_i_i=$cond15_i_i | 8;
+   var $add_ptr224_sum126_i=((($add_ptr16_sum2930_i_i)+($tsize_291_i))|0);
+   var $fd78_i_i=(($tbase_292_i+$add_ptr224_sum126_i)|0);
+   var $252=$fd78_i_i;
+   var $253=HEAP32[(($252)>>2)];
+   var $254=$253;
+   var $255=HEAP32[((((1896)|0))>>2)];
+   var $cmp81_i_i=($254>>>0) < ($255>>>0);
+   if ($cmp81_i_i) { label = 251; break; } else { label = 248; break; }
+  case 248: 
+   var $bk82_i_i=(($253+12)|0);
+   var $256=HEAP32[(($bk82_i_i)>>2)];
+   var $cmp83_i_i=($256|0)==($247|0);
+   if ($cmp83_i_i) { label = 249; break; } else { label = 251; break; }
+  case 249: 
+   var $fd85_i_i=(($251+8)|0);
+   var $257=HEAP32[(($fd85_i_i)>>2)];
+   var $cmp86_i_i=($257|0)==($247|0);
+   if ($cmp86_i_i) { label = 250; break; } else { label = 251; break; }
+  case 250: 
+   HEAP32[(($bk82_i_i)>>2)]=$251;
+   HEAP32[(($fd85_i_i)>>2)]=$253;
+   var $R_1_i_i = $251;label = 259; break;
+  case 251: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 252: 
+   var $add_ptr16_sum56_i_i=$cond15_i_i | 16;
+   var $add_ptr224_sum131_i=((($add_ptr16_sum_i_i)+($add_ptr16_sum56_i_i))|0);
+   var $arrayidx96_i_i=(($tbase_292_i+$add_ptr224_sum131_i)|0);
+   var $258=$arrayidx96_i_i;
+   var $259=HEAP32[(($258)>>2)];
+   var $cmp97_i_i=($259|0)==0;
+   if ($cmp97_i_i) { label = 253; break; } else { var $R_0_i_i = $259;var $RP_0_i_i = $258;label = 254; break; }
+  case 253: 
+   var $add_ptr224_sum132_i=((($add_ptr16_sum56_i_i)+($tsize_291_i))|0);
+   var $child_i_i=(($tbase_292_i+$add_ptr224_sum132_i)|0);
+   var $arrayidx99_i_i=$child_i_i;
+   var $260=HEAP32[(($arrayidx99_i_i)>>2)];
+   var $cmp100_i_i=($260|0)==0;
+   if ($cmp100_i_i) { var $R_1_i_i = 0;label = 259; break; } else { var $R_0_i_i = $260;var $RP_0_i_i = $arrayidx99_i_i;label = 254; break; }
+  case 254: 
+   var $RP_0_i_i;
+   var $R_0_i_i;
+   var $arrayidx103_i_i=(($R_0_i_i+20)|0);
+   var $261=HEAP32[(($arrayidx103_i_i)>>2)];
+   var $cmp104_i_i=($261|0)==0;
+   if ($cmp104_i_i) { label = 255; break; } else { var $R_0_i_i = $261;var $RP_0_i_i = $arrayidx103_i_i;label = 254; break; }
+  case 255: 
+   var $arrayidx107_i_i=(($R_0_i_i+16)|0);
+   var $262=HEAP32[(($arrayidx107_i_i)>>2)];
+   var $cmp108_i_i=($262|0)==0;
+   if ($cmp108_i_i) { label = 256; break; } else { var $R_0_i_i = $262;var $RP_0_i_i = $arrayidx107_i_i;label = 254; break; }
+  case 256: 
+   var $263=$RP_0_i_i;
+   var $264=HEAP32[((((1896)|0))>>2)];
+   var $cmp112_i_i=($263>>>0) < ($264>>>0);
+   if ($cmp112_i_i) { label = 258; break; } else { label = 257; break; }
+  case 257: 
+   HEAP32[(($RP_0_i_i)>>2)]=0;
+   var $R_1_i_i = $R_0_i_i;label = 259; break;
+  case 258: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 259: 
+   var $R_1_i_i;
+   var $cmp120_i64_i=($249|0)==0;
+   if ($cmp120_i64_i) { label = 279; break; } else { label = 260; break; }
+  case 260: 
+   var $add_ptr16_sum26_i_i=((($tsize_291_i)+(28))|0);
+   var $add_ptr224_sum127_i=((($add_ptr16_sum26_i_i)+($cond15_i_i))|0);
+   var $index_i65_i=(($tbase_292_i+$add_ptr224_sum127_i)|0);
+   var $265=$index_i65_i;
+   var $266=HEAP32[(($265)>>2)];
+   var $arrayidx123_i_i=((2184+($266<<2))|0);
+   var $267=HEAP32[(($arrayidx123_i_i)>>2)];
+   var $cmp124_i_i=($247|0)==($267|0);
+   if ($cmp124_i_i) { label = 261; break; } else { label = 263; break; }
+  case 261: 
+   HEAP32[(($arrayidx123_i_i)>>2)]=$R_1_i_i;
+   var $cond41_i_i=($R_1_i_i|0)==0;
+   if ($cond41_i_i) { label = 262; break; } else { label = 269; break; }
+  case 262: 
+   var $268=HEAP32[(($265)>>2)];
+   var $shl131_i_i=1 << $268;
+   var $neg132_i_i=$shl131_i_i ^ -1;
+   var $269=HEAP32[((((1884)|0))>>2)];
+   var $and133_i_i=$269 & $neg132_i_i;
+   HEAP32[((((1884)|0))>>2)]=$and133_i_i;
+   label = 279; break;
+  case 263: 
+   var $270=$249;
+   var $271=HEAP32[((((1896)|0))>>2)];
+   var $cmp137_i_i=($270>>>0) < ($271>>>0);
+   if ($cmp137_i_i) { label = 267; break; } else { label = 264; break; }
+  case 264: 
+   var $arrayidx143_i_i=(($249+16)|0);
+   var $272=HEAP32[(($arrayidx143_i_i)>>2)];
+   var $cmp144_i_i=($272|0)==($247|0);
+   if ($cmp144_i_i) { label = 265; break; } else { label = 266; break; }
+  case 265: 
+   HEAP32[(($arrayidx143_i_i)>>2)]=$R_1_i_i;
+   label = 268; break;
+  case 266: 
+   var $arrayidx151_i_i=(($249+20)|0);
+   HEAP32[(($arrayidx151_i_i)>>2)]=$R_1_i_i;
+   label = 268; break;
+  case 267: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 268: 
+   var $cmp156_i_i=($R_1_i_i|0)==0;
+   if ($cmp156_i_i) { label = 279; break; } else { label = 269; break; }
+  case 269: 
+   var $273=$R_1_i_i;
+   var $274=HEAP32[((((1896)|0))>>2)];
+   var $cmp160_i_i=($273>>>0) < ($274>>>0);
+   if ($cmp160_i_i) { label = 278; break; } else { label = 270; break; }
+  case 270: 
+   var $parent165_i_i=(($R_1_i_i+24)|0);
+   HEAP32[(($parent165_i_i)>>2)]=$249;
+   var $add_ptr16_sum2728_i_i=$cond15_i_i | 16;
+   var $add_ptr224_sum128_i=((($add_ptr16_sum2728_i_i)+($tsize_291_i))|0);
+   var $child166_i_i=(($tbase_292_i+$add_ptr224_sum128_i)|0);
+   var $arrayidx167_i_i=$child166_i_i;
+   var $275=HEAP32[(($arrayidx167_i_i)>>2)];
+   var $cmp168_i_i=($275|0)==0;
+   if ($cmp168_i_i) { label = 274; break; } else { label = 271; break; }
+  case 271: 
+   var $276=$275;
+   var $277=HEAP32[((((1896)|0))>>2)];
+   var $cmp172_i_i=($276>>>0) < ($277>>>0);
+   if ($cmp172_i_i) { label = 273; break; } else { label = 272; break; }
+  case 272: 
+   var $arrayidx178_i_i=(($R_1_i_i+16)|0);
+   HEAP32[(($arrayidx178_i_i)>>2)]=$275;
+   var $parent179_i_i=(($275+24)|0);
+   HEAP32[(($parent179_i_i)>>2)]=$R_1_i_i;
+   label = 274; break;
+  case 273: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 274: 
+   var $add_ptr224_sum129_i=((($add_ptr16_sum_i_i)+($add_ptr16_sum2728_i_i))|0);
+   var $arrayidx184_i_i=(($tbase_292_i+$add_ptr224_sum129_i)|0);
+   var $278=$arrayidx184_i_i;
+   var $279=HEAP32[(($278)>>2)];
+   var $cmp185_i_i=($279|0)==0;
+   if ($cmp185_i_i) { label = 279; break; } else { label = 275; break; }
+  case 275: 
+   var $280=$279;
+   var $281=HEAP32[((((1896)|0))>>2)];
+   var $cmp189_i_i=($280>>>0) < ($281>>>0);
+   if ($cmp189_i_i) { label = 277; break; } else { label = 276; break; }
+  case 276: 
+   var $arrayidx195_i_i=(($R_1_i_i+20)|0);
+   HEAP32[(($arrayidx195_i_i)>>2)]=$279;
+   var $parent196_i_i=(($279+24)|0);
+   HEAP32[(($parent196_i_i)>>2)]=$R_1_i_i;
+   label = 279; break;
+  case 277: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 278: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 279: 
+   var $add_ptr16_sum7_i_i=$and37_i_i | $cond15_i_i;
+   var $add_ptr224_sum130_i=((($add_ptr16_sum7_i_i)+($tsize_291_i))|0);
+   var $add_ptr205_i_i=(($tbase_292_i+$add_ptr224_sum130_i)|0);
+   var $282=$add_ptr205_i_i;
+   var $add206_i_i=((($and37_i_i)+($sub18_i_i))|0);
+   var $oldfirst_0_i_i = $282;var $qsize_0_i_i = $add206_i_i;label = 280; break;
+  case 280: 
+   var $qsize_0_i_i;
+   var $oldfirst_0_i_i;
+   var $head208_i_i=(($oldfirst_0_i_i+4)|0);
+   var $283=HEAP32[(($head208_i_i)>>2)];
+   var $and209_i_i=$283 & -2;
+   HEAP32[(($head208_i_i)>>2)]=$and209_i_i;
+   var $or210_i_i=$qsize_0_i_i | 1;
+   var $add_ptr17_sum_i_i=((($add_ptr4_sum_i50_i)+(4))|0);
+   var $head211_i_i=(($tbase_292_i+$add_ptr17_sum_i_i)|0);
+   var $284=$head211_i_i;
+   HEAP32[(($284)>>2)]=$or210_i_i;
+   var $add_ptr17_sum8_i_i=((($qsize_0_i_i)+($add_ptr4_sum_i50_i))|0);
+   var $add_ptr212_i_i=(($tbase_292_i+$add_ptr17_sum8_i_i)|0);
+   var $prev_foot213_i_i=$add_ptr212_i_i;
+   HEAP32[(($prev_foot213_i_i)>>2)]=$qsize_0_i_i;
+   var $shr214_i_i=$qsize_0_i_i >>> 3;
+   var $cmp215_i_i=($qsize_0_i_i>>>0) < 256;
+   if ($cmp215_i_i) { label = 281; break; } else { label = 286; break; }
+  case 281: 
+   var $shl221_i_i=$shr214_i_i << 1;
+   var $arrayidx223_i_i=((1920+($shl221_i_i<<2))|0);
+   var $285=$arrayidx223_i_i;
+   var $286=HEAP32[((((1880)|0))>>2)];
+   var $shl226_i_i=1 << $shr214_i_i;
+   var $and227_i_i=$286 & $shl226_i_i;
+   var $tobool228_i_i=($and227_i_i|0)==0;
+   if ($tobool228_i_i) { label = 282; break; } else { label = 283; break; }
+  case 282: 
+   var $or232_i_i=$286 | $shl226_i_i;
+   HEAP32[((((1880)|0))>>2)]=$or232_i_i;
+   var $arrayidx223_sum_pre_i_i=((($shl221_i_i)+(2))|0);
+   var $_pre_i67_i=((1920+($arrayidx223_sum_pre_i_i<<2))|0);
+   var $F224_0_i_i = $285;var $_pre_phi_i68_i = $_pre_i67_i;label = 285; break;
+  case 283: 
+   var $arrayidx223_sum25_i_i=((($shl221_i_i)+(2))|0);
+   var $287=((1920+($arrayidx223_sum25_i_i<<2))|0);
+   var $288=HEAP32[(($287)>>2)];
+   var $289=$288;
+   var $290=HEAP32[((((1896)|0))>>2)];
+   var $cmp236_i_i=($289>>>0) < ($290>>>0);
+   if ($cmp236_i_i) { label = 284; break; } else { var $F224_0_i_i = $288;var $_pre_phi_i68_i = $287;label = 285; break; }
+  case 284: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 285: 
+   var $_pre_phi_i68_i;
+   var $F224_0_i_i;
+   HEAP32[(($_pre_phi_i68_i)>>2)]=$225;
+   var $bk246_i_i=(($F224_0_i_i+12)|0);
+   HEAP32[(($bk246_i_i)>>2)]=$225;
+   var $add_ptr17_sum23_i_i=((($add_ptr4_sum_i50_i)+(8))|0);
+   var $fd247_i_i=(($tbase_292_i+$add_ptr17_sum23_i_i)|0);
+   var $291=$fd247_i_i;
+   HEAP32[(($291)>>2)]=$F224_0_i_i;
+   var $add_ptr17_sum24_i_i=((($add_ptr4_sum_i50_i)+(12))|0);
+   var $bk248_i_i=(($tbase_292_i+$add_ptr17_sum24_i_i)|0);
+   var $292=$bk248_i_i;
+   HEAP32[(($292)>>2)]=$285;
+   label = 303; break;
+  case 286: 
+   var $293=$add_ptr17_i_i;
+   var $shr253_i_i=$qsize_0_i_i >>> 8;
+   var $cmp254_i_i=($shr253_i_i|0)==0;
+   if ($cmp254_i_i) { var $I252_0_i_i = 0;label = 289; break; } else { label = 287; break; }
+  case 287: 
+   var $cmp258_i_i=($qsize_0_i_i>>>0) > 16777215;
+   if ($cmp258_i_i) { var $I252_0_i_i = 31;label = 289; break; } else { label = 288; break; }
+  case 288: 
+   var $sub262_i_i=((($shr253_i_i)+(1048320))|0);
+   var $shr263_i_i=$sub262_i_i >>> 16;
+   var $and264_i_i=$shr263_i_i & 8;
+   var $shl265_i_i=$shr253_i_i << $and264_i_i;
+   var $sub266_i_i=((($shl265_i_i)+(520192))|0);
+   var $shr267_i_i=$sub266_i_i >>> 16;
+   var $and268_i_i=$shr267_i_i & 4;
+   var $add269_i_i=$and268_i_i | $and264_i_i;
+   var $shl270_i_i=$shl265_i_i << $and268_i_i;
+   var $sub271_i_i=((($shl270_i_i)+(245760))|0);
+   var $shr272_i_i=$sub271_i_i >>> 16;
+   var $and273_i_i=$shr272_i_i & 2;
+   var $add274_i_i=$add269_i_i | $and273_i_i;
+   var $sub275_i_i=(((14)-($add274_i_i))|0);
+   var $shl276_i_i=$shl270_i_i << $and273_i_i;
+   var $shr277_i_i=$shl276_i_i >>> 15;
+   var $add278_i_i=((($sub275_i_i)+($shr277_i_i))|0);
+   var $shl279_i_i=$add278_i_i << 1;
+   var $add280_i_i=((($add278_i_i)+(7))|0);
+   var $shr281_i_i=$qsize_0_i_i >>> ($add280_i_i>>>0);
+   var $and282_i_i=$shr281_i_i & 1;
+   var $add283_i_i=$and282_i_i | $shl279_i_i;
+   var $I252_0_i_i = $add283_i_i;label = 289; break;
+  case 289: 
+   var $I252_0_i_i;
+   var $arrayidx287_i_i=((2184+($I252_0_i_i<<2))|0);
+   var $add_ptr17_sum9_i_i=((($add_ptr4_sum_i50_i)+(28))|0);
+   var $index288_i_i=(($tbase_292_i+$add_ptr17_sum9_i_i)|0);
+   var $294=$index288_i_i;
+   HEAP32[(($294)>>2)]=$I252_0_i_i;
+   var $add_ptr17_sum10_i_i=((($add_ptr4_sum_i50_i)+(16))|0);
+   var $child289_i_i=(($tbase_292_i+$add_ptr17_sum10_i_i)|0);
+   var $child289_sum_i_i=((($add_ptr4_sum_i50_i)+(20))|0);
+   var $arrayidx290_i_i=(($tbase_292_i+$child289_sum_i_i)|0);
+   var $295=$arrayidx290_i_i;
+   HEAP32[(($295)>>2)]=0;
+   var $arrayidx292_i_i=$child289_i_i;
+   HEAP32[(($arrayidx292_i_i)>>2)]=0;
+   var $296=HEAP32[((((1884)|0))>>2)];
+   var $shl294_i_i=1 << $I252_0_i_i;
+   var $and295_i_i=$296 & $shl294_i_i;
+   var $tobool296_i_i=($and295_i_i|0)==0;
+   if ($tobool296_i_i) { label = 290; break; } else { label = 291; break; }
+  case 290: 
+   var $or300_i_i=$296 | $shl294_i_i;
+   HEAP32[((((1884)|0))>>2)]=$or300_i_i;
+   HEAP32[(($arrayidx287_i_i)>>2)]=$293;
+   var $297=$arrayidx287_i_i;
+   var $add_ptr17_sum11_i_i=((($add_ptr4_sum_i50_i)+(24))|0);
+   var $parent301_i_i=(($tbase_292_i+$add_ptr17_sum11_i_i)|0);
+   var $298=$parent301_i_i;
+   HEAP32[(($298)>>2)]=$297;
+   var $add_ptr17_sum12_i_i=((($add_ptr4_sum_i50_i)+(12))|0);
+   var $bk302_i_i=(($tbase_292_i+$add_ptr17_sum12_i_i)|0);
+   var $299=$bk302_i_i;
+   HEAP32[(($299)>>2)]=$293;
+   var $add_ptr17_sum13_i_i=((($add_ptr4_sum_i50_i)+(8))|0);
+   var $fd303_i_i=(($tbase_292_i+$add_ptr17_sum13_i_i)|0);
+   var $300=$fd303_i_i;
+   HEAP32[(($300)>>2)]=$293;
+   label = 303; break;
+  case 291: 
+   var $301=HEAP32[(($arrayidx287_i_i)>>2)];
+   var $cmp306_i_i=($I252_0_i_i|0)==31;
+   if ($cmp306_i_i) { var $cond315_i_i = 0;label = 293; break; } else { label = 292; break; }
+  case 292: 
+   var $shr310_i_i=$I252_0_i_i >>> 1;
+   var $sub313_i_i=(((25)-($shr310_i_i))|0);
+   var $cond315_i_i = $sub313_i_i;label = 293; break;
+  case 293: 
+   var $cond315_i_i;
+   var $shl316_i_i=$qsize_0_i_i << $cond315_i_i;
+   var $K305_0_i_i = $shl316_i_i;var $T_0_i69_i = $301;label = 294; break;
+  case 294: 
+   var $T_0_i69_i;
+   var $K305_0_i_i;
+   var $head317_i_i=(($T_0_i69_i+4)|0);
+   var $302=HEAP32[(($head317_i_i)>>2)];
+   var $and318_i_i=$302 & -8;
+   var $cmp319_i_i=($and318_i_i|0)==($qsize_0_i_i|0);
+   if ($cmp319_i_i) { label = 299; break; } else { label = 295; break; }
+  case 295: 
+   var $shr322_i_i=$K305_0_i_i >>> 31;
+   var $arrayidx325_i_i=(($T_0_i69_i+16+($shr322_i_i<<2))|0);
+   var $303=HEAP32[(($arrayidx325_i_i)>>2)];
+   var $cmp327_i_i=($303|0)==0;
+   var $shl326_i_i=$K305_0_i_i << 1;
+   if ($cmp327_i_i) { label = 296; break; } else { var $K305_0_i_i = $shl326_i_i;var $T_0_i69_i = $303;label = 294; break; }
+  case 296: 
+   var $304=$arrayidx325_i_i;
+   var $305=HEAP32[((((1896)|0))>>2)];
+   var $cmp332_i_i=($304>>>0) < ($305>>>0);
+   if ($cmp332_i_i) { label = 298; break; } else { label = 297; break; }
+  case 297: 
+   HEAP32[(($arrayidx325_i_i)>>2)]=$293;
+   var $add_ptr17_sum20_i_i=((($add_ptr4_sum_i50_i)+(24))|0);
+   var $parent337_i_i=(($tbase_292_i+$add_ptr17_sum20_i_i)|0);
+   var $306=$parent337_i_i;
+   HEAP32[(($306)>>2)]=$T_0_i69_i;
+   var $add_ptr17_sum21_i_i=((($add_ptr4_sum_i50_i)+(12))|0);
+   var $bk338_i_i=(($tbase_292_i+$add_ptr17_sum21_i_i)|0);
+   var $307=$bk338_i_i;
+   HEAP32[(($307)>>2)]=$293;
+   var $add_ptr17_sum22_i_i=((($add_ptr4_sum_i50_i)+(8))|0);
+   var $fd339_i_i=(($tbase_292_i+$add_ptr17_sum22_i_i)|0);
+   var $308=$fd339_i_i;
+   HEAP32[(($308)>>2)]=$293;
+   label = 303; break;
+  case 298: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 299: 
+   var $fd344_i_i=(($T_0_i69_i+8)|0);
+   var $309=HEAP32[(($fd344_i_i)>>2)];
+   var $310=$T_0_i69_i;
+   var $311=HEAP32[((((1896)|0))>>2)];
+   var $cmp346_i_i=($310>>>0) < ($311>>>0);
+   if ($cmp346_i_i) { label = 302; break; } else { label = 300; break; }
+  case 300: 
+   var $312=$309;
+   var $cmp350_i_i=($312>>>0) < ($311>>>0);
+   if ($cmp350_i_i) { label = 302; break; } else { label = 301; break; }
+  case 301: 
+   var $bk357_i_i=(($309+12)|0);
+   HEAP32[(($bk357_i_i)>>2)]=$293;
+   HEAP32[(($fd344_i_i)>>2)]=$293;
+   var $add_ptr17_sum17_i_i=((($add_ptr4_sum_i50_i)+(8))|0);
+   var $fd359_i_i=(($tbase_292_i+$add_ptr17_sum17_i_i)|0);
+   var $313=$fd359_i_i;
+   HEAP32[(($313)>>2)]=$309;
+   var $add_ptr17_sum18_i_i=((($add_ptr4_sum_i50_i)+(12))|0);
+   var $bk360_i_i=(($tbase_292_i+$add_ptr17_sum18_i_i)|0);
+   var $314=$bk360_i_i;
+   HEAP32[(($314)>>2)]=$T_0_i69_i;
+   var $add_ptr17_sum19_i_i=((($add_ptr4_sum_i50_i)+(24))|0);
+   var $parent361_i_i=(($tbase_292_i+$add_ptr17_sum19_i_i)|0);
+   var $315=$parent361_i_i;
+   HEAP32[(($315)>>2)]=0;
+   label = 303; break;
+  case 302: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 303: 
+   var $add_ptr4_sum1415_i_i=$cond_i43_i | 8;
+   var $add_ptr368_i_i=(($tbase_292_i+$add_ptr4_sum1415_i_i)|0);
+   var $mem_0 = $add_ptr368_i_i;label = 341; break;
+  case 304: 
+   var $316=$189;
+   var $sp_0_i_i_i = ((2328)|0);label = 305; break;
+  case 305: 
+   var $sp_0_i_i_i;
+   var $base_i_i_i=(($sp_0_i_i_i)|0);
+   var $317=HEAP32[(($base_i_i_i)>>2)];
+   var $cmp_i_i_i=($317>>>0) > ($316>>>0);
+   if ($cmp_i_i_i) { label = 307; break; } else { label = 306; break; }
+  case 306: 
+   var $size_i_i_i=(($sp_0_i_i_i+4)|0);
+   var $318=HEAP32[(($size_i_i_i)>>2)];
+   var $add_ptr_i_i_i=(($317+$318)|0);
+   var $cmp2_i_i_i=($add_ptr_i_i_i>>>0) > ($316>>>0);
+   if ($cmp2_i_i_i) { label = 308; break; } else { label = 307; break; }
+  case 307: 
+   var $next_i_i_i=(($sp_0_i_i_i+8)|0);
+   var $319=HEAP32[(($next_i_i_i)>>2)];
+   var $sp_0_i_i_i = $319;label = 305; break;
+  case 308: 
+   var $add_ptr_sum_i_i=((($318)-(47))|0);
+   var $add_ptr2_sum_i_i=((($318)-(39))|0);
+   var $add_ptr3_i_i=(($317+$add_ptr2_sum_i_i)|0);
+   var $320=$add_ptr3_i_i;
+   var $and_i15_i=$320 & 7;
+   var $cmp_i16_i=($and_i15_i|0)==0;
+   if ($cmp_i16_i) { var $cond_i18_i = 0;label = 310; break; } else { label = 309; break; }
+  case 309: 
+   var $321=(((-$320))|0);
+   var $and6_i_i=$321 & 7;
+   var $cond_i18_i = $and6_i_i;label = 310; break;
+  case 310: 
+   var $cond_i18_i;
+   var $add_ptr2_sum1_i_i=((($add_ptr_sum_i_i)+($cond_i18_i))|0);
+   var $add_ptr7_i_i=(($317+$add_ptr2_sum1_i_i)|0);
+   var $add_ptr82_i_i=(($189+16)|0);
+   var $add_ptr8_i_i=$add_ptr82_i_i;
+   var $cmp9_i_i=($add_ptr7_i_i>>>0) < ($add_ptr8_i_i>>>0);
+   var $cond13_i_i=$cmp9_i_i ? $316 : $add_ptr7_i_i;
+   var $add_ptr14_i_i=(($cond13_i_i+8)|0);
+   var $322=$add_ptr14_i_i;
+   var $sub16_i_i=((($tsize_291_i)-(40))|0);
+   var $add_ptr_i11_i_i=(($tbase_292_i+8)|0);
+   var $323=$add_ptr_i11_i_i;
+   var $and_i_i_i=$323 & 7;
+   var $cmp_i12_i_i=($and_i_i_i|0)==0;
+   if ($cmp_i12_i_i) { var $cond_i_i_i = 0;label = 312; break; } else { label = 311; break; }
+  case 311: 
+   var $324=(((-$323))|0);
+   var $and3_i_i_i=$324 & 7;
+   var $cond_i_i_i = $and3_i_i_i;label = 312; break;
+  case 312: 
+   var $cond_i_i_i;
+   var $add_ptr4_i_i_i=(($tbase_292_i+$cond_i_i_i)|0);
+   var $325=$add_ptr4_i_i_i;
+   var $sub5_i_i_i=((($sub16_i_i)-($cond_i_i_i))|0);
+   HEAP32[((((1904)|0))>>2)]=$325;
+   HEAP32[((((1892)|0))>>2)]=$sub5_i_i_i;
+   var $or_i_i_i=$sub5_i_i_i | 1;
+   var $add_ptr4_sum_i_i_i=((($cond_i_i_i)+(4))|0);
+   var $head_i_i_i=(($tbase_292_i+$add_ptr4_sum_i_i_i)|0);
+   var $326=$head_i_i_i;
+   HEAP32[(($326)>>2)]=$or_i_i_i;
+   var $add_ptr6_sum_i_i_i=((($tsize_291_i)-(36))|0);
+   var $head7_i_i_i=(($tbase_292_i+$add_ptr6_sum_i_i_i)|0);
+   var $327=$head7_i_i_i;
+   HEAP32[(($327)>>2)]=40;
+   var $328=HEAP32[((((1872)|0))>>2)];
+   HEAP32[((((1908)|0))>>2)]=$328;
+   var $head_i19_i=(($cond13_i_i+4)|0);
+   var $329=$head_i19_i;
+   HEAP32[(($329)>>2)]=27;
+   assert(16 % 1 === 0);HEAP32[(($add_ptr14_i_i)>>2)]=HEAP32[(((((2328)|0)))>>2)];HEAP32[((($add_ptr14_i_i)+(4))>>2)]=HEAP32[((((((2328)|0)))+(4))>>2)];HEAP32[((($add_ptr14_i_i)+(8))>>2)]=HEAP32[((((((2328)|0)))+(8))>>2)];HEAP32[((($add_ptr14_i_i)+(12))>>2)]=HEAP32[((((((2328)|0)))+(12))>>2)];
+   HEAP32[((((2328)|0))>>2)]=$tbase_292_i;
+   HEAP32[((((2332)|0))>>2)]=$tsize_291_i;
+   HEAP32[((((2340)|0))>>2)]=0;
+   HEAP32[((((2336)|0))>>2)]=$322;
+   var $add_ptr2414_i_i=(($cond13_i_i+28)|0);
+   var $330=$add_ptr2414_i_i;
+   HEAP32[(($330)>>2)]=7;
+   var $331=(($cond13_i_i+32)|0);
+   var $cmp2715_i_i=($331>>>0) < ($add_ptr_i_i_i>>>0);
+   if ($cmp2715_i_i) { var $add_ptr2416_i_i = $330;label = 313; break; } else { label = 314; break; }
+  case 313: 
+   var $add_ptr2416_i_i;
+   var $332=(($add_ptr2416_i_i+4)|0);
+   HEAP32[(($332)>>2)]=7;
+   var $333=(($add_ptr2416_i_i+8)|0);
+   var $334=$333;
+   var $cmp27_i_i=($334>>>0) < ($add_ptr_i_i_i>>>0);
+   if ($cmp27_i_i) { var $add_ptr2416_i_i = $332;label = 313; break; } else { label = 314; break; }
+  case 314: 
+   var $cmp28_i_i=($cond13_i_i|0)==($316|0);
+   if ($cmp28_i_i) { label = 338; break; } else { label = 315; break; }
+  case 315: 
+   var $sub_ptr_lhs_cast_i_i=$cond13_i_i;
+   var $sub_ptr_rhs_cast_i_i=$189;
+   var $sub_ptr_sub_i_i=((($sub_ptr_lhs_cast_i_i)-($sub_ptr_rhs_cast_i_i))|0);
+   var $add_ptr30_i_i=(($316+$sub_ptr_sub_i_i)|0);
+   var $add_ptr30_sum_i_i=((($sub_ptr_sub_i_i)+(4))|0);
+   var $head31_i_i=(($316+$add_ptr30_sum_i_i)|0);
+   var $335=$head31_i_i;
+   var $336=HEAP32[(($335)>>2)];
+   var $and32_i_i=$336 & -2;
+   HEAP32[(($335)>>2)]=$and32_i_i;
+   var $or33_i_i=$sub_ptr_sub_i_i | 1;
+   var $head34_i_i=(($189+4)|0);
+   HEAP32[(($head34_i_i)>>2)]=$or33_i_i;
+   var $prev_foot_i_i=$add_ptr30_i_i;
+   HEAP32[(($prev_foot_i_i)>>2)]=$sub_ptr_sub_i_i;
+   var $shr_i_i=$sub_ptr_sub_i_i >>> 3;
+   var $cmp36_i_i=($sub_ptr_sub_i_i>>>0) < 256;
+   if ($cmp36_i_i) { label = 316; break; } else { label = 321; break; }
+  case 316: 
+   var $shl_i21_i=$shr_i_i << 1;
+   var $arrayidx_i22_i=((1920+($shl_i21_i<<2))|0);
+   var $337=$arrayidx_i22_i;
+   var $338=HEAP32[((((1880)|0))>>2)];
+   var $shl39_i_i=1 << $shr_i_i;
+   var $and40_i_i=$338 & $shl39_i_i;
+   var $tobool_i_i=($and40_i_i|0)==0;
+   if ($tobool_i_i) { label = 317; break; } else { label = 318; break; }
+  case 317: 
+   var $or44_i_i=$338 | $shl39_i_i;
+   HEAP32[((((1880)|0))>>2)]=$or44_i_i;
+   var $arrayidx_sum_pre_i_i=((($shl_i21_i)+(2))|0);
+   var $_pre_i_i=((1920+($arrayidx_sum_pre_i_i<<2))|0);
+   var $F_0_i_i = $337;var $_pre_phi_i_i = $_pre_i_i;label = 320; break;
+  case 318: 
+   var $arrayidx_sum10_i_i=((($shl_i21_i)+(2))|0);
+   var $339=((1920+($arrayidx_sum10_i_i<<2))|0);
+   var $340=HEAP32[(($339)>>2)];
+   var $341=$340;
+   var $342=HEAP32[((((1896)|0))>>2)];
+   var $cmp46_i_i=($341>>>0) < ($342>>>0);
+   if ($cmp46_i_i) { label = 319; break; } else { var $F_0_i_i = $340;var $_pre_phi_i_i = $339;label = 320; break; }
+  case 319: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 320: 
+   var $_pre_phi_i_i;
+   var $F_0_i_i;
+   HEAP32[(($_pre_phi_i_i)>>2)]=$189;
+   var $bk_i_i=(($F_0_i_i+12)|0);
+   HEAP32[(($bk_i_i)>>2)]=$189;
+   var $fd54_i_i=(($189+8)|0);
+   HEAP32[(($fd54_i_i)>>2)]=$F_0_i_i;
+   var $bk55_i_i=(($189+12)|0);
+   HEAP32[(($bk55_i_i)>>2)]=$337;
+   label = 338; break;
+  case 321: 
+   var $343=$189;
+   var $shr58_i_i=$sub_ptr_sub_i_i >>> 8;
+   var $cmp59_i_i=($shr58_i_i|0)==0;
+   if ($cmp59_i_i) { var $I57_0_i_i = 0;label = 324; break; } else { label = 322; break; }
+  case 322: 
+   var $cmp63_i_i=($sub_ptr_sub_i_i>>>0) > 16777215;
+   if ($cmp63_i_i) { var $I57_0_i_i = 31;label = 324; break; } else { label = 323; break; }
+  case 323: 
+   var $sub67_i_i=((($shr58_i_i)+(1048320))|0);
+   var $shr68_i_i=$sub67_i_i >>> 16;
+   var $and69_i_i=$shr68_i_i & 8;
+   var $shl70_i_i=$shr58_i_i << $and69_i_i;
+   var $sub71_i_i=((($shl70_i_i)+(520192))|0);
+   var $shr72_i_i=$sub71_i_i >>> 16;
+   var $and73_i_i=$shr72_i_i & 4;
+   var $add74_i_i=$and73_i_i | $and69_i_i;
+   var $shl75_i_i=$shl70_i_i << $and73_i_i;
+   var $sub76_i_i=((($shl75_i_i)+(245760))|0);
+   var $shr77_i_i=$sub76_i_i >>> 16;
+   var $and78_i_i=$shr77_i_i & 2;
+   var $add79_i_i=$add74_i_i | $and78_i_i;
+   var $sub80_i_i=(((14)-($add79_i_i))|0);
+   var $shl81_i_i=$shl75_i_i << $and78_i_i;
+   var $shr82_i_i=$shl81_i_i >>> 15;
+   var $add83_i_i=((($sub80_i_i)+($shr82_i_i))|0);
+   var $shl84_i_i=$add83_i_i << 1;
+   var $add85_i_i=((($add83_i_i)+(7))|0);
+   var $shr86_i_i=$sub_ptr_sub_i_i >>> ($add85_i_i>>>0);
+   var $and87_i_i=$shr86_i_i & 1;
+   var $add88_i_i=$and87_i_i | $shl84_i_i;
+   var $I57_0_i_i = $add88_i_i;label = 324; break;
+  case 324: 
+   var $I57_0_i_i;
+   var $arrayidx91_i_i=((2184+($I57_0_i_i<<2))|0);
+   var $index_i_i=(($189+28)|0);
+   var $I57_0_c_i_i=$I57_0_i_i;
+   HEAP32[(($index_i_i)>>2)]=$I57_0_c_i_i;
+   var $arrayidx92_i_i=(($189+20)|0);
+   HEAP32[(($arrayidx92_i_i)>>2)]=0;
+   var $344=(($189+16)|0);
+   HEAP32[(($344)>>2)]=0;
+   var $345=HEAP32[((((1884)|0))>>2)];
+   var $shl95_i_i=1 << $I57_0_i_i;
+   var $and96_i_i=$345 & $shl95_i_i;
+   var $tobool97_i_i=($and96_i_i|0)==0;
+   if ($tobool97_i_i) { label = 325; break; } else { label = 326; break; }
+  case 325: 
+   var $or101_i_i=$345 | $shl95_i_i;
+   HEAP32[((((1884)|0))>>2)]=$or101_i_i;
+   HEAP32[(($arrayidx91_i_i)>>2)]=$343;
+   var $parent_i_i=(($189+24)|0);
+   var $_c_i_i=$arrayidx91_i_i;
+   HEAP32[(($parent_i_i)>>2)]=$_c_i_i;
+   var $bk102_i_i=(($189+12)|0);
+   HEAP32[(($bk102_i_i)>>2)]=$189;
+   var $fd103_i_i=(($189+8)|0);
+   HEAP32[(($fd103_i_i)>>2)]=$189;
+   label = 338; break;
+  case 326: 
+   var $346=HEAP32[(($arrayidx91_i_i)>>2)];
+   var $cmp106_i_i=($I57_0_i_i|0)==31;
+   if ($cmp106_i_i) { var $cond115_i_i = 0;label = 328; break; } else { label = 327; break; }
+  case 327: 
+   var $shr110_i_i=$I57_0_i_i >>> 1;
+   var $sub113_i_i=(((25)-($shr110_i_i))|0);
+   var $cond115_i_i = $sub113_i_i;label = 328; break;
+  case 328: 
+   var $cond115_i_i;
+   var $shl116_i_i=$sub_ptr_sub_i_i << $cond115_i_i;
+   var $K105_0_i_i = $shl116_i_i;var $T_0_i_i = $346;label = 329; break;
+  case 329: 
+   var $T_0_i_i;
+   var $K105_0_i_i;
+   var $head118_i_i=(($T_0_i_i+4)|0);
+   var $347=HEAP32[(($head118_i_i)>>2)];
+   var $and119_i_i=$347 & -8;
+   var $cmp120_i_i=($and119_i_i|0)==($sub_ptr_sub_i_i|0);
+   if ($cmp120_i_i) { label = 334; break; } else { label = 330; break; }
+  case 330: 
+   var $shr123_i_i=$K105_0_i_i >>> 31;
+   var $arrayidx126_i_i=(($T_0_i_i+16+($shr123_i_i<<2))|0);
+   var $348=HEAP32[(($arrayidx126_i_i)>>2)];
+   var $cmp128_i_i=($348|0)==0;
+   var $shl127_i_i=$K105_0_i_i << 1;
+   if ($cmp128_i_i) { label = 331; break; } else { var $K105_0_i_i = $shl127_i_i;var $T_0_i_i = $348;label = 329; break; }
+  case 331: 
+   var $349=$arrayidx126_i_i;
+   var $350=HEAP32[((((1896)|0))>>2)];
+   var $cmp133_i_i=($349>>>0) < ($350>>>0);
+   if ($cmp133_i_i) { label = 333; break; } else { label = 332; break; }
+  case 332: 
+   HEAP32[(($arrayidx126_i_i)>>2)]=$343;
+   var $parent138_i_i=(($189+24)|0);
+   var $T_0_c7_i_i=$T_0_i_i;
+   HEAP32[(($parent138_i_i)>>2)]=$T_0_c7_i_i;
+   var $bk139_i_i=(($189+12)|0);
+   HEAP32[(($bk139_i_i)>>2)]=$189;
+   var $fd140_i_i=(($189+8)|0);
+   HEAP32[(($fd140_i_i)>>2)]=$189;
+   label = 338; break;
+  case 333: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 334: 
+   var $fd145_i_i=(($T_0_i_i+8)|0);
+   var $351=HEAP32[(($fd145_i_i)>>2)];
+   var $352=$T_0_i_i;
+   var $353=HEAP32[((((1896)|0))>>2)];
+   var $cmp147_i_i=($352>>>0) < ($353>>>0);
+   if ($cmp147_i_i) { label = 337; break; } else { label = 335; break; }
+  case 335: 
+   var $354=$351;
+   var $cmp150_i_i=($354>>>0) < ($353>>>0);
+   if ($cmp150_i_i) { label = 337; break; } else { label = 336; break; }
+  case 336: 
+   var $bk155_i_i=(($351+12)|0);
+   HEAP32[(($bk155_i_i)>>2)]=$343;
+   HEAP32[(($fd145_i_i)>>2)]=$343;
+   var $fd157_i_i=(($189+8)|0);
+   var $_c6_i_i=$351;
+   HEAP32[(($fd157_i_i)>>2)]=$_c6_i_i;
+   var $bk158_i_i=(($189+12)|0);
+   var $T_0_c_i_i=$T_0_i_i;
+   HEAP32[(($bk158_i_i)>>2)]=$T_0_c_i_i;
+   var $parent159_i_i=(($189+24)|0);
+   HEAP32[(($parent159_i_i)>>2)]=0;
+   label = 338; break;
+  case 337: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 338: 
+   var $355=HEAP32[((((1892)|0))>>2)];
+   var $cmp250_i=($355>>>0) > ($nb_0>>>0);
+   if ($cmp250_i) { label = 339; break; } else { label = 340; break; }
+  case 339: 
+   var $sub253_i=((($355)-($nb_0))|0);
+   HEAP32[((((1892)|0))>>2)]=$sub253_i;
+   var $356=HEAP32[((((1904)|0))>>2)];
+   var $357=$356;
+   var $add_ptr255_i=(($357+$nb_0)|0);
+   var $358=$add_ptr255_i;
+   HEAP32[((((1904)|0))>>2)]=$358;
+   var $or257_i=$sub253_i | 1;
+   var $add_ptr255_sum_i=((($nb_0)+(4))|0);
+   var $head258_i=(($357+$add_ptr255_sum_i)|0);
+   var $359=$head258_i;
+   HEAP32[(($359)>>2)]=$or257_i;
+   var $or260_i=$nb_0 | 3;
+   var $head261_i=(($356+4)|0);
+   HEAP32[(($head261_i)>>2)]=$or260_i;
+   var $add_ptr262_i=(($356+8)|0);
+   var $360=$add_ptr262_i;
+   var $mem_0 = $360;label = 341; break;
+  case 340: 
+   var $call265_i=___errno_location();
+   HEAP32[(($call265_i)>>2)]=12;
+   var $mem_0 = 0;label = 341; break;
+  case 341: 
+   var $mem_0;
+   return $mem_0;
+  default: assert(0, "bad label: " + label);
+ }
+}
 Module["_malloc"] = _malloc;
+function _free($mem) {
+ var label = 0;
+ label = 1; 
+ while(1) switch(label) {
+  case 1: 
+   var $cmp=($mem|0)==0;
+   if ($cmp) { label = 140; break; } else { label = 2; break; }
+  case 2: 
+   var $add_ptr=((($mem)-(8))|0);
+   var $0=$add_ptr;
+   var $1=HEAP32[((((1896)|0))>>2)];
+   var $cmp1=($add_ptr>>>0) < ($1>>>0);
+   if ($cmp1) { label = 139; break; } else { label = 3; break; }
+  case 3: 
+   var $head=((($mem)-(4))|0);
+   var $2=$head;
+   var $3=HEAP32[(($2)>>2)];
+   var $and=$3 & 3;
+   var $cmp2=($and|0)==1;
+   if ($cmp2) { label = 139; break; } else { label = 4; break; }
+  case 4: 
+   var $and5=$3 & -8;
+   var $add_ptr_sum=((($and5)-(8))|0);
+   var $add_ptr6=(($mem+$add_ptr_sum)|0);
+   var $4=$add_ptr6;
+   var $and8=$3 & 1;
+   var $tobool9=($and8|0)==0;
+   if ($tobool9) { label = 5; break; } else { var $p_0 = $0;var $psize_0 = $and5;label = 56; break; }
+  case 5: 
+   var $prev_foot=$add_ptr;
+   var $5=HEAP32[(($prev_foot)>>2)];
+   var $cmp13=($and|0)==0;
+   if ($cmp13) { label = 140; break; } else { label = 6; break; }
+  case 6: 
+   var $add_ptr_sum231=(((-8)-($5))|0);
+   var $add_ptr16=(($mem+$add_ptr_sum231)|0);
+   var $6=$add_ptr16;
+   var $add17=((($5)+($and5))|0);
+   var $cmp18=($add_ptr16>>>0) < ($1>>>0);
+   if ($cmp18) { label = 139; break; } else { label = 7; break; }
+  case 7: 
+   var $7=HEAP32[((((1900)|0))>>2)];
+   var $cmp22=($6|0)==($7|0);
+   if ($cmp22) { label = 54; break; } else { label = 8; break; }
+  case 8: 
+   var $shr=$5 >>> 3;
+   var $cmp25=($5>>>0) < 256;
+   if ($cmp25) { label = 9; break; } else { label = 21; break; }
+  case 9: 
+   var $add_ptr16_sum268=((($add_ptr_sum231)+(8))|0);
+   var $fd=(($mem+$add_ptr16_sum268)|0);
+   var $8=$fd;
+   var $9=HEAP32[(($8)>>2)];
+   var $add_ptr16_sum269=((($add_ptr_sum231)+(12))|0);
+   var $bk=(($mem+$add_ptr16_sum269)|0);
+   var $10=$bk;
+   var $11=HEAP32[(($10)>>2)];
+   var $shl=$shr << 1;
+   var $arrayidx=((1920+($shl<<2))|0);
+   var $12=$arrayidx;
+   var $cmp29=($9|0)==($12|0);
+   if ($cmp29) { label = 12; break; } else { label = 10; break; }
+  case 10: 
+   var $13=$9;
+   var $cmp31=($13>>>0) < ($1>>>0);
+   if ($cmp31) { label = 20; break; } else { label = 11; break; }
+  case 11: 
+   var $bk34=(($9+12)|0);
+   var $14=HEAP32[(($bk34)>>2)];
+   var $cmp35=($14|0)==($6|0);
+   if ($cmp35) { label = 12; break; } else { label = 20; break; }
+  case 12: 
+   var $cmp42=($11|0)==($9|0);
+   if ($cmp42) { label = 13; break; } else { label = 14; break; }
+  case 13: 
+   var $shl45=1 << $shr;
+   var $neg=$shl45 ^ -1;
+   var $15=HEAP32[((((1880)|0))>>2)];
+   var $and46=$15 & $neg;
+   HEAP32[((((1880)|0))>>2)]=$and46;
+   var $p_0 = $6;var $psize_0 = $add17;label = 56; break;
+  case 14: 
+   var $cmp50=($11|0)==($12|0);
+   if ($cmp50) { label = 15; break; } else { label = 16; break; }
+  case 15: 
+   var $fd67_pre=(($11+8)|0);
+   var $fd67_pre_phi = $fd67_pre;label = 18; break;
+  case 16: 
+   var $16=$11;
+   var $cmp53=($16>>>0) < ($1>>>0);
+   if ($cmp53) { label = 19; break; } else { label = 17; break; }
+  case 17: 
+   var $fd56=(($11+8)|0);
+   var $17=HEAP32[(($fd56)>>2)];
+   var $cmp57=($17|0)==($6|0);
+   if ($cmp57) { var $fd67_pre_phi = $fd56;label = 18; break; } else { label = 19; break; }
+  case 18: 
+   var $fd67_pre_phi;
+   var $bk66=(($9+12)|0);
+   HEAP32[(($bk66)>>2)]=$11;
+   HEAP32[(($fd67_pre_phi)>>2)]=$9;
+   var $p_0 = $6;var $psize_0 = $add17;label = 56; break;
+  case 19: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 20: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 21: 
+   var $18=$add_ptr16;
+   var $add_ptr16_sum260=((($add_ptr_sum231)+(24))|0);
+   var $parent=(($mem+$add_ptr16_sum260)|0);
+   var $19=$parent;
+   var $20=HEAP32[(($19)>>2)];
+   var $add_ptr16_sum261=((($add_ptr_sum231)+(12))|0);
+   var $bk73=(($mem+$add_ptr16_sum261)|0);
+   var $21=$bk73;
+   var $22=HEAP32[(($21)>>2)];
+   var $cmp74=($22|0)==($18|0);
+   if ($cmp74) { label = 27; break; } else { label = 22; break; }
+  case 22: 
+   var $add_ptr16_sum265=((($add_ptr_sum231)+(8))|0);
+   var $fd78=(($mem+$add_ptr16_sum265)|0);
+   var $23=$fd78;
+   var $24=HEAP32[(($23)>>2)];
+   var $25=$24;
+   var $cmp80=($25>>>0) < ($1>>>0);
+   if ($cmp80) { label = 26; break; } else { label = 23; break; }
+  case 23: 
+   var $bk82=(($24+12)|0);
+   var $26=HEAP32[(($bk82)>>2)];
+   var $cmp83=($26|0)==($18|0);
+   if ($cmp83) { label = 24; break; } else { label = 26; break; }
+  case 24: 
+   var $fd86=(($22+8)|0);
+   var $27=HEAP32[(($fd86)>>2)];
+   var $cmp87=($27|0)==($18|0);
+   if ($cmp87) { label = 25; break; } else { label = 26; break; }
+  case 25: 
+   HEAP32[(($bk82)>>2)]=$22;
+   HEAP32[(($fd86)>>2)]=$24;
+   var $R_1 = $22;label = 34; break;
+  case 26: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 27: 
+   var $child_sum=((($add_ptr_sum231)+(20))|0);
+   var $arrayidx99=(($mem+$child_sum)|0);
+   var $28=$arrayidx99;
+   var $29=HEAP32[(($28)>>2)];
+   var $cmp100=($29|0)==0;
+   if ($cmp100) { label = 28; break; } else { var $R_0 = $29;var $RP_0 = $28;label = 29; break; }
+  case 28: 
+   var $add_ptr16_sum262=((($add_ptr_sum231)+(16))|0);
+   var $child=(($mem+$add_ptr16_sum262)|0);
+   var $arrayidx103=$child;
+   var $30=HEAP32[(($arrayidx103)>>2)];
+   var $cmp104=($30|0)==0;
+   if ($cmp104) { var $R_1 = 0;label = 34; break; } else { var $R_0 = $30;var $RP_0 = $arrayidx103;label = 29; break; }
+  case 29: 
+   var $RP_0;
+   var $R_0;
+   var $arrayidx108=(($R_0+20)|0);
+   var $31=HEAP32[(($arrayidx108)>>2)];
+   var $cmp109=($31|0)==0;
+   if ($cmp109) { label = 30; break; } else { var $R_0 = $31;var $RP_0 = $arrayidx108;label = 29; break; }
+  case 30: 
+   var $arrayidx113=(($R_0+16)|0);
+   var $32=HEAP32[(($arrayidx113)>>2)];
+   var $cmp114=($32|0)==0;
+   if ($cmp114) { label = 31; break; } else { var $R_0 = $32;var $RP_0 = $arrayidx113;label = 29; break; }
+  case 31: 
+   var $33=$RP_0;
+   var $cmp118=($33>>>0) < ($1>>>0);
+   if ($cmp118) { label = 33; break; } else { label = 32; break; }
+  case 32: 
+   HEAP32[(($RP_0)>>2)]=0;
+   var $R_1 = $R_0;label = 34; break;
+  case 33: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 34: 
+   var $R_1;
+   var $cmp127=($20|0)==0;
+   if ($cmp127) { var $p_0 = $6;var $psize_0 = $add17;label = 56; break; } else { label = 35; break; }
+  case 35: 
+   var $add_ptr16_sum263=((($add_ptr_sum231)+(28))|0);
+   var $index=(($mem+$add_ptr16_sum263)|0);
+   var $34=$index;
+   var $35=HEAP32[(($34)>>2)];
+   var $arrayidx130=((2184+($35<<2))|0);
+   var $36=HEAP32[(($arrayidx130)>>2)];
+   var $cmp131=($18|0)==($36|0);
+   if ($cmp131) { label = 36; break; } else { label = 38; break; }
+  case 36: 
+   HEAP32[(($arrayidx130)>>2)]=$R_1;
+   var $cond278=($R_1|0)==0;
+   if ($cond278) { label = 37; break; } else { label = 44; break; }
+  case 37: 
+   var $37=HEAP32[(($34)>>2)];
+   var $shl138=1 << $37;
+   var $neg139=$shl138 ^ -1;
+   var $38=HEAP32[((((1884)|0))>>2)];
+   var $and140=$38 & $neg139;
+   HEAP32[((((1884)|0))>>2)]=$and140;
+   var $p_0 = $6;var $psize_0 = $add17;label = 56; break;
+  case 38: 
+   var $39=$20;
+   var $40=HEAP32[((((1896)|0))>>2)];
+   var $cmp143=($39>>>0) < ($40>>>0);
+   if ($cmp143) { label = 42; break; } else { label = 39; break; }
+  case 39: 
+   var $arrayidx149=(($20+16)|0);
+   var $41=HEAP32[(($arrayidx149)>>2)];
+   var $cmp150=($41|0)==($18|0);
+   if ($cmp150) { label = 40; break; } else { label = 41; break; }
+  case 40: 
+   HEAP32[(($arrayidx149)>>2)]=$R_1;
+   label = 43; break;
+  case 41: 
+   var $arrayidx157=(($20+20)|0);
+   HEAP32[(($arrayidx157)>>2)]=$R_1;
+   label = 43; break;
+  case 42: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 43: 
+   var $cmp162=($R_1|0)==0;
+   if ($cmp162) { var $p_0 = $6;var $psize_0 = $add17;label = 56; break; } else { label = 44; break; }
+  case 44: 
+   var $42=$R_1;
+   var $43=HEAP32[((((1896)|0))>>2)];
+   var $cmp165=($42>>>0) < ($43>>>0);
+   if ($cmp165) { label = 53; break; } else { label = 45; break; }
+  case 45: 
+   var $parent170=(($R_1+24)|0);
+   HEAP32[(($parent170)>>2)]=$20;
+   var $add_ptr16_sum264=((($add_ptr_sum231)+(16))|0);
+   var $child171=(($mem+$add_ptr16_sum264)|0);
+   var $arrayidx172=$child171;
+   var $44=HEAP32[(($arrayidx172)>>2)];
+   var $cmp173=($44|0)==0;
+   if ($cmp173) { label = 49; break; } else { label = 46; break; }
+  case 46: 
+   var $45=$44;
+   var $46=HEAP32[((((1896)|0))>>2)];
+   var $cmp176=($45>>>0) < ($46>>>0);
+   if ($cmp176) { label = 48; break; } else { label = 47; break; }
+  case 47: 
+   var $arrayidx182=(($R_1+16)|0);
+   HEAP32[(($arrayidx182)>>2)]=$44;
+   var $parent183=(($44+24)|0);
+   HEAP32[(($parent183)>>2)]=$R_1;
+   label = 49; break;
+  case 48: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 49: 
+   var $child171_sum=((($add_ptr_sum231)+(20))|0);
+   var $arrayidx188=(($mem+$child171_sum)|0);
+   var $47=$arrayidx188;
+   var $48=HEAP32[(($47)>>2)];
+   var $cmp189=($48|0)==0;
+   if ($cmp189) { var $p_0 = $6;var $psize_0 = $add17;label = 56; break; } else { label = 50; break; }
+  case 50: 
+   var $49=$48;
+   var $50=HEAP32[((((1896)|0))>>2)];
+   var $cmp192=($49>>>0) < ($50>>>0);
+   if ($cmp192) { label = 52; break; } else { label = 51; break; }
+  case 51: 
+   var $arrayidx198=(($R_1+20)|0);
+   HEAP32[(($arrayidx198)>>2)]=$48;
+   var $parent199=(($48+24)|0);
+   HEAP32[(($parent199)>>2)]=$R_1;
+   var $p_0 = $6;var $psize_0 = $add17;label = 56; break;
+  case 52: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 53: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 54: 
+   var $add_ptr6_sum=((($and5)-(4))|0);
+   var $head209=(($mem+$add_ptr6_sum)|0);
+   var $51=$head209;
+   var $52=HEAP32[(($51)>>2)];
+   var $and210=$52 & 3;
+   var $cmp211=($and210|0)==3;
+   if ($cmp211) { label = 55; break; } else { var $p_0 = $6;var $psize_0 = $add17;label = 56; break; }
+  case 55: 
+   HEAP32[((((1888)|0))>>2)]=$add17;
+   var $53=HEAP32[(($51)>>2)];
+   var $and215=$53 & -2;
+   HEAP32[(($51)>>2)]=$and215;
+   var $or=$add17 | 1;
+   var $add_ptr16_sum=((($add_ptr_sum231)+(4))|0);
+   var $head216=(($mem+$add_ptr16_sum)|0);
+   var $54=$head216;
+   HEAP32[(($54)>>2)]=$or;
+   var $prev_foot218=$add_ptr6;
+   HEAP32[(($prev_foot218)>>2)]=$add17;
+   label = 140; break;
+  case 56: 
+   var $psize_0;
+   var $p_0;
+   var $55=$p_0;
+   var $cmp225=($55>>>0) < ($add_ptr6>>>0);
+   if ($cmp225) { label = 57; break; } else { label = 139; break; }
+  case 57: 
+   var $add_ptr6_sum258=((($and5)-(4))|0);
+   var $head228=(($mem+$add_ptr6_sum258)|0);
+   var $56=$head228;
+   var $57=HEAP32[(($56)>>2)];
+   var $and229=$57 & 1;
+   var $phitmp=($and229|0)==0;
+   if ($phitmp) { label = 139; break; } else { label = 58; break; }
+  case 58: 
+   var $and237=$57 & 2;
+   var $tobool238=($and237|0)==0;
+   if ($tobool238) { label = 59; break; } else { label = 112; break; }
+  case 59: 
+   var $58=HEAP32[((((1904)|0))>>2)];
+   var $cmp240=($4|0)==($58|0);
+   if ($cmp240) { label = 60; break; } else { label = 62; break; }
+  case 60: 
+   var $59=HEAP32[((((1892)|0))>>2)];
+   var $add243=((($59)+($psize_0))|0);
+   HEAP32[((((1892)|0))>>2)]=$add243;
+   HEAP32[((((1904)|0))>>2)]=$p_0;
+   var $or244=$add243 | 1;
+   var $head245=(($p_0+4)|0);
+   HEAP32[(($head245)>>2)]=$or244;
+   var $60=HEAP32[((((1900)|0))>>2)];
+   var $cmp246=($p_0|0)==($60|0);
+   if ($cmp246) { label = 61; break; } else { label = 140; break; }
+  case 61: 
+   HEAP32[((((1900)|0))>>2)]=0;
+   HEAP32[((((1888)|0))>>2)]=0;
+   label = 140; break;
+  case 62: 
+   var $61=HEAP32[((((1900)|0))>>2)];
+   var $cmp251=($4|0)==($61|0);
+   if ($cmp251) { label = 63; break; } else { label = 64; break; }
+  case 63: 
+   var $62=HEAP32[((((1888)|0))>>2)];
+   var $add254=((($62)+($psize_0))|0);
+   HEAP32[((((1888)|0))>>2)]=$add254;
+   HEAP32[((((1900)|0))>>2)]=$p_0;
+   var $or255=$add254 | 1;
+   var $head256=(($p_0+4)|0);
+   HEAP32[(($head256)>>2)]=$or255;
+   var $add_ptr257=(($55+$add254)|0);
+   var $prev_foot258=$add_ptr257;
+   HEAP32[(($prev_foot258)>>2)]=$add254;
+   label = 140; break;
+  case 64: 
+   var $and261=$57 & -8;
+   var $add262=((($and261)+($psize_0))|0);
+   var $shr263=$57 >>> 3;
+   var $cmp264=($57>>>0) < 256;
+   if ($cmp264) { label = 65; break; } else { label = 77; break; }
+  case 65: 
+   var $fd268=(($mem+$and5)|0);
+   var $63=$fd268;
+   var $64=HEAP32[(($63)>>2)];
+   var $add_ptr6_sum252253=$and5 | 4;
+   var $bk270=(($mem+$add_ptr6_sum252253)|0);
+   var $65=$bk270;
+   var $66=HEAP32[(($65)>>2)];
+   var $shl273=$shr263 << 1;
+   var $arrayidx274=((1920+($shl273<<2))|0);
+   var $67=$arrayidx274;
+   var $cmp275=($64|0)==($67|0);
+   if ($cmp275) { label = 68; break; } else { label = 66; break; }
+  case 66: 
+   var $68=$64;
+   var $69=HEAP32[((((1896)|0))>>2)];
+   var $cmp278=($68>>>0) < ($69>>>0);
+   if ($cmp278) { label = 76; break; } else { label = 67; break; }
+  case 67: 
+   var $bk281=(($64+12)|0);
+   var $70=HEAP32[(($bk281)>>2)];
+   var $cmp282=($70|0)==($4|0);
+   if ($cmp282) { label = 68; break; } else { label = 76; break; }
+  case 68: 
+   var $cmp291=($66|0)==($64|0);
+   if ($cmp291) { label = 69; break; } else { label = 70; break; }
+  case 69: 
+   var $shl294=1 << $shr263;
+   var $neg295=$shl294 ^ -1;
+   var $71=HEAP32[((((1880)|0))>>2)];
+   var $and296=$71 & $neg295;
+   HEAP32[((((1880)|0))>>2)]=$and296;
+   label = 110; break;
+  case 70: 
+   var $cmp300=($66|0)==($67|0);
+   if ($cmp300) { label = 71; break; } else { label = 72; break; }
+  case 71: 
+   var $fd317_pre=(($66+8)|0);
+   var $fd317_pre_phi = $fd317_pre;label = 74; break;
+  case 72: 
+   var $72=$66;
+   var $73=HEAP32[((((1896)|0))>>2)];
+   var $cmp303=($72>>>0) < ($73>>>0);
+   if ($cmp303) { label = 75; break; } else { label = 73; break; }
+  case 73: 
+   var $fd306=(($66+8)|0);
+   var $74=HEAP32[(($fd306)>>2)];
+   var $cmp307=($74|0)==($4|0);
+   if ($cmp307) { var $fd317_pre_phi = $fd306;label = 74; break; } else { label = 75; break; }
+  case 74: 
+   var $fd317_pre_phi;
+   var $bk316=(($64+12)|0);
+   HEAP32[(($bk316)>>2)]=$66;
+   HEAP32[(($fd317_pre_phi)>>2)]=$64;
+   label = 110; break;
+  case 75: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 76: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 77: 
+   var $75=$add_ptr6;
+   var $add_ptr6_sum233=((($and5)+(16))|0);
+   var $parent326=(($mem+$add_ptr6_sum233)|0);
+   var $76=$parent326;
+   var $77=HEAP32[(($76)>>2)];
+   var $add_ptr6_sum234235=$and5 | 4;
+   var $bk328=(($mem+$add_ptr6_sum234235)|0);
+   var $78=$bk328;
+   var $79=HEAP32[(($78)>>2)];
+   var $cmp329=($79|0)==($75|0);
+   if ($cmp329) { label = 83; break; } else { label = 78; break; }
+  case 78: 
+   var $fd333=(($mem+$and5)|0);
+   var $80=$fd333;
+   var $81=HEAP32[(($80)>>2)];
+   var $82=$81;
+   var $83=HEAP32[((((1896)|0))>>2)];
+   var $cmp335=($82>>>0) < ($83>>>0);
+   if ($cmp335) { label = 82; break; } else { label = 79; break; }
+  case 79: 
+   var $bk338=(($81+12)|0);
+   var $84=HEAP32[(($bk338)>>2)];
+   var $cmp339=($84|0)==($75|0);
+   if ($cmp339) { label = 80; break; } else { label = 82; break; }
+  case 80: 
+   var $fd342=(($79+8)|0);
+   var $85=HEAP32[(($fd342)>>2)];
+   var $cmp343=($85|0)==($75|0);
+   if ($cmp343) { label = 81; break; } else { label = 82; break; }
+  case 81: 
+   HEAP32[(($bk338)>>2)]=$79;
+   HEAP32[(($fd342)>>2)]=$81;
+   var $R327_1 = $79;label = 90; break;
+  case 82: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 83: 
+   var $child356_sum=((($and5)+(12))|0);
+   var $arrayidx357=(($mem+$child356_sum)|0);
+   var $86=$arrayidx357;
+   var $87=HEAP32[(($86)>>2)];
+   var $cmp358=($87|0)==0;
+   if ($cmp358) { label = 84; break; } else { var $R327_0 = $87;var $RP355_0 = $86;label = 85; break; }
+  case 84: 
+   var $add_ptr6_sum236=((($and5)+(8))|0);
+   var $child356=(($mem+$add_ptr6_sum236)|0);
+   var $arrayidx362=$child356;
+   var $88=HEAP32[(($arrayidx362)>>2)];
+   var $cmp363=($88|0)==0;
+   if ($cmp363) { var $R327_1 = 0;label = 90; break; } else { var $R327_0 = $88;var $RP355_0 = $arrayidx362;label = 85; break; }
+  case 85: 
+   var $RP355_0;
+   var $R327_0;
+   var $arrayidx369=(($R327_0+20)|0);
+   var $89=HEAP32[(($arrayidx369)>>2)];
+   var $cmp370=($89|0)==0;
+   if ($cmp370) { label = 86; break; } else { var $R327_0 = $89;var $RP355_0 = $arrayidx369;label = 85; break; }
+  case 86: 
+   var $arrayidx374=(($R327_0+16)|0);
+   var $90=HEAP32[(($arrayidx374)>>2)];
+   var $cmp375=($90|0)==0;
+   if ($cmp375) { label = 87; break; } else { var $R327_0 = $90;var $RP355_0 = $arrayidx374;label = 85; break; }
+  case 87: 
+   var $91=$RP355_0;
+   var $92=HEAP32[((((1896)|0))>>2)];
+   var $cmp381=($91>>>0) < ($92>>>0);
+   if ($cmp381) { label = 89; break; } else { label = 88; break; }
+  case 88: 
+   HEAP32[(($RP355_0)>>2)]=0;
+   var $R327_1 = $R327_0;label = 90; break;
+  case 89: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 90: 
+   var $R327_1;
+   var $cmp390=($77|0)==0;
+   if ($cmp390) { label = 110; break; } else { label = 91; break; }
+  case 91: 
+   var $add_ptr6_sum246=((($and5)+(20))|0);
+   var $index394=(($mem+$add_ptr6_sum246)|0);
+   var $93=$index394;
+   var $94=HEAP32[(($93)>>2)];
+   var $arrayidx395=((2184+($94<<2))|0);
+   var $95=HEAP32[(($arrayidx395)>>2)];
+   var $cmp396=($75|0)==($95|0);
+   if ($cmp396) { label = 92; break; } else { label = 94; break; }
+  case 92: 
+   HEAP32[(($arrayidx395)>>2)]=$R327_1;
+   var $cond279=($R327_1|0)==0;
+   if ($cond279) { label = 93; break; } else { label = 100; break; }
+  case 93: 
+   var $96=HEAP32[(($93)>>2)];
+   var $shl403=1 << $96;
+   var $neg404=$shl403 ^ -1;
+   var $97=HEAP32[((((1884)|0))>>2)];
+   var $and405=$97 & $neg404;
+   HEAP32[((((1884)|0))>>2)]=$and405;
+   label = 110; break;
+  case 94: 
+   var $98=$77;
+   var $99=HEAP32[((((1896)|0))>>2)];
+   var $cmp408=($98>>>0) < ($99>>>0);
+   if ($cmp408) { label = 98; break; } else { label = 95; break; }
+  case 95: 
+   var $arrayidx414=(($77+16)|0);
+   var $100=HEAP32[(($arrayidx414)>>2)];
+   var $cmp415=($100|0)==($75|0);
+   if ($cmp415) { label = 96; break; } else { label = 97; break; }
+  case 96: 
+   HEAP32[(($arrayidx414)>>2)]=$R327_1;
+   label = 99; break;
+  case 97: 
+   var $arrayidx422=(($77+20)|0);
+   HEAP32[(($arrayidx422)>>2)]=$R327_1;
+   label = 99; break;
+  case 98: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 99: 
+   var $cmp427=($R327_1|0)==0;
+   if ($cmp427) { label = 110; break; } else { label = 100; break; }
+  case 100: 
+   var $101=$R327_1;
+   var $102=HEAP32[((((1896)|0))>>2)];
+   var $cmp430=($101>>>0) < ($102>>>0);
+   if ($cmp430) { label = 109; break; } else { label = 101; break; }
+  case 101: 
+   var $parent437=(($R327_1+24)|0);
+   HEAP32[(($parent437)>>2)]=$77;
+   var $add_ptr6_sum247=((($and5)+(8))|0);
+   var $child438=(($mem+$add_ptr6_sum247)|0);
+   var $arrayidx439=$child438;
+   var $103=HEAP32[(($arrayidx439)>>2)];
+   var $cmp440=($103|0)==0;
+   if ($cmp440) { label = 105; break; } else { label = 102; break; }
+  case 102: 
+   var $104=$103;
+   var $105=HEAP32[((((1896)|0))>>2)];
+   var $cmp443=($104>>>0) < ($105>>>0);
+   if ($cmp443) { label = 104; break; } else { label = 103; break; }
+  case 103: 
+   var $arrayidx449=(($R327_1+16)|0);
+   HEAP32[(($arrayidx449)>>2)]=$103;
+   var $parent450=(($103+24)|0);
+   HEAP32[(($parent450)>>2)]=$R327_1;
+   label = 105; break;
+  case 104: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 105: 
+   var $child438_sum=((($and5)+(12))|0);
+   var $arrayidx455=(($mem+$child438_sum)|0);
+   var $106=$arrayidx455;
+   var $107=HEAP32[(($106)>>2)];
+   var $cmp456=($107|0)==0;
+   if ($cmp456) { label = 110; break; } else { label = 106; break; }
+  case 106: 
+   var $108=$107;
+   var $109=HEAP32[((((1896)|0))>>2)];
+   var $cmp459=($108>>>0) < ($109>>>0);
+   if ($cmp459) { label = 108; break; } else { label = 107; break; }
+  case 107: 
+   var $arrayidx465=(($R327_1+20)|0);
+   HEAP32[(($arrayidx465)>>2)]=$107;
+   var $parent466=(($107+24)|0);
+   HEAP32[(($parent466)>>2)]=$R327_1;
+   label = 110; break;
+  case 108: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 109: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 110: 
+   var $or475=$add262 | 1;
+   var $head476=(($p_0+4)|0);
+   HEAP32[(($head476)>>2)]=$or475;
+   var $add_ptr477=(($55+$add262)|0);
+   var $prev_foot478=$add_ptr477;
+   HEAP32[(($prev_foot478)>>2)]=$add262;
+   var $110=HEAP32[((((1900)|0))>>2)];
+   var $cmp479=($p_0|0)==($110|0);
+   if ($cmp479) { label = 111; break; } else { var $psize_1 = $add262;label = 113; break; }
+  case 111: 
+   HEAP32[((((1888)|0))>>2)]=$add262;
+   label = 140; break;
+  case 112: 
+   var $and487=$57 & -2;
+   HEAP32[(($56)>>2)]=$and487;
+   var $or488=$psize_0 | 1;
+   var $head489=(($p_0+4)|0);
+   HEAP32[(($head489)>>2)]=$or488;
+   var $add_ptr490=(($55+$psize_0)|0);
+   var $prev_foot491=$add_ptr490;
+   HEAP32[(($prev_foot491)>>2)]=$psize_0;
+   var $psize_1 = $psize_0;label = 113; break;
+  case 113: 
+   var $psize_1;
+   var $shr493=$psize_1 >>> 3;
+   var $cmp494=($psize_1>>>0) < 256;
+   if ($cmp494) { label = 114; break; } else { label = 119; break; }
+  case 114: 
+   var $shl500=$shr493 << 1;
+   var $arrayidx501=((1920+($shl500<<2))|0);
+   var $111=$arrayidx501;
+   var $112=HEAP32[((((1880)|0))>>2)];
+   var $shl503=1 << $shr493;
+   var $and504=$112 & $shl503;
+   var $tobool505=($and504|0)==0;
+   if ($tobool505) { label = 115; break; } else { label = 116; break; }
+  case 115: 
+   var $or508=$112 | $shl503;
+   HEAP32[((((1880)|0))>>2)]=$or508;
+   var $arrayidx501_sum_pre=((($shl500)+(2))|0);
+   var $_pre=((1920+($arrayidx501_sum_pre<<2))|0);
+   var $F502_0 = $111;var $_pre_phi = $_pre;label = 118; break;
+  case 116: 
+   var $arrayidx501_sum245=((($shl500)+(2))|0);
+   var $113=((1920+($arrayidx501_sum245<<2))|0);
+   var $114=HEAP32[(($113)>>2)];
+   var $115=$114;
+   var $116=HEAP32[((((1896)|0))>>2)];
+   var $cmp511=($115>>>0) < ($116>>>0);
+   if ($cmp511) { label = 117; break; } else { var $F502_0 = $114;var $_pre_phi = $113;label = 118; break; }
+  case 117: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 118: 
+   var $_pre_phi;
+   var $F502_0;
+   HEAP32[(($_pre_phi)>>2)]=$p_0;
+   var $bk521=(($F502_0+12)|0);
+   HEAP32[(($bk521)>>2)]=$p_0;
+   var $fd522=(($p_0+8)|0);
+   HEAP32[(($fd522)>>2)]=$F502_0;
+   var $bk523=(($p_0+12)|0);
+   HEAP32[(($bk523)>>2)]=$111;
+   label = 140; break;
+  case 119: 
+   var $117=$p_0;
+   var $shr527=$psize_1 >>> 8;
+   var $cmp528=($shr527|0)==0;
+   if ($cmp528) { var $I526_0 = 0;label = 122; break; } else { label = 120; break; }
+  case 120: 
+   var $cmp532=($psize_1>>>0) > 16777215;
+   if ($cmp532) { var $I526_0 = 31;label = 122; break; } else { label = 121; break; }
+  case 121: 
+   var $sub=((($shr527)+(1048320))|0);
+   var $shr536=$sub >>> 16;
+   var $and537=$shr536 & 8;
+   var $shl538=$shr527 << $and537;
+   var $sub539=((($shl538)+(520192))|0);
+   var $shr540=$sub539 >>> 16;
+   var $and541=$shr540 & 4;
+   var $add542=$and541 | $and537;
+   var $shl543=$shl538 << $and541;
+   var $sub544=((($shl543)+(245760))|0);
+   var $shr545=$sub544 >>> 16;
+   var $and546=$shr545 & 2;
+   var $add547=$add542 | $and546;
+   var $sub548=(((14)-($add547))|0);
+   var $shl549=$shl543 << $and546;
+   var $shr550=$shl549 >>> 15;
+   var $add551=((($sub548)+($shr550))|0);
+   var $shl552=$add551 << 1;
+   var $add553=((($add551)+(7))|0);
+   var $shr554=$psize_1 >>> ($add553>>>0);
+   var $and555=$shr554 & 1;
+   var $add556=$and555 | $shl552;
+   var $I526_0 = $add556;label = 122; break;
+  case 122: 
+   var $I526_0;
+   var $arrayidx559=((2184+($I526_0<<2))|0);
+   var $index560=(($p_0+28)|0);
+   var $I526_0_c=$I526_0;
+   HEAP32[(($index560)>>2)]=$I526_0_c;
+   var $arrayidx562=(($p_0+20)|0);
+   HEAP32[(($arrayidx562)>>2)]=0;
+   var $118=(($p_0+16)|0);
+   HEAP32[(($118)>>2)]=0;
+   var $119=HEAP32[((((1884)|0))>>2)];
+   var $shl565=1 << $I526_0;
+   var $and566=$119 & $shl565;
+   var $tobool567=($and566|0)==0;
+   if ($tobool567) { label = 123; break; } else { label = 124; break; }
+  case 123: 
+   var $or570=$119 | $shl565;
+   HEAP32[((((1884)|0))>>2)]=$or570;
+   HEAP32[(($arrayidx559)>>2)]=$117;
+   var $parent571=(($p_0+24)|0);
+   var $_c=$arrayidx559;
+   HEAP32[(($parent571)>>2)]=$_c;
+   var $bk572=(($p_0+12)|0);
+   HEAP32[(($bk572)>>2)]=$p_0;
+   var $fd573=(($p_0+8)|0);
+   HEAP32[(($fd573)>>2)]=$p_0;
+   label = 136; break;
+  case 124: 
+   var $120=HEAP32[(($arrayidx559)>>2)];
+   var $cmp576=($I526_0|0)==31;
+   if ($cmp576) { var $cond = 0;label = 126; break; } else { label = 125; break; }
+  case 125: 
+   var $shr578=$I526_0 >>> 1;
+   var $sub581=(((25)-($shr578))|0);
+   var $cond = $sub581;label = 126; break;
+  case 126: 
+   var $cond;
+   var $shl582=$psize_1 << $cond;
+   var $K575_0 = $shl582;var $T_0 = $120;label = 127; break;
+  case 127: 
+   var $T_0;
+   var $K575_0;
+   var $head583=(($T_0+4)|0);
+   var $121=HEAP32[(($head583)>>2)];
+   var $and584=$121 & -8;
+   var $cmp585=($and584|0)==($psize_1|0);
+   if ($cmp585) { label = 132; break; } else { label = 128; break; }
+  case 128: 
+   var $shr588=$K575_0 >>> 31;
+   var $arrayidx591=(($T_0+16+($shr588<<2))|0);
+   var $122=HEAP32[(($arrayidx591)>>2)];
+   var $cmp593=($122|0)==0;
+   var $shl592=$K575_0 << 1;
+   if ($cmp593) { label = 129; break; } else { var $K575_0 = $shl592;var $T_0 = $122;label = 127; break; }
+  case 129: 
+   var $123=$arrayidx591;
+   var $124=HEAP32[((((1896)|0))>>2)];
+   var $cmp597=($123>>>0) < ($124>>>0);
+   if ($cmp597) { label = 131; break; } else { label = 130; break; }
+  case 130: 
+   HEAP32[(($arrayidx591)>>2)]=$117;
+   var $parent602=(($p_0+24)|0);
+   var $T_0_c242=$T_0;
+   HEAP32[(($parent602)>>2)]=$T_0_c242;
+   var $bk603=(($p_0+12)|0);
+   HEAP32[(($bk603)>>2)]=$p_0;
+   var $fd604=(($p_0+8)|0);
+   HEAP32[(($fd604)>>2)]=$p_0;
+   label = 136; break;
+  case 131: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 132: 
+   var $fd609=(($T_0+8)|0);
+   var $125=HEAP32[(($fd609)>>2)];
+   var $126=$T_0;
+   var $127=HEAP32[((((1896)|0))>>2)];
+   var $cmp610=($126>>>0) < ($127>>>0);
+   if ($cmp610) { label = 135; break; } else { label = 133; break; }
+  case 133: 
+   var $128=$125;
+   var $cmp613=($128>>>0) < ($127>>>0);
+   if ($cmp613) { label = 135; break; } else { label = 134; break; }
+  case 134: 
+   var $bk620=(($125+12)|0);
+   HEAP32[(($bk620)>>2)]=$117;
+   HEAP32[(($fd609)>>2)]=$117;
+   var $fd622=(($p_0+8)|0);
+   var $_c241=$125;
+   HEAP32[(($fd622)>>2)]=$_c241;
+   var $bk623=(($p_0+12)|0);
+   var $T_0_c=$T_0;
+   HEAP32[(($bk623)>>2)]=$T_0_c;
+   var $parent624=(($p_0+24)|0);
+   HEAP32[(($parent624)>>2)]=0;
+   label = 136; break;
+  case 135: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 136: 
+   var $129=HEAP32[((((1912)|0))>>2)];
+   var $dec=((($129)-(1))|0);
+   HEAP32[((((1912)|0))>>2)]=$dec;
+   var $cmp628=($dec|0)==0;
+   if ($cmp628) { var $sp_0_in_i = ((2336)|0);label = 137; break; } else { label = 140; break; }
+  case 137: 
+   var $sp_0_in_i;
+   var $sp_0_i=HEAP32[(($sp_0_in_i)>>2)];
+   var $cmp_i=($sp_0_i|0)==0;
+   var $next4_i=(($sp_0_i+8)|0);
+   if ($cmp_i) { label = 138; break; } else { var $sp_0_in_i = $next4_i;label = 137; break; }
+  case 138: 
+   HEAP32[((((1912)|0))>>2)]=-1;
+   label = 140; break;
+  case 139: 
+   _abort();
+   throw "Reached an unreachable!";
+  case 140: 
+   return;
+  default: assert(0, "bad label: " + label);
+ }
+}
 Module["_free"] = _free;
+// EMSCRIPTEN_END_FUNCS
+function _i64Add(a, b, c, d) {
+    /*
+      x = a + b*2^32
+      y = c + d*2^32
+      result = l + h*2^32
+    */
+    a = a|0; b = b|0; c = c|0; d = d|0;
+    var l = 0, h = 0;
+    l = (a + c)>>>0;
+    h = (b + d + (((l>>>0) < (a>>>0))|0))>>>0; // Add carry from low word to high word on overflow.
+    return tempRet0 = h,l|0;
+  }
+function _i64Subtract(a, b, c, d) {
+    a = a|0; b = b|0; c = c|0; d = d|0;
+    var l = 0, h = 0;
+    l = (a - c)>>>0;
+    h = (b - d)>>>0;
+    h = (b - d - (((c>>>0) > (a>>>0))|0))>>>0; // Borrow one from high word to low word on underflow.
+    return tempRet0 = h,l|0;
+  }
+function _bitshift64Shl(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = (high << bits) | ((low&(ander << (32 - bits))) >>> (32 - bits));
+      return low << bits;
+    }
+    tempRet0 = low << (bits - 32);
+    return 0;
+  }
+function _bitshift64Lshr(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = high >>> bits;
+      return (low >>> bits) | ((high&ander) << (32 - bits));
+    }
+    tempRet0 = 0;
+    return (high >>> (bits - 32))|0;
+  }
+function _bitshift64Ashr(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = high >> bits;
+      return (low >>> bits) | ((high&ander) << (32 - bits));
+    }
+    tempRet0 = (high|0) < 0 ? -1 : 0;
+    return (high >> (bits - 32))|0;
+  }
+function _llvm_ctlz_i32(x) {
+    x = x|0;
+    var ret = 0;
+    ret = HEAP8[(((ctlz_i8)+(x >>> 24))|0)];
+    if ((ret|0) < 8) return ret|0;
+    var ret = HEAP8[(((ctlz_i8)+((x >> 16)&0xff))|0)];
+    if ((ret|0) < 8) return (ret + 8)|0;
+    var ret = HEAP8[(((ctlz_i8)+((x >> 8)&0xff))|0)];
+    if ((ret|0) < 8) return (ret + 16)|0;
+    return (HEAP8[(((ctlz_i8)+(x&0xff))|0)] + 24)|0;
+  }
+/* PRE_ASM */ var ctlz_i8 = allocate([8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_DYNAMIC);
+function _llvm_cttz_i32(x) {
+    x = x|0;
+    var ret = 0;
+    ret = HEAP8[(((cttz_i8)+(x & 0xff))|0)];
+    if ((ret|0) < 8) return ret|0;
+    var ret = HEAP8[(((cttz_i8)+((x >> 8)&0xff))|0)];
+    if ((ret|0) < 8) return (ret + 8)|0;
+    var ret = HEAP8[(((cttz_i8)+((x >> 16)&0xff))|0)];
+    if ((ret|0) < 8) return (ret + 16)|0;
+    return (HEAP8[(((cttz_i8)+(x >>> 24))|0)] + 24)|0;
+  }
+/* PRE_ASM */ var cttz_i8 = allocate([8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0], "i8", ALLOC_DYNAMIC);
+// ======== compiled code from system/lib/compiler-rt , see readme therein
+function ___muldsi3($a, $b) {
+  $a = $a | 0;
+  $b = $b | 0;
+  var $1 = 0, $2 = 0, $3 = 0, $6 = 0, $8 = 0, $11 = 0, $12 = 0;
+  $1 = $a & 65535;
+  $2 = $b & 65535;
+  $3 = Math.imul($2, $1) | 0;
+  $6 = $a >>> 16;
+  $8 = ($3 >>> 16) + (Math.imul($2, $6) | 0) | 0;
+  $11 = $b >>> 16;
+  $12 = Math.imul($11, $1) | 0;
+  return (tempRet0 = (($8 >>> 16) + (Math.imul($11, $6) | 0) | 0) + ((($8 & 65535) + $12 | 0) >>> 16) | 0, 0 | ($8 + $12 << 16 | $3 & 65535)) | 0;
+}
+function ___divdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $1$0 = 0, $1$1 = 0, $2$0 = 0, $2$1 = 0, $4$0 = 0, $4$1 = 0, $6$0 = 0, $7$0 = 0, $7$1 = 0, $8$0 = 0, $10$0 = 0;
+  $1$0 = $a$1 >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $1$1 = (($a$1 | 0) < 0 ? -1 : 0) >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$0 = $b$1 >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$1 = (($b$1 | 0) < 0 ? -1 : 0) >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $4$0 = _i64Subtract($1$0 ^ $a$0, $1$1 ^ $a$1, $1$0, $1$1) | 0;
+  $4$1 = tempRet0;
+  $6$0 = _i64Subtract($2$0 ^ $b$0, $2$1 ^ $b$1, $2$0, $2$1) | 0;
+  $7$0 = $2$0 ^ $1$0;
+  $7$1 = $2$1 ^ $1$1;
+  $8$0 = ___udivmoddi4($4$0, $4$1, $6$0, tempRet0, 0) | 0;
+  $10$0 = _i64Subtract($8$0 ^ $7$0, tempRet0 ^ $7$1, $7$0, $7$1) | 0;
+  return (tempRet0 = tempRet0, $10$0) | 0;
+}
+function ___remdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $rem = 0, $1$0 = 0, $1$1 = 0, $2$0 = 0, $2$1 = 0, $4$0 = 0, $4$1 = 0, $6$0 = 0, $10$0 = 0, $10$1 = 0, __stackBase__ = 0;
+  __stackBase__ = STACKTOP;
+  STACKTOP = STACKTOP + 8 | 0;
+  $rem = __stackBase__ | 0;
+  $1$0 = $a$1 >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $1$1 = (($a$1 | 0) < 0 ? -1 : 0) >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$0 = $b$1 >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$1 = (($b$1 | 0) < 0 ? -1 : 0) >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $4$0 = _i64Subtract($1$0 ^ $a$0, $1$1 ^ $a$1, $1$0, $1$1) | 0;
+  $4$1 = tempRet0;
+  $6$0 = _i64Subtract($2$0 ^ $b$0, $2$1 ^ $b$1, $2$0, $2$1) | 0;
+  ___udivmoddi4($4$0, $4$1, $6$0, tempRet0, $rem) | 0;
+  $10$0 = _i64Subtract(HEAP32[$rem >> 2] ^ $1$0, HEAP32[$rem + 4 >> 2] ^ $1$1, $1$0, $1$1) | 0;
+  $10$1 = tempRet0;
+  STACKTOP = __stackBase__;
+  return (tempRet0 = $10$1, $10$0) | 0;
+}
+function ___muldi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $x_sroa_0_0_extract_trunc = 0, $y_sroa_0_0_extract_trunc = 0, $1$0 = 0, $1$1 = 0, $2 = 0;
+  $x_sroa_0_0_extract_trunc = $a$0;
+  $y_sroa_0_0_extract_trunc = $b$0;
+  $1$0 = ___muldsi3($x_sroa_0_0_extract_trunc, $y_sroa_0_0_extract_trunc) | 0;
+  $1$1 = tempRet0;
+  $2 = Math.imul($a$1, $y_sroa_0_0_extract_trunc) | 0;
+  return (tempRet0 = ((Math.imul($b$1, $x_sroa_0_0_extract_trunc) | 0) + $2 | 0) + $1$1 | $1$1 & 0, 0 | $1$0 & -1) | 0;
+}
+function ___udivdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $1$0 = 0;
+  $1$0 = ___udivmoddi4($a$0, $a$1, $b$0, $b$1, 0) | 0;
+  return (tempRet0 = tempRet0, $1$0) | 0;
+}
+function ___uremdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $rem = 0, __stackBase__ = 0;
+  __stackBase__ = STACKTOP;
+  STACKTOP = STACKTOP + 8 | 0;
+  $rem = __stackBase__ | 0;
+  ___udivmoddi4($a$0, $a$1, $b$0, $b$1, $rem) | 0;
+  STACKTOP = __stackBase__;
+  return (tempRet0 = HEAP32[$rem + 4 >> 2] | 0, HEAP32[$rem >> 2] | 0) | 0;
+}
+function ___udivmoddi4($a$0, $a$1, $b$0, $b$1, $rem) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  $rem = $rem | 0;
+  var $n_sroa_0_0_extract_trunc = 0, $n_sroa_1_4_extract_shift$0 = 0, $n_sroa_1_4_extract_trunc = 0, $d_sroa_0_0_extract_trunc = 0, $d_sroa_1_4_extract_shift$0 = 0, $d_sroa_1_4_extract_trunc = 0, $4 = 0, $17 = 0, $37 = 0, $49 = 0, $51 = 0, $57 = 0, $58 = 0, $66 = 0, $78 = 0, $86 = 0, $88 = 0, $89 = 0, $91 = 0, $92 = 0, $95 = 0, $105 = 0, $117 = 0, $119 = 0, $125 = 0, $126 = 0, $130 = 0, $q_sroa_1_1_ph = 0, $q_sroa_0_1_ph = 0, $r_sroa_1_1_ph = 0, $r_sroa_0_1_ph = 0, $sr_1_ph = 0, $d_sroa_0_0_insert_insert99$0 = 0, $d_sroa_0_0_insert_insert99$1 = 0, $137$0 = 0, $137$1 = 0, $carry_0203 = 0, $sr_1202 = 0, $r_sroa_0_1201 = 0, $r_sroa_1_1200 = 0, $q_sroa_0_1199 = 0, $q_sroa_1_1198 = 0, $147 = 0, $149 = 0, $r_sroa_0_0_insert_insert42$0 = 0, $r_sroa_0_0_insert_insert42$1 = 0, $150$1 = 0, $151$0 = 0, $152 = 0, $154$0 = 0, $r_sroa_0_0_extract_trunc = 0, $r_sroa_1_4_extract_trunc = 0, $155 = 0, $carry_0_lcssa$0 = 0, $carry_0_lcssa$1 = 0, $r_sroa_0_1_lcssa = 0, $r_sroa_1_1_lcssa = 0, $q_sroa_0_1_lcssa = 0, $q_sroa_1_1_lcssa = 0, $q_sroa_0_0_insert_ext75$0 = 0, $q_sroa_0_0_insert_ext75$1 = 0, $q_sroa_0_0_insert_insert77$1 = 0, $_0$0 = 0, $_0$1 = 0;
+  $n_sroa_0_0_extract_trunc = $a$0;
+  $n_sroa_1_4_extract_shift$0 = $a$1;
+  $n_sroa_1_4_extract_trunc = $n_sroa_1_4_extract_shift$0;
+  $d_sroa_0_0_extract_trunc = $b$0;
+  $d_sroa_1_4_extract_shift$0 = $b$1;
+  $d_sroa_1_4_extract_trunc = $d_sroa_1_4_extract_shift$0;
+  if (($n_sroa_1_4_extract_trunc | 0) == 0) {
+    $4 = ($rem | 0) != 0;
+    if (($d_sroa_1_4_extract_trunc | 0) == 0) {
+      if ($4) {
+        HEAP32[$rem >> 2] = ($n_sroa_0_0_extract_trunc >>> 0) % ($d_sroa_0_0_extract_trunc >>> 0);
+        HEAP32[$rem + 4 >> 2] = 0;
+      }
+      $_0$1 = 0;
+      $_0$0 = ($n_sroa_0_0_extract_trunc >>> 0) / ($d_sroa_0_0_extract_trunc >>> 0) >>> 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    } else {
+      if (!$4) {
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      HEAP32[$rem >> 2] = $a$0 & -1;
+      HEAP32[$rem + 4 >> 2] = $a$1 & 0;
+      $_0$1 = 0;
+      $_0$0 = 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    }
+  }
+  $17 = ($d_sroa_1_4_extract_trunc | 0) == 0;
+  do {
+    if (($d_sroa_0_0_extract_trunc | 0) == 0) {
+      if ($17) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = ($n_sroa_1_4_extract_trunc >>> 0) % ($d_sroa_0_0_extract_trunc >>> 0);
+          HEAP32[$rem + 4 >> 2] = 0;
+        }
+        $_0$1 = 0;
+        $_0$0 = ($n_sroa_1_4_extract_trunc >>> 0) / ($d_sroa_0_0_extract_trunc >>> 0) >>> 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      if (($n_sroa_0_0_extract_trunc | 0) == 0) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = 0;
+          HEAP32[$rem + 4 >> 2] = ($n_sroa_1_4_extract_trunc >>> 0) % ($d_sroa_1_4_extract_trunc >>> 0);
+        }
+        $_0$1 = 0;
+        $_0$0 = ($n_sroa_1_4_extract_trunc >>> 0) / ($d_sroa_1_4_extract_trunc >>> 0) >>> 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $37 = $d_sroa_1_4_extract_trunc - 1 | 0;
+      if (($37 & $d_sroa_1_4_extract_trunc | 0) == 0) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+          HEAP32[$rem + 4 >> 2] = $37 & $n_sroa_1_4_extract_trunc | $a$1 & 0;
+        }
+        $_0$1 = 0;
+        $_0$0 = $n_sroa_1_4_extract_trunc >>> ((_llvm_cttz_i32($d_sroa_1_4_extract_trunc | 0) | 0) >>> 0);
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $49 = _llvm_ctlz_i32($d_sroa_1_4_extract_trunc | 0) | 0;
+      $51 = $49 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+      if ($51 >>> 0 <= 30) {
+        $57 = $51 + 1 | 0;
+        $58 = 31 - $51 | 0;
+        $sr_1_ph = $57;
+        $r_sroa_0_1_ph = $n_sroa_1_4_extract_trunc << $58 | $n_sroa_0_0_extract_trunc >>> ($57 >>> 0);
+        $r_sroa_1_1_ph = $n_sroa_1_4_extract_trunc >>> ($57 >>> 0);
+        $q_sroa_0_1_ph = 0;
+        $q_sroa_1_1_ph = $n_sroa_0_0_extract_trunc << $58;
+        break;
+      }
+      if (($rem | 0) == 0) {
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+      HEAP32[$rem + 4 >> 2] = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+      $_0$1 = 0;
+      $_0$0 = 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    } else {
+      if (!$17) {
+        $117 = _llvm_ctlz_i32($d_sroa_1_4_extract_trunc | 0) | 0;
+        $119 = $117 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+        if ($119 >>> 0 <= 31) {
+          $125 = $119 + 1 | 0;
+          $126 = 31 - $119 | 0;
+          $130 = $119 - 31 >> 31;
+          $sr_1_ph = $125;
+          $r_sroa_0_1_ph = $n_sroa_0_0_extract_trunc >>> ($125 >>> 0) & $130 | $n_sroa_1_4_extract_trunc << $126;
+          $r_sroa_1_1_ph = $n_sroa_1_4_extract_trunc >>> ($125 >>> 0) & $130;
+          $q_sroa_0_1_ph = 0;
+          $q_sroa_1_1_ph = $n_sroa_0_0_extract_trunc << $126;
+          break;
+        }
+        if (($rem | 0) == 0) {
+          $_0$1 = 0;
+          $_0$0 = 0;
+          return (tempRet0 = $_0$1, $_0$0) | 0;
+        }
+        HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+        HEAP32[$rem + 4 >> 2] = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $66 = $d_sroa_0_0_extract_trunc - 1 | 0;
+      if (($66 & $d_sroa_0_0_extract_trunc | 0) != 0) {
+        $86 = (_llvm_ctlz_i32($d_sroa_0_0_extract_trunc | 0) | 0) + 33 | 0;
+        $88 = $86 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+        $89 = 64 - $88 | 0;
+        $91 = 32 - $88 | 0;
+        $92 = $91 >> 31;
+        $95 = $88 - 32 | 0;
+        $105 = $95 >> 31;
+        $sr_1_ph = $88;
+        $r_sroa_0_1_ph = $91 - 1 >> 31 & $n_sroa_1_4_extract_trunc >>> ($95 >>> 0) | ($n_sroa_1_4_extract_trunc << $91 | $n_sroa_0_0_extract_trunc >>> ($88 >>> 0)) & $105;
+        $r_sroa_1_1_ph = $105 & $n_sroa_1_4_extract_trunc >>> ($88 >>> 0);
+        $q_sroa_0_1_ph = $n_sroa_0_0_extract_trunc << $89 & $92;
+        $q_sroa_1_1_ph = ($n_sroa_1_4_extract_trunc << $89 | $n_sroa_0_0_extract_trunc >>> ($95 >>> 0)) & $92 | $n_sroa_0_0_extract_trunc << $91 & $88 - 33 >> 31;
+        break;
+      }
+      if (($rem | 0) != 0) {
+        HEAP32[$rem >> 2] = $66 & $n_sroa_0_0_extract_trunc;
+        HEAP32[$rem + 4 >> 2] = 0;
+      }
+      if (($d_sroa_0_0_extract_trunc | 0) == 1) {
+        $_0$1 = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+        $_0$0 = 0 | $a$0 & -1;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      } else {
+        $78 = _llvm_cttz_i32($d_sroa_0_0_extract_trunc | 0) | 0;
+        $_0$1 = 0 | $n_sroa_1_4_extract_trunc >>> ($78 >>> 0);
+        $_0$0 = $n_sroa_1_4_extract_trunc << 32 - $78 | $n_sroa_0_0_extract_trunc >>> ($78 >>> 0) | 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+    }
+  } while (0);
+  if (($sr_1_ph | 0) == 0) {
+    $q_sroa_1_1_lcssa = $q_sroa_1_1_ph;
+    $q_sroa_0_1_lcssa = $q_sroa_0_1_ph;
+    $r_sroa_1_1_lcssa = $r_sroa_1_1_ph;
+    $r_sroa_0_1_lcssa = $r_sroa_0_1_ph;
+    $carry_0_lcssa$1 = 0;
+    $carry_0_lcssa$0 = 0;
+  } else {
+    $d_sroa_0_0_insert_insert99$0 = 0 | $b$0 & -1;
+    $d_sroa_0_0_insert_insert99$1 = $d_sroa_1_4_extract_shift$0 | $b$1 & 0;
+    $137$0 = _i64Add($d_sroa_0_0_insert_insert99$0, $d_sroa_0_0_insert_insert99$1, -1, -1) | 0;
+    $137$1 = tempRet0;
+    $q_sroa_1_1198 = $q_sroa_1_1_ph;
+    $q_sroa_0_1199 = $q_sroa_0_1_ph;
+    $r_sroa_1_1200 = $r_sroa_1_1_ph;
+    $r_sroa_0_1201 = $r_sroa_0_1_ph;
+    $sr_1202 = $sr_1_ph;
+    $carry_0203 = 0;
+    while (1) {
+      $147 = $q_sroa_0_1199 >>> 31 | $q_sroa_1_1198 << 1;
+      $149 = $carry_0203 | $q_sroa_0_1199 << 1;
+      $r_sroa_0_0_insert_insert42$0 = 0 | ($r_sroa_0_1201 << 1 | $q_sroa_1_1198 >>> 31);
+      $r_sroa_0_0_insert_insert42$1 = $r_sroa_0_1201 >>> 31 | $r_sroa_1_1200 << 1 | 0;
+      _i64Subtract($137$0, $137$1, $r_sroa_0_0_insert_insert42$0, $r_sroa_0_0_insert_insert42$1) | 0;
+      $150$1 = tempRet0;
+      $151$0 = $150$1 >> 31 | (($150$1 | 0) < 0 ? -1 : 0) << 1;
+      $152 = $151$0 & 1;
+      $154$0 = _i64Subtract($r_sroa_0_0_insert_insert42$0, $r_sroa_0_0_insert_insert42$1, $151$0 & $d_sroa_0_0_insert_insert99$0, ((($150$1 | 0) < 0 ? -1 : 0) >> 31 | (($150$1 | 0) < 0 ? -1 : 0) << 1) & $d_sroa_0_0_insert_insert99$1) | 0;
+      $r_sroa_0_0_extract_trunc = $154$0;
+      $r_sroa_1_4_extract_trunc = tempRet0;
+      $155 = $sr_1202 - 1 | 0;
+      if (($155 | 0) == 0) {
+        break;
+      } else {
+        $q_sroa_1_1198 = $147;
+        $q_sroa_0_1199 = $149;
+        $r_sroa_1_1200 = $r_sroa_1_4_extract_trunc;
+        $r_sroa_0_1201 = $r_sroa_0_0_extract_trunc;
+        $sr_1202 = $155;
+        $carry_0203 = $152;
+      }
+    }
+    $q_sroa_1_1_lcssa = $147;
+    $q_sroa_0_1_lcssa = $149;
+    $r_sroa_1_1_lcssa = $r_sroa_1_4_extract_trunc;
+    $r_sroa_0_1_lcssa = $r_sroa_0_0_extract_trunc;
+    $carry_0_lcssa$1 = 0;
+    $carry_0_lcssa$0 = $152;
+  }
+  $q_sroa_0_0_insert_ext75$0 = $q_sroa_0_1_lcssa;
+  $q_sroa_0_0_insert_ext75$1 = 0;
+  $q_sroa_0_0_insert_insert77$1 = $q_sroa_1_1_lcssa | $q_sroa_0_0_insert_ext75$1;
+  if (($rem | 0) != 0) {
+    HEAP32[$rem >> 2] = 0 | $r_sroa_0_1_lcssa;
+    HEAP32[$rem + 4 >> 2] = $r_sroa_1_1_lcssa | 0;
+  }
+  $_0$1 = (0 | $q_sroa_0_0_insert_ext75$0) >>> 31 | $q_sroa_0_0_insert_insert77$1 << 1 | ($q_sroa_0_0_insert_ext75$1 << 1 | $q_sroa_0_0_insert_ext75$0 >>> 31) & 0 | $carry_0_lcssa$1;
+  $_0$0 = ($q_sroa_0_0_insert_ext75$0 << 1 | 0 >>> 31) & -2 | $carry_0_lcssa$0;
+  return (tempRet0 = $_0$1, $_0$0) | 0;
+}
+// =======================================================================
+// EMSCRIPTEN_END_FUNCS
 // TODO: strip out parts of this we do not need
 //======= begin closure i64 code =======
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
@@ -7232,6 +13758,22 @@ var i64Math = (function() { // Emscripten wrapper
 })();
 //======= end closure i64 code =======
 // === Auto-generated postamble setup entry stuff ===
+if (memoryInitializer) {
+  function applyData(data) {
+    HEAPU8.set(data, STATIC_BASE);
+  }
+  if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+    applyData(Module['readBinary'](memoryInitializer));
+  } else {
+    addRunDependency('memory initializer');
+    Browser.asyncLoad(memoryInitializer, function(data) {
+      applyData(data);
+      removeRunDependency('memory initializer');
+    }, function(data) {
+      throw 'could not load memory initializer ' + memoryInitializer;
+    });
+  }
+}
 function ExitStatus(status) {
   this.name = "ExitStatus";
   this.message = "Program terminated with exit(" + status + ")";
@@ -7241,6 +13783,13 @@ ExitStatus.prototype = new Error();
 ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
 var preloadStartTime = null;
+var calledMain = false;
+var calledRun = false;
+dependenciesFulfilled = function runCaller() {
+  // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
+  if (!calledRun && shouldRunNow) run();
+  if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
+}
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
@@ -7283,6 +13832,8 @@ Module['callMain'] = Module.callMain = function callMain(args) {
     } else {
       throw e;
     }
+  } finally {
+    calledMain = true;
   }
 }
 function run(args) {
@@ -7325,6 +13876,13 @@ function exit(status) {
   STACKTOP = initialStackTop;
   // exit the runtime
   exitRuntime();
+  // TODO We should handle this differently based on environment.
+  // In the browser, the best we can do is throw an exception
+  // to halt execution, but in node we could process.exit and
+  // I'd imagine SM shell would have something equivalent.
+  // This would let us set a proper exit status (which
+  // would be great for checking test exit statuses).
+  // https://github.com/kripken/emscripten/issues/1371
   // throw an exception to halt the current execution
   throw new ExitStatus(status);
 }
@@ -7401,7 +13959,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/reduce.data';
     var REMOTE_PACKAGE_NAME = 'reduce.data';
-    var PACKAGE_UUID = '6b2db6b7-4fc9-4639-b08b-dae1ab7143e3';
+    var PACKAGE_UUID = 'c24cac73-f814-40e7-b4aa-cd04fb25e0d1';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -7480,3 +14038,4 @@ if (Module['noInitialRun']) {
 run();
 // {{POST_RUN_ADDITIONS}}
 // {{MODULE_ADDITIONS}}
+//@ sourceMappingURL=reduce.js.map

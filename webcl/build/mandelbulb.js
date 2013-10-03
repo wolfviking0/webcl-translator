@@ -91,22 +91,25 @@ else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (typeof arguments != 'undefined') {
     Module['arguments'] = arguments;
   }
-  if (ENVIRONMENT_IS_WEB) {
+  if (typeof console !== 'undefined') {
     Module['print'] = function(x) {
       console.log(x);
     };
     Module['printErr'] = function(x) {
       console.log(x);
     };
-    this['Module'] = Module;
-  } else if (ENVIRONMENT_IS_WORKER) {
-    // We can do very little here...
+  } else {
+    // Probably a worker, and without console.log. We can do very little here...
     var TRY_USE_DUMP = false;
     Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
       dump(x);
     }) : (function(x) {
       // self.postMessage(x); // enable this if you want stdout to be sent as messages
     }));
+  }
+  if (ENVIRONMENT_IS_WEB) {
+    this['Module'] = Module;
+  } else {
     Module['load'] = importScripts;
   }
 }
@@ -161,8 +164,7 @@ var Runtime = {
     if (isNumber(target) && isNumber(quantum)) {
       return Math.ceil(target/quantum)*quantum;
     } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      var logg = log2(quantum);
-      return '((((' +target + ')+' + (quantum-1) + ')>>' + logg + ')<<' + logg + ')';
+      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
     }
     return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
   },
@@ -196,27 +198,24 @@ var Runtime = {
     var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
     return l + h;
   },
-  getNativeTypeSize: function (type, quantumSize) {
-    if (Runtime.QUANTUM_SIZE == 1) return 1;
-    var size = {
-      '%i1': 1,
-      '%i8': 1,
-      '%i16': 2,
-      '%i32': 4,
-      '%i64': 8,
-      "%float": 4,
-      "%double": 8
-    }['%'+type]; // add '%' since float and double confuse Closure compiler as keys, and also spidermonkey as a compiler will remove 's from '_i8' etc
-    if (!size) {
-      if (type.charAt(type.length-1) == '*') {
-        size = Runtime.QUANTUM_SIZE; // A pointer
-      } else if (type[0] == 'i') {
-        var bits = parseInt(type.substr(1));
-        assert(bits % 8 == 0);
-        size = bits/8;
+  getNativeTypeSize: function (type) {
+    switch (type) {
+      case 'i1': case 'i8': return 1;
+      case 'i16': return 2;
+      case 'i32': return 4;
+      case 'i64': return 8;
+      case 'float': return 4;
+      case 'double': return 8;
+      default: {
+        if (type[type.length-1] === '*') {
+          return Runtime.QUANTUM_SIZE; // A pointer
+        } else if (type[0] === 'i') {
+          var bits = parseInt(type.substr(1));
+          assert(bits % 8 === 0);
+          return bits/8;
+        }
       }
     }
-    return size;
   },
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
@@ -270,7 +269,11 @@ var Runtime = {
           // and it adds no size
           // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
           size = 0;
-          alignSize = type.alignSize || QUANTUM_SIZE;
+          if (Types.types[field]) {
+            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+          } else {
+            alignSize = type.alignSize || QUANTUM_SIZE;
+          }
         } else {
           size = Types.types[field].flatSize;
           alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
@@ -347,8 +350,9 @@ var Runtime = {
   addFunction: function (func) {
     var table = FUNCTION_TABLE;
     var ret = table.length;
+    assert(ret % 2 === 0);
     table.push(func);
-    table.push(0);
+    for (var i = 0; i < 2-1; i++) table.push(0);
     return ret;
   },
   removeFunction: function (index) {
@@ -425,11 +429,11 @@ var Runtime = {
       return ret;
     }
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = ((((STACKTOP)+7)>>3)<<3); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + size)|0;STATICTOP = ((((STATICTOP)+7)>>3)<<3); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + size)|0;DYNAMICTOP = ((((DYNAMICTOP)+7)>>3)<<3); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + size)|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + size)|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
   alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
-  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? (((low)>>>(0))+(((high)>>>(0))*4294967296)) : (((low)>>>(0))+(((high)|(0))*4294967296))); return ret; },
+  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((low>>>0)+((high>>>0)*4294967296)) : ((low>>>0)+((high|0)*4294967296))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
   __dummy__: 0
@@ -491,11 +495,10 @@ function ccallFunc(func, returnType, argTypes, args) {
   function toC(value, type) {
     if (type == 'string') {
       if (value === null || value === undefined || value === 0) return 0; // null string
-      if (!stack) stack = Runtime.stackSave();
-      var ret = Runtime.stackAlloc(value.length+1);
-      writeStringToMemory(value, ret);
-      return ret;
-    } else if (type == 'array') {
+      value = intArrayFromString(value);
+      type = 'array';
+    }
+    if (type == 'array') {
       if (!stack) stack = Runtime.stackSave();
       var ret = Runtime.stackAlloc(value.length);
       writeArrayToMemory(value, ret);
@@ -689,10 +692,76 @@ function Pointer_stringify(ptr, /* optional */ length) {
   return ret;
 }
 Module['Pointer_stringify'] = Pointer_stringify;
+// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF16ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var codeUnit = HEAP16[(((ptr)+(i*2))>>1)];
+    if (codeUnit == 0)
+      return str;
+    ++i;
+    // fromCharCode constructs a character from a UTF-16 code unit, so we can pass the UTF16 string right through.
+    str += String.fromCharCode(codeUnit);
+  }
+}
+Module['UTF16ToString'] = UTF16ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+function stringToUTF16(str, outPtr) {
+  for(var i = 0; i < str.length; ++i) {
+    // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
+    var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
+    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP16[(((outPtr)+(str.length*2))>>1)]=0
+}
+Module['stringToUTF16'] = stringToUTF16;
+// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF32ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var utf32 = HEAP32[(((ptr)+(i*4))>>2)];
+    if (utf32 == 0)
+      return str;
+    ++i;
+    // Gotcha: fromCharCode constructs a character from a UTF-16 encoded code (pair), not from a Unicode code point! So encode the code point to UTF-16 for constructing.
+    if (utf32 >= 0x10000) {
+      var ch = utf32 - 0x10000;
+      str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
+    } else {
+      str += String.fromCharCode(utf32);
+    }
+  }
+}
+Module['UTF32ToString'] = UTF32ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
+// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+function stringToUTF32(str, outPtr) {
+  var iChar = 0;
+  for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
+    // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code unit, not a Unicode code point of the character! We must decode the string to UTF-32 to the heap.
+    var codeUnit = str.charCodeAt(iCodeUnit); // possibly a lead surrogate
+    if (codeUnit >= 0xD800 && codeUnit <= 0xDFFF) {
+      var trailSurrogate = str.charCodeAt(++iCodeUnit);
+      codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
+    }
+    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit
+    ++iChar;
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP32[(((outPtr)+(iChar*4))>>2)]=0
+}
+Module['stringToUTF32'] = stringToUTF32;
 // Memory management
 var PAGE_SIZE = 4096;
 function alignMemoryPage(x) {
-  return ((x+4095)>>12)<<12;
+  return (x+4095)&-4096;
 }
 var HEAP;
 var HEAP8, HEAPU8, HEAP16, HEAPU16, HEAP32, HEAPU32, HEAPF32, HEAPF64;
@@ -707,7 +776,7 @@ var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 // Initialize the runtime's memory
 // check for full engine support (use string 'subarray' to avoid closure compiler confusion)
-assert(!!Int32Array && !!Float64Array && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
+assert(typeof Int32Array !== 'undefined' && typeof Float64Array !== 'undefined' && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
        'Cannot fallback to non-typed array case: Code is too specialized');
 var buffer = new ArrayBuffer(TOTAL_MEMORY);
 HEAP8 = new Int8Array(buffer);
@@ -849,6 +918,13 @@ function writeArrayToMemory(array, buffer) {
   }
 }
 Module['writeArrayToMemory'] = writeArrayToMemory;
+function writeAsciiToMemory(str, buffer, dontAddNull) {
+  for (var i = 0; i < str.length; i++) {
+    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i)
+  }
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0
+}
+Module['writeAsciiToMemory'] = writeAsciiToMemory;
 function unSign(value, bits, ignore, sig) {
   if (value >= 0) {
     return value;
@@ -886,8 +962,8 @@ Math.imul = Math['imul'];
 // the dependencies are met.
 var runDependencies = 0;
 var runDependencyTracking = {};
-var calledInit = false, calledRun = false;
 var runDependencyWatcher = null;
+var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
 function addRunDependency(id) {
   runDependencies++;
   if (Module['monitorRunDependencies']) {
@@ -916,31 +992,18 @@ function removeRunDependency(id) {
     if (runDependencyWatcher !== null) {
       clearInterval(runDependencyWatcher);
       runDependencyWatcher = null;
-    } 
-    // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
-    if (!calledRun && shouldRunNow) run();
+    }
+    if (dependenciesFulfilled) {
+      var callback = dependenciesFulfilled;
+      dependenciesFulfilled = null;
+      callback(); // can add another dependenciesFulfilled
+    }
   }
 }
 Module['removeRunDependency'] = removeRunDependency;
 Module["preloadedImages"] = {}; // maps url to image data
 Module["preloadedAudios"] = {}; // maps url to audio data
-function loadMemoryInitializer(filename) {
-  function applyData(data) {
-    HEAPU8.set(data, STATIC_BASE);
-  }
-  // always do this asynchronously, to keep shell and web as similar as possible
-  addOnPreRun(function() {
-    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
-      applyData(Module['readBinary'](filename));
-    } else {
-      Browser.asyncLoad(filename, function(data) {
-        applyData(data);
-      }, function(data) {
-        throw 'could not load memory initializer ' + filename;
-      });
-    }
-  });
-}
+var memoryInitializer = null;
 // === Body ===
 STATIC_BASE = 8;
 STATICTOP = STATIC_BASE + 3184;
@@ -1108,6 +1171,23 @@ function copyTempDouble(ptr) {
                 throw 'Invalid format (' + format + ')';
             }
             break;
+          case 0x1403 /* GL_UNSIGNED_SHORT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 2;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x1405 /* GL_UNSIGNED_INT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 4;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
+            sizePerPixel = 4;
+            break;
           case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
           case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
           case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
@@ -1135,6 +1215,8 @@ function copyTempDouble(ptr) {
           pixels = HEAPU8.subarray((pixels),(pixels+bytes));
         } else if (type == 0x1406 /* GL_FLOAT */) {
           pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
+        } else if (type == 0x1405 /* GL_UNSIGNED_INT */ || type == 0x84FA /* UNSIGNED_INT_24_8_WEBGL */) {
+          pixels = HEAPU32.subarray((pixels)>>2,(pixels+bytes)>>2);
         } else {
           pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
         }
@@ -1160,7 +1242,10 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
         GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
-      }};var CL={address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,webcl_mozilla:0,webcl_webkit:0,ctx:[],ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],devices:[],devices_clean:[],platforms:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
+        GL.depthTextureExt = Module.ctx.getExtension("WEBGL_depth_texture") ||
+                             Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
+                             Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
+      }};var CL={cl_elapsed_time:0,address_space:{GENERAL:0,GLOBAL:1,LOCAL:2,CONSTANT:4,PRIVATE:8},data_type:{FLOAT:16,INT:32,UINT:64},device_infos:{},index_object:0,webcl_mozilla:0,webcl_webkit:0,ctx:[],ctx_clean:[],cmdQueue:[],cmdQueue_clean:[],programs:[],programs_clean:[],kernels:[],kernels_name:[],kernels_sig:{},kernels_clean:[],buffers:[],buffers_clean:[],devices:[],devices_clean:[],platforms:[],errorMessage:"Unfortunately your system does not support WebCL. Make sure that you have both the OpenCL driver and the WebCL browser extension installed.",setupWebCLEnums:function () {
         // All the EnumName are CL.DEVICE_INFO / CL. .... on both browser.
         // Remove on Mozilla CL_ prefix on the EnumName
         for (var legacyEnumName in WebCL) {
@@ -1450,8 +1535,8 @@ function copyTempDouble(ptr) {
         return CL.catchError("clSetKernelArg",e);
       }
     }
-  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,EDOTDOT:76,EBADMSG:77,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
-  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"No message of desired type",36:"Identifier removed",37:"Channel number out of range",38:"Level 2 not synchronized",39:"Level 3 halted",40:"Level 3 reset",41:"Link number out of range",42:"Protocol driver not attached",43:"No CSI structure available",44:"Level 2 halted",45:"Deadlock condition",46:"No record locks available",50:"Invalid exchange",51:"Invalid request descriptor",52:"Exchange full",53:"No anode",54:"Invalid request code",55:"Invalid slot",56:"File locking deadlock error",57:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",74:"Multihop attempted",76:"Cross mount point (not really error)",77:"Trying to read unreadable message",80:"Given log. name not unique",81:"f.d. invalid for this operation",82:"Remote address changed",83:"Can   access a needed shared lib",84:"Accessing a corrupted shared lib",85:".lib section in a.out corrupted",86:"Attempting to link in too many libs",87:"Attempting to exec a shared library",88:"Function not implemented",90:"Directory not empty",91:"File or path name too long",92:"Too many symbolic links",95:"Operation not supported on transport endpoint",96:"Protocol family not supported",104:"Connection reset by peer",105:"No buffer space available",106:"Address family not supported by protocol family",107:"Protocol wrong type for socket",108:"Socket operation on non-socket",109:"Protocol not available",110:"Can't send after socket shutdown",111:"Connection refused",112:"Address already in use",113:"Connection aborted",114:"Network is unreachable",115:"Network interface is not configured",116:"Connection timed out",117:"Host is down",118:"Host is unreachable",119:"Connection already in progress",120:"Socket already connected",121:"Destination address required",122:"Message too long",123:"Unknown protocol",124:"Socket type not supported",125:"Address not available",126:"Connection reset by network",127:"Socket is already connected",128:"Socket is not connected",129:"Too many references",131:"Too many users",132:"Quota exceeded",133:"Stale file handle",134:"Not supported",135:"No medium (in tape drive)",138:"Illegal byte sequence",139:"Value too large for defined data type",140:"Operation canceled",141:"State not recoverable",142:"Previous owner died",143:"Streams pipe error"};
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:42,EIDRM:43,ECHRNG:44,EL2NSYNC:45,EL3HLT:46,EL3RST:47,ELNRNG:48,EUNATCH:49,ENOCSI:50,EL2HLT:51,EDEADLK:35,ENOLCK:37,EBADE:52,EBADR:53,EXFULL:54,ENOANO:55,EBADRQC:56,EBADSLT:57,EDEADLOCK:35,EBFONT:59,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:72,EDOTDOT:73,EBADMSG:74,ENOTUNIQ:76,EBADFD:77,EREMCHG:78,ELIBACC:79,ELIBBAD:80,ELIBSCN:81,ELIBMAX:82,ELIBEXEC:83,ENOSYS:38,ENOTEMPTY:39,ENAMETOOLONG:36,ELOOP:40,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:97,EPROTOTYPE:91,ENOTSOCK:88,ENOPROTOOPT:92,ESHUTDOWN:108,ECONNREFUSED:111,EADDRINUSE:98,ECONNABORTED:103,ENETUNREACH:101,ENETDOWN:100,ETIMEDOUT:110,EHOSTDOWN:112,EHOSTUNREACH:113,EINPROGRESS:115,EALREADY:114,EDESTADDRREQ:89,EMSGSIZE:90,EPROTONOSUPPORT:93,ESOCKTNOSUPPORT:94,EADDRNOTAVAIL:99,ENETRESET:102,EISCONN:106,ENOTCONN:107,ETOOMANYREFS:109,EUSERS:87,EDQUOT:122,ESTALE:116,ENOTSUP:95,ENOMEDIUM:123,EILSEQ:84,EOVERFLOW:75,ECANCELED:125,ENOTRECOVERABLE:131,EOWNERDEAD:130,ESTRPIPE:86};
+  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"File locking deadlock error",36:"File or path name too long",37:"No record locks available",38:"Function not implemented",39:"Directory not empty",40:"Too many symbolic links",42:"No message of desired type",43:"Identifier removed",44:"Channel number out of range",45:"Level 2 not synchronized",46:"Level 3 halted",47:"Level 3 reset",48:"Link number out of range",49:"Protocol driver not attached",50:"No CSI structure available",51:"Level 2 halted",52:"Invalid exchange",53:"Invalid request descriptor",54:"Exchange full",55:"No anode",56:"Invalid request code",57:"Invalid slot",59:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",72:"Multihop attempted",73:"Cross mount point (not really error)",74:"Trying to read unreadable message",75:"Value too large for defined data type",76:"Given log. name not unique",77:"f.d. invalid for this operation",78:"Remote address changed",79:"Can   access a needed shared lib",80:"Accessing a corrupted shared lib",81:".lib section in a.out corrupted",82:"Attempting to link in too many libs",83:"Attempting to exec a shared library",84:"Illegal byte sequence",86:"Streams pipe error",87:"Too many users",88:"Socket operation on non-socket",89:"Destination address required",90:"Message too long",91:"Protocol wrong type for socket",92:"Protocol not available",93:"Unknown protocol",94:"Socket type not supported",95:"Not supported",96:"Protocol family not supported",97:"Address family not supported by protocol family",98:"Address already in use",99:"Address not available",100:"Network interface is not configured",101:"Network is unreachable",102:"Connection reset by network",103:"Connection aborted",104:"Connection reset by peer",105:"No buffer space available",106:"Socket is already connected",107:"Socket is not connected",108:"Can't send after socket shutdown",109:"Too many references",110:"Connection timed out",111:"Connection refused",112:"Host is down",113:"Host is unreachable",114:"Socket already connected",115:"Connection already in progress",116:"Stale file handle",122:"Quota exceeded",123:"No medium (in tape drive)",125:"Operation canceled",130:"Previous owner died",131:"State not recoverable"};
   var ___errno_state=0;function ___setErrNo(value) {
       // For convenient setting and returning of errno.
       HEAP32[((___errno_state)>>2)]=value
@@ -1698,15 +1783,9 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,ensureFlexible:function (node) {
-        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
-          var contents = node.contents;
-          node.contents = Array.prototype.slice.call(contents);
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
-        }
-      },mount:function (mount) {
-        return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
-      },create_node:function (parent, name, mode, dev) {
+  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+        return MEMFS.createNode(null, '/', 16384 | 0777, 0);
+      },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
           // no supported
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
@@ -1763,6 +1842,12 @@ function copyTempDouble(ptr) {
           parent.contents[name] = node;
         }
         return node;
+      },ensureFlexible:function (node) {
+        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
+          var contents = node.contents;
+          node.contents = Array.prototype.slice.call(contents);
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+        }
       },node_ops:{getattr:function (node) {
           var attr = {};
           // device numbers reuse inode numbers.
@@ -1806,7 +1891,7 @@ function copyTempDouble(ptr) {
         },lookup:function (parent, name) {
           throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
         },mknod:function (parent, name, mode, dev) {
-          return MEMFS.create_node(parent, name, mode, dev);
+          return MEMFS.createNode(parent, name, mode, dev);
         },rename:function (old_node, new_dir, new_name) {
           // if we're overwriting a directory at new_name, make sure it's empty.
           if (FS.isDir(old_node.mode)) {
@@ -1843,7 +1928,7 @@ function copyTempDouble(ptr) {
           }
           return entries;
         },symlink:function (parent, newname, oldpath) {
-          var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
+          var node = MEMFS.createNode(parent, newname, 0777 | 40960, 0);
           node.link = oldpath;
           return node;
         },readlink:function (node) {
@@ -1853,7 +1938,10 @@ function copyTempDouble(ptr) {
           return node.link;
         }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
@@ -1914,7 +2002,7 @@ function copyTempDouble(ptr) {
           var allocated;
           var contents = stream.node.contents;
           // Only make a new copy when MAP_PRIVATE is specified.
-          if ( !(flags & 0x02) &&
+          if ( !(flags & 2) &&
                 (contents.buffer === buffer || contents.buffer === buffer.buffer) ) {
             // We can't emulate MAP_SHARED when the file is not backed by the buffer
             // we're mapping to (e.g. the HEAP buffer).
@@ -1938,6 +2026,386 @@ function copyTempDouble(ptr) {
           }
           return { ptr: ptr, allocated: allocated };
         }}};
+  var IDBFS={dbs:{},indexedDB:function () {
+        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
+        return MEMFS.mount.apply(null, arguments);
+      },syncfs:function (mount, populate, callback) {
+        IDBFS.getLocalSet(mount, function(err, local) {
+          if (err) return callback(err);
+          IDBFS.getRemoteSet(mount, function(err, remote) {
+            if (err) return callback(err);
+            var src = populate ? remote : local;
+            var dst = populate ? local : remote;
+            IDBFS.reconcile(src, dst, callback);
+          });
+        });
+      },reconcile:function (src, dst, callback) {
+        var total = 0;
+        var create = {};
+        for (var key in src.files) {
+          if (!src.files.hasOwnProperty(key)) continue;
+          var e = src.files[key];
+          var e2 = dst.files[key];
+          if (!e2 || e.timestamp > e2.timestamp) {
+            create[key] = e;
+            total++;
+          }
+        }
+        var remove = {};
+        for (var key in dst.files) {
+          if (!dst.files.hasOwnProperty(key)) continue;
+          var e = dst.files[key];
+          var e2 = src.files[key];
+          if (!e2) {
+            remove[key] = e;
+            total++;
+          }
+        }
+        if (!total) {
+          // early out
+          return callback(null);
+        }
+        var completed = 0;
+        var done = function(err) {
+          if (err) return callback(err);
+          if (++completed >= total) {
+            return callback(null);
+          }
+        };
+        // create a single transaction to handle and IDB reads / writes we'll need to do
+        var db = src.type === 'remote' ? src.db : dst.db;
+        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+        transaction.onerror = function() { callback(this.error); };
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+        for (var path in create) {
+          if (!create.hasOwnProperty(path)) continue;
+          var entry = create[path];
+          if (dst.type === 'local') {
+            // save file to local
+            try {
+              if (FS.isDir(entry.mode)) {
+                FS.mkdir(path, entry.mode);
+              } else if (FS.isFile(entry.mode)) {
+                var stream = FS.open(path, 'w+', 0666);
+                FS.write(stream, entry.contents, 0, entry.contents.length, 0, true /* canOwn */);
+                FS.close(stream);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // save file to IDB
+            var req = store.put(entry, path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+        for (var path in remove) {
+          if (!remove.hasOwnProperty(path)) continue;
+          var entry = remove[path];
+          if (dst.type === 'local') {
+            // delete file from local
+            try {
+              if (FS.isDir(entry.mode)) {
+                // TODO recursive delete?
+                FS.rmdir(path);
+              } else if (FS.isFile(entry.mode)) {
+                FS.unlink(path);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // delete file from IDB
+            var req = store.delete(path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+      },getLocalSet:function (mount, callback) {
+        var files = {};
+        var isRealDir = function(p) {
+          return p !== '.' && p !== '..';
+        };
+        var toAbsolute = function(root) {
+          return function(p) {
+            return PATH.join(root, p);
+          }
+        };
+        var check = FS.readdir(mount.mountpoint)
+          .filter(isRealDir)
+          .map(toAbsolute(mount.mountpoint));
+        while (check.length) {
+          var path = check.pop();
+          var stat, node;
+          try {
+            var lookup = FS.lookupPath(path);
+            node = lookup.node;
+            stat = FS.stat(path);
+          } catch (e) {
+            return callback(e);
+          }
+          if (FS.isDir(stat.mode)) {
+            check.push.apply(check, FS.readdir(path)
+              .filter(isRealDir)
+              .map(toAbsolute(path)));
+            files[path] = { mode: stat.mode, timestamp: stat.mtime };
+          } else if (FS.isFile(stat.mode)) {
+            files[path] = { contents: node.contents, mode: stat.mode, timestamp: stat.mtime };
+          } else {
+            return callback(new Error('node type not supported'));
+          }
+        }
+        return callback(null, { type: 'local', files: files });
+      },getDB:function (name, callback) {
+        // look it up in the cache
+        var db = IDBFS.dbs[name];
+        if (db) {
+          return callback(null, db);
+        }
+        var req;
+        try {
+          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        } catch (e) {
+          return onerror(e);
+        }
+        req.onupgradeneeded = function() {
+          db = req.result;
+          db.createObjectStore(IDBFS.DB_STORE_NAME);
+        };
+        req.onsuccess = function() {
+          db = req.result;
+          // add to the cache
+          IDBFS.dbs[name] = db;
+          callback(null, db);
+        };
+        req.onerror = function() {
+          callback(this.error);
+        };
+      },getRemoteSet:function (mount, callback) {
+        var files = {};
+        IDBFS.getDB(mount.mountpoint, function(err, db) {
+          if (err) return callback(err);
+          var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+          transaction.onerror = function() { callback(this.error); };
+          var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          store.openCursor().onsuccess = function(event) {
+            var cursor = event.target.result;
+            if (!cursor) {
+              return callback(null, { type: 'remote', db: db, files: files });
+            }
+            files[cursor.key] = cursor.value;
+            cursor.continue();
+          };
+        });
+      }};
+  var NODEFS={mount:function (mount) {
+        assert(ENVIRONMENT_IS_NODE);
+        return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root), 0);
+      },createNode:function (parent, name, mode, dev) {
+        if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node = FS.createNode(parent, name, mode);
+        node.node_ops = NODEFS.node_ops;
+        node.stream_ops = NODEFS.stream_ops;
+        return node;
+      },getMode:function (path) {
+        var stat;
+        try {
+          stat = fs.lstatSync(path);
+        } catch (e) {
+          if (!e.code) throw e;
+          throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+        }
+        return stat.mode;
+      },realPath:function (node) {
+        var parts = [];
+        while (node.parent !== node) {
+          parts.push(node.name);
+          node = node.parent;
+        }
+        parts.push(node.mount.opts.root);
+        parts.reverse();
+        return PATH.join.apply(null, parts);
+      },node_ops:{getattr:function (node) {
+          var path = NODEFS.realPath(node);
+          var stat;
+          try {
+            stat = fs.lstatSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return {
+            dev: stat.dev,
+            ino: stat.ino,
+            mode: stat.mode,
+            nlink: stat.nlink,
+            uid: stat.uid,
+            gid: stat.gid,
+            rdev: stat.rdev,
+            size: stat.size,
+            atime: stat.atime,
+            mtime: stat.mtime,
+            ctime: stat.ctime,
+            blksize: stat.blksize,
+            blocks: stat.blocks
+          };
+        },setattr:function (node, attr) {
+          var path = NODEFS.realPath(node);
+          try {
+            if (attr.mode !== undefined) {
+              fs.chmodSync(path, attr.mode);
+              // update the common node structure mode as well
+              node.mode = attr.mode;
+            }
+            if (attr.timestamp !== undefined) {
+              var date = new Date(attr.timestamp);
+              fs.utimesSync(path, date, date);
+            }
+            if (attr.size !== undefined) {
+              fs.truncateSync(path, attr.size);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },lookup:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          var mode = NODEFS.getMode(path);
+          return NODEFS.createNode(parent, name, mode);
+        },mknod:function (parent, name, mode, dev) {
+          var node = NODEFS.createNode(parent, name, mode, dev);
+          // create the backing node for this in the fs root as well
+          var path = NODEFS.realPath(node);
+          try {
+            if (FS.isDir(node.mode)) {
+              fs.mkdirSync(path, node.mode);
+            } else {
+              fs.writeFileSync(path, '', { mode: node.mode });
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return node;
+        },rename:function (oldNode, newDir, newName) {
+          var oldPath = NODEFS.realPath(oldNode);
+          var newPath = PATH.join(NODEFS.realPath(newDir), newName);
+          try {
+            fs.renameSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },unlink:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.unlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },rmdir:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.rmdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readdir:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },symlink:function (parent, newName, oldPath) {
+          var newPath = PATH.join(NODEFS.realPath(parent), newName);
+          try {
+            fs.symlinkSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readlink:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        }},stream_ops:{open:function (stream) {
+          var path = NODEFS.realPath(stream.node);
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              stream.nfd = fs.openSync(path, stream.flags);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },close:function (stream) {
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              fs.closeSync(stream.nfd);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },read:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(length);
+          var res;
+          try {
+            res = fs.readSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          if (res > 0) {
+            for (var i = 0; i < res; i++) {
+              buffer[offset + i] = nbuffer[i];
+            }
+          }
+          return res;
+        },write:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(buffer.subarray(offset, offset + length));
+          var res;
+          try {
+            res = fs.writeSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return res;
+        },llseek:function (stream, offset, whence) {
+          var position = offset;
+          if (whence === 1) {  // SEEK_CUR.
+            position += stream.position;
+          } else if (whence === 2) {  // SEEK_END.
+            if (FS.isFile(stream.node.mode)) {
+              try {
+                var stat = fs.fstatSync(stream.nfd);
+                position += stat.size;
+              } catch (e) {
+                throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+              }
+            }
+          }
+          if (position < 0) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          stream.position = position;
+          return position;
+        }}};
   var _stdin=allocate(1, "i32*", ALLOC_STATIC);
   var _stdout=allocate(1, "i32*", ALLOC_STATIC);
   var _stderr=allocate(1, "i32*", ALLOC_STATIC);
@@ -1945,7 +2413,7 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
           this.errno = errno;
           for (var key in ERRNO_CODES) {
             if (ERRNO_CODES[key] === errno) {
@@ -1957,10 +2425,8 @@ function copyTempDouble(ptr) {
         },handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
         return ___setErrNo(e.errno);
-      },cwd:function () {
-        return FS.currentPath;
       },lookupPath:function (path, opts) {
-        path = PATH.resolve(FS.currentPath, path);
+        path = PATH.resolve(FS.cwd(), path);
         opts = opts || { recurse_count: 0 };
         if (opts.recurse_count > 8) {  // max recursive lookup of 8
           throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
@@ -2041,7 +2507,8 @@ function copyTempDouble(ptr) {
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
-          if (node.parent.id === parent.id && node.name === name) {
+          var nodeName = node.name;
+          if (node.parent.id === parent.id && nodeName === name) {
             return node;
           }
         }
@@ -2093,29 +2560,29 @@ function copyTempDouble(ptr) {
       },isMountpoint:function (node) {
         return node.mounted;
       },isFile:function (mode) {
-        return (mode & 0170000) === 0100000;
+        return (mode & 61440) === 32768;
       },isDir:function (mode) {
-        return (mode & 0170000) === 0040000;
+        return (mode & 61440) === 16384;
       },isLink:function (mode) {
-        return (mode & 0170000) === 0120000;
+        return (mode & 61440) === 40960;
       },isChrdev:function (mode) {
-        return (mode & 0170000) === 0020000;
+        return (mode & 61440) === 8192;
       },isBlkdev:function (mode) {
-        return (mode & 0170000) === 0060000;
+        return (mode & 61440) === 24576;
       },isFIFO:function (mode) {
-        return (mode & 0170000) === 0010000;
+        return (mode & 61440) === 4096;
       },isSocket:function (mode) {
-        return (mode & 0140000) === 0140000;
-      },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
+        return (mode & 49152) === 49152;
+      },flagModes:{"r":0,"rs":1052672,"r+":2,"w":577,"wx":705,"xw":705,"w+":578,"wx+":706,"xw+":706,"a":1089,"ax":1217,"xa":1217,"a+":1090,"ax+":1218,"xa+":1218},modeStringToFlags:function (str) {
         var flags = FS.flagModes[str];
         if (typeof flags === 'undefined') {
           throw new Error('Unknown file open mode: ' + str);
         }
         return flags;
       },flagsToPermissionString:function (flag) {
-        var accmode = flag & 3;
+        var accmode = flag & 2097155;
         var perms = ['r', 'w', 'rw'][accmode];
-        if ((flag & 1024)) {
+        if ((flag & 512)) {
           perms += 'w';
         }
         return perms;
@@ -2156,7 +2623,7 @@ function copyTempDouble(ptr) {
           if (!FS.isDir(node.mode)) {
             return ERRNO_CODES.ENOTDIR;
           }
-          if (FS.isRoot(node) || FS.getPath(node) === FS.currentPath) {
+          if (FS.isRoot(node) || FS.getPath(node) === FS.cwd()) {
             return ERRNO_CODES.EBUSY;
           }
         } else {
@@ -2172,8 +2639,8 @@ function copyTempDouble(ptr) {
         if (FS.isLink(node.mode)) {
           return ERRNO_CODES.ELOOP;
         } else if (FS.isDir(node.mode)) {
-          if ((flags & 3) !== 0 ||  // opening for write
-              (flags & 1024)) {
+          if ((flags & 2097155) !== 0 ||  // opening for write
+              (flags & 512)) {
             return ERRNO_CODES.EISDIR;
           }
         }
@@ -2199,13 +2666,13 @@ function copyTempDouble(ptr) {
             set: function(val) { stream.node = val; }
           },
           isRead: {
-            get: function() { return (stream.flags & 3) !== 1; }
+            get: function() { return (stream.flags & 2097155) !== 1; }
           },
           isWrite: {
-            get: function() { return (stream.flags & 3) !== 0; }
+            get: function() { return (stream.flags & 2097155) !== 0; }
           },
           isAppend: {
-            get: function() { return (stream.flags & 8); }
+            get: function() { return (stream.flags & 1024); }
           }
         });
         FS.streams[fd] = stream;
@@ -2232,17 +2699,42 @@ function copyTempDouble(ptr) {
         FS.devices[dev] = { stream_ops: ops };
       },getDevice:function (dev) {
         return FS.devices[dev];
+      },syncfs:function (populate, callback) {
+        if (typeof(populate) === 'function') {
+          callback = populate;
+          populate = false;
+        }
+        var completed = 0;
+        var total = FS.mounts.length;
+        var done = function(err) {
+          if (err) {
+            return callback(err);
+          }
+          if (++completed >= total) {
+            callback(null);
+          }
+        };
+        // sync all mounts
+        for (var i = 0; i < FS.mounts.length; i++) {
+          var mount = FS.mounts[i];
+          if (!mount.type.syncfs) {
+            done(null);
+            continue;
+          }
+          mount.type.syncfs(mount, populate, done);
+        }
       },mount:function (type, opts, mountpoint) {
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+          mountpoint = lookup.path;  // use the absolute path
+        }
         var mount = {
           type: type,
           opts: opts,
           mountpoint: mountpoint,
           root: null
         };
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
-        }
         // create a root node for the fs
         var root = type.mount(mount);
         root.mount = mount;
@@ -2256,6 +2748,8 @@ function copyTempDouble(ptr) {
             FS.root = mount.root;
           }
         }
+        // add to our cached list of mounts
+        FS.mounts.push(mount);
         return root;
       },lookup:function (parent, name) {
         return parent.node_ops.lookup(parent, name);
@@ -2274,19 +2768,19 @@ function copyTempDouble(ptr) {
       },create:function (path, mode) {
         mode = mode !== undefined ? mode : 0666;
         mode &= 4095;
-        mode |= 0100000;
+        mode |= 32768;
         return FS.mknod(path, mode, 0);
       },mkdir:function (path, mode) {
         mode = mode !== undefined ? mode : 0777;
-        mode &= 511 | 0001000;
-        mode |= 0040000;
+        mode &= 511 | 512;
+        mode |= 16384;
         return FS.mknod(path, mode, 0);
       },mkdev:function (path, mode, dev) {
         if (typeof(dev) === 'undefined') {
           dev = mode;
           mode = 0666;
         }
-        mode |= 0020000;
+        mode |= 8192;
         return FS.mknod(path, mode, dev);
       },symlink:function (oldpath, newpath) {
         var lookup = FS.lookupPath(newpath, { parent: true });
@@ -2519,7 +3013,7 @@ function copyTempDouble(ptr) {
         if (!stream) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
         FS.truncate(stream.node, len);
@@ -2533,26 +3027,25 @@ function copyTempDouble(ptr) {
         path = PATH.normalize(path);
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 0666 : mode;
-        if ((flags & 512)) {
-          mode = (mode & 4095) | 0100000;
+        if ((flags & 64)) {
+          mode = (mode & 4095) | 32768;
         } else {
           mode = 0;
         }
         var node;
         try {
           var lookup = FS.lookupPath(path, {
-            follow: !(flags & 0200000)
+            follow: !(flags & 131072)
           });
           node = lookup.node;
-          path = lookup.path;
         } catch (e) {
           // ignore
         }
         // perhaps we need to create the node
-        if ((flags & 512)) {
+        if ((flags & 64)) {
           if (node) {
             // if O_CREAT and O_EXCL are set, error out if the node already exists
-            if ((flags & 2048)) {
+            if ((flags & 128)) {
               throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
             }
           } else {
@@ -2565,7 +3058,7 @@ function copyTempDouble(ptr) {
         }
         // can't truncate a device
         if (FS.isChrdev(node.mode)) {
-          flags &= ~1024;
+          flags &= ~512;
         }
         // check permissions
         var err = FS.mayOpen(node, flags);
@@ -2573,13 +3066,15 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(err);
         }
         // do truncation if necessary
-        if ((flags & 1024)) {
+        if ((flags & 512)) {
           FS.truncate(node, 0);
         }
+        // we've already handled these, don't pass down to the underlying vfs
+        flags &= ~(128 | 512);
         // register the stream with the filesystem
         var stream = FS.createStream({
-          path: path,
           node: node,
+          path: FS.getPath(node),  // we want the absolute path to the node
           flags: flags,
           seekable: true,
           position: 0,
@@ -2591,6 +3086,13 @@ function copyTempDouble(ptr) {
         // call the new stream's open function
         if (stream.stream_ops.open) {
           stream.stream_ops.open(stream);
+        }
+        if (Module['logReadFiles'] && !(flags & 1)) {
+          if (!FS.readFiles) FS.readFiles = {};
+          if (!(path in FS.readFiles)) {
+            FS.readFiles[path] = 1;
+            Module['printErr']('read file: ' + path);
+          }
         }
         return stream;
       },close:function (stream) {
@@ -2612,7 +3114,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2635,7 +3137,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2651,7 +3153,7 @@ function copyTempDouble(ptr) {
         } else if (!stream.seekable) {
           throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
         }
-        if (stream.flags & 8) {
+        if (stream.flags & 1024) {
           // seek to the end before writing in append mode
           FS.llseek(stream, 0, 2);
         }
@@ -2662,7 +3164,7 @@ function copyTempDouble(ptr) {
         if (offset < 0 || length <= 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
@@ -2674,7 +3176,7 @@ function copyTempDouble(ptr) {
         stream.stream_ops.allocate(stream, offset, length);
       },mmap:function (stream, buffer, offset, length, position, prot, flags) {
         // TODO if PROT is PROT_WRITE, make sure we have write access
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
@@ -2724,6 +3226,18 @@ function copyTempDouble(ptr) {
           throw new Error('Invalid encoding type "' + opts.encoding + '"');
         }
         FS.close(stream);
+      },cwd:function () {
+        return FS.currentPath;
+      },chdir:function (path) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        if (!FS.isDir(lookup.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        var err = FS.nodePermissions(lookup.node, 'x');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        FS.currentPath = lookup.path;
       },createDefaultDirectories:function () {
         FS.mkdir('/tmp');
       },createDefaultDevices:function () {
@@ -2781,7 +3295,7 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
       },staticInit:function () {
         FS.nameTable = new Array(4096);
-        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.root = FS.createNode(null, '/', 16384 | 0777, 0);
         FS.mount(MEMFS, {}, '/');
         FS.createDefaultDirectories();
         FS.createDefaultDevices();
@@ -3081,7 +3595,10 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.EIO);
           }
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (contents.slice) { // normal array
             for (var i = 0; i < size; i++) {
               buffer[offset + i] = contents[position + i];
@@ -3203,12 +3720,7 @@ function copyTempDouble(ptr) {
         openRequest.onerror = onerror;
       }};
   var SOCKFS={mount:function (mount) {
-        return FS.createNode(null, '/', 0040000 | 0777, 0);
-      },nextname:function () {
-        if (!SOCKFS.nextname.current) {
-          SOCKFS.nextname.current = 0;
-        }
-        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+        return FS.createNode(null, '/', 16384 | 0777, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
         if (protocol) {
@@ -3227,7 +3739,7 @@ function copyTempDouble(ptr) {
         };
         // create the filesystem node to store the socket structure
         var name = SOCKFS.nextname();
-        var node = FS.createNode(SOCKFS.root, name, 0140000, 0);
+        var node = FS.createNode(SOCKFS.root, name, 49152, 0);
         node.sock = sock;
         // and the wrapping stream that enables library functions such
         // as read and write to indirectly interact with the socket
@@ -3269,7 +3781,12 @@ function copyTempDouble(ptr) {
         },close:function (stream) {
           var sock = stream.node.sock;
           sock.sock_ops.close(sock);
-        }},websocket_sock_ops:{createPeer:function (sock, addr, port) {
+        }},nextname:function () {
+        if (!SOCKFS.nextname.current) {
+          SOCKFS.nextname.current = 0;
+        }
+        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+      },websocket_sock_ops:{createPeer:function (sock, addr, port) {
           var ws;
           if (typeof addr === 'object') {
             ws = addr;
@@ -3385,7 +3902,7 @@ function copyTempDouble(ptr) {
           if (sock.type === 1 && sock.server) {
             // listen sockets should only say they're available for reading
             // if there are pending clients.
-            return sock.pending.length ? (0 /* XXX missing C define POLLRDNORM */ | 1) : 0;
+            return sock.pending.length ? (64 | 1) : 0;
           }
           var mask = 0;
           var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
@@ -3395,11 +3912,11 @@ function copyTempDouble(ptr) {
               !dest ||  // connection-less sockets are always ready to read
               (dest && dest.socket.readyState === dest.socket.CLOSING) ||
               (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
-            mask |= (0 /* XXX missing C define POLLRDNORM */ | 1);
+            mask |= (64 | 1);
           }
           if (!dest ||  // connection-less sockets are always ready to write
               (dest && dest.socket.readyState === dest.socket.OPEN)) {
-            mask |= 2;
+            mask |= 4;
           }
           if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
               (dest && dest.socket.readyState === dest.socket.CLOSED)) {
@@ -3408,7 +3925,7 @@ function copyTempDouble(ptr) {
           return mask;
         },ioctl:function (sock, request, arg) {
           switch (request) {
-            case 1:
+            case 21531:
               var bytes = 0;
               if (sock.recv_queue.length) {
                 bytes = sock.recv_queue[0].data.length;
@@ -3742,6 +4259,7 @@ function copyTempDouble(ptr) {
           var flagLeftAlign = false;
           var flagAlternative = false;
           var flagZeroPad = false;
+          var flagPadSign = false;
           flagsLoop: while (1) {
             switch (next) {
               case 43:
@@ -3760,6 +4278,9 @@ function copyTempDouble(ptr) {
                   flagZeroPad = true;
                   break;
                 }
+              case 32:
+                flagPadSign = true;
+                break;
               default:
                 break flagsLoop;
             }
@@ -3911,12 +4432,17 @@ function copyTempDouble(ptr) {
                 }
               }
               // Add sign if needed
-              if (flagAlwaysSigned) {
-                if (currArg < 0) {
-                  prefix = '-' + prefix;
-                } else {
+              if (currArg >= 0) {
+                if (flagAlwaysSigned) {
                   prefix = '+' + prefix;
+                } else if (flagPadSign) {
+                  prefix = ' ' + prefix;
                 }
+              }
+              // Move sign to prefix so we zero-pad after the sign
+              if (argText.charAt(0) == '-') {
+                prefix = '-' + prefix;
+                argText = argText.substr(1);
               }
               // Add padding.
               while (prefix.length + argText.length < width) {
@@ -3994,8 +4520,12 @@ function copyTempDouble(ptr) {
                 // Capitalize 'E' if needed.
                 if (next == 69) argText = argText.toUpperCase();
                 // Add sign.
-                if (flagAlwaysSigned && currArg >= 0) {
-                  argText = '+' + argText;
+                if (currArg >= 0) {
+                  if (flagAlwaysSigned) {
+                    argText = '+' + argText;
+                  } else if (flagPadSign) {
+                    argText = ' ' + argText;
+                  }
                 }
               }
               // Add padding.
@@ -4945,7 +5475,7 @@ function copyTempDouble(ptr) {
         return CL.catchError("clGetKernelWorkGroupInfo",e);
       }
     }
-  var ___dirent_struct_layout={__size__:1040,d_ino:0,d_name:4,d_off:1028,d_reclen:1032,d_type:1036};function _open(path, oflag, varargs) {
+  function _open(path, oflag, varargs) {
       // int open(const char *path, int oflag, ...);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/open.html
       var mode = HEAP32[((varargs)>>2)];
@@ -4974,16 +5504,16 @@ function copyTempDouble(ptr) {
         } else {
           flags = 1;
         }
+        flags |= 64;
         flags |= 512;
-        flags |= 1024;
       } else if (mode[0] == 'a') {
         if (mode.indexOf('+') != -1) {
           flags = 2;
         } else {
           flags = 1;
         }
-        flags |= 512;
-        flags |= 8;
+        flags |= 64;
+        flags |= 1024;
       } else {
         ___setErrNo(ERRNO_CODES.EINVAL);
         return 0;
@@ -9543,12 +10073,12 @@ function copyTempDouble(ptr) {
       GL.immediate.modifiedClientAttributes = true;
     }
   function _glFlush() { Module.ctx.flush() }
-  var SDL={defaults:{width:320,height:200,copyOnLock:true},version:null,surfaces:{},canvasPool:[],events:[],fonts:[null],audios:[null],rwops:[null],music:{audio:null,volume:1},mixerFrequency:22050,mixerFormat:32784,mixerNumChannels:2,mixerChunkSize:1024,channelMinimumNumber:0,GL:false,keyboardState:null,keyboardMap:{},canRequestFullscreen:false,isRequestingFullscreen:false,textInput:false,startTime:null,buttonState:0,modState:0,DOMButtons:[0,0,0],DOMEventToSDLEvent:{},keyCodes:{16:1249,17:1248,18:1250,33:1099,34:1102,37:1104,38:1106,39:1103,40:1105,46:127,96:1112,97:1113,98:1114,99:1115,100:1116,101:1117,102:1118,103:1119,104:1120,105:1121,112:1082,113:1083,114:1084,115:1085,116:1086,117:1087,118:1088,119:1089,120:1090,121:1091,122:1092,123:1093,173:45,188:44,190:46,191:47,192:96},scanCodes:{9:43,13:40,27:41,32:44,44:54,46:55,47:56,48:39,49:30,50:31,51:32,52:33,53:34,54:35,55:36,56:37,57:38,92:49,97:4,98:5,99:6,100:7,101:8,102:9,103:10,104:11,105:12,106:13,107:14,108:15,109:16,110:17,111:18,112:19,113:20,114:21,115:22,116:23,117:24,118:25,119:26,120:27,121:28,122:29,305:224,308:226},structs:{Rect:{__size__:16,x:0,y:4,w:8,h:12},PixelFormat:{__size__:36,format:0,palette:4,BitsPerPixel:8,BytesPerPixel:9,padding1:10,padding2:11,Rmask:12,Gmask:16,Bmask:20,Amask:24,Rloss:28,Gloss:29,Bloss:30,Aloss:31,Rshift:32,Gshift:33,Bshift:34,Ashift:35},KeyboardEvent:{__size__:16,type:0,windowID:4,state:8,repeat:9,padding2:10,padding3:11,keysym:12},keysym:{__size__:16,scancode:0,sym:4,mod:8,unicode:12},TextInputEvent:{__size__:264,type:0,windowID:4,text:8},MouseMotionEvent:{__size__:28,type:0,windowID:4,state:8,padding1:9,padding2:10,padding3:11,x:12,y:16,xrel:20,yrel:24},MouseButtonEvent:{__size__:20,type:0,windowID:4,button:8,state:9,padding1:10,padding2:11,x:12,y:16},ResizeEvent:{__size__:12,type:0,w:4,h:8},AudioSpec:{__size__:24,freq:0,format:4,channels:6,silence:7,samples:8,size:12,callback:16,userdata:20},version:{__size__:3,major:0,minor:1,patch:2}},loadRect:function (rect) {
+  var SDL={defaults:{width:320,height:200,copyOnLock:true},version:null,surfaces:{},canvasPool:[],events:[],fonts:[null],audios:[null],rwops:[null],music:{audio:null,volume:1},mixerFrequency:22050,mixerFormat:32784,mixerNumChannels:2,mixerChunkSize:1024,channelMinimumNumber:0,GL:false,keyboardState:null,keyboardMap:{},canRequestFullscreen:false,isRequestingFullscreen:false,textInput:false,startTime:null,buttonState:0,modState:0,DOMButtons:[0,0,0],DOMEventToSDLEvent:{},keyCodes:{16:1249,17:1248,18:1250,33:1099,34:1102,37:1104,38:1106,39:1103,40:1105,46:127,96:1112,97:1113,98:1114,99:1115,100:1116,101:1117,102:1118,103:1119,104:1120,105:1121,112:1082,113:1083,114:1084,115:1085,116:1086,117:1087,118:1088,119:1089,120:1090,121:1091,122:1092,123:1093,173:45,188:44,190:46,191:47,192:96},scanCodes:{9:43,13:40,27:41,32:44,44:54,46:55,47:56,48:39,49:30,50:31,51:32,52:33,53:34,54:35,55:36,56:37,57:38,92:49,97:4,98:5,99:6,100:7,101:8,102:9,103:10,104:11,105:12,106:13,107:14,108:15,109:16,110:17,111:18,112:19,113:20,114:21,115:22,116:23,117:24,118:25,119:26,120:27,121:28,122:29,305:224,308:226},loadRect:function (rect) {
         return {
-          x: HEAP32[((rect + SDL.structs.Rect.x)>>2)],
-          y: HEAP32[((rect + SDL.structs.Rect.y)>>2)],
-          w: HEAP32[((rect + SDL.structs.Rect.w)>>2)],
-          h: HEAP32[((rect + SDL.structs.Rect.h)>>2)]
+          x: HEAP32[((rect + 0)>>2)],
+          y: HEAP32[((rect + 4)>>2)],
+          w: HEAP32[((rect + 8)>>2)],
+          h: HEAP32[((rect + 12)>>2)]
         };
       },loadColorToCSSRGB:function (color) {
         var rgba = HEAP32[((color)>>2)];
@@ -9564,30 +10094,30 @@ function copyTempDouble(ptr) {
         return r | g << 8 | b << 16 | a << 24;
       },makeSurface:function (width, height, flags, usePageCanvas, source, rmask, gmask, bmask, amask) {
         flags = flags || 0;
-        var surf = _malloc(15*Runtime.QUANTUM_SIZE);  // SDL_Surface has 15 fields of quantum size
+        var surf = _malloc(60);  // SDL_Surface has 15 fields of quantum size
         var buffer = _malloc(width*height*4); // TODO: only allocate when locked the first time
-        var pixelFormat = _malloc(18*Runtime.QUANTUM_SIZE);
+        var pixelFormat = _malloc(44);
         flags |= 1; // SDL_HWSURFACE - this tells SDL_MUSTLOCK that this needs to be locked
         //surface with SDL_HWPALETTE flag is 8bpp surface (1 byte)
         var is_SDL_HWPALETTE = flags & 0x00200000;  
         var bpp = is_SDL_HWPALETTE ? 1 : 4;
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*0)>>2)]=flags         // SDL_Surface.flags
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*1)>>2)]=pixelFormat // SDL_Surface.format TODO
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*2)>>2)]=width         // SDL_Surface.w
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*3)>>2)]=height        // SDL_Surface.h
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*4)>>2)]=width * bpp       // SDL_Surface.pitch, assuming RGBA or indexed for now,
+        HEAP32[((surf)>>2)]=flags         // SDL_Surface.flags
+        HEAP32[(((surf)+(4))>>2)]=pixelFormat // SDL_Surface.format TODO
+        HEAP32[(((surf)+(8))>>2)]=width         // SDL_Surface.w
+        HEAP32[(((surf)+(12))>>2)]=height        // SDL_Surface.h
+        HEAP32[(((surf)+(16))>>2)]=width * bpp       // SDL_Surface.pitch, assuming RGBA or indexed for now,
                                                                                  // since that is what ImageData gives us in browsers
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*5)>>2)]=buffer      // SDL_Surface.pixels
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*6)>>2)]=0      // SDL_Surface.offset
-        HEAP32[((surf+Runtime.QUANTUM_SIZE*14)>>2)]=1
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.format)>>2)]=-2042224636 // SDL_PIXELFORMAT_RGBA8888
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.palette)>>2)]=0 // TODO
-        HEAP8[((pixelFormat + SDL.structs.PixelFormat.BitsPerPixel)|0)]=bpp * 8
-        HEAP8[((pixelFormat + SDL.structs.PixelFormat.BytesPerPixel)|0)]=bpp
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.Rmask)>>2)]=rmask || 0x000000ff
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.Gmask)>>2)]=gmask || 0x0000ff00
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.Bmask)>>2)]=bmask || 0x00ff0000
-        HEAP32[((pixelFormat + SDL.structs.PixelFormat.Amask)>>2)]=amask || 0xff000000
+        HEAP32[(((surf)+(20))>>2)]=buffer      // SDL_Surface.pixels
+        HEAP32[(((surf)+(36))>>2)]=0      // SDL_Surface.offset
+        HEAP32[(((surf)+(56))>>2)]=1
+        HEAP32[((pixelFormat)>>2)]=0 /* XXX missing C define SDL_PIXELFORMAT_RGBA8888 */ // SDL_PIXELFORMAT_RGBA8888
+        HEAP32[(((pixelFormat)+(4))>>2)]=0 // TODO
+        HEAP8[(((pixelFormat)+(8))|0)]=bpp * 8
+        HEAP8[(((pixelFormat)+(9))|0)]=bpp
+        HEAP32[(((pixelFormat)+(12))>>2)]=rmask || 0x000000ff
+        HEAP32[(((pixelFormat)+(16))>>2)]=gmask || 0x0000ff00
+        HEAP32[(((pixelFormat)+(20))>>2)]=bmask || 0x00ff0000
+        HEAP32[(((pixelFormat)+(24))>>2)]=amask || 0xff000000
         // Decide if we want to use WebGL or not
         var useWebGL = (flags & 0x04000000) != 0; // SDL_OPENGL
         SDL.GL = SDL.GL || useWebGL;
@@ -9651,7 +10181,7 @@ function copyTempDouble(ptr) {
           }
         }
       },freeSurface:function (surf) {
-        var refcountPointer = surf + Runtime.QUANTUM_SIZE * 14;
+        var refcountPointer = surf + 56;
         var refcount = HEAP32[((refcountPointer)>>2)];
         if (refcount > 1) {
           HEAP32[((refcountPointer)>>2)]=refcount - 1;
@@ -9720,6 +10250,13 @@ function copyTempDouble(ptr) {
             }
             // fall through
           case 'keydown': case 'keyup': case 'keypress': case 'mousedown': case 'mouseup': case 'DOMMouseScroll': case 'mousewheel':
+            // If we preventDefault on keydown events, the subsequent keypress events
+            // won't fire. However, it's fine (and in some cases necessary) to
+            // preventDefault for keys that don't generate a character. Otherwise,
+            // preventDefault is the right thing to do in general.
+            if (event.type !== 'keydown' || (event.keyCode === 8 /* backspace */ || event.keyCode === 9 /* tab */)) {
+              event.preventDefault();
+            }
             if (event.type == 'DOMMouseScroll' || event.type == 'mousewheel') {
               var button = (event.type == 'DOMMouseScroll' ? event.detail : -event.wheelDelta) > 0 ? 4 : 3;
               var event2 = {
@@ -9741,7 +10278,6 @@ function copyTempDouble(ptr) {
               // ignore extra ups, can happen if we leave the canvas while pressing down, then return,
               // since we add a mouseup in that case
               if (!SDL.DOMButtons[event.button]) {
-                event.preventDefault();
                 return;
               }
               SDL.DOMButtons[event.button] = 0;
@@ -9772,12 +10308,6 @@ function copyTempDouble(ptr) {
               SDL.savedKeydown = null;
             } else if (event.type === 'keydown') {
               SDL.savedKeydown = event;
-            }
-            // If we preventDefault on keydown events, the subsequent keypress events
-            // won't fire. However, it's fine (and in some cases necessary) to
-            // preventDefault for keys that don't generate a character.
-            if (event.type !== 'keydown' || (event.keyCode === 8 /* backspace */ || event.keyCode === 9 /* tab */)) {
-              event.preventDefault();
             }
             // Don't push keypress events unless SDL_StartTextInput has been called.
             if (event.type !== 'keypress' || SDL.textInput) {
@@ -9873,7 +10403,7 @@ function copyTempDouble(ptr) {
       },makeCEvent:function (event, ptr) {
         if (typeof event === 'number') {
           // This is a pointer to a native C event that was SDL_PushEvent'ed
-          _memcpy(ptr, event, SDL.structs.KeyboardEvent.__size__); // XXX
+          _memcpy(ptr, event, 28); // XXX
           return;
         }
         SDL.handleEvent(event);
@@ -9893,51 +10423,51 @@ function copyTempDouble(ptr) {
             } else {
               scan = SDL.scanCodes[key] || key;
             }
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type]
-            HEAP8[(((ptr)+(SDL.structs.KeyboardEvent.state))|0)]=down ? 1 : 0
-            HEAP8[(((ptr)+(SDL.structs.KeyboardEvent.repeat))|0)]=0 // TODO
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.scancode))>>2)]=scan
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.sym))>>2)]=key
-            HEAP16[(((ptr)+(SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.mod))>>1)]=SDL.modState
+            HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type]
+            HEAP8[(((ptr)+(8))|0)]=down ? 1 : 0
+            HEAP8[(((ptr)+(9))|0)]=0 // TODO
+            HEAP32[(((ptr)+(12))>>2)]=scan
+            HEAP32[(((ptr)+(16))>>2)]=key
+            HEAP16[(((ptr)+(20))>>1)]=SDL.modState
             // some non-character keys (e.g. backspace and tab) won't have keypressCharCode set, fill in with the keyCode.
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.keysym + SDL.structs.keysym.unicode))>>2)]=event.keypressCharCode || key
+            HEAP32[(((ptr)+(24))>>2)]=event.keypressCharCode || key
             break;
           }
           case 'keypress': {
-            HEAP32[(((ptr)+(SDL.structs.TextInputEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type]
+            HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type]
             // Not filling in windowID for now
             var cStr = intArrayFromString(String.fromCharCode(event.charCode));
             for (var i = 0; i < cStr.length; ++i) {
-              HEAP8[(((ptr)+(SDL.structs.TextInputEvent.text + i))|0)]=cStr[i];
+              HEAP8[(((ptr)+(8 + i))|0)]=cStr[i];
             }
             break;
           }
           case 'mousedown': case 'mouseup': case 'mousemove': {
             if (event.type != 'mousemove') {
               var down = event.type === 'mousedown';
-              HEAP32[(((ptr)+(SDL.structs.MouseButtonEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type];
-              HEAP8[(((ptr)+(SDL.structs.MouseButtonEvent.button))|0)]=event.button+1; // DOM buttons are 0-2, SDL 1-3
-              HEAP8[(((ptr)+(SDL.structs.MouseButtonEvent.state))|0)]=down ? 1 : 0;
-              HEAP32[(((ptr)+(SDL.structs.MouseButtonEvent.x))>>2)]=Browser.mouseX;
-              HEAP32[(((ptr)+(SDL.structs.MouseButtonEvent.y))>>2)]=Browser.mouseY;
+              HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type];
+              HEAP8[(((ptr)+(8))|0)]=event.button+1; // DOM buttons are 0-2, SDL 1-3
+              HEAP8[(((ptr)+(9))|0)]=down ? 1 : 0;
+              HEAP32[(((ptr)+(12))>>2)]=Browser.mouseX;
+              HEAP32[(((ptr)+(16))>>2)]=Browser.mouseY;
             } else {
-              HEAP32[(((ptr)+(SDL.structs.MouseMotionEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type];
-              HEAP8[(((ptr)+(SDL.structs.MouseMotionEvent.state))|0)]=SDL.buttonState;
-              HEAP32[(((ptr)+(SDL.structs.MouseMotionEvent.x))>>2)]=Browser.mouseX;
-              HEAP32[(((ptr)+(SDL.structs.MouseMotionEvent.y))>>2)]=Browser.mouseY;
-              HEAP32[(((ptr)+(SDL.structs.MouseMotionEvent.xrel))>>2)]=Browser.mouseMovementX;
-              HEAP32[(((ptr)+(SDL.structs.MouseMotionEvent.yrel))>>2)]=Browser.mouseMovementY;
+              HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type];
+              HEAP8[(((ptr)+(8))|0)]=SDL.buttonState;
+              HEAP32[(((ptr)+(12))>>2)]=Browser.mouseX;
+              HEAP32[(((ptr)+(16))>>2)]=Browser.mouseY;
+              HEAP32[(((ptr)+(20))>>2)]=Browser.mouseMovementX;
+              HEAP32[(((ptr)+(24))>>2)]=Browser.mouseMovementY;
             }
             break;
           }
           case 'unload': {
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type];
             break;
           }
           case 'resize': {
-            HEAP32[(((ptr)+(SDL.structs.KeyboardEvent.type))>>2)]=SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(SDL.structs.ResizeEvent.w))>>2)]=event.w;
-            HEAP32[(((ptr)+(SDL.structs.ResizeEvent.h))>>2)]=event.h;
+            HEAP32[((ptr)>>2)]=SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))>>2)]=event.w;
+            HEAP32[(((ptr)+(8))>>2)]=event.h;
             break;
           }
           default: throw 'Unhandled SDL event: ' + event.type;
@@ -9952,7 +10482,7 @@ function copyTempDouble(ptr) {
         tempCtx.restore();
         return ret;
       },allocateChannels:function (num) { // called from Mix_AllocateChannels and init
-        if (SDL.numChannels && SDL.numChannels >= num) return;
+        if (SDL.numChannels && SDL.numChannels >= num && num != 0) return;
         SDL.numChannels = num;
         SDL.channels = [];
         for (var i = 0; i < num; i++) {
@@ -10170,7 +10700,7 @@ function copyTempDouble(ptr) {
     }
   function ___errno_location() {
       return ___errno_state;
-    }var ___errno=___errno_location;
+    }
   function _memcpy(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
       var ret = 0;
@@ -10219,137 +10749,137 @@ function copyTempDouble(ptr) {
       // long sysconf(int name);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/sysconf.html
       switch(name) {
-        case 8: return PAGE_SIZE;
-        case 54:
-        case 56:
+        case 30: return PAGE_SIZE;
+        case 132:
+        case 133:
+        case 12:
+        case 137:
+        case 138:
+        case 15:
+        case 235:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 149:
+        case 13:
+        case 10:
+        case 236:
+        case 153:
+        case 9:
         case 21:
-        case 61:
-        case 63:
         case 22:
+        case 159:
+        case 154:
+        case 14:
+        case 77:
+        case 78:
+        case 139:
+        case 80:
+        case 81:
+        case 79:
+        case 82:
+        case 68:
         case 67:
+        case 164:
+        case 11:
+        case 29:
+        case 47:
+        case 48:
+        case 95:
+        case 52:
+        case 51:
+        case 46:
+          return 200809;
+        case 27:
+        case 246:
+        case 127:
+        case 128:
         case 23:
         case 24:
-        case 25:
-        case 26:
-        case 27:
-        case 69:
-        case 28:
-        case 101:
-        case 70:
-        case 71:
-        case 29:
-        case 30:
-        case 199:
-        case 75:
+        case 160:
+        case 161:
+        case 181:
+        case 182:
+        case 242:
+        case 183:
+        case 184:
+        case 243:
+        case 244:
+        case 245:
+        case 165:
+        case 178:
+        case 179:
+        case 49:
+        case 50:
+        case 168:
+        case 169:
+        case 175:
+        case 170:
+        case 171:
+        case 172:
+        case 97:
         case 76:
         case 32:
-        case 43:
-        case 44:
-        case 80:
-        case 46:
-        case 47:
-        case 45:
-        case 48:
-        case 49:
-        case 42:
-        case 82:
-        case 33:
-        case 7:
-        case 108:
-        case 109:
-        case 107:
-        case 112:
-        case 119:
-        case 121:
-          return 200809;
-        case 13:
-        case 104:
-        case 94:
-        case 95:
-        case 34:
+        case 173:
         case 35:
-        case 77:
-        case 81:
-        case 83:
-        case 84:
-        case 85:
-        case 86:
-        case 87:
-        case 88:
-        case 89:
-        case 90:
-        case 91:
-        case 94:
-        case 95:
-        case 110:
-        case 111:
-        case 113:
-        case 114:
-        case 115:
-        case 116:
-        case 117:
-        case 118:
-        case 120:
-        case 40:
-        case 16:
-        case 79:
-        case 19:
           return -1;
+        case 176:
+        case 177:
+        case 7:
+        case 155:
+        case 8:
+        case 157:
+        case 125:
+        case 126:
         case 92:
         case 93:
-        case 5:
-        case 72:
-        case 6:
-        case 74:
-        case 92:
-        case 93:
-        case 96:
-        case 97:
-        case 98:
-        case 99:
-        case 102:
-        case 103:
-        case 105:
+        case 129:
+        case 130:
+        case 131:
+        case 94:
+        case 91:
           return 1;
-        case 38:
-        case 66:
-        case 50:
-        case 51:
+        case 74:
+        case 60:
+        case 69:
+        case 70:
         case 4:
           return 1024;
-        case 15:
-        case 64:
-        case 41:
+        case 31:
+        case 42:
+        case 72:
           return 32;
-        case 55:
-        case 37:
-        case 17:
+        case 87:
+        case 26:
+        case 33:
           return 2147483647;
-        case 18:
+        case 34:
         case 1:
           return 47839;
-        case 59:
-        case 57:
+        case 38:
+        case 36:
           return 99;
-        case 68:
-        case 58:
+        case 43:
+        case 37:
           return 2048;
         case 0: return 2097152;
         case 3: return 65536;
-        case 14: return 32768;
-        case 73: return 32767;
-        case 39: return 16384;
-        case 60: return 1000;
-        case 106: return 700;
-        case 52: return 256;
-        case 62: return 255;
+        case 28: return 32768;
+        case 44: return 32767;
+        case 75: return 16384;
+        case 39: return 1000;
+        case 89: return 700;
+        case 71: return 256;
+        case 40: return 255;
         case 2: return 100;
-        case 65: return 64;
-        case 36: return 20;
-        case 100: return 16;
-        case 20: return 6;
-        case 53: return 4;
-        case 10: return 1;
+        case 180: return 64;
+        case 25: return 20;
+        case 5: return 16;
+        case 6: return 6;
+        case 73: return 4;
+        case 84: return 1;
       }
       ___setErrNo(ERRNO_CODES.EINVAL);
       return -1;
@@ -10365,6 +10895,7 @@ GL.init()
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 __ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); }
 __ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
 Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
@@ -10379,9 +10910,9 @@ staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
-var FUNCTION_TABLE = [0,0,_motionFunc,0,_specialFunc,0,_reshapeFunc,0,_keyFunc,0,_displayFunc,0,_mouseFunc,0,_timerFunc];
+var FUNCTION_TABLE = [0,0,_motionFunc,0,_specialFunc,0,_reshapeFunc,0,_keyFunc,0,_displayFunc,0,_mouseFunc,0,_timerFunc,0];
 // EMSCRIPTEN_START_FUNCS
-function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27;r1=0;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+32|0;r4=r3;r5=r3+24;r6=_WallClockTime();r7=_clSetKernelArg(HEAP32[2256>>2],0,4,2208);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2120,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=_clSetKernelArg(HEAP32[2256>>2],1,4,2280);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=Math.imul(HEAP32[2292>>2],HEAP32[2288>>2])|0;r8=r3+8|0;HEAP32[r8>>2]=r7;r9=HEAP32[8>>2];if(((r7>>>0)%(r9>>>0)&-1|0)!=0){HEAP32[r8>>2]=Math.imul(((r7>>>0)/(r9>>>0)&-1)+1|0,r9)|0}r7=r3+16|0;HEAP32[r7>>2]=r9;r9=HEAP32[2296>>2];L11:do{if((HEAP32[2300>>2]|0)==0&(r9|0)>1){if((r9|0)>0){r10=0;r11=r9}else{break}L13:while(1){if((r11|0)>0){r12=(r10|0)+.5;r13=0;r14=r11;while(1){r15=r14|0;r16=((r13|0)+.5)/r15;r17=r12/r15;do{if((r13|r10|0)==0){_SetEnableAccumulationKernelArg(0,r16,r17);r18=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,0);if((r18|0)!=0){r1=14;break L13}}else{r15=r14-1|0;_SetEnableAccumulationKernelArg(1,r16,r17);r19=HEAP32[2408>>2];r20=HEAP32[2256>>2];if(!((r13|0)==(r15|0)&(r10|0)==(r15|0))){r21=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,0);if((r21|0)==0){break}else{r1=20;break L13}}r22=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,r4);if((r22|0)!=0){r1=17;break L13}_clFinish(HEAP32[2408>>2])}}while(0);r17=r13+1|0;r16=HEAP32[2296>>2];if((r17|0)<(r16|0)){r13=r17;r14=r16}else{r23=r16;break}}}else{r23=r11}r14=r10+1|0;if((r14|0)<(r23|0)){r10=r14;r11=r23}else{break L11}}if(r1==14){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r18,r2));STACKTOP=r2;_exit(-1)}else if(r1==17){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r22,r2));STACKTOP=r2;_exit(-1)}else if(r1==20){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}}else{_SetEnableAccumulationKernelArg(0,0,0);r14=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,r4);if((r14|0)==0){_clFinish(HEAP32[2408>>2]);break}else{_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r14,r2));STACKTOP=r2;_exit(-1)}}}while(0);r4=HEAP32[2408>>2];r7=HEAP32[2208>>2];r8=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r21=_clEnqueueReadBuffer(r4,r7,1,0,r8,HEAP32[2200>>2],0,0,r5);if((r21|0)!=0){_fprintf(HEAP32[_stderr>>2],1640,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);r21=HEAP32[2296>>2];do{if((HEAP32[2300>>2]|0)==0&(r21|0)>1){r5=1/(Math.imul(r21,r21)|0);if((Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)==0){break}else{r24=0}while(1){r8=HEAP32[2200>>2]+(r24<<2)|0;HEAPF32[r8>>2]=r5*HEAPF32[r8>>2];r8=r24+1|0;if(r8>>>0<(Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)>>>0){r24=r8}else{break}}}}while(0);r24=_WallClockTime()-r6;r6=((Math.imul(HEAP32[2288>>2],HEAP32[2292>>2])|0)>>>0)/r24;r21=HEAP32[2296>>2];if(!((HEAP32[2300>>2]|0)==0&(r21|0)>1)){r25=r6;r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}r25=r6*(Math.imul(r21,r21)|0);r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}function _ReInit(r1){var r2,r3;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+8|0;if((r1|0)==0){_UpdateCamera();r1=_clEnqueueWriteBuffer(HEAP32[2408>>2],HEAP32[2280>>2],1,0,116,2288,0,0,r3);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],824,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);STACKTOP=r3;return}r1=_clReleaseMemObject(HEAP32[2208>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],424,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}r1=_clReleaseMemObject(HEAP32[2280>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],368,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_free(HEAP32[2200>>2]);_UpdateCamera();_AllocateBuffers();STACKTOP=r3;return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+448|0;r6=r5;r7=r5+8;r8=r5+16;r9=r5+120;r10=r5+136;r11=r5+144;r12=r5+152;r13=r5+408;r14=r5+416;r15=r5+424;r16=r5+432;r17=r5+440;if((r1|0)<1|(r2|0)==0){r18=1}else{r19=0;r20=1;while(1){r21=HEAP32[r2+(r19<<2)>>2];do{if((r21|0)==0){r22=r20}else{if((_strstr(r21,416)|0)!=0){r22=0;break}r22=(_strstr(r21,216)|0)==0?r20:1}}while(0);r21=r19+1|0;if((r21|0)<(r1|0)){r19=r21;r20=r22}else{r18=r22;break}}}_printf(152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=(r18|0)==1?112:72,r4));STACKTOP=r4;HEAP8[16]=(r18|0)==0;HEAP32[2288>>2]=512;HEAP32[2292>>2]=512;HEAP32[2304>>2]=1;HEAP32[2296>>2]=2;HEAP32[2300>>2]=1;HEAP32[2308>>2]=6;HEAPF32[2312>>2]=.0010000000474974513;HEAPF32[2332>>2]=5;HEAPF32[2336>>2]=10;HEAPF32[2340>>2]=15;HEAPF32[2316>>2]=-.18799999356269836;HEAPF32[2320>>2]=.4129999876022339;HEAPF32[2324>>2]=-.2630000114440918;HEAPF32[2328>>2]=.6000000238418579;HEAPF32[2344>>2]=1;HEAPF32[2348>>2]=2;HEAPF32[2352>>2]=8;HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;_UpdateCamera();r18=r8|0;r8=r11;r22=r12|0;r12=r13;r20=r14;r19=r17;r21=_clGetPlatformIDs(0,0,r6);HEAP32[r7>>2]=r21;if((r21|0)!=0){_fwrite(1992,31,1,HEAP32[_stderr>>2]);_exit(-1)}r21=HEAP32[r6>>2];if((r21|0)==0){r23=0}else{r24=_malloc(r21<<2);r25=r24;r26=_clGetPlatformIDs(r21,r25,0);HEAP32[r7>>2]=r26;if((r26|0)!=0){_fwrite(1952,34,1,HEAP32[_stderr>>2]);_exit(-1)}L81:do{if((HEAP32[r6>>2]|0)!=0){r26=0;while(1){HEAP32[r7>>2]=_clGetPlatformInfo(HEAP32[r25+(r26<<2)>>2],2307,100,r18,0);r21=_clGetPlatformIDs(HEAP32[r6>>2],r25,0);HEAP32[r7>>2]=r21;r27=HEAP32[_stderr>>2];if((r21|0)!=0){break}_fprintf(r27,1928,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r26,HEAP32[r4+8>>2]=r18,r4));STACKTOP=r4;r21=r26+1|0;if(r21>>>0<HEAP32[r6>>2]>>>0){r26=r21}else{break L81}}_fwrite(1952,34,1,r27);_exit(-1)}}while(0);r27=HEAP32[r25>>2];_free(r24);r23=r27}r27=r9|0;HEAP32[r27>>2]=4228;HEAP32[r9+4>>2]=r23;HEAP32[r9+8>>2]=0;r9=HEAP8[16];r24=_clCreateContextFromType((r23|0)==0?0:r27,r9?2:4,r9?0:0,0,0,r7);HEAP32[2272>>2]=r24;if((HEAP32[r7>>2]|0)!=0){_fwrite(1896,30,1,HEAP32[_stderr>>2]);_exit(-1)}r9=_clGetContextInfo(r24,4225,0,0,r10);HEAP32[r7>>2]=r9;if((r9|0)!=0){_fprintf(HEAP32[_stderr>>2],1848,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r9,r4));STACKTOP=r4;_exit(-1)}r9=HEAP32[r10>>2];r24=_malloc(r9);HEAP32[2264>>2]=r24;if((r24|0)==0){_fprintf(HEAP32[_stderr>>2],1784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=0,r4));STACKTOP=r4;_exit(-1)}r27=_clGetContextInfo(HEAP32[2272>>2],4225,r9,r24,0);HEAP32[r7>>2]=r27;if((r27|0)!=0){_fprintf(HEAP32[_stderr>>2],1744,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r27,r4));STACKTOP=r4;_exit(-1)}L100:do{if(HEAP32[r10>>2]>>>0>3){r27=0;while(1){HEAP32[r11>>2]=0;HEAP32[r11+4>>2]=0;r28=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4096,8,r8,0);HEAP32[r7>>2]=r28;if((r28|0)!=0){r3=73;break}r24=HEAP32[r11>>2];r9=HEAP32[r11+4>>2];r23=4;r25=0;r6=2;r18=0;r26=-1;r21=0;if(r24==1&r9==0){r29=1624}else if(r24==r6&r9==r18){r29=1608}else if(r24==r23&r9==r25){r29=1592}else if(r24==r26&r9==r21){r29=1688}else{r29=1576}_fprintf(HEAP32[_stderr>>2],1544,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r29,r4));STACKTOP=r4;r30=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4139,256,r22,0);HEAP32[r7>>2]=r30;r31=HEAP32[_stderr>>2];if((r30|0)!=0){r3=80;break}_fprintf(r31,1512,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r22,r4));STACKTOP=r4;HEAP32[r13>>2]=0;r32=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4098,4,r12,0);HEAP32[r7>>2]=r32;r33=HEAP32[_stderr>>2];if((r32|0)!=0){r3=82;break}r21=HEAP32[r13>>2];_fprintf(r33,1432,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;HEAP32[r14>>2]=0;r34=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r27<<2)>>2],4100,4,r20,0);HEAP32[r7>>2]=r34;r35=HEAP32[_stderr>>2];if((r34|0)!=0){r3=84;break}r21=HEAP32[r14>>2];_fprintf(r35,1384,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r27,HEAP32[r4+8>>2]=r21,r4));STACKTOP=r4;r21=r27+1|0;if(r21>>>0<HEAP32[r10>>2]>>>2>>>0){r27=r21}else{break L100}}if(r3==73){_fprintf(HEAP32[_stderr>>2],1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r28,r4));STACKTOP=r4;_exit(-1)}else if(r3==80){_fprintf(r31,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r30,r4));STACKTOP=r4;_exit(-1)}else if(r3==82){_fprintf(r33,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r32,r4));STACKTOP=r4;_exit(-1)}else if(r3==84){_fprintf(r35,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}}while(0);HEAP32[2408>>2]=_clCreateCommandQueue(HEAP32[2272>>2],HEAP32[HEAP32[2264>>2]>>2],0,0,r7);r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1336,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r34=_fopen(872,816);if((r34|0)==0){_fprintf(HEAP32[_stderr>>2],784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r34,0,2)|0)!=0){_fprintf(HEAP32[_stderr>>2],752,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}r35=_ftell(r34);if((r35|0)==0){_fprintf(HEAP32[_stderr>>2],712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_rewind(r34);r3=_malloc(r35+1|0);r32=HEAP32[_stderr>>2];if((r3|0)==0){_fprintf(r32,664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_fprintf(r32,624,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r35,r4));STACKTOP=r4;r32=_fread(r3,1,r35,r34);if((r32|0)!=(r35|0)){_fprintf(HEAP32[_stderr>>2],568,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r32,r4));STACKTOP=r4;_exit(-1)}HEAP8[r3+r35|0]=0;_fclose(r34);HEAP32[r15>>2]=r3;r3=_clCreateProgramWithSource(HEAP32[2272>>2],1,r15,0,r7);HEAP32[2192>>2]=r3;r15=HEAP32[r7>>2];if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=_clBuildProgram(r3,1,HEAP32[2264>>2],1232,0,0);HEAP32[r7>>2]=r15;if((r15|0)==0){r3=_clCreateKernel(HEAP32[2192>>2],1056,r7);HEAP32[2256>>2]=r3;r34=HEAP32[r7>>2];if((r34|0)!=0){_fprintf(HEAP32[_stderr>>2],1e3,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}HEAP32[r17>>2]=0;r34=_clGetKernelWorkGroupInfo(r3,HEAP32[HEAP32[2264>>2]>>2],4528,4,r19,0);HEAP32[r7>>2]=r34;if((r34|0)==0){r19=HEAP32[r17>>2];HEAP32[8>>2]=r19;_fprintf(HEAP32[_stderr>>2],896,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_InitGlut(r1,r2,2024);_glutMainLoop();STACKTOP=r5;return 0}else{_fprintf(HEAP32[_stderr>>2],944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}}else{_fprintf(HEAP32[_stderr>>2],1192,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;r15=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,0,0,r16);HEAP32[r7>>2]=r15;if((r15|0)!=0){_fprintf(HEAP32[_stderr>>2],1144,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=HEAP32[r16>>2];r34=_malloc(r15+1|0);r5=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,r15,r34,0);HEAP32[r7>>2]=r5;if((r5|0)==0){HEAP8[r34+HEAP32[r16>>2]|0]=0;_fprintf(HEAP32[_stderr>>2],1072,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}else{_fprintf(HEAP32[_stderr>>2],1104,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}function _AllocateBuffers(){var r1,r2,r3,r4,r5;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2;r4=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r5=_malloc(r4);HEAP32[2200>>2]=r5;HEAP32[2208>>2]=_clCreateBuffer(HEAP32[2272>>2],33,0,r4,r5,r3);r5=HEAP32[r3>>2];if((r5|0)!=0){_fprintf(HEAP32[_stderr>>2],520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}HEAP32[2280>>2]=_clCreateBuffer(HEAP32[2272>>2],36,0,116,2288,r3);r5=HEAP32[r3>>2];if((r5|0)==0){STACKTOP=r2;return}else{_fprintf(HEAP32[_stderr>>2],472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}}function _SetEnableAccumulationKernelArg(r1,r2,r3){var r4,r5,r6,r7,r8;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+24|0;r6=r5;r7=r5+8;r8=r5+16;HEAP32[r6>>2]=r1;HEAPF32[r7>>2]=r2;HEAPF32[r8>>2]=r3;r3=_clSetKernelArg(HEAP32[2256>>2],2,4,r6);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],3,4,r7);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],4,4,r8);if((r3|0)==0){STACKTOP=r5;return}else{_fprintf(HEAP32[_stderr>>2],248,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[2356>>2]-HEAPF32[2344>>2];r2=HEAPF32[2360>>2]-HEAPF32[2348>>2];r3=HEAPF32[2364>>2]-HEAPF32[2352>>2];r4=1/Math.sqrt(r3*r3+(r1*r1+r2*r2));r5=r1*r4;HEAPF32[2368>>2]=r5;r1=r4*r2;HEAPF32[2372>>2]=r1;r2=r4*r3;HEAPF32[2376>>2]=r2;r3=0;r4=r3-r2;r6=0-0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+(r4*r4+r6*r6));r8=(HEAP32[2288>>2]>>>0)*.5134999752044678/(HEAP32[2292>>2]>>>0);r9=r8*r4*r3;HEAPF32[2380>>2]=r9;r4=r8*r3*r6;HEAPF32[2384>>2]=r4;r6=r8*r3*r7;HEAPF32[2388>>2]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+(r7*r7+r3*r3));HEAPF32[2392>>2]=r7*r5*.5134999752044678;HEAPF32[2396>>2]=r5*r3*.5134999752044678;HEAPF32[2400>>2]=r5*r2*.5134999752044678;return}function _displayFunc(){var r1,r2,r3,r4,r5;r1=STACKTOP;STACKTOP=STACKTOP+64|0;r2=r1;_UpdateRendering();_glClear(16384);r3=HEAP32[2200>>2];_glDisable(2896);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5889);r4=r2|0;HEAPF32[r4>>2]=2/(HEAP32[2288>>2]>>>0);r5=r2+4|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+20>>2]=2/(HEAP32[2292>>2]>>>0);r5=r2+24|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+40>>2]=1;HEAPF32[r2+44>>2]=0;HEAPF32[r2+48>>2]=-1;HEAPF32[r2+52>>2]=-1;HEAPF32[r2+56>>2]=0;HEAPF32[r2+60>>2]=1;_glLoadMatrixf(r4);_glMatrixMode(5888);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[3144>>2]);if((r3|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[2288>>2],HEAP32[2292>>2],6407,5126,r3)}_glBegin(5);_glTexCoord2i(0,0);_glVertex3f(0,0,0);_glTexCoord2i(0,1);_glVertex3f(0,HEAP32[2292>>2]>>>0,0);_glTexCoord2i(1,0);_glVertex3f(HEAP32[2288>>2]>>>0,0,0);_glTexCoord2i(1,1);_glVertex3f(HEAP32[2288>>2]>>>0,HEAP32[2292>>2]>>>0,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);_glEnable(3042);_glBlendFunc(770,771);r3=HEAP32[2288>>2]-66|0;_DrawJulia(1,r3,1,HEAPF32[2316>>2],HEAPF32[2320>>2]);r4=HEAP32[2288>>2]-66|0;_DrawJulia(2,r4,66,HEAPF32[2324>>2],HEAPF32[2328>>2]);_glDisable(3042);_glColor3f(1,1,1);r2=r3+(HEAPF32[2316>>2]+1.5)*64/3&-1;r3=(HEAPF32[2320>>2]+1.5)*64/3+1&-1;_glBegin(1);_glVertex3f(r2-4|0,r3);_glVertex3f(r2+4|0,r3);_glVertex3f(r2,r3-4|0);_glVertex3f(r2,r3+4|0);_glEnd();r3=r4+(HEAPF32[2324>>2]+1.5)*64/3&-1;r4=(HEAPF32[2328>>2]+1.5)*64/3+66&-1;_glBegin(1);_glVertex3f(r3-4|0,r4);_glVertex3f(r3+4|0,r4);_glVertex3f(r3,r4-4|0);_glVertex3f(r3,r4+4|0);_glEnd();_glFlush();STACKTOP=r1;return}function _DrawJulia(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r6=STACKTOP;STACKTOP=STACKTOP+65536|0;r7=r6;r8=0;while(1){r9=(r8|0)*.046875-1.5;r10=0;while(1){r11=0;r12=r9;r13=(r10|0)*.046875-1.5;while(1){r14=r13*r13;r15=r12*r12;if(r15+r14>4){r16=r11;break}r17=r11+1|0;if((r17|0)<64){r11=r17;r12=r12*r13*2+r5;r13=r14-r15+r4}else{r16=r17;break}}HEAPF32[r7+(r10<<10)+(r8<<4)>>2]=(r16|0)*.015625;HEAPF32[r7+(r10<<10)+(r8<<4)+4>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+8>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+12>>2]=.5;r13=r10+1|0;if((r13|0)<64){r10=r13}else{break}}r10=r8+1|0;if((r10|0)<64){r8=r10}else{break}}_glEnable(3553);_glBindTexture(3553,HEAP32[3144+(r1<<2)>>2]);_glTexSubImage2D(3553,0,0,0,64,64,6408,5126,r7);_glBegin(5);_glTexCoord2i(0,0);r7=r2|0;r1=r3|0;_glVertex3f(r7,r1,0);_glTexCoord2i(0,1);r8=r3+64|0;_glVertex3f(r7,r8,0);_glTexCoord2i(1,0);r7=r2+64|0;_glVertex3f(r7,r1,0);_glTexCoord2i(1,1);_glVertex3f(r7,r8,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);STACKTOP=r6;return}function _reshapeFunc(r1,r2){HEAP32[2288>>2]=r1;HEAP32[2292>>2]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(-.5,(HEAP32[2288>>2]>>>0)-.5,-.5,(HEAP32[2292>>2]>>>0)-.5,-1,1);_ReInit(1);_glutPostRedisplay();return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105;r4=0;switch(r1|0){case 101:{r5=HEAPF32[2356>>2];r6=HEAPF32[2360>>2];r7=HEAPF32[2364>>2];r8=HEAPF32[2344>>2];r9=r5-r8;r10=HEAPF32[2348>>2];r11=r6-r10;r12=HEAPF32[2352>>2];r13=r7-r12;r14=r11;r15=r14*.9993908270285325;r16=r13;r17=r16*-.03489949643226648;r18=r15+r17;r19=r18;r20=-r19;r21=r20;r22=r21*-.03489949643226648;r23=r16*.9993908270285325;r24=r23+r22;r25=r24;r26=r8+r9;r27=r10+r19;r28=r12+r25;HEAPF32[2356>>2]=r26;HEAPF32[2360>>2]=r27;HEAPF32[2364>>2]=r28;break};case 103:{r29=HEAPF32[2356>>2];r30=HEAPF32[2360>>2];r31=HEAPF32[2364>>2];r32=HEAPF32[2344>>2];r33=r29-r32;r34=HEAPF32[2348>>2];r35=r30-r34;r36=HEAPF32[2352>>2];r37=r31-r36;r38=r35;r39=r38*.9993908270285325;r40=r37;r41=r40*.03489949643226648;r42=r39+r41;r43=r42;r44=-r43;r45=r44;r46=r45*.03489949643226648;r47=r40*.9993908270285325;r48=r47+r46;r49=r48;r50=r32+r33;r51=r34+r43;r52=r36+r49;HEAPF32[2356>>2]=r50;HEAPF32[2360>>2]=r51;HEAPF32[2364>>2]=r52;break};case 100:{r53=HEAPF32[2356>>2];r54=HEAPF32[2360>>2];r55=HEAPF32[2364>>2];r56=HEAPF32[2344>>2];r57=r53-r56;r58=HEAPF32[2348>>2];r59=r54-r58;r60=HEAPF32[2352>>2];r61=r55-r60;r62=r57;r63=r62*.9993908270285325;r64=r61;r65=r64*-.03489949643226648;r66=r63-r65;r67=r66;r68=r67;r69=r68*-.03489949643226648;r70=r64*.9993908270285325;r71=r70+r69;r72=r71;r73=r56+r67;r74=r58+r59;r75=r60+r72;HEAPF32[2356>>2]=r73;HEAPF32[2360>>2]=r74;HEAPF32[2364>>2]=r75;break};case 102:{r76=HEAPF32[2356>>2];r77=HEAPF32[2360>>2];r78=HEAPF32[2364>>2];r79=HEAPF32[2344>>2];r80=r76-r79;r81=HEAPF32[2348>>2];r82=r77-r81;r83=HEAPF32[2352>>2];r84=r78-r83;r85=r80;r86=r85*.9993908270285325;r87=r84;r88=r87*.03489949643226648;r89=r86-r88;r90=r89;r91=r90;r92=r91*.03489949643226648;r93=r87*.9993908270285325;r94=r93+r92;r95=r94;r96=r79+r90;r97=r81+r82;r98=r83+r95;HEAPF32[2356>>2]=r96;HEAPF32[2360>>2]=r97;HEAPF32[2364>>2]=r98;break};case 104:{r99=HEAPF32[2360>>2];r100=r99+.5;HEAPF32[2360>>2]=r100;break};case 105:{r101=HEAPF32[2360>>2];r102=r101-.5;HEAPF32[2360>>2]=r102;break};default:{}}_ReInit(0);_glutPostRedisplay();r103=_emscripten_get_now();r104=r103|0;r105=r104/1e3;HEAPF64[64>>3]=r105;return}function _mouseFunc(r1,r2,r3,r4){var r5,r6,r7,r8;L199:do{if((r1|0)==0){if((r2|0)==1){HEAP8[56]=0;HEAP8[24]=0;HEAP8[40]=0;break}else if((r2|0)!=0){break}HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[56]=1;if((_glutGetModifiers()|0)==1){HEAP8[24]=1;break}HEAP8[24]=0;r5=HEAP32[2292>>2]-r4|0;r6=HEAP32[2288>>2];r7=r6-66|0;do{if(!((r7|0)>(r3|0)|(r6-2|0)<(r3|0))){r8=r5-2|0;if(r8>>>0<65){HEAP8[40]=1;HEAPF32[2316>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}r8=r5-67|0;if(r8>>>0>=65){break}HEAP8[40]=1;HEAPF32[2324>>2]=(r3-r7|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r8|0)*3*.015625-1.5;_ReInit(0);_glutPostRedisplay();break L199}}while(0);HEAP8[40]=0}else if((r1|0)==2){if((r2|0)==0){HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[48]=1;break}else if((r2|0)==1){HEAP8[48]=0;break}else{break}}}while(0);HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105,r106,r107,r108,r109,r110,r111,r112,r113,r114,r115,r116,r117,r118,r119,r120,r121,r122,r123,r124,r125,r126,r127,r128,r129,r130,r131,r132,r133,r134,r135,r136,r137,r138,r139,r140,r141,r142,r143,r144,r145,r146,r147,r148,r149,r150,r151,r152,r153,r154,r155,r156,r157,r158,r159,r160,r161,r162,r163,r164,r165,r166,r167,r168,r169,r170,r171,r172,r173,r174,r175,r176,r177,r178,r179,r180,r181,r182,r183,r184,r185,r186,r187,r188,r189,r190,r191,r192,r193,r194,r195,r196,r197,r198,r199,r200,r201;r4=0;r5=0;r6=STACKTOP;r7=r1&255;L220:do{switch(r7|0){case 112:{r8=_fopen(232,1840);r9=(r8|0)==0;if(r9){r10=HEAP32[_stderr>>2];r11=_fwrite(1472,37,1,r10);break L220}r12=HEAP32[2288>>2];r13=HEAP32[2292>>2];r14=_fprintf(r8,1040,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r12,HEAP32[r5+8>>2]=r13,HEAP32[r5+16>>2]=255,r5));STACKTOP=r5;r15=HEAP32[2292>>2];r16=(r15|0)==0;if(!r16){r17=HEAP32[2288>>2];r18=0;r19=r17;r20=r15;while(1){r21=(r19|0)==0;if(r21){r22=0;r23=r20}else{r24=~r18;r25=0;r26=r19;r27=r20;while(1){r28=r27+r24|0;r29=Math.imul(r28,r26)|0;r30=r29+r25|0;r31=r30*3&-1;r32=HEAP32[2200>>2];r33=r32+(r31<<2)|0;r34=HEAPF32[r33>>2];r35=r34<0;do{if(r35){r36=0}else{r37=r34>1;if(r37){r36=255;break}r38=r34*255;r39=r38+.5;r40=r39&-1;r36=r40}}while(0);r41=r31+1|0;r42=r32+(r41<<2)|0;r43=HEAPF32[r42>>2];r44=r43<0;do{if(r44){r45=0}else{r46=r43>1;if(r46){r45=255;break}r47=r43*255;r48=r47+.5;r49=r48&-1;r45=r49}}while(0);r50=r31+2|0;r51=r32+(r50<<2)|0;r52=HEAPF32[r51>>2];r53=r52<0;do{if(r53){r54=0}else{r55=r52>1;if(r55){r54=255;break}r56=r52*255;r57=r56+.5;r58=r57&-1;r54=r58}}while(0);r59=_fprintf(r8,608,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r36,HEAP32[r5+8>>2]=r45,HEAP32[r5+16>>2]=r54,r5));STACKTOP=r5;r60=r25+1|0;r61=HEAP32[2288>>2];r62=r60>>>0<r61>>>0;r63=HEAP32[2292>>2];if(r62){r25=r60;r26=r61;r27=r63}else{r22=r61;r23=r63;break}}}r64=r18+1|0;r65=r64>>>0<r23>>>0;if(r65){r18=r64;r19=r22;r20=r23}else{break}}}r66=_fclose(r8);break};case 27:{r67=HEAP32[_stderr>>2];r68=_fwrite(224,6,1,r67);_exit(0);break};case 97:{r69=HEAPF32[2380>>2];r70=HEAPF32[2384>>2];r71=HEAPF32[2388>>2];r72=r69*r69;r73=r70*r70;r74=r72+r73;r75=r71*r71;r76=r74+r75;r77=r76;r78=Math.sqrt(r77);r79=1/r78;r80=r79;r81=r69*r80;r82=r70*r80;r83=r71*r80;r84=r81*-.5;r85=r82*-.5;r86=r83*-.5;r87=HEAPF32[2344>>2];r88=r87+r84;HEAPF32[2344>>2]=r88;r89=HEAPF32[2348>>2];r90=r89+r85;HEAPF32[2348>>2]=r90;r91=HEAPF32[2352>>2];r92=r91+r86;HEAPF32[2352>>2]=r92;r93=HEAPF32[2356>>2];r94=r84+r93;HEAPF32[2356>>2]=r94;r95=HEAPF32[2360>>2];r96=r85+r95;HEAPF32[2360>>2]=r96;r97=HEAPF32[2364>>2];r98=r86+r97;HEAPF32[2364>>2]=r98;break};case 100:{r99=HEAPF32[2380>>2];r100=HEAPF32[2384>>2];r101=HEAPF32[2388>>2];r102=r99*r99;r103=r100*r100;r104=r102+r103;r105=r101*r101;r106=r104+r105;r107=r106;r108=Math.sqrt(r107);r109=1/r108;r110=r109;r111=r99*r110;r112=r100*r110;r113=r101*r110;r114=r111*.5;r115=r112*.5;r116=r113*.5;r117=HEAPF32[2344>>2];r118=r117+r114;HEAPF32[2344>>2]=r118;r119=HEAPF32[2348>>2];r120=r119+r115;HEAPF32[2348>>2]=r120;r121=HEAPF32[2352>>2];r122=r121+r116;HEAPF32[2352>>2]=r122;r123=HEAPF32[2356>>2];r124=r114+r123;HEAPF32[2356>>2]=r124;r125=HEAPF32[2360>>2];r126=r115+r125;HEAPF32[2360>>2]=r126;r127=HEAPF32[2364>>2];r128=r116+r127;HEAPF32[2364>>2]=r128;break};case 119:{r129=HEAPF32[2368>>2];r130=HEAPF32[2372>>2];r131=HEAPF32[2376>>2];r132=r129*.5;r133=r130*.5;r134=r131*.5;r135=HEAPF32[2344>>2];r136=r132+r135;HEAPF32[2344>>2]=r136;r137=HEAPF32[2348>>2];r138=r133+r137;HEAPF32[2348>>2]=r138;r139=HEAPF32[2352>>2];r140=r134+r139;HEAPF32[2352>>2]=r140;r141=HEAPF32[2356>>2];r142=r132+r141;HEAPF32[2356>>2]=r142;r143=HEAPF32[2360>>2];r144=r133+r143;HEAPF32[2360>>2]=r144;r145=HEAPF32[2364>>2];r146=r134+r145;HEAPF32[2364>>2]=r146;break};case 115:{r147=HEAPF32[2368>>2];r148=HEAPF32[2372>>2];r149=HEAPF32[2376>>2];r150=r147*-.5;r151=r148*-.5;r152=r149*-.5;r153=HEAPF32[2344>>2];r154=r150+r153;HEAPF32[2344>>2]=r154;r155=HEAPF32[2348>>2];r156=r151+r155;HEAPF32[2348>>2]=r156;r157=HEAPF32[2352>>2];r158=r152+r157;HEAPF32[2352>>2]=r158;r159=HEAPF32[2356>>2];r160=r150+r159;HEAPF32[2356>>2]=r160;r161=HEAPF32[2360>>2];r162=r151+r161;HEAPF32[2360>>2]=r162;r163=HEAPF32[2364>>2];r164=r152+r163;HEAPF32[2364>>2]=r164;break};case 114:{r165=HEAPF32[2348>>2];r166=r165+.5;HEAPF32[2348>>2]=r166;r167=HEAPF32[2360>>2];r168=r167+.5;HEAPF32[2360>>2]=r168;break};case 102:{r169=HEAPF32[2348>>2];r170=r169-.5;HEAPF32[2348>>2]=r170;r171=HEAPF32[2360>>2];r172=r171-.5;HEAPF32[2360>>2]=r172;break};case 108:{r173=HEAP32[2304>>2];r174=(r173|0)==0;r175=r174&1;HEAP32[2304>>2]=r175;break};case 104:{r176=HEAP32[32>>2];r177=(r176|0)==0;r178=r177&1;HEAP32[32>>2]=r178;break};case 49:{r179=HEAPF32[2312>>2];r180=r179*.75;HEAPF32[2312>>2]=r180;break};case 50:{r181=HEAPF32[2312>>2];r182=r181*1.3333333730697632;HEAPF32[2312>>2]=r182;break};case 51:{r183=HEAP32[2308>>2];r184=r183-1|0;r185=(r184|0)==0;r186=r185?1:r184;HEAP32[2308>>2]=r186;break};case 52:{r187=HEAP32[2308>>2];r188=r187+1|0;r189=r188>>>0>12;r190=r189?12:r188;HEAP32[2308>>2]=r190;break};case 53:{r191=HEAP32[2296>>2];r192=r191-1|0;r193=(r192|0)<1;r194=r193?1:r192;HEAP32[2296>>2]=r194;break};case 54:{r195=HEAP32[2296>>2];r196=r195+1|0;r197=(r196|0)>5;r198=r197?5:r196;HEAP32[2296>>2]=r198;break};default:{}}}while(0);_ReInit(0);_glutPostRedisplay();r199=_emscripten_get_now();r200=r199|0;r201=r200/1e3;HEAPF64[64>>3]=r201;STACKTOP=r6;return}function _motionFunc(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;L264:do{if(HEAP8[56]){r3=HEAP32[2292>>2]-r2|0;r4=HEAP32[2288>>2];r5=r4-66|0;r6=HEAP8[40];do{if((r5|0)>(r1|0)|r6^1|(r4-2|0)<(r1|0)){if(r6){break L264}}else{r7=r3-2|0;if(r7>>>0<65){HEAPF32[2316>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2320>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}r7=r3-67|0;if(r7>>>0<65){HEAPF32[2324>>2]=(r1-r5|0)*3*.015625-1.5;HEAPF32[2328>>2]=(r7|0)*3*.015625-1.5;_ReInit(0);break L264}else{if(r6){break L264}else{break}}}}while(0);r6=r1-HEAP32[2248>>2]|0;r5=r2-HEAP32[2240>>2]|0;if(HEAP8[24]){r3=HEAPF32[2344>>2];r4=HEAPF32[2348>>2];r7=HEAPF32[2360>>2]-r4;r8=HEAPF32[2352>>2];r9=HEAPF32[2364>>2]-r8;r10=HEAPF32[2356>>2]-r3;r11=(r6|0)*.10000000149011612*.03490658503988659;r12=Math.cos(r11);r13=r9;r9=Math.sin(r11);r11=r10*r12-r13*r9;r10=(r5|0)*.10000000149011612*.03490658503988659;r14=Math.cos(r10);r15=r8+(r12*r13+r9*r11)-r8;r9=Math.sin(r10);r10=(r4+r7-r4)*r14+r9*r15;HEAPF32[2356>>2]=r3+(r3+r11-r3);HEAPF32[2360>>2]=r4+r10;HEAPF32[2364>>2]=r8+(r14*r15+r9*-r10)}else{HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;r10=HEAPF32[2352>>2];r9=HEAPF32[2344>>2];r15=(r6|0)*.20000000298023224*.03490658503988659;r6=Math.cos(r15);r14=r10;r10=Math.sin(r15);HEAPF32[2344>>2]=r9*r6-r14*r10;r15=HEAPF32[2348>>2];r8=(r5|0)*.20000000298023224*.03490658503988659;r5=Math.cos(r8);r4=r14*r6+r9*r10;r10=Math.sin(r8);HEAPF32[2348>>2]=r15*r5+r10*r4;HEAPF32[2352>>2]=-r15*r10+r5*r4}HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0)}else{if(HEAP8[48]){r4=r1-HEAP32[2248>>2]|0;r5=HEAPF32[2336>>2];r10=HEAPF32[2340>>2];r15=(r2-HEAP32[2240>>2]|0)*-.20000000298023224*.03490658503988659;r8=Math.cos(r15);r9=r10;r10=Math.sin(r15);HEAPF32[2336>>2]=r5*r8+r9*r10;r15=HEAPF32[2332>>2];r6=(r4|0)*-.20000000298023224*.03490658503988659;r4=Math.cos(r6);r14=r9*r8+ -r5*r10;r10=Math.sin(r6);HEAPF32[2332>>2]=r15*r4-r10*r14;HEAPF32[2340>>2]=r15*r10+r4*r14;HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0);break}else{return}}}while(0);_glutPostRedisplay();HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _timerFunc(r1){r1=(_emscripten_get_now()|0)/1e3;do{if(r1-HEAPF64[64>>3]>5){if((HEAP32[2300>>2]|0)==0){break}HEAP32[2300>>2]=0;_glutPostRedisplay()}else{HEAP32[2300>>2]=1}}while(0);_glutTimerFunc(1e3,14,0);return}function _InitGlut(r1,r2,r3){var r4,r5,r6;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+8|0;r6=r5;HEAP32[r6>>2]=r1;HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;_glutInitWindowSize(HEAP32[2288>>2],HEAP32[2292>>2]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r6,r2);_glutCreateWindow(r3);_glutReshapeFunc(6);_glutKeyboardFunc(8);_glutSpecialFunc(4);_glutDisplayFunc(10);_glutMouseFunc(12);_glutMotionFunc(2);_glutTimerFunc(1e3,14,0);_glMatrixMode(5889);r3=HEAP32[2288>>2];r2=HEAP32[2292>>2];_glGenTextures(3,3144);_printf(184,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r3,HEAP32[r4+8>>2]=r2,r4));STACKTOP=r4;_printf(120,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_printf(80,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_glActiveTexture(33985);_glGenTextures(3,3144);_glBindTexture(3553,HEAP32[3144>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6407,r3,r2,0,6407,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3148>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3152>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[3184>>2]=0;HEAPF32[3188>>2]=0;r2=HEAP32[2288>>2]>>>0;HEAPF32[3176>>2]=r2;HEAPF32[3180>>2]=0;HEAPF32[3168>>2]=r2;r2=HEAP32[2292>>2]>>>0;HEAPF32[3172>>2]=r2;HEAPF32[3160>>2]=0;HEAPF32[3164>>2]=r2;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,2160);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,3160);STACKTOP=r5;return}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[2672>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2712+(r8<<2)|0;r10=2712+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[2680>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2712+(r16<<2)|0;r13=2712+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[2680>>2];if((r12|0)!=0){r17=HEAP32[2692>>2];r4=r12>>>3;r12=r4<<1;r6=2712+(r12<<2)|0;r11=HEAP32[2672>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[2672>>2]=r11|r8;r19=r6;r20=2712+(r12+2<<2)|0}else{r4=2712+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[2688>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[2680>>2]=r13;HEAP32[2692>>2]=r5;r14=r9;return r14}r12=HEAP32[2676>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2976+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[2688>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L371:do{if((r5|0)!=0){r6=r4+28|0;r9=2976+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r6>>2]);break L371}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L371}}}while(0);if(r22>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[2680>>2];if((r6|0)!=0){r5=HEAP32[2692>>2];r9=r6>>>3;r6=r9<<1;r17=2712+(r6<<2)|0;r11=HEAP32[2672>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[2672>>2]=r11|r7;r25=r17;r26=2712+(r6+2<<2)|0}else{r9=2712+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[2688>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[2680>>2]=r16;HEAP32[2692>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[2676>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2976+(r27<<2)>>2];L419:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L419}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2976+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[2680>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[2688>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L469:do{if((r5|0)!=0){r9=r37+28|0;r13=2976+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r9>>2]);break L469}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L469}}}while(0);if(r38>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2712+(r5<<2)|0;r18=HEAP32[2672>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[2672>>2]=r18|r10;r41=r13;r42=2712+(r5+2<<2)|0}else{r9=2712+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[2688>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2976+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[2676>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[2676>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=368;break}else{r12=r12<<1;r13=r10}}if(r2==368){if(r45>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[2688>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[2680>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[2692>>2];if(r45>>>0>15){r44=r36;HEAP32[2692>>2]=r44+r15;HEAP32[2680>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[2680>>2]=0;HEAP32[2692>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[2684>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[2684>>2]=r45;r36=HEAP32[2696>>2];r37=r36;HEAP32[2696>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[2216>>2]|0)==0){r36=_sysconf(8);if((r36-1&r36|0)==0){HEAP32[2224>>2]=r36;HEAP32[2220>>2]=r36;HEAP32[2228>>2]=-1;HEAP32[2232>>2]=-1;HEAP32[2236>>2]=0;HEAP32[3116>>2]=0;HEAP32[2216>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[2224>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[3112>>2];do{if((r41|0)!=0){r42=HEAP32[3104>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L561:do{if((HEAP32[3116>>2]&4|0)==0){r41=HEAP32[2696>>2];L563:do{if((r41|0)==0){r2=398}else{r38=r41;r42=3120;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=398;break L563}else{r42=r39}}if((r42|0)==0){r2=398;break}r38=r44-HEAP32[2684>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=407}}while(0);do{if(r2==398){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[2220>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[3104>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[3112>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=407}}while(0);L583:do{if(r2==407){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=418;break L561}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[2224>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L583}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=418;break L561}}}while(0);HEAP32[3116>>2]=HEAP32[3116>>2]|4;r57=r48;r2=415}else{r57=0;r2=415}}while(0);do{if(r2==415){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=418}}}while(0);do{if(r2==418){r57=HEAP32[3104>>2]+r54|0;HEAP32[3104>>2]=r57;if(r57>>>0>HEAP32[3108>>2]>>>0){HEAP32[3108>>2]=r57}r57=HEAP32[2696>>2];L603:do{if((r57|0)==0){r45=HEAP32[2688>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[2688>>2]=r55}HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[2708>>2]=HEAP32[2216>>2];HEAP32[2704>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2712+(r50<<2)|0;HEAP32[2712+(r50+3<<2)>>2]=r56;HEAP32[2712+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[2696>>2]=r55+r58;HEAP32[2684>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2]}else{r45=3120;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=430;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==430){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[2696>>2];r50=HEAP32[2684>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[2696>>2]=r51+r62;HEAP32[2684>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];break L603}}while(0);if(r55>>>0<HEAP32[2688>>2]>>>0){HEAP32[2688>>2]=r55}r45=r55+r54|0;r50=3120;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=440;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==440){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[2696>>2]|0)){r36=HEAP32[2684>>2]+r37|0;HEAP32[2684>>2]=r36;HEAP32[2696>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[2692>>2]|0)){r36=HEAP32[2680>>2]+r37|0;HEAP32[2680>>2]=r36;HEAP32[2692>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L648:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2712+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2976+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r42>>2]);break L648}else{if(r13>>>0<HEAP32[2688>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L648}}}while(0);if(r67>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2712+(r47<<2)|0;r42=HEAP32[2672>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[2672>>2]=r42|r13;r72=r49;r73=2712+(r47+2<<2)|0}else{r36=2712+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[2688>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[2676>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[2676>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=513;break}else{r43=r43<<1;r49=r13}}if(r2==513){if(r76>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[2688>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=3120;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[2696>>2]=r55+r81;HEAP32[2684>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[3120>>2];HEAP32[r48+4>>2]=HEAP32[3124>>2];HEAP32[r48+8>>2]=HEAP32[3128>>2];HEAP32[r48+12>>2]=HEAP32[3132>>2];HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[3128>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2712+(r37<<2)|0;r45=HEAP32[2672>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[2672>>2]=r45|r13;r82=r51;r83=2712+(r37+2<<2)|0}else{r48=2712+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[2688>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[2676>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[2676>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=548;break}else{r43=r43<<1;r51=r13}}if(r2==548){if(r86>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[2688>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[2684>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[2684>>2]=r52;r57=HEAP32[2696>>2];r43=r57;HEAP32[2696>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[2688>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L820:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[2692>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[2680>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2712+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2976+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L820}else{if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L820}}}while(0);if(r27>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[2696>>2]|0)){r28=HEAP32[2684>>2]+r18|0;HEAP32[2684>>2]=r28;HEAP32[2696>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[2692>>2]|0)){return}HEAP32[2692>>2]=0;HEAP32[2680>>2]=0;return}if((r10|0)==(HEAP32[2692>>2]|0)){r28=HEAP32[2680>>2]+r18|0;HEAP32[2680>>2]=r28;HEAP32[2692>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L923:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2712+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2976+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r20>>2]);break L923}else{if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L923}}}while(0);if(r31>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[2692>>2]|0)){r34=r28;break}HEAP32[2680>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2712+(r4<<2)|0;r27=HEAP32[2672>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[2672>>2]=r27|r31;r35=r5;r36=2712+(r4+2<<2)|0}else{r18=2712+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[2688>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2976+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[2676>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[2676>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=725;break}else{r27=r27<<1;r36=r31}}if(r2==725){if(r39>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[2688>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[2704>>2]-1|0;HEAP32[2704>>2]=r17;if((r17|0)==0){r40=3128}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[2704>>2]=-1;return}
+function _UpdateRendering(){var r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27;r1=0;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+32|0;r4=r3;r5=r3+24;r6=_WallClockTime();r7=_clSetKernelArg(HEAP32[2256>>2],0,4,2208);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2120,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=_clSetKernelArg(HEAP32[2256>>2],1,4,2280);if((r7|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r7,r2));STACKTOP=r2;_exit(-1)}r7=Math.imul(HEAP32[2292>>2],HEAP32[2288>>2])|0;r8=r3+8|0;HEAP32[r8>>2]=r7;r9=HEAP32[8>>2];if(((r7>>>0)%(r9>>>0)&-1|0)!=0){HEAP32[r8>>2]=Math.imul(((r7>>>0)/(r9>>>0)&-1)+1|0,r9)|0}r7=r3+16|0;HEAP32[r7>>2]=r9;r9=HEAP32[2296>>2];L10:do{if((HEAP32[2300>>2]|0)==0&(r9|0)>1){if((r9|0)>0){r10=0;r11=r9}else{break}L12:while(1){if((r11|0)>0){r12=(r10|0)+.5;r13=0;r14=r11;while(1){r15=r14|0;r16=((r13|0)+.5)/r15;r17=r12/r15;do{if((r13|r10|0)==0){_SetEnableAccumulationKernelArg(0,r16,r17);r18=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,0);if((r18|0)!=0){r1=13;break L12}}else{r15=r14-1|0;_SetEnableAccumulationKernelArg(1,r16,r17);r19=HEAP32[2408>>2];r20=HEAP32[2256>>2];if(!((r13|0)==(r15|0)&(r10|0)==(r15|0))){r21=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,0);if((r21|0)==0){break}else{r1=19;break L12}}r22=_clEnqueueNDRangeKernel(r19,r20,1,0,r8,r7,0,0,r4);if((r22|0)!=0){r1=16;break L12}_clFinish(HEAP32[2408>>2])}}while(0);r17=r13+1|0;r16=HEAP32[2296>>2];if((r17|0)<(r16|0)){r13=r17;r14=r16}else{r23=r16;break}}}else{r23=r11}r14=r10+1|0;if((r14|0)<(r23|0)){r10=r14;r11=r23}else{break L10}}if(r1==13){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r18,r2));STACKTOP=r2;_exit(-1)}else if(r1==16){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r22,r2));STACKTOP=r2;_exit(-1)}else if(r1==19){_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}}else{_SetEnableAccumulationKernelArg(0,0,0);r14=_clEnqueueNDRangeKernel(HEAP32[2408>>2],HEAP32[2256>>2],1,0,r8,r7,0,0,r4);if((r14|0)==0){_clFinish(HEAP32[2408>>2]);break}else{_fprintf(HEAP32[_stderr>>2],328,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r14,r2));STACKTOP=r2;_exit(-1)}}}while(0);r4=HEAP32[2408>>2];r7=HEAP32[2208>>2];r8=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r21=_clEnqueueReadBuffer(r4,r7,1,0,r8,HEAP32[2200>>2],0,0,r5);if((r21|0)!=0){_fprintf(HEAP32[_stderr>>2],1640,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r21,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);r21=HEAP32[2296>>2];do{if((HEAP32[2300>>2]|0)==0&(r21|0)>1){r5=1/(Math.imul(r21,r21)|0);if((Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)==0){break}else{r24=0}while(1){r8=HEAP32[2200>>2]+(r24<<2)|0;HEAPF32[r8>>2]=r5*HEAPF32[r8>>2];r8=r24+1|0;if(r8>>>0<(Math.imul(HEAP32[2288>>2]*3&-1,HEAP32[2292>>2])|0)>>>0){r24=r8}else{break}}}}while(0);r24=_WallClockTime()-r6;r6=((Math.imul(HEAP32[2288>>2],HEAP32[2292>>2])|0)>>>0)/r24;r21=HEAP32[2296>>2];if(!((HEAP32[2300>>2]|0)==0&(r21|0)>1)){r25=r6;r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}r25=r6*(Math.imul(r21,r21)|0);r26=r25*.0009765625;r27=_sprintf(2416,1240,(r2=STACKTOP,STACKTOP=STACKTOP+16|0,HEAPF64[r2>>3]=r24,HEAPF64[r2+8>>3]=r26,r2));STACKTOP=r2;STACKTOP=r3;return}function _ReInit(r1){var r2,r3;r2=0;r3=STACKTOP;STACKTOP=STACKTOP+8|0;if((r1|0)==0){_UpdateCamera();r1=_clEnqueueWriteBuffer(HEAP32[2408>>2],HEAP32[2280>>2],1,0,116,2288,0,0,r3);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],824,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_clFinish(HEAP32[2408>>2]);STACKTOP=r3;return}r1=_clReleaseMemObject(HEAP32[2208>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],424,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}r1=_clReleaseMemObject(HEAP32[2280>>2]);if((r1|0)!=0){_fprintf(HEAP32[_stderr>>2],368,(r2=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r2>>2]=r1,r2));STACKTOP=r2;_exit(-1)}_free(HEAP32[2200>>2]);_UpdateCamera();_AllocateBuffers();STACKTOP=r3;return}function _main(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34;r3=0;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+448|0;r6=r5;r7=r5+8;r8=r5+16;r9=r5+120;r10=r5+136;r11=r5+144;r12=r5+152;r13=r5+408;r14=r5+416;r15=r5+424;r16=r5+432;r17=r5+440;if((r1|0)<1|(r2|0)==0){r18=1}else{r19=0;r20=1;while(1){r21=HEAP32[r2+(r19<<2)>>2];do{if((r21|0)==0){r22=r20}else{if((_strstr(r21,416)|0)!=0){r22=0;break}r22=(_strstr(r21,216)|0)==0?r20:1}}while(0);r21=r19+1|0;if((r21|0)<(r1|0)){r19=r21;r20=r22}else{r18=r22;break}}}_printf(152,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=(r18|0)==1?112:72,r4));STACKTOP=r4;HEAP8[16]=(r18|0)==0;HEAP32[2288>>2]=512;HEAP32[2292>>2]=512;HEAP32[2304>>2]=1;HEAP32[2296>>2]=2;HEAP32[2300>>2]=1;HEAP32[2308>>2]=6;HEAPF32[2312>>2]=.0010000000474974513;HEAPF32[2332>>2]=5;HEAPF32[2336>>2]=10;HEAPF32[2340>>2]=15;HEAPF32[2316>>2]=-.18799999356269836;HEAPF32[2320>>2]=.4129999876022339;HEAPF32[2324>>2]=-.2630000114440918;HEAPF32[2328>>2]=.6000000238418579;HEAPF32[2344>>2]=1;HEAPF32[2348>>2]=2;HEAPF32[2352>>2]=8;HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;_UpdateCamera();r18=r8|0;r8=r11;r22=r12|0;r12=r13;r20=r14;r19=r17;r21=_clGetPlatformIDs(0,0,r6);HEAP32[r7>>2]=r21;if((r21|0)!=0){_fwrite(1992,31,1,HEAP32[_stderr>>2]);_exit(-1)}r21=HEAP32[r6>>2];if((r21|0)==0){r23=0}else{r24=_malloc(r21<<2);r25=r24;r26=_clGetPlatformIDs(r21,r25,0);HEAP32[r7>>2]=r26;if((r26|0)!=0){_fwrite(1952,34,1,HEAP32[_stderr>>2]);_exit(-1)}L80:do{if((HEAP32[r6>>2]|0)!=0){r26=HEAP32[_stderr>>2];r21=0;while(1){HEAP32[r7>>2]=_clGetPlatformInfo(HEAP32[r25+(r21<<2)>>2],2307,100,r18,0);r27=_clGetPlatformIDs(HEAP32[r6>>2],r25,0);HEAP32[r7>>2]=r27;if((r27|0)!=0){break}_fprintf(r26,1928,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r21,HEAP32[r4+8>>2]=r18,r4));STACKTOP=r4;r27=r21+1|0;if(r27>>>0<HEAP32[r6>>2]>>>0){r21=r27}else{break L80}}_fwrite(1952,34,1,r26);_exit(-1)}}while(0);r6=HEAP32[r25>>2];_free(r24);r23=r6}r6=r9|0;HEAP32[r6>>2]=4228;HEAP32[r9+4>>2]=r23;HEAP32[r9+8>>2]=0;r9=HEAP8[16];r24=_clCreateContextFromType((r23|0)==0?0:r6,r9?2:4,r9?0:0,0,0,r7);HEAP32[2272>>2]=r24;if((HEAP32[r7>>2]|0)!=0){_fwrite(1896,30,1,HEAP32[_stderr>>2]);_exit(-1)}r9=_clGetContextInfo(r24,4225,0,0,r10);HEAP32[r7>>2]=r9;if((r9|0)!=0){_fprintf(HEAP32[_stderr>>2],1848,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r9,r4));STACKTOP=r4;_exit(-1)}r9=HEAP32[r10>>2];r24=_malloc(r9);HEAP32[2264>>2]=r24;if((r24|0)==0){_fprintf(HEAP32[_stderr>>2],1784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=0,r4));STACKTOP=r4;_exit(-1)}r6=_clGetContextInfo(HEAP32[2272>>2],4225,r9,r24,0);HEAP32[r7>>2]=r6;if((r6|0)!=0){_fprintf(HEAP32[_stderr>>2],1744,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r6,r4));STACKTOP=r4;_exit(-1)}L100:do{if(HEAP32[r10>>2]>>>0>3){r6=HEAP32[_stderr>>2];r24=0;while(1){HEAP32[r11>>2]=0;HEAP32[r11+4>>2]=0;r28=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r24<<2)>>2],4096,8,r8,0);HEAP32[r7>>2]=r28;if((r28|0)!=0){r3=74;break}r9=HEAP32[r11>>2];r23=HEAP32[r11+4>>2];r25=4;r18=0;r21=2;r27=0;r29=-1;r30=0;if(r9==1&r23==0){r31=1624}else if(r9==r21&r23==r27){r31=1608}else if(r9==r25&r23==r18){r31=1592}else if(r9==r29&r23==r30){r31=1688}else{r31=1576}_fprintf(r6,1544,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r24,HEAP32[r4+8>>2]=r31,r4));STACKTOP=r4;r32=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r24<<2)>>2],4139,256,r22,0);HEAP32[r7>>2]=r32;if((r32|0)!=0){r3=81;break}_fprintf(r6,1512,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r24,HEAP32[r4+8>>2]=r22,r4));STACKTOP=r4;HEAP32[r13>>2]=0;r33=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r24<<2)>>2],4098,4,r12,0);HEAP32[r7>>2]=r33;if((r33|0)!=0){r3=83;break}r30=HEAP32[r13>>2];_fprintf(r6,1432,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r24,HEAP32[r4+8>>2]=r30,r4));STACKTOP=r4;HEAP32[r14>>2]=0;r34=_clGetDeviceInfo(HEAP32[HEAP32[2264>>2]+(r24<<2)>>2],4100,4,r20,0);HEAP32[r7>>2]=r34;if((r34|0)!=0){r3=85;break}r30=HEAP32[r14>>2];_fprintf(r6,1384,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r24,HEAP32[r4+8>>2]=r30,r4));STACKTOP=r4;r30=r24+1|0;if(r30>>>0<HEAP32[r10>>2]>>>2>>>0){r24=r30}else{break L100}}if(r3==85){_fprintf(r6,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r34,r4));STACKTOP=r4;_exit(-1)}else if(r3==74){_fprintf(r6,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r28,r4));STACKTOP=r4;_exit(-1)}else if(r3==81){_fprintf(r6,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r32,r4));STACKTOP=r4;_exit(-1)}else if(r3==83){_fprintf(r6,1704,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r33,r4));STACKTOP=r4;_exit(-1)}}}while(0);HEAP32[2408>>2]=_clCreateCommandQueue(HEAP32[2272>>2],HEAP32[HEAP32[2264>>2]>>2],0,0,r7);r33=HEAP32[r7>>2];if((r33|0)!=0){_fprintf(HEAP32[_stderr>>2],1336,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r33,r4));STACKTOP=r4;_exit(-1)}_AllocateBuffers();r33=_fopen(872,816);if((r33|0)==0){_fprintf(HEAP32[_stderr>>2],784,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}if((_fseek(r33,0,2)|0)!=0){_fprintf(HEAP32[_stderr>>2],752,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}r3=_ftell(r33);if((r3|0)==0){_fprintf(HEAP32[_stderr>>2],712,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_rewind(r33);r32=_malloc(r3+1|0);r28=HEAP32[_stderr>>2];if((r32|0)==0){_fprintf(r28,664,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=872,r4));STACKTOP=r4;_exit(-1)}_fprintf(r28,624,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r3,r4));STACKTOP=r4;r34=_fread(r32,1,r3,r33);if((r34|0)!=(r3|0)){_fprintf(r28,568,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=872,HEAP32[r4+8>>2]=r34,r4));STACKTOP=r4;_exit(-1)}HEAP8[r32+r3|0]=0;_fclose(r33);HEAP32[r15>>2]=r32;r32=_clCreateProgramWithSource(HEAP32[2272>>2],1,r15,0,r7);HEAP32[2192>>2]=r32;r15=HEAP32[r7>>2];if((r15|0)!=0){_fprintf(r28,1288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=_clBuildProgram(r32,1,HEAP32[2264>>2],1232,0,0);HEAP32[r7>>2]=r15;if((r15|0)==0){r32=_clCreateKernel(HEAP32[2192>>2],1056,r7);HEAP32[2256>>2]=r32;r33=HEAP32[r7>>2];if((r33|0)!=0){_fprintf(r28,1e3,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r33,r4));STACKTOP=r4;_exit(-1)}HEAP32[r17>>2]=0;r33=_clGetKernelWorkGroupInfo(r32,HEAP32[HEAP32[2264>>2]>>2],4528,4,r19,0);HEAP32[r7>>2]=r33;if((r33|0)==0){r19=HEAP32[r17>>2];HEAP32[8>>2]=r19;_fprintf(r28,896,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r19,r4));STACKTOP=r4;_InitGlut(r1,r2,2024);_glutMainLoop();STACKTOP=r5;return 0}else{_fprintf(r28,944,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r33,r4));STACKTOP=r4;_exit(-1)}}else{_fprintf(r28,1192,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;r15=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,0,0,r16);HEAP32[r7>>2]=r15;if((r15|0)!=0){_fprintf(r28,1144,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r15,r4));STACKTOP=r4;_exit(-1)}r15=HEAP32[r16>>2];r33=_malloc(r15+1|0);r5=_clGetProgramBuildInfo(HEAP32[2192>>2],HEAP32[HEAP32[2264>>2]>>2],4483,r15,r33,0);HEAP32[r7>>2]=r5;if((r5|0)==0){HEAP8[r33+HEAP32[r16>>2]|0]=0;_fprintf(r28,1072,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r33,r4));STACKTOP=r4;_exit(-1)}else{_fprintf(r28,1104,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r5,r4));STACKTOP=r4;_exit(-1)}}}function _AllocateBuffers(){var r1,r2,r3,r4,r5;r1=0;r2=STACKTOP;STACKTOP=STACKTOP+8|0;r3=r2;r4=Math.imul(HEAP32[2288>>2]*12&-1,HEAP32[2292>>2])|0;r5=_malloc(r4);HEAP32[2200>>2]=r5;HEAP32[2208>>2]=_clCreateBuffer(HEAP32[2272>>2],33,0,r4,r5,r3);r5=HEAP32[r3>>2];if((r5|0)!=0){_fprintf(HEAP32[_stderr>>2],520,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}HEAP32[2280>>2]=_clCreateBuffer(HEAP32[2272>>2],36,0,116,2288,r3);r5=HEAP32[r3>>2];if((r5|0)==0){STACKTOP=r2;return}else{_fprintf(HEAP32[_stderr>>2],472,(r1=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r1>>2]=r5,r1));STACKTOP=r1;_exit(-1)}}function _SetEnableAccumulationKernelArg(r1,r2,r3){var r4,r5,r6,r7,r8;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+24|0;r6=r5;r7=r5+8;r8=r5+16;HEAP32[r6>>2]=r1;HEAPF32[r7>>2]=r2;HEAPF32[r8>>2]=r3;r3=_clSetKernelArg(HEAP32[2256>>2],2,4,r6);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],2080,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],3,4,r7);if((r3|0)!=0){_fprintf(HEAP32[_stderr>>2],288,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}r3=_clSetKernelArg(HEAP32[2256>>2],4,4,r8);if((r3|0)==0){STACKTOP=r5;return}else{_fprintf(HEAP32[_stderr>>2],248,(r4=STACKTOP,STACKTOP=STACKTOP+8|0,HEAP32[r4>>2]=r3,r4));STACKTOP=r4;_exit(-1)}}function _WallClockTime(){return(_emscripten_get_now()|0)/1e3}function _UpdateCamera(){var r1,r2,r3,r4,r5,r6,r7,r8,r9;r1=HEAPF32[2356>>2]-HEAPF32[2344>>2];r2=HEAPF32[2360>>2]-HEAPF32[2348>>2];r3=HEAPF32[2364>>2]-HEAPF32[2352>>2];r4=1/Math.sqrt(r3*r3+(r1*r1+r2*r2));r5=r1*r4;HEAPF32[2368>>2]=r5;r1=r4*r2;HEAPF32[2372>>2]=r1;r2=r4*r3;HEAPF32[2376>>2]=r2;r3=r1*0;r4=r3-r2;r6=r2*0-r5*0;r7=r5-r3;r3=1/Math.sqrt(r7*r7+(r4*r4+r6*r6));r8=(HEAP32[2288>>2]>>>0)*.5134999752044678/(HEAP32[2292>>2]>>>0);r9=r8*r4*r3;HEAPF32[2380>>2]=r9;r4=r8*r3*r6;HEAPF32[2384>>2]=r4;r6=r8*r3*r7;HEAPF32[2388>>2]=r6;r7=r4*r2-r6*r1;r3=r6*r5-r9*r2;r2=r9*r1-r4*r5;r5=1/Math.sqrt(r2*r2+(r7*r7+r3*r3));HEAPF32[2392>>2]=r7*r5*.5134999752044678;HEAPF32[2396>>2]=r5*r3*.5134999752044678;HEAPF32[2400>>2]=r5*r2*.5134999752044678;return}function _displayFunc(){var r1,r2,r3,r4,r5;r1=STACKTOP;STACKTOP=STACKTOP+64|0;r2=r1;_UpdateRendering();_glClear(16384);r3=HEAP32[2200>>2];_glDisable(2896);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5889);r4=r2|0;HEAPF32[r4>>2]=2/(HEAP32[2288>>2]>>>0);r5=r2+4|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+20>>2]=2/(HEAP32[2292>>2]>>>0);r5=r2+24|0;HEAP32[r5>>2]=0;HEAP32[r5+4>>2]=0;HEAP32[r5+8>>2]=0;HEAP32[r5+12>>2]=0;HEAPF32[r2+40>>2]=1;HEAPF32[r2+44>>2]=0;HEAPF32[r2+48>>2]=-1;HEAPF32[r2+52>>2]=-1;HEAPF32[r2+56>>2]=0;HEAPF32[r2+60>>2]=1;_glLoadMatrixf(r4);_glMatrixMode(5888);_glLoadIdentity();_glEnable(3553);_glBindTexture(3553,HEAP32[3144>>2]);if((r3|0)!=0){_glTexSubImage2D(3553,0,0,0,HEAP32[2288>>2],HEAP32[2292>>2],6407,5126,r3)}_glBegin(5);_glTexCoord2i(0,0);_glVertex3f(0,0,0);_glTexCoord2i(0,1);_glVertex3f(0,HEAP32[2292>>2]>>>0,0);_glTexCoord2i(1,0);_glVertex3f(HEAP32[2288>>2]>>>0,0,0);_glTexCoord2i(1,1);_glVertex3f(HEAP32[2288>>2]>>>0,HEAP32[2292>>2]>>>0,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);_glEnable(3042);_glBlendFunc(770,771);r3=HEAP32[2288>>2]-66|0;_DrawJulia(1,r3,1,HEAPF32[2316>>2],HEAPF32[2320>>2]);r4=HEAP32[2288>>2]-66|0;_DrawJulia(2,r4,66,HEAPF32[2324>>2],HEAPF32[2328>>2]);_glDisable(3042);_glColor3f(1,1,1);r2=r3+(HEAPF32[2316>>2]+1.5)*64/3&-1;r3=(HEAPF32[2320>>2]+1.5)*64/3+1&-1;_glBegin(1);_glVertex3f(r2-4|0,r3);_glVertex3f(r2+4|0,r3);_glVertex3f(r2,r3-4|0);_glVertex3f(r2,r3+4|0);_glEnd();r3=r4+(HEAPF32[2324>>2]+1.5)*64/3&-1;r4=(HEAPF32[2328>>2]+1.5)*64/3+66&-1;_glBegin(1);_glVertex3f(r3-4|0,r4);_glVertex3f(r3+4|0,r4);_glVertex3f(r3,r4-4|0);_glVertex3f(r3,r4+4|0);_glEnd();_glFlush();STACKTOP=r1;return}function _DrawJulia(r1,r2,r3,r4,r5){var r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17;r6=STACKTOP;STACKTOP=STACKTOP+65536|0;r7=r6;r8=0;while(1){r9=(r8|0)*.046875+ -1.5;r10=0;while(1){r11=0;r12=r9;r13=(r10|0)*.046875+ -1.5;while(1){r14=r13*r13;r15=r12*r12;if(r15+r14>4){r16=r11;break}r17=r11+1|0;if((r17|0)<64){r11=r17;r12=r12*r13*2+r5;r13=r14-r15+r4}else{r16=r17;break}}HEAPF32[r7+(r10<<10)+(r8<<4)>>2]=(r16|0)*.015625;HEAPF32[r7+(r10<<10)+(r8<<4)+4>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+8>>2]=0;HEAPF32[r7+(r10<<10)+(r8<<4)+12>>2]=.5;r13=r10+1|0;if((r13|0)<64){r10=r13}else{break}}r10=r8+1|0;if((r10|0)<64){r8=r10}else{break}}_glEnable(3553);_glBindTexture(3553,HEAP32[3144+(r1<<2)>>2]);_glTexSubImage2D(3553,0,0,0,64,64,6408,5126,r7);_glBegin(5);_glTexCoord2i(0,0);r7=r2|0;r1=r3|0;_glVertex3f(r7,r1,0);_glTexCoord2i(0,1);r8=r3+64|0;_glVertex3f(r7,r8,0);_glTexCoord2i(1,0);r7=r2+64|0;_glVertex3f(r7,r1,0);_glTexCoord2i(1,1);_glVertex3f(r7,r8,0);_glEnd();_glDisable(3553);_glBindTexture(3553,0);STACKTOP=r6;return}function _reshapeFunc(r1,r2){HEAP32[2288>>2]=r1;HEAP32[2292>>2]=r2;_glViewport(0,0,r1,r2);_glLoadIdentity();_glOrtho(-.5,(HEAP32[2288>>2]>>>0)+ -.5,-.5,(HEAP32[2292>>2]>>>0)+ -.5,-1,1);_ReInit(1);_glutPostRedisplay();return}function _keyFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105,r106,r107,r108,r109,r110,r111,r112,r113,r114,r115,r116,r117,r118,r119,r120,r121,r122,r123,r124,r125,r126,r127,r128,r129,r130,r131,r132,r133,r134,r135,r136,r137,r138,r139,r140,r141,r142,r143,r144,r145,r146,r147,r148,r149,r150,r151,r152,r153,r154,r155,r156,r157,r158,r159,r160,r161,r162,r163,r164,r165,r166,r167,r168,r169,r170,r171,r172,r173,r174,r175,r176,r177,r178,r179,r180,r181,r182,r183,r184,r185,r186,r187,r188,r189,r190,r191,r192,r193,r194,r195,r196,r197,r198,r199,r200,r201;r4=0;r5=0;r6=STACKTOP;r7=r1&255;L192:do{switch(r7|0){case 112:{r8=_fopen(232,1840);r9=(r8|0)==0;if(r9){r10=HEAP32[_stderr>>2];r11=_fwrite(1472,37,1,r10);break L192}r12=HEAP32[2288>>2];r13=HEAP32[2292>>2];r14=_fprintf(r8,1040,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r12,HEAP32[r5+8>>2]=r13,HEAP32[r5+16>>2]=255,r5));STACKTOP=r5;r15=HEAP32[2292>>2];r16=(r15|0)==0;if(!r16){r17=HEAP32[2288>>2];r18=0;r19=r17;r20=r15;while(1){r21=(r19|0)==0;if(r21){r22=0;r23=r20}else{r24=~r18;r25=0;r26=r19;r27=r20;while(1){r28=r27+r24|0;r29=Math.imul(r28,r26)|0;r30=r29+r25|0;r31=r30*3&-1;r32=HEAP32[2200>>2];r33=r32+(r31<<2)|0;r34=HEAPF32[r33>>2];r35=r34<0;do{if(r35){r36=0}else{r37=r34>1;if(r37){r36=255;break}r38=r34*255;r39=r38+.5;r40=r39&-1;r36=r40}}while(0);r41=r31+1|0;r42=r32+(r41<<2)|0;r43=HEAPF32[r42>>2];r44=r43<0;do{if(r44){r45=0}else{r46=r43>1;if(r46){r45=255;break}r47=r43*255;r48=r47+.5;r49=r48&-1;r45=r49}}while(0);r50=r31+2|0;r51=r32+(r50<<2)|0;r52=HEAPF32[r51>>2];r53=r52<0;do{if(r53){r54=0}else{r55=r52>1;if(r55){r54=255;break}r56=r52*255;r57=r56+.5;r58=r57&-1;r54=r58}}while(0);r59=_fprintf(r8,608,(r5=STACKTOP,STACKTOP=STACKTOP+24|0,HEAP32[r5>>2]=r36,HEAP32[r5+8>>2]=r45,HEAP32[r5+16>>2]=r54,r5));STACKTOP=r5;r60=r25+1|0;r61=HEAP32[2288>>2];r62=r60>>>0<r61>>>0;r63=HEAP32[2292>>2];if(r62){r25=r60;r26=r61;r27=r63}else{r22=r61;r23=r63;break}}}r64=r18+1|0;r65=r64>>>0<r23>>>0;if(r65){r18=r64;r19=r22;r20=r23}else{break}}}r66=_fclose(r8);break};case 27:{r67=HEAP32[_stderr>>2];r68=_fwrite(224,6,1,r67);_exit(0);break};case 97:{r69=HEAPF32[2380>>2];r70=HEAPF32[2384>>2];r71=HEAPF32[2388>>2];r72=r69*r69;r73=r70*r70;r74=r72+r73;r75=r71*r71;r76=r74+r75;r77=r76;r78=Math.sqrt(r77);r79=1/r78;r80=r79;r81=r69*r80;r82=r70*r80;r83=r71*r80;r84=r81*-.5;r85=r82*-.5;r86=r83*-.5;r87=HEAPF32[2344>>2];r88=r87+r84;HEAPF32[2344>>2]=r88;r89=HEAPF32[2348>>2];r90=r89+r85;HEAPF32[2348>>2]=r90;r91=HEAPF32[2352>>2];r92=r91+r86;HEAPF32[2352>>2]=r92;r93=HEAPF32[2356>>2];r94=r84+r93;HEAPF32[2356>>2]=r94;r95=HEAPF32[2360>>2];r96=r85+r95;HEAPF32[2360>>2]=r96;r97=HEAPF32[2364>>2];r98=r86+r97;HEAPF32[2364>>2]=r98;break};case 100:{r99=HEAPF32[2380>>2];r100=HEAPF32[2384>>2];r101=HEAPF32[2388>>2];r102=r99*r99;r103=r100*r100;r104=r102+r103;r105=r101*r101;r106=r104+r105;r107=r106;r108=Math.sqrt(r107);r109=1/r108;r110=r109;r111=r99*r110;r112=r100*r110;r113=r101*r110;r114=r111*.5;r115=r112*.5;r116=r113*.5;r117=HEAPF32[2344>>2];r118=r117+r114;HEAPF32[2344>>2]=r118;r119=HEAPF32[2348>>2];r120=r119+r115;HEAPF32[2348>>2]=r120;r121=HEAPF32[2352>>2];r122=r121+r116;HEAPF32[2352>>2]=r122;r123=HEAPF32[2356>>2];r124=r114+r123;HEAPF32[2356>>2]=r124;r125=HEAPF32[2360>>2];r126=r115+r125;HEAPF32[2360>>2]=r126;r127=HEAPF32[2364>>2];r128=r116+r127;HEAPF32[2364>>2]=r128;break};case 119:{r129=HEAPF32[2368>>2];r130=HEAPF32[2372>>2];r131=HEAPF32[2376>>2];r132=r129*.5;r133=r130*.5;r134=r131*.5;r135=HEAPF32[2344>>2];r136=r132+r135;HEAPF32[2344>>2]=r136;r137=HEAPF32[2348>>2];r138=r133+r137;HEAPF32[2348>>2]=r138;r139=HEAPF32[2352>>2];r140=r134+r139;HEAPF32[2352>>2]=r140;r141=HEAPF32[2356>>2];r142=r132+r141;HEAPF32[2356>>2]=r142;r143=HEAPF32[2360>>2];r144=r133+r143;HEAPF32[2360>>2]=r144;r145=HEAPF32[2364>>2];r146=r134+r145;HEAPF32[2364>>2]=r146;break};case 115:{r147=HEAPF32[2368>>2];r148=HEAPF32[2372>>2];r149=HEAPF32[2376>>2];r150=r147*-.5;r151=r148*-.5;r152=r149*-.5;r153=HEAPF32[2344>>2];r154=r150+r153;HEAPF32[2344>>2]=r154;r155=HEAPF32[2348>>2];r156=r151+r155;HEAPF32[2348>>2]=r156;r157=HEAPF32[2352>>2];r158=r152+r157;HEAPF32[2352>>2]=r158;r159=HEAPF32[2356>>2];r160=r150+r159;HEAPF32[2356>>2]=r160;r161=HEAPF32[2360>>2];r162=r151+r161;HEAPF32[2360>>2]=r162;r163=HEAPF32[2364>>2];r164=r152+r163;HEAPF32[2364>>2]=r164;break};case 114:{r165=HEAPF32[2348>>2];r166=r165+.5;HEAPF32[2348>>2]=r166;r167=HEAPF32[2360>>2];r168=r167+.5;HEAPF32[2360>>2]=r168;break};case 102:{r169=HEAPF32[2348>>2];r170=r169+ -.5;HEAPF32[2348>>2]=r170;r171=HEAPF32[2360>>2];r172=r171+ -.5;HEAPF32[2360>>2]=r172;break};case 108:{r173=HEAP32[2304>>2];r174=(r173|0)==0;r175=r174&1;HEAP32[2304>>2]=r175;break};case 104:{r176=HEAP32[32>>2];r177=(r176|0)==0;r178=r177&1;HEAP32[32>>2]=r178;break};case 49:{r179=HEAPF32[2312>>2];r180=r179*.75;HEAPF32[2312>>2]=r180;break};case 50:{r181=HEAPF32[2312>>2];r182=r181*1.3333333730697632;HEAPF32[2312>>2]=r182;break};case 51:{r183=HEAP32[2308>>2];r184=r183-1|0;r185=(r184|0)==0;r186=r185?1:r184;HEAP32[2308>>2]=r186;break};case 52:{r187=HEAP32[2308>>2];r188=r187+1|0;r189=r188>>>0>12;r190=r189?12:r188;HEAP32[2308>>2]=r190;break};case 53:{r191=HEAP32[2296>>2];r192=r191-1|0;r193=(r192|0)<1;r194=r193?1:r192;HEAP32[2296>>2]=r194;break};case 54:{r195=HEAP32[2296>>2];r196=r195+1|0;r197=(r196|0)>5;r198=r197?5:r196;HEAP32[2296>>2]=r198;break};default:{}}}while(0);_ReInit(0);_glutPostRedisplay();r199=_emscripten_get_now();r200=r199|0;r201=r200/1e3;HEAPF64[64>>3]=r201;STACKTOP=r6;return}function _specialFunc(r1,r2,r3){var r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86,r87,r88,r89,r90,r91,r92,r93,r94,r95,r96,r97,r98,r99,r100,r101,r102,r103,r104,r105;r4=0;switch(r1|0){case 101:{r5=HEAPF32[2356>>2];r6=HEAPF32[2360>>2];r7=HEAPF32[2364>>2];r8=HEAPF32[2344>>2];r9=r5-r8;r10=HEAPF32[2348>>2];r11=r6-r10;r12=HEAPF32[2352>>2];r13=r7-r12;r14=r11;r15=r14*.9993908270285325;r16=r13;r17=r16*-.03489949643226648;r18=r15+r17;r19=r18;r20=-r19;r21=r20;r22=r21*-.03489949643226648;r23=r16*.9993908270285325;r24=r23+r22;r25=r24;r26=r8+r9;r27=r10+r19;r28=r12+r25;HEAPF32[2356>>2]=r26;HEAPF32[2360>>2]=r27;HEAPF32[2364>>2]=r28;break};case 103:{r29=HEAPF32[2356>>2];r30=HEAPF32[2360>>2];r31=HEAPF32[2364>>2];r32=HEAPF32[2344>>2];r33=r29-r32;r34=HEAPF32[2348>>2];r35=r30-r34;r36=HEAPF32[2352>>2];r37=r31-r36;r38=r35;r39=r38*.9993908270285325;r40=r37;r41=r40*.03489949643226648;r42=r39+r41;r43=r42;r44=-r43;r45=r44;r46=r45*.03489949643226648;r47=r40*.9993908270285325;r48=r47+r46;r49=r48;r50=r32+r33;r51=r34+r43;r52=r36+r49;HEAPF32[2356>>2]=r50;HEAPF32[2360>>2]=r51;HEAPF32[2364>>2]=r52;break};case 100:{r53=HEAPF32[2356>>2];r54=HEAPF32[2360>>2];r55=HEAPF32[2364>>2];r56=HEAPF32[2344>>2];r57=r53-r56;r58=HEAPF32[2348>>2];r59=r54-r58;r60=HEAPF32[2352>>2];r61=r55-r60;r62=r57;r63=r62*.9993908270285325;r64=r61;r65=r64*-.03489949643226648;r66=r63-r65;r67=r66;r68=r67;r69=r68*-.03489949643226648;r70=r64*.9993908270285325;r71=r70+r69;r72=r71;r73=r56+r67;r74=r58+r59;r75=r60+r72;HEAPF32[2356>>2]=r73;HEAPF32[2360>>2]=r74;HEAPF32[2364>>2]=r75;break};case 102:{r76=HEAPF32[2356>>2];r77=HEAPF32[2360>>2];r78=HEAPF32[2364>>2];r79=HEAPF32[2344>>2];r80=r76-r79;r81=HEAPF32[2348>>2];r82=r77-r81;r83=HEAPF32[2352>>2];r84=r78-r83;r85=r80;r86=r85*.9993908270285325;r87=r84;r88=r87*.03489949643226648;r89=r86-r88;r90=r89;r91=r90;r92=r91*.03489949643226648;r93=r87*.9993908270285325;r94=r93+r92;r95=r94;r96=r79+r90;r97=r81+r82;r98=r83+r95;HEAPF32[2356>>2]=r96;HEAPF32[2360>>2]=r97;HEAPF32[2364>>2]=r98;break};case 104:{r99=HEAPF32[2360>>2];r100=r99+.5;HEAPF32[2360>>2]=r100;break};case 105:{r101=HEAPF32[2360>>2];r102=r101+ -.5;HEAPF32[2360>>2]=r102;break};default:{}}_ReInit(0);_glutPostRedisplay();r103=_emscripten_get_now();r104=r103|0;r105=r104/1e3;HEAPF64[64>>3]=r105;return}function _mouseFunc(r1,r2,r3,r4){var r5,r6,r7,r8;L245:do{if((r1|0)==0){if((r2|0)==1){HEAP8[56]=0;HEAP8[24]=0;HEAP8[40]=0;break}else if((r2|0)!=0){break}HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[56]=1;if((_glutGetModifiers()|0)==1){HEAP8[24]=1;break}HEAP8[24]=0;r5=HEAP32[2292>>2]-r4|0;r6=HEAP32[2288>>2];r7=r6-66|0;do{if(!((r7|0)>(r3|0)|(r6-2|0)<(r3|0))){r8=r5-2|0;if(r8>>>0<65){HEAP8[40]=1;HEAPF32[2316>>2]=(r3-r7|0)*3*.015625+ -1.5;HEAPF32[2320>>2]=(r8|0)*3*.015625+ -1.5;_ReInit(0);_glutPostRedisplay();break L245}r8=r5-67|0;if(r8>>>0>=65){break}HEAP8[40]=1;HEAPF32[2324>>2]=(r3-r7|0)*3*.015625+ -1.5;HEAPF32[2328>>2]=(r8|0)*3*.015625+ -1.5;_ReInit(0);_glutPostRedisplay();break L245}}while(0);HEAP8[40]=0}else if((r1|0)==2){if((r2|0)==0){HEAP32[2248>>2]=r3;HEAP32[2240>>2]=r4;HEAP8[48]=1;break}else if((r2|0)==1){HEAP8[48]=0;break}else{break}}}while(0);HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _motionFunc(r1,r2){var r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15;L266:do{if(HEAP8[56]){r3=HEAP32[2292>>2]-r2|0;r4=HEAP32[2288>>2];r5=r4-66|0;r6=HEAP8[40];do{if((r5|0)>(r1|0)|r6^1|(r4-2|0)<(r1|0)){if(r6){break L266}}else{r7=r3-2|0;if(r7>>>0<65){HEAPF32[2316>>2]=(r1-r5|0)*3*.015625+ -1.5;HEAPF32[2320>>2]=(r7|0)*3*.015625+ -1.5;_ReInit(0);break L266}r7=r3-67|0;if(r7>>>0<65){HEAPF32[2324>>2]=(r1-r5|0)*3*.015625+ -1.5;HEAPF32[2328>>2]=(r7|0)*3*.015625+ -1.5;_ReInit(0);break L266}else{if(r6){break L266}else{break}}}}while(0);r6=r1-HEAP32[2248>>2]|0;r5=r2-HEAP32[2240>>2]|0;if(HEAP8[24]){r3=HEAPF32[2344>>2];r4=HEAPF32[2348>>2];r7=HEAPF32[2360>>2]-r4;r8=HEAPF32[2352>>2];r9=HEAPF32[2364>>2]-r8;r10=HEAPF32[2356>>2]-r3;r11=(r6|0)*.10000000149011612*.03490658503988659;r12=Math.cos(r11);r13=r9;r9=Math.sin(r11);r11=r10*r12-r13*r9;r10=(r5|0)*.10000000149011612*.03490658503988659;r14=Math.cos(r10);r15=r8+(r12*r13+r9*r11)-r8;r9=Math.sin(r10);r10=(r4+r7-r4)*r14+r9*r15;HEAPF32[2356>>2]=r3+(r3+r11-r3);HEAPF32[2360>>2]=r4+r10;HEAPF32[2364>>2]=r8+(r14*r15+r9*-r10)}else{HEAPF32[2356>>2]=0;HEAPF32[2360>>2]=0;HEAPF32[2364>>2]=0;r10=HEAPF32[2352>>2];r9=HEAPF32[2344>>2];r15=(r6|0)*.20000000298023224*.03490658503988659;r6=Math.cos(r15);r14=r10;r10=Math.sin(r15);HEAPF32[2344>>2]=r9*r6-r14*r10;r15=HEAPF32[2348>>2];r8=(r5|0)*.20000000298023224*.03490658503988659;r5=Math.cos(r8);r4=r14*r6+r9*r10;r10=Math.sin(r8);HEAPF32[2348>>2]=r15*r5+r10*r4;HEAPF32[2352>>2]=-r15*r10+r5*r4}HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0)}else{if(HEAP8[48]){r4=r1-HEAP32[2248>>2]|0;r5=HEAPF32[2336>>2];r10=HEAPF32[2340>>2];r15=(r2-HEAP32[2240>>2]|0)*-.20000000298023224*.03490658503988659;r8=Math.cos(r15);r9=r10;r10=Math.sin(r15);HEAPF32[2336>>2]=r5*r8+r9*r10;r15=HEAPF32[2332>>2];r6=(r4|0)*-.20000000298023224*.03490658503988659;r4=Math.cos(r6);r14=r9*r8+ -r5*r10;r10=Math.sin(r6);HEAPF32[2332>>2]=r15*r4-r10*r14;HEAPF32[2340>>2]=r15*r10+r4*r14;HEAP32[2248>>2]=r1;HEAP32[2240>>2]=r2;_ReInit(0);break}else{return}}}while(0);_glutPostRedisplay();HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;return}function _timerFunc(r1){r1=(_emscripten_get_now()|0)/1e3;do{if(r1-HEAPF64[64>>3]>5){if((HEAP32[2300>>2]|0)==0){break}HEAP32[2300>>2]=0;_glutPostRedisplay()}else{HEAP32[2300>>2]=1}}while(0);_glutTimerFunc(1e3,14,0);return}function _InitGlut(r1,r2,r3){var r4,r5,r6;r4=0;r5=STACKTOP;STACKTOP=STACKTOP+8|0;r6=r5;HEAP32[r6>>2]=r1;HEAPF64[64>>3]=(_emscripten_get_now()|0)/1e3;_glutInitWindowSize(HEAP32[2288>>2],HEAP32[2292>>2]);_glutInitWindowPosition(0,0);_glutInitDisplayMode(2);_glutInit(r6,r2);_glutCreateWindow(r3);_glutReshapeFunc(6);_glutKeyboardFunc(8);_glutSpecialFunc(4);_glutDisplayFunc(10);_glutMouseFunc(12);_glutMotionFunc(2);_glutTimerFunc(1e3,14,0);_glMatrixMode(5889);r3=HEAP32[2288>>2];r2=HEAP32[2292>>2];_glGenTextures(3,3144);_printf(184,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=r3,HEAP32[r4+8>>2]=r2,r4));STACKTOP=r4;_printf(120,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_printf(80,(r4=STACKTOP,STACKTOP=STACKTOP+16|0,HEAP32[r4>>2]=64,HEAP32[r4+8>>2]=64,r4));STACKTOP=r4;_glActiveTexture(33985);_glGenTextures(3,3144);_glBindTexture(3553,HEAP32[3144>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6407,r3,r2,0,6407,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3148>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glBindTexture(3553,HEAP32[3152>>2]);_glTexParameteri(3553,10240,9728);_glTexParameteri(3553,10241,9728);_glTexImage2D(3553,0,6408,64,64,0,6408,5126,0);_glBindTexture(3553,0);_glClearColor(0,0,0,0);_glDisable(2929);_glActiveTexture(33984);_glViewport(0,0,HEAP32[2288>>2],HEAP32[2292>>2]);_glMatrixMode(5888);_glLoadIdentity();_glMatrixMode(5889);_glLoadIdentity();HEAPF32[3184>>2]=0;HEAPF32[3188>>2]=0;r2=HEAP32[2288>>2]>>>0;HEAPF32[3176>>2]=r2;HEAPF32[3180>>2]=0;HEAPF32[3168>>2]=r2;r2=HEAP32[2292>>2]>>>0;HEAPF32[3172>>2]=r2;HEAPF32[3160>>2]=0;HEAPF32[3164>>2]=r2;_glEnableClientState(32884);_glEnableClientState(32888);_glVertexPointer(2,5126,0,2160);_glClientActiveTexture(33984);_glTexCoordPointer(2,5126,0,3160);STACKTOP=r5;return}function _malloc(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,r70,r71,r72,r73,r74,r75,r76,r77,r78,r79,r80,r81,r82,r83,r84,r85,r86;r2=0;do{if(r1>>>0<245){if(r1>>>0<11){r3=16}else{r3=r1+11&-8}r4=r3>>>3;r5=HEAP32[2672>>2];r6=r5>>>(r4>>>0);if((r6&3|0)!=0){r7=(r6&1^1)+r4|0;r8=r7<<1;r9=2712+(r8<<2)|0;r10=2712+(r8+2<<2)|0;r8=HEAP32[r10>>2];r11=r8+8|0;r12=HEAP32[r11>>2];do{if((r9|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r7)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r12+12|0;if((HEAP32[r13>>2]|0)==(r8|0)){HEAP32[r13>>2]=r9;HEAP32[r10>>2]=r12;break}else{_abort()}}}while(0);r12=r7<<3;HEAP32[r8+4>>2]=r12|3;r10=r8+(r12|4)|0;HEAP32[r10>>2]=HEAP32[r10>>2]|1;r14=r11;return r14}if(r3>>>0<=HEAP32[2680>>2]>>>0){r15=r3;break}if((r6|0)!=0){r10=2<<r4;r12=r6<<r4&(r10|-r10);r10=(r12&-r12)-1|0;r12=r10>>>12&16;r9=r10>>>(r12>>>0);r10=r9>>>5&8;r13=r9>>>(r10>>>0);r9=r13>>>2&4;r16=r13>>>(r9>>>0);r13=r16>>>1&2;r17=r16>>>(r13>>>0);r16=r17>>>1&1;r18=(r10|r12|r9|r13|r16)+(r17>>>(r16>>>0))|0;r16=r18<<1;r17=2712+(r16<<2)|0;r13=2712+(r16+2<<2)|0;r16=HEAP32[r13>>2];r9=r16+8|0;r12=HEAP32[r9>>2];do{if((r17|0)==(r12|0)){HEAP32[2672>>2]=r5&~(1<<r18)}else{if(r12>>>0<HEAP32[2688>>2]>>>0){_abort()}r10=r12+12|0;if((HEAP32[r10>>2]|0)==(r16|0)){HEAP32[r10>>2]=r17;HEAP32[r13>>2]=r12;break}else{_abort()}}}while(0);r12=r18<<3;r13=r12-r3|0;HEAP32[r16+4>>2]=r3|3;r17=r16;r5=r17+r3|0;HEAP32[r17+(r3|4)>>2]=r13|1;HEAP32[r17+r12>>2]=r13;r12=HEAP32[2680>>2];if((r12|0)!=0){r17=HEAP32[2692>>2];r4=r12>>>3;r12=r4<<1;r6=2712+(r12<<2)|0;r11=HEAP32[2672>>2];r8=1<<r4;do{if((r11&r8|0)==0){HEAP32[2672>>2]=r11|r8;r19=r6;r20=2712+(r12+2<<2)|0}else{r4=2712+(r12+2<<2)|0;r7=HEAP32[r4>>2];if(r7>>>0>=HEAP32[2688>>2]>>>0){r19=r7;r20=r4;break}_abort()}}while(0);HEAP32[r20>>2]=r17;HEAP32[r19+12>>2]=r17;HEAP32[r17+8>>2]=r19;HEAP32[r17+12>>2]=r6}HEAP32[2680>>2]=r13;HEAP32[2692>>2]=r5;r14=r9;return r14}r12=HEAP32[2676>>2];if((r12|0)==0){r15=r3;break}r8=(r12&-r12)-1|0;r12=r8>>>12&16;r11=r8>>>(r12>>>0);r8=r11>>>5&8;r16=r11>>>(r8>>>0);r11=r16>>>2&4;r18=r16>>>(r11>>>0);r16=r18>>>1&2;r4=r18>>>(r16>>>0);r18=r4>>>1&1;r7=HEAP32[2976+((r8|r12|r11|r16|r18)+(r4>>>(r18>>>0))<<2)>>2];r18=r7;r4=r7;r16=(HEAP32[r7+4>>2]&-8)-r3|0;while(1){r7=HEAP32[r18+16>>2];if((r7|0)==0){r11=HEAP32[r18+20>>2];if((r11|0)==0){break}else{r21=r11}}else{r21=r7}r7=(HEAP32[r21+4>>2]&-8)-r3|0;r11=r7>>>0<r16>>>0;r18=r21;r4=r11?r21:r4;r16=r11?r7:r16}r18=r4;r9=HEAP32[2688>>2];if(r18>>>0<r9>>>0){_abort()}r5=r18+r3|0;r13=r5;if(r18>>>0>=r5>>>0){_abort()}r5=HEAP32[r4+24>>2];r6=HEAP32[r4+12>>2];do{if((r6|0)==(r4|0)){r17=r4+20|0;r7=HEAP32[r17>>2];if((r7|0)==0){r11=r4+16|0;r12=HEAP32[r11>>2];if((r12|0)==0){r22=0;break}else{r23=r12;r24=r11}}else{r23=r7;r24=r17}while(1){r17=r23+20|0;r7=HEAP32[r17>>2];if((r7|0)!=0){r23=r7;r24=r17;continue}r17=r23+16|0;r7=HEAP32[r17>>2];if((r7|0)==0){break}else{r23=r7;r24=r17}}if(r24>>>0<r9>>>0){_abort()}else{HEAP32[r24>>2]=0;r22=r23;break}}else{r17=HEAP32[r4+8>>2];if(r17>>>0<r9>>>0){_abort()}r7=r17+12|0;if((HEAP32[r7>>2]|0)!=(r4|0)){_abort()}r11=r6+8|0;if((HEAP32[r11>>2]|0)==(r4|0)){HEAP32[r7>>2]=r6;HEAP32[r11>>2]=r17;r22=r6;break}else{_abort()}}}while(0);L373:do{if((r5|0)!=0){r6=r4+28|0;r9=2976+(HEAP32[r6>>2]<<2)|0;do{if((r4|0)==(HEAP32[r9>>2]|0)){HEAP32[r9>>2]=r22;if((r22|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r6>>2]);break L373}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r17=r5+16|0;if((HEAP32[r17>>2]|0)==(r4|0)){HEAP32[r17>>2]=r22}else{HEAP32[r5+20>>2]=r22}if((r22|0)==0){break L373}}}while(0);if(r22>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r22+24>>2]=r5;r6=HEAP32[r4+16>>2];do{if((r6|0)!=0){if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+16>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);r6=HEAP32[r4+20>>2];if((r6|0)==0){break}if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r22+20>>2]=r6;HEAP32[r6+24>>2]=r22;break}}}while(0);if(r16>>>0<16){r5=r16+r3|0;HEAP32[r4+4>>2]=r5|3;r6=r18+(r5+4)|0;HEAP32[r6>>2]=HEAP32[r6>>2]|1}else{HEAP32[r4+4>>2]=r3|3;HEAP32[r18+(r3|4)>>2]=r16|1;HEAP32[r18+(r16+r3)>>2]=r16;r6=HEAP32[2680>>2];if((r6|0)!=0){r5=HEAP32[2692>>2];r9=r6>>>3;r6=r9<<1;r17=2712+(r6<<2)|0;r11=HEAP32[2672>>2];r7=1<<r9;do{if((r11&r7|0)==0){HEAP32[2672>>2]=r11|r7;r25=r17;r26=2712+(r6+2<<2)|0}else{r9=2712+(r6+2<<2)|0;r12=HEAP32[r9>>2];if(r12>>>0>=HEAP32[2688>>2]>>>0){r25=r12;r26=r9;break}_abort()}}while(0);HEAP32[r26>>2]=r5;HEAP32[r25+12>>2]=r5;HEAP32[r5+8>>2]=r25;HEAP32[r5+12>>2]=r17}HEAP32[2680>>2]=r16;HEAP32[2692>>2]=r13}r6=r4+8|0;if((r6|0)==0){r15=r3;break}else{r14=r6}return r14}else{if(r1>>>0>4294967231){r15=-1;break}r6=r1+11|0;r7=r6&-8;r11=HEAP32[2676>>2];if((r11|0)==0){r15=r7;break}r18=-r7|0;r9=r6>>>8;do{if((r9|0)==0){r27=0}else{if(r7>>>0>16777215){r27=31;break}r6=(r9+1048320|0)>>>16&8;r12=r9<<r6;r8=(r12+520192|0)>>>16&4;r10=r12<<r8;r12=(r10+245760|0)>>>16&2;r28=14-(r8|r6|r12)+(r10<<r12>>>15)|0;r27=r7>>>((r28+7|0)>>>0)&1|r28<<1}}while(0);r9=HEAP32[2976+(r27<<2)>>2];L421:do{if((r9|0)==0){r29=0;r30=r18;r31=0}else{if((r27|0)==31){r32=0}else{r32=25-(r27>>>1)|0}r4=0;r13=r18;r16=r9;r17=r7<<r32;r5=0;while(1){r28=HEAP32[r16+4>>2]&-8;r12=r28-r7|0;if(r12>>>0<r13>>>0){if((r28|0)==(r7|0)){r29=r16;r30=r12;r31=r16;break L421}else{r33=r16;r34=r12}}else{r33=r4;r34=r13}r12=HEAP32[r16+20>>2];r28=HEAP32[r16+16+(r17>>>31<<2)>>2];r10=(r12|0)==0|(r12|0)==(r28|0)?r5:r12;if((r28|0)==0){r29=r33;r30=r34;r31=r10;break}else{r4=r33;r13=r34;r16=r28;r17=r17<<1;r5=r10}}}}while(0);if((r31|0)==0&(r29|0)==0){r9=2<<r27;r18=r11&(r9|-r9);if((r18|0)==0){r15=r7;break}r9=(r18&-r18)-1|0;r18=r9>>>12&16;r5=r9>>>(r18>>>0);r9=r5>>>5&8;r17=r5>>>(r9>>>0);r5=r17>>>2&4;r16=r17>>>(r5>>>0);r17=r16>>>1&2;r13=r16>>>(r17>>>0);r16=r13>>>1&1;r35=HEAP32[2976+((r9|r18|r5|r17|r16)+(r13>>>(r16>>>0))<<2)>>2]}else{r35=r31}if((r35|0)==0){r36=r30;r37=r29}else{r16=r35;r13=r30;r17=r29;while(1){r5=(HEAP32[r16+4>>2]&-8)-r7|0;r18=r5>>>0<r13>>>0;r9=r18?r5:r13;r5=r18?r16:r17;r18=HEAP32[r16+16>>2];if((r18|0)!=0){r16=r18;r13=r9;r17=r5;continue}r18=HEAP32[r16+20>>2];if((r18|0)==0){r36=r9;r37=r5;break}else{r16=r18;r13=r9;r17=r5}}}if((r37|0)==0){r15=r7;break}if(r36>>>0>=(HEAP32[2680>>2]-r7|0)>>>0){r15=r7;break}r17=r37;r13=HEAP32[2688>>2];if(r17>>>0<r13>>>0){_abort()}r16=r17+r7|0;r11=r16;if(r17>>>0>=r16>>>0){_abort()}r5=HEAP32[r37+24>>2];r9=HEAP32[r37+12>>2];do{if((r9|0)==(r37|0)){r18=r37+20|0;r4=HEAP32[r18>>2];if((r4|0)==0){r10=r37+16|0;r28=HEAP32[r10>>2];if((r28|0)==0){r38=0;break}else{r39=r28;r40=r10}}else{r39=r4;r40=r18}while(1){r18=r39+20|0;r4=HEAP32[r18>>2];if((r4|0)!=0){r39=r4;r40=r18;continue}r18=r39+16|0;r4=HEAP32[r18>>2];if((r4|0)==0){break}else{r39=r4;r40=r18}}if(r40>>>0<r13>>>0){_abort()}else{HEAP32[r40>>2]=0;r38=r39;break}}else{r18=HEAP32[r37+8>>2];if(r18>>>0<r13>>>0){_abort()}r4=r18+12|0;if((HEAP32[r4>>2]|0)!=(r37|0)){_abort()}r10=r9+8|0;if((HEAP32[r10>>2]|0)==(r37|0)){HEAP32[r4>>2]=r9;HEAP32[r10>>2]=r18;r38=r9;break}else{_abort()}}}while(0);L471:do{if((r5|0)!=0){r9=r37+28|0;r13=2976+(HEAP32[r9>>2]<<2)|0;do{if((r37|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r38;if((r38|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r9>>2]);break L471}else{if(r5>>>0<HEAP32[2688>>2]>>>0){_abort()}r18=r5+16|0;if((HEAP32[r18>>2]|0)==(r37|0)){HEAP32[r18>>2]=r38}else{HEAP32[r5+20>>2]=r38}if((r38|0)==0){break L471}}}while(0);if(r38>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r38+24>>2]=r5;r9=HEAP32[r37+16>>2];do{if((r9|0)!=0){if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+16>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);r9=HEAP32[r37+20>>2];if((r9|0)==0){break}if(r9>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r38+20>>2]=r9;HEAP32[r9+24>>2]=r38;break}}}while(0);do{if(r36>>>0<16){r5=r36+r7|0;HEAP32[r37+4>>2]=r5|3;r9=r17+(r5+4)|0;HEAP32[r9>>2]=HEAP32[r9>>2]|1}else{HEAP32[r37+4>>2]=r7|3;HEAP32[r17+(r7|4)>>2]=r36|1;HEAP32[r17+(r36+r7)>>2]=r36;r9=r36>>>3;if(r36>>>0<256){r5=r9<<1;r13=2712+(r5<<2)|0;r18=HEAP32[2672>>2];r10=1<<r9;do{if((r18&r10|0)==0){HEAP32[2672>>2]=r18|r10;r41=r13;r42=2712+(r5+2<<2)|0}else{r9=2712+(r5+2<<2)|0;r4=HEAP32[r9>>2];if(r4>>>0>=HEAP32[2688>>2]>>>0){r41=r4;r42=r9;break}_abort()}}while(0);HEAP32[r42>>2]=r11;HEAP32[r41+12>>2]=r11;HEAP32[r17+(r7+8)>>2]=r41;HEAP32[r17+(r7+12)>>2]=r13;break}r5=r16;r10=r36>>>8;do{if((r10|0)==0){r43=0}else{if(r36>>>0>16777215){r43=31;break}r18=(r10+1048320|0)>>>16&8;r9=r10<<r18;r4=(r9+520192|0)>>>16&4;r28=r9<<r4;r9=(r28+245760|0)>>>16&2;r12=14-(r4|r18|r9)+(r28<<r9>>>15)|0;r43=r36>>>((r12+7|0)>>>0)&1|r12<<1}}while(0);r10=2976+(r43<<2)|0;HEAP32[r17+(r7+28)>>2]=r43;HEAP32[r17+(r7+20)>>2]=0;HEAP32[r17+(r7+16)>>2]=0;r13=HEAP32[2676>>2];r12=1<<r43;if((r13&r12|0)==0){HEAP32[2676>>2]=r13|r12;HEAP32[r10>>2]=r5;HEAP32[r17+(r7+24)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}if((r43|0)==31){r44=0}else{r44=25-(r43>>>1)|0}r12=r36<<r44;r13=HEAP32[r10>>2];while(1){if((HEAP32[r13+4>>2]&-8|0)==(r36|0)){break}r45=r13+16+(r12>>>31<<2)|0;r10=HEAP32[r45>>2];if((r10|0)==0){r2=370;break}else{r12=r12<<1;r13=r10}}if(r2==370){if(r45>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r45>>2]=r5;HEAP32[r17+(r7+24)>>2]=r13;HEAP32[r17+(r7+12)>>2]=r5;HEAP32[r17+(r7+8)>>2]=r5;break}}r12=r13+8|0;r10=HEAP32[r12>>2];r9=HEAP32[2688>>2];if(r13>>>0<r9>>>0){_abort()}if(r10>>>0<r9>>>0){_abort()}else{HEAP32[r10+12>>2]=r5;HEAP32[r12>>2]=r5;HEAP32[r17+(r7+8)>>2]=r10;HEAP32[r17+(r7+12)>>2]=r13;HEAP32[r17+(r7+24)>>2]=0;break}}}while(0);r17=r37+8|0;if((r17|0)==0){r15=r7;break}else{r14=r17}return r14}}while(0);r37=HEAP32[2680>>2];if(r15>>>0<=r37>>>0){r45=r37-r15|0;r36=HEAP32[2692>>2];if(r45>>>0>15){r44=r36;HEAP32[2692>>2]=r44+r15;HEAP32[2680>>2]=r45;HEAP32[r44+(r15+4)>>2]=r45|1;HEAP32[r44+r37>>2]=r45;HEAP32[r36+4>>2]=r15|3}else{HEAP32[2680>>2]=0;HEAP32[2692>>2]=0;HEAP32[r36+4>>2]=r37|3;r45=r36+(r37+4)|0;HEAP32[r45>>2]=HEAP32[r45>>2]|1}r14=r36+8|0;return r14}r36=HEAP32[2684>>2];if(r15>>>0<r36>>>0){r45=r36-r15|0;HEAP32[2684>>2]=r45;r36=HEAP32[2696>>2];r37=r36;HEAP32[2696>>2]=r37+r15;HEAP32[r37+(r15+4)>>2]=r45|1;HEAP32[r36+4>>2]=r15|3;r14=r36+8|0;return r14}do{if((HEAP32[2216>>2]|0)==0){r36=_sysconf(30);if((r36-1&r36|0)==0){HEAP32[2224>>2]=r36;HEAP32[2220>>2]=r36;HEAP32[2228>>2]=-1;HEAP32[2232>>2]=-1;HEAP32[2236>>2]=0;HEAP32[3116>>2]=0;HEAP32[2216>>2]=_time(0)&-16^1431655768;break}else{_abort()}}}while(0);r36=r15+48|0;r45=HEAP32[2224>>2];r37=r15+47|0;r44=r45+r37|0;r43=-r45|0;r45=r44&r43;if(r45>>>0<=r15>>>0){r14=0;return r14}r41=HEAP32[3112>>2];do{if((r41|0)!=0){r42=HEAP32[3104>>2];r38=r42+r45|0;if(r38>>>0<=r42>>>0|r38>>>0>r41>>>0){r14=0}else{break}return r14}}while(0);L563:do{if((HEAP32[3116>>2]&4|0)==0){r41=HEAP32[2696>>2];L565:do{if((r41|0)==0){r2=400}else{r38=r41;r42=3120;while(1){r46=r42|0;r39=HEAP32[r46>>2];if(r39>>>0<=r38>>>0){r47=r42+4|0;if((r39+HEAP32[r47>>2]|0)>>>0>r38>>>0){break}}r39=HEAP32[r42+8>>2];if((r39|0)==0){r2=400;break L565}else{r42=r39}}if((r42|0)==0){r2=400;break}r38=r44-HEAP32[2684>>2]&r43;if(r38>>>0>=2147483647){r48=0;break}r13=_sbrk(r38);r5=(r13|0)==(HEAP32[r46>>2]+HEAP32[r47>>2]|0);r49=r5?r13:-1;r50=r5?r38:0;r51=r13;r52=r38;r2=409}}while(0);do{if(r2==400){r41=_sbrk(0);if((r41|0)==-1){r48=0;break}r7=r41;r38=HEAP32[2220>>2];r13=r38-1|0;if((r13&r7|0)==0){r53=r45}else{r53=r45-r7+(r13+r7&-r38)|0}r38=HEAP32[3104>>2];r7=r38+r53|0;if(!(r53>>>0>r15>>>0&r53>>>0<2147483647)){r48=0;break}r13=HEAP32[3112>>2];if((r13|0)!=0){if(r7>>>0<=r38>>>0|r7>>>0>r13>>>0){r48=0;break}}r13=_sbrk(r53);r7=(r13|0)==(r41|0);r49=r7?r41:-1;r50=r7?r53:0;r51=r13;r52=r53;r2=409}}while(0);L585:do{if(r2==409){r13=-r52|0;if((r49|0)!=-1){r54=r50;r55=r49;r2=420;break L563}do{if((r51|0)!=-1&r52>>>0<2147483647&r52>>>0<r36>>>0){r7=HEAP32[2224>>2];r41=r37-r52+r7&-r7;if(r41>>>0>=2147483647){r56=r52;break}if((_sbrk(r41)|0)==-1){_sbrk(r13);r48=r50;break L585}else{r56=r41+r52|0;break}}else{r56=r52}}while(0);if((r51|0)==-1){r48=r50}else{r54=r56;r55=r51;r2=420;break L563}}}while(0);HEAP32[3116>>2]=HEAP32[3116>>2]|4;r57=r48;r2=417}else{r57=0;r2=417}}while(0);do{if(r2==417){if(r45>>>0>=2147483647){break}r48=_sbrk(r45);r51=_sbrk(0);if(!((r51|0)!=-1&(r48|0)!=-1&r48>>>0<r51>>>0)){break}r56=r51-r48|0;r51=r56>>>0>(r15+40|0)>>>0;r50=r51?r48:-1;if((r50|0)!=-1){r54=r51?r56:r57;r55=r50;r2=420}}}while(0);do{if(r2==420){r57=HEAP32[3104>>2]+r54|0;HEAP32[3104>>2]=r57;if(r57>>>0>HEAP32[3108>>2]>>>0){HEAP32[3108>>2]=r57}r57=HEAP32[2696>>2];L605:do{if((r57|0)==0){r45=HEAP32[2688>>2];if((r45|0)==0|r55>>>0<r45>>>0){HEAP32[2688>>2]=r55}HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[2708>>2]=HEAP32[2216>>2];HEAP32[2704>>2]=-1;r45=0;while(1){r50=r45<<1;r56=2712+(r50<<2)|0;HEAP32[2712+(r50+3<<2)>>2]=r56;HEAP32[2712+(r50+2<<2)>>2]=r56;r56=r45+1|0;if(r56>>>0<32){r45=r56}else{break}}r45=r55+8|0;if((r45&7|0)==0){r58=0}else{r58=-r45&7}r45=r54-40-r58|0;HEAP32[2696>>2]=r55+r58;HEAP32[2684>>2]=r45;HEAP32[r55+(r58+4)>>2]=r45|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2]}else{r45=3120;while(1){r59=HEAP32[r45>>2];r60=r45+4|0;r61=HEAP32[r60>>2];if((r55|0)==(r59+r61|0)){r2=432;break}r56=HEAP32[r45+8>>2];if((r56|0)==0){break}else{r45=r56}}do{if(r2==432){if((HEAP32[r45+12>>2]&8|0)!=0){break}r56=r57;if(!(r56>>>0>=r59>>>0&r56>>>0<r55>>>0)){break}HEAP32[r60>>2]=r61+r54;r56=HEAP32[2696>>2];r50=HEAP32[2684>>2]+r54|0;r51=r56;r48=r56+8|0;if((r48&7|0)==0){r62=0}else{r62=-r48&7}r48=r50-r62|0;HEAP32[2696>>2]=r51+r62;HEAP32[2684>>2]=r48;HEAP32[r51+(r62+4)>>2]=r48|1;HEAP32[r51+(r50+4)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];break L605}}while(0);if(r55>>>0<HEAP32[2688>>2]>>>0){HEAP32[2688>>2]=r55}r45=r55+r54|0;r50=3120;while(1){r63=r50|0;if((HEAP32[r63>>2]|0)==(r45|0)){r2=442;break}r51=HEAP32[r50+8>>2];if((r51|0)==0){break}else{r50=r51}}do{if(r2==442){if((HEAP32[r50+12>>2]&8|0)!=0){break}HEAP32[r63>>2]=r55;r45=r50+4|0;HEAP32[r45>>2]=HEAP32[r45>>2]+r54;r45=r55+8|0;if((r45&7|0)==0){r64=0}else{r64=-r45&7}r45=r55+(r54+8)|0;if((r45&7|0)==0){r65=0}else{r65=-r45&7}r45=r55+(r65+r54)|0;r51=r45;r48=r64+r15|0;r56=r55+r48|0;r52=r56;r37=r45-(r55+r64)-r15|0;HEAP32[r55+(r64+4)>>2]=r15|3;do{if((r51|0)==(HEAP32[2696>>2]|0)){r36=HEAP32[2684>>2]+r37|0;HEAP32[2684>>2]=r36;HEAP32[2696>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1}else{if((r51|0)==(HEAP32[2692>>2]|0)){r36=HEAP32[2680>>2]+r37|0;HEAP32[2680>>2]=r36;HEAP32[2692>>2]=r52;HEAP32[r55+(r48+4)>>2]=r36|1;HEAP32[r55+(r36+r48)>>2]=r36;break}r36=r54+4|0;r49=HEAP32[r55+(r36+r65)>>2];if((r49&3|0)==1){r53=r49&-8;r47=r49>>>3;L650:do{if(r49>>>0<256){r46=HEAP32[r55+((r65|8)+r54)>>2];r43=HEAP32[r55+(r54+12+r65)>>2];r44=2712+(r47<<1<<2)|0;do{if((r46|0)!=(r44|0)){if(r46>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r46+12>>2]|0)==(r51|0)){break}_abort()}}while(0);if((r43|0)==(r46|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r47);break}do{if((r43|0)==(r44|0)){r66=r43+8|0}else{if(r43>>>0<HEAP32[2688>>2]>>>0){_abort()}r13=r43+8|0;if((HEAP32[r13>>2]|0)==(r51|0)){r66=r13;break}_abort()}}while(0);HEAP32[r46+12>>2]=r43;HEAP32[r66>>2]=r46}else{r44=r45;r13=HEAP32[r55+((r65|24)+r54)>>2];r42=HEAP32[r55+(r54+12+r65)>>2];do{if((r42|0)==(r44|0)){r41=r65|16;r7=r55+(r36+r41)|0;r38=HEAP32[r7>>2];if((r38|0)==0){r5=r55+(r41+r54)|0;r41=HEAP32[r5>>2];if((r41|0)==0){r67=0;break}else{r68=r41;r69=r5}}else{r68=r38;r69=r7}while(1){r7=r68+20|0;r38=HEAP32[r7>>2];if((r38|0)!=0){r68=r38;r69=r7;continue}r7=r68+16|0;r38=HEAP32[r7>>2];if((r38|0)==0){break}else{r68=r38;r69=r7}}if(r69>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r69>>2]=0;r67=r68;break}}else{r7=HEAP32[r55+((r65|8)+r54)>>2];if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r38=r7+12|0;if((HEAP32[r38>>2]|0)!=(r44|0)){_abort()}r5=r42+8|0;if((HEAP32[r5>>2]|0)==(r44|0)){HEAP32[r38>>2]=r42;HEAP32[r5>>2]=r7;r67=r42;break}else{_abort()}}}while(0);if((r13|0)==0){break}r42=r55+(r54+28+r65)|0;r46=2976+(HEAP32[r42>>2]<<2)|0;do{if((r44|0)==(HEAP32[r46>>2]|0)){HEAP32[r46>>2]=r67;if((r67|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r42>>2]);break L650}else{if(r13>>>0<HEAP32[2688>>2]>>>0){_abort()}r43=r13+16|0;if((HEAP32[r43>>2]|0)==(r44|0)){HEAP32[r43>>2]=r67}else{HEAP32[r13+20>>2]=r67}if((r67|0)==0){break L650}}}while(0);if(r67>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r67+24>>2]=r13;r44=r65|16;r42=HEAP32[r55+(r44+r54)>>2];do{if((r42|0)!=0){if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+16>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r42=HEAP32[r55+(r36+r44)>>2];if((r42|0)==0){break}if(r42>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r67+20>>2]=r42;HEAP32[r42+24>>2]=r67;break}}}while(0);r70=r55+((r53|r65)+r54)|0;r71=r53+r37|0}else{r70=r51;r71=r37}r36=r70+4|0;HEAP32[r36>>2]=HEAP32[r36>>2]&-2;HEAP32[r55+(r48+4)>>2]=r71|1;HEAP32[r55+(r71+r48)>>2]=r71;r36=r71>>>3;if(r71>>>0<256){r47=r36<<1;r49=2712+(r47<<2)|0;r42=HEAP32[2672>>2];r13=1<<r36;do{if((r42&r13|0)==0){HEAP32[2672>>2]=r42|r13;r72=r49;r73=2712+(r47+2<<2)|0}else{r36=2712+(r47+2<<2)|0;r46=HEAP32[r36>>2];if(r46>>>0>=HEAP32[2688>>2]>>>0){r72=r46;r73=r36;break}_abort()}}while(0);HEAP32[r73>>2]=r52;HEAP32[r72+12>>2]=r52;HEAP32[r55+(r48+8)>>2]=r72;HEAP32[r55+(r48+12)>>2]=r49;break}r47=r56;r13=r71>>>8;do{if((r13|0)==0){r74=0}else{if(r71>>>0>16777215){r74=31;break}r42=(r13+1048320|0)>>>16&8;r53=r13<<r42;r36=(r53+520192|0)>>>16&4;r46=r53<<r36;r53=(r46+245760|0)>>>16&2;r43=14-(r36|r42|r53)+(r46<<r53>>>15)|0;r74=r71>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r74<<2)|0;HEAP32[r55+(r48+28)>>2]=r74;HEAP32[r55+(r48+20)>>2]=0;HEAP32[r55+(r48+16)>>2]=0;r49=HEAP32[2676>>2];r43=1<<r74;if((r49&r43|0)==0){HEAP32[2676>>2]=r49|r43;HEAP32[r13>>2]=r47;HEAP32[r55+(r48+24)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}if((r74|0)==31){r75=0}else{r75=25-(r74>>>1)|0}r43=r71<<r75;r49=HEAP32[r13>>2];while(1){if((HEAP32[r49+4>>2]&-8|0)==(r71|0)){break}r76=r49+16+(r43>>>31<<2)|0;r13=HEAP32[r76>>2];if((r13|0)==0){r2=515;break}else{r43=r43<<1;r49=r13}}if(r2==515){if(r76>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r76>>2]=r47;HEAP32[r55+(r48+24)>>2]=r49;HEAP32[r55+(r48+12)>>2]=r47;HEAP32[r55+(r48+8)>>2]=r47;break}}r43=r49+8|0;r13=HEAP32[r43>>2];r53=HEAP32[2688>>2];if(r49>>>0<r53>>>0){_abort()}if(r13>>>0<r53>>>0){_abort()}else{HEAP32[r13+12>>2]=r47;HEAP32[r43>>2]=r47;HEAP32[r55+(r48+8)>>2]=r13;HEAP32[r55+(r48+12)>>2]=r49;HEAP32[r55+(r48+24)>>2]=0;break}}}while(0);r14=r55+(r64|8)|0;return r14}}while(0);r50=r57;r48=3120;while(1){r77=HEAP32[r48>>2];if(r77>>>0<=r50>>>0){r78=HEAP32[r48+4>>2];r79=r77+r78|0;if(r79>>>0>r50>>>0){break}}r48=HEAP32[r48+8>>2]}r48=r77+(r78-39)|0;if((r48&7|0)==0){r80=0}else{r80=-r48&7}r48=r77+(r78-47+r80)|0;r56=r48>>>0<(r57+16|0)>>>0?r50:r48;r48=r56+8|0;r52=r55+8|0;if((r52&7|0)==0){r81=0}else{r81=-r52&7}r52=r54-40-r81|0;HEAP32[2696>>2]=r55+r81;HEAP32[2684>>2]=r52;HEAP32[r55+(r81+4)>>2]=r52|1;HEAP32[r55+(r54-36)>>2]=40;HEAP32[2700>>2]=HEAP32[2232>>2];HEAP32[r56+4>>2]=27;HEAP32[r48>>2]=HEAP32[3120>>2];HEAP32[r48+4>>2]=HEAP32[3124>>2];HEAP32[r48+8>>2]=HEAP32[3128>>2];HEAP32[r48+12>>2]=HEAP32[3132>>2];HEAP32[3120>>2]=r55;HEAP32[3124>>2]=r54;HEAP32[3132>>2]=0;HEAP32[3128>>2]=r48;r48=r56+28|0;HEAP32[r48>>2]=7;if((r56+32|0)>>>0<r79>>>0){r52=r48;while(1){r48=r52+4|0;HEAP32[r48>>2]=7;if((r52+8|0)>>>0<r79>>>0){r52=r48}else{break}}}if((r56|0)==(r50|0)){break}r52=r56-r57|0;r48=r50+(r52+4)|0;HEAP32[r48>>2]=HEAP32[r48>>2]&-2;HEAP32[r57+4>>2]=r52|1;HEAP32[r50+r52>>2]=r52;r48=r52>>>3;if(r52>>>0<256){r37=r48<<1;r51=2712+(r37<<2)|0;r45=HEAP32[2672>>2];r13=1<<r48;do{if((r45&r13|0)==0){HEAP32[2672>>2]=r45|r13;r82=r51;r83=2712+(r37+2<<2)|0}else{r48=2712+(r37+2<<2)|0;r43=HEAP32[r48>>2];if(r43>>>0>=HEAP32[2688>>2]>>>0){r82=r43;r83=r48;break}_abort()}}while(0);HEAP32[r83>>2]=r57;HEAP32[r82+12>>2]=r57;HEAP32[r57+8>>2]=r82;HEAP32[r57+12>>2]=r51;break}r37=r57;r13=r52>>>8;do{if((r13|0)==0){r84=0}else{if(r52>>>0>16777215){r84=31;break}r45=(r13+1048320|0)>>>16&8;r50=r13<<r45;r56=(r50+520192|0)>>>16&4;r48=r50<<r56;r50=(r48+245760|0)>>>16&2;r43=14-(r56|r45|r50)+(r48<<r50>>>15)|0;r84=r52>>>((r43+7|0)>>>0)&1|r43<<1}}while(0);r13=2976+(r84<<2)|0;HEAP32[r57+28>>2]=r84;HEAP32[r57+20>>2]=0;HEAP32[r57+16>>2]=0;r51=HEAP32[2676>>2];r43=1<<r84;if((r51&r43|0)==0){HEAP32[2676>>2]=r51|r43;HEAP32[r13>>2]=r37;HEAP32[r57+24>>2]=r13;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}if((r84|0)==31){r85=0}else{r85=25-(r84>>>1)|0}r43=r52<<r85;r51=HEAP32[r13>>2];while(1){if((HEAP32[r51+4>>2]&-8|0)==(r52|0)){break}r86=r51+16+(r43>>>31<<2)|0;r13=HEAP32[r86>>2];if((r13|0)==0){r2=550;break}else{r43=r43<<1;r51=r13}}if(r2==550){if(r86>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r86>>2]=r37;HEAP32[r57+24>>2]=r51;HEAP32[r57+12>>2]=r57;HEAP32[r57+8>>2]=r57;break}}r43=r51+8|0;r52=HEAP32[r43>>2];r13=HEAP32[2688>>2];if(r51>>>0<r13>>>0){_abort()}if(r52>>>0<r13>>>0){_abort()}else{HEAP32[r52+12>>2]=r37;HEAP32[r43>>2]=r37;HEAP32[r57+8>>2]=r52;HEAP32[r57+12>>2]=r51;HEAP32[r57+24>>2]=0;break}}}while(0);r57=HEAP32[2684>>2];if(r57>>>0<=r15>>>0){break}r52=r57-r15|0;HEAP32[2684>>2]=r52;r57=HEAP32[2696>>2];r43=r57;HEAP32[2696>>2]=r43+r15;HEAP32[r43+(r15+4)>>2]=r52|1;HEAP32[r57+4>>2]=r15|3;r14=r57+8|0;return r14}}while(0);HEAP32[___errno_location()>>2]=12;r14=0;return r14}function _free(r1){var r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25,r26,r27,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40;r2=0;if((r1|0)==0){return}r3=r1-8|0;r4=r3;r5=HEAP32[2688>>2];if(r3>>>0<r5>>>0){_abort()}r6=HEAP32[r1-4>>2];r7=r6&3;if((r7|0)==1){_abort()}r8=r6&-8;r9=r1+(r8-8)|0;r10=r9;L822:do{if((r6&1|0)==0){r11=HEAP32[r3>>2];if((r7|0)==0){return}r12=-8-r11|0;r13=r1+r12|0;r14=r13;r15=r11+r8|0;if(r13>>>0<r5>>>0){_abort()}if((r14|0)==(HEAP32[2692>>2]|0)){r16=r1+(r8-4)|0;if((HEAP32[r16>>2]&3|0)!=3){r17=r14;r18=r15;break}HEAP32[2680>>2]=r15;HEAP32[r16>>2]=HEAP32[r16>>2]&-2;HEAP32[r1+(r12+4)>>2]=r15|1;HEAP32[r9>>2]=r15;return}r16=r11>>>3;if(r11>>>0<256){r11=HEAP32[r1+(r12+8)>>2];r19=HEAP32[r1+(r12+12)>>2];r20=2712+(r16<<1<<2)|0;do{if((r11|0)!=(r20|0)){if(r11>>>0<r5>>>0){_abort()}if((HEAP32[r11+12>>2]|0)==(r14|0)){break}_abort()}}while(0);if((r19|0)==(r11|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r16);r17=r14;r18=r15;break}do{if((r19|0)==(r20|0)){r21=r19+8|0}else{if(r19>>>0<r5>>>0){_abort()}r22=r19+8|0;if((HEAP32[r22>>2]|0)==(r14|0)){r21=r22;break}_abort()}}while(0);HEAP32[r11+12>>2]=r19;HEAP32[r21>>2]=r11;r17=r14;r18=r15;break}r20=r13;r16=HEAP32[r1+(r12+24)>>2];r22=HEAP32[r1+(r12+12)>>2];do{if((r22|0)==(r20|0)){r23=r1+(r12+20)|0;r24=HEAP32[r23>>2];if((r24|0)==0){r25=r1+(r12+16)|0;r26=HEAP32[r25>>2];if((r26|0)==0){r27=0;break}else{r28=r26;r29=r25}}else{r28=r24;r29=r23}while(1){r23=r28+20|0;r24=HEAP32[r23>>2];if((r24|0)!=0){r28=r24;r29=r23;continue}r23=r28+16|0;r24=HEAP32[r23>>2];if((r24|0)==0){break}else{r28=r24;r29=r23}}if(r29>>>0<r5>>>0){_abort()}else{HEAP32[r29>>2]=0;r27=r28;break}}else{r23=HEAP32[r1+(r12+8)>>2];if(r23>>>0<r5>>>0){_abort()}r24=r23+12|0;if((HEAP32[r24>>2]|0)!=(r20|0)){_abort()}r25=r22+8|0;if((HEAP32[r25>>2]|0)==(r20|0)){HEAP32[r24>>2]=r22;HEAP32[r25>>2]=r23;r27=r22;break}else{_abort()}}}while(0);if((r16|0)==0){r17=r14;r18=r15;break}r22=r1+(r12+28)|0;r13=2976+(HEAP32[r22>>2]<<2)|0;do{if((r20|0)==(HEAP32[r13>>2]|0)){HEAP32[r13>>2]=r27;if((r27|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r22>>2]);r17=r14;r18=r15;break L822}else{if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r11=r16+16|0;if((HEAP32[r11>>2]|0)==(r20|0)){HEAP32[r11>>2]=r27}else{HEAP32[r16+20>>2]=r27}if((r27|0)==0){r17=r14;r18=r15;break L822}}}while(0);if(r27>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r27+24>>2]=r16;r20=HEAP32[r1+(r12+16)>>2];do{if((r20|0)!=0){if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+16>>2]=r20;HEAP32[r20+24>>2]=r27;break}}}while(0);r20=HEAP32[r1+(r12+20)>>2];if((r20|0)==0){r17=r14;r18=r15;break}if(r20>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r27+20>>2]=r20;HEAP32[r20+24>>2]=r27;r17=r14;r18=r15;break}}else{r17=r4;r18=r8}}while(0);r4=r17;if(r4>>>0>=r9>>>0){_abort()}r27=r1+(r8-4)|0;r5=HEAP32[r27>>2];if((r5&1|0)==0){_abort()}do{if((r5&2|0)==0){if((r10|0)==(HEAP32[2696>>2]|0)){r28=HEAP32[2684>>2]+r18|0;HEAP32[2684>>2]=r28;HEAP32[2696>>2]=r17;HEAP32[r17+4>>2]=r28|1;if((r17|0)!=(HEAP32[2692>>2]|0)){return}HEAP32[2692>>2]=0;HEAP32[2680>>2]=0;return}if((r10|0)==(HEAP32[2692>>2]|0)){r28=HEAP32[2680>>2]+r18|0;HEAP32[2680>>2]=r28;HEAP32[2692>>2]=r17;HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;return}r28=(r5&-8)+r18|0;r29=r5>>>3;L925:do{if(r5>>>0<256){r21=HEAP32[r1+r8>>2];r7=HEAP32[r1+(r8|4)>>2];r3=2712+(r29<<1<<2)|0;do{if((r21|0)!=(r3|0)){if(r21>>>0<HEAP32[2688>>2]>>>0){_abort()}if((HEAP32[r21+12>>2]|0)==(r10|0)){break}_abort()}}while(0);if((r7|0)==(r21|0)){HEAP32[2672>>2]=HEAP32[2672>>2]&~(1<<r29);break}do{if((r7|0)==(r3|0)){r30=r7+8|0}else{if(r7>>>0<HEAP32[2688>>2]>>>0){_abort()}r6=r7+8|0;if((HEAP32[r6>>2]|0)==(r10|0)){r30=r6;break}_abort()}}while(0);HEAP32[r21+12>>2]=r7;HEAP32[r30>>2]=r21}else{r3=r9;r6=HEAP32[r1+(r8+16)>>2];r20=HEAP32[r1+(r8|4)>>2];do{if((r20|0)==(r3|0)){r16=r1+(r8+12)|0;r22=HEAP32[r16>>2];if((r22|0)==0){r13=r1+(r8+8)|0;r11=HEAP32[r13>>2];if((r11|0)==0){r31=0;break}else{r32=r11;r33=r13}}else{r32=r22;r33=r16}while(1){r16=r32+20|0;r22=HEAP32[r16>>2];if((r22|0)!=0){r32=r22;r33=r16;continue}r16=r32+16|0;r22=HEAP32[r16>>2];if((r22|0)==0){break}else{r32=r22;r33=r16}}if(r33>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r33>>2]=0;r31=r32;break}}else{r16=HEAP32[r1+r8>>2];if(r16>>>0<HEAP32[2688>>2]>>>0){_abort()}r22=r16+12|0;if((HEAP32[r22>>2]|0)!=(r3|0)){_abort()}r13=r20+8|0;if((HEAP32[r13>>2]|0)==(r3|0)){HEAP32[r22>>2]=r20;HEAP32[r13>>2]=r16;r31=r20;break}else{_abort()}}}while(0);if((r6|0)==0){break}r20=r1+(r8+20)|0;r21=2976+(HEAP32[r20>>2]<<2)|0;do{if((r3|0)==(HEAP32[r21>>2]|0)){HEAP32[r21>>2]=r31;if((r31|0)!=0){break}HEAP32[2676>>2]=HEAP32[2676>>2]&~(1<<HEAP32[r20>>2]);break L925}else{if(r6>>>0<HEAP32[2688>>2]>>>0){_abort()}r7=r6+16|0;if((HEAP32[r7>>2]|0)==(r3|0)){HEAP32[r7>>2]=r31}else{HEAP32[r6+20>>2]=r31}if((r31|0)==0){break L925}}}while(0);if(r31>>>0<HEAP32[2688>>2]>>>0){_abort()}HEAP32[r31+24>>2]=r6;r3=HEAP32[r1+(r8+8)>>2];do{if((r3|0)!=0){if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+16>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);r3=HEAP32[r1+(r8+12)>>2];if((r3|0)==0){break}if(r3>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r31+20>>2]=r3;HEAP32[r3+24>>2]=r31;break}}}while(0);HEAP32[r17+4>>2]=r28|1;HEAP32[r4+r28>>2]=r28;if((r17|0)!=(HEAP32[2692>>2]|0)){r34=r28;break}HEAP32[2680>>2]=r28;return}else{HEAP32[r27>>2]=r5&-2;HEAP32[r17+4>>2]=r18|1;HEAP32[r4+r18>>2]=r18;r34=r18}}while(0);r18=r34>>>3;if(r34>>>0<256){r4=r18<<1;r5=2712+(r4<<2)|0;r27=HEAP32[2672>>2];r31=1<<r18;do{if((r27&r31|0)==0){HEAP32[2672>>2]=r27|r31;r35=r5;r36=2712+(r4+2<<2)|0}else{r18=2712+(r4+2<<2)|0;r8=HEAP32[r18>>2];if(r8>>>0>=HEAP32[2688>>2]>>>0){r35=r8;r36=r18;break}_abort()}}while(0);HEAP32[r36>>2]=r17;HEAP32[r35+12>>2]=r17;HEAP32[r17+8>>2]=r35;HEAP32[r17+12>>2]=r5;return}r5=r17;r35=r34>>>8;do{if((r35|0)==0){r37=0}else{if(r34>>>0>16777215){r37=31;break}r36=(r35+1048320|0)>>>16&8;r4=r35<<r36;r31=(r4+520192|0)>>>16&4;r27=r4<<r31;r4=(r27+245760|0)>>>16&2;r18=14-(r31|r36|r4)+(r27<<r4>>>15)|0;r37=r34>>>((r18+7|0)>>>0)&1|r18<<1}}while(0);r35=2976+(r37<<2)|0;HEAP32[r17+28>>2]=r37;HEAP32[r17+20>>2]=0;HEAP32[r17+16>>2]=0;r18=HEAP32[2676>>2];r4=1<<r37;do{if((r18&r4|0)==0){HEAP32[2676>>2]=r18|r4;HEAP32[r35>>2]=r5;HEAP32[r17+24>>2]=r35;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17}else{if((r37|0)==31){r38=0}else{r38=25-(r37>>>1)|0}r27=r34<<r38;r36=HEAP32[r35>>2];while(1){if((HEAP32[r36+4>>2]&-8|0)==(r34|0)){break}r39=r36+16+(r27>>>31<<2)|0;r31=HEAP32[r39>>2];if((r31|0)==0){r2=727;break}else{r27=r27<<1;r36=r31}}if(r2==727){if(r39>>>0<HEAP32[2688>>2]>>>0){_abort()}else{HEAP32[r39>>2]=r5;HEAP32[r17+24>>2]=r36;HEAP32[r17+12>>2]=r17;HEAP32[r17+8>>2]=r17;break}}r27=r36+8|0;r28=HEAP32[r27>>2];r31=HEAP32[2688>>2];if(r36>>>0<r31>>>0){_abort()}if(r28>>>0<r31>>>0){_abort()}else{HEAP32[r28+12>>2]=r5;HEAP32[r27>>2]=r5;HEAP32[r17+8>>2]=r28;HEAP32[r17+12>>2]=r36;HEAP32[r17+24>>2]=0;break}}}while(0);r17=HEAP32[2704>>2]-1|0;HEAP32[2704>>2]=r17;if((r17|0)==0){r40=3128}else{return}while(1){r17=HEAP32[r40>>2];if((r17|0)==0){break}else{r40=r17+8|0}}HEAP32[2704>>2]=-1;return}
 // EMSCRIPTEN_END_FUNCS
 Module["_main"] = _main;
 Module["_malloc"] = _malloc;
@@ -10389,6 +10920,22 @@ Module["_free"] = _free;
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
+if (memoryInitializer) {
+  function applyData(data) {
+    HEAPU8.set(data, STATIC_BASE);
+  }
+  if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+    applyData(Module['readBinary'](memoryInitializer));
+  } else {
+    addRunDependency('memory initializer');
+    Browser.asyncLoad(memoryInitializer, function(data) {
+      applyData(data);
+      removeRunDependency('memory initializer');
+    }, function(data) {
+      throw 'could not load memory initializer ' + memoryInitializer;
+    });
+  }
+}
 function ExitStatus(status) {
   this.name = "ExitStatus";
   this.message = "Program terminated with exit(" + status + ")";
@@ -10398,6 +10945,13 @@ ExitStatus.prototype = new Error();
 ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
 var preloadStartTime = null;
+var calledMain = false;
+var calledRun = false;
+dependenciesFulfilled = function runCaller() {
+  // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
+  if (!calledRun && shouldRunNow) run();
+  if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
+}
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
@@ -10440,6 +10994,8 @@ Module['callMain'] = Module.callMain = function callMain(args) {
     } else {
       throw e;
     }
+  } finally {
+    calledMain = true;
   }
 }
 function run(args) {
@@ -10482,6 +11038,13 @@ function exit(status) {
   STACKTOP = initialStackTop;
   // exit the runtime
   exitRuntime();
+  // TODO We should handle this differently based on environment.
+  // In the browser, the best we can do is throw an exception
+  // to halt execution, but in node we could process.exit and
+  // I'd imagine SM shell would have something equivalent.
+  // This would let us set a proper exit status (which
+  // would be great for checking test exit statuses).
+  // https://github.com/kripken/emscripten/issues/1371
   // throw an exception to halt the current execution
   throw new ExitStatus(status);
 }
@@ -10553,7 +11116,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '8367b7e4-824a-418f-bd9a-ff72ed9f25f5';
+    var PACKAGE_UUID = '7667d368-8154-4305-ab3c-c3e5e3382221';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

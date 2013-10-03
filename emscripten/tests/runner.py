@@ -646,7 +646,7 @@ class BrowserCore(RunnerCore):
       });
 ''' % basename)
 
-  def btest(self, filename, expected=None, reference=None, force_c=False, reference_slack=0,
+  def btest(self, filename, expected=None, reference=None, force_c=False, reference_slack=0, manual_reference=False, post_build=None,
       args=[], outfile='test.html', message='.'): # TODO: use in all other tests
     # if we are provided the source and not a path, use that
     filename_is_src = '\n' in filename
@@ -663,9 +663,11 @@ class BrowserCore(RunnerCore):
       expected = [str(i) for i in range(0, reference_slack+1)]
       shutil.copyfile(filepath, temp_filepath)
       self.reftest(path_from_root('tests', reference))
-      args = args + ['--pre-js', 'reftest.js', '-s', 'GL_TESTING=1']
+      if not manual_reference:
+        args = args + ['--pre-js', 'reftest.js', '-s', 'GL_TESTING=1']
     Popen([PYTHON, EMCC, temp_filepath, '-o', outfile] + args).communicate()
     assert os.path.exists(outfile)
+    if post_build: post_build()
     if type(expected) is str: expected = [expected]
     self.run_browser(outfile, message, ['/report_result?' + e for e in expected])
 
@@ -735,13 +737,15 @@ if __name__ == '__main__':
     print '''
 ==============================================================================
 Running the main part of the test suite. Don't forget to run the other parts!
+A recommended order is:
 
-  other - tests separate from the main suite
   sanity - tests for first run, etc., modifies ~/.emscripten
-  benchmark - run before and after each set of changes before pushing to
-              master, verify no regressions
+  (the main test suite)
+  other - tests separate from the main suite
   browser - runs pages in a web browser
   sockets - runs websocket networking tests
+  benchmark - run before and after each set of changes before pushing to
+              master, verify no regressions
 
 There are also commands to run specific subsets of the test suite:
 
@@ -797,3 +801,4 @@ an individual test with
 
   # Return the number of failures as the process exit code for automating success/failure reporting.
   exit(numFailures)
+

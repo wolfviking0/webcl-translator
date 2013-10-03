@@ -1,4 +1,4 @@
-// Note: For maximum-speed code, see "Optimizing Code" on the Emscripten wiki, https://github.com/kripken/emscripten/wiki/Optimizing-Code
+// Note: Some Emscripten settings will significantly limit the speed of the generated code.
 // Note: Some Emscripten settings may limit the speed of the generated code.
 // The Module object: Our interface to the outside world. We import
 // and export values on it, and do the work to get that through
@@ -91,22 +91,25 @@ else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (typeof arguments != 'undefined') {
     Module['arguments'] = arguments;
   }
-  if (ENVIRONMENT_IS_WEB) {
+  if (typeof console !== 'undefined') {
     Module['print'] = function(x) {
       console.log(x);
     };
     Module['printErr'] = function(x) {
       console.log(x);
     };
-    this['Module'] = Module;
-  } else if (ENVIRONMENT_IS_WORKER) {
-    // We can do very little here...
+  } else {
+    // Probably a worker, and without console.log. We can do very little here...
     var TRY_USE_DUMP = false;
     Module['print'] = (TRY_USE_DUMP && (typeof(dump) !== "undefined") ? (function(x) {
       dump(x);
     }) : (function(x) {
       // self.postMessage(x); // enable this if you want stdout to be sent as messages
     }));
+  }
+  if (ENVIRONMENT_IS_WEB) {
+    this['Module'] = Module;
+  } else {
     Module['load'] = importScripts;
   }
 }
@@ -161,8 +164,7 @@ var Runtime = {
     if (isNumber(target) && isNumber(quantum)) {
       return Math.ceil(target/quantum)*quantum;
     } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      var logg = log2(quantum);
-      return '((((' +target + ')+' + (quantum-1) + ')>>' + logg + ')<<' + logg + ')';
+      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
     }
     return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
   },
@@ -196,27 +198,24 @@ var Runtime = {
     var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
     return l + h;
   },
-  getNativeTypeSize: function (type, quantumSize) {
-    if (Runtime.QUANTUM_SIZE == 1) return 1;
-    var size = {
-      '%i1': 1,
-      '%i8': 1,
-      '%i16': 2,
-      '%i32': 4,
-      '%i64': 8,
-      "%float": 4,
-      "%double": 8
-    }['%'+type]; // add '%' since float and double confuse Closure compiler as keys, and also spidermonkey as a compiler will remove 's from '_i8' etc
-    if (!size) {
-      if (type.charAt(type.length-1) == '*') {
-        size = Runtime.QUANTUM_SIZE; // A pointer
-      } else if (type[0] == 'i') {
-        var bits = parseInt(type.substr(1));
-        assert(bits % 8 == 0);
-        size = bits/8;
+  getNativeTypeSize: function (type) {
+    switch (type) {
+      case 'i1': case 'i8': return 1;
+      case 'i16': return 2;
+      case 'i32': return 4;
+      case 'i64': return 8;
+      case 'float': return 4;
+      case 'double': return 8;
+      default: {
+        if (type[type.length-1] === '*') {
+          return Runtime.QUANTUM_SIZE; // A pointer
+        } else if (type[0] === 'i') {
+          var bits = parseInt(type.substr(1));
+          assert(bits % 8 === 0);
+          return bits/8;
+        }
       }
     }
-    return size;
   },
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
@@ -270,7 +269,11 @@ var Runtime = {
           // and it adds no size
           // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
           size = 0;
-          alignSize = type.alignSize || QUANTUM_SIZE;
+          if (Types.types[field]) {
+            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
+          } else {
+            alignSize = type.alignSize || QUANTUM_SIZE;
+          }
         } else {
           size = Types.types[field].flatSize;
           alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
@@ -339,25 +342,24 @@ var Runtime = {
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
-      if (!args.splice) args = Array.prototype.slice.call(args);
-      args.splice(0, 0, ptr);
-      return Module['dynCall_' + sig].apply(null, args);
+      assert(args.length == sig.length-1);
+      return FUNCTION_TABLE[ptr].apply(null, args);
     } else {
-      return Module['dynCall_' + sig].call(null, ptr);
+      assert(sig.length == 1);
+      return FUNCTION_TABLE[ptr]();
     }
   },
-  functionPointers: [],
   addFunction: function (func) {
-    for (var i = 0; i < Runtime.functionPointers.length; i++) {
-      if (!Runtime.functionPointers[i]) {
-        Runtime.functionPointers[i] = func;
-        return 2 + 2*i;
-      }
-    }
-    throw 'Finished up all reserved function pointers. Use a higher value for RESERVED_FUNCTION_POINTERS.';
+    var table = FUNCTION_TABLE;
+    var ret = table.length;
+    assert(ret % 2 === 0);
+    table.push(func);
+    for (var i = 0; i < 2-1; i++) table.push(0);
+    return ret;
   },
   removeFunction: function (index) {
-    Runtime.functionPointers[(index-2)/2] = null;
+    var table = FUNCTION_TABLE;
+    table[index] = null;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -429,11 +431,11 @@ var Runtime = {
       return ret;
     }
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = ((((STACKTOP)+7)>>3)<<3); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + size)|0;STATICTOP = ((((STATICTOP)+7)>>3)<<3); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + size)|0;DYNAMICTOP = ((((DYNAMICTOP)+7)>>3)<<3); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((STACKTOP|0) < (STACK_MAX|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
   alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
-  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+(((low)>>>(0))))+((+(((high)>>>(0))))*(+(4294967296)))) : ((+(((low)>>>(0))))+((+(((high)|(0))))*(+(4294967296))))); return ret; },
+  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((low>>>0)+((high>>>0)*4294967296)) : ((low>>>0)+((high|0)*4294967296))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
   __dummy__: 0
@@ -442,6 +444,8 @@ var Runtime = {
 // Runtime essentials
 //========================================
 var __THREW__ = 0; // Used in checking for thrown exceptions.
+var setjmpId = 1; // Used in setjmp/longjmp
+var setjmpLabels = {};
 var ABORT = false; // whether we are quitting the application. no code should run after this. set in exit() and abort()
 var EXITSTATUS = 0;
 var undef = 0;
@@ -493,11 +497,10 @@ function ccallFunc(func, returnType, argTypes, args) {
   function toC(value, type) {
     if (type == 'string') {
       if (value === null || value === undefined || value === 0) return 0; // null string
-      if (!stack) stack = Runtime.stackSave();
-      var ret = Runtime.stackAlloc(value.length+1);
-      writeStringToMemory(value, ret);
-      return ret;
-    } else if (type == 'array') {
+      value = intArrayFromString(value);
+      type = 'array';
+    }
+    if (type == 'array') {
       if (!stack) stack = Runtime.stackSave();
       var ret = Runtime.stackAlloc(value.length);
       writeArrayToMemory(value, ret);
@@ -550,7 +553,7 @@ function setValue(ptr, value, type, noSafe) {
       case 'i8': HEAP8[(ptr)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
-      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,(+(Math.abs(tempDouble))) >= (+(1)) ? (tempDouble > (+(0)) ? ((Math.min((+(Math.floor((tempDouble)/(+(4294967296))))), (+(4294967295))))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/(+(4294967296)))))))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
+      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,Math.abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math.min(Math.floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
       case 'float': HEAPF32[((ptr)>>2)]=value; break;
       case 'double': HEAPF64[((ptr)>>3)]=value; break;
       default: abort('invalid type for setValue: ' + type);
@@ -645,6 +648,7 @@ function allocate(slab, types, allocator, ptr) {
       i++;
       continue;
     }
+    assert(type, 'Must know what type to store in allocate!');
     if (type == 'i64') type = 'i32'; // special case: we have one i32 here, and one i32 later
     setValue(ret+i, curr, type);
     // no need to look up size unless type changes, so cache it
@@ -664,6 +668,7 @@ function Pointer_stringify(ptr, /* optional */ length) {
   var t;
   var i = 0;
   while (1) {
+    assert(ptr + i < TOTAL_MEMORY);
     t = HEAPU8[(((ptr)+(i))|0)];
     if (t >= 128) hasUtf = true;
     else if (t == 0 && !length) break;
@@ -685,16 +690,83 @@ function Pointer_stringify(ptr, /* optional */ length) {
   }
   var utf8 = new Runtime.UTF8Processor();
   for (i = 0; i < length; i++) {
+    assert(ptr + i < TOTAL_MEMORY);
     t = HEAPU8[(((ptr)+(i))|0)];
     ret += utf8.processCChar(t);
   }
   return ret;
 }
 Module['Pointer_stringify'] = Pointer_stringify;
+// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF16ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var codeUnit = HEAP16[(((ptr)+(i*2))>>1)];
+    if (codeUnit == 0)
+      return str;
+    ++i;
+    // fromCharCode constructs a character from a UTF-16 code unit, so we can pass the UTF16 string right through.
+    str += String.fromCharCode(codeUnit);
+  }
+}
+Module['UTF16ToString'] = UTF16ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+function stringToUTF16(str, outPtr) {
+  for(var i = 0; i < str.length; ++i) {
+    // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
+    var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
+    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP16[(((outPtr)+(str.length*2))>>1)]=0
+}
+Module['stringToUTF16'] = stringToUTF16;
+// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
+// a copy of that string as a Javascript String object.
+function UTF32ToString(ptr) {
+  var i = 0;
+  var str = '';
+  while (1) {
+    var utf32 = HEAP32[(((ptr)+(i*4))>>2)];
+    if (utf32 == 0)
+      return str;
+    ++i;
+    // Gotcha: fromCharCode constructs a character from a UTF-16 encoded code (pair), not from a Unicode code point! So encode the code point to UTF-16 for constructing.
+    if (utf32 >= 0x10000) {
+      var ch = utf32 - 0x10000;
+      str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
+    } else {
+      str += String.fromCharCode(utf32);
+    }
+  }
+}
+Module['UTF32ToString'] = UTF32ToString;
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
+// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+function stringToUTF32(str, outPtr) {
+  var iChar = 0;
+  for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
+    // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code unit, not a Unicode code point of the character! We must decode the string to UTF-32 to the heap.
+    var codeUnit = str.charCodeAt(iCodeUnit); // possibly a lead surrogate
+    if (codeUnit >= 0xD800 && codeUnit <= 0xDFFF) {
+      var trailSurrogate = str.charCodeAt(++iCodeUnit);
+      codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
+    }
+    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit
+    ++iChar;
+  }
+  // Null-terminate the pointer to the HEAP.
+  HEAP32[(((outPtr)+(iChar*4))>>2)]=0
+}
+Module['stringToUTF32'] = stringToUTF32;
 // Memory management
 var PAGE_SIZE = 4096;
 function alignMemoryPage(x) {
-  return ((x+4095)>>12)<<12;
+  return (x+4095)&-4096;
 }
 var HEAP;
 var HEAP8, HEAPU8, HEAP16, HEAPU16, HEAP32, HEAPU32, HEAPF32, HEAPF64;
@@ -702,14 +774,14 @@ var STATIC_BASE = 0, STATICTOP = 0, staticSealed = false; // static area
 var STACK_BASE = 0, STACKTOP = 0, STACK_MAX = 0; // stack area
 var DYNAMIC_BASE = 0, DYNAMICTOP = 0; // dynamic area handled by sbrk
 function enlargeMemory() {
-  abort('Cannot enlarge memory arrays in asm.js. Either (1) compile with -s TOTAL_MEMORY=X with X higher than the current value ' + TOTAL_MEMORY + ', or (2) set Module.TOTAL_MEMORY before the program runs.');
+  abort('Cannot enlarge memory arrays. Either (1) compile with -s TOTAL_MEMORY=X with X higher than the current value ' + TOTAL_MEMORY + ', (2) compile with ALLOW_MEMORY_GROWTH which adjusts the size at runtime but prevents some optimizations, or (3) set Module.TOTAL_MEMORY before the program runs.');
 }
 var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 // Initialize the runtime's memory
 // check for full engine support (use string 'subarray' to avoid closure compiler confusion)
-assert(!!Int32Array && !!Float64Array && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
+assert(typeof Int32Array !== 'undefined' && typeof Float64Array !== 'undefined' && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set']),
        'Cannot fallback to non-typed array case: Code is too specialized');
 var buffer = new ArrayBuffer(TOTAL_MEMORY);
 HEAP8 = new Int8Array(buffer);
@@ -827,6 +899,7 @@ function intArrayToString(array) {
   for (var i = 0; i < array.length; i++) {
     var chr = array[i];
     if (chr > 0xFF) {
+        assert(false, 'Character code ' + chr + ' (' + String.fromCharCode(chr) + ')  at offset ' + i + ' not in 0x00-0xFF.');
       chr &= 0xFF;
     }
     ret.push(String.fromCharCode(chr));
@@ -851,6 +924,14 @@ function writeArrayToMemory(array, buffer) {
   }
 }
 Module['writeArrayToMemory'] = writeArrayToMemory;
+function writeAsciiToMemory(str, buffer, dontAddNull) {
+  for (var i = 0; i < str.length; i++) {
+    assert(str.charCodeAt(i) === str.charCodeAt(i)&0xff);
+    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i)
+  }
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0
+}
+Module['writeAsciiToMemory'] = writeAsciiToMemory;
 function unSign(value, bits, ignore, sig) {
   if (value >= 0) {
     return value;
@@ -888,8 +969,8 @@ Math.imul = Math['imul'];
 // the dependencies are met.
 var runDependencies = 0;
 var runDependencyTracking = {};
-var calledInit = false, calledRun = false;
 var runDependencyWatcher = null;
+var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
 function addRunDependency(id) {
   runDependencies++;
   if (Module['monitorRunDependencies']) {
@@ -898,6 +979,22 @@ function addRunDependency(id) {
   if (id) {
     assert(!runDependencyTracking[id]);
     runDependencyTracking[id] = 1;
+    if (runDependencyWatcher === null && typeof setInterval !== 'undefined') {
+      // Check for missing dependencies every few seconds
+      runDependencyWatcher = setInterval(function() {
+        var shown = false;
+        for (var dep in runDependencyTracking) {
+          if (!shown) {
+            shown = true;
+            Module.printErr('still waiting on run dependencies:');
+          }
+          Module.printErr('dependency: ' + dep);
+        }
+        if (shown) {
+          Module.printErr('(end of list)');
+        }
+      }, 10000);
+    }
   } else {
     Module.printErr('warning: run dependency added without ID');
   }
@@ -918,36 +1015,25 @@ function removeRunDependency(id) {
     if (runDependencyWatcher !== null) {
       clearInterval(runDependencyWatcher);
       runDependencyWatcher = null;
-    } 
-    // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
-    if (!calledRun && shouldRunNow) run();
+    }
+    if (dependenciesFulfilled) {
+      var callback = dependenciesFulfilled;
+      dependenciesFulfilled = null;
+      callback(); // can add another dependenciesFulfilled
+    }
   }
 }
 Module['removeRunDependency'] = removeRunDependency;
 Module["preloadedImages"] = {}; // maps url to image data
 Module["preloadedAudios"] = {}; // maps url to audio data
-function loadMemoryInitializer(filename) {
-  function applyData(data) {
-    HEAPU8.set(data, STATIC_BASE);
-  }
-  // always do this asynchronously, to keep shell and web as similar as possible
-  addOnPreRun(function() {
-    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
-      applyData(Module['readBinary'](filename));
-    } else {
-      Browser.asyncLoad(filename, function(data) {
-        applyData(data);
-      }, function(data) {
-        throw 'could not load memory initializer ' + filename;
-      });
-    }
-  });
-}
+var memoryInitializer = null;
 // === Body ===
 STATIC_BASE = 8;
 STATICTOP = STATIC_BASE + 0;
 /* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } });
 /* no memory initializer */
+function runPostSets() {
+}
 var tempDoublePtr = Runtime.alignMemory(allocate(12, "i8", ALLOC_STATIC), 8);
 assert(tempDoublePtr % 8 == 0);
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
@@ -966,8 +1052,60 @@ function copyTempDouble(ptr) {
   HEAP8[tempDoublePtr+6] = HEAP8[ptr+6];
   HEAP8[tempDoublePtr+7] = HEAP8[ptr+7];
 }
-  Module["_memcpy"] = _memcpy;
-  Module["_memset"] = _memset;
+  function _memcpy(dest, src, num) {
+      dest = dest|0; src = src|0; num = num|0;
+      var ret = 0;
+      ret = dest|0;
+      if ((dest&3) == (src&3)) {
+        while (dest & 3) {
+          if ((num|0) == 0) return ret|0;
+          HEAP8[(dest)]=HEAP8[(src)];
+          dest = (dest+1)|0;
+          src = (src+1)|0;
+          num = (num-1)|0;
+        }
+        while ((num|0) >= 4) {
+          HEAP32[((dest)>>2)]=HEAP32[((src)>>2)];
+          dest = (dest+4)|0;
+          src = (src+4)|0;
+          num = (num-4)|0;
+        }
+      }
+      while ((num|0) > 0) {
+        HEAP8[(dest)]=HEAP8[(src)];
+        dest = (dest+1)|0;
+        src = (src+1)|0;
+        num = (num-1)|0;
+      }
+      return ret|0;
+    }
+  function _memset(ptr, value, num) {
+      ptr = ptr|0; value = value|0; num = num|0;
+      var stop = 0, value4 = 0, stop4 = 0, unaligned = 0;
+      stop = (ptr + num)|0;
+      if ((num|0) >= 20) {
+        // This is unaligned, but quite large, so work hard to get to aligned settings
+        value = value & 0xff;
+        unaligned = ptr & 3;
+        value4 = value | (value << 8) | (value << 16) | (value << 24);
+        stop4 = stop & ~3;
+        if (unaligned) {
+          unaligned = (ptr + 4 - unaligned)|0;
+          while ((ptr|0) < (unaligned|0)) { // no need to check for stop, since we have large num
+            HEAP8[(ptr)]=value;
+            ptr = (ptr+1)|0;
+          }
+        }
+        while ((ptr|0) < (stop4|0)) {
+          HEAP32[((ptr)>>2)]=value4;
+          ptr = (ptr+4)|0;
+        }
+      }
+      while ((ptr|0) < (stop|0)) {
+        HEAP8[(ptr)]=value;
+        ptr = (ptr+1)|0;
+      }
+    }
   function _malloc(bytes) {
       /* Over-allocate to make sure it is byte-aligned by 8.
        * This will leak memory, but this is only the dummy
@@ -981,9 +1119,17 @@ function copyTempDouble(ptr) {
   function _free() {
   }
   Module["_free"] = _free;
-  Module["_strlen"] = _strlen;
-  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:35,EIDRM:36,ECHRNG:37,EL2NSYNC:38,EL3HLT:39,EL3RST:40,ELNRNG:41,EUNATCH:42,ENOCSI:43,EL2HLT:44,EDEADLK:45,ENOLCK:46,EBADE:50,EBADR:51,EXFULL:52,ENOANO:53,EBADRQC:54,EBADSLT:55,EDEADLOCK:56,EBFONT:57,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:74,EDOTDOT:76,EBADMSG:77,ENOTUNIQ:80,EBADFD:81,EREMCHG:82,ELIBACC:83,ELIBBAD:84,ELIBSCN:85,ELIBMAX:86,ELIBEXEC:87,ENOSYS:88,ENOTEMPTY:90,ENAMETOOLONG:91,ELOOP:92,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:106,EPROTOTYPE:107,ENOTSOCK:108,ENOPROTOOPT:109,ESHUTDOWN:110,ECONNREFUSED:111,EADDRINUSE:112,ECONNABORTED:113,ENETUNREACH:114,ENETDOWN:115,ETIMEDOUT:116,EHOSTDOWN:117,EHOSTUNREACH:118,EINPROGRESS:119,EALREADY:120,EDESTADDRREQ:121,EMSGSIZE:122,EPROTONOSUPPORT:123,ESOCKTNOSUPPORT:124,EADDRNOTAVAIL:125,ENETRESET:126,EISCONN:127,ENOTCONN:128,ETOOMANYREFS:129,EUSERS:131,EDQUOT:132,ESTALE:133,ENOTSUP:134,ENOMEDIUM:135,EILSEQ:138,EOVERFLOW:139,ECANCELED:140,ENOTRECOVERABLE:141,EOWNERDEAD:142,ESTRPIPE:143};
-  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"No message of desired type",36:"Identifier removed",37:"Channel number out of range",38:"Level 2 not synchronized",39:"Level 3 halted",40:"Level 3 reset",41:"Link number out of range",42:"Protocol driver not attached",43:"No CSI structure available",44:"Level 2 halted",45:"Deadlock condition",46:"No record locks available",50:"Invalid exchange",51:"Invalid request descriptor",52:"Exchange full",53:"No anode",54:"Invalid request code",55:"Invalid slot",56:"File locking deadlock error",57:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",74:"Multihop attempted",76:"Cross mount point (not really error)",77:"Trying to read unreadable message",80:"Given log. name not unique",81:"f.d. invalid for this operation",82:"Remote address changed",83:"Can   access a needed shared lib",84:"Accessing a corrupted shared lib",85:".lib section in a.out corrupted",86:"Attempting to link in too many libs",87:"Attempting to exec a shared library",88:"Function not implemented",90:"Directory not empty",91:"File or path name too long",92:"Too many symbolic links",95:"Operation not supported on transport endpoint",96:"Protocol family not supported",104:"Connection reset by peer",105:"No buffer space available",106:"Address family not supported by protocol family",107:"Protocol wrong type for socket",108:"Socket operation on non-socket",109:"Protocol not available",110:"Can't send after socket shutdown",111:"Connection refused",112:"Address already in use",113:"Connection aborted",114:"Network is unreachable",115:"Network interface is not configured",116:"Connection timed out",117:"Host is down",118:"Host is unreachable",119:"Connection already in progress",120:"Socket already connected",121:"Destination address required",122:"Message too long",123:"Unknown protocol",124:"Socket type not supported",125:"Address not available",126:"Connection reset by network",127:"Socket is already connected",128:"Socket is not connected",129:"Too many references",131:"Too many users",132:"Quota exceeded",133:"Stale file handle",134:"Not supported",135:"No medium (in tape drive)",138:"Illegal byte sequence",139:"Value too large for defined data type",140:"Operation canceled",141:"State not recoverable",142:"Previous owner died",143:"Streams pipe error"};
+  function _strlen(ptr) {
+      ptr = ptr|0;
+      var curr = 0;
+      curr = ptr;
+      while (HEAP8[(curr)]) {
+        curr = (curr + 1)|0;
+      }
+      return (curr - ptr)|0;
+    }
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:42,EIDRM:43,ECHRNG:44,EL2NSYNC:45,EL3HLT:46,EL3RST:47,ELNRNG:48,EUNATCH:49,ENOCSI:50,EL2HLT:51,EDEADLK:35,ENOLCK:37,EBADE:52,EBADR:53,EXFULL:54,ENOANO:55,EBADRQC:56,EBADSLT:57,EDEADLOCK:35,EBFONT:59,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:72,EDOTDOT:73,EBADMSG:74,ENOTUNIQ:76,EBADFD:77,EREMCHG:78,ELIBACC:79,ELIBBAD:80,ELIBSCN:81,ELIBMAX:82,ELIBEXEC:83,ENOSYS:38,ENOTEMPTY:39,ENAMETOOLONG:36,ELOOP:40,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:97,EPROTOTYPE:91,ENOTSOCK:88,ENOPROTOOPT:92,ESHUTDOWN:108,ECONNREFUSED:111,EADDRINUSE:98,ECONNABORTED:103,ENETUNREACH:101,ENETDOWN:100,ETIMEDOUT:110,EHOSTDOWN:112,EHOSTUNREACH:113,EINPROGRESS:115,EALREADY:114,EDESTADDRREQ:89,EMSGSIZE:90,EPROTONOSUPPORT:93,ESOCKTNOSUPPORT:94,EADDRNOTAVAIL:99,ENETRESET:102,EISCONN:106,ENOTCONN:107,ETOOMANYREFS:109,EUSERS:87,EDQUOT:122,ESTALE:116,ENOTSUP:95,ENOMEDIUM:123,EILSEQ:84,EOVERFLOW:75,ECANCELED:125,ENOTRECOVERABLE:131,EOWNERDEAD:130,ESTRPIPE:86};
+  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"File locking deadlock error",36:"File or path name too long",37:"No record locks available",38:"Function not implemented",39:"Directory not empty",40:"Too many symbolic links",42:"No message of desired type",43:"Identifier removed",44:"Channel number out of range",45:"Level 2 not synchronized",46:"Level 3 halted",47:"Level 3 reset",48:"Link number out of range",49:"Protocol driver not attached",50:"No CSI structure available",51:"Level 2 halted",52:"Invalid exchange",53:"Invalid request descriptor",54:"Exchange full",55:"No anode",56:"Invalid request code",57:"Invalid slot",59:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",72:"Multihop attempted",73:"Cross mount point (not really error)",74:"Trying to read unreadable message",75:"Value too large for defined data type",76:"Given log. name not unique",77:"f.d. invalid for this operation",78:"Remote address changed",79:"Can   access a needed shared lib",80:"Accessing a corrupted shared lib",81:".lib section in a.out corrupted",82:"Attempting to link in too many libs",83:"Attempting to exec a shared library",84:"Illegal byte sequence",86:"Streams pipe error",87:"Too many users",88:"Socket operation on non-socket",89:"Destination address required",90:"Message too long",91:"Protocol wrong type for socket",92:"Protocol not available",93:"Unknown protocol",94:"Socket type not supported",95:"Not supported",96:"Protocol family not supported",97:"Address family not supported by protocol family",98:"Address already in use",99:"Address not available",100:"Network interface is not configured",101:"Network is unreachable",102:"Connection reset by network",103:"Connection aborted",104:"Connection reset by peer",105:"No buffer space available",106:"Socket is already connected",107:"Socket is not connected",108:"Can't send after socket shutdown",109:"Too many references",110:"Connection timed out",111:"Connection refused",112:"Host is down",113:"Host is unreachable",114:"Socket already connected",115:"Connection already in progress",116:"Stale file handle",122:"Quota exceeded",123:"No medium (in tape drive)",125:"Operation canceled",130:"Previous owner died",131:"State not recoverable"};
   var ___errno_state=0;function ___setErrNo(value) {
       // For convenient setting and returning of errno.
       HEAP32[((___errno_state)>>2)]=value
@@ -1108,15 +1254,9 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,ensureFlexible:function (node) {
-        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
-          var contents = node.contents;
-          node.contents = Array.prototype.slice.call(contents);
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
-        }
-      },mount:function (mount) {
-        return MEMFS.create_node(null, '/', 0040000 | 0777, 0);
-      },create_node:function (parent, name, mode, dev) {
+  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+        return MEMFS.createNode(null, '/', 16384 | 0777, 0);
+      },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
           // no supported
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
@@ -1173,6 +1313,12 @@ function copyTempDouble(ptr) {
           parent.contents[name] = node;
         }
         return node;
+      },ensureFlexible:function (node) {
+        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
+          var contents = node.contents;
+          node.contents = Array.prototype.slice.call(contents);
+          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+        }
       },node_ops:{getattr:function (node) {
           var attr = {};
           // device numbers reuse inode numbers.
@@ -1216,7 +1362,7 @@ function copyTempDouble(ptr) {
         },lookup:function (parent, name) {
           throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
         },mknod:function (parent, name, mode, dev) {
-          return MEMFS.create_node(parent, name, mode, dev);
+          return MEMFS.createNode(parent, name, mode, dev);
         },rename:function (old_node, new_dir, new_name) {
           // if we're overwriting a directory at new_name, make sure it's empty.
           if (FS.isDir(old_node.mode)) {
@@ -1253,7 +1399,7 @@ function copyTempDouble(ptr) {
           }
           return entries;
         },symlink:function (parent, newname, oldpath) {
-          var node = MEMFS.create_node(parent, newname, 0777 | 0120000, 0);
+          var node = MEMFS.createNode(parent, newname, 0777 | 40960, 0);
           node.link = oldpath;
           return node;
         },readlink:function (node) {
@@ -1263,7 +1409,10 @@ function copyTempDouble(ptr) {
           return node.link;
         }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
@@ -1324,7 +1473,7 @@ function copyTempDouble(ptr) {
           var allocated;
           var contents = stream.node.contents;
           // Only make a new copy when MAP_PRIVATE is specified.
-          if ( !(flags & 0x02) &&
+          if ( !(flags & 2) &&
                 (contents.buffer === buffer || contents.buffer === buffer.buffer) ) {
             // We can't emulate MAP_SHARED when the file is not backed by the buffer
             // we're mapping to (e.g. the HEAP buffer).
@@ -1348,6 +1497,386 @@ function copyTempDouble(ptr) {
           }
           return { ptr: ptr, allocated: allocated };
         }}};
+  var IDBFS={dbs:{},indexedDB:function () {
+        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
+        return MEMFS.mount.apply(null, arguments);
+      },syncfs:function (mount, populate, callback) {
+        IDBFS.getLocalSet(mount, function(err, local) {
+          if (err) return callback(err);
+          IDBFS.getRemoteSet(mount, function(err, remote) {
+            if (err) return callback(err);
+            var src = populate ? remote : local;
+            var dst = populate ? local : remote;
+            IDBFS.reconcile(src, dst, callback);
+          });
+        });
+      },reconcile:function (src, dst, callback) {
+        var total = 0;
+        var create = {};
+        for (var key in src.files) {
+          if (!src.files.hasOwnProperty(key)) continue;
+          var e = src.files[key];
+          var e2 = dst.files[key];
+          if (!e2 || e.timestamp > e2.timestamp) {
+            create[key] = e;
+            total++;
+          }
+        }
+        var remove = {};
+        for (var key in dst.files) {
+          if (!dst.files.hasOwnProperty(key)) continue;
+          var e = dst.files[key];
+          var e2 = src.files[key];
+          if (!e2) {
+            remove[key] = e;
+            total++;
+          }
+        }
+        if (!total) {
+          // early out
+          return callback(null);
+        }
+        var completed = 0;
+        var done = function(err) {
+          if (err) return callback(err);
+          if (++completed >= total) {
+            return callback(null);
+          }
+        };
+        // create a single transaction to handle and IDB reads / writes we'll need to do
+        var db = src.type === 'remote' ? src.db : dst.db;
+        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+        transaction.onerror = function() { callback(this.error); };
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+        for (var path in create) {
+          if (!create.hasOwnProperty(path)) continue;
+          var entry = create[path];
+          if (dst.type === 'local') {
+            // save file to local
+            try {
+              if (FS.isDir(entry.mode)) {
+                FS.mkdir(path, entry.mode);
+              } else if (FS.isFile(entry.mode)) {
+                var stream = FS.open(path, 'w+', 0666);
+                FS.write(stream, entry.contents, 0, entry.contents.length, 0, true /* canOwn */);
+                FS.close(stream);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // save file to IDB
+            var req = store.put(entry, path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+        for (var path in remove) {
+          if (!remove.hasOwnProperty(path)) continue;
+          var entry = remove[path];
+          if (dst.type === 'local') {
+            // delete file from local
+            try {
+              if (FS.isDir(entry.mode)) {
+                // TODO recursive delete?
+                FS.rmdir(path);
+              } else if (FS.isFile(entry.mode)) {
+                FS.unlink(path);
+              }
+              done(null);
+            } catch (e) {
+              return done(e);
+            }
+          } else {
+            // delete file from IDB
+            var req = store.delete(path);
+            req.onsuccess = function() { done(null); };
+            req.onerror = function() { done(this.error); };
+          }
+        }
+      },getLocalSet:function (mount, callback) {
+        var files = {};
+        var isRealDir = function(p) {
+          return p !== '.' && p !== '..';
+        };
+        var toAbsolute = function(root) {
+          return function(p) {
+            return PATH.join(root, p);
+          }
+        };
+        var check = FS.readdir(mount.mountpoint)
+          .filter(isRealDir)
+          .map(toAbsolute(mount.mountpoint));
+        while (check.length) {
+          var path = check.pop();
+          var stat, node;
+          try {
+            var lookup = FS.lookupPath(path);
+            node = lookup.node;
+            stat = FS.stat(path);
+          } catch (e) {
+            return callback(e);
+          }
+          if (FS.isDir(stat.mode)) {
+            check.push.apply(check, FS.readdir(path)
+              .filter(isRealDir)
+              .map(toAbsolute(path)));
+            files[path] = { mode: stat.mode, timestamp: stat.mtime };
+          } else if (FS.isFile(stat.mode)) {
+            files[path] = { contents: node.contents, mode: stat.mode, timestamp: stat.mtime };
+          } else {
+            return callback(new Error('node type not supported'));
+          }
+        }
+        return callback(null, { type: 'local', files: files });
+      },getDB:function (name, callback) {
+        // look it up in the cache
+        var db = IDBFS.dbs[name];
+        if (db) {
+          return callback(null, db);
+        }
+        var req;
+        try {
+          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        } catch (e) {
+          return onerror(e);
+        }
+        req.onupgradeneeded = function() {
+          db = req.result;
+          db.createObjectStore(IDBFS.DB_STORE_NAME);
+        };
+        req.onsuccess = function() {
+          db = req.result;
+          // add to the cache
+          IDBFS.dbs[name] = db;
+          callback(null, db);
+        };
+        req.onerror = function() {
+          callback(this.error);
+        };
+      },getRemoteSet:function (mount, callback) {
+        var files = {};
+        IDBFS.getDB(mount.mountpoint, function(err, db) {
+          if (err) return callback(err);
+          var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+          transaction.onerror = function() { callback(this.error); };
+          var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          store.openCursor().onsuccess = function(event) {
+            var cursor = event.target.result;
+            if (!cursor) {
+              return callback(null, { type: 'remote', db: db, files: files });
+            }
+            files[cursor.key] = cursor.value;
+            cursor.continue();
+          };
+        });
+      }};
+  var NODEFS={mount:function (mount) {
+        assert(ENVIRONMENT_IS_NODE);
+        return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root), 0);
+      },createNode:function (parent, name, mode, dev) {
+        if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+        var node = FS.createNode(parent, name, mode);
+        node.node_ops = NODEFS.node_ops;
+        node.stream_ops = NODEFS.stream_ops;
+        return node;
+      },getMode:function (path) {
+        var stat;
+        try {
+          stat = fs.lstatSync(path);
+        } catch (e) {
+          if (!e.code) throw e;
+          throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+        }
+        return stat.mode;
+      },realPath:function (node) {
+        var parts = [];
+        while (node.parent !== node) {
+          parts.push(node.name);
+          node = node.parent;
+        }
+        parts.push(node.mount.opts.root);
+        parts.reverse();
+        return PATH.join.apply(null, parts);
+      },node_ops:{getattr:function (node) {
+          var path = NODEFS.realPath(node);
+          var stat;
+          try {
+            stat = fs.lstatSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return {
+            dev: stat.dev,
+            ino: stat.ino,
+            mode: stat.mode,
+            nlink: stat.nlink,
+            uid: stat.uid,
+            gid: stat.gid,
+            rdev: stat.rdev,
+            size: stat.size,
+            atime: stat.atime,
+            mtime: stat.mtime,
+            ctime: stat.ctime,
+            blksize: stat.blksize,
+            blocks: stat.blocks
+          };
+        },setattr:function (node, attr) {
+          var path = NODEFS.realPath(node);
+          try {
+            if (attr.mode !== undefined) {
+              fs.chmodSync(path, attr.mode);
+              // update the common node structure mode as well
+              node.mode = attr.mode;
+            }
+            if (attr.timestamp !== undefined) {
+              var date = new Date(attr.timestamp);
+              fs.utimesSync(path, date, date);
+            }
+            if (attr.size !== undefined) {
+              fs.truncateSync(path, attr.size);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },lookup:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          var mode = NODEFS.getMode(path);
+          return NODEFS.createNode(parent, name, mode);
+        },mknod:function (parent, name, mode, dev) {
+          var node = NODEFS.createNode(parent, name, mode, dev);
+          // create the backing node for this in the fs root as well
+          var path = NODEFS.realPath(node);
+          try {
+            if (FS.isDir(node.mode)) {
+              fs.mkdirSync(path, node.mode);
+            } else {
+              fs.writeFileSync(path, '', { mode: node.mode });
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return node;
+        },rename:function (oldNode, newDir, newName) {
+          var oldPath = NODEFS.realPath(oldNode);
+          var newPath = PATH.join(NODEFS.realPath(newDir), newName);
+          try {
+            fs.renameSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },unlink:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.unlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },rmdir:function (parent, name) {
+          var path = PATH.join(NODEFS.realPath(parent), name);
+          try {
+            fs.rmdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readdir:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readdirSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },symlink:function (parent, newName, oldPath) {
+          var newPath = PATH.join(NODEFS.realPath(parent), newName);
+          try {
+            fs.symlinkSync(oldPath, newPath);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },readlink:function (node) {
+          var path = NODEFS.realPath(node);
+          try {
+            return fs.readlinkSync(path);
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        }},stream_ops:{open:function (stream) {
+          var path = NODEFS.realPath(stream.node);
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              stream.nfd = fs.openSync(path, stream.flags);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },close:function (stream) {
+          try {
+            if (FS.isFile(stream.node.mode)) {
+              fs.closeSync(stream.nfd);
+            }
+          } catch (e) {
+            if (!e.code) throw e;
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+        },read:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(length);
+          var res;
+          try {
+            res = fs.readSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          if (res > 0) {
+            for (var i = 0; i < res; i++) {
+              buffer[offset + i] = nbuffer[i];
+            }
+          }
+          return res;
+        },write:function (stream, buffer, offset, length, position) {
+          // FIXME this is terrible.
+          var nbuffer = new Buffer(buffer.subarray(offset, offset + length));
+          var res;
+          try {
+            res = fs.writeSync(stream.nfd, nbuffer, 0, length, position);
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          return res;
+        },llseek:function (stream, offset, whence) {
+          var position = offset;
+          if (whence === 1) {  // SEEK_CUR.
+            position += stream.position;
+          } else if (whence === 2) {  // SEEK_END.
+            if (FS.isFile(stream.node.mode)) {
+              try {
+                var stat = fs.fstatSync(stream.nfd);
+                position += stat.size;
+              } catch (e) {
+                throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+              }
+            }
+          }
+          if (position < 0) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          stream.position = position;
+          return position;
+        }}};
   var _stdin=allocate(1, "i32*", ALLOC_STATIC);
   var _stdout=allocate(1, "i32*", ALLOC_STATIC);
   var _stderr=allocate(1, "i32*", ALLOC_STATIC);
@@ -1355,7 +1884,7 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
           this.errno = errno;
           for (var key in ERRNO_CODES) {
             if (ERRNO_CODES[key] === errno) {
@@ -1367,10 +1896,8 @@ function copyTempDouble(ptr) {
         },handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
         return ___setErrNo(e.errno);
-      },cwd:function () {
-        return FS.currentPath;
       },lookupPath:function (path, opts) {
-        path = PATH.resolve(FS.currentPath, path);
+        path = PATH.resolve(FS.cwd(), path);
         opts = opts || { recurse_count: 0 };
         if (opts.recurse_count > 8) {  // max recursive lookup of 8
           throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
@@ -1451,7 +1978,8 @@ function copyTempDouble(ptr) {
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
-          if (node.parent.id === parent.id && node.name === name) {
+          var nodeName = node.name;
+          if (node.parent.id === parent.id && nodeName === name) {
             return node;
           }
         }
@@ -1503,29 +2031,29 @@ function copyTempDouble(ptr) {
       },isMountpoint:function (node) {
         return node.mounted;
       },isFile:function (mode) {
-        return (mode & 0170000) === 0100000;
+        return (mode & 61440) === 32768;
       },isDir:function (mode) {
-        return (mode & 0170000) === 0040000;
+        return (mode & 61440) === 16384;
       },isLink:function (mode) {
-        return (mode & 0170000) === 0120000;
+        return (mode & 61440) === 40960;
       },isChrdev:function (mode) {
-        return (mode & 0170000) === 0020000;
+        return (mode & 61440) === 8192;
       },isBlkdev:function (mode) {
-        return (mode & 0170000) === 0060000;
+        return (mode & 61440) === 24576;
       },isFIFO:function (mode) {
-        return (mode & 0170000) === 0010000;
+        return (mode & 61440) === 4096;
       },isSocket:function (mode) {
-        return (mode & 0140000) === 0140000;
-      },flagModes:{"r":0,"rs":8192,"r+":2,"w":1537,"wx":3585,"xw":3585,"w+":1538,"wx+":3586,"xw+":3586,"a":521,"ax":2569,"xa":2569,"a+":522,"ax+":2570,"xa+":2570},modeStringToFlags:function (str) {
+        return (mode & 49152) === 49152;
+      },flagModes:{"r":0,"rs":1052672,"r+":2,"w":577,"wx":705,"xw":705,"w+":578,"wx+":706,"xw+":706,"a":1089,"ax":1217,"xa":1217,"a+":1090,"ax+":1218,"xa+":1218},modeStringToFlags:function (str) {
         var flags = FS.flagModes[str];
         if (typeof flags === 'undefined') {
           throw new Error('Unknown file open mode: ' + str);
         }
         return flags;
       },flagsToPermissionString:function (flag) {
-        var accmode = flag & 3;
+        var accmode = flag & 2097155;
         var perms = ['r', 'w', 'rw'][accmode];
-        if ((flag & 1024)) {
+        if ((flag & 512)) {
           perms += 'w';
         }
         return perms;
@@ -1566,7 +2094,7 @@ function copyTempDouble(ptr) {
           if (!FS.isDir(node.mode)) {
             return ERRNO_CODES.ENOTDIR;
           }
-          if (FS.isRoot(node) || FS.getPath(node) === FS.currentPath) {
+          if (FS.isRoot(node) || FS.getPath(node) === FS.cwd()) {
             return ERRNO_CODES.EBUSY;
           }
         } else {
@@ -1582,8 +2110,8 @@ function copyTempDouble(ptr) {
         if (FS.isLink(node.mode)) {
           return ERRNO_CODES.ELOOP;
         } else if (FS.isDir(node.mode)) {
-          if ((flags & 3) !== 0 ||  // opening for write
-              (flags & 1024)) {
+          if ((flags & 2097155) !== 0 ||  // opening for write
+              (flags & 512)) {
             return ERRNO_CODES.EISDIR;
           }
         }
@@ -1609,13 +2137,13 @@ function copyTempDouble(ptr) {
             set: function(val) { stream.node = val; }
           },
           isRead: {
-            get: function() { return (stream.flags & 3) !== 1; }
+            get: function() { return (stream.flags & 2097155) !== 1; }
           },
           isWrite: {
-            get: function() { return (stream.flags & 3) !== 0; }
+            get: function() { return (stream.flags & 2097155) !== 0; }
           },
           isAppend: {
-            get: function() { return (stream.flags & 8); }
+            get: function() { return (stream.flags & 1024); }
           }
         });
         FS.streams[fd] = stream;
@@ -1642,17 +2170,42 @@ function copyTempDouble(ptr) {
         FS.devices[dev] = { stream_ops: ops };
       },getDevice:function (dev) {
         return FS.devices[dev];
+      },syncfs:function (populate, callback) {
+        if (typeof(populate) === 'function') {
+          callback = populate;
+          populate = false;
+        }
+        var completed = 0;
+        var total = FS.mounts.length;
+        var done = function(err) {
+          if (err) {
+            return callback(err);
+          }
+          if (++completed >= total) {
+            callback(null);
+          }
+        };
+        // sync all mounts
+        for (var i = 0; i < FS.mounts.length; i++) {
+          var mount = FS.mounts[i];
+          if (!mount.type.syncfs) {
+            done(null);
+            continue;
+          }
+          mount.type.syncfs(mount, populate, done);
+        }
       },mount:function (type, opts, mountpoint) {
+        var lookup;
+        if (mountpoint) {
+          lookup = FS.lookupPath(mountpoint, { follow: false });
+          mountpoint = lookup.path;  // use the absolute path
+        }
         var mount = {
           type: type,
           opts: opts,
           mountpoint: mountpoint,
           root: null
         };
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
-        }
         // create a root node for the fs
         var root = type.mount(mount);
         root.mount = mount;
@@ -1666,6 +2219,8 @@ function copyTempDouble(ptr) {
             FS.root = mount.root;
           }
         }
+        // add to our cached list of mounts
+        FS.mounts.push(mount);
         return root;
       },lookup:function (parent, name) {
         return parent.node_ops.lookup(parent, name);
@@ -1684,19 +2239,19 @@ function copyTempDouble(ptr) {
       },create:function (path, mode) {
         mode = mode !== undefined ? mode : 0666;
         mode &= 4095;
-        mode |= 0100000;
+        mode |= 32768;
         return FS.mknod(path, mode, 0);
       },mkdir:function (path, mode) {
         mode = mode !== undefined ? mode : 0777;
-        mode &= 511 | 0001000;
-        mode |= 0040000;
+        mode &= 511 | 512;
+        mode |= 16384;
         return FS.mknod(path, mode, 0);
       },mkdev:function (path, mode, dev) {
         if (typeof(dev) === 'undefined') {
           dev = mode;
           mode = 0666;
         }
-        mode |= 0020000;
+        mode |= 8192;
         return FS.mknod(path, mode, dev);
       },symlink:function (oldpath, newpath) {
         var lookup = FS.lookupPath(newpath, { parent: true });
@@ -1929,7 +2484,7 @@ function copyTempDouble(ptr) {
         if (!stream) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
         FS.truncate(stream.node, len);
@@ -1943,26 +2498,25 @@ function copyTempDouble(ptr) {
         path = PATH.normalize(path);
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 0666 : mode;
-        if ((flags & 512)) {
-          mode = (mode & 4095) | 0100000;
+        if ((flags & 64)) {
+          mode = (mode & 4095) | 32768;
         } else {
           mode = 0;
         }
         var node;
         try {
           var lookup = FS.lookupPath(path, {
-            follow: !(flags & 0200000)
+            follow: !(flags & 131072)
           });
           node = lookup.node;
-          path = lookup.path;
         } catch (e) {
           // ignore
         }
         // perhaps we need to create the node
-        if ((flags & 512)) {
+        if ((flags & 64)) {
           if (node) {
             // if O_CREAT and O_EXCL are set, error out if the node already exists
-            if ((flags & 2048)) {
+            if ((flags & 128)) {
               throw new FS.ErrnoError(ERRNO_CODES.EEXIST);
             }
           } else {
@@ -1975,7 +2529,7 @@ function copyTempDouble(ptr) {
         }
         // can't truncate a device
         if (FS.isChrdev(node.mode)) {
-          flags &= ~1024;
+          flags &= ~512;
         }
         // check permissions
         var err = FS.mayOpen(node, flags);
@@ -1983,13 +2537,15 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(err);
         }
         // do truncation if necessary
-        if ((flags & 1024)) {
+        if ((flags & 512)) {
           FS.truncate(node, 0);
         }
+        // we've already handled these, don't pass down to the underlying vfs
+        flags &= ~(128 | 512);
         // register the stream with the filesystem
         var stream = FS.createStream({
-          path: path,
           node: node,
+          path: FS.getPath(node),  // we want the absolute path to the node
           flags: flags,
           seekable: true,
           position: 0,
@@ -2001,6 +2557,13 @@ function copyTempDouble(ptr) {
         // call the new stream's open function
         if (stream.stream_ops.open) {
           stream.stream_ops.open(stream);
+        }
+        if (Module['logReadFiles'] && !(flags & 1)) {
+          if (!FS.readFiles) FS.readFiles = {};
+          if (!(path in FS.readFiles)) {
+            FS.readFiles[path] = 1;
+            Module['printErr']('read file: ' + path);
+          }
         }
         return stream;
       },close:function (stream) {
@@ -2022,7 +2585,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2045,7 +2608,7 @@ function copyTempDouble(ptr) {
         if (length < 0 || position < 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (FS.isDir(stream.node.mode)) {
@@ -2061,7 +2624,7 @@ function copyTempDouble(ptr) {
         } else if (!stream.seekable) {
           throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
         }
-        if (stream.flags & 8) {
+        if (stream.flags & 1024) {
           // seek to the end before writing in append mode
           FS.llseek(stream, 0, 2);
         }
@@ -2072,7 +2635,7 @@ function copyTempDouble(ptr) {
         if (offset < 0 || length <= 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
-        if ((stream.flags & 3) === 0) {
+        if ((stream.flags & 2097155) === 0) {
           throw new FS.ErrnoError(ERRNO_CODES.EBADF);
         }
         if (!FS.isFile(stream.node.mode) && !FS.isDir(node.mode)) {
@@ -2084,7 +2647,7 @@ function copyTempDouble(ptr) {
         stream.stream_ops.allocate(stream, offset, length);
       },mmap:function (stream, buffer, offset, length, position, prot, flags) {
         // TODO if PROT is PROT_WRITE, make sure we have write access
-        if ((stream.flags & 3) === 1) {
+        if ((stream.flags & 2097155) === 1) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
@@ -2134,6 +2697,18 @@ function copyTempDouble(ptr) {
           throw new Error('Invalid encoding type "' + opts.encoding + '"');
         }
         FS.close(stream);
+      },cwd:function () {
+        return FS.currentPath;
+      },chdir:function (path) {
+        var lookup = FS.lookupPath(path, { follow: true });
+        if (!FS.isDir(lookup.node.mode)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+        }
+        var err = FS.nodePermissions(lookup.node, 'x');
+        if (err) {
+          throw new FS.ErrnoError(err);
+        }
+        FS.currentPath = lookup.path;
       },createDefaultDirectories:function () {
         FS.mkdir('/tmp');
       },createDefaultDevices:function () {
@@ -2191,7 +2766,7 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
       },staticInit:function () {
         FS.nameTable = new Array(4096);
-        FS.root = FS.createNode(null, '/', 0040000 | 0777, 0);
+        FS.root = FS.createNode(null, '/', 16384 | 0777, 0);
         FS.mount(MEMFS, {}, '/');
         FS.createDefaultDirectories();
         FS.createDefaultDevices();
@@ -2491,7 +3066,10 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES.EIO);
           }
           var contents = stream.node.contents;
+          if (position >= contents.length)
+            return 0;
           var size = Math.min(contents.length - position, length);
+          assert(size >= 0);
           if (contents.slice) { // normal array
             for (var i = 0; i < size; i++) {
               buffer[offset + i] = contents[position + i];
@@ -2802,6 +3380,7 @@ function copyTempDouble(ptr) {
             b = bb.getBlob();
           }
           var url = Browser.URLObject.createObjectURL(b);
+          assert(typeof url == 'string', 'createObjectURL must return a url as a string');
           var img = new Image();
           img.onload = function() {
             assert(img.complete, 'Image ' + name + ' could not be decoded');
@@ -2846,6 +3425,7 @@ function copyTempDouble(ptr) {
               return fail();
             }
             var url = Browser.URLObject.createObjectURL(b); // XXX we never revoke this!
+            assert(typeof url == 'string', 'createObjectURL must return a url as a string');
             var audio = new Audio();
             audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
             audio.onerror = function(event) {
@@ -3152,73 +3732,40 @@ Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requ
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 __ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); }
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
-var Math_min = Math.min;
-function invoke_ii(index,a1) {
-  try {
-    return Module["dynCall_ii"](index,a1);
-  } catch(e) {
-    if (typeof e !== 'number' && e !== 'longjmp') throw e;
-    asm["setThrew"](1, 0);
-  }
-}
-function invoke_v(index) {
-  try {
-    Module["dynCall_v"](index);
-  } catch(e) {
-    if (typeof e !== 'number' && e !== 'longjmp') throw e;
-    asm["setThrew"](1, 0);
-  }
-}
-function invoke_iii(index,a1,a2) {
-  try {
-    return Module["dynCall_iii"](index,a1,a2);
-  } catch(e) {
-    if (typeof e !== 'number' && e !== 'longjmp') throw e;
-    asm["setThrew"](1, 0);
-  }
-}
-function invoke_vi(index,a1) {
-  try {
-    Module["dynCall_vi"](index,a1);
-  } catch(e) {
-    if (typeof e !== 'number' && e !== 'longjmp') throw e;
-    asm["setThrew"](1, 0);
-  }
-}
-function asmPrintInt(x, y) {
-  Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-}
-function asmPrintFloat(x, y) {
-  Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-}
-// EMSCRIPTEN_START_ASM
-var asm=(function(global,env,buffer){"use asm";var a=new global.Int8Array(buffer);var b=new global.Int16Array(buffer);var c=new global.Int32Array(buffer);var d=new global.Uint8Array(buffer);var e=new global.Uint16Array(buffer);var f=new global.Uint32Array(buffer);var g=new global.Float32Array(buffer);var h=new global.Float64Array(buffer);var i=env.STACKTOP|0;var j=env.STACK_MAX|0;var k=env.tempDoublePtr|0;var l=env.ABORT|0;var m=+env.NaN;var n=+env.Infinity;var o=0;var p=0;var q=0;var r=0;var s=0,t=0,u=0,v=0,w=0.0,x=0,y=0,z=0,A=0.0;var B=0;var C=0;var D=0;var E=0;var F=0;var G=0;var H=0;var I=0;var J=0;var K=0;var L=global.Math.floor;var M=global.Math.abs;var N=global.Math.sqrt;var O=global.Math.pow;var P=global.Math.cos;var Q=global.Math.sin;var R=global.Math.tan;var S=global.Math.acos;var T=global.Math.asin;var U=global.Math.atan;var V=global.Math.atan2;var W=global.Math.exp;var X=global.Math.log;var Y=global.Math.ceil;var Z=global.Math.imul;var _=env.abort;var $=env.assert;var aa=env.asmPrintInt;var ab=env.asmPrintFloat;var ac=env.min;var ad=env.invoke_ii;var ae=env.invoke_v;var af=env.invoke_iii;var ag=env.invoke_vi;var ah=env._malloc;var ai=env.___setErrNo;var aj=env._free;var ak=env._fflush;
+var FUNCTION_TABLE = [0, 0];
 // EMSCRIPTEN_START_FUNCS
-function ap(a){a=a|0;var b=0;b=i;i=i+a|0;i=i+7>>3<<3;return b|0}function aq(){return i|0}function ar(a){a=a|0;i=a}function as(a,b){a=a|0;b=b|0;if((o|0)==0){o=a;p=b}}function at(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0]}function au(b){b=b|0;a[k]=a[b];a[k+1|0]=a[b+1|0];a[k+2|0]=a[b+2|0];a[k+3|0]=a[b+3|0];a[k+4|0]=a[b+4|0];a[k+5|0]=a[b+5|0];a[k+6|0]=a[b+6|0];a[k+7|0]=a[b+7|0]}function av(a){a=a|0;B=a}function aw(a){a=a|0;C=a}function ax(a){a=a|0;D=a}function ay(a){a=a|0;E=a}function az(a){a=a|0;F=a}function aA(a){a=a|0;G=a}function aB(a){a=a|0;H=a}function aC(a){a=a|0;I=a}function aD(a){a=a|0;J=a}function aE(a){a=a|0;K=a}function aF(){}function aG(){return 0}function aH(b,d,e){b=b|0;d=d|0;e=e|0;var f=0;f=b|0;if((b&3)==(d&3)){while(b&3){if((e|0)==0)return f|0;a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}while((e|0)>=4){c[b>>2]=c[d>>2];b=b+4|0;d=d+4|0;e=e-4|0}}while((e|0)>0){a[b]=a[d]|0;b=b+1|0;d=d+1|0;e=e-1|0}return f|0}function aI(b,d,e){b=b|0;d=d|0;e=e|0;var f=0,g=0,h=0;f=b+e|0;if((e|0)>=20){d=d&255;e=b&3;g=d|d<<8|d<<16|d<<24;h=f&~3;if(e){e=b+4-e|0;while((b|0)<(e|0)){a[b]=d;b=b+1|0}}while((b|0)<(h|0)){c[b>>2]=g;b=b+4|0}}while((b|0)<(f|0)){a[b]=d;b=b+1|0}}function aJ(b){b=b|0;var c=0;c=b;while(a[c]|0){c=c+1|0}return c-b|0}function aK(a,b){a=a|0;b=b|0;return al[a&1](b|0)|0}function aL(a){a=a|0;am[a&1]()}function aM(a,b,c){a=a|0;b=b|0;c=c|0;return an[a&1](b|0,c|0)|0}function aN(a,b){a=a|0;b=b|0;ao[a&1](b|0)}function aO(a){a=a|0;_(0);return 0}function aP(){_(1)}function aQ(a,b){a=a|0;b=b|0;_(2);return 0}function aR(a){a=a|0;_(3)}
+function _main() {
+ var label = 0;
+ return 0;
+}
+Module["_main"] = _main;
 // EMSCRIPTEN_END_FUNCS
-var al=[aO,aO];var am=[aP,aP];var an=[aQ,aQ];var ao=[aR,aR];return{_strlen:aJ,_memcpy:aH,_main:aG,_memset:aI,runPostSets:aF,stackAlloc:ap,stackSave:aq,stackRestore:ar,setThrew:as,setTempRet0:av,setTempRet1:aw,setTempRet2:ax,setTempRet3:ay,setTempRet4:az,setTempRet5:aA,setTempRet6:aB,setTempRet7:aC,setTempRet8:aD,setTempRet9:aE,dynCall_ii:aK,dynCall_v:aL,dynCall_iii:aM,dynCall_vi:aN}})
-// EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "invoke_ii": invoke_ii, "invoke_v": invoke_v, "invoke_iii": invoke_iii, "invoke_vi": invoke_vi, "_malloc": _malloc, "___setErrNo": ___setErrNo, "_free": _free, "_fflush": _fflush, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
-var _strlen = Module["_strlen"] = asm["_strlen"];
-var _memcpy = Module["_memcpy"] = asm["_memcpy"];
-var _main = Module["_main"] = asm["_main"];
-var _memset = Module["_memset"] = asm["_memset"];
-var runPostSets = Module["runPostSets"] = asm["runPostSets"];
-var dynCall_ii = Module["dynCall_ii"] = asm["dynCall_ii"];
-var dynCall_v = Module["dynCall_v"] = asm["dynCall_v"];
-var dynCall_iii = Module["dynCall_iii"] = asm["dynCall_iii"];
-var dynCall_vi = Module["dynCall_vi"] = asm["dynCall_vi"];
-Runtime.stackAlloc = function(size) { return asm['stackAlloc'](size) };
-Runtime.stackSave = function() { return asm['stackSave']() };
-Runtime.stackRestore = function(top) { asm['stackRestore'](top) };
+// EMSCRIPTEN_END_FUNCS
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
+if (memoryInitializer) {
+  function applyData(data) {
+    HEAPU8.set(data, STATIC_BASE);
+  }
+  if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+    applyData(Module['readBinary'](memoryInitializer));
+  } else {
+    addRunDependency('memory initializer');
+    Browser.asyncLoad(memoryInitializer, function(data) {
+      applyData(data);
+      removeRunDependency('memory initializer');
+    }, function(data) {
+      throw 'could not load memory initializer ' + memoryInitializer;
+    });
+  }
+}
 function ExitStatus(status) {
   this.name = "ExitStatus";
   this.message = "Program terminated with exit(" + status + ")";
@@ -3228,6 +3775,13 @@ ExitStatus.prototype = new Error();
 ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
 var preloadStartTime = null;
+var calledMain = false;
+var calledRun = false;
+dependenciesFulfilled = function runCaller() {
+  // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
+  if (!calledRun && shouldRunNow) run();
+  if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
+}
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
@@ -3270,6 +3824,8 @@ Module['callMain'] = Module.callMain = function callMain(args) {
     } else {
       throw e;
     }
+  } finally {
+    calledMain = true;
   }
 }
 function run(args) {
@@ -3312,6 +3868,13 @@ function exit(status) {
   STACKTOP = initialStackTop;
   // exit the runtime
   exitRuntime();
+  // TODO We should handle this differently based on environment.
+  // In the browser, the best we can do is throw an exception
+  // to halt execution, but in node we could process.exit and
+  // I'd imagine SM shell would have something equivalent.
+  // This would let us set a proper exit status (which
+  // would be great for checking test exit statuses).
+  // https://github.com/kripken/emscripten/issues/1371
   // throw an exception to halt the current execution
   throw new ExitStatus(status);
 }
@@ -3341,3 +3904,4 @@ if (Module['noInitialRun']) {
 run();
 // {{POST_RUN_ADDITIONS}}
 // {{MODULE_ADDITIONS}}
+//@ sourceMappingURL=hello_world_cuda.js.map

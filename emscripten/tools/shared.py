@@ -47,6 +47,7 @@ class WindowsPopen:
     try:
       # Call the process with fixed streams.
       self.process = subprocess.Popen(args, bufsize, executable, self.stdin_, self.stdout_, self.stderr_, preexec_fn, close_fds, shell, cwd, env, universal_newlines, startupinfo, creationflags)
+      self.pid = self.process.pid
     except Exception, e:
       logging.error('\nsubprocess.Popen(args=%s) failed! Exception %s\n' % (' '.join(args), str(e)))
       raise e
@@ -83,10 +84,6 @@ class WindowsPopen:
       tempfiles.try_delete(self.response_filename)
     except:
       pass # Mute all exceptions in dtor, particularly if we didn't use a response file, self.response_filename doesn't exist.
-
-# Install our replacement Popen handler if we are running on Windows to avoid python spawn process function.
-if os.name == 'nt':
-  Popen = WindowsPopen
 
 __rootpath__ = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def path_from_root(*pathelems):
@@ -250,6 +247,19 @@ except Exception, e:
   logging.error('Error in evaluating %s (at %s): %s, text: %s' % (EM_CONFIG, CONFIG_FILE, str(e), config_text))
   sys.exit(1)
 
+try:
+  EM_POPEN_WORKAROUND
+except:
+  EM_POPEN_WORKAROUND = os.environ.get('EM_POPEN_WORKAROUND')
+
+# Install our replacement Popen handler if we are running on Windows to avoid python spawn process function.
+# nb. This is by default disabled since it has the adverse effect of buffering up all logging messages, which makes
+# builds look unresponsive (messages are printed only after the whole build finishes). Whether this workaround is needed 
+# seems to depend on how the host application that invokes emcc has set up its stdout and stderr.
+if EM_POPEN_WORKAROUND and os.name == 'nt':
+  logging.debug('Installing Popen workaround handler to avoid bug http://bugs.python.org/issue3905')
+  Popen = WindowsPopen
+
 # Expectations
 
 EXPECTED_LLVM_VERSION = (3,2)
@@ -304,7 +314,7 @@ def find_temp_directory():
 # we re-check sanity when the settings are changed)
 # We also re-check sanity and clear the cache when the version changes
 
-EMSCRIPTEN_VERSION = '1.5.6'
+EMSCRIPTEN_VERSION = '1.6.4'
 
 def generate_sanity():
   return EMSCRIPTEN_VERSION + '|' + get_llvm_target() + '|' + LLVM_ROOT
@@ -354,7 +364,7 @@ def check_sanity(force=False):
         logging.critical('Node.js (%s) does not seem to work, check the paths in %s' % (NODE_JS, EM_CONFIG))
         sys.exit(1)
 
-    for cmd in [CLANG, LINK_CMD[0], LLVM_AR, LLVM_OPT, LLVM_AS, LLVM_DIS, LLVM_NM]:
+    for cmd in [CLANG, LINK_CMD[0], LLVM_AR, LLVM_OPT, LLVM_AS, LLVM_DIS, LLVM_NM, LLVM_INTERPRETER]:
       if not os.path.exists(cmd) and not os.path.exists(cmd + '.exe'): # .exe extension required for Windows
         logging.critical('Cannot find %s, check the paths in %s' % (cmd, EM_CONFIG))
         sys.exit(1)
@@ -546,21 +556,24 @@ def get_llvm_target():
   return os.environ.get('EMCC_LLVM_TARGET') or 'le32-unknown-nacl' # 'i386-pc-linux-gnu'
 LLVM_TARGET = get_llvm_target()
 
+# COMPILER_OPTS: options passed to clang when generating bitcode for us
 try:
   COMPILER_OPTS # Can be set in EM_CONFIG, optionally
 except:
   COMPILER_OPTS = []
-# Force a simple, standard target as much as possible: target 32-bit linux, and disable various flags that hint at other platforms
-COMPILER_OPTS = COMPILER_OPTS + ['-m32', '-U__i386__', '-U__i386', '-Ui386',
-                                 '-U__SSE__', '-U__SSE_MATH__', '-U__SSE2__', '-U__SSE2_MATH__', '-U__MMX__',
-                                 '-DEMSCRIPTEN', '-D__EMSCRIPTEN__', '-U__STRICT_ANSI__',
-                                 '-D__IEEE_LITTLE_ENDIAN', '-fno-math-errno',
+COMPILER_OPTS = COMPILER_OPTS + ['-m32', '-DEMSCRIPTEN', '-D__EMSCRIPTEN__',
+                                 '-fno-math-errno',
                                  #'-fno-threadsafe-statics', # disabled due to issue 1289
                                  '-target', LLVM_TARGET]
 
 if LLVM_TARGET == 'le32-unknown-nacl':
   COMPILER_OPTS = filter(lambda opt: opt != '-m32', COMPILER_OPTS) # le32 target is 32-bit anyhow, no need for -m32
   COMPILER_OPTS += ['-U__native_client__', '-U__pnacl__', '-U__ELF__'] # The nacl target is originally used for Google Native Client. Emscripten is not NaCl, so remove the platform #define, when using their triple.
+
+# Remove various platform specific defines, and set little endian
+COMPILER_STANDARDIZATION_OPTS = ['-U__i386__', '-U__i386', '-Ui386', '-U__STRICT_ANSI__', '-D__IEEE_LITTLE_ENDIAN',
+                                 '-U__SSE__', '-U__SSE_MATH__', '-U__SSE2__', '-U__SSE2_MATH__', '-U__MMX__',
+                                 '-U__APPLE__', '-U__linux__']
 
 USE_EMSDK = not os.environ.get('EMMAKEN_NO_SDK')
 
@@ -578,9 +591,8 @@ if USE_EMSDK:
     '-Xclang', '-isystem' + path_from_root('system', 'include', 'gfx'),
     '-Xclang', '-isystem' + path_from_root('system', 'include', 'net'),
     '-Xclang', '-isystem' + path_from_root('system', 'include', 'SDL'),
-  ] + [
-    '-U__APPLE__', '-U__linux__'
   ]
+  EMSDK_OPTS += COMPILER_STANDARDIZATION_OPTS
   if LLVM_TARGET != 'le32-unknown-nacl':
     EMSDK_CXX_OPTS = ['-nostdinc++'] # le32 target does not need -nostdinc++
   else:
@@ -589,6 +601,7 @@ if USE_EMSDK:
 else:
   EMSDK_OPTS = []
   EMSDK_CXX_OPTS = []
+  COMPILER_OPTS += COMPILER_STANDARDIZATION_OPTS
 
 #print >> sys.stderr, 'SDK opts', ' '.join(EMSDK_OPTS)
 #print >> sys.stderr, 'Compiler opts', ' '.join(COMPILER_OPTS)
@@ -817,35 +830,52 @@ class Building:
     env['EMSCRIPTEN'] = path_from_root()
     return env
 
+  # Finds the given executable 'program' in PATH. Operates like the Unix tool 'which'.
+  @staticmethod
+  def which(program):
+    import os
+    def is_exe(fpath):
+      return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+      if is_exe(program):
+        return program
+    else:
+      for path in os.environ["PATH"].split(os.pathsep):
+        path = path.strip('"')
+        exe_file = os.path.join(path, program)
+        if is_exe(exe_file):
+          return exe_file
+
+        if WINDOWS and not '.' in fname:
+          if is_exe(exe_file + '.exe'):
+            return exe_file + '.exe'
+          if is_exe(exe_file + '.cmd'):
+            return exe_file + '.cmd'
+          if is_exe(exe_file + '.bat'):
+            return exe_file + '.bat'
+
+    return None
+
   @staticmethod
   def handle_CMake_toolchain(args, env):
-    CMakeToolchain = ('''# the name of the target operating system
-SET(CMAKE_SYSTEM_NAME Linux)
 
-# which C and C++ compiler to use
-SET(CMAKE_C_COMPILER   %(winfix)s$EMSCRIPTEN_ROOT/emcc)
-SET(CMAKE_CXX_COMPILER %(winfix)s$EMSCRIPTEN_ROOT/em++)
-SET(CMAKE_AR           %(winfix)s$EMSCRIPTEN_ROOT/emar)
-SET(CMAKE_RANLIB       %(winfix)s$EMSCRIPTEN_ROOT/emranlib)
-SET(CMAKE_C_FLAGS      $CFLAGS)
-SET(CMAKE_CXX_FLAGS    $CXXFLAGS)
+    def has_substr(array, substr):
+      for arg in array:
+        if substr in arg:
+          return True
+      return False
 
-# here is the target environment located
-SET(CMAKE_FIND_ROOT_PATH  $EMSCRIPTEN_ROOT/system/include )
+    # Append the Emscripten toolchain file if the user didn't specify one.
+    if not has_substr(args, '-DCMAKE_TOOLCHAIN_FILE'):
+      args.append('-DCMAKE_TOOLCHAIN_FILE=' + path_from_root('cmake', 'Platform', 'Emscripten.cmake'))
 
-# adjust the default behaviour of the FIND_XXX() commands:
-# search headers and libraries in the target environment, search
-# programs in the host environment
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS else 'python ' }) \
-      .replace('$EMSCRIPTEN_ROOT', path_from_root('').replace('\\', '/')) \
-      .replace('$CFLAGS', env['CFLAGS']) \
-      .replace('$CXXFLAGS', env['CFLAGS'])
-    toolchainFile = mkstemp(suffix='.cmaketoolchain.txt', dir=configuration.TEMP_DIR)[1]
-    open(toolchainFile, 'w').write(CMakeToolchain)
-    args.append('-DCMAKE_TOOLCHAIN_FILE=%s' % os.path.abspath(toolchainFile))
+    # On Windows specify MinGW Makefiles if we have MinGW and no other toolchain was specified, to avoid CMake
+    # pulling in a native Visual Studio, or Unix Makefiles.
+    if WINDOWS and not '-G' in args and Building.which('mingw32-make'):
+      args += ['-G', 'MinGW Makefiles']
+ 
     return args
 
   @staticmethod
@@ -876,6 +906,13 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
       logging.error('Executable to run not specified.')
       sys.exit(1)
     #args += ['VERBOSE=1']
+
+    # On Windows prefer building with mingw32-make instead of make, if it exists.
+    if WINDOWS and args[0] == 'make':
+      mingw32_make = Building.which('mingw32-make')
+      if mingw32_make:
+        args[0] = mingw32_make
+
     try:
       process = Popen(args, stdout=stdout, stderr=stderr, env=env)
       process.communicate()
@@ -916,13 +953,13 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     #  except:
     #    pass
     env = Building.get_building_env(native)
-    log_to_file = os.getenv('EM_BUILD_VERBOSE') == None or int(os.getenv('EM_BUILD_VERBOSE')) == 0
+    verbose_level = int(os.getenv('EM_BUILD_VERBOSE')) if os.getenv('EM_BUILD_VERBOSE') != None else 0
     for k, v in env_init.iteritems():
       env[k] = v
     if configure: # Useful in debugging sometimes to comment this out (and the lines below up to and including the |link| call)
       try:
-        Building.configure(configure + configure_args, env=env, stdout=open(os.path.join(project_dir, 'configure_'), 'w') if log_to_file else None, 
-                                                                stderr=open(os.path.join(project_dir, 'configure_err'), 'w') if log_to_file else None)
+        Building.configure(configure + configure_args, env=env, stdout=open(os.path.join(project_dir, 'configure_'), 'w') if verbose_level < 2 else None,
+                                                                stderr=open(os.path.join(project_dir, 'configure_err'), 'w') if verbose_level < 1 else None)
       except subprocess.CalledProcessError, e:
         pass # Ignore exit code != 0
     def open_make_out(i, mode='r'):
@@ -930,13 +967,16 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     
     def open_make_err(i, mode='r'):
       return open(os.path.join(project_dir, 'make_err' + str(i)), mode)
-    
+
+    if verbose_level >= 3:
+      make_args += ['VERBOSE=1']
+
     for i in range(2): # FIXME: Sad workaround for some build systems that need to be run twice to succeed (e.g. poppler)
       with open_make_out(i, 'w') as make_out:
         with open_make_err(i, 'w') as make_err:
           try:
-            Building.make(make + make_args, stdout=make_out if log_to_file else None,
-                                            stderr=make_err if log_to_file else None, env=env)
+            Building.make(make + make_args, stdout=make_out if verbose_level < 2 else None,
+                                            stderr=make_err if verbose_level < 1 else None, env=env)
           except subprocess.CalledProcessError, e:
             pass # Ignore exit code != 0
       try:
@@ -948,7 +988,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
         break
       except Exception, e:
         if i > 0:
-          if log_to_file:
+          if verbose_level == 0:
             # Due to the ugly hack above our best guess is to output the first run
             with open_make_err(0) as ferr:
               for line in ferr:
@@ -1383,22 +1423,24 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
       emcc_debug = os.environ.get('EMCC_DEBUG')
       if emcc_debug: del os.environ['EMCC_DEBUG']
 
+      emcc_leave_inputs_raw = os.environ.get('EMCC_LEAVE_INPUTS_RAW')
+      if emcc_leave_inputs_raw: del os.environ['EMCC_LEAVE_INPUTS_RAW']
+
       def make(opt_level):
         raw = relooper + '.raw.js'
         Building.emcc(os.path.join('relooper', 'Relooper.cpp'), ['-I' + os.path.join('relooper'), '--post-js',
           os.path.join('relooper', 'emscripten', 'glue.js'),
           '--memory-init-file', '0',
-          '-s', 'TOTAL_MEMORY=67108864',
           '-s', 'EXPORTED_FUNCTIONS=["_rl_set_output_buffer","_rl_make_output_buffer","_rl_new_block","_rl_delete_block","_rl_block_add_branch_to","_rl_new_relooper","_rl_delete_relooper","_rl_relooper_add_block","_rl_relooper_calculate","_rl_relooper_render", "_rl_set_asm_js_mode"]',
           '-s', 'DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=["memcpy", "memset", "malloc", "free", "puts"]',
           '-s', 'RELOOPER="' + relooper + '"',
           '-O' + str(opt_level), '--closure', '0'], raw)
         f = open(relooper, 'w')
         f.write("// Relooper, (C) 2012 Alon Zakai, MIT license, https://github.com/kripken/Relooper\n")
-        f.write("var Relooper = (function() {\n")
+        f.write("var Relooper = (function(Module) {\n")
         f.write(open(raw).read())
         f.write('\n  return Module.Relooper;\n')
-        f.write('})();\n')
+        f.write('})(RelooperModule);\n')
         f.close()
 
       # bootstrap phase 1: generate unrelooped relooper, for which we do not need a relooper (so we cannot recurse infinitely in this function)
@@ -1413,10 +1455,20 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)''' % { 'winfix': '' if not WINDOWS e
     finally:
       os.chdir(curr)
       if emcc_debug: os.environ['EMCC_DEBUG'] = emcc_debug
+      if emcc_leave_inputs_raw: os.environ['EMCC_LEAVE_INPUTS_RAW'] = emcc_leave_inputs_raw
       if not ok:
         logging.error('bootstrapping relooper failed. You may need to manually create relooper.js by compiling it, see src/relooper/emscripten')
+        try_delete(relooper) # do not leave a phase-1 version if phase 2 broke
         1/0
-
+  
+  @staticmethod
+  def ensure_struct_info(info_path):
+    if os.path.exists(info_path): return
+    Cache.ensure()
+    
+    import gen_struct_info
+    gen_struct_info.main(['-qo', info_path, path_from_root('src/struct_info.json')])
+  
   @staticmethod
   def preprocess(infile, outfile):
     '''
