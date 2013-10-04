@@ -575,6 +575,7 @@ var LibraryOpenCL = {
 #endif
       return webcl.INVALID_PLATFORM;
     }
+#endif    
   
     var _info = null;
   
