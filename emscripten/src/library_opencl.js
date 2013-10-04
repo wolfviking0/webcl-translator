@@ -527,23 +527,14 @@ var LibraryOpenCL = {
       return webcl.INVALID_VALUE;
     }
 
+    var _platforms = null;
+
     try { 
 
 #if OPENCL_STACK_TRACE
       CL.webclCallStackTrace(webcl+".getPlatforms",[]);
 #endif
-      var _platforms = webcl.getPlatforms();
-
-      if (num_platforms != 0) {
-        {{{ makeSetValue('num_platforms', '0', '_platforms.length', 'i32') }}} /* Num of platforms */;
-      } 
-
-      if (platforms != 0) {
-        for (var i = 0; i < Math.min(num_entries,_platforms.length); i++) {
-          var _id = CL.udid(_platforms[i]);
-          {{{ makeSetValue('platforms', 'i*4', '_id', 'i32') }}};
-        }
-      }
+      _platforms = webcl.getPlatforms();
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -552,6 +543,17 @@ var LibraryOpenCL = {
       CL.webclEndStackTrace([_error,platforms,num_platforms],"",e.message);
 #endif
       return _error;
+    }
+
+    if (num_platforms != 0) {
+      {{{ makeSetValue('num_platforms', '0', '_platforms.length', 'i32') }}} /* Num of platforms */;
+    } 
+
+    if (platforms != 0) {
+      for (var i = 0; i < Math.min(num_entries,_platforms.length); i++) {
+        var _id = CL.udid(_platforms[i]);
+        {{{ makeSetValue('platforms', 'i*4', '_id', 'i32') }}};
+      }
     }
 
 #if OPENCL_STACK_TRACE
@@ -566,42 +568,33 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clGetPlatformInfo",[platform,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
 
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT
-      if (platform in CL.cl_objects) {
+    if (!(platform in CL.cl_objects)) {
+#if OPENCL_STACK_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform are NULL","");
 #endif
+      return webcl.INVALID_PLATFORM;
+    }
+  
+    var _info = null;
+  
+    try { 
 
 #if OPENCL_STACK_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",[param_name]);
+      CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",[param_name]);
 #endif        
 
-        var _info = CL.cl_objects[platform].getInfo(param_name);
-
-        if (param_value != 0) {
-          writeStringToMemory(_info, param_value);
-        }
+      _info = CL.cl_objects[platform].getInfo(param_name);
       
-        if (param_value_size_ret != 0) {
-          {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
-        }
-
-#if OPENCL_CHECK_VALID_OBJECT           
-      } else {
-#if OPENCL_STACK_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_PLATFORM],"platform are NULL","");
-#endif
-        return webcl.INVALID_PLATFORM;
-      }
-#endif      
-
     } catch (e) {
+      
       var _error = CL.catchError(e);
       var _info = "undefined";
 
       if (param_value != 0) {
         writeStringToMemory(_info, param_value);
       }
-    
+  
       if (param_value_size_ret != 0) {
         {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
       }
@@ -610,6 +603,14 @@ var LibraryOpenCL = {
       CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
 #endif
       return _error;
+    }
+    
+    if (param_value != 0) {
+      writeStringToMemory(_info, param_value);
+    }
+  
+    if (param_value_size_ret != 0) {
+      {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
     }
 
 #if OPENCL_STACK_TRACE
