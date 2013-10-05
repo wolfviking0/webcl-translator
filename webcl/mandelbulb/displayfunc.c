@@ -40,6 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "displayfunc.h"
 
+extern int end(int);
 extern void ReInit(const int);
 extern void ReInitScene();
 extern void UpdateRendering();
@@ -368,6 +369,10 @@ void keyFunc(unsigned char key, int x, int y) {
 		}
 		case 27: /* Escape key */
 			fprintf(stderr, "Done.\n");
+#ifdef __EMSCRIPTEN__
+			end(0);
+      		webclEndProfile();
+#endif			
 			exit(0);
 			break;
 		case ' ': /* Refresh display */

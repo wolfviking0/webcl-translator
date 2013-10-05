@@ -2219,31 +2219,32 @@ function copyTempDouble(ptr) {
             break;
         }
         return _size;
-      },setPointerWithArray:function (ptr,array,type) {  
-        switch(type) {
-          case webcl.UNSIGNED_INT8:
-          case webcl.SIGNED_INT8:
-            for (var i = 0; i < array.length; i++) {
-              HEAP8[(((ptr)+(i))|0)]=array[i];      
-            }
-            break;
-          case webcl.UNSIGNED_INT16:          
-          case webcl.SIGNED_INT16:
-            for (var i = 0; i < array.length; i++) {
-              HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
-            }
-            break;
-          case webcl.UNSIGNED_INT32:
-          case webcl.SIGNED_INT32:
-            for (var i = 0; i < array.length; i++) {
-              HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
-            }
-            break;       
-          default:
-            for (var i = 0; i < array.length; i++) {
-              HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
-            }
-            break;
+      },setPointerWithArray:function (ptr,array,type) { 
+        // Try with buffer 
+        if (type == webcl.FLOAT) {
+          for (var i = 0; i < array.length; i++) {
+             HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
+          }
+        } else {
+          var i = 0;
+          for (; i < array.length; i++) {
+            HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
+          }     
+          // switch(type) {
+          //   case webcl.UNSIGNED_INT8:
+          //   case webcl.SIGNED_INT8:
+          //     for (; i < array.length; i++) {
+          //       HEAP8[(((ptr)+(i))|0)]=array[i];      
+          //     }
+          //     break;
+          //   case webcl.UNSIGNED_INT16:          
+          //   case webcl.SIGNED_INT16:
+          //     for (; i < array.length; i++) {
+          //       HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
+          //     }
+          //     break;
+          //   default:
+          // }
         }
       },getPointerToValue:function (ptr,size,type) {  
         var _value = null;
@@ -2267,27 +2268,28 @@ function copyTempDouble(ptr) {
         return _value;
       },getPointerToEmptyArray:function (size,type) {  
         var _host_ptr = null;
+        var _buffer = new ArrayBuffer(size);
         switch(type) {
           case webcl.SIGNED_INT8:
-            _host_ptr = new Int8Array(size);
-            break;
+            // _host_ptr = new Int8Array(_buffer);
+            // break;
           case webcl.SIGNED_INT16:
-            _host_ptr = new Int16Array(size>>(Int16Array.BYTES_PER_ELEMENT>>1));
-            break;
+            // _host_ptr = new Int16Array(_buffer);
+            // break;
           case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array(size>>(Int32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Int32Array(_buffer);
             break;
           case webcl.UNSIGNED_INT8:
-            _host_ptr = new Uint8Array(size);
-            break;
+            // _host_ptr = new Uint8Array(size);
+            // break;
           case webcl.UNSIGNED_INT16:
-            _host_ptr = new Uint16Array(size>>(Uint16Array.BYTES_PER_ELEMENT>>1));
-            break;
+            // _host_ptr = new Uint16Array(_buffer);
+            // break;
           case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Uint32Array(_buffer);
             break;       
           default:
-            _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Float32Array(_buffer);
             break;
         }
         return _host_ptr;
@@ -2295,53 +2297,25 @@ function copyTempDouble(ptr) {
         var _host_ptr = null;
         switch(type) {
           case webcl.SIGNED_INT8:
-            _host_ptr = HEAP8.subarray((ptr),(ptr+size))
-            break;
+            // _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
+            // break;
           case webcl.SIGNED_INT16:
-            _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1)
-            break;
+            // _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
+            // break;
           case webcl.SIGNED_INT32:
-            _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2)
+            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
           case webcl.UNSIGNED_INT8:
-            _host_ptr = HEAPU8.subarray((ptr),(ptr+size))
-            break;
+            // _host_ptr = new UInt8Array( HEAPU8.subarray((ptr),(ptr+size)) );
+            // break;
           case webcl.UNSIGNED_INT16:
-            _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1)
-            break;
+            // _host_ptr = new UInt16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
+            // break;
           case webcl.UNSIGNED_INT32:
-            _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2)
+            _host_ptr = new Int32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;         
           default:
-            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2)
-            break;
-        }
-        return _host_ptr;
-      },getPointerToArrayBuffer:function (ptr,size,type) {  
-        var _host_ptr = new ArrayBuffer(size);
-        switch(type) {
-          case webcl.UNSIGNED_INT8:
-          case webcl.SIGNED_INT8:
-            for (var i = 0; i < size; i++) {
-              _host_ptr[i] = HEAP8[(((ptr)+(i))|0)];      
-            }
-            break;
-          case webcl.UNSIGNED_INT16:          
-          case webcl.SIGNED_INT16:
-            for (var i = 0; i < size>>1; i++) {
-              _host_ptr[i] = HEAP16[(((ptr)+(i*2))>>1)];      
-            }
-            break;
-          case webcl.UNSIGNED_INT32:
-          case webcl.SIGNED_INT32:
-            for (var i = 0; i < size>>2; i++) {
-              _host_ptr[i] = HEAP32[(((ptr)+(i*4))>>2)];      
-            }
-            break;     
-          default:
-            for (var i = 0; i < size>>2; i++) {
-              _host_ptr[i] = HEAPF32[(((ptr)+(i*4))>>2)];      
-            }
+            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
         }
         return _host_ptr;
@@ -7459,10 +7433,3767 @@ function copyTempDouble(ptr) {
     }
   function _glClearColor(x0, x1, x2, x3) { Module.ctx.clearColor(x0, x1, x2, x3) }
   function _glViewport(x0, x1, x2, x3) { Module.ctx.viewport(x0, x1, x2, x3) }
-  function _glMatrixMode(){ throw 'Legacy GL function (glMatrixMode) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
-  function _glLoadIdentity(){ throw 'Legacy GL function (glLoadIdentity) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
   function _glEnable(x0) { Module.ctx.enable(x0) }
+  function _glDisable(x0) { Module.ctx.disable(x0) }
+  function _glIsEnabled(x0) { return Module.ctx.isEnabled(x0) }
+  function _glGetBooleanv(name_, p) {
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAP8[(p)]=result != 0;
+          break;
+        case "boolean":
+          HEAP8[(p)]=result != 0;
+          break;
+        case "string":
+          throw 'Native code calling glGetBooleanv(' + name_ + ') on a name which returns a string!';
+        case "object":
+          if (result === null) {
+            HEAP8[(p)]=0;
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAP8[(((p)+(i))|0)]=result[i] != 0;
+            }
+          } else if (result instanceof WebGLBuffer ||
+                     result instanceof WebGLProgram ||
+                     result instanceof WebGLFramebuffer ||
+                     result instanceof WebGLRenderbuffer ||
+                     result instanceof WebGLTexture) {
+            HEAP8[(p)]=1; // non-zero ID is always 1!
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+            throw 'Unknown object returned from WebGL getParameter';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glGetIntegerv(name_, p) {
+      switch(name_) { // Handle a few trivial GLES values
+        case 0x8DFA: // GL_SHADER_COMPILER
+          HEAP32[((p)>>2)]=1;
+          return;
+        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+          HEAP32[((p)>>2)]=0;
+          return;
+        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+          // so implement it ourselves to allow C++ GLES2 code get the length.
+          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+          HEAP32[((p)>>2)]=formats.length;
+          return;
+      }
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAP32[((p)>>2)]=result;
+          break;
+        case "boolean":
+          HEAP8[(p)]=result ? 1 : 0;
+          break;
+        case "string":
+          throw 'Native code calling glGetIntegerv(' + name_ + ') on a name which returns a string!';
+        case "object":
+          if (result === null) {
+            HEAP32[((p)>>2)]=0;
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAP32[(((p)+(i*4))>>2)]=result[i];
+            }
+          } else if (result instanceof WebGLBuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLProgram) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLFramebuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLRenderbuffer) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLTexture) {
+            HEAP32[((p)>>2)]=result.name | 0;
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+          throw 'Native code calling glGetIntegerv(' + name_ + ') and it returns undefined';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glCreateShader(shaderType) {
+      var id = GL.getNewId(GL.shaders);
+      GL.shaders[id] = Module.ctx.createShader(shaderType);
+      return id;
+    }
+  function _glShaderSource(shader, count, string, length) {
+      var source = GL.getSource(shader, count, string, length);
+      Module.ctx.shaderSource(GL.shaders[shader], source);
+    }
+  function _glCompileShader(shader) {
+      Module.ctx.compileShader(GL.shaders[shader]);
+    }
+  function _glAttachShader(program, shader) {
+      Module.ctx.attachShader(GL.programs[program],
+                              GL.shaders[shader]);
+    }
+  function _glDetachShader(program, shader) {
+      Module.ctx.detachShader(GL.programs[program],
+                              GL.shaders[shader]);
+    }
+  function _glUseProgram(program) {
+      Module.ctx.useProgram(program ? GL.programs[program] : null);
+    }
+  function _glDeleteProgram(program) {
+      var program = GL.programs[program];
+      Module.ctx.deleteProgram(program);
+      program.name = 0;
+      GL.programs[program] = null;
+      GL.uniformTable[program] = null;
+    }
+  function _glBindAttribLocation(program, index, name) {
+      name = Pointer_stringify(name);
+      Module.ctx.bindAttribLocation(GL.programs[program], index, name);
+    }
+  function _glLinkProgram(program) {
+      Module.ctx.linkProgram(GL.programs[program]);
+      GL.uniformTable[program] = {}; // uniforms no longer keep the same names after linking
+    }
+  function _glBindBuffer(target, buffer) {
+      var bufferObj = buffer ? GL.buffers[buffer] : null;
+      if (target == Module.ctx.ARRAY_BUFFER) {
+        GL.currArrayBuffer = buffer;
+      } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
+        GL.currElementArrayBuffer = buffer;
+      }
+      Module.ctx.bindBuffer(target, bufferObj);
+    }
+  function _glGetFloatv(name_, p) {
+      var result = Module.ctx.getParameter(name_);
+      switch (typeof(result)) {
+        case "number":
+          HEAPF32[((p)>>2)]=result;
+          break;
+        case "boolean":
+          HEAPF32[((p)>>2)]=result ? 1.0 : 0.0;
+          break;
+        case "string":
+            HEAPF32[((p)>>2)]=0;
+        case "object":
+          if (result === null) {
+            throw 'Native code calling glGetFloatv(' + name_ + ') and it returns null';
+          } else if (result instanceof Float32Array ||
+                     result instanceof Uint32Array ||
+                     result instanceof Int32Array ||
+                     result instanceof Array) {
+            for (var i = 0; i < result.length; ++i) {
+              HEAPF32[(((p)+(i*4))>>2)]=result[i];
+            }
+          } else if (result instanceof WebGLBuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLProgram) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLFramebuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLRenderbuffer) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else if (result instanceof WebGLTexture) {
+            HEAPF32[((p)>>2)]=result.name | 0;
+          } else {
+            throw 'Unknown object returned from WebGL getParameter';
+          }
+          break;
+        case "undefined":
+          throw 'Native code calling glGetFloatv(' + name_ + ') and it returns undefined';
+        default:
+          throw 'Why did we hit the default case?';
+      }
+    }
+  function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
+  function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
+      Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
+    }
+  function _glActiveTexture(x0) { Module.ctx.activeTexture(x0) }var GLEmulation={fogStart:0,fogEnd:1,fogDensity:1,fogColor:null,fogMode:2048,fogEnabled:false,vaos:[],currentVao:null,enabledVertexAttribArrays:{},hasRunInit:false,init:function () {
+        // Do not activate immediate/emulation code (e.g. replace glDrawElements) when in FULL_ES2 mode.
+        // We do not need full emulation, we instead emulate client-side arrays etc. in FULL_ES2 code in
+        // a straightforward manner, and avoid not having a bound buffer be ambiguous between es2 emulation
+        // code and legacy gl emulation code.
+        if (GLEmulation.hasRunInit) {
+          return;
+        }
+        GLEmulation.hasRunInit = true;
+        GLEmulation.fogColor = new Float32Array(4);
+        // Add some emulation workarounds
+        Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work.');
+        // XXX some of the capabilities we don't support may lead to incorrect rendering, if we do not emulate them in shaders
+        var validCapabilities = {
+          0x0B44: 1, // GL_CULL_FACE
+          0x0BE2: 1, // GL_BLEND
+          0x0BD0: 1, // GL_DITHER,
+          0x0B90: 1, // GL_STENCIL_TEST
+          0x0B71: 1, // GL_DEPTH_TEST
+          0x0C11: 1, // GL_SCISSOR_TEST
+          0x8037: 1, // GL_POLYGON_OFFSET_FILL
+          0x809E: 1, // GL_SAMPLE_ALPHA_TO_COVERAGE
+          0x80A0: 1  // GL_SAMPLE_COVERAGE
+        };
+        var glEnable = _glEnable;
+        _glEnable = function(cap) {
+          // Clean up the renderer on any change to the rendering state. The optimization of
+          // skipping renderer setup is aimed at the case of multiple glDraw* right after each other
+          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
+          if (cap == 0x0B60 /* GL_FOG */) {
+            GLEmulation.fogEnabled = true;
+            return;
+          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
+            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
+            // it by forwarding to glEnableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
+            _glEnableClientState(cap);
+            */
+            return;
+          } else if (!(cap in validCapabilities)) {
+            return;
+          }
+          glEnable(cap);
+        };
+        var glDisable = _glDisable;
+        _glDisable = function(cap) {
+          if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
+          if (cap == 0x0B60 /* GL_FOG */) {
+            GLEmulation.fogEnabled = false;
+            return;
+          } else if (cap == 0x0de1 /* GL_TEXTURE_2D */) {
+            // XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support
+            // it by forwarding to glDisableClientState
+            /* Actually, let's not, for now. (This sounds exceedingly broken)
+             * This is in gl_ps_workaround2.c.
+            _glDisableClientState(cap);
+            */
+            return;
+          } else if (!(cap in validCapabilities)) {
+            return;
+          }
+          glDisable(cap);
+        };
+        _glIsEnabled = function(cap) {
+          if (cap == 0x0B60 /* GL_FOG */) {
+            return GLEmulation.fogEnabled ? 1 : 0;
+          } else if (!(cap in validCapabilities)) {
+            return 0;
+          }
+          return Module.ctx.isEnabled(cap);
+        };
+        var glGetBooleanv = _glGetBooleanv;
+        _glGetBooleanv = function(pname, p) {
+          var attrib = GLEmulation.getAttributeFromCapability(pname);
+          if (attrib !== null) {
+            var result = GL.immediate.enabledClientAttributes[attrib];
+            HEAP8[(p)]=result === true ? 1 : 0;
+            return;
+          }
+          glGetBooleanv(pname, p);
+        };
+        var glGetIntegerv = _glGetIntegerv;
+        _glGetIntegerv = function(pname, params) {
+          switch (pname) {
+            case 0x84E2: pname = Module.ctx.MAX_TEXTURE_IMAGE_UNITS /* fake it */; break; // GL_MAX_TEXTURE_UNITS
+            case 0x8B4A: { // GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_VERTEX_UNIFORM_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8B49: { // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_FRAGMENT_UNIFORM_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8B4B: { // GL_MAX_VARYING_FLOATS_ARB
+              var result = Module.ctx.getParameter(Module.ctx.MAX_VARYING_VECTORS);
+              HEAP32[((params)>>2)]=result*4; // GLES gives num of 4-element vectors, GL wants individual components, so multiply
+              return;
+            }
+            case 0x8871: pname = Module.ctx.MAX_COMBINED_TEXTURE_IMAGE_UNITS /* close enough */; break; // GL_MAX_TEXTURE_COORDS
+            case 0x807A: { // GL_VERTEX_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x807B: { // GL_VERTEX_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x807C: { // GL_VERTEX_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.VERTEX];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+            case 0x8081: { // GL_COLOR_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x8082: { // GL_COLOR_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x8083: { // GL_COLOR_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.COLOR];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+            case 0x8088: { // GL_TEXTURE_COORD_ARRAY_SIZE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.size : 0;
+              return;
+            }
+            case 0x8089: { // GL_TEXTURE_COORD_ARRAY_TYPE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.type : 0;
+              return;
+            }
+            case 0x808A: { // GL_TEXTURE_COORD_ARRAY_STRIDE
+              var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+              HEAP32[((params)>>2)]=attribute ? attribute.stride : 0;
+              return;
+            }
+          }
+          glGetIntegerv(pname, params);
+        };
+        var glGetString = _glGetString;
+        _glGetString = function(name_) {
+          switch(name_) {
+            case 0x1F03 /* GL_EXTENSIONS */: // Add various extensions that we can support
+              return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ') +
+                     ' GL_EXT_texture_env_combine GL_ARB_texture_env_crossbar GL_ATI_texture_env_combine3 GL_NV_texture_env_combine4 GL_EXT_texture_env_dot3 GL_ARB_multitexture GL_ARB_vertex_buffer_object GL_EXT_framebuffer_object GL_ARB_vertex_program GL_ARB_fragment_program GL_ARB_shading_language_100 GL_ARB_shader_objects GL_ARB_vertex_shader GL_ARB_fragment_shader GL_ARB_texture_cube_map GL_EXT_draw_range_elements' +
+                     (GL.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
+                     (GL.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
+              ), 'i8', ALLOC_NORMAL);
+          }
+          return glGetString(name_);
+        };
+        // Do some automatic rewriting to work around GLSL differences. Note that this must be done in
+        // tandem with the rest of the program, by itself it cannot suffice.
+        // Note that we need to remember shader types for this rewriting, saving sources makes it easier to debug.
+        GL.shaderInfos = {};
+        var glCreateShader = _glCreateShader;
+        _glCreateShader = function(shaderType) {
+          var id = glCreateShader(shaderType);
+          GL.shaderInfos[id] = {
+            type: shaderType,
+            ftransform: false
+          };
+          return id;
+        };
+        var glShaderSource = _glShaderSource;
+        _glShaderSource = function(shader, count, string, length) {
+          var source = GL.getSource(shader, count, string, length);
+          // XXX We add attributes and uniforms to shaders. The program can ask for the # of them, and see the
+          // ones we generated, potentially confusing it? Perhaps we should hide them.
+          if (GL.shaderInfos[shader].type == Module.ctx.VERTEX_SHADER) {
+            // Replace ftransform() with explicit project/modelview transforms, and add position and matrix info.
+            var has_pm = source.search(/u_projection/) >= 0;
+            var has_mm = source.search(/u_modelView/) >= 0;
+            var has_pv = source.search(/a_position/) >= 0;
+            var need_pm = 0, need_mm = 0, need_pv = 0;
+            var old = source;
+            source = source.replace(/ftransform\(\)/g, '(u_projection * u_modelView * a_position)');
+            if (old != source) need_pm = need_mm = need_pv = 1;
+            old = source;
+            source = source.replace(/gl_ProjectionMatrix/g, 'u_projection');
+            if (old != source) need_pm = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewMatrixTranspose\[2\]/g, 'vec4(u_modelView[0][2], u_modelView[1][2], u_modelView[2][2], u_modelView[3][2])'); // XXX extremely inefficient
+            if (old != source) need_mm = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewMatrix/g, 'u_modelView');
+            if (old != source) need_mm = 1;
+            old = source;
+            source = source.replace(/gl_Vertex/g, 'a_position');
+            if (old != source) need_pv = 1;
+            old = source;
+            source = source.replace(/gl_ModelViewProjectionMatrix/g, '(u_projection * u_modelView)');
+            if (old != source) need_pm = need_mm = 1;
+            if (need_pv && !has_pv) source = 'attribute vec4 a_position; \n' + source;
+            if (need_mm && !has_mm) source = 'uniform mat4 u_modelView; \n' + source;
+            if (need_pm && !has_pm) source = 'uniform mat4 u_projection; \n' + source;
+            GL.shaderInfos[shader].ftransform = need_pm || need_mm || need_pv; // we will need to provide the fixed function stuff as attributes and uniforms
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              // XXX To handle both regular texture mapping and cube mapping, we use vec4 for tex coordinates.
+              var old = source;
+              var need_vtc = source.search('v_texCoord' + i) == -1;
+              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i)
+                             .replace(new RegExp('gl_MultiTexCoord' + i, 'g'), 'a_texCoord' + i);
+              if (source != old) {
+                source = 'attribute vec4 a_texCoord' + i + '; \n' + source;
+                if (need_vtc) {
+                  source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
+                }
+              }
+              old = source;
+              source = source.replace(new RegExp('gl_TextureMatrix\\[' + i + '\\]', 'g'), 'u_textureMatrix' + i);
+              if (source != old) {
+                source = 'uniform mat4 u_textureMatrix' + i + '; \n' + source;
+              }
+            }
+            if (source.indexOf('gl_FrontColor') >= 0) {
+              source = 'varying vec4 v_color; \n' +
+                       source.replace(/gl_FrontColor/g, 'v_color');
+            }
+            if (source.indexOf('gl_Color') >= 0) {
+              source = 'attribute vec4 a_color; \n' +
+                       source.replace(/gl_Color/g, 'a_color');
+            }
+            if (source.indexOf('gl_Normal') >= 0) {
+              source = 'attribute vec3 a_normal; \n' +
+                       source.replace(/gl_Normal/g, 'a_normal');
+            }
+            // fog
+            if (source.indexOf('gl_FogFragCoord') >= 0) {
+              source = 'varying float v_fogFragCoord;   \n' +
+                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
+            }
+          } else { // Fragment shader
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              var old = source;
+              source = source.replace(new RegExp('gl_TexCoord\\[' + i + '\\]', 'g'), 'v_texCoord' + i);
+              if (source != old) {
+                source = 'varying vec4 v_texCoord' + i + ';   \n' + source;
+              }
+            }
+            if (source.indexOf('gl_Color') >= 0) {
+              source = 'varying vec4 v_color; \n' + source.replace(/gl_Color/g, 'v_color');
+            }
+            if (source.indexOf('gl_Fog.color') >= 0) {
+              source = 'uniform vec4 u_fogColor;   \n' +
+                       source.replace(/gl_Fog.color/g, 'u_fogColor');
+            }
+            if (source.indexOf('gl_Fog.end') >= 0) {
+              source = 'uniform float u_fogEnd;   \n' +
+                       source.replace(/gl_Fog.end/g, 'u_fogEnd');
+            }
+            if (source.indexOf('gl_Fog.scale') >= 0) {
+              source = 'uniform float u_fogScale;   \n' +
+                       source.replace(/gl_Fog.scale/g, 'u_fogScale');
+            }
+            if (source.indexOf('gl_Fog.density') >= 0) {
+              source = 'uniform float u_fogDensity;   \n' +
+                       source.replace(/gl_Fog.density/g, 'u_fogDensity');
+            }
+            if (source.indexOf('gl_FogFragCoord') >= 0) {
+              source = 'varying float v_fogFragCoord;   \n' +
+                       source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
+            }
+            source = 'precision mediump float;\n' + source;
+          }
+          Module.ctx.shaderSource(GL.shaders[shader], source);
+        };
+        var glCompileShader = _glCompileShader;
+        _glCompileShader = function(shader) {
+          Module.ctx.compileShader(GL.shaders[shader]);
+        };
+        GL.programShaders = {};
+        var glAttachShader = _glAttachShader;
+        _glAttachShader = function(program, shader) {
+          if (!GL.programShaders[program]) GL.programShaders[program] = [];
+          GL.programShaders[program].push(shader);
+          glAttachShader(program, shader);
+        };
+        var glDetachShader = _glDetachShader;
+        _glDetachShader = function(program, shader) {
+          var programShader = GL.programShaders[program];
+          if (!programShader) {
+            Module.printErr('WARNING: _glDetachShader received invalid program: ' + program);
+            return;
+          }
+          var index = programShader.indexOf(shader);
+          programShader.splice(index, 1);
+          glDetachShader(program, shader);
+        };
+        var glUseProgram = _glUseProgram;
+        _glUseProgram = function(program) {
+          GL.currProgram = program;
+          glUseProgram(program);
+        }
+        var glDeleteProgram = _glDeleteProgram;
+        _glDeleteProgram = function(program) {
+          glDeleteProgram(program);
+          if (program == GL.currProgram) GL.currProgram = 0;
+        };
+        // If attribute 0 was not bound, bind it to 0 for WebGL performance reasons. Track if 0 is free for that.
+        var zeroUsedPrograms = {};
+        var glBindAttribLocation = _glBindAttribLocation;
+        _glBindAttribLocation = function(program, index, name) {
+          if (index == 0) zeroUsedPrograms[program] = true;
+          glBindAttribLocation(program, index, name);
+        };
+        var glLinkProgram = _glLinkProgram;
+        _glLinkProgram = function(program) {
+          if (!(program in zeroUsedPrograms)) {
+            Module.ctx.bindAttribLocation(GL.programs[program], 0, 'a_position');
+          }
+          glLinkProgram(program);
+        };
+        var glBindBuffer = _glBindBuffer;
+        _glBindBuffer = function(target, buffer) {
+          glBindBuffer(target, buffer);
+          if (target == Module.ctx.ARRAY_BUFFER) {
+            if (GLEmulation.currentVao) {
+              assert(GLEmulation.currentVao.arrayBuffer == buffer || GLEmulation.currentVao.arrayBuffer == 0 || buffer == 0, 'TODO: support for multiple array buffers in vao');
+              GLEmulation.currentVao.arrayBuffer = buffer;
+            }
+          } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
+            if (GLEmulation.currentVao) GLEmulation.currentVao.elementArrayBuffer = buffer;
+          }
+        };
+        var glGetFloatv = _glGetFloatv;
+        _glGetFloatv = function(pname, params) {
+          if (pname == 0x0BA6) { // GL_MODELVIEW_MATRIX
+            HEAPF32.set(GL.immediate.matrix['m'], params >> 2);
+          } else if (pname == 0x0BA7) { // GL_PROJECTION_MATRIX
+            HEAPF32.set(GL.immediate.matrix['p'], params >> 2);
+          } else if (pname == 0x0BA8) { // GL_TEXTURE_MATRIX
+            HEAPF32.set(GL.immediate.matrix['t' + GL.immediate.clientActiveTexture], params >> 2);
+          } else if (pname == 0x0B66) { // GL_FOG_COLOR
+            HEAPF32.set(GLEmulation.fogColor, params >> 2);
+          } else if (pname == 0x0B63) { // GL_FOG_START
+            HEAPF32[((params)>>2)]=GLEmulation.fogStart;
+          } else if (pname == 0x0B64) { // GL_FOG_END
+            HEAPF32[((params)>>2)]=GLEmulation.fogEnd;
+          } else if (pname == 0x0B62) { // GL_FOG_DENSITY
+            HEAPF32[((params)>>2)]=GLEmulation.fogDensity;
+          } else if (pname == 0x0B65) { // GL_FOG_MODE
+            HEAPF32[((params)>>2)]=GLEmulation.fogMode;
+          } else {
+            glGetFloatv(pname, params);
+          }
+        };
+        var glHint = _glHint;
+        _glHint = function(target, mode) {
+          if (target == 0x84EF) { // GL_TEXTURE_COMPRESSION_HINT
+            return;
+          }
+          glHint(target, mode);
+        };
+        var glEnableVertexAttribArray = _glEnableVertexAttribArray;
+        _glEnableVertexAttribArray = function(index) {
+          glEnableVertexAttribArray(index);
+          GLEmulation.enabledVertexAttribArrays[index] = 1;
+          if (GLEmulation.currentVao) GLEmulation.currentVao.enabledVertexAttribArrays[index] = 1;
+        };
+        var glDisableVertexAttribArray = _glDisableVertexAttribArray;
+        _glDisableVertexAttribArray = function(index) {
+          glDisableVertexAttribArray(index);
+          delete GLEmulation.enabledVertexAttribArrays[index];
+          if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledVertexAttribArrays[index];
+        };
+        var glVertexAttribPointer = _glVertexAttribPointer;
+        _glVertexAttribPointer = function(index, size, type, normalized, stride, pointer) {
+          glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+          if (GLEmulation.currentVao) { // TODO: avoid object creation here? likely not hot though
+            GLEmulation.currentVao.vertexAttribPointers[index] = [index, size, type, normalized, stride, pointer];
+          }
+        };
+      },getAttributeFromCapability:function (cap) {
+        var attrib = null;
+        switch (cap) {
+          case 0x0de1: // GL_TEXTURE_2D - XXX not according to spec, and not in desktop GL, but works in some GLES1.x apparently, so support it
+            abort("GL_TEXTURE_2D is not a spec-defined capability for gl{Enable,Disable}ClientState.");
+            // Fall through:
+          case 0x8078: // GL_TEXTURE_COORD_ARRAY
+            attrib = GL.immediate.TEXTURE0 + GL.immediate.clientActiveTexture; break;
+          case 0x8074: // GL_VERTEX_ARRAY
+            attrib = GL.immediate.VERTEX; break;
+          case 0x8075: // GL_NORMAL_ARRAY
+            attrib = GL.immediate.NORMAL; break;
+          case 0x8076: // GL_COLOR_ARRAY
+            attrib = GL.immediate.COLOR; break;
+        }
+        return attrib;
+      }};var GLImmediate={MapTreeLib:null,spawnMapTreeLib:function () {
+        /* A naive implementation of a map backed by an array, and accessed by
+         * naive iteration along the array. (hashmap with only one bucket)
+         */
+        function CNaiveListMap() {
+          var list = [];
+          this.insert = function(key, val) {
+            if (this.contains(key|0)) return false;
+            list.push([key, val]);
+            return true;
+          };
+          var __contains_i;
+          this.contains = function(key) {
+            for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
+              if (list[__contains_i][0] === key) return true;
+            }
+            return false;
+          };
+          var __get_i;
+          this.get = function(key) {
+            for (__get_i = 0; __get_i < list.length; ++__get_i) {
+              if (list[__get_i][0] === key) return list[__get_i][1];
+            }
+            return undefined;
+          };
+        };
+        /* A tree of map nodes.
+          Uses `KeyView`s to allow descending the tree without garbage.
+          Example: {
+            // Create our map object.
+            var map = new ObjTreeMap();
+            // Grab the static keyView for the map.
+            var keyView = map.GetStaticKeyView();
+            // Let's make a map for:
+            // root: <undefined>
+            //   1: <undefined>
+            //     2: <undefined>
+            //       5: "Three, sir!"
+            //       3: "Three!"
+            // Note how we can chain together `Reset` and `Next` to
+            // easily descend based on multiple key fragments.
+            keyView.Reset().Next(1).Next(2).Next(5).Set("Three, sir!");
+            keyView.Reset().Next(1).Next(2).Next(3).Set("Three!");
+          }
+        */
+        function CMapTree() {
+          function CNLNode() {
+            var map = new CNaiveListMap();
+            this.child = function(keyFrag) {
+              if (!map.contains(keyFrag|0)) {
+                map.insert(keyFrag|0, new CNLNode());
+              }
+              return map.get(keyFrag|0);
+            };
+            this.value = undefined;
+            this.get = function() {
+              return this.value;
+            };
+            this.set = function(val) {
+              this.value = val;
+            };
+          }
+          function CKeyView(root) {
+            var cur;
+            this.reset = function() {
+              cur = root;
+              return this;
+            };
+            this.reset();
+            this.next = function(keyFrag) {
+              cur = cur.child(keyFrag);
+              return this;
+            };
+            this.get = function() {
+              return cur.get();
+            };
+            this.set = function(val) {
+              cur.set(val);
+            };
+          };
+          var root;
+          var staticKeyView;
+          this.createKeyView = function() {
+            return new CKeyView(root);
+          }
+          this.clear = function() {
+            root = new CNLNode();
+            staticKeyView = this.createKeyView();
+          };
+          this.clear();
+          this.getStaticKeyView = function() {
+            staticKeyView.reset();
+            return staticKeyView;
+          };
+        };
+        // Exports:
+        return {
+          create: function() {
+            return new CMapTree();
+          },
+        };
+      },TexEnvJIT:null,spawnTexEnvJIT:function () {
+        // GL defs:
+        var GL_TEXTURE0 = 0x84C0;
+        var GL_TEXTURE_1D = 0x0DE0;
+        var GL_TEXTURE_2D = 0x0DE1;
+        var GL_TEXTURE_3D = 0x806f;
+        var GL_TEXTURE_CUBE_MAP = 0x8513;
+        var GL_TEXTURE_ENV = 0x2300;
+        var GL_TEXTURE_ENV_MODE = 0x2200;
+        var GL_TEXTURE_ENV_COLOR = 0x2201;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518;
+        var GL_TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519;
+        var GL_TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A;
+        var GL_SRC0_RGB = 0x8580;
+        var GL_SRC1_RGB = 0x8581;
+        var GL_SRC2_RGB = 0x8582;
+        var GL_SRC0_ALPHA = 0x8588;
+        var GL_SRC1_ALPHA = 0x8589;
+        var GL_SRC2_ALPHA = 0x858A;
+        var GL_OPERAND0_RGB = 0x8590;
+        var GL_OPERAND1_RGB = 0x8591;
+        var GL_OPERAND2_RGB = 0x8592;
+        var GL_OPERAND0_ALPHA = 0x8598;
+        var GL_OPERAND1_ALPHA = 0x8599;
+        var GL_OPERAND2_ALPHA = 0x859A;
+        var GL_COMBINE_RGB = 0x8571;
+        var GL_COMBINE_ALPHA = 0x8572;
+        var GL_RGB_SCALE = 0x8573;
+        var GL_ALPHA_SCALE = 0x0D1C;
+        // env.mode
+        var GL_ADD      = 0x0104;
+        var GL_BLEND    = 0x0BE2;
+        var GL_REPLACE  = 0x1E01;
+        var GL_MODULATE = 0x2100;
+        var GL_DECAL    = 0x2101;
+        var GL_COMBINE  = 0x8570;
+        // env.color/alphaCombiner
+        //var GL_ADD         = 0x0104;
+        //var GL_REPLACE     = 0x1E01;
+        //var GL_MODULATE    = 0x2100;
+        var GL_SUBTRACT    = 0x84E7;
+        var GL_INTERPOLATE = 0x8575;
+        // env.color/alphaSrc
+        var GL_TEXTURE       = 0x1702;
+        var GL_CONSTANT      = 0x8576;
+        var GL_PRIMARY_COLOR = 0x8577;
+        var GL_PREVIOUS      = 0x8578;
+        // env.color/alphaOp
+        var GL_SRC_COLOR           = 0x0300;
+        var GL_ONE_MINUS_SRC_COLOR = 0x0301;
+        var GL_SRC_ALPHA           = 0x0302;
+        var GL_ONE_MINUS_SRC_ALPHA = 0x0303;
+        var GL_RGB  = 0x1907;
+        var GL_RGBA = 0x1908;
+        // Our defs:
+        var TEXENVJIT_NAMESPACE_PREFIX = "tej_";
+        // Not actually constant, as they can be changed between JIT passes:
+        var TEX_UNIT_UNIFORM_PREFIX = "uTexUnit";
+        var TEX_COORD_VARYING_PREFIX = "vTexCoord";
+        var PRIM_COLOR_VARYING = "vPrimColor";
+        var TEX_MATRIX_UNIFORM_PREFIX = "uTexMatrix";
+        // Static vars:
+        var s_texUnits = null; //[];
+        var s_activeTexture = 0;
+        var s_requiredTexUnitsForPass = [];
+        // Static funcs:
+        function abort(info) {
+          assert(false, "[TexEnvJIT] ABORT: " + info);
+        }
+        function abort_noSupport(info) {
+          abort("No support: " + info);
+        }
+        function abort_sanity(info) {
+          abort("Sanity failure: " + info);
+        }
+        function genTexUnitSampleExpr(texUnitID) {
+          var texUnit = s_texUnits[texUnitID];
+          var texType = texUnit.getTexType();
+          var func = null;
+          switch (texType) {
+            case GL_TEXTURE_1D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_2D:
+              func = "texture2D";
+              break;
+            case GL_TEXTURE_3D:
+              return abort_noSupport("No support for 3D textures.");
+            case GL_TEXTURE_CUBE_MAP:
+              func = "textureCube";
+              break;
+            default:
+              return abort_sanity("Unknown texType: 0x" + texType.toString(16));
+          }
+          var texCoordExpr = TEX_COORD_VARYING_PREFIX + texUnitID;
+          if (TEX_MATRIX_UNIFORM_PREFIX != null) {
+            texCoordExpr = "(" + TEX_MATRIX_UNIFORM_PREFIX + texUnitID + " * " + texCoordExpr + ")";
+          }
+          return func + "(" + TEX_UNIT_UNIFORM_PREFIX + texUnitID + ", " + texCoordExpr + ".xy)";
+        }
+        function getTypeFromCombineOp(op) {
+          switch (op) {
+            case GL_SRC_COLOR:
+            case GL_ONE_MINUS_SRC_COLOR:
+              return "vec3";
+            case GL_SRC_ALPHA:
+            case GL_ONE_MINUS_SRC_ALPHA:
+              return "float";
+          }
+          return Abort_NoSupport("Unsupported combiner op: 0x" + op.toString(16));
+        }
+        function getCurTexUnit() {
+          return s_texUnits[s_activeTexture];
+        }
+        function genCombinerSourceExpr(texUnitID, constantExpr, previousVar,
+                                       src, op)
+        {
+          var srcExpr = null;
+          switch (src) {
+            case GL_TEXTURE:
+              srcExpr = genTexUnitSampleExpr(texUnitID);
+              break;
+            case GL_CONSTANT:
+              srcExpr = constantExpr;
+              break;
+            case GL_PRIMARY_COLOR:
+              srcExpr = PRIM_COLOR_VARYING;
+              break;
+            case GL_PREVIOUS:
+              srcExpr = previousVar;
+              break;
+            default:
+                return abort_noSupport("Unsupported combiner src: 0x" + src.toString(16));
+          }
+          var expr = null;
+          switch (op) {
+            case GL_SRC_COLOR:
+              expr = srcExpr + ".rgb";
+              break;
+            case GL_ONE_MINUS_SRC_COLOR:
+              expr = "(vec3(1.0) - " + srcExpr + ".rgb)";
+              break;
+            case GL_SRC_ALPHA:
+              expr = srcExpr + ".a";
+              break;
+            case GL_ONE_MINUS_SRC_ALPHA:
+              expr = "(1.0 - " + srcExpr + ".a)";
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner op: 0x" + op.toString(16));
+          }
+          return expr;
+        }
+        function valToFloatLiteral(val) {
+          if (val == Math.round(val)) return val + '.0';
+          return val;
+        }
+        // Classes:
+        function CTexEnv() {
+          this.mode = GL_MODULATE;
+          this.colorCombiner = GL_MODULATE;
+          this.alphaCombiner = GL_MODULATE;
+          this.colorScale = 1;
+          this.alphaScale = 1;
+          this.envColor = [0, 0, 0, 0];
+          this.colorSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.alphaSrc = [
+            GL_TEXTURE,
+            GL_PREVIOUS,
+            GL_CONSTANT
+          ];
+          this.colorOp = [
+            GL_SRC_COLOR,
+            GL_SRC_COLOR,
+            GL_SRC_ALPHA
+          ];
+          this.alphaOp = [
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA,
+            GL_SRC_ALPHA
+          ];
+          this.traverseState = function(keyView) {
+            keyView.next(this.mode);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaCombiner);
+            keyView.next(this.colorCombiner);
+            keyView.next(this.alphaScale);
+            keyView.next(this.envColor[0]);
+            keyView.next(this.envColor[1]);
+            keyView.next(this.envColor[2]);
+            keyView.next(this.envColor[3]);
+            keyView.next(this.colorSrc[0]);
+            keyView.next(this.colorSrc[1]);
+            keyView.next(this.colorSrc[2]);
+            keyView.next(this.alphaSrc[0]);
+            keyView.next(this.alphaSrc[1]);
+            keyView.next(this.alphaSrc[2]);
+            keyView.next(this.colorOp[0]);
+            keyView.next(this.colorOp[1]);
+            keyView.next(this.colorOp[2]);
+            keyView.next(this.alphaOp[0]);
+            keyView.next(this.alphaOp[1]);
+            keyView.next(this.alphaOp[2]);
+          };
+        }
+        function CTexUnit() {
+          this.env = new CTexEnv();
+          this.enabled_tex1D   = false;
+          this.enabled_tex2D   = false;
+          this.enabled_tex3D   = false;
+          this.enabled_texCube = false;
+          this.traverseState = function(keyView) {
+            var texUnitType = this.getTexType();
+            keyView.next(texUnitType);
+            if (!texUnitType) return;
+            this.env.traverseState(keyView);
+          };
+        };
+        // Class impls:
+        CTexUnit.prototype.enabled = function() {
+          return this.getTexType() != 0;
+        }
+        CTexUnit.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          if (!this.enabled()) {
+            return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
+          }
+          return this.env.genPassLines(passOutputVar, passInputVar, texUnitID);
+        }
+        CTexUnit.prototype.getTexType = function() {
+          if (this.enabled_texCube) {
+            return GL_TEXTURE_CUBE_MAP;
+          } else if (this.enabled_tex3D) {
+            return GL_TEXTURE_3D;
+          } else if (this.enabled_tex2D) {
+            return GL_TEXTURE_2D;
+          } else if (this.enabled_tex1D) {
+            return GL_TEXTURE_1D;
+          }
+          return 0;
+        }
+        CTexEnv.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+          switch (this.mode) {
+            case GL_REPLACE: {
+              /* RGB:
+               * Cv = Cs
+               * Av = Ap // Note how this is different, and that we'll
+               *            need to track the bound texture internalFormat
+               *            to get this right.
+               *
+               * RGBA:
+               * Cv = Cs
+               * Av = As
+               */
+              return [
+                "vec4 " + passOutputVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+              ];
+            }
+            case GL_ADD: {
+              /* RGBA:
+               * Cv = Cp + Cs
+               * Av = ApAs
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                "vec3 " + colorVar + " = " + passInputVar + ".rgb + " + texVar + ".rgb;",
+                "float " + alphaVar + " = " + passInputVar + ".a * " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_MODULATE: {
+              /* RGBA:
+               * Cv = CpCs
+               * Av = ApAs
+               */
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  passInputVar,
+                  " * ",
+                  genTexUnitSampleExpr(texUnitID),
+                ";",
+              ];
+              return [line.join("")];
+            }
+            case GL_DECAL: {
+              /* RGBA:
+               * Cv = Cp(1 - As) + CsAs
+               * Av = Ap
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".a)",
+                      " + ",
+                    texVar + ".rgb * " + texVar + ".a",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + passInputVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_BLEND: {
+              /* RGBA:
+               * Cv = Cp(1 - Cs) + CcCs
+               * Av = As
+               */
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var texVar = prefix + "tex";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              return [
+                "vec4 " + texVar + " = " + genTexUnitSampleExpr(texUnitID) + ";",
+                [
+                  "vec3 " + colorVar + " = ",
+                    passInputVar + ".rgb * (1.0 - " + texVar + ".rgb)",
+                      " + ",
+                    PRIM_COLOR_VARYING + ".rgb * " + texVar + ".rgb",
+                  ";"
+                ].join(""),
+                "float " + alphaVar + " = " + texVar + ".a;",
+                "vec4 " + passOutputVar + " = vec4(" + colorVar + ", " + alphaVar + ");",
+              ];
+            }
+            case GL_COMBINE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var colorVar = prefix + "color";
+              var alphaVar = prefix + "alpha";
+              var colorLines = this.genCombinerLines(true, colorVar,
+                                                     passInputVar, texUnitID,
+                                                     this.colorCombiner, this.colorSrc, this.colorOp);
+              var alphaLines = this.genCombinerLines(false, alphaVar,
+                                                     passInputVar, texUnitID,
+                                                     this.alphaCombiner, this.alphaSrc, this.alphaOp);
+              var line = [
+                "vec4 " + passOutputVar,
+                " = ",
+                  "vec4(",
+                      colorVar + " * " + valToFloatLiteral(this.colorScale),
+                      ", ",
+                      alphaVar + " * " + valToFloatLiteral(this.alphaScale),
+                  ")",
+                ";",
+              ].join("");
+              return [].concat(colorLines, alphaLines, [line]);
+            }
+          }
+          return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
+        }
+        CTexEnv.prototype.genCombinerLines = function(isColor, outputVar,
+                                                      passInputVar, texUnitID,
+                                                      combiner, srcArr, opArr)
+        {
+          var argsNeeded = null;
+          switch (combiner) {
+            case GL_REPLACE:
+              argsNeeded = 1;
+              break;
+            case GL_MODULATE:
+            case GL_ADD:
+            case GL_SUBTRACT:
+              argsNeeded = 2;
+              break;
+            case GL_INTERPOLATE:
+              argsNeeded = 3;
+              break;
+            default:
+              return abort_noSupport("Unsupported combiner: 0x" + combiner.toString(16));
+          }
+          var constantExpr = [
+            "vec4(",
+              valToFloatLiteral(this.envColor[0]),
+              ", ",
+              valToFloatLiteral(this.envColor[1]),
+              ", ",
+              valToFloatLiteral(this.envColor[2]),
+              ", ",
+              valToFloatLiteral(this.envColor[3]),
+            ")",
+          ].join("");
+          var src0Expr = (argsNeeded >= 1) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[0], opArr[0])
+                                           : null;
+          var src1Expr = (argsNeeded >= 2) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[1], opArr[1])
+                                           : null;
+          var src2Expr = (argsNeeded >= 3) ? genCombinerSourceExpr(texUnitID, constantExpr, passInputVar, srcArr[2], opArr[2])
+                                           : null;
+          var outputType = isColor ? "vec3" : "float";
+          var lines = null;
+          switch (combiner) {
+            case GL_REPLACE: {
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_MODULATE: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " * " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_ADD: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " + " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_SUBTRACT: {
+              var line = [
+                outputType + " " + outputVar + " = ",
+                  src0Expr + " - " + src1Expr,
+                ";",
+              ];
+              lines = [line.join("")];
+              break;
+            }
+            case GL_INTERPOLATE: {
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + texUnitID + "_";
+              var arg2Var = prefix + "colorSrc2";
+              var arg2Line = getTypeFromCombineOp(this.colorOp[2]) + " " + arg2Var + " = " + src2Expr + ";";
+              var line = [
+                outputType + " " + outputVar,
+                " = ",
+                  src0Expr + " * " + arg2Var,
+                  " + ",
+                  src1Expr + " * (1.0 - " + arg2Var + ")",
+                ";",
+              ];
+              lines = [
+                arg2Line,
+                line.join(""),
+              ];
+              break;
+            }
+            default:
+              return abort_sanity("Unmatched TexEnv.colorCombiner?");
+          }
+          return lines;
+        }
+        return {
+          // Exports:
+          init: function(gl, specifiedMaxTextureImageUnits) {
+            var maxTexUnits = 0;
+            if (specifiedMaxTextureImageUnits) {
+              maxTexUnits = specifiedMaxTextureImageUnits;
+            } else if (gl) {
+              maxTexUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+            }
+            assert(maxTexUnits > 0);
+            s_texUnits = [];
+            for (var i = 0; i < maxTexUnits; i++) {
+              s_texUnits.push(new CTexUnit());
+            }
+          },
+          setGLSLVars: function(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix) {
+            TEX_UNIT_UNIFORM_PREFIX   = uTexUnitPrefix;
+            TEX_COORD_VARYING_PREFIX  = vTexCoordPrefix;
+            PRIM_COLOR_VARYING        = vPrimColor;
+            TEX_MATRIX_UNIFORM_PREFIX = uTexMatrixPrefix;
+          },
+          genAllPassLines: function(resultDest, indentSize) {
+            indentSize = indentSize || 0;
+            s_requiredTexUnitsForPass.length = 0; // Clear the list.
+            var lines = [];
+            var lastPassVar = PRIM_COLOR_VARYING;
+            for (var i = 0; i < s_texUnits.length; i++) {
+              if (!s_texUnits[i].enabled()) continue;
+              s_requiredTexUnitsForPass.push(i);
+              var prefix = TEXENVJIT_NAMESPACE_PREFIX + 'env' + i + "_";
+              var passOutputVar = prefix + "result";
+              var newLines = s_texUnits[i].genPassLines(passOutputVar, lastPassVar, i);
+              lines = lines.concat(newLines, [""]);
+              lastPassVar = passOutputVar;
+            }
+            lines.push(resultDest + " = " + lastPassVar + ";");
+            var indent = "";
+            for (var i = 0; i < indentSize; i++) indent += " ";
+            var output = indent + lines.join("\n" + indent);
+            return output;
+          },
+          getUsedTexUnitList: function() {
+            return s_requiredTexUnitsForPass;
+          },
+          traverseState: function(keyView) {
+            for (var i = 0; i < s_texUnits.length; i++) {
+              var texUnit = s_texUnits[i];
+              var enabled = texUnit.enabled();
+              keyView.next(enabled);
+              if (enabled) {
+                texUnit.traverseState(keyView);
+              }
+            }
+          },
+          getTexUnitType: function(texUnitID) {
+            assert(texUnitID >= 0 &&
+                   texUnitID < s_texUnits.length);
+            return s_texUnits[texUnitID].getTexType();
+          },
+          // Hooks:
+          hook_activeTexture: function(texture) {
+            s_activeTexture = texture - GL_TEXTURE0;
+          },
+          hook_enable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = true;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = true;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = true;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = true;
+                break;
+            }
+          },
+          hook_disable: function(cap) {
+            var cur = getCurTexUnit();
+            switch (cap) {
+              case GL_TEXTURE_1D:
+                cur.enabled_tex1D = false;
+                break;
+              case GL_TEXTURE_2D:
+                cur.enabled_tex2D = false;
+                break;
+              case GL_TEXTURE_3D:
+                cur.enabled_tex3D = false;
+                break;
+              case GL_TEXTURE_CUBE_MAP:
+                cur.enabled_texCube = false;
+                break;
+            }
+          },
+          hook_texEnvf: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvf`.');
+            }
+          },
+          hook_texEnvi: function(target, pname, param) {
+            if (target != GL_TEXTURE_ENV)
+              return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_MODE:
+                env.mode = param;
+                break;
+              case GL_COMBINE_RGB:
+                env.colorCombiner = param;
+                break;
+              case GL_COMBINE_ALPHA:
+                env.alphaCombiner = param;
+                break;
+              case GL_SRC0_RGB:
+                env.colorSrc[0] = param;
+                break;
+              case GL_SRC1_RGB:
+                env.colorSrc[1] = param;
+                break;
+              case GL_SRC2_RGB:
+                env.colorSrc[2] = param;
+                break;
+              case GL_SRC0_ALPHA:
+                env.alphaSrc[0] = param;
+                break;
+              case GL_SRC1_ALPHA:
+                env.alphaSrc[1] = param;
+                break;
+              case GL_SRC2_ALPHA:
+                env.alphaSrc[2] = param;
+                break;
+              case GL_OPERAND0_RGB:
+                env.colorOp[0] = param;
+                break;
+              case GL_OPERAND1_RGB:
+                env.colorOp[1] = param;
+                break;
+              case GL_OPERAND2_RGB:
+                env.colorOp[2] = param;
+                break;
+              case GL_OPERAND0_ALPHA:
+                env.alphaOp[0] = param;
+                break;
+              case GL_OPERAND1_ALPHA:
+                env.alphaOp[1] = param;
+                break;
+              case GL_OPERAND2_ALPHA:
+                env.alphaOp[2] = param;
+                break;
+              case GL_RGB_SCALE:
+                env.colorScale = param;
+                break;
+              case GL_ALPHA_SCALE:
+                env.alphaScale = param;
+                break;
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvi`.');
+            }
+          },
+          hook_texEnvfv: function(target, pname, params) {
+            if (target != GL_TEXTURE_ENV) return;
+            var env = getCurTexUnit().env;
+            switch (pname) {
+              case GL_TEXTURE_ENV_COLOR: {
+                for (var i = 0; i < 4; i++) {
+                  var param = HEAPF32[(((params)+(i*4))>>2)];
+                  env.envColor[i] = param;
+                }
+                break
+              }
+              default:
+                Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvfv`.');
+            }
+          },
+        };
+      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,MAX_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function (name, size, type, stride, pointer) {
+        var attrib = this.clientAttributes[name];
+        if (!attrib) {
+          for (var i = 0; i <= name; i++) { // keep flat
+            if (!this.clientAttributes[i]) {
+              this.clientAttributes[i] = {
+                name: name,
+                size: size,
+                type: type,
+                stride: stride,
+                pointer: pointer,
+                offset: 0
+              };
+            }
+          }
+        } else {
+          attrib.name = name;
+          attrib.size = size;
+          attrib.type = type;
+          attrib.stride = stride;
+          attrib.pointer = pointer;
+          attrib.offset = 0;
+        }
+        this.modifiedClientAttributes = true;
+      },addRendererComponent:function (name, size, type) {
+        if (!this.rendererComponents[name]) {
+          this.rendererComponents[name] = 1;
+          if (this.enabledClientAttributes[name]) {
+            console.log("Warning: glTexCoord used after EnableClientState for TEXTURE_COORD_ARRAY for TEXTURE0. Disabling TEXTURE_COORD_ARRAY...");
+          }
+          this.enabledClientAttributes[name] = true;
+          this.setClientAttribute(name, size, type, 0, this.rendererComponentPointer);
+          this.rendererComponentPointer += size * GL.byteSizeByType[type - GL.byteSizeByTypeRoot];
+        } else {
+          this.rendererComponents[name]++;
+        }
+      },disableBeginEndClientAttributes:function () {
+        for (var i = 0; i < this.NUM_ATTRIBUTES; i++) {
+          if (this.rendererComponents[i]) this.enabledClientAttributes[i] = false;
+        }
+      },getRenderer:function () {
+        // return a renderer object given the liveClientAttributes
+        // we maintain a cache of renderers, optimized to not generate garbage
+        var attributes = GL.immediate.liveClientAttributes;
+        var cacheMap = GL.immediate.rendererCache;
+        var temp;
+        var keyView = cacheMap.getStaticKeyView().reset();
+        // By attrib state:
+        for (var i = 0; i < attributes.length; i++) {
+          var attribute = attributes[i];
+          keyView.next(attribute.name).next(attribute.size).next(attribute.type);
+        }
+        // By fog state:
+        var fogParam = 0;
+        if (GLEmulation.fogEnabled) {
+          switch (GLEmulation.fogMode) {
+            case 0x0801: // GL_EXP2
+              fogParam = 1;
+              break;
+            case 0x2601: // GL_LINEAR
+              fogParam = 2;
+              break;
+            default: // default to GL_EXP
+              fogParam = 3;
+              break;
+          }
+        }
+        keyView.next(fogParam);
+        // By cur program:
+        keyView.next(GL.currProgram);
+        if (!GL.currProgram) {
+          GL.immediate.TexEnvJIT.traverseState(keyView);
+        }
+        // If we don't already have it, create it.
+        if (!keyView.get()) {
+          keyView.set(this.createRenderer());
+        }
+        return keyView.get();
+      },createRenderer:function (renderer) {
+        var useCurrProgram = !!GL.currProgram;
+        var hasTextures = false, textureSizes = [], textureTypes = [];
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          var texAttribName = GL.immediate.TEXTURE0 + i;
+          if (!GL.immediate.enabledClientAttributes[texAttribName])
+            continue;
+          if (!useCurrProgram) {
+            assert(GL.immediate.TexEnvJIT.getTexUnitType(i) != 0, "GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
+          }
+          textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
+          textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
+          hasTextures = true;
+        }
+        var positionSize = GL.immediate.clientAttributes[GL.immediate.VERTEX].size;
+        var positionType = GL.immediate.clientAttributes[GL.immediate.VERTEX].type;
+        var colorSize = 0, colorType;
+        if (GL.immediate.enabledClientAttributes[GL.immediate.COLOR]) {
+          colorSize = GL.immediate.clientAttributes[GL.immediate.COLOR].size;
+          colorType = GL.immediate.clientAttributes[GL.immediate.COLOR].type;
+        }
+        var normalSize = 0, normalType;
+        if (GL.immediate.enabledClientAttributes[GL.immediate.NORMAL]) {
+          normalSize = GL.immediate.clientAttributes[GL.immediate.NORMAL].size;
+          normalType = GL.immediate.clientAttributes[GL.immediate.NORMAL].type;
+        }
+        var ret = {
+          init: function() {
+            // For fixed-function shader generation.
+            var uTexUnitPrefix = 'u_texUnit';
+            var aTexCoordPrefix = 'a_texCoord';
+            var vTexCoordPrefix = 'v_texCoord';
+            var vPrimColor = 'v_color';
+            var uTexMatrixPrefix = GL.immediate.useTextureMatrix ? 'u_textureMatrix' : null;
+            if (useCurrProgram) {
+              if (GL.shaderInfos[GL.programShaders[GL.currProgram][0]].type == Module.ctx.VERTEX_SHADER) {
+                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
+                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
+              } else {
+                this.vertexShader = GL.shaders[GL.programShaders[GL.currProgram][1]];
+                this.fragmentShader = GL.shaders[GL.programShaders[GL.currProgram][0]];
+              }
+              this.program = GL.programs[GL.currProgram];
+              this.usedTexUnitList = [];
+            } else {
+              // IMPORTANT NOTE: If you parameterize the shader source based on any runtime values
+              // in order to create the least expensive shader possible based on the features being
+              // used, you should also update the code in the beginning of getRenderer to make sure
+              // that you cache the renderer based on the said parameters.
+              if (GLEmulation.fogEnabled) {
+                switch (GLEmulation.fogMode) {
+                  case 0x0801: // GL_EXP2
+                    // fog = exp(-(gl_Fog.density * gl_FogFragCoord)^2)
+                    var fogFormula = '  float fog = exp(-u_fogDensity * u_fogDensity * ecDistance * ecDistance); \n';
+                    break;
+                  case 0x2601: // GL_LINEAR
+                    // fog = (gl_Fog.end - gl_FogFragCoord) * gl_fog.scale
+                    var fogFormula = '  float fog = (u_fogEnd - ecDistance) * u_fogScale; \n';
+                    break;
+                  default: // default to GL_EXP
+                    // fog = exp(-gl_Fog.density * gl_FogFragCoord)
+                    var fogFormula = '  float fog = exp(-u_fogDensity * ecDistance); \n';
+                    break;
+                }
+              }
+              GL.immediate.TexEnvJIT.setGLSLVars(uTexUnitPrefix, vTexCoordPrefix, vPrimColor, uTexMatrixPrefix);
+              var fsTexEnvPass = GL.immediate.TexEnvJIT.genAllPassLines('gl_FragColor', 2);
+              var texUnitAttribList = '';
+              var texUnitVaryingList = '';
+              var texUnitUniformList = '';
+              var vsTexCoordInits = '';
+              this.usedTexUnitList = GL.immediate.TexEnvJIT.getUsedTexUnitList();
+              for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                var texUnit = this.usedTexUnitList[i];
+                texUnitAttribList += 'attribute vec4 ' + aTexCoordPrefix + texUnit + ';\n';
+                texUnitVaryingList += 'varying vec4 ' + vTexCoordPrefix + texUnit + ';\n';
+                texUnitUniformList += 'uniform sampler2D ' + uTexUnitPrefix + texUnit + ';\n';
+                vsTexCoordInits += '  ' + vTexCoordPrefix + texUnit + ' = ' + aTexCoordPrefix + texUnit + ';\n';
+                if (GL.immediate.useTextureMatrix) {
+                  texUnitUniformList += 'uniform mat4 ' + uTexMatrixPrefix + texUnit + ';\n';
+                }
+              }
+              var vsFogVaryingInit = null;
+              if (GLEmulation.fogEnabled) {
+                vsFogVaryingInit = '  v_fogFragCoord = abs(ecPosition.z);\n';
+              }
+              var vsSource = [
+                'attribute vec4 a_position;',
+                'attribute vec4 a_color;',
+                'varying vec4 v_color;',
+                texUnitAttribList,
+                texUnitVaryingList,
+                (GLEmulation.fogEnabled ? 'varying float v_fogFragCoord;' : null),
+                'uniform mat4 u_modelView;',
+                'uniform mat4 u_projection;',
+                'void main()',
+                '{',
+                '  vec4 ecPosition = u_modelView * a_position;', // eye-coordinate position
+                '  gl_Position = u_projection * ecPosition;',
+                '  v_color = a_color;',
+                vsTexCoordInits,
+                vsFogVaryingInit,
+                '}',
+                ''
+              ].join('\n').replace(/\n\n+/g, '\n');
+              this.vertexShader = Module.ctx.createShader(Module.ctx.VERTEX_SHADER);
+              Module.ctx.shaderSource(this.vertexShader, vsSource);
+              Module.ctx.compileShader(this.vertexShader);
+              var fogHeaderIfNeeded = null;
+              if (GLEmulation.fogEnabled) {
+                fogHeaderIfNeeded = [
+                  '',
+                  'varying float v_fogFragCoord; ',
+                  'uniform vec4 u_fogColor;      ',
+                  'uniform float u_fogEnd;       ',
+                  'uniform float u_fogScale;     ',
+                  'uniform float u_fogDensity;   ',
+                  'float ffog(in float ecDistance) { ',
+                  fogFormula,
+                  '  fog = clamp(fog, 0.0, 1.0); ',
+                  '  return fog;                 ',
+                  '}',
+                  '',
+                ].join("\n");
+              }
+              var fogPass = null;
+              if (GLEmulation.fogEnabled) {
+                fogPass = 'gl_FragColor = vec4(mix(u_fogColor.rgb, gl_FragColor.rgb, ffog(v_fogFragCoord)), gl_FragColor.a);\n';
+              }
+              var fsSource = [
+                'precision mediump float;',
+                texUnitVaryingList,
+                texUnitUniformList,
+                'varying vec4 v_color;',
+                fogHeaderIfNeeded,
+                'void main()',
+                '{',
+                fsTexEnvPass,
+                fogPass,
+                '}',
+                ''
+              ].join("\n").replace(/\n\n+/g, '\n');
+              this.fragmentShader = Module.ctx.createShader(Module.ctx.FRAGMENT_SHADER);
+              Module.ctx.shaderSource(this.fragmentShader, fsSource);
+              Module.ctx.compileShader(this.fragmentShader);
+              this.program = Module.ctx.createProgram();
+              Module.ctx.attachShader(this.program, this.vertexShader);
+              Module.ctx.attachShader(this.program, this.fragmentShader);
+              Module.ctx.bindAttribLocation(this.program, 0, 'a_position');
+              Module.ctx.linkProgram(this.program);
+            }
+            this.positionLocation = Module.ctx.getAttribLocation(this.program, 'a_position');
+            this.texCoordLocations = [];
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              if (!GL.immediate.enabledClientAttributes[GL.immediate.TEXTURE0 + i]) {
+                this.texCoordLocations[i] = -1;
+                continue;
+              }
+              if (useCurrProgram) {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, 'a_texCoord' + i);
+              } else {
+                this.texCoordLocations[i] = Module.ctx.getAttribLocation(this.program, aTexCoordPrefix + i);
+              }
+            }
+            if (!useCurrProgram) {
+              // Temporarily switch to the program so we can set our sampler uniforms early.
+              var prevBoundProg = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              Module.ctx.useProgram(this.program);
+              {
+                for (var i = 0; i < this.usedTexUnitList.length; i++) {
+                  var texUnitID = this.usedTexUnitList[i];
+                  var texSamplerLoc = Module.ctx.getUniformLocation(this.program, uTexUnitPrefix + texUnitID);
+                  Module.ctx.uniform1i(texSamplerLoc, texUnitID);
+                }
+              }
+              Module.ctx.useProgram(prevBoundProg);
+            }
+            this.textureMatrixLocations = [];
+            for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+              this.textureMatrixLocations[i] = Module.ctx.getUniformLocation(this.program, 'u_textureMatrix' + i);
+            }
+            this.colorLocation = Module.ctx.getAttribLocation(this.program, 'a_color');
+            this.normalLocation = Module.ctx.getAttribLocation(this.program, 'a_normal');
+            this.modelViewLocation = Module.ctx.getUniformLocation(this.program, 'u_modelView');
+            this.projectionLocation = Module.ctx.getUniformLocation(this.program, 'u_projection');
+            this.hasTextures = hasTextures;
+            this.hasNormal = normalSize > 0 && this.normalLocation >= 0;
+            this.hasColor = (this.colorLocation === 0) || this.colorLocation > 0;
+            this.floatType = Module.ctx.FLOAT; // minor optimization
+            this.fogColorLocation = Module.ctx.getUniformLocation(this.program, 'u_fogColor');
+            this.fogEndLocation = Module.ctx.getUniformLocation(this.program, 'u_fogEnd');
+            this.fogScaleLocation = Module.ctx.getUniformLocation(this.program, 'u_fogScale');
+            this.fogDensityLocation = Module.ctx.getUniformLocation(this.program, 'u_fogDensity');
+            this.hasFog = !!(this.fogColorLocation || this.fogEndLocation ||
+                             this.fogScaleLocation || this.fogDensityLocation);
+          },
+          prepare: function() {
+            // Calculate the array buffer
+            var arrayBuffer;
+            if (!GL.currArrayBuffer) {
+              var start = GL.immediate.firstVertex*GL.immediate.stride;
+              var end = GL.immediate.lastVertex*GL.immediate.stride;
+              assert(end <= GL.MAX_TEMP_BUFFER_SIZE, 'too much vertex data');
+              arrayBuffer = GL.tempVertexBuffers[GL.tempBufferIndexLookup[end]];
+              // TODO: consider using the last buffer we bound, if it was larger. downside is larger buffer, but we might avoid rebinding and preparing
+            } else {
+              arrayBuffer = GL.currArrayBuffer;
+            }
+            // If the array buffer is unchanged and the renderer as well, then we can avoid all the work here
+            // XXX We use some heuristics here, and this may not work in all cases. Try disabling GL_UNSAFE_OPTS if you
+            // have odd glitches
+            var lastRenderer = GL.immediate.lastRenderer;
+            var canSkip = this == lastRenderer &&
+                          arrayBuffer == GL.immediate.lastArrayBuffer &&
+                          (GL.currProgram || this.program) == GL.immediate.lastProgram &&
+                          GL.immediate.stride == GL.immediate.lastStride &&
+                          !GL.immediate.matricesModified;
+            if (!canSkip && lastRenderer) lastRenderer.cleanup();
+            if (!GL.currArrayBuffer) {
+              // Bind the array buffer and upload data after cleaning up the previous renderer
+              // Potentially unsafe, since lastArrayBuffer might not reflect the true array buffer in code that mixes immediate/non-immediate
+              if (arrayBuffer != GL.immediate.lastArrayBuffer) {
+                Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, arrayBuffer);
+              }
+              Module.ctx.bufferSubData(Module.ctx.ARRAY_BUFFER, start, GL.immediate.vertexData.subarray(start >> 2, end >> 2));
+            }
+            if (canSkip) return;
+            GL.immediate.lastRenderer = this;
+            GL.immediate.lastArrayBuffer = arrayBuffer;
+            GL.immediate.lastProgram = GL.currProgram || this.program;
+            GL.immediate.lastStride == GL.immediate.stride;
+            GL.immediate.matricesModified = false;
+            if (!GL.currProgram) {
+              Module.ctx.useProgram(this.program);
+              GL.immediate.fixedFunctionProgram = this.program;
+            }
+            if (this.modelViewLocation) Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
+            if (this.projectionLocation) Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
+            var clientAttributes = GL.immediate.clientAttributes;
+            Module.ctx.vertexAttribPointer(this.positionLocation, positionSize, positionType, false,
+                                           GL.immediate.stride, clientAttributes[GL.immediate.VERTEX].offset);
+            Module.ctx.enableVertexAttribArray(this.positionLocation);
+            if (this.hasTextures) {
+              //for (var i = 0; i < this.usedTexUnitList.length; i++) {
+              //  var texUnitID = this.usedTexUnitList[i];
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                var texUnitID = i;
+                var attribLoc = this.texCoordLocations[texUnitID];
+                if (attribLoc === undefined || attribLoc < 0) continue;
+                if (texUnitID < textureSizes.length && textureSizes[texUnitID]) {
+                  Module.ctx.vertexAttribPointer(attribLoc, textureSizes[texUnitID], textureTypes[texUnitID], false,
+                                                 GL.immediate.stride, GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + texUnitID].offset);
+                  Module.ctx.enableVertexAttribArray(attribLoc);
+                } else {
+                  // These two might be dangerous, but let's try them.
+                  Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
+                  Module.ctx.disableVertexAttribArray(attribLoc);
+                }
+              }
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                if (this.textureMatrixLocations[i]) { // XXX might we need this even without the condition we are currently in?
+                  Module.ctx.uniformMatrix4fv(this.textureMatrixLocations[i], false, GL.immediate.matrix['t' + i]);
+                }
+              }
+            }
+            if (colorSize) {
+              Module.ctx.vertexAttribPointer(this.colorLocation, colorSize, colorType, true,
+                                             GL.immediate.stride, clientAttributes[GL.immediate.COLOR].offset);
+              Module.ctx.enableVertexAttribArray(this.colorLocation);
+            } else if (this.hasColor) {
+              Module.ctx.disableVertexAttribArray(this.colorLocation);
+              Module.ctx.vertexAttrib4fv(this.colorLocation, GL.immediate.clientColor);
+            }
+            if (this.hasNormal) {
+              Module.ctx.vertexAttribPointer(this.normalLocation, normalSize, normalType, true,
+                                             GL.immediate.stride, clientAttributes[GL.immediate.NORMAL].offset);
+              Module.ctx.enableVertexAttribArray(this.normalLocation);
+            }
+            if (this.hasFog) {
+              if (this.fogColorLocation) Module.ctx.uniform4fv(this.fogColorLocation, GLEmulation.fogColor);
+              if (this.fogEndLocation) Module.ctx.uniform1f(this.fogEndLocation, GLEmulation.fogEnd);
+              if (this.fogScaleLocation) Module.ctx.uniform1f(this.fogScaleLocation, 1/(GLEmulation.fogEnd - GLEmulation.fogStart));
+              if (this.fogDensityLocation) Module.ctx.uniform1f(this.fogDensityLocation, GLEmulation.fogDensity);
+            }
+          },
+          cleanup: function() {
+            Module.ctx.disableVertexAttribArray(this.positionLocation);
+            if (this.hasTextures) {
+              for (var i = 0; i < textureSizes.length; i++) {
+                if (textureSizes[i] && this.texCoordLocations[i] >= 0) {
+                  Module.ctx.disableVertexAttribArray(this.texCoordLocations[i]);
+                }
+              }
+            }
+            if (this.hasColor) {
+              Module.ctx.disableVertexAttribArray(this.colorLocation);
+            }
+            if (this.hasNormal) {
+              Module.ctx.disableVertexAttribArray(this.normalLocation);
+            }
+            if (!GL.currProgram) {
+              Module.ctx.useProgram(null);
+            }
+            if (!GL.currArrayBuffer) {
+              Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
+            }
+            GL.immediate.lastRenderer = null;
+            GL.immediate.lastArrayBuffer = null;
+            GL.immediate.lastProgram = null;
+            GL.immediate.matricesModified = true;
+          }
+        };
+        ret.init();
+        return ret;
+      },setupFuncs:function () {
+        // Replace some functions with immediate-mode aware versions. If there are no client
+        // attributes enabled, and we use webgl-friendly modes (no GL_QUADS), then no need
+        // for emulation
+        _glDrawArrays = function(mode, first, count) {
+          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6) {
+            Module.ctx.drawArrays(mode, first, count);
+            return;
+          }
+          GL.immediate.prepareClientAttributes(count, false);
+          GL.immediate.mode = mode;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,(GL.immediate.vertexPointer + (first+count)*GL.immediate.stride)>>2); // XXX assuming float
+            GL.immediate.firstVertex = first;
+            GL.immediate.lastVertex = first + count;
+          }
+          GL.immediate.flush(null, first);
+          GL.immediate.mode = -1;
+        };
+        _glDrawElements = function(mode, count, type, indices, start, end) { // start, end are given if we come from glDrawRangeElements
+          if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6 && GL.currElementArrayBuffer) {
+            Module.ctx.drawElements(mode, count, type, indices);
+            return;
+          }
+          if (!GL.currElementArrayBuffer) {
+            assert(type == Module.ctx.UNSIGNED_SHORT); // We can only emulate buffers of this kind, for now
+          }
+          console.log("DrawElements doesn't actually prepareClientAttributes properly.");
+          GL.immediate.prepareClientAttributes(count, false);
+          GL.immediate.mode = mode;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.firstVertex = end ? start : TOTAL_MEMORY; // if we don't know the start, set an invalid value and we will calculate it later from the indices
+            GL.immediate.lastVertex = end ? end+1 : 0;
+            GL.immediate.vertexData = HEAPF32.subarray((GL.immediate.vertexPointer)>>2,((end ? GL.immediate.vertexPointer + (end+1)*GL.immediate.stride : TOTAL_MEMORY))>>2); // XXX assuming float
+          }
+          GL.immediate.flush(count, 0, indices);
+          GL.immediate.mode = -1;
+        };
+        // TexEnv stuff needs to be prepared early, so do it here.
+        // init() is too late for -O2, since it freezes the GL functions
+        // by that point.
+        GL.immediate.MapTreeLib = GL.immediate.spawnMapTreeLib();
+        GL.immediate.spawnMapTreeLib = null;
+        GL.immediate.TexEnvJIT = GL.immediate.spawnTexEnvJIT();
+        GL.immediate.spawnTexEnvJIT = null;
+        GL.immediate.setupHooks();
+      },setupHooks:function () {
+        if (!GLEmulation.hasRunInit) {
+          GLEmulation.init();
+        }
+        var glActiveTexture = _glActiveTexture;
+        _glActiveTexture = function(texture) {
+          GL.immediate.TexEnvJIT.hook_activeTexture(texture);
+          glActiveTexture(texture);
+        };
+        var glEnable = _glEnable;
+        _glEnable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_enable(cap);
+          glEnable(cap);
+        };
+        var glDisable = _glDisable;
+        _glDisable = function(cap) {
+          GL.immediate.TexEnvJIT.hook_disable(cap);
+          glDisable(cap);
+        };
+        var glTexEnvf = (typeof(_glTexEnvf) != 'undefined') ? _glTexEnvf : function(){};
+        _glTexEnvf = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvf(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvf(target, pname, param);
+        };
+        var glTexEnvi = (typeof(_glTexEnvi) != 'undefined') ? _glTexEnvi : function(){};
+        _glTexEnvi = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvi(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvi(target, pname, param);
+        };
+        var glTexEnvfv = (typeof(_glTexEnvfv) != 'undefined') ? _glTexEnvfv : function(){};
+        _glTexEnvfv = function(target, pname, param) {
+          GL.immediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
+          // Don't call old func, since we are the implementor.
+          //glTexEnvfv(target, pname, param);
+        };
+        var glGetIntegerv = _glGetIntegerv;
+        _glGetIntegerv = function(pname, params) {
+          switch (pname) {
+            case 0x8B8D: { // GL_CURRENT_PROGRAM
+              // Just query directly so we're working with WebGL objects.
+              var cur = Module.ctx.getParameter(Module.ctx.CURRENT_PROGRAM);
+              if (cur == GL.immediate.fixedFunctionProgram) {
+                // Pretend we're not using a program.
+                HEAP32[((params)>>2)]=0;
+                return;
+              }
+              break;
+            }
+          }
+          glGetIntegerv(pname, params);
+        };
+      },initted:false,init:function () {
+        Module.printErr('WARNING: using emscripten GL immediate mode emulation. This is very limited in what it supports');
+        GL.immediate.initted = true;
+        if (!Module.useWebGL) return; // a 2D canvas may be currently used TODO: make sure we are actually called in that case
+        this.TexEnvJIT.init(Module.ctx);
+        GL.immediate.MAX_TEXTURES = Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
+        GL.immediate.NUM_ATTRIBUTES = GL.immediate.TEXTURE0 + GL.immediate.MAX_TEXTURES;
+        GL.immediate.clientAttributes = [];
+        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+          GL.immediate.clientAttributes.push({});
+        }
+        this.matrixStack['m'] = [];
+        this.matrixStack['p'] = [];
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          this.matrixStack['t' + i] = [];
+        }
+        // Initialize matrix library
+        GL.immediate.matrix['m'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['m']);
+        GL.immediate.matrix['p'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['p']);
+        for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+          GL.immediate.matrix['t' + i] = GL.immediate.matrix.lib.mat4.create();
+        }
+        // Renderer cache
+        this.rendererCache = this.MapTreeLib.create();
+        // Buffers for data
+        this.tempData = new Float32Array(GL.MAX_TEMP_BUFFER_SIZE >> 2);
+        this.indexData = new Uint16Array(GL.MAX_TEMP_BUFFER_SIZE >> 1);
+        this.vertexDataU8 = new Uint8Array(this.tempData.buffer);
+        GL.generateTempBuffers(true);
+        this.clientColor = new Float32Array([1, 1, 1, 1]);
+      },prepareClientAttributes:function (count, beginEnd) {
+        // If no client attributes were modified since we were last called, do nothing. Note that this
+        // does not work for glBegin/End, where we generate renderer components dynamically and then
+        // disable them ourselves, but it does help with glDrawElements/Arrays.
+        if (!this.modifiedClientAttributes) {
+          GL.immediate.vertexCounter = (GL.immediate.stride * count) / 4; // XXX assuming float
+          return;
+        }
+        this.modifiedClientAttributes = false;
+        var stride = 0, start;
+        var attributes = GL.immediate.liveClientAttributes;
+        attributes.length = 0;
+        for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+          if (GL.immediate.enabledClientAttributes[i]) attributes.push(GL.immediate.clientAttributes[i]);
+        }
+        attributes.sort(function(x, y) { return !x ? (!y ? 0 : 1) : (!y ? -1 : (x.pointer - y.pointer)) });
+        start = GL.currArrayBuffer ? 0 : attributes[0].pointer;
+        var multiStrides = false;
+        for (var i = 0; i < attributes.length; i++) {
+          var attribute = attributes[i];
+          if (!attribute) break;
+          if (stride != 0 && stride != attribute.stride) multiStrides = true;
+          if (attribute.stride) stride = attribute.stride;
+        }
+        if (multiStrides) stride = 0; // we will need to restride
+        var bytes = 0; // total size in bytes
+        if (!stride && !beginEnd) {
+          // beginEnd can not have stride in the attributes, that is fine. otherwise,
+          // no stride means that all attributes are in fact packed. to keep the rest of
+          // our emulation code simple, we perform unpacking/restriding here. this adds overhead, so
+          // it is a good idea to not hit this!
+          Runtime.warnOnce('Unpacking/restriding attributes, this is slow and dangerous');
+          if (!GL.immediate.restrideBuffer) GL.immediate.restrideBuffer = _malloc(GL.MAX_TEMP_BUFFER_SIZE);
+          start = GL.immediate.restrideBuffer;
+          assert(start % 4 == 0);
+          // calculate restrided offsets and total size
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            var size = attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
+            if (size % 4 != 0) size += 4 - (size % 4); // align everything
+            attribute.offset = bytes;
+            bytes += size;
+          }
+          assert(count*bytes <= GL.MAX_TEMP_BUFFER_SIZE);
+          // copy out the data (we need to know the stride for that, and define attribute.pointer
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            var size4 = Math.floor((attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot])/4);
+            for (var j = 0; j < count; j++) {
+              for (var k = 0; k < size4; k++) { // copy in chunks of 4 bytes, our alignment makes this possible
+                HEAP32[((start + attribute.offset + bytes*j)>>2) + k] = HEAP32[(attribute.pointer>>2) + j*size4 + k];
+              }
+            }
+            attribute.pointer = start + attribute.offset;
+          }
+        } else {
+          // normal situation, everything is strided and in the same buffer
+          for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            if (!attribute) break;
+            attribute.offset = attribute.pointer - start;
+            if (attribute.offset > bytes) { // ensure we start where we should
+              assert((attribute.offset - bytes)%4 == 0); // XXX assuming 4-alignment
+              bytes += attribute.offset - bytes;
+            }
+            bytes += attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
+            if (bytes % 4 != 0) bytes += 4 - (bytes % 4); // XXX assuming 4-alignment
+          }
+          assert(beginEnd || bytes <= stride); // if not begin-end, explicit stride should make sense with total byte size
+          if (bytes < stride) { // ensure the size is that of the stride
+            bytes = stride;
+          }
+        }
+        GL.immediate.stride = bytes;
+        if (!beginEnd) {
+          bytes *= count;
+          if (!GL.currArrayBuffer) {
+            GL.immediate.vertexPointer = start;
+          }
+          GL.immediate.vertexCounter = bytes / 4; // XXX assuming float
+        }
+      },flush:function (numProvidedIndexes, startIndex, ptr) {
+        assert(numProvidedIndexes >= 0 || !numProvidedIndexes);
+        startIndex = startIndex || 0;
+        ptr = ptr || 0;
+        var renderer = this.getRenderer();
+        // Generate index data in a format suitable for GLES 2.0/WebGL
+        var numVertexes = 4 * this.vertexCounter / GL.immediate.stride;
+        assert(numVertexes % 1 == 0, "`numVertexes` must be an integer.");
+        var emulatedElementArrayBuffer = false;
+        var numIndexes = 0;
+        if (numProvidedIndexes) {
+          numIndexes = numProvidedIndexes;
+          if (!GL.currArrayBuffer && GL.immediate.firstVertex > GL.immediate.lastVertex) {
+            // Figure out the first and last vertex from the index data
+            assert(!GL.currElementArrayBuffer); // If we are going to upload array buffer data, we need to find which range to
+                                                // upload based on the indices. If they are in a buffer on the GPU, that is very
+                                                // inconvenient! So if you do not have an array buffer, you should also not have
+                                                // an element array buffer. But best is to use both buffers!
+            for (var i = 0; i < numProvidedIndexes; i++) {
+              var currIndex = HEAPU16[(((ptr)+(i*2))>>1)];
+              GL.immediate.firstVertex = Math.min(GL.immediate.firstVertex, currIndex);
+              GL.immediate.lastVertex = Math.max(GL.immediate.lastVertex, currIndex+1);
+            }
+          }
+          if (!GL.currElementArrayBuffer) {
+            // If no element array buffer is bound, then indices is a literal pointer to clientside data
+            assert(numProvidedIndexes << 1 <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (a)');
+            var indexBuffer = GL.tempIndexBuffers[GL.tempBufferIndexLookup[numProvidedIndexes << 1]];
+            Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            Module.ctx.bufferSubData(Module.ctx.ELEMENT_ARRAY_BUFFER, 0, HEAPU16.subarray((ptr)>>1,(ptr + (numProvidedIndexes << 1))>>1));
+            ptr = 0;
+            emulatedElementArrayBuffer = true;
+          }
+        } else if (GL.immediate.mode > 6) { // above GL_TRIANGLE_FAN are the non-GL ES modes
+          if (GL.immediate.mode != 7) throw 'unsupported immediate mode ' + GL.immediate.mode; // GL_QUADS
+          // GL.immediate.firstVertex is the first vertex we want. Quad indexes are in the pattern
+          // 0 1 2, 0 2 3, 4 5 6, 4 6 7, so we need to look at index firstVertex * 1.5 to see it.
+          // Then since indexes are 2 bytes each, that means 3
+          assert(GL.immediate.firstVertex % 4 == 0);
+          ptr = GL.immediate.firstVertex*3;
+          var numQuads = numVertexes / 4;
+          numIndexes = numQuads * 6; // 0 1 2, 0 2 3 pattern
+          assert(ptr + (numIndexes << 1) <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (b)');
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          emulatedElementArrayBuffer = true;
+        }
+        renderer.prepare();
+        if (numIndexes) {
+          Module.ctx.drawElements(Module.ctx.TRIANGLES, numIndexes, Module.ctx.UNSIGNED_SHORT, ptr);
+        } else {
+          Module.ctx.drawArrays(GL.immediate.mode, startIndex, numVertexes);
+        }
+        if (emulatedElementArrayBuffer) {
+          Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.buffers[GL.currElementArrayBuffer] || null);
+        }
+      }};
+  GL.immediate = GLImmediate; GL.immediate.matrix.lib = (function() {
+  /**
+   * @fileoverview gl-matrix - High performance matrix and vector operations for WebGL
+   * @author Brandon Jones
+   * @version 1.2.4
+   */
+  // Modifed for emscripten: Global scoping etc.
+  /*
+   * Copyright (c) 2011 Brandon Jones
+   *
+   * This software is provided 'as-is', without any express or implied
+   * warranty. In no event will the authors be held liable for any damages
+   * arising from the use of this software.
+   *
+   * Permission is granted to anyone to use this software for any purpose,
+   * including commercial applications, and to alter it and redistribute it
+   * freely, subject to the following restrictions:
+   *
+   *    1. The origin of this software must not be misrepresented; you must not
+   *    claim that you wrote the original software. If you use this software
+   *    in a product, an acknowledgment in the product documentation would be
+   *    appreciated but is not required.
+   *
+   *    2. Altered source versions must be plainly marked as such, and must not
+   *    be misrepresented as being the original software.
+   *
+   *    3. This notice may not be removed or altered from any source
+   *    distribution.
+   */
+  /**
+   * @class 3 Dimensional Vector
+   * @name vec3
+   */
+  var vec3 = {};
+  /**
+   * @class 3x3 Matrix
+   * @name mat3
+   */
+  var mat3 = {};
+  /**
+   * @class 4x4 Matrix
+   * @name mat4
+   */
+  var mat4 = {};
+  /**
+   * @class Quaternion
+   * @name quat4
+   */
+  var quat4 = {};
+  var MatrixArray = Float32Array;
+  /*
+   * vec3
+   */
+  /**
+   * Creates a new instance of a vec3 using the default array type
+   * Any javascript array-like objects containing at least 3 numeric elements can serve as a vec3
+   *
+   * @param {vec3} [vec] vec3 containing values to initialize with
+   *
+   * @returns {vec3} New vec3
+   */
+  vec3.create = function (vec) {
+      var dest = new MatrixArray(3);
+      if (vec) {
+          dest[0] = vec[0];
+          dest[1] = vec[1];
+          dest[2] = vec[2];
+      } else {
+          dest[0] = dest[1] = dest[2] = 0;
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one vec3 to another
+   *
+   * @param {vec3} vec vec3 containing values to copy
+   * @param {vec3} dest vec3 receiving copied values
+   *
+   * @returns {vec3} dest
+   */
+  vec3.set = function (vec, dest) {
+      dest[0] = vec[0];
+      dest[1] = vec[1];
+      dest[2] = vec[2];
+      return dest;
+  };
+  /**
+   * Performs a vector addition
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.add = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] += vec2[0];
+          vec[1] += vec2[1];
+          vec[2] += vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] + vec2[0];
+      dest[1] = vec[1] + vec2[1];
+      dest[2] = vec[2] + vec2[2];
+      return dest;
+  };
+  /**
+   * Performs a vector subtraction
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.subtract = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] -= vec2[0];
+          vec[1] -= vec2[1];
+          vec[2] -= vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] - vec2[0];
+      dest[1] = vec[1] - vec2[1];
+      dest[2] = vec[2] - vec2[2];
+      return dest;
+  };
+  /**
+   * Performs a vector multiplication
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.multiply = function (vec, vec2, dest) {
+      if (!dest || vec === dest) {
+          vec[0] *= vec2[0];
+          vec[1] *= vec2[1];
+          vec[2] *= vec2[2];
+          return vec;
+      }
+      dest[0] = vec[0] * vec2[0];
+      dest[1] = vec[1] * vec2[1];
+      dest[2] = vec[2] * vec2[2];
+      return dest;
+  };
+  /**
+   * Negates the components of a vec3
+   *
+   * @param {vec3} vec vec3 to negate
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.negate = function (vec, dest) {
+      if (!dest) { dest = vec; }
+      dest[0] = -vec[0];
+      dest[1] = -vec[1];
+      dest[2] = -vec[2];
+      return dest;
+  };
+  /**
+   * Multiplies the components of a vec3 by a scalar value
+   *
+   * @param {vec3} vec vec3 to scale
+   * @param {number} val Value to scale by
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.scale = function (vec, val, dest) {
+      if (!dest || vec === dest) {
+          vec[0] *= val;
+          vec[1] *= val;
+          vec[2] *= val;
+          return vec;
+      }
+      dest[0] = vec[0] * val;
+      dest[1] = vec[1] * val;
+      dest[2] = vec[2] * val;
+      return dest;
+  };
+  /**
+   * Generates a unit vector of the same direction as the provided vec3
+   * If vector length is 0, returns [0, 0, 0]
+   *
+   * @param {vec3} vec vec3 to normalize
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.normalize = function (vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          len = Math.sqrt(x * x + y * y + z * z);
+      if (!len) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          return dest;
+      } else if (len === 1) {
+          dest[0] = x;
+          dest[1] = y;
+          dest[2] = z;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      return dest;
+  };
+  /**
+   * Generates the cross product of two vec3s
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.cross = function (vec, vec2, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          x2 = vec2[0], y2 = vec2[1], z2 = vec2[2];
+      dest[0] = y * z2 - z * y2;
+      dest[1] = z * x2 - x * z2;
+      dest[2] = x * y2 - y * x2;
+      return dest;
+  };
+  /**
+   * Caclulates the length of a vec3
+   *
+   * @param {vec3} vec vec3 to calculate length of
+   *
+   * @returns {number} Length of vec
+   */
+  vec3.length = function (vec) {
+      var x = vec[0], y = vec[1], z = vec[2];
+      return Math.sqrt(x * x + y * y + z * z);
+  };
+  /**
+   * Caclulates the dot product of two vec3s
+   *
+   * @param {vec3} vec First operand
+   * @param {vec3} vec2 Second operand
+   *
+   * @returns {number} Dot product of vec and vec2
+   */
+  vec3.dot = function (vec, vec2) {
+      return vec[0] * vec2[0] + vec[1] * vec2[1] + vec[2] * vec2[2];
+  };
+  /**
+   * Generates a unit vector pointing from one vector to another
+   *
+   * @param {vec3} vec Origin vec3
+   * @param {vec3} vec2 vec3 to point to
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.direction = function (vec, vec2, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0] - vec2[0],
+          y = vec[1] - vec2[1],
+          z = vec[2] - vec2[2],
+          len = Math.sqrt(x * x + y * y + z * z);
+      if (!len) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      return dest;
+  };
+  /**
+   * Performs a linear interpolation between two vec3
+   *
+   * @param {vec3} vec First vector
+   * @param {vec3} vec2 Second vector
+   * @param {number} lerp Interpolation amount between the two inputs
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.lerp = function (vec, vec2, lerp, dest) {
+      if (!dest) { dest = vec; }
+      dest[0] = vec[0] + lerp * (vec2[0] - vec[0]);
+      dest[1] = vec[1] + lerp * (vec2[1] - vec[1]);
+      dest[2] = vec[2] + lerp * (vec2[2] - vec[2]);
+      return dest;
+  };
+  /**
+   * Calculates the euclidian distance between two vec3
+   *
+   * Params:
+   * @param {vec3} vec First vector
+   * @param {vec3} vec2 Second vector
+   *
+   * @returns {number} Distance between vec and vec2
+   */
+  vec3.dist = function (vec, vec2) {
+      var x = vec2[0] - vec[0],
+          y = vec2[1] - vec[1],
+          z = vec2[2] - vec[2];
+      return Math.sqrt(x*x + y*y + z*z);
+  };
+  /**
+   * Projects the specified vec3 from screen space into object space
+   * Based on the <a href="http://webcvs.freedesktop.org/mesa/Mesa/src/glu/mesa/project.c?revision=1.4&view=markup">Mesa gluUnProject implementation</a>
+   *
+   * @param {vec3} vec Screen-space vector to project
+   * @param {mat4} view View matrix
+   * @param {mat4} proj Projection matrix
+   * @param {vec4} viewport Viewport as given to gl.viewport [x, y, width, height]
+   * @param {vec3} [dest] vec3 receiving unprojected result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  vec3.unproject = function (vec, view, proj, viewport, dest) {
+      if (!dest) { dest = vec; }
+      var m = mat4.create();
+      var v = new MatrixArray(4);
+      v[0] = (vec[0] - viewport[0]) * 2.0 / viewport[2] - 1.0;
+      v[1] = (vec[1] - viewport[1]) * 2.0 / viewport[3] - 1.0;
+      v[2] = 2.0 * vec[2] - 1.0;
+      v[3] = 1.0;
+      mat4.multiply(proj, view, m);
+      if(!mat4.inverse(m)) { return null; }
+      mat4.multiplyVec4(m, v);
+      if(v[3] === 0.0) { return null; }
+      dest[0] = v[0] / v[3];
+      dest[1] = v[1] / v[3];
+      dest[2] = v[2] / v[3];
+      return dest;
+  };
+  /**
+   * Returns a string representation of a vector
+   *
+   * @param {vec3} vec Vector to represent as a string
+   *
+   * @returns {string} String representation of vec
+   */
+  vec3.str = function (vec) {
+      return '[' + vec[0] + ', ' + vec[1] + ', ' + vec[2] + ']';
+  };
+  /*
+   * mat3
+   */
+  /**
+   * Creates a new instance of a mat3 using the default array type
+   * Any javascript array-like object containing at least 9 numeric elements can serve as a mat3
+   *
+   * @param {mat3} [mat] mat3 containing values to initialize with
+   *
+   * @returns {mat3} New mat3
+   */
+  mat3.create = function (mat) {
+      var dest = new MatrixArray(9);
+      if (mat) {
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[8] = mat[8];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one mat3 to another
+   *
+   * @param {mat3} mat mat3 containing values to copy
+   * @param {mat3} dest mat3 receiving copied values
+   *
+   * @returns {mat3} dest
+   */
+  mat3.set = function (mat, dest) {
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      return dest;
+  };
+  /**
+   * Sets a mat3 to an identity matrix
+   *
+   * @param {mat3} dest mat3 to set
+   *
+   * @returns dest if specified, otherwise a new mat3
+   */
+  mat3.identity = function (dest) {
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = 1;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 1;
+      dest[5] = 0;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 1;
+      return dest;
+  };
+  /**
+   * Transposes a mat3 (flips the values over the diagonal)
+   *
+   * Params:
+   * @param {mat3} mat mat3 to transpose
+   * @param {mat3} [dest] mat3 receiving transposed values. If not specified result is written to mat
+   *
+   * @returns {mat3} dest is specified, mat otherwise
+   */
+  mat3.transpose = function (mat, dest) {
+      // If we are transposing ourselves we can skip a few steps but have to cache some values
+      if (!dest || mat === dest) {
+          var a01 = mat[1], a02 = mat[2],
+              a12 = mat[5];
+          mat[1] = mat[3];
+          mat[2] = mat[6];
+          mat[3] = a01;
+          mat[5] = mat[7];
+          mat[6] = a02;
+          mat[7] = a12;
+          return mat;
+      }
+      dest[0] = mat[0];
+      dest[1] = mat[3];
+      dest[2] = mat[6];
+      dest[3] = mat[1];
+      dest[4] = mat[4];
+      dest[5] = mat[7];
+      dest[6] = mat[2];
+      dest[7] = mat[5];
+      dest[8] = mat[8];
+      return dest;
+  };
+  /**
+   * Copies the elements of a mat3 into the upper 3x3 elements of a mat4
+   *
+   * @param {mat3} mat mat3 containing values to copy
+   * @param {mat4} [dest] mat4 receiving copied values
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat3.toMat4 = function (mat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[15] = 1;
+      dest[14] = 0;
+      dest[13] = 0;
+      dest[12] = 0;
+      dest[11] = 0;
+      dest[10] = mat[8];
+      dest[9] = mat[7];
+      dest[8] = mat[6];
+      dest[7] = 0;
+      dest[6] = mat[5];
+      dest[5] = mat[4];
+      dest[4] = mat[3];
+      dest[3] = 0;
+      dest[2] = mat[2];
+      dest[1] = mat[1];
+      dest[0] = mat[0];
+      return dest;
+  };
+  /**
+   * Returns a string representation of a mat3
+   *
+   * @param {mat3} mat mat3 to represent as a string
+   *
+   * @param {string} String representation of mat
+   */
+  mat3.str = function (mat) {
+      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] +
+          ', ' + mat[3] + ', ' + mat[4] + ', ' + mat[5] +
+          ', ' + mat[6] + ', ' + mat[7] + ', ' + mat[8] + ']';
+  };
+  /*
+   * mat4
+   */
+  /**
+   * Creates a new instance of a mat4 using the default array type
+   * Any javascript array-like object containing at least 16 numeric elements can serve as a mat4
+   *
+   * @param {mat4} [mat] mat4 containing values to initialize with
+   *
+   * @returns {mat4} New mat4
+   */
+  mat4.create = function (mat) {
+      var dest = new MatrixArray(16);
+      if (mat) {
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[8] = mat[8];
+          dest[9] = mat[9];
+          dest[10] = mat[10];
+          dest[11] = mat[11];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one mat4 to another
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat4} dest mat4 receiving copied values
+   *
+   * @returns {mat4} dest
+   */
+  mat4.set = function (mat, dest) {
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      dest[9] = mat[9];
+      dest[10] = mat[10];
+      dest[11] = mat[11];
+      dest[12] = mat[12];
+      dest[13] = mat[13];
+      dest[14] = mat[14];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Sets a mat4 to an identity matrix
+   *
+   * @param {mat4} dest mat4 to set
+   *
+   * @returns {mat4} dest
+   */
+  mat4.identity = function (dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[0] = 1;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = 1;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 0;
+      dest[9] = 0;
+      dest[10] = 1;
+      dest[11] = 0;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Transposes a mat4 (flips the values over the diagonal)
+   *
+   * @param {mat4} mat mat4 to transpose
+   * @param {mat4} [dest] mat4 receiving transposed values. If not specified result is written to mat
+   *
+   * @param {mat4} dest is specified, mat otherwise
+   */
+  mat4.transpose = function (mat, dest) {
+      // If we are transposing ourselves we can skip a few steps but have to cache some values
+      if (!dest || mat === dest) {
+          var a01 = mat[1], a02 = mat[2], a03 = mat[3],
+              a12 = mat[6], a13 = mat[7],
+              a23 = mat[11];
+          mat[1] = mat[4];
+          mat[2] = mat[8];
+          mat[3] = mat[12];
+          mat[4] = a01;
+          mat[6] = mat[9];
+          mat[7] = mat[13];
+          mat[8] = a02;
+          mat[9] = a12;
+          mat[11] = mat[14];
+          mat[12] = a03;
+          mat[13] = a13;
+          mat[14] = a23;
+          return mat;
+      }
+      dest[0] = mat[0];
+      dest[1] = mat[4];
+      dest[2] = mat[8];
+      dest[3] = mat[12];
+      dest[4] = mat[1];
+      dest[5] = mat[5];
+      dest[6] = mat[9];
+      dest[7] = mat[13];
+      dest[8] = mat[2];
+      dest[9] = mat[6];
+      dest[10] = mat[10];
+      dest[11] = mat[14];
+      dest[12] = mat[3];
+      dest[13] = mat[7];
+      dest[14] = mat[11];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Calculates the determinant of a mat4
+   *
+   * @param {mat4} mat mat4 to calculate determinant of
+   *
+   * @returns {number} determinant of mat
+   */
+  mat4.determinant = function (mat) {
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15];
+      return (a30 * a21 * a12 * a03 - a20 * a31 * a12 * a03 - a30 * a11 * a22 * a03 + a10 * a31 * a22 * a03 +
+              a20 * a11 * a32 * a03 - a10 * a21 * a32 * a03 - a30 * a21 * a02 * a13 + a20 * a31 * a02 * a13 +
+              a30 * a01 * a22 * a13 - a00 * a31 * a22 * a13 - a20 * a01 * a32 * a13 + a00 * a21 * a32 * a13 +
+              a30 * a11 * a02 * a23 - a10 * a31 * a02 * a23 - a30 * a01 * a12 * a23 + a00 * a31 * a12 * a23 +
+              a10 * a01 * a32 * a23 - a00 * a11 * a32 * a23 - a20 * a11 * a02 * a33 + a10 * a21 * a02 * a33 +
+              a20 * a01 * a12 * a33 - a00 * a21 * a12 * a33 - a10 * a01 * a22 * a33 + a00 * a11 * a22 * a33);
+  };
+  /**
+   * Calculates the inverse matrix of a mat4
+   *
+   * @param {mat4} mat mat4 to calculate inverse of
+   * @param {mat4} [dest] mat4 receiving inverse matrix. If not specified result is written to mat
+   *
+   * @param {mat4} dest is specified, mat otherwise, null if matrix cannot be inverted
+   */
+  mat4.inverse = function (mat, dest) {
+      if (!dest) { dest = mat; }
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
+          b00 = a00 * a11 - a01 * a10,
+          b01 = a00 * a12 - a02 * a10,
+          b02 = a00 * a13 - a03 * a10,
+          b03 = a01 * a12 - a02 * a11,
+          b04 = a01 * a13 - a03 * a11,
+          b05 = a02 * a13 - a03 * a12,
+          b06 = a20 * a31 - a21 * a30,
+          b07 = a20 * a32 - a22 * a30,
+          b08 = a20 * a33 - a23 * a30,
+          b09 = a21 * a32 - a22 * a31,
+          b10 = a21 * a33 - a23 * a31,
+          b11 = a22 * a33 - a23 * a32,
+          d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
+          invDet;
+          // Calculate the determinant
+          if (!d) { return null; }
+          invDet = 1 / d;
+      dest[0] = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
+      dest[1] = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
+      dest[2] = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
+      dest[3] = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
+      dest[4] = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
+      dest[5] = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
+      dest[6] = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
+      dest[7] = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
+      dest[8] = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
+      dest[9] = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
+      dest[10] = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
+      dest[11] = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
+      dest[12] = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
+      dest[13] = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
+      dest[14] = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
+      dest[15] = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
+      return dest;
+  };
+  /**
+   * Copies the upper 3x3 elements of a mat4 into another mat4
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat4} [dest] mat4 receiving copied values
+   *
+   * @returns {mat4} dest is specified, a new mat4 otherwise
+   */
+  mat4.toRotationMat = function (mat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[3];
+      dest[4] = mat[4];
+      dest[5] = mat[5];
+      dest[6] = mat[6];
+      dest[7] = mat[7];
+      dest[8] = mat[8];
+      dest[9] = mat[9];
+      dest[10] = mat[10];
+      dest[11] = mat[11];
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Copies the upper 3x3 elements of a mat4 into a mat3
+   *
+   * @param {mat4} mat mat4 containing values to copy
+   * @param {mat3} [dest] mat3 receiving copied values
+   *
+   * @returns {mat3} dest is specified, a new mat3 otherwise
+   */
+  mat4.toMat3 = function (mat, dest) {
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = mat[0];
+      dest[1] = mat[1];
+      dest[2] = mat[2];
+      dest[3] = mat[4];
+      dest[4] = mat[5];
+      dest[5] = mat[6];
+      dest[6] = mat[8];
+      dest[7] = mat[9];
+      dest[8] = mat[10];
+      return dest;
+  };
+  /**
+   * Calculates the inverse of the upper 3x3 elements of a mat4 and copies the result into a mat3
+   * The resulting matrix is useful for calculating transformed normals
+   *
+   * Params:
+   * @param {mat4} mat mat4 containing values to invert and copy
+   * @param {mat3} [dest] mat3 receiving values
+   *
+   * @returns {mat3} dest is specified, a new mat3 otherwise, null if the matrix cannot be inverted
+   */
+  mat4.toInverseMat3 = function (mat, dest) {
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10],
+          b01 = a22 * a11 - a12 * a21,
+          b11 = -a22 * a10 + a12 * a20,
+          b21 = a21 * a10 - a11 * a20,
+          d = a00 * b01 + a01 * b11 + a02 * b21,
+          id;
+      if (!d) { return null; }
+      id = 1 / d;
+      if (!dest) { dest = mat3.create(); }
+      dest[0] = b01 * id;
+      dest[1] = (-a22 * a01 + a02 * a21) * id;
+      dest[2] = (a12 * a01 - a02 * a11) * id;
+      dest[3] = b11 * id;
+      dest[4] = (a22 * a00 - a02 * a20) * id;
+      dest[5] = (-a12 * a00 + a02 * a10) * id;
+      dest[6] = b21 * id;
+      dest[7] = (-a21 * a00 + a01 * a20) * id;
+      dest[8] = (a11 * a00 - a01 * a10) * id;
+      return dest;
+  };
+  /**
+   * Performs a matrix multiplication
+   *
+   * @param {mat4} mat First operand
+   * @param {mat4} mat2 Second operand
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.multiply = function (mat, mat2, dest) {
+      if (!dest) { dest = mat; }
+      // Cache the matrix values (makes for huge speed increases!)
+      var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10], a23 = mat[11],
+          a30 = mat[12], a31 = mat[13], a32 = mat[14], a33 = mat[15],
+          b00 = mat2[0], b01 = mat2[1], b02 = mat2[2], b03 = mat2[3],
+          b10 = mat2[4], b11 = mat2[5], b12 = mat2[6], b13 = mat2[7],
+          b20 = mat2[8], b21 = mat2[9], b22 = mat2[10], b23 = mat2[11],
+          b30 = mat2[12], b31 = mat2[13], b32 = mat2[14], b33 = mat2[15];
+      dest[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+      dest[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+      dest[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+      dest[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+      dest[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+      dest[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+      dest[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+      dest[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+      dest[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+      dest[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+      dest[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+      dest[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+      dest[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+      dest[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+      dest[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+      dest[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+      return dest;
+  };
+  /**
+   * Transforms a vec3 with the given matrix
+   * 4th vector component is implicitly '1'
+   *
+   * @param {mat4} mat mat4 to transform the vector with
+   * @param {vec3} vec vec3 to transform
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec3} dest if specified, vec otherwise
+   */
+  mat4.multiplyVec3 = function (mat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2];
+      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
+      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
+      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
+      return dest;
+  };
+  /**
+   * Transforms a vec4 with the given matrix
+   *
+   * @param {mat4} mat mat4 to transform the vector with
+   * @param {vec4} vec vec4 to transform
+   * @param {vec4} [dest] vec4 receiving operation result. If not specified result is written to vec
+   *
+   * @returns {vec4} dest if specified, vec otherwise
+   */
+  mat4.multiplyVec4 = function (mat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
+      dest[0] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12] * w;
+      dest[1] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13] * w;
+      dest[2] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14] * w;
+      dest[3] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15] * w;
+      return dest;
+  };
+  /**
+   * Translates a matrix by the given vector
+   *
+   * @param {mat4} mat mat4 to translate
+   * @param {vec3} vec vec3 specifying the translation
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.translate = function (mat, vec, dest) {
+      var x = vec[0], y = vec[1], z = vec[2],
+          a00, a01, a02, a03,
+          a10, a11, a12, a13,
+          a20, a21, a22, a23;
+      if (!dest || mat === dest) {
+          mat[12] = mat[0] * x + mat[4] * y + mat[8] * z + mat[12];
+          mat[13] = mat[1] * x + mat[5] * y + mat[9] * z + mat[13];
+          mat[14] = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
+          mat[15] = mat[3] * x + mat[7] * y + mat[11] * z + mat[15];
+          return mat;
+      }
+      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
+      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
+      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
+      dest[0] = a00; dest[1] = a01; dest[2] = a02; dest[3] = a03;
+      dest[4] = a10; dest[5] = a11; dest[6] = a12; dest[7] = a13;
+      dest[8] = a20; dest[9] = a21; dest[10] = a22; dest[11] = a23;
+      dest[12] = a00 * x + a10 * y + a20 * z + mat[12];
+      dest[13] = a01 * x + a11 * y + a21 * z + mat[13];
+      dest[14] = a02 * x + a12 * y + a22 * z + mat[14];
+      dest[15] = a03 * x + a13 * y + a23 * z + mat[15];
+      return dest;
+  };
+  /**
+   * Scales a matrix by the given vector
+   *
+   * @param {mat4} mat mat4 to scale
+   * @param {vec3} vec vec3 specifying the scale for each axis
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @param {mat4} dest if specified, mat otherwise
+   */
+  mat4.scale = function (mat, vec, dest) {
+      var x = vec[0], y = vec[1], z = vec[2];
+      if (!dest || mat === dest) {
+          mat[0] *= x;
+          mat[1] *= x;
+          mat[2] *= x;
+          mat[3] *= x;
+          mat[4] *= y;
+          mat[5] *= y;
+          mat[6] *= y;
+          mat[7] *= y;
+          mat[8] *= z;
+          mat[9] *= z;
+          mat[10] *= z;
+          mat[11] *= z;
+          return mat;
+      }
+      dest[0] = mat[0] * x;
+      dest[1] = mat[1] * x;
+      dest[2] = mat[2] * x;
+      dest[3] = mat[3] * x;
+      dest[4] = mat[4] * y;
+      dest[5] = mat[5] * y;
+      dest[6] = mat[6] * y;
+      dest[7] = mat[7] * y;
+      dest[8] = mat[8] * z;
+      dest[9] = mat[9] * z;
+      dest[10] = mat[10] * z;
+      dest[11] = mat[11] * z;
+      dest[12] = mat[12];
+      dest[13] = mat[13];
+      dest[14] = mat[14];
+      dest[15] = mat[15];
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the specified axis
+   * If rotating around a primary axis (X,Y,Z) one of the specialized rotation functions should be used instead for performance
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {vec3} axis vec3 representing the axis to rotate around 
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotate = function (mat, angle, axis, dest) {
+      var x = axis[0], y = axis[1], z = axis[2],
+          len = Math.sqrt(x * x + y * y + z * z),
+          s, c, t,
+          a00, a01, a02, a03,
+          a10, a11, a12, a13,
+          a20, a21, a22, a23,
+          b00, b01, b02,
+          b10, b11, b12,
+          b20, b21, b22;
+      if (!len) { return null; }
+      if (len !== 1) {
+          len = 1 / len;
+          x *= len;
+          y *= len;
+          z *= len;
+      }
+      s = Math.sin(angle);
+      c = Math.cos(angle);
+      t = 1 - c;
+      a00 = mat[0]; a01 = mat[1]; a02 = mat[2]; a03 = mat[3];
+      a10 = mat[4]; a11 = mat[5]; a12 = mat[6]; a13 = mat[7];
+      a20 = mat[8]; a21 = mat[9]; a22 = mat[10]; a23 = mat[11];
+      // Construct the elements of the rotation matrix
+      b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
+      b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
+      b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform rotation-specific matrix multiplication
+      dest[0] = a00 * b00 + a10 * b01 + a20 * b02;
+      dest[1] = a01 * b00 + a11 * b01 + a21 * b02;
+      dest[2] = a02 * b00 + a12 * b01 + a22 * b02;
+      dest[3] = a03 * b00 + a13 * b01 + a23 * b02;
+      dest[4] = a00 * b10 + a10 * b11 + a20 * b12;
+      dest[5] = a01 * b10 + a11 * b11 + a21 * b12;
+      dest[6] = a02 * b10 + a12 * b11 + a22 * b12;
+      dest[7] = a03 * b10 + a13 * b11 + a23 * b12;
+      dest[8] = a00 * b20 + a10 * b21 + a20 * b22;
+      dest[9] = a01 * b20 + a11 * b21 + a21 * b22;
+      dest[10] = a02 * b20 + a12 * b21 + a22 * b22;
+      dest[11] = a03 * b20 + a13 * b21 + a23 * b22;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the X axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateX = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a10 = mat[4],
+          a11 = mat[5],
+          a12 = mat[6],
+          a13 = mat[7],
+          a20 = mat[8],
+          a21 = mat[9],
+          a22 = mat[10],
+          a23 = mat[11];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+          dest[0] = mat[0];
+          dest[1] = mat[1];
+          dest[2] = mat[2];
+          dest[3] = mat[3];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[4] = a10 * c + a20 * s;
+      dest[5] = a11 * c + a21 * s;
+      dest[6] = a12 * c + a22 * s;
+      dest[7] = a13 * c + a23 * s;
+      dest[8] = a10 * -s + a20 * c;
+      dest[9] = a11 * -s + a21 * c;
+      dest[10] = a12 * -s + a22 * c;
+      dest[11] = a13 * -s + a23 * c;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the Y axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateY = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a00 = mat[0],
+          a01 = mat[1],
+          a02 = mat[2],
+          a03 = mat[3],
+          a20 = mat[8],
+          a21 = mat[9],
+          a22 = mat[10],
+          a23 = mat[11];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged rows
+          dest[4] = mat[4];
+          dest[5] = mat[5];
+          dest[6] = mat[6];
+          dest[7] = mat[7];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[0] = a00 * c + a20 * -s;
+      dest[1] = a01 * c + a21 * -s;
+      dest[2] = a02 * c + a22 * -s;
+      dest[3] = a03 * c + a23 * -s;
+      dest[8] = a00 * s + a20 * c;
+      dest[9] = a01 * s + a21 * c;
+      dest[10] = a02 * s + a22 * c;
+      dest[11] = a03 * s + a23 * c;
+      return dest;
+  };
+  /**
+   * Rotates a matrix by the given angle around the Z axis
+   *
+   * @param {mat4} mat mat4 to rotate
+   * @param {number} angle Angle (in radians) to rotate
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to mat
+   *
+   * @returns {mat4} dest if specified, mat otherwise
+   */
+  mat4.rotateZ = function (mat, angle, dest) {
+      var s = Math.sin(angle),
+          c = Math.cos(angle),
+          a00 = mat[0],
+          a01 = mat[1],
+          a02 = mat[2],
+          a03 = mat[3],
+          a10 = mat[4],
+          a11 = mat[5],
+          a12 = mat[6],
+          a13 = mat[7];
+      if (!dest) {
+          dest = mat;
+      } else if (mat !== dest) { // If the source and destination differ, copy the unchanged last row
+          dest[8] = mat[8];
+          dest[9] = mat[9];
+          dest[10] = mat[10];
+          dest[11] = mat[11];
+          dest[12] = mat[12];
+          dest[13] = mat[13];
+          dest[14] = mat[14];
+          dest[15] = mat[15];
+      }
+      // Perform axis-specific matrix multiplication
+      dest[0] = a00 * c + a10 * s;
+      dest[1] = a01 * c + a11 * s;
+      dest[2] = a02 * c + a12 * s;
+      dest[3] = a03 * c + a13 * s;
+      dest[4] = a00 * -s + a10 * c;
+      dest[5] = a01 * -s + a11 * c;
+      dest[6] = a02 * -s + a12 * c;
+      dest[7] = a03 * -s + a13 * c;
+      return dest;
+  };
+  /**
+   * Generates a frustum matrix with the given bounds
+   *
+   * @param {number} left Left bound of the frustum
+   * @param {number} right Right bound of the frustum
+   * @param {number} bottom Bottom bound of the frustum
+   * @param {number} top Top bound of the frustum
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.frustum = function (left, right, bottom, top, near, far, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var rl = (right - left),
+          tb = (top - bottom),
+          fn = (far - near);
+      dest[0] = (near * 2) / rl;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = (near * 2) / tb;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = (right + left) / rl;
+      dest[9] = (top + bottom) / tb;
+      dest[10] = -(far + near) / fn;
+      dest[11] = -1;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = -(far * near * 2) / fn;
+      dest[15] = 0;
+      return dest;
+  };
+  /**
+   * Generates a perspective projection matrix with the given bounds
+   *
+   * @param {number} fovy Vertical field of view
+   * @param {number} aspect Aspect ratio. typically viewport width/height
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.perspective = function (fovy, aspect, near, far, dest) {
+      var top = near * Math.tan(fovy * Math.PI / 360.0),
+          right = top * aspect;
+      return mat4.frustum(-right, right, -top, top, near, far, dest);
+  };
+  /**
+   * Generates a orthogonal projection matrix with the given bounds
+   *
+   * @param {number} left Left bound of the frustum
+   * @param {number} right Right bound of the frustum
+   * @param {number} bottom Bottom bound of the frustum
+   * @param {number} top Top bound of the frustum
+   * @param {number} near Near bound of the frustum
+   * @param {number} far Far bound of the frustum
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.ortho = function (left, right, bottom, top, near, far, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var rl = (right - left),
+          tb = (top - bottom),
+          fn = (far - near);
+      dest[0] = 2 / rl;
+      dest[1] = 0;
+      dest[2] = 0;
+      dest[3] = 0;
+      dest[4] = 0;
+      dest[5] = 2 / tb;
+      dest[6] = 0;
+      dest[7] = 0;
+      dest[8] = 0;
+      dest[9] = 0;
+      dest[10] = -2 / fn;
+      dest[11] = 0;
+      dest[12] = -(left + right) / rl;
+      dest[13] = -(top + bottom) / tb;
+      dest[14] = -(far + near) / fn;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Generates a look-at matrix with the given eye position, focal point, and up axis
+   *
+   * @param {vec3} eye Position of the viewer
+   * @param {vec3} center Point the viewer is looking at
+   * @param {vec3} up vec3 pointing "up"
+   * @param {mat4} [dest] mat4 frustum matrix will be written into
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.lookAt = function (eye, center, up, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var x0, x1, x2, y0, y1, y2, z0, z1, z2, len,
+          eyex = eye[0],
+          eyey = eye[1],
+          eyez = eye[2],
+          upx = up[0],
+          upy = up[1],
+          upz = up[2],
+          centerx = center[0],
+          centery = center[1],
+          centerz = center[2];
+      if (eyex === centerx && eyey === centery && eyez === centerz) {
+          return mat4.identity(dest);
+      }
+      //vec3.direction(eye, center, z);
+      z0 = eyex - centerx;
+      z1 = eyey - centery;
+      z2 = eyez - centerz;
+      // normalize (no check needed for 0 because of early return)
+      len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+      z0 *= len;
+      z1 *= len;
+      z2 *= len;
+      //vec3.normalize(vec3.cross(up, z, x));
+      x0 = upy * z2 - upz * z1;
+      x1 = upz * z0 - upx * z2;
+      x2 = upx * z1 - upy * z0;
+      len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+      if (!len) {
+          x0 = 0;
+          x1 = 0;
+          x2 = 0;
+      } else {
+          len = 1 / len;
+          x0 *= len;
+          x1 *= len;
+          x2 *= len;
+      }
+      //vec3.normalize(vec3.cross(z, x, y));
+      y0 = z1 * x2 - z2 * x1;
+      y1 = z2 * x0 - z0 * x2;
+      y2 = z0 * x1 - z1 * x0;
+      len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+      if (!len) {
+          y0 = 0;
+          y1 = 0;
+          y2 = 0;
+      } else {
+          len = 1 / len;
+          y0 *= len;
+          y1 *= len;
+          y2 *= len;
+      }
+      dest[0] = x0;
+      dest[1] = y0;
+      dest[2] = z0;
+      dest[3] = 0;
+      dest[4] = x1;
+      dest[5] = y1;
+      dest[6] = z1;
+      dest[7] = 0;
+      dest[8] = x2;
+      dest[9] = y2;
+      dest[10] = z2;
+      dest[11] = 0;
+      dest[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
+      dest[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
+      dest[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Creates a matrix from a quaternion rotation and vector translation
+   * This is equivalent to (but much faster than):
+   *
+   *     mat4.identity(dest);
+   *     mat4.translate(dest, vec);
+   *     var quatMat = mat4.create();
+   *     quat4.toMat4(quat, quatMat);
+   *     mat4.multiply(dest, quatMat);
+   *
+   * @param {quat4} quat Rotation quaternion
+   * @param {vec3} vec Translation vector
+   * @param {mat4} [dest] mat4 receiving operation result. If not specified result is written to a new mat4
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  mat4.fromRotationTranslation = function (quat, vec, dest) {
+      if (!dest) { dest = mat4.create(); }
+      // Quaternion math
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = 0;
+      dest[4] = xy - wz;
+      dest[5] = 1 - (xx + zz);
+      dest[6] = yz + wx;
+      dest[7] = 0;
+      dest[8] = xz + wy;
+      dest[9] = yz - wx;
+      dest[10] = 1 - (xx + yy);
+      dest[11] = 0;
+      dest[12] = vec[0];
+      dest[13] = vec[1];
+      dest[14] = vec[2];
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Returns a string representation of a mat4
+   *
+   * @param {mat4} mat mat4 to represent as a string
+   *
+   * @returns {string} String representation of mat
+   */
+  mat4.str = function (mat) {
+      return '[' + mat[0] + ', ' + mat[1] + ', ' + mat[2] + ', ' + mat[3] +
+          ', ' + mat[4] + ', ' + mat[5] + ', ' + mat[6] + ', ' + mat[7] +
+          ', ' + mat[8] + ', ' + mat[9] + ', ' + mat[10] + ', ' + mat[11] +
+          ', ' + mat[12] + ', ' + mat[13] + ', ' + mat[14] + ', ' + mat[15] + ']';
+  };
+  /*
+   * quat4
+   */
+  /**
+   * Creates a new instance of a quat4 using the default array type
+   * Any javascript array containing at least 4 numeric elements can serve as a quat4
+   *
+   * @param {quat4} [quat] quat4 containing values to initialize with
+   *
+   * @returns {quat4} New quat4
+   */
+  quat4.create = function (quat) {
+      var dest = new MatrixArray(4);
+      if (quat) {
+          dest[0] = quat[0];
+          dest[1] = quat[1];
+          dest[2] = quat[2];
+          dest[3] = quat[3];
+      }
+      return dest;
+  };
+  /**
+   * Copies the values of one quat4 to another
+   *
+   * @param {quat4} quat quat4 containing values to copy
+   * @param {quat4} dest quat4 receiving copied values
+   *
+   * @returns {quat4} dest
+   */
+  quat4.set = function (quat, dest) {
+      dest[0] = quat[0];
+      dest[1] = quat[1];
+      dest[2] = quat[2];
+      dest[3] = quat[3];
+      return dest;
+  };
+  /**
+   * Calculates the W component of a quat4 from the X, Y, and Z components.
+   * Assumes that quaternion is 1 unit in length. 
+   * Any existing W component will be ignored. 
+   *
+   * @param {quat4} quat quat4 to calculate W component of
+   * @param {quat4} [dest] quat4 receiving calculated values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.calculateW = function (quat, dest) {
+      var x = quat[0], y = quat[1], z = quat[2];
+      if (!dest || quat === dest) {
+          quat[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
+          return quat;
+      }
+      dest[0] = x;
+      dest[1] = y;
+      dest[2] = z;
+      dest[3] = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
+      return dest;
+  };
+  /**
+   * Calculates the dot product of two quaternions
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   *
+   * @return {number} Dot product of quat and quat2
+   */
+  quat4.dot = function(quat, quat2){
+      return quat[0]*quat2[0] + quat[1]*quat2[1] + quat[2]*quat2[2] + quat[3]*quat2[3];
+  };
+  /**
+   * Calculates the inverse of a quat4
+   *
+   * @param {quat4} quat quat4 to calculate inverse of
+   * @param {quat4} [dest] quat4 receiving inverse values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.inverse = function(quat, dest) {
+      var q0 = quat[0], q1 = quat[1], q2 = quat[2], q3 = quat[3],
+          dot = q0*q0 + q1*q1 + q2*q2 + q3*q3,
+          invDot = dot ? 1.0/dot : 0;
+      // TODO: Would be faster to return [0,0,0,0] immediately if dot == 0
+      if(!dest || quat === dest) {
+          quat[0] *= -invDot;
+          quat[1] *= -invDot;
+          quat[2] *= -invDot;
+          quat[3] *= invDot;
+          return quat;
+      }
+      dest[0] = -quat[0]*invDot;
+      dest[1] = -quat[1]*invDot;
+      dest[2] = -quat[2]*invDot;
+      dest[3] = quat[3]*invDot;
+      return dest;
+  };
+  /**
+   * Calculates the conjugate of a quat4
+   * If the quaternion is normalized, this function is faster than quat4.inverse and produces the same result.
+   *
+   * @param {quat4} quat quat4 to calculate conjugate of
+   * @param {quat4} [dest] quat4 receiving conjugate values. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.conjugate = function (quat, dest) {
+      if (!dest || quat === dest) {
+          quat[0] *= -1;
+          quat[1] *= -1;
+          quat[2] *= -1;
+          return quat;
+      }
+      dest[0] = -quat[0];
+      dest[1] = -quat[1];
+      dest[2] = -quat[2];
+      dest[3] = quat[3];
+      return dest;
+  };
+  /**
+   * Calculates the length of a quat4
+   *
+   * Params:
+   * @param {quat4} quat quat4 to calculate length of
+   *
+   * @returns Length of quat
+   */
+  quat4.length = function (quat) {
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3];
+      return Math.sqrt(x * x + y * y + z * z + w * w);
+  };
+  /**
+   * Generates a unit quaternion of the same direction as the provided quat4
+   * If quaternion length is 0, returns [0, 0, 0, 0]
+   *
+   * @param {quat4} quat quat4 to normalize
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.normalize = function (quat, dest) {
+      if (!dest) { dest = quat; }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          len = Math.sqrt(x * x + y * y + z * z + w * w);
+      if (len === 0) {
+          dest[0] = 0;
+          dest[1] = 0;
+          dest[2] = 0;
+          dest[3] = 0;
+          return dest;
+      }
+      len = 1 / len;
+      dest[0] = x * len;
+      dest[1] = y * len;
+      dest[2] = z * len;
+      dest[3] = w * len;
+      return dest;
+  };
+  /**
+   * Performs quaternion addition
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.add = function (quat, quat2, dest) {
+      if(!dest || quat === dest) {
+          quat[0] += quat2[0];
+          quat[1] += quat2[1];
+          quat[2] += quat2[2];
+          quat[3] += quat2[3];
+          return quat;
+      }
+      dest[0] = quat[0]+quat2[0];
+      dest[1] = quat[1]+quat2[1];
+      dest[2] = quat[2]+quat2[2];
+      dest[3] = quat[3]+quat2[3];
+      return dest;
+  };
+  /**
+   * Performs a quaternion multiplication
+   *
+   * @param {quat4} quat First operand
+   * @param {quat4} quat2 Second operand
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.multiply = function (quat, quat2, dest) {
+      if (!dest) { dest = quat; }
+      var qax = quat[0], qay = quat[1], qaz = quat[2], qaw = quat[3],
+          qbx = quat2[0], qby = quat2[1], qbz = quat2[2], qbw = quat2[3];
+      dest[0] = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+      dest[1] = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+      dest[2] = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+      dest[3] = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+      return dest;
+  };
+  /**
+   * Transforms a vec3 with the given quaternion
+   *
+   * @param {quat4} quat quat4 to transform the vector with
+   * @param {vec3} vec vec3 to transform
+   * @param {vec3} [dest] vec3 receiving operation result. If not specified result is written to vec
+   *
+   * @returns dest if specified, vec otherwise
+   */
+  quat4.multiplyVec3 = function (quat, vec, dest) {
+      if (!dest) { dest = vec; }
+      var x = vec[0], y = vec[1], z = vec[2],
+          qx = quat[0], qy = quat[1], qz = quat[2], qw = quat[3],
+          // calculate quat * vec
+          ix = qw * x + qy * z - qz * y,
+          iy = qw * y + qz * x - qx * z,
+          iz = qw * z + qx * y - qy * x,
+          iw = -qx * x - qy * y - qz * z;
+      // calculate result * inverse quat
+      dest[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+      dest[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+      dest[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+      return dest;
+  };
+  /**
+   * Multiplies the components of a quaternion by a scalar value
+   *
+   * @param {quat4} quat to scale
+   * @param {number} val Value to scale by
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.scale = function (quat, val, dest) {
+      if(!dest || quat === dest) {
+          quat[0] *= val;
+          quat[1] *= val;
+          quat[2] *= val;
+          quat[3] *= val;
+          return quat;
+      }
+      dest[0] = quat[0]*val;
+      dest[1] = quat[1]*val;
+      dest[2] = quat[2]*val;
+      dest[3] = quat[3]*val;
+      return dest;
+  };
+  /**
+   * Calculates a 3x3 matrix from the given quat4
+   *
+   * @param {quat4} quat quat4 to create matrix from
+   * @param {mat3} [dest] mat3 receiving operation result
+   *
+   * @returns {mat3} dest if specified, a new mat3 otherwise
+   */
+  quat4.toMat3 = function (quat, dest) {
+      if (!dest) { dest = mat3.create(); }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = xy - wz;
+      dest[4] = 1 - (xx + zz);
+      dest[5] = yz + wx;
+      dest[6] = xz + wy;
+      dest[7] = yz - wx;
+      dest[8] = 1 - (xx + yy);
+      return dest;
+  };
+  /**
+   * Calculates a 4x4 matrix from the given quat4
+   *
+   * @param {quat4} quat quat4 to create matrix from
+   * @param {mat4} [dest] mat4 receiving operation result
+   *
+   * @returns {mat4} dest if specified, a new mat4 otherwise
+   */
+  quat4.toMat4 = function (quat, dest) {
+      if (!dest) { dest = mat4.create(); }
+      var x = quat[0], y = quat[1], z = quat[2], w = quat[3],
+          x2 = x + x,
+          y2 = y + y,
+          z2 = z + z,
+          xx = x * x2,
+          xy = x * y2,
+          xz = x * z2,
+          yy = y * y2,
+          yz = y * z2,
+          zz = z * z2,
+          wx = w * x2,
+          wy = w * y2,
+          wz = w * z2;
+      dest[0] = 1 - (yy + zz);
+      dest[1] = xy + wz;
+      dest[2] = xz - wy;
+      dest[3] = 0;
+      dest[4] = xy - wz;
+      dest[5] = 1 - (xx + zz);
+      dest[6] = yz + wx;
+      dest[7] = 0;
+      dest[8] = xz + wy;
+      dest[9] = yz - wx;
+      dest[10] = 1 - (xx + yy);
+      dest[11] = 0;
+      dest[12] = 0;
+      dest[13] = 0;
+      dest[14] = 0;
+      dest[15] = 1;
+      return dest;
+  };
+  /**
+   * Performs a spherical linear interpolation between two quat4
+   *
+   * @param {quat4} quat First quaternion
+   * @param {quat4} quat2 Second quaternion
+   * @param {number} slerp Interpolation amount between the two inputs
+   * @param {quat4} [dest] quat4 receiving operation result. If not specified result is written to quat
+   *
+   * @returns {quat4} dest if specified, quat otherwise
+   */
+  quat4.slerp = function (quat, quat2, slerp, dest) {
+      if (!dest) { dest = quat; }
+      var cosHalfTheta = quat[0] * quat2[0] + quat[1] * quat2[1] + quat[2] * quat2[2] + quat[3] * quat2[3],
+          halfTheta,
+          sinHalfTheta,
+          ratioA,
+          ratioB;
+      if (Math.abs(cosHalfTheta) >= 1.0) {
+          if (dest !== quat) {
+              dest[0] = quat[0];
+              dest[1] = quat[1];
+              dest[2] = quat[2];
+              dest[3] = quat[3];
+          }
+          return dest;
+      }
+      halfTheta = Math.acos(cosHalfTheta);
+      sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+      if (Math.abs(sinHalfTheta) < 0.001) {
+          dest[0] = (quat[0] * 0.5 + quat2[0] * 0.5);
+          dest[1] = (quat[1] * 0.5 + quat2[1] * 0.5);
+          dest[2] = (quat[2] * 0.5 + quat2[2] * 0.5);
+          dest[3] = (quat[3] * 0.5 + quat2[3] * 0.5);
+          return dest;
+      }
+      ratioA = Math.sin((1 - slerp) * halfTheta) / sinHalfTheta;
+      ratioB = Math.sin(slerp * halfTheta) / sinHalfTheta;
+      dest[0] = (quat[0] * ratioA + quat2[0] * ratioB);
+      dest[1] = (quat[1] * ratioA + quat2[1] * ratioB);
+      dest[2] = (quat[2] * ratioA + quat2[2] * ratioB);
+      dest[3] = (quat[3] * ratioA + quat2[3] * ratioB);
+      return dest;
+  };
+  /**
+   * Returns a string representation of a quaternion
+   *
+   * @param {quat4} quat quat4 to represent as a string
+   *
+   * @returns {string} String representation of quat
+   */
+  quat4.str = function (quat) {
+      return '[' + quat[0] + ', ' + quat[1] + ', ' + quat[2] + ', ' + quat[3] + ']';
+  };
+  return {
+    vec3: vec3,
+    mat3: mat3,
+    mat4: mat4,
+    quat4: quat4
+  };
+  })();
+  ;
+  var GLImmediateSetup={};function _glMatrixMode(mode) {
+      if (mode == 0x1700 /* GL_MODELVIEW */) {
+        GL.immediate.currentMatrix = 'm';
+      } else if (mode == 0x1701 /* GL_PROJECTION */) {
+        GL.immediate.currentMatrix = 'p';
+      } else if (mode == 0x1702) { // GL_TEXTURE
+        GL.immediate.useTextureMatrix = true;
+        GL.immediate.currentMatrix = 't' + GL.immediate.clientActiveTexture;
+      } else {
+        throw "Wrong mode " + mode + " passed to glMatrixMode";
+      }
+    }
+  function _glLoadMatrixf(matrix) {
+      GL.immediate.matricesModified = true;
+      GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
+    }
+  function _glLoadIdentity() {
+      GL.immediate.matricesModified = true;
+      GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix[GL.immediate.currentMatrix]);
+    }
   function _glDepthMask(x0) { Module.ctx.depthMask(x0) }
   function _glGenTextures(n, textures) {
       for (var i = 0; i < n; i++) {
@@ -7497,11 +11228,73 @@ function copyTempDouble(ptr) {
       Module.ctx['compressedTexImage2D'](target, level, internalFormat, width, height, border, data);
     }
   function _glClear(x0) { Module.ctx.clear(x0) }
-;
-  function _glBegin(){ throw 'Legacy GL function (glBegin) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
-;
-;
+  function _glColor4f(r, g, b, a) {
+      r = Math.max(Math.min(r, 1), 0);
+      g = Math.max(Math.min(g, 1), 0);
+      b = Math.max(Math.min(b, 1), 0);
+      a = Math.max(Math.min(a, 1), 0);
+      // TODO: make ub the default, not f, save a few mathops
+      if (GL.immediate.mode >= 0) {
+        var start = GL.immediate.vertexCounter << 2;
+        GL.immediate.vertexDataU8[start + 0] = r * 255;
+        GL.immediate.vertexDataU8[start + 1] = g * 255;
+        GL.immediate.vertexDataU8[start + 2] = b * 255;
+        GL.immediate.vertexDataU8[start + 3] = a * 255;
+        GL.immediate.vertexCounter++;
+        GL.immediate.addRendererComponent(GL.immediate.COLOR, 4, Module.ctx.UNSIGNED_BYTE);
+      } else {
+        GL.immediate.clientColor[0] = r;
+        GL.immediate.clientColor[1] = g;
+        GL.immediate.clientColor[2] = b;
+        GL.immediate.clientColor[3] = a;
+      }
+    }function _glColor3f(r, g, b) {
+      _glColor4f(r, g, b, 1);
+    }
+  function _glBegin(mode) {
+      // Push the old state:
+      GL.immediate.enabledClientAttributes_preBegin = GL.immediate.enabledClientAttributes;
+      GL.immediate.enabledClientAttributes = [];
+      GL.immediate.clientAttributes_preBegin = GL.immediate.clientAttributes;
+      GL.immediate.clientAttributes = []
+      for (var i = 0; i < GL.immediate.clientAttributes_preBegin.length; i++) {
+        GL.immediate.clientAttributes.push({});
+      }
+      GL.immediate.mode = mode;
+      GL.immediate.vertexCounter = 0;
+      var components = GL.immediate.rendererComponents = [];
+      for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
+        components[i] = 0;
+      }
+      GL.immediate.rendererComponentPointer = 0;
+      GL.immediate.vertexData = GL.immediate.tempData;
+    }
+  function _glTexCoord2i(u, v) {
+      assert(GL.immediate.mode >= 0); // must be in begin/end
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = u;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = v;
+      GL.immediate.addRendererComponent(GL.immediate.TEXTURE0, 2, Module.ctx.FLOAT);
+    }
+  function _glVertex3f(x, y, z) {
+      assert(GL.immediate.mode >= 0); // must be in begin/end
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = x;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = y;
+      GL.immediate.vertexData[GL.immediate.vertexCounter++] = z || 0;
+      assert(GL.immediate.vertexCounter << 2 < GL.MAX_TEMP_BUFFER_SIZE);
+      GL.immediate.addRendererComponent(GL.immediate.VERTEX, 3, Module.ctx.FLOAT);
+    }
+  function _glEnd() {
+      GL.immediate.prepareClientAttributes(GL.immediate.rendererComponents[GL.immediate.VERTEX], true);
+      GL.immediate.firstVertex = 0;
+      GL.immediate.lastVertex = GL.immediate.vertexCounter / (GL.immediate.stride >> 2);
+      GL.immediate.flush();
+      GL.immediate.disableBeginEndClientAttributes();
+      GL.immediate.mode = -1;
+      // Pop the old state:
+      GL.immediate.enabledClientAttributes = GL.immediate.enabledClientAttributes_preBegin;
+      GL.immediate.clientAttributes = GL.immediate.clientAttributes_preBegin;
+      GL.immediate.modifiedClientAttributes = true;
+    }
   function _glFlush() { Module.ctx.flush() }
   function _SDL_GL_SwapBuffers() {}
   function _clCreateContextFromType(properties,device_type_i64_1,device_type_i64_2,pfn_notify,user_data,cl_errcode_ret) {
@@ -7622,6 +11415,34 @@ function copyTempDouble(ptr) {
       CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
       return _id;
     }
+  function _clSetTypePointer(pn_type) {
+      /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
+      switch(pn_type) {
+        case webcl.SIGNED_INT8:
+          console.info("clSetTypePointer : SIGNED_INT8 - "+webcl.SIGNED_INT8);
+          break;
+        case webcl.SIGNED_INT16:
+          console.info("clSetTypePointer : SIGNED_INT16 - "+webcl.SIGNED_INT16);
+          break;
+        case webcl.SIGNED_INT32:
+          console.info("clSetTypePointer : SIGNED_INT32 - "+webcl.SIGNED_INT32);
+          break;
+        case webcl.UNSIGNED_INT8:
+          console.info("clSetTypePointer : UNSIGNED_INT8 - "+webcl.UNSIGNED_INT8);
+          break;
+        case webcl.UNSIGNED_INT16:
+          console.info("clSetTypePointer : UNSIGNED_INT16 - "+webcl.UNSIGNED_INT16);
+          break;
+        case webcl.UNSIGNED_INT32:
+          console.info("clSetTypePointer : UNSIGNED_INT32 - "+webcl.UNSIGNED_INT32);
+          break;
+        default:
+          console.info("clSetTypePointer : FLOAT - "+webcl.FLOAT);
+          break;
+      }
+      CL.cl_pn_type = pn_type;
+      return webcl.SUCCESS;
+    }
   function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
       // Assume the flags is i32 
       assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -7658,7 +11479,7 @@ function copyTempDouble(ptr) {
         if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
           _host_ptr = new ArrayBuffer(size);
         } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-          _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+          _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
         } else if (flags_i64_1 & ~_flags) {
           // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
           // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
@@ -7666,7 +11487,7 @@ function copyTempDouble(ptr) {
         }
         CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
         if (_host_ptr != null) {
-          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
         } else
           _buffer = CL.cl_objects[context].createBuffer(_flags,size);
       } catch (e) {
@@ -8905,6 +12726,8 @@ Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requ
   Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function() { Browser.getUserMedia() }
+GL.immediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GL.immediate.init() });
+GLEmulation.init();
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
@@ -39210,564 +43033,569 @@ function _main($argc, $argv) {
    __Z17__shrCheckErrorEXiiPFviEPKci($160, 0, 0, ((6448)|0), 278);
    var $161=(($permutations)|0);
    __ZL19computePermutationsPj($161);
-   var $162=$cxGPUContext;
-   var $163=(($permutations)|0);
-   var $164=$163;
+   var $162=_clSetTypePointer(4316);
+   var $163=$cxGPUContext;
+   var $164=(($permutations)|0);
+   var $165=$164;
    var $$etemp$1$0=36;
    var $$etemp$1$1=0;
-   var $165=_clCreateBuffer($162, $$etemp$1$0, $$etemp$1$1, 4096, $164, $ciErrNum);
-   var $166=(($cmMemObjs)|0);
-   HEAP32[(($166)>>2)]=$165;
-   var $167=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($167, 0, 0, ((6448)|0), 289);
-   var $168=$cxGPUContext;
-   var $169=HEAP32[((16136)>>2)];
-   var $170=($169<<2);
-   var $171=HEAP32[((16184)>>2)];
-   var $172=(Math.imul($170,$171)|0);
+   var $166=_clCreateBuffer($163, $$etemp$1$0, $$etemp$1$1, 4096, $165, $ciErrNum);
+   var $167=(($cmMemObjs)|0);
+   HEAP32[(($167)>>2)]=$166;
+   var $168=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($168, 0, 0, ((6448)|0), 292);
+   var $169=_clSetTypePointer(4316);
+   var $170=$cxGPUContext;
+   var $171=HEAP32[((16136)>>2)];
+   var $172=($171<<2);
+   var $173=HEAP32[((16184)>>2)];
+   var $174=(Math.imul($172,$173)|0);
    var $$etemp$2$0=4;
    var $$etemp$2$1=0;
-   var $173=_clCreateBuffer($168, $$etemp$2$0, $$etemp$2$1, $172, 0, $ciErrNum);
-   var $174=(($cmMemObjs+4)|0);
-   HEAP32[(($174)>>2)]=$173;
-   var $175=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($175, 0, 0, ((6448)|0), 294);
-   var $176=HEAP32[((16136)>>2)];
-   var $177=(((($176>>>0))/(4))&-1);
-   var $178=HEAP32[((16184)>>2)];
+   var $175=_clCreateBuffer($170, $$etemp$2$0, $$etemp$2$1, $174, 0, $ciErrNum);
+   var $176=(($cmMemObjs+4)|0);
+   HEAP32[(($176)>>2)]=$175;
+   var $177=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($177, 0, 0, ((6448)|0), 300);
+   var $178=HEAP32[((16136)>>2)];
    var $179=(((($178>>>0))/(4))&-1);
-   var $180=(Math.imul($177,$179)|0);
-   var $181=($180<<3);
-   $compressedSize=$181;
-   var $182=$cxGPUContext;
-   var $183=$compressedSize;
+   var $180=HEAP32[((16184)>>2)];
+   var $181=(((($180>>>0))/(4))&-1);
+   var $182=(Math.imul($179,$181)|0);
+   var $183=($182<<3);
+   $compressedSize=$183;
+   var $184=_clSetTypePointer(4316);
+   var $185=$cxGPUContext;
+   var $186=$compressedSize;
    var $$etemp$3$0=2;
    var $$etemp$3$1=0;
-   var $184=_clCreateBuffer($182, $$etemp$3$0, $$etemp$3$1, $183, 0, $ciErrNum);
-   var $185=(($cmMemObjs+8)|0);
-   HEAP32[(($185)>>2)]=$184;
-   var $186=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($186, 0, 0, ((6448)|0), 301);
-   var $187=$compressedSize;
-   var $188=_malloc($187);
-   var $189=$188;
-   $h_result=$189;
-   var $190=$3;
-   var $191=(($190)|0);
-   var $192=HEAP32[(($191)>>2)];
-   var $193=_shrFindFilePath(((4248)|0), $192);
-   $source_path=$193;
-   var $194=$source_path;
-   var $195=_printf(((4144)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$194,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $196=$source_path;
-   var $197=($196|0)!=0;
-   var $198=($197&1);
-   __Z17__shrCheckErrorEXiiPFviEPKci($198, 1, 0, ((6448)|0), 309);
+   var $187=_clCreateBuffer($185, $$etemp$3$0, $$etemp$3$1, $186, 0, $ciErrNum);
+   var $188=(($cmMemObjs+8)|0);
+   HEAP32[(($188)>>2)]=$187;
+   var $189=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($189, 0, 0, ((6448)|0), 310);
+   var $190=$compressedSize;
+   var $191=_malloc($190);
+   var $192=$191;
+   $h_result=$192;
+   var $193=$3;
+   var $194=(($193)|0);
+   var $195=HEAP32[(($194)>>2)];
+   var $196=_shrFindFilePath(((4248)|0), $195);
+   $source_path=$196;
+   var $197=$source_path;
+   var $198=_printf(((4144)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$197,tempVarArgs)); STACKTOP=tempVarArgs;
    var $199=$source_path;
-   var $200=_oclLoadProgSource($199, ((16216)|0), $program_length);
-   HEAP32[(($source)>>2)]=$200;
-   var $201=HEAP32[(($source)>>2)];
-   var $202=($201|0)!=0;
-   var $203=($202&1);
-   __Z17__shrCheckErrorEXiiPFviEPKci($203, 1, 0, ((6448)|0), 311);
-   var $204=$cxGPUContext;
-   var $205=_clCreateProgramWithSource($204, 1, $source, $program_length, $ciErrNum);
-   $cpProgram=$205;
-   var $206=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($206, 0, 0, ((6448)|0), 316);
-   var $207=$cpProgram;
-   var $208=_clBuildProgram($207, 0, 0, ((3872)|0), 0, 0);
-   HEAP32[(($ciErrNum)>>2)]=$208;
+   var $200=($199|0)!=0;
+   var $201=($200&1);
+   __Z17__shrCheckErrorEXiiPFviEPKci($201, 1, 0, ((6448)|0), 318);
+   var $202=$source_path;
+   var $203=_oclLoadProgSource($202, ((16216)|0), $program_length);
+   HEAP32[(($source)>>2)]=$203;
+   var $204=HEAP32[(($source)>>2)];
+   var $205=($204|0)!=0;
+   var $206=($205&1);
+   __Z17__shrCheckErrorEXiiPFviEPKci($206, 1, 0, ((6448)|0), 320);
+   var $207=$cxGPUContext;
+   var $208=_clCreateProgramWithSource($207, 1, $source, $program_length, $ciErrNum);
+   $cpProgram=$208;
    var $209=HEAP32[(($ciErrNum)>>2)];
-   var $210=($209|0)!=0;
-   if ($210) { label = 32; break; } else { label = 33; break; }
-  case 32: 
+   __Z17__shrCheckErrorEXiiPFviEPKci($209, 0, 0, ((6448)|0), 325);
+   var $210=$cpProgram;
+   var $211=_clBuildProgram($210, 0, 0, ((3872)|0), 0, 0);
+   HEAP32[(($ciErrNum)>>2)]=$211;
    var $212=HEAP32[(($ciErrNum)>>2)];
-   var $213=_shrLog(19, $212, ((3744)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=((6448)|0),HEAP32[(((tempVarArgs)+(8))>>2)]=323,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $214=$cpProgram;
-   var $215=$cxGPUContext;
-   var $216=_oclGetFirstDev($215);
-   _oclLogBuildInfo($214, $216);
+   var $213=($212|0)!=0;
+   if ($213) { label = 32; break; } else { label = 33; break; }
+  case 32: 
+   var $215=HEAP32[(($ciErrNum)>>2)];
+   var $216=_shrLog(19, $215, ((3744)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=((6448)|0),HEAP32[(((tempVarArgs)+(8))>>2)]=332,tempVarArgs)); STACKTOP=tempVarArgs;
    var $217=$cpProgram;
    var $218=$cxGPUContext;
    var $219=_oclGetFirstDev($218);
-   _oclLogPtx($217, $219, ((3592)|0));
-   var $220=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($220, 0, 0, ((6448)|0), 326);
+   _oclLogBuildInfo($217, $219);
+   var $220=$cpProgram;
+   var $221=$cxGPUContext;
+   var $222=_oclGetFirstDev($221);
+   _oclLogPtx($220, $222, ((3592)|0));
+   var $223=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($223, 0, 0, ((6448)|0), 335);
    label = 33; break;
   case 33: 
-   var $222=$cpProgram;
-   var $223=_clCreateKernel($222, ((3480)|0), $ciErrNum);
-   $ckKernel=$223;
-   var $224=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($224, 0, 0, ((6448)|0), 331);
-   var $225=$ckKernel;
-   var $226=(($cmMemObjs)|0);
-   var $227=$226;
-   var $228=_clSetKernelArg($225, 0, 4, $227);
-   HEAP32[(($ciErrNum)>>2)]=$228;
-   var $229=$ckKernel;
-   var $230=(($cmMemObjs+4)|0);
-   var $231=$230;
-   var $232=_clSetKernelArg($229, 1, 4, $231);
-   var $233=HEAP32[(($ciErrNum)>>2)];
-   var $234=$233 | $232;
-   HEAP32[(($ciErrNum)>>2)]=$234;
-   var $235=$ckKernel;
-   var $236=(($cmMemObjs+8)|0);
-   var $237=$236;
-   var $238=_clSetKernelArg($235, 2, 4, $237);
-   var $239=HEAP32[(($ciErrNum)>>2)];
-   var $240=$239 | $238;
-   HEAP32[(($ciErrNum)>>2)]=$240;
-   var $241=$ckKernel;
-   var $242=_clSetKernelArg($241, 3, 256, 0);
-   var $243=HEAP32[(($ciErrNum)>>2)];
-   var $244=$243 | $242;
-   HEAP32[(($ciErrNum)>>2)]=$244;
-   var $245=$ckKernel;
-   var $246=_clSetKernelArg($245, 4, 256, 0);
-   var $247=HEAP32[(($ciErrNum)>>2)];
-   var $248=$247 | $246;
-   HEAP32[(($ciErrNum)>>2)]=$248;
-   var $249=$ckKernel;
-   var $250=_clSetKernelArg($249, 5, 256, 0);
-   var $251=HEAP32[(($ciErrNum)>>2)];
-   var $252=$251 | $250;
-   HEAP32[(($ciErrNum)>>2)]=$252;
-   var $253=$ckKernel;
-   var $254=_clSetKernelArg($253, 6, 384, 0);
-   var $255=HEAP32[(($ciErrNum)>>2)];
-   var $256=$255 | $254;
-   HEAP32[(($ciErrNum)>>2)]=$256;
-   var $257=$ckKernel;
-   var $258=_clSetKernelArg($257, 7, 640, 0);
-   var $259=HEAP32[(($ciErrNum)>>2)];
-   var $260=$259 | $258;
-   HEAP32[(($ciErrNum)>>2)]=$260;
-   var $261=$ckKernel;
-   var $262=_clSetKernelArg($261, 8, 64, 0);
-   var $263=HEAP32[(($ciErrNum)>>2)];
-   var $264=$263 | $262;
-   HEAP32[(($ciErrNum)>>2)]=$264;
-   var $265=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($265, 0, 0, ((6448)|0), 343);
-   var $266=HEAP32[((16136)>>2)];
-   var $267=HEAP32[((16184)>>2)];
-   var $268=_shrLog(3, 0, ((3312)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$266,HEAP32[(((tempVarArgs)+(8))>>2)]=$267,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $269=$cqCommandQueue;
-   var $270=(($cmMemObjs+4)|0);
-   var $271=HEAP32[(($270)>>2)];
-   var $272=HEAP32[((16136)>>2)];
-   var $273=($272<<2);
-   var $274=HEAP32[((16184)>>2)];
-   var $275=(Math.imul($273,$274)|0);
-   var $276=$block_image;
-   var $277=$276;
-   var $278=_clEnqueueWriteBuffer($269, $271, 0, 0, $275, $277, 0, 0, 0);
-   var $279=HEAP32[((16136)>>2)];
-   var $280=HEAP32[((16184)>>2)];
-   var $281=(Math.imul($279,$280)|0);
-   var $282=($281<<2);
-   var $283=(($szGlobalWorkSize)|0);
-   HEAP32[(($283)>>2)]=$282;
-   var $284=(($szLocalWorkSize)|0);
-   HEAP32[(($284)>>2)]=64;
-   var $285=(($szGlobalWorkSize)|0);
-   var $286=HEAP32[(($285)>>2)];
-   var $287=(($szLocalWorkSize)|0);
-   var $288=HEAP32[(($287)>>2)];
-   var $289=_printf(((3184)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$286,HEAP32[(((tempVarArgs)+(8))>>2)]=$288,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $225=$cpProgram;
+   var $226=_clCreateKernel($225, ((3480)|0), $ciErrNum);
+   $ckKernel=$226;
+   var $227=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($227, 0, 0, ((6448)|0), 340);
+   var $228=$ckKernel;
+   var $229=(($cmMemObjs)|0);
+   var $230=$229;
+   var $231=_clSetKernelArg($228, 0, 4, $230);
+   HEAP32[(($ciErrNum)>>2)]=$231;
+   var $232=$ckKernel;
+   var $233=(($cmMemObjs+4)|0);
+   var $234=$233;
+   var $235=_clSetKernelArg($232, 1, 4, $234);
+   var $236=HEAP32[(($ciErrNum)>>2)];
+   var $237=$236 | $235;
+   HEAP32[(($ciErrNum)>>2)]=$237;
+   var $238=$ckKernel;
+   var $239=(($cmMemObjs+8)|0);
+   var $240=$239;
+   var $241=_clSetKernelArg($238, 2, 4, $240);
+   var $242=HEAP32[(($ciErrNum)>>2)];
+   var $243=$242 | $241;
+   HEAP32[(($ciErrNum)>>2)]=$243;
+   var $244=$ckKernel;
+   var $245=_clSetKernelArg($244, 3, 256, 0);
+   var $246=HEAP32[(($ciErrNum)>>2)];
+   var $247=$246 | $245;
+   HEAP32[(($ciErrNum)>>2)]=$247;
+   var $248=$ckKernel;
+   var $249=_clSetKernelArg($248, 4, 256, 0);
+   var $250=HEAP32[(($ciErrNum)>>2)];
+   var $251=$250 | $249;
+   HEAP32[(($ciErrNum)>>2)]=$251;
+   var $252=$ckKernel;
+   var $253=_clSetKernelArg($252, 5, 256, 0);
+   var $254=HEAP32[(($ciErrNum)>>2)];
+   var $255=$254 | $253;
+   HEAP32[(($ciErrNum)>>2)]=$255;
+   var $256=$ckKernel;
+   var $257=_clSetKernelArg($256, 6, 384, 0);
+   var $258=HEAP32[(($ciErrNum)>>2)];
+   var $259=$258 | $257;
+   HEAP32[(($ciErrNum)>>2)]=$259;
+   var $260=$ckKernel;
+   var $261=_clSetKernelArg($260, 7, 640, 0);
+   var $262=HEAP32[(($ciErrNum)>>2)];
+   var $263=$262 | $261;
+   HEAP32[(($ciErrNum)>>2)]=$263;
+   var $264=$ckKernel;
+   var $265=_clSetKernelArg($264, 8, 64, 0);
+   var $266=HEAP32[(($ciErrNum)>>2)];
+   var $267=$266 | $265;
+   HEAP32[(($ciErrNum)>>2)]=$267;
+   var $268=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($268, 0, 0, ((6448)|0), 352);
+   var $269=HEAP32[((16136)>>2)];
+   var $270=HEAP32[((16184)>>2)];
+   var $271=_shrLog(3, 0, ((3312)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$269,HEAP32[(((tempVarArgs)+(8))>>2)]=$270,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $272=_clSetTypePointer(4316);
+   var $273=$cqCommandQueue;
+   var $274=(($cmMemObjs+4)|0);
+   var $275=HEAP32[(($274)>>2)];
+   var $276=HEAP32[((16136)>>2)];
+   var $277=($276<<2);
+   var $278=HEAP32[((16184)>>2)];
+   var $279=(Math.imul($277,$278)|0);
+   var $280=$block_image;
+   var $281=$280;
+   var $282=_clEnqueueWriteBuffer($273, $275, 0, 0, $279, $281, 0, 0, 0);
+   var $283=HEAP32[((16136)>>2)];
+   var $284=HEAP32[((16184)>>2)];
+   var $285=(Math.imul($283,$284)|0);
+   var $286=($285<<2);
+   var $287=(($szGlobalWorkSize)|0);
+   HEAP32[(($287)>>2)]=$286;
+   var $288=(($szLocalWorkSize)|0);
+   HEAP32[(($288)>>2)]=64;
+   var $289=(($szGlobalWorkSize)|0);
+   var $290=HEAP32[(($289)>>2)];
+   var $291=(($szLocalWorkSize)|0);
+   var $292=HEAP32[(($291)>>2)];
+   var $293=_printf(((3184)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$290,HEAP32[(((tempVarArgs)+(8))>>2)]=$292,tempVarArgs)); STACKTOP=tempVarArgs;
    $numIterations=100;
    $i2=-1;
    label = 34; break;
   case 34: 
-   var $291=$i2;
-   var $292=$numIterations;
-   var $293=($291|0) < ($292|0);
-   if ($293) { label = 35; break; } else { label = 39; break; }
-  case 35: 
    var $295=$i2;
-   var $296=($295|0)==0;
-   if ($296) { label = 36; break; } else { label = 37; break; }
+   var $296=$numIterations;
+   var $297=($295|0) < ($296|0);
+   if ($297) { label = 35; break; } else { label = 39; break; }
+  case 35: 
+   var $299=$i2;
+   var $300=($299|0)==0;
+   if ($300) { label = 36; break; } else { label = 37; break; }
   case 36: 
-   var $298=$cqCommandQueue;
-   var $299=_clFinish($298);
-   var $300=_shrDeltaT(0);
+   var $302=$cqCommandQueue;
+   var $303=_clFinish($302);
+   var $304=_shrDeltaT(0);
    label = 37; break;
   case 37: 
-   var $302=$cqCommandQueue;
-   var $303=$ckKernel;
-   var $304=(($szGlobalWorkSize)|0);
-   var $305=(($szLocalWorkSize)|0);
-   var $306=_clEnqueueNDRangeKernel($302, $303, 1, 0, $304, $305, 0, 0, 0);
-   HEAP32[(($ciErrNum)>>2)]=$306;
-   var $307=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($307, 0, 0, ((6448)|0), 368);
+   var $306=$cqCommandQueue;
+   var $307=$ckKernel;
+   var $308=(($szGlobalWorkSize)|0);
+   var $309=(($szLocalWorkSize)|0);
+   var $310=_clEnqueueNDRangeKernel($306, $307, 1, 0, $308, $309, 0, 0, 0);
+   HEAP32[(($ciErrNum)>>2)]=$310;
+   var $311=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($311, 0, 0, ((6448)|0), 380);
    label = 38; break;
   case 38: 
-   var $309=$i2;
-   var $310=((($309)+(1))|0);
-   $i2=$310;
+   var $313=$i2;
+   var $314=((($313)+(1))|0);
+   $i2=$314;
    label = 34; break;
   case 39: 
-   var $312=$cqCommandQueue;
-   var $313=_clFinish($312);
-   var $314=_shrDeltaT(0);
-   var $315=$numIterations;
-   var $316=($315|0);
-   var $317=($314)/($316);
-   $dAvgTime=$317;
-   var $318=HEAP32[((16136)>>2)];
-   var $319=HEAP32[((16184)>>2)];
-   var $320=(Math.imul($318,$319)|0);
-   var $321=($320>>>0);
-   var $322=((0.000001))*($321);
-   var $323=$dAvgTime;
-   var $324=($322)/($323);
-   var $325=$dAvgTime;
-   var $326=HEAP32[((16136)>>2)];
-   var $327=HEAP32[((16184)>>2)];
-   var $328=(Math.imul($326,$327)|0);
-   var $329=_shrLog(11, 0, ((2944)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$324,HEAPF64[(((tempVarArgs)+(8))>>3)]=$325,HEAP32[(((tempVarArgs)+(16))>>2)]=$328,HEAP32[(((tempVarArgs)+(24))>>2)]=1,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $330=$cqCommandQueue;
-   var $331=(($cmMemObjs+8)|0);
-   var $332=HEAP32[(($331)>>2)];
-   var $333=$compressedSize;
-   var $334=$h_result;
-   var $335=$334;
-   var $336=_clEnqueueReadBuffer($330, $332, 1, 0, $333, $335, 0, 0, 0);
-   HEAP32[(($ciErrNum)>>2)]=$336;
-   var $337=HEAP32[(($ciErrNum)>>2)];
-   __Z17__shrCheckErrorEXiiPFviEPKci($337, 0, 0, ((6448)|0), 381);
+   var $316=$cqCommandQueue;
+   var $317=_clFinish($316);
+   var $318=_shrDeltaT(0);
+   var $319=$numIterations;
+   var $320=($319|0);
+   var $321=($318)/($320);
+   $dAvgTime=$321;
+   var $322=HEAP32[((16136)>>2)];
+   var $323=HEAP32[((16184)>>2)];
+   var $324=(Math.imul($322,$323)|0);
+   var $325=($324>>>0);
+   var $326=((0.000001))*($325);
+   var $327=$dAvgTime;
+   var $328=($326)/($327);
+   var $329=$dAvgTime;
+   var $330=HEAP32[((16136)>>2)];
+   var $331=HEAP32[((16184)>>2)];
+   var $332=(Math.imul($330,$331)|0);
+   var $333=_shrLog(11, 0, ((2944)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$328,HEAPF64[(((tempVarArgs)+(8))>>3)]=$329,HEAP32[(((tempVarArgs)+(16))>>2)]=$332,HEAP32[(((tempVarArgs)+(24))>>2)]=1,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $334=_clSetTypePointer(4316);
+   var $335=$cqCommandQueue;
+   var $336=(($cmMemObjs+8)|0);
+   var $337=HEAP32[(($336)>>2)];
+   var $338=$compressedSize;
+   var $339=$h_result;
+   var $340=$339;
+   var $341=_clEnqueueReadBuffer($335, $337, 1, 0, $338, $340, 0, 0, 0);
+   HEAP32[(($ciErrNum)>>2)]=$341;
+   var $342=HEAP32[(($ciErrNum)>>2)];
+   __Z17__shrCheckErrorEXiiPFviEPKci($342, 0, 0, ((6448)|0), 396);
    $fp=0;
-   var $338=(($output_filename)|0);
-   var $339=$image_path;
-   var $340=_strcpy($338, $339);
-   var $341=(($output_filename)|0);
-   var $342=$image_path;
-   var $343=_strlen($342);
-   var $344=(($341+$343)|0);
-   var $345=((($344)-(3))|0);
-   var $346=_strcpy($345, ((2880)|0));
-   var $347=(($output_filename)|0);
-   var $348=_fopen($347, ((2752)|0));
-   $fp=$348;
-   var $349=$fp;
-   var $350=($349|0)!=0;
-   var $351=($350&1);
-   __Z17__shrCheckErrorEXiiPFviEPKci($351, 1, 0, ((6448)|0), 395);
-   var $352=(($header)|0);
-   HEAP32[(($352)>>2)]=542327876;
-   var $353=(($header+4)|0);
-   HEAP32[(($353)>>2)]=124;
-   var $354=(($header+8)|0);
-   HEAP32[(($354)>>2)]=528391;
-   var $355=HEAP32[((16184)>>2)];
-   var $356=(($header+12)|0);
-   HEAP32[(($356)>>2)]=$355;
-   var $357=HEAP32[((16136)>>2)];
-   var $358=(($header+16)|0);
-   HEAP32[(($358)>>2)]=$357;
-   var $359=$compressedSize;
-   var $360=(($header+20)|0);
-   HEAP32[(($360)>>2)]=$359;
-   var $361=(($header+24)|0);
-   HEAP32[(($361)>>2)]=0;
-   var $362=(($header+28)|0);
-   HEAP32[(($362)>>2)]=0;
-   var $363=(($header+32)|0);
-   var $364=$363;
-   _memset($364, 0, 44);
-   var $365=(($header+76)|0);
-   var $366=(($365)|0);
-   HEAP32[(($366)>>2)]=32;
-   var $367=(($header+76)|0);
-   var $368=(($367+4)|0);
-   HEAP32[(($368)>>2)]=4;
-   var $369=(($header+76)|0);
-   var $370=(($369+8)|0);
-   HEAP32[(($370)>>2)]=827611204;
-   var $371=(($header+76)|0);
-   var $372=(($371+12)|0);
-   HEAP32[(($372)>>2)]=0;
-   var $373=(($header+76)|0);
-   var $374=(($373+16)|0);
-   HEAP32[(($374)>>2)]=0;
-   var $375=(($header+76)|0);
-   var $376=(($375+20)|0);
-   HEAP32[(($376)>>2)]=0;
-   var $377=(($header+76)|0);
-   var $378=(($377+24)|0);
-   HEAP32[(($378)>>2)]=0;
-   var $379=(($header+76)|0);
-   var $380=(($379+28)|0);
-   HEAP32[(($380)>>2)]=0;
-   var $381=(($header+108)|0);
-   var $382=(($381)|0);
-   HEAP32[(($382)>>2)]=4096;
-   var $383=(($header+108)|0);
-   var $384=(($383+4)|0);
-   HEAP32[(($384)>>2)]=0;
-   var $385=(($header+108)|0);
-   var $386=(($385+8)|0);
-   HEAP32[(($386)>>2)]=0;
-   var $387=(($header+108)|0);
-   var $388=(($387+12)|0);
-   HEAP32[(($388)>>2)]=0;
-   var $389=(($header+124)|0);
+   var $343=(($output_filename)|0);
+   var $344=$image_path;
+   var $345=_strcpy($343, $344);
+   var $346=(($output_filename)|0);
+   var $347=$image_path;
+   var $348=_strlen($347);
+   var $349=(($346+$348)|0);
+   var $350=((($349)-(3))|0);
+   var $351=_strcpy($350, ((2880)|0));
+   var $352=(($output_filename)|0);
+   var $353=_fopen($352, ((2752)|0));
+   $fp=$353;
+   var $354=$fp;
+   var $355=($354|0)!=0;
+   var $356=($355&1);
+   __Z17__shrCheckErrorEXiiPFviEPKci($356, 1, 0, ((6448)|0), 410);
+   var $357=(($header)|0);
+   HEAP32[(($357)>>2)]=542327876;
+   var $358=(($header+4)|0);
+   HEAP32[(($358)>>2)]=124;
+   var $359=(($header+8)|0);
+   HEAP32[(($359)>>2)]=528391;
+   var $360=HEAP32[((16184)>>2)];
+   var $361=(($header+12)|0);
+   HEAP32[(($361)>>2)]=$360;
+   var $362=HEAP32[((16136)>>2)];
+   var $363=(($header+16)|0);
+   HEAP32[(($363)>>2)]=$362;
+   var $364=$compressedSize;
+   var $365=(($header+20)|0);
+   HEAP32[(($365)>>2)]=$364;
+   var $366=(($header+24)|0);
+   HEAP32[(($366)>>2)]=0;
+   var $367=(($header+28)|0);
+   HEAP32[(($367)>>2)]=0;
+   var $368=(($header+32)|0);
+   var $369=$368;
+   _memset($369, 0, 44);
+   var $370=(($header+76)|0);
+   var $371=(($370)|0);
+   HEAP32[(($371)>>2)]=32;
+   var $372=(($header+76)|0);
+   var $373=(($372+4)|0);
+   HEAP32[(($373)>>2)]=4;
+   var $374=(($header+76)|0);
+   var $375=(($374+8)|0);
+   HEAP32[(($375)>>2)]=827611204;
+   var $376=(($header+76)|0);
+   var $377=(($376+12)|0);
+   HEAP32[(($377)>>2)]=0;
+   var $378=(($header+76)|0);
+   var $379=(($378+16)|0);
+   HEAP32[(($379)>>2)]=0;
+   var $380=(($header+76)|0);
+   var $381=(($380+20)|0);
+   HEAP32[(($381)>>2)]=0;
+   var $382=(($header+76)|0);
+   var $383=(($382+24)|0);
+   HEAP32[(($383)>>2)]=0;
+   var $384=(($header+76)|0);
+   var $385=(($384+28)|0);
+   HEAP32[(($385)>>2)]=0;
+   var $386=(($header+108)|0);
+   var $387=(($386)|0);
+   HEAP32[(($387)>>2)]=4096;
+   var $388=(($header+108)|0);
+   var $389=(($388+4)|0);
    HEAP32[(($389)>>2)]=0;
-   var $390=$header;
-   var $391=$fp;
-   var $392=_fwrite($390, 128, 1, $391);
-   var $393=$h_result;
-   var $394=$393;
-   var $395=$compressedSize;
+   var $390=(($header+108)|0);
+   var $391=(($390+8)|0);
+   HEAP32[(($391)>>2)]=0;
+   var $392=(($header+108)|0);
+   var $393=(($392+12)|0);
+   HEAP32[(($393)>>2)]=0;
+   var $394=(($header+124)|0);
+   HEAP32[(($394)>>2)]=0;
+   var $395=$header;
    var $396=$fp;
-   var $397=_fwrite($394, $395, 1, $396);
-   var $398=$fp;
-   var $399=_fclose($398);
-   var $400=(($cmMemObjs)|0);
-   _oclDeleteMemObjs($400, 3);
-   var $401=$ckKernel;
-   var $402=_clReleaseKernel($401);
-   var $403=$cpProgram;
-   var $404=_clReleaseProgram($403);
-   var $405=$cqCommandQueue;
-   var $406=_clReleaseCommandQueue($405);
-   var $407=$cxGPUContext;
-   var $408=_clReleaseContext($407);
-   var $409=$use_worker;
-   var $410=($409|0)!=0;
-   if ($410) { label = 40; break; } else { label = 45; break; }
+   var $397=_fwrite($395, 128, 1, $396);
+   var $398=$h_result;
+   var $399=$398;
+   var $400=$compressedSize;
+   var $401=$fp;
+   var $402=_fwrite($399, $400, 1, $401);
+   var $403=$fp;
+   var $404=_fclose($403);
+   var $405=(($cmMemObjs)|0);
+   _oclDeleteMemObjs($405, 3);
+   var $406=$ckKernel;
+   var $407=_clReleaseKernel($406);
+   var $408=$cpProgram;
+   var $409=_clReleaseProgram($408);
+   var $410=$cqCommandQueue;
+   var $411=_clReleaseCommandQueue($410);
+   var $412=$cxGPUContext;
+   var $413=_clReleaseContext($412);
+   var $414=$use_worker;
+   var $415=($414|0)!=0;
+   if ($415) { label = 40; break; } else { label = 45; break; }
   case 40: 
    __Z11showtexturei(128);
-   var $412=(($check_data)|0);
-   HEAP32[(($412)>>2)]=128;
-   var $413=HEAP32[((16136)>>2)];
-   var $414=(($check_data+4)|0);
-   HEAP32[(($414)>>2)]=$413;
-   var $415=HEAP32[((16184)>>2)];
-   var $416=(($check_data+8)|0);
-   HEAP32[(($416)>>2)]=$415;
+   var $417=(($check_data)|0);
+   HEAP32[(($417)>>2)]=128;
+   var $418=HEAP32[((16136)>>2)];
+   var $419=(($check_data+4)|0);
+   HEAP32[(($419)>>2)]=$418;
+   var $420=HEAP32[((16184)>>2)];
+   var $421=(($check_data+8)|0);
+   HEAP32[(($421)>>2)]=$420;
    $fp=0;
-   var $417=_fopen(((5632)|0), ((5512)|0));
-   $fp=$417;
+   var $422=_fopen(((5632)|0), ((5512)|0));
+   $fp=$422;
    $referenceSize=0;
    $reference=0;
-   var $418=$fp;
-   var $419=($418|0)!=0;
-   if ($419) { label = 41; break; } else { label = 42; break; }
+   var $423=$fp;
+   var $424=($423|0)!=0;
+   if ($424) { label = 41; break; } else { label = 42; break; }
   case 41: 
-   var $421=$fp;
-   var $422=_fseek($421, 128, 0);
-   var $423=HEAP32[((16136)>>2)];
-   var $424=(((($423>>>0))/(4))&-1);
-   var $425=HEAP32[((16184)>>2)];
-   var $426=(((($425>>>0))/(4))&-1);
-   var $427=(Math.imul($424,$426)|0);
-   var $428=($427<<3);
-   $referenceSize=$428;
-   var $429=(($check_data+16)|0);
-   var $430=(($429)|0);
-   var $431=$430;
-   var $432=$referenceSize;
-   var $433=$fp;
-   var $434=_fread($431, $432, 1, $433);
-   var $435=$fp;
-   var $436=_fclose($435);
+   var $426=$fp;
+   var $427=_fseek($426, 128, 0);
+   var $428=HEAP32[((16136)>>2)];
+   var $429=(((($428>>>0))/(4))&-1);
+   var $430=HEAP32[((16184)>>2)];
+   var $431=(((($430>>>0))/(4))&-1);
+   var $432=(Math.imul($429,$431)|0);
+   var $433=($432<<3);
+   $referenceSize=$433;
+   var $434=(($check_data+16)|0);
+   var $435=(($434)|0);
+   var $436=$435;
+   var $437=$referenceSize;
+   var $438=$fp;
+   var $439=_fread($436, $437, 1, $438);
+   var $440=$fp;
+   var $441=_fclose($440);
    label = 42; break;
   case 42: 
    $fp=0;
-   var $438=_fopen(((5120)|0), ((5512)|0));
-   $fp=$438;
+   var $443=_fopen(((5120)|0), ((5512)|0));
+   $fp=$443;
    $generatedSize=0;
    $generated=0;
-   var $439=$fp;
-   var $440=($439|0)!=0;
-   if ($440) { label = 43; break; } else { label = 44; break; }
+   var $444=$fp;
+   var $445=($444|0)!=0;
+   if ($445) { label = 43; break; } else { label = 44; break; }
   case 43: 
-   var $442=$fp;
-   var $443=_fseek($442, 128, 0);
-   var $444=HEAP32[((16136)>>2)];
-   var $445=(((($444>>>0))/(4))&-1);
-   var $446=HEAP32[((16184)>>2)];
-   var $447=(((($446>>>0))/(4))&-1);
-   var $448=(Math.imul($445,$447)|0);
-   var $449=($448<<3);
-   $generatedSize=$449;
-   var $450=(($check_data+524308)|0);
-   var $451=(($450)|0);
-   var $452=$451;
-   var $453=$generatedSize;
-   var $454=$fp;
-   var $455=_fread($452, $453, 1, $454);
-   var $456=$fp;
-   var $457=_fclose($456);
+   var $447=$fp;
+   var $448=_fseek($447, 128, 0);
+   var $449=HEAP32[((16136)>>2)];
+   var $450=(((($449>>>0))/(4))&-1);
+   var $451=HEAP32[((16184)>>2)];
+   var $452=(((($451>>>0))/(4))&-1);
+   var $453=(Math.imul($450,$452)|0);
+   var $454=($453<<3);
+   $generatedSize=$454;
+   var $455=(($check_data+524308)|0);
+   var $456=(($455)|0);
+   var $457=$456;
+   var $458=$generatedSize;
+   var $459=$fp;
+   var $460=_fread($457, $458, 1, $459);
+   var $461=$fp;
+   var $462=_fclose($461);
    label = 44; break;
   case 44: 
-   var $459=$referenceSize;
-   var $460=(($check_data+12)|0);
-   HEAP32[(($460)>>2)]=$459;
-   var $461=$generatedSize;
-   var $462=(($check_data+524304)|0);
-   HEAP32[(($462)>>2)]=$461;
-   var $463=_emscripten_create_worker(((2656)|0));
-   HEAP32[((16200)>>2)]=$463;
-   var $464=_shrLog(3, 0, ((2544)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $465=HEAP32[((16200)>>2)];
-   var $466=$check_data;
-   _emscripten_call_worker($465, ((2496)|0), $466, 1048856, 444, 0);
+   var $464=$referenceSize;
+   var $465=(($check_data+12)|0);
+   HEAP32[(($465)>>2)]=$464;
+   var $466=$generatedSize;
+   var $467=(($check_data+524304)|0);
+   HEAP32[(($467)>>2)]=$466;
+   var $468=_emscripten_create_worker(((2656)|0));
+   HEAP32[((16200)>>2)]=$468;
+   var $469=_shrLog(3, 0, ((2544)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $470=HEAP32[((16200)>>2)];
+   var $471=$check_data;
+   _emscripten_call_worker($470, ((2496)|0), $471, 1048856, 444, 0);
    $1=0;
    label = 56; break;
   case 45: 
    __Z11showtexturei(128);
-   var $468=_shrLog(3, 0, ((2360)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $469=HEAP32[((8)>>2)];
-   var $470=$3;
-   var $471=(($470)|0);
-   var $472=HEAP32[(($471)>>2)];
-   var $473=_shrFindFilePath($469, $472);
-   $reference_image_path=$473;
-   var $474=$reference_image_path;
-   var $475=($474|0)!=0;
-   var $476=($475&1);
-   __Z17__shrCheckErrorEXiiPFviEPKci($476, 1, 0, ((6448)|0), 505);
-   var $477=$reference_image_path;
-   var $478=_fopen($477, ((5512)|0));
-   $fp=$478;
-   var $479=$fp;
+   var $473=_shrLog(3, 0, ((2360)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $474=HEAP32[((8)>>2)];
+   var $475=$3;
+   var $476=(($475)|0);
+   var $477=HEAP32[(($476)>>2)];
+   var $478=_shrFindFilePath($474, $477);
+   $reference_image_path=$478;
+   var $479=$reference_image_path;
    var $480=($479|0)!=0;
    var $481=($480&1);
-   __Z17__shrCheckErrorEXiiPFviEPKci($481, 1, 0, ((6448)|0), 513);
-   var $482=$fp;
-   var $483=_fseek($482, 128, 0);
-   var $484=HEAP32[((16136)>>2)];
-   var $485=(((($484>>>0))/(4))&-1);
-   var $486=HEAP32[((16184)>>2)];
-   var $487=(((($486>>>0))/(4))&-1);
-   var $488=(Math.imul($485,$487)|0);
-   var $489=($488<<3);
-   $referenceSize3=$489;
-   var $490=$referenceSize3;
-   var $491=_malloc($490);
-   var $492=$491;
-   $reference4=$492;
-   var $493=$reference4;
-   var $494=$493;
+   __Z17__shrCheckErrorEXiiPFviEPKci($481, 1, 0, ((6448)|0), 520);
+   var $482=$reference_image_path;
+   var $483=_fopen($482, ((5512)|0));
+   $fp=$483;
+   var $484=$fp;
+   var $485=($484|0)!=0;
+   var $486=($485&1);
+   __Z17__shrCheckErrorEXiiPFviEPKci($486, 1, 0, ((6448)|0), 528);
+   var $487=$fp;
+   var $488=_fseek($487, 128, 0);
+   var $489=HEAP32[((16136)>>2)];
+   var $490=(((($489>>>0))/(4))&-1);
+   var $491=HEAP32[((16184)>>2)];
+   var $492=(((($491>>>0))/(4))&-1);
+   var $493=(Math.imul($490,$492)|0);
+   var $494=($493<<3);
+   $referenceSize3=$494;
    var $495=$referenceSize3;
-   var $496=$fp;
-   var $497=_fread($494, $495, 1, $496);
-   var $498=$fp;
-   var $499=_fclose($498);
+   var $496=_malloc($495);
+   var $497=$496;
+   $reference4=$497;
+   var $498=$reference4;
+   var $499=$498;
    var $500=$referenceSize3;
-   var $501=_printf(((2296)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$500,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $501=$fp;
+   var $502=_fread($499, $500, 1, $501);
+   var $503=$fp;
+   var $504=_fclose($503);
+   var $505=$referenceSize3;
+   var $506=_printf(((2296)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$505,tempVarArgs)); STACKTOP=tempVarArgs;
    $rms=0;
    $y5=0;
    label = 46; break;
   case 46: 
-   var $503=$y5;
-   var $504=HEAP32[((16184)>>2)];
-   var $505=($503>>>0) < ($504>>>0);
-   if ($505) { label = 47; break; } else { label = 55; break; }
+   var $508=$y5;
+   var $509=HEAP32[((16184)>>2)];
+   var $510=($508>>>0) < ($509>>>0);
+   if ($510) { label = 47; break; } else { label = 55; break; }
   case 47: 
    $x6=0;
    label = 48; break;
   case 48: 
-   var $508=$x6;
-   var $509=HEAP32[((16136)>>2)];
-   var $510=($508>>>0) < ($509>>>0);
-   if ($510) { label = 49; break; } else { label = 53; break; }
-  case 49: 
-   var $512=$y5;
-   var $513=(((($512>>>0))/(4))&-1);
+   var $513=$x6;
    var $514=HEAP32[((16136)>>2)];
-   var $515=(((($514>>>0))/(4))&-1);
-   var $516=(Math.imul($513,$515)|0);
-   var $517=$x6;
+   var $515=($513>>>0) < ($514>>>0);
+   if ($515) { label = 49; break; } else { label = 53; break; }
+  case 49: 
+   var $517=$y5;
    var $518=(((($517>>>0))/(4))&-1);
-   var $519=((($516)+($518))|0);
-   $referenceBlockIdx=$519;
-   var $520=$y5;
-   var $521=(((($520>>>0))/(4))&-1);
-   var $522=HEAP32[((16136)>>2)];
+   var $519=HEAP32[((16136)>>2)];
+   var $520=(((($519>>>0))/(4))&-1);
+   var $521=(Math.imul($518,$520)|0);
+   var $522=$x6;
    var $523=(((($522>>>0))/(4))&-1);
-   var $524=(Math.imul($521,$523)|0);
-   var $525=$x6;
+   var $524=((($521)+($523))|0);
+   $referenceBlockIdx=$524;
+   var $525=$y5;
    var $526=(((($525>>>0))/(4))&-1);
-   var $527=((($524)+($526))|0);
-   $resultBlockIdx=$527;
-   var $528=$h_result;
-   var $529=$528;
-   var $530=$resultBlockIdx;
-   var $531=(($529+($530<<3))|0);
-   var $532=$reference4;
-   var $533=$532;
-   var $534=$referenceBlockIdx;
-   var $535=(($533+($534<<3))|0);
-   var $536=__Z12compareBlockPK9BlockDXT1S1_($531, $535);
-   $cmp=$536;
-   var $537=$cmp;
-   var $538=($537|0);
-   var $539=$538 != 0;
-   if ($539) { label = 50; break; } else { label = 51; break; }
+   var $527=HEAP32[((16136)>>2)];
+   var $528=(((($527>>>0))/(4))&-1);
+   var $529=(Math.imul($526,$528)|0);
+   var $530=$x6;
+   var $531=(((($530>>>0))/(4))&-1);
+   var $532=((($529)+($531))|0);
+   $resultBlockIdx=$532;
+   var $533=$h_result;
+   var $534=$533;
+   var $535=$resultBlockIdx;
+   var $536=(($534+($535<<3))|0);
+   var $537=$reference4;
+   var $538=$537;
+   var $539=$referenceBlockIdx;
+   var $540=(($538+($539<<3))|0);
+   var $541=__Z12compareBlockPK9BlockDXT1S1_($536, $540);
+   $cmp=$541;
+   var $542=$cmp;
+   var $543=($542|0);
+   var $544=$543 != 0;
+   if ($544) { label = 50; break; } else { label = 51; break; }
   case 50: 
-   var $541=$h_result;
-   var $542=$541;
-   var $543=$resultBlockIdx;
-   var $544=(($542+($543<<3))|0);
-   var $545=$reference4;
-   var $546=$545;
-   var $547=$referenceBlockIdx;
-   var $548=(($546+($547<<3))|0);
-   var $549=__Z12compareBlockPK9BlockDXT1S1_($544, $548);
+   var $546=$h_result;
+   var $547=$546;
+   var $548=$resultBlockIdx;
+   var $549=(($547+($548<<3))|0);
+   var $550=$reference4;
+   var $551=$550;
+   var $552=$referenceBlockIdx;
+   var $553=(($551+($552<<3))|0);
+   var $554=__Z12compareBlockPK9BlockDXT1S1_($549, $553);
    label = 51; break;
   case 51: 
-   var $551=$cmp;
-   var $552=($551|0);
-   var $553=$rms;
-   var $554=($553)+($552);
-   $rms=$554;
+   var $556=$cmp;
+   var $557=($556|0);
+   var $558=$rms;
+   var $559=($558)+($557);
+   $rms=$559;
    label = 52; break;
   case 52: 
-   var $556=$x6;
-   var $557=((($556)+(4))|0);
-   $x6=$557;
+   var $561=$x6;
+   var $562=((($561)+(4))|0);
+   $x6=$562;
    label = 48; break;
   case 53: 
    label = 54; break;
   case 54: 
-   var $560=$y5;
-   var $561=((($560)+(4))|0);
-   $y5=$561;
+   var $565=$y5;
+   var $566=((($565)+(4))|0);
+   $y5=$566;
    label = 46; break;
   case 55: 
-   var $563=HEAP32[((16136)>>2)];
-   var $564=HEAP32[((16184)>>2)];
-   var $565=(Math.imul($563,$564)|0);
-   var $566=((($565)*(3))&-1);
-   var $567=($566>>>0);
-   var $568=$rms;
-   var $569=($568)/($567);
-   $rms=$569;
-   var $570=$rms;
-   var $571=$570;
-   var $572=_shrLog(3, 0, ((4688)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$571,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $568=HEAP32[((16136)>>2)];
+   var $569=HEAP32[((16184)>>2)];
+   var $570=(Math.imul($568,$569)|0);
+   var $571=((($570)*(3))&-1);
+   var $572=($571>>>0);
    var $573=$rms;
-   var $574=$573 <= (0.019999999552965164);
-   var $575=$574 ? (((2488)|0)) : (((1888)|0));
-   var $576=_shrLog(3, 0, ((3688)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$575,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $577=HEAP32[(($source)>>2)];
-   _free($577);
-   var $578=HEAP32[((16192)>>2)];
-   var $579=$578;
-   _free($579);
+   var $574=($573)/($572);
+   $rms=$574;
+   var $575=$rms;
+   var $576=$575;
+   var $577=_shrLog(3, 0, ((4688)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$576,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $578=$rms;
+   var $579=$578 <= (0.019999999552965164);
+   var $580=$579 ? (((2488)|0)) : (((1888)|0));
+   var $581=_shrLog(3, 0, ((3688)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$580,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $582=HEAP32[(($source)>>2)];
+   _free($582);
+   var $583=HEAP32[((16192)>>2)];
+   var $584=$583;
+   _free($584);
    $1=0;
    label = 56; break;
   case 56: 
-   var $581=$1;
+   var $586=$1;
    STACKTOP = sp;
-   return $581;
+   return $586;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -91323,7 +95151,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '279564d2-dfc2-4f16-9503-4ba2100b696e';
+    var PACKAGE_UUID = '40f43483-a863-4458-bd4e-889ceac0eac7';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

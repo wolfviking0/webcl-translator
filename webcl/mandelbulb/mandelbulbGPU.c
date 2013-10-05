@@ -55,6 +55,30 @@ static cl_kernel kernel;
 static unsigned int workGroupSize = 1;
 static char *kernelFileName = "mandelbulb_kernel.cl";
 
+#ifdef __EMSCRIPTEN__
+void print_stack() {
+    printf("\n___________________________________\n");
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
+#endif
+
+static int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
+}
+
 static void FreeBuffers() {
 	cl_int status = clReleaseMemObject(pixelBuffer);
 	if (status != CL_SUCCESS) {
@@ -77,6 +101,9 @@ static void AllocateBuffers() {
 
 	cl_int status;
 	cl_uint sizeBytes = 3 * sizeof(float) * pixelCount;
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);
+	#endif
     pixelBuffer = clCreateBuffer(
             context,
             CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -89,6 +116,9 @@ static void AllocateBuffers() {
     }
 
 	sizeBytes = sizeof(RenderingConfig);
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);
+	#endif
 	configBuffer = clCreateBuffer(
 			context,
 			CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -289,7 +319,7 @@ static void SetUpOpenCL() {
 				NULL);
 		if (status != CL_SUCCESS) {
 			fprintf(stderr, "Failed to get OpenCL device info: %d\n", status);
-			exit(-1);
+			//exit(-1);
 		}
 
 		fprintf(stderr, "OpenCL Device %d: Name = %s\n", i, buf);
@@ -351,7 +381,11 @@ static void SetUpOpenCL() {
 		exit(-1);
     }
 
+#ifdef __EMSCRIPTEN__
+	status = clBuildProgram(program, 1, devices, "", NULL, NULL);
+#else
 	status = clBuildProgram(program, 1, devices, "-I.", NULL, NULL);
+#endif		
 	if (status != CL_SUCCESS) {
 		fprintf(stderr, "Failed to build OpenCL kernel: %d\n", status);
 
@@ -586,6 +620,9 @@ void UpdateRendering() {
 
 	/* Enqueue readBuffer */
 	cl_event event;
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);
+	#endif
 	status = clEnqueueReadBuffer(
 			commandQueue,
 			pixelBuffer,
@@ -640,6 +677,9 @@ void ReInit(const int reallocBuffers) {
 
 		/* Enqueue writeBuffer */
 		cl_event event;
+		#ifdef __EMSCRIPTEN__
+			clSetTypePointer(CL_FLOAT);
+		#endif
 		cl_int status = clEnqueueWriteBuffer(
 				commandQueue,
 				configBuffer,
@@ -670,6 +710,10 @@ void ReInit(const int reallocBuffers) {
 }
 
 int main(int argc, char *argv[]) {
+
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile qjulia webcl");
+    #endif
 
     // Parse command line options
     //

@@ -284,11 +284,17 @@ int main(const int argc, const char** argv)
     computePermutations(permutations);
 
     // Upload permutations.
+#ifdef __EMSCRIPTEN__
+    clSetTypePointer(CL_UNSIGNED_INT32);
+#endif    
     cmMemObjs[0] = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                   sizeof(cl_uint) * 1024, permutations, &ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
 
     // Image
+#ifdef __EMSCRIPTEN__
+    clSetTypePointer(CL_UNSIGNED_INT32);
+#endif        
     cmMemObjs[1] = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY ,
                                   sizeof(cl_uint) * width * height, NULL, &ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
@@ -296,6 +302,9 @@ int main(const int argc, const char** argv)
     // Result
     const uint compressedSize = (width / 4) * (height / 4) * 8;
 
+#ifdef __EMSCRIPTEN__
+    clSetTypePointer(CL_UNSIGNED_INT32);
+#endif    
     cmMemObjs[2] = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY,
                                   compressedSize, NULL , &ciErrNum);
     shrCheckError(ciErrNum, CL_SUCCESS);
@@ -345,6 +354,9 @@ int main(const int argc, const char** argv)
     shrLog(LOGBOTH, 0, "Running DXT Compression on %u x %u image...\n\n", width, height);
 
     // Upload the image
+#ifdef __EMSCRIPTEN__
+    clSetTypePointer(CL_UNSIGNED_INT32);
+#endif        
     clEnqueueWriteBuffer(cqCommandQueue, cmMemObjs[1], CL_FALSE, 0, sizeof(cl_uint) * width * height, block_image, 0,0,0);
 
     // set work-item dimensions
@@ -376,6 +388,9 @@ int main(const int argc, const char** argv)
 #endif
 
     // blocking read output
+#ifdef __EMSCRIPTEN__
+    clSetTypePointer(CL_UNSIGNED_INT32);
+#endif        
     ciErrNum = clEnqueueReadBuffer(cqCommandQueue, cmMemObjs[2], CL_TRUE, 0,
                                    compressedSize, h_result, 0, NULL, NULL);
     shrCheckError(ciErrNum, CL_SUCCESS);

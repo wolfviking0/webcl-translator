@@ -84,6 +84,31 @@ static bool integer   = true;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef __EMSCRIPTEN__
+void print_stack() {
+    printf("\n___________________________________\n");
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("___________________________________\n");
+    free(webcl_stack);
+}
+#endif
+
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        webclEndProfile();
+        print_stack();
+    #endif
+    return e;
+}
+
 uint64_t
 current_time()
 {
@@ -99,7 +124,7 @@ double
 subtract_time_in_seconds( uint64_t endtime, uint64_t starttime )
 {    
 #ifdef __EMSCRIPTEN__
-  return (endtime - starttime) / 1000.0;
+    return 1e-3 * (endtime - starttime);  
 #else
 	static double conversion = 0.0;
 	uint64_t difference = endtime - starttime;
@@ -335,7 +360,11 @@ void create_reduction_pass_counts(
 /////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv)
-{
+{    
+    #ifdef __EMSCRIPTEN__
+        webclBeginProfile("Profile qjulia webcl");
+    #endif
+
     uint64_t         t1 = 0;
     uint64_t         t2 = 0;
     int              err;
@@ -451,7 +480,7 @@ int main(int argc, char **argv)
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        //return EXIT_FAILURE;
     }
 
     printf(SEPARATOR);
@@ -509,6 +538,10 @@ int main(int argc, char **argv)
     // Create the input buffer on the device
     //
     size_t buffer_size = typesize * count * channels;
+
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
+    #endif
     input_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!input_buffer)
     {
@@ -519,6 +552,9 @@ int main(int argc, char **argv)
     // Fill the input buffer with the host allocated random data
     //
     void *input_data = (integer) ? (void*)integer_data : (void*)float_data;
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
+    #endif    
     err = clEnqueueWriteBuffer(commands, input_buffer, CL_TRUE, 0, buffer_size, input_data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -528,6 +564,9 @@ int main(int argc, char **argv)
 
     // Create an intermediate data buffer for intra-level results
     //
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(CL_SIGNED_INT32);
+    #endif
     partials_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!partials_buffer)
     {
@@ -537,6 +576,9 @@ int main(int argc, char **argv)
     
     // Create the output buffer on the device
     //
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(CL_SIGNED_INT32);
+    #endif    
     output_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!output_buffer)
     {
@@ -712,6 +754,9 @@ int main(int argc, char **argv)
     //
     void *computed_result = malloc(typesize * channels);
     memset(computed_result, 0, typesize * channels);
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
+    #endif  
     err = clEnqueueReadBuffer(commands, pass_output, CL_TRUE, 0, typesize * channels, computed_result, 0, NULL, NULL);
     if (err)
     {

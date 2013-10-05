@@ -193,31 +193,33 @@ var LibraryOpenCL = {
       return _size;
     },
     
-    setPointerWithArray: function(ptr,array,type) {  
-      switch(type) {
-        case webcl.UNSIGNED_INT8:
-        case webcl.SIGNED_INT8:
-          for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i', 'array[i]', 'i8') }}};      
-          }
-          break;
-        case webcl.UNSIGNED_INT16:          
-        case webcl.SIGNED_INT16:
-          for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i*2', 'array[i]', 'i16') }}};      
-          }
-          break;
-        case webcl.UNSIGNED_INT32:
-        case webcl.SIGNED_INT32:
-          for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
-          }
-          break;       
-        default:
-          for (var i = 0; i < array.length; i++) {
-            {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
-          }
-          break;
+    setPointerWithArray: function(ptr,array,type) { 
+      // Try with buffer 
+      if (type == webcl.FLOAT) {
+        for (var i = 0; i < array.length; i++) {
+           {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
+        }
+      } else {
+        var i = 0;
+        for (; i < array.length; i++) {
+          {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
+        }     
+
+        // switch(type) {
+        //   case webcl.UNSIGNED_INT8:
+        //   case webcl.SIGNED_INT8:
+        //     for (; i < array.length; i++) {
+        //       {{{ makeSetValue('ptr', 'i', 'array[i]', 'i8') }}};      
+        //     }
+        //     break;
+        //   case webcl.UNSIGNED_INT16:          
+        //   case webcl.SIGNED_INT16:
+        //     for (; i < array.length; i++) {
+        //       {{{ makeSetValue('ptr', 'i*2', 'array[i]', 'i16') }}};      
+        //     }
+        //     break;
+        //   default:
+        // }
       }
     },
     
@@ -248,27 +250,29 @@ var LibraryOpenCL = {
     getPointerToEmptyArray: function(size,type) {  
       var _host_ptr = null;
 
+      var _buffer = new ArrayBuffer(size);
+
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(size);
-          break;
+          // _host_ptr = new Int8Array(_buffer);
+          // break;
         case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(size>>(Int16Array.BYTES_PER_ELEMENT>>1));
-          break;
+          // _host_ptr = new Int16Array(_buffer);
+          // break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(size>>(Int32Array.BYTES_PER_ELEMENT>>1));
+          _host_ptr = new Int32Array(_buffer);
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array(size);
-          break;
+          // _host_ptr = new Uint8Array(size);
+          // break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array(size>>(Uint16Array.BYTES_PER_ELEMENT>>1));
-          break;
+          // _host_ptr = new Uint16Array(_buffer);
+          // break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
+          _host_ptr = new Uint32Array(_buffer);
           break;       
         default:
-          _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
+          _host_ptr = new Float32Array(_buffer);
           break;
       }
       
@@ -280,68 +284,31 @@ var LibraryOpenCL = {
             
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}}
-          break;
+          // _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
+          // break;
         case webcl.SIGNED_INT16:
-          _host_ptr = {{{ makeHEAPView('16','ptr','ptr+size') }}}
-          break;
+          // _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
+          // break;
         case webcl.SIGNED_INT32:
-          _host_ptr = {{{ makeHEAPView('32','ptr','ptr+size') }}}
+          _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = {{{ makeHEAPView('U8','ptr','ptr+size') }}}
-          break;
+          // _host_ptr = new UInt8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
+          // break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = {{{ makeHEAPView('U16','ptr','ptr+size') }}}
-          break;
+          // _host_ptr = new UInt16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
+          // break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}}
+          _host_ptr = new Int32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
           break;         
         default:
-          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}}
+          _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
           break;
       }
 
       return _host_ptr;
     },
     
-    getPointerToArrayBuffer: function(ptr,size,type) {  
-
-      var _host_ptr = new ArrayBuffer(size);
-
-      switch(type) {
-        case webcl.UNSIGNED_INT8:
-        case webcl.SIGNED_INT8:
-          
-          for (var i = 0; i < size; i++) {
-            _host_ptr[i] = {{{ makeGetValue('ptr', 'i', 'i8') }}};      
-          }
-          break;
-        case webcl.UNSIGNED_INT16:          
-        case webcl.SIGNED_INT16:
-
-          for (var i = 0; i < size>>1; i++) {
-            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*2', 'i16') }}};      
-          }
-          break;
-        case webcl.UNSIGNED_INT32:
-        case webcl.SIGNED_INT32:
-
-          for (var i = 0; i < size>>2; i++) {
-            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'i32') }}};      
-          }
-          break;     
-        default:
-
-          for (var i = 0; i < size>>2; i++) {
-            _host_ptr[i] = {{{ makeGetValue('ptr', 'i*4', 'float') }}};      
-          }
-          break;
-      }
-
-      return _host_ptr;
-    },
-
     catchError: function(e) {
       console.error(e);
       var _error = -1;
@@ -1483,7 +1450,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+        _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
@@ -1495,7 +1462,7 @@ var LibraryOpenCL = {
       CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
 #endif      
       if (_host_ptr != null) {
-        _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+        _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
       } else
         _buffer = CL.cl_objects[context].createBuffer(_flags,size);
 
@@ -1729,7 +1696,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(_sizeInByte);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+        _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // ( Same question : clCreateBuffer )
@@ -1745,7 +1712,7 @@ var LibraryOpenCL = {
 #endif      
 
       if (_host_ptr != null)
-        _image = CL.cl_objects[context].createImage(_flags,_descriptor,_host_ptr);
+        _image = CL.cl_objects[context].createImage(_flags,_descriptor,_host_ptr.buffer);
       else
         _image = CL.cl_objects[context].createImage(_flags,_descriptor);
 

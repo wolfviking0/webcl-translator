@@ -1454,31 +1454,32 @@ function copyTempDouble(ptr) {
             break;
         }
         return _size;
-      },setPointerWithArray:function (ptr,array,type) {  
-        switch(type) {
-          case webcl.UNSIGNED_INT8:
-          case webcl.SIGNED_INT8:
-            for (var i = 0; i < array.length; i++) {
-              HEAP8[(((ptr)+(i))|0)]=array[i];      
-            }
-            break;
-          case webcl.UNSIGNED_INT16:          
-          case webcl.SIGNED_INT16:
-            for (var i = 0; i < array.length; i++) {
-              HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
-            }
-            break;
-          case webcl.UNSIGNED_INT32:
-          case webcl.SIGNED_INT32:
-            for (var i = 0; i < array.length; i++) {
-              HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
-            }
-            break;       
-          default:
-            for (var i = 0; i < array.length; i++) {
-              HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
-            }
-            break;
+      },setPointerWithArray:function (ptr,array,type) { 
+        // Try with buffer 
+        if (type == webcl.FLOAT) {
+          for (var i = 0; i < array.length; i++) {
+             HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
+          }
+        } else {
+          var i = 0;
+          for (; i < array.length; i++) {
+            HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
+          }     
+          // switch(type) {
+          //   case webcl.UNSIGNED_INT8:
+          //   case webcl.SIGNED_INT8:
+          //     for (; i < array.length; i++) {
+          //       HEAP8[(((ptr)+(i))|0)]=array[i];      
+          //     }
+          //     break;
+          //   case webcl.UNSIGNED_INT16:          
+          //   case webcl.SIGNED_INT16:
+          //     for (; i < array.length; i++) {
+          //       HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
+          //     }
+          //     break;
+          //   default:
+          // }
         }
       },getPointerToValue:function (ptr,size,type) {  
         var _value = null;
@@ -1502,27 +1503,28 @@ function copyTempDouble(ptr) {
         return _value;
       },getPointerToEmptyArray:function (size,type) {  
         var _host_ptr = null;
+        var _buffer = new ArrayBuffer(size);
         switch(type) {
           case webcl.SIGNED_INT8:
-            _host_ptr = new Int8Array(size);
-            break;
+            // _host_ptr = new Int8Array(_buffer);
+            // break;
           case webcl.SIGNED_INT16:
-            _host_ptr = new Int16Array(size>>(Int16Array.BYTES_PER_ELEMENT>>1));
-            break;
+            // _host_ptr = new Int16Array(_buffer);
+            // break;
           case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array(size>>(Int32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Int32Array(_buffer);
             break;
           case webcl.UNSIGNED_INT8:
-            _host_ptr = new Uint8Array(size);
-            break;
+            // _host_ptr = new Uint8Array(size);
+            // break;
           case webcl.UNSIGNED_INT16:
-            _host_ptr = new Uint16Array(size>>(Uint16Array.BYTES_PER_ELEMENT>>1));
-            break;
+            // _host_ptr = new Uint16Array(_buffer);
+            // break;
           case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array(size>>(Uint32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Uint32Array(_buffer);
             break;       
           default:
-            _host_ptr = new Float32Array(size>>(Float32Array.BYTES_PER_ELEMENT>>1));
+            _host_ptr = new Float32Array(_buffer);
             break;
         }
         return _host_ptr;
@@ -1530,53 +1532,25 @@ function copyTempDouble(ptr) {
         var _host_ptr = null;
         switch(type) {
           case webcl.SIGNED_INT8:
-            _host_ptr = HEAP8.subarray((ptr),(ptr+size))
-            break;
+            // _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
+            // break;
           case webcl.SIGNED_INT16:
-            _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1)
-            break;
+            // _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
+            // break;
           case webcl.SIGNED_INT32:
-            _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2)
+            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
           case webcl.UNSIGNED_INT8:
-            _host_ptr = HEAPU8.subarray((ptr),(ptr+size))
-            break;
+            // _host_ptr = new UInt8Array( HEAPU8.subarray((ptr),(ptr+size)) );
+            // break;
           case webcl.UNSIGNED_INT16:
-            _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1)
-            break;
+            // _host_ptr = new UInt16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
+            // break;
           case webcl.UNSIGNED_INT32:
-            _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2)
+            _host_ptr = new Int32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;         
           default:
-            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2)
-            break;
-        }
-        return _host_ptr;
-      },getPointerToArrayBuffer:function (ptr,size,type) {  
-        var _host_ptr = new ArrayBuffer(size);
-        switch(type) {
-          case webcl.UNSIGNED_INT8:
-          case webcl.SIGNED_INT8:
-            for (var i = 0; i < size; i++) {
-              _host_ptr[i] = HEAP8[(((ptr)+(i))|0)];      
-            }
-            break;
-          case webcl.UNSIGNED_INT16:          
-          case webcl.SIGNED_INT16:
-            for (var i = 0; i < size>>1; i++) {
-              _host_ptr[i] = HEAP16[(((ptr)+(i*2))>>1)];      
-            }
-            break;
-          case webcl.UNSIGNED_INT32:
-          case webcl.SIGNED_INT32:
-            for (var i = 0; i < size>>2; i++) {
-              _host_ptr[i] = HEAP32[(((ptr)+(i*4))>>2)];      
-            }
-            break;     
-          default:
-            for (var i = 0; i < size>>2; i++) {
-              _host_ptr[i] = HEAPF32[(((ptr)+(i*4))>>2)];      
-            }
+            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
         }
         return _host_ptr;
@@ -1620,14 +1594,14 @@ function copyTempDouble(ptr) {
         if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
           _host_ptr = new ArrayBuffer(size);
         } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-          _host_ptr = CL.getPointerToArrayBuffer(host_ptr,size,CL.cl_pn_type);
+          _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
         } else if (flags_i64_1 & ~_flags) {
           // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
           // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
           console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
         }
         if (_host_ptr != null) {
-          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
         } else
           _buffer = CL.cl_objects[context].createBuffer(_flags,size);
       } catch (e) {
@@ -13399,7 +13373,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = '46ae8fd0-a568-4489-bc93-3d59f30767c6';
+    var PACKAGE_UUID = '653c6f1e-7e6f-48e6-84d0-893a5bfb2c97';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
