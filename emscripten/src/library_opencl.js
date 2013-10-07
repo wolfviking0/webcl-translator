@@ -4242,12 +4242,12 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
 
-          var _dest_origin = [];
-          var _region = [];
+          var _dest_origin = new Int32Array(2); 
+          var _region = new Int32Array(2); 
 
           for (var i = 0; i < 2; i++) {
-            _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+            _dest_origin[i] = {{{ makeGetValue('dst_origin', 'i*4', 'i32') }}};
+            _region[i] = {{{ makeGetValue('region', 'i*4', 'i32') }}};            
           }
 
           for (var i = 0; i < num_events_in_wait_list; i++) {

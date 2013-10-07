@@ -9431,11 +9431,11 @@ function copyTempDouble(ptr) {
       try { 
             var _event = null;
             var _event_wait_list = [];
-            var _dest_origin = [];
-            var _region = [];
+            var _dest_origin = new Int32Array(2); 
+            var _region = new Int32Array(2); 
             for (var i = 0; i < 2; i++) {
-              _dest_origin.push(HEAP32[(((dst_origin)+(i*4))>>2)]);
-              _region.push(HEAP32[(((region)+(i*4))>>2)]);            
+              _dest_origin[i] = HEAP32[(((dst_origin)+(i*4))>>2)];
+              _region[i] = HEAP32[(((region)+(i*4))>>2)];            
             }
             for (var i = 0; i < num_events_in_wait_list; i++) {
               var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
@@ -17735,7 +17735,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = '7f08c5f8-68a4-427a-9aa7-0595b18c705b';
+    var PACKAGE_UUID = '934e5514-0a28-43da-850c-35681b4db09c';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
