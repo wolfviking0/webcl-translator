@@ -172,7 +172,37 @@ var LibraryOpenCL = {
     
       return _kernel_struct;
     },
-
+        
+    // setPointerWithArray: function(ptr,array,type) { 
+    //   // Try with buffer 
+    //   if (type == webcl.FLOAT) {
+    //     for (var i = 0; i < array.length; i++) {
+    //        {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
+    //     }
+    //   } else {
+    //     var i = 0;
+    //     for (; i < array.length; i++) {
+    //       {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
+    //     }     
+    // 
+    //     // switch(type) {
+    //     //   case webcl.UNSIGNED_INT8:
+    //     //   case webcl.SIGNED_INT8:
+    //     //     for (; i < array.length; i++) {
+    //     //       {{{ makeSetValue('ptr', 'i', 'array[i]', 'i8') }}};      
+    //     //     }
+    //     //     break;
+    //     //   case webcl.UNSIGNED_INT16:          
+    //     //   case webcl.SIGNED_INT16:
+    //     //     for (; i < array.length; i++) {
+    //     //       {{{ makeSetValue('ptr', 'i*2', 'array[i]', 'i16') }}};      
+    //     //     }
+    //     //     break;
+    //     //   default:
+    //     // }
+    //   }
+    // },
+    
     getTypeSizeBits: function(type) {  
       var _size = null;
             
@@ -191,36 +221,6 @@ var LibraryOpenCL = {
       }
       
       return _size;
-    },
-    
-    setPointerWithArray: function(ptr,array,type) { 
-      // Try with buffer 
-      if (type == webcl.FLOAT) {
-        for (var i = 0; i < array.length; i++) {
-           {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'float') }}};      
-        }
-      } else {
-        var i = 0;
-        for (; i < array.length; i++) {
-          {{{ makeSetValue('ptr', 'i*4', 'array[i]', 'i32') }}};      
-        }     
-
-        // switch(type) {
-        //   case webcl.UNSIGNED_INT8:
-        //   case webcl.SIGNED_INT8:
-        //     for (; i < array.length; i++) {
-        //       {{{ makeSetValue('ptr', 'i', 'array[i]', 'i8') }}};      
-        //     }
-        //     break;
-        //   case webcl.UNSIGNED_INT16:          
-        //   case webcl.SIGNED_INT16:
-        //     for (; i < array.length; i++) {
-        //       {{{ makeSetValue('ptr', 'i*2', 'array[i]', 'i16') }}};      
-        //     }
-        //     break;
-        //   default:
-        // }
-      }
     },
     
     getPointerToValue: function(ptr,size,type) {  
@@ -247,57 +247,55 @@ var LibraryOpenCL = {
       return _value;
     },
     
-    getPointerToEmptyArray: function(size,type) {  
+    getReferencePointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
-
-      var _buffer = new ArrayBuffer(size);
 
       switch(type) {
         case webcl.SIGNED_INT8:
-          // _host_ptr = new Int8Array(_buffer);
-          // break;
+          _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}};
+          break;
         case webcl.SIGNED_INT16:
-          // _host_ptr = new Int16Array(_buffer);
-          // break;
+          _host_ptr = {{{ makeHEAPView('16','ptr','ptr+size') }}};
+          break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(_buffer);
+          _host_ptr = {{{ makeHEAPView('32','ptr','ptr+size') }}};
           break;
         case webcl.UNSIGNED_INT8:
-          // _host_ptr = new Uint8Array(size);
-          // break;
+          _host_ptr = {{{ makeHEAPView('U8','ptr','ptr+size') }}};
+          break;
         case webcl.UNSIGNED_INT16:
-          // _host_ptr = new Uint16Array(_buffer);
-          // break;
+          _host_ptr = {{{ makeHEAPView('U16','ptr','ptr+size') }}};
+          break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array(_buffer);
-          break;       
+          _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}};
+          break;         
         default:
-          _host_ptr = new Float32Array(_buffer);
+          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
           break;
       }
       
       return _host_ptr;
     },
 
-    getPointerToArray: function(ptr,size,type) {  
+    getCopyPointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
             
       switch(type) {
         case webcl.SIGNED_INT8:
-          // _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
-          // break;
+          _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
+          break;
         case webcl.SIGNED_INT16:
-          // _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
-          // break;
+          _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
+          break;
         case webcl.SIGNED_INT32:
           _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT8:
-          // _host_ptr = new UInt8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
-          // break;
+          _host_ptr = new UInt8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
+          break;
         case webcl.UNSIGNED_INT16:
-          // _host_ptr = new UInt16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
-          // break;
+          _host_ptr = new UInt16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
+          break;
         case webcl.UNSIGNED_INT32:
           _host_ptr = new Int32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
           break;         
@@ -1450,7 +1448,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
+        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
@@ -1696,7 +1694,7 @@ var LibraryOpenCL = {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = new ArrayBuffer(_sizeInByte);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
+        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
       } else if (flags_i64_1 & ~_flags) {
         // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
         // ( Same question : clCreateBuffer )
@@ -2797,7 +2795,7 @@ var LibraryOpenCL = {
               CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
 
             } else {
-              var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
+              var _array = CL.getCopyPointerToArray(arg_value,arg_size,_sig);
 
 #if OPENCL_STACK_TRACE
               CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
@@ -3484,7 +3482,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 #endif
-          var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -3513,8 +3511,6 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
 #endif       
 
-          if (ptr)
-            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
 #if OPENCL_CHECK_VALID_OBJECT            
       } else {
 #if OPENCL_CHECK_SET_POINTER    
@@ -3572,7 +3568,7 @@ var LibraryOpenCL = {
         if (buffer in CL.cl_objects) {
 #endif
           // /!\ _host_ptr must be init with size --> @steven how i can have it ??
-          var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,0,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
           var _buffer_origin = [];
@@ -3609,8 +3605,6 @@ var LibraryOpenCL = {
 
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
-          if (ptr)
-            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
 #if OPENCL_CHECK_VALID_OBJECT             
       } else {
 #if OPENCL_CHECK_SET_POINTER    
@@ -3669,7 +3663,7 @@ var LibraryOpenCL = {
 #endif
           var _event = null;
           var _event_wait_list = [];
-          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -3753,7 +3747,7 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
           
-          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
 
           var _buffer_origin = [];
           var _host_origin = [];
@@ -3910,7 +3904,7 @@ var LibraryOpenCL = {
         if (image in CL.cl_objects) {
 #endif
           // /!\ _host_ptr must be init with size --> @steven how i can have it ??
-          var _host_ptr = CL.getPointerToEmptyArray(0,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,0,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -3945,9 +3939,6 @@ var LibraryOpenCL = {
           //CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
-          if (ptr) {
-            CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
-          }
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
@@ -4007,7 +3998,7 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
           
-          var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
 
           var _origin = [];
           var _region = [];

@@ -589,7 +589,6 @@ Recompute(void)
             // Type of HostImageBuffer
             clSetTypePointer(CL_UNSIGNED_INT8);
         #endif
-        printf("clEnqueueReadBuffer\n");
         err = clEnqueueReadBuffer( ComputeCommands, ComputeResult, CL_TRUE, 0, Width * Height * TextureTypeSize * 4, HostImageBuffer, 0, NULL, NULL );      
         if (err != CL_SUCCESS)
         {
