@@ -2203,50 +2203,59 @@ function copyTempDouble(ptr) {
           console.info("Kernel PARAMETER NUM : "+_kernel_struct[name].length);
         }
         return _kernel_struct;
-      },getTypeSizeBits:function (type) {  
-        var _size = null;
+      },getReferencePointerToArray:function (ptr,size,type) {  
+        var _host_ptr = null;
         switch(type) {
-          case webcl.UNSIGNED_INT8:
           case webcl.SIGNED_INT8:
-            _size = 1;
+            _host_ptr = HEAP8.subarray((ptr),(ptr+size));
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1);
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2);
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = HEAPU8.subarray((ptr),(ptr+size));
             break;
           case webcl.UNSIGNED_INT16:
-          case webcl.SIGNED_INT16:
-            _size = 2;
-            break;  
+            _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1);
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2);
+            break;         
           default:
-            _size = 4;
+            _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
             break;
         }
-        return _size;
-      },setPointerWithArray:function (ptr,array,type) { 
-        // Try with buffer 
-        if (type == webcl.FLOAT) {
-          for (var i = 0; i < array.length; i++) {
-             HEAPF32[(((ptr)+(i*4))>>2)]=array[i];      
-          }
-        } else {
-          var i = 0;
-          for (; i < array.length; i++) {
-            HEAP32[(((ptr)+(i*4))>>2)]=array[i];      
-          }     
-          // switch(type) {
-          //   case webcl.UNSIGNED_INT8:
-          //   case webcl.SIGNED_INT8:
-          //     for (; i < array.length; i++) {
-          //       HEAP8[(((ptr)+(i))|0)]=array[i];      
-          //     }
-          //     break;
-          //   case webcl.UNSIGNED_INT16:          
-          //   case webcl.SIGNED_INT16:
-          //     for (; i < array.length; i++) {
-          //       HEAP16[(((ptr)+(i*2))>>1)]=array[i];      
-          //     }
-          //     break;
-          //   default:
-          // }
+        return _host_ptr;
+      },getCopyPointerToArray:function (ptr,size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new UInt8Array( HEAPU8.subarray((ptr),(ptr+size)) );
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new UInt16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Int32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
+            break;         
+          default:
+            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
+            break;
         }
-      },getPointerToValue:function (ptr,size,type) {  
+        return _host_ptr;
+      },getPointerToValue:function (ptr,type) {  
         var _value = null;
         switch(type) {
           case webcl.SIGNED_INT8:
@@ -2266,59 +2275,6 @@ function copyTempDouble(ptr) {
             break;
         }
         return _value;
-      },getPointerToEmptyArray:function (size,type) {  
-        var _host_ptr = null;
-        var _buffer = new ArrayBuffer(size);
-        switch(type) {
-          case webcl.SIGNED_INT8:
-            // _host_ptr = new Int8Array(_buffer);
-            // break;
-          case webcl.SIGNED_INT16:
-            // _host_ptr = new Int16Array(_buffer);
-            // break;
-          case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array(_buffer);
-            break;
-          case webcl.UNSIGNED_INT8:
-            // _host_ptr = new Uint8Array(size);
-            // break;
-          case webcl.UNSIGNED_INT16:
-            // _host_ptr = new Uint16Array(_buffer);
-            // break;
-          case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array(_buffer);
-            break;       
-          default:
-            _host_ptr = new Float32Array(_buffer);
-            break;
-        }
-        return _host_ptr;
-      },getPointerToArray:function (ptr,size,type) {  
-        var _host_ptr = null;
-        switch(type) {
-          case webcl.SIGNED_INT8:
-            // _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
-            // break;
-          case webcl.SIGNED_INT16:
-            // _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
-            // break;
-          case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;
-          case webcl.UNSIGNED_INT8:
-            // _host_ptr = new UInt8Array( HEAPU8.subarray((ptr),(ptr+size)) );
-            // break;
-          case webcl.UNSIGNED_INT16:
-            // _host_ptr = new UInt16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
-            // break;
-          case webcl.UNSIGNED_INT32:
-            _host_ptr = new Int32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;         
-          default:
-            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;
-        }
-        return _host_ptr;
       },catchError:function (e) {
         console.error(e);
         var _error = -1;
@@ -2381,8 +2337,12 @@ function copyTempDouble(ptr) {
         CL.stack_trace += ") - Message (" + message + ") - Exception (" + exception + ")\n";
       }};function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
       CL.webclBeginStackTrace("clGetDeviceInfo",[device,param_name,param_value_size,param_value,param_value_size_ret]);
+        if (!(device in CL.cl_objects)) {
+          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are not in the map","");
+          return webcl.INVALID_DEVICE;
+        }
+      var  _info = null;
       try { 
-        if (device in CL.cl_objects) {
           var _object = CL.cl_objects[device];
           if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
             CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP64"]);
@@ -2393,46 +2353,7 @@ function copyTempDouble(ptr) {
             _object = webcl.getExtension("KHR_FP16");
           }
           CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
-          var _info = _object.getInfo(param_name);
-          if(typeof(_info) == "number") {
-            if (param_value_size == 8) {
-              if (param_value != 0) (tempI64 = [_info>>>0,(Math.abs(_info) >= 1 ? (_info > 0 ? Math.min(Math.floor((_info)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((_info - +(((~~(_info)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
-            } else {
-              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-            } 
-          } else if(typeof(_info) == "boolean") {
-            if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
-            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-          } else if(typeof(_info) == "string") {
-            if (param_value != 0) writeStringToMemory(_info, param_value);
-            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length;
-          } else if(typeof(_info) == "object") {
-            if (_info instanceof Int32Array) {
-              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
-              }
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-            } else if (_info instanceof WebCLPlatform) {
-              var _id = CL.udid(_info);
-              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-            } else if (_info == null) {
-              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-            } else {
-              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-              return webcl.INVALID_VALUE;
-            }
-          } else {
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-            return webcl.INVALID_VALUE;
-          }
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
-          return webcl.INVALID_DEVICE;
-        }
+          _info = _object.getInfo(param_name);
       } catch (e) {
         var _error = CL.catchError(e);
         if (param_value != 0) {
@@ -2443,6 +2364,41 @@ function copyTempDouble(ptr) {
         }
         CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
         return _error;
+      }
+      if(typeof(_info) == "number") {
+        if (param_value_size == 8) {
+          if (param_value != 0) (tempI64 = [_info>>>0,(Math.abs(_info) >= 1 ? (_info > 0 ? Math.min(Math.floor((_info)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((_info - +(((~~(_info)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
+        } else {
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } 
+      } else if(typeof(_info) == "boolean") {
+        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+      } else if(typeof(_info) == "string") {
+        if (param_value != 0) writeStringToMemory(_info, param_value);
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length;
+      } else if(typeof(_info) == "object") {
+        if (_info instanceof Int32Array) {
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+        } else if (_info instanceof WebCLPlatform) {
+          var _id = CL.udid(_info);
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } else if (_info == null) {
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+          return webcl.INVALID_VALUE;
+        }
+      } else {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+        return webcl.INVALID_VALUE;
       }
       CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
       return webcl.SUCCESS;
@@ -2480,42 +2436,14 @@ function copyTempDouble(ptr) {
     }
   function _clGetContextInfo(context,param_name,param_value_size,param_value,param_value_size_ret) {
       CL.webclBeginStackTrace("clGetContextInfo",[context,param_name,param_value_size,param_value,param_value_size_ret]);
+      if (!(context in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
+        return webcl.INVALID_CONTEXT;
+      }
+      var _info = null;
       try { 
-        if (context in CL.cl_objects) {
-          CL.webclCallStackTrace(""+CL.cl_objects[context]+".getInfo",[param_name]);
-          var _info = CL.cl_objects[context].getInfo(param_name);
-          if(typeof(_info) == "number") {
-            if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-          } else if(typeof(_info) == "boolean") {
-            if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
-            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-          } else if(typeof(_info) == "object") {
-            if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
-              var _id = CL.udid(_info);
-              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-            } else if (_info instanceof Array) {
-              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-                var _id = CL.udid(_info[i]);
-                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
-              }
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length*4;
-            } else if (_info == null) {
-              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-            } else {
-              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-              return webcl.INVALID_VALUE;
-            }
-          } else {
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-            return webcl.INVALID_VALUE;
-          }
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_CONTEXT],"context are NULL","");
-          return webcl.INVALID_CONTEXT;
-        }
+        CL.webclCallStackTrace(""+CL.cl_objects[context]+".getInfo",[param_name]);
+        _info = CL.cl_objects[context].getInfo(param_name);
       } catch (e) {
         var _error = CL.catchError(e);
         if (param_value != 0) {
@@ -2526,6 +2454,34 @@ function copyTempDouble(ptr) {
         }
         CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
         return _error;
+      }
+      if(typeof(_info) == "number") {
+        if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+      } else if(typeof(_info) == "boolean") {
+        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+      } else if(typeof(_info) == "object") {
+        if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
+          var _id = CL.udid(_info);
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } else if (_info instanceof Array) {
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            var _id = CL.udid(_info[i]);
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length*4;
+        } else if (_info == null) {
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+          return webcl.INVALID_VALUE;
+        }
+      } else {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+        return webcl.INVALID_VALUE;
       }
       CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
       return webcl.SUCCESS;
@@ -5376,46 +5332,15 @@ function copyTempDouble(ptr) {
     }
   function _clGetProgramInfo(program,param_name,param_value_size,param_value,param_value_size_ret) {
       CL.webclBeginStackTrace("clGetProgramInfo",[program,param_name,param_value_size,param_value,param_value_size_ret]);
+      // Program must be created
+      if (!(program in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program '"+program+"' is not a valid program","");
+        return webcl.INVALID_PROGRAM; 
+      }
+      var _info = null;
       try { 
-        if (program in CL.cl_objects) {
-          CL.webclCallStackTrace(""+CL.cl_objects[program]+".getInfo",[param_name]);
-          var _info = CL.cl_objects[program].getInfo(param_name);
-          if(typeof(_info) == "number") {
-            if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-            if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-          } else if(typeof(_info) == "string") {
-            if (param_value != 0) {
-              writeStringToMemory(_info, param_value);
-            }
-            if (param_value_size_ret != 0) {
-              HEAP32[((param_value_size_ret)>>2)]=_info.length;
-            }
-          } else if(typeof(_info) == "object") {
-            if (_info instanceof WebCLContext) {
-              var _id = CL.udid(_info);
-              if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-            } else if (_info instanceof Array) {
-              for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-                var _id = CL.udid(_info[i]);
-                if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
-              }
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-            } else if (_info == null) {
-              if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-            } else {
-              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-              return webcl.INVALID_VALUE;
-            }
-          } else {
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-            return webcl.INVALID_VALUE;
-          }
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
-          return webcl.INVALID_PROGRAM;
-        }
+        CL.webclCallStackTrace(""+CL.cl_objects[program]+".getInfo",[param_name]);
+        _info = CL.cl_objects[program].getInfo(param_name);
       } catch (e) {
         var _error = CL.catchError(e);
         if (param_value != 0) {
@@ -5426,6 +5351,38 @@ function copyTempDouble(ptr) {
         }
         CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
         return _error;
+      }
+      if(typeof(_info) == "number") {
+        if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+      } else if(typeof(_info) == "string") {
+        if (param_value != 0) {
+          writeStringToMemory(_info, param_value);
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=_info.length;
+        }
+      } else if(typeof(_info) == "object") {
+        if (_info instanceof WebCLContext) {
+          var _id = CL.udid(_info);
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } else if (_info instanceof Array) {
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            var _id = CL.udid(_info[i]);
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+        } else if (_info == null) {
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+        } else {
+          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+          return webcl.INVALID_VALUE;
+        }
+      } else {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+        return webcl.INVALID_VALUE;
       }
       CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
       return webcl.SUCCESS;
@@ -5485,33 +5442,19 @@ function copyTempDouble(ptr) {
     }
   function _clGetProgramBuildInfo(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
       CL.webclBeginStackTrace("clGetProgramBuildInfo",[program,device,param_name,param_value_size,param_value,param_value_size_ret]);
+      // Program must be created
+      if (!(program in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program '"+program+"' is not a valid program","");
+        return webcl.INVALID_PROGRAM; 
+      }
+      if (!(device in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"device '"+device+"' is not a valid device","");
+        return webcl.INVALID_DEVICE; 
+      }
+      var _info = null;
       try { 
-        if (program in CL.cl_objects) {
-          if (device in CL.cl_objects) {
-            CL.webclCallStackTrace(""+CL.cl_objects[program]+".getBuildInfo",[device,param_name]);
-            var _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
-            if(typeof(_info) == "number") {
-              if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-              if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-            } else if(typeof(_info) == "string") {
-              if (param_value != 0) {
-                writeStringToMemory(_info, param_value);
-              }
-              if (param_value_size_ret != 0) {
-                HEAP32[((param_value_size_ret)>>2)]=_info.length;
-              }
-            } else {
-              CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-              return webcl.INVALID_VALUE;
-            }
-          } else {
-            CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
-            return webcl.INVALID_DEVICE;
-          }
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_PROGRAM],"program are NULL","");
-          return webcl.INVALID_PROGRAM;
-        }
+        CL.webclCallStackTrace(""+CL.cl_objects[program]+".getBuildInfo",[device,param_name]);
+        _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
       } catch (e) {
         var _error = CL.catchError(e);
         if (param_value != 0) {
@@ -5523,22 +5466,35 @@ function copyTempDouble(ptr) {
         CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
         return _error;
       }
+      if(typeof(_info) == "number") {
+        if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+      } else if(typeof(_info) == "string") {
+        if (param_value != 0) {
+          writeStringToMemory(_info, param_value);
+        }
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=_info.length;
+        }
+      } else {
+        CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+        return webcl.INVALID_VALUE;
+      }
       CL.webclEndStackTrace([webcl.SUCCESS,param_value,param_value_size_ret],"","");
       return webcl.SUCCESS;
     }
   function _clReleaseMemObject(memobj) {
       CL.webclBeginStackTrace("clReleaseMemObject",[memobj]);
+      if (!(memobj in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL memobj","");
+        return webcl.INVALID_MEM_OBJECT;
+      }
       try {
-        if (memobj in CL.cl_objects) {
-          CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
-          //CL.cl_objects[memobj].release();
-          delete CL.cl_objects[memobj];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL memobj","");
-          return webcl.INVALID_MEM_OBJECT;
-        }
+        CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
+        //CL.cl_objects[memobj].release();
+        delete CL.cl_objects[memobj];
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
       } catch (e) {
         var _error = CL.catchError(e);
         CL.webclEndStackTrace([_error],"",e.message);
@@ -11459,32 +11415,32 @@ function copyTempDouble(ptr) {
         CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
         return 0; 
       }
+      var _flags;
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+        }
+        CL.cl_pn_type = 0;
+        CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
+        return 0; 
+      }
+      var _host_ptr = null;
+      if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
+        _host_ptr = new ArrayBuffer(size);
+      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
+      } else if (flags_i64_1 & ~_flags) {
+        // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
+        // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
+        console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
+      }
       try {
-        var _flags;
-        if (flags_i64_1 & webcl.MEM_READ_WRITE) {
-          _flags = webcl.MEM_READ_WRITE;
-        } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
-          _flags = webcl.MEM_WRITE_ONLY;
-        } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
-          _flags = webcl.MEM_READ_ONLY;
-        } else {
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
-          }
-          CL.cl_pn_type = 0;
-          CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
-          return 0; 
-        }
-        var _host_ptr = null;
-        if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-          _host_ptr = new ArrayBuffer(size);
-        } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-          _host_ptr = CL.getPointerToArray(host_ptr,size,CL.cl_pn_type);
-        } else if (flags_i64_1 & ~_flags) {
-          // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
-          // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
-          console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
-        }
         CL.webclCallStackTrace( CL.cl_objects[context]+".createBuffer",[_flags,size,_host_ptr]);
         if (_host_ptr != null) {
           _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
@@ -11607,69 +11563,78 @@ function copyTempDouble(ptr) {
     }
   function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
       CL.webclBeginStackTrace("clSetKernelArg",[kernel,arg_index,arg_size,arg_value]);
+      if (!(kernel in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+        return webcl.INVALID_KERNEL;
+      }
+      if (CL.cl_objects[kernel].sig.length < arg_index) {
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
+        return webcl.INVALID_KERNEL;          
+      }
       try {
-        if (kernel in CL.cl_objects) {
-          if (CL.cl_objects[kernel].sig.length > arg_index) {
-            var _sig = CL.cl_objects[kernel].sig[arg_index];
-            if (_sig == webcl.LOCAL) {
-              var _array = new Uint32Array([arg_size]);
-              CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
-              // WD --> 
-              //CL.cl_objects[kernel].setArg(arg_index,_array);
-              // WebKit -->
-              CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-            } else {
-              var _value = HEAP32[((arg_value)>>2)];
-              if (_value in CL.cl_objects) {
-                CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
-                CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
-              } else {
-                var _array = CL.getPointerToArray(arg_value,arg_size,_sig);
-                CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
-                // WD --> 
-                //CL.cl_objects[kernel].setArg(arg_index,_array);
-                // WebKit -->              
-                var _size = (arg_size>>(CL.getTypeSizeBits(_sig)>>1));
-                if ( _size > 1) {
-                  var _values = new Array(_size);
-                  for (var i = 0; i < _values.length; i++) {
-                    if (_sig == webcl.FLOAT) {
-                      _values[i] = HEAPF32[(((arg_value)+(i*4))>>2)];   
-                    } else {
-                      _values[i] = HEAP32[(((arg_value)+(i*4))>>2)];
-                    }
-                  }
-                  var _type;
-                  if (_size == 2) {
-                    _type = WebCLKernelArgumentTypes.VEC2;
-                  } else if (_size == 3) {
-                    _type = WebCLKernelArgumentTypes.VEC3;
-                  } else if (_size == 4) {
-                    _type = WebCLKernelArgumentTypes.VEC4;
-                  }
-                  if (_sig == webcl.FLOAT) {
-                    CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.FLOAT | _type)
-                  } else {
-                    CL.cl_objects[kernel].setArg(arg_index,_values,WebCLKernelArgumentTypes.INT | _type)
-                  }  
-                } else {
-                  if (_sig == webcl.FLOAT) {
-                    var _value = HEAPF32[((arg_value)>>2)];
-                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.FLOAT)
-                  } else {
-                    var _value = HEAP32[((arg_value)>>2)];
-                    CL.cl_objects[kernel].setArg(arg_index,_value,WebCLKernelArgumentTypes.INT)
-                  }                
-                }
-              }
-            }
-          } else {
-            CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
-            return webcl.INVALID_KERNEL;          
-          }
+        var _sig = CL.cl_objects[kernel].sig[arg_index];
+        if (_sig == webcl.LOCAL) {
+          // Not yet implemented in browser
+          var _array = null;//new Uint32Array([arg_size]);
+          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+          // WD --> 
+          //CL.cl_objects[kernel].setArg(arg_index,_array);
+          // WebKit -->
+          CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
         } else {
-          CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
-          return webcl.INVALID_KERNEL;
+          var _value = HEAP32[((arg_value)>>2)];
+          if (_value in CL.cl_objects) {
+            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
+            CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
+          } else {
+            var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
+            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+            // WD --> 
+            //CL.cl_objects[kernel].setArg(arg_index,_array);
+            // WebKit -->     
+            var _size = (arg_size>>(_array.BYTES_PER_ELEMENT>>1));
+            var _type;
+            switch(_sig) {
+              case webcl.SIGNED_INT8:
+                _type = WebCLKernelArgumentTypes.CHAR;
+                break;
+              case webcl.SIGNED_INT16:
+                _type = WebCLKernelArgumentTypes.SHORT;
+                break;
+              case webcl.SIGNED_INT32:
+                _type = WebCLKernelArgumentTypes.INT;
+                break;
+              case webcl.UNSIGNED_INT8:
+                _type = WebCLKernelArgumentTypes.UCHAR;
+                break;
+              case webcl.UNSIGNED_INT16:
+                _type = WebCLKernelArgumentTypes.USHORT;
+                break;
+              case webcl.UNSIGNED_INT32:
+                _type = WebCLKernelArgumentTypes.UINT;
+                break;
+              default:
+                _type = WebCLKernelArgumentTypes.FLOAT;
+                break;
+            }
+            if ( _size > 1) {
+              if (_size == 2) {
+                _type |= WebCLKernelArgumentTypes.VEC2;
+              } else if (_size == 3) {
+                _type |= WebCLKernelArgumentTypes.VEC3;
+              } else if (_size == 4) {
+                _type |= WebCLKernelArgumentTypes.VEC4;
+              } else if (_size == 8) {
+                _type |= WebCLKernelArgumentTypes.VEC8;
+              } else if (_size == 16) {
+                _type |= WebCLKernelArgumentTypes.VEC16;
+              }
+              var _values = Array.apply( [], _array);
+              CL.cl_objects[kernel].setArg(arg_index, _values, _type);
+            } else {
+              CL.cl_objects[kernel].setArg(arg_index,CL.getPointerToValue(arg_value,_sig),_type);
+            }
+          }
         }
       } catch (e) {
         var _error = CL.catchError(e);
@@ -11687,7 +11652,7 @@ function copyTempDouble(ptr) {
           if (buffer in CL.cl_objects) {
             var _event = null;
             var _event_wait_list = [];
-            var _host_ptr = CL.getPointerToArray(ptr,cb,CL.cl_pn_type);
+            var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
             for (var i = 0; i < num_events_in_wait_list; i++) {
               var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
               if (_event_wait in CL.cl_objects) {
@@ -11804,7 +11769,7 @@ function copyTempDouble(ptr) {
       try { 
         if (command_queue in CL.cl_objects) {
           if (buffer in CL.cl_objects) {
-            var _host_ptr = CL.getPointerToEmptyArray(cb,CL.cl_pn_type);
+            var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
             var _event_wait_list = [];
             var _event = null;
             for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -11822,8 +11787,6 @@ function copyTempDouble(ptr) {
             //if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
             // It's the only callStackTrace call after the call for have info about the read host ptr
             CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
-            if (ptr)
-              CL.setPointerWithArray(ptr,_host_ptr,CL.cl_pn_type);
         } else {
             CL.cl_pn_type = 0;
             CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -11846,17 +11809,16 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseKernel(kernel) {
       CL.webclBeginStackTrace("clReleaseKernel",[kernel]);
+      if (!(kernel in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+        return webcl.INVALID_KERNEL;
+      }
       try {
-        if (kernel in CL.cl_objects) {
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
-          //CL.cl_objects[kernel].release();
-          delete CL.cl_objects[kernel];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
-          return webcl.INVALID_KERNEL;
-        }
+        CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
+        //CL.cl_objects[kernel].release();
+        delete CL.cl_objects[kernel];
+        CL.cl_objects_counter--;
+        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
       } catch (e) {
         var _error = CL.catchError(e);
         CL.webclEndStackTrace([_error],"",e.message);
@@ -11867,17 +11829,16 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseProgram(program) {
       CL.webclBeginStackTrace("clReleaseProgram",[program]);
+      if (program in CL.cl_objects) {
+        CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
+        return webcl.INVALID_PROGRAM;
+      }
       try {
-        if (program in CL.cl_objects) {
           CL.webclCallStackTrace(CL.cl_objects[program]+".release",[]);
           CL.cl_objects[program].release();
           delete CL.cl_objects[program];
           CL.cl_objects_counter--;
           //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
-          return webcl.INVALID_PROGRAM;
-        }
       } catch (e) {
         var _error = CL.catchError(e);
         CL.webclEndStackTrace([_error],"",e.message);
@@ -11888,17 +11849,16 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseCommandQueue(command_queue) {
       CL.webclBeginStackTrace("clReleaseCommandQueue",[command_queue]);
+      if (!(command_queue in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],CL.cl_objects[command_queue]+" is not a valid OpenCL command_queue","");
+        return webcl.INVALID_COMMAND_QUEUE;
+      }
       try {
-        if (command_queue in CL.cl_objects) {
           CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
           //CL.cl_objects[command_queue].release();
           delete CL.cl_objects[command_queue];
           CL.cl_objects_counter--;
           //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],CL.cl_objects[command_queue]+" is not a valid OpenCL command_queue","");
-          return webcl.INVALID_COMMAND_QUEUE;
-        }
       } catch (e) {
         var _error = CL.catchError(e);
         CL.webclEndStackTrace([_error],"",e.message);
@@ -11909,17 +11869,16 @@ function copyTempDouble(ptr) {
     }
   function _clReleaseContext(context) {
       CL.webclBeginStackTrace("clReleaseContext",[context]);
+      if (!(context in CL.cl_objects)) {
+        CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
+        return webcl.INVALID_CONTEXT;
+      }
       try {
-        if (context in CL.cl_objects) {
           CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
           //CL.cl_objects[context].release();
           delete CL.cl_objects[context];
           CL.cl_objects_counter--;
           //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
-        } else {
-          CL.webclEndStackTrace([webcl.INVALID_CONTEXT],CL.cl_objects[context]+" is not a valid OpenCL context","");
-          return webcl.INVALID_CONTEXT;
-        }
       } catch (e) {
         var _error = CL.catchError(e);
         CL.webclEndStackTrace([_error],"",e.message);
@@ -95151,7 +95110,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '40f43483-a863-4458-bd4e-889ceac0eac7';
+    var PACKAGE_UUID = '5ee4f540-0819-4ac8-9166-1da063432dd0';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
