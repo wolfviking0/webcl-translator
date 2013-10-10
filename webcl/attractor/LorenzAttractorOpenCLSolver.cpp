@@ -135,10 +135,18 @@ void LorenzAttractorOpenCLSolver::__init()
     else
     {
         // no interop
+        #ifdef __EMSCRIPTEN__
+            clSetTypePointer(CL_FLOAT);
+        #endif
         m_memPos = cl::Buffer( m_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 4*nParticles*sizeof(float), global::par().getPtr("pos"));
+        #ifdef __EMSCRIPTEN__
+            clSetTypePointer(CL_FLOAT);
+        #endif        
         m_memColor = cl::Buffer( m_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 4*nParticles*sizeof(float), global::par().getPtr("color"));
     }
-
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(CL_FLOAT);
+    #endif
     m_memLifetime = cl::Buffer( m_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, nParticles*sizeof(float), global::par().getPtr("lifetime"));
 }
 
@@ -196,7 +204,14 @@ void LorenzAttractorOpenCLSolver::__step(float time, float deltaTime)
     if ( !bInterop )
     {
         // update particles in case of no interop (slow)
+        #ifdef __EMSCRIPTEN__
+            clSetTypePointer(CL_FLOAT);
+        #endif
         m_queue.enqueueReadBuffer( m_memPos, CL_TRUE, 0, 4*nParticles*sizeof(float), global::par().getPtr("pos") );
+        
+        #ifdef __EMSCRIPTEN__
+            clSetTypePointer(CL_FLOAT);
+        #endif
         m_queue.enqueueReadBuffer( m_memColor, CL_TRUE, 0, 4*nParticles*sizeof(float), global::par().getPtr("color") );
     }
 }

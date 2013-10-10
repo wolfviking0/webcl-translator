@@ -22,9 +22,9 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    global::par().setInt("windowHeight",600);
-    global::par().setInt("windowWidth",800);
-    global::par().setString("windowTitle","Demo AT");
+    global::par().setInt("windowHeight",512);
+    global::par().setInt("windowWidth",512);
+    global::par().setString("windowTitle","WebCL Lorenz Demo");
 
 /*
     global::par().enable("export");
