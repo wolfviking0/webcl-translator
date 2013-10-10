@@ -79,7 +79,7 @@ void LorenzAttractorOpenCLSolver::__init()
         0
     };
 
-    m_context = cl::Context (CL_DEVICE_TYPE_GPU, context_properties);
+    m_context = cl::Context (CL_DEVICE_TYPE_DEFAULT, context_properties);
 
     vector<cl::Device> devices = m_context.getInfo<CL_CONTEXT_DEVICES>();
 

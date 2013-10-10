@@ -21,6 +21,10 @@ namespace error
 
 void throw_ex( const char *msg, const char *file, const int line )
 {
+	#ifdef __EMSCRIPTEN__
+		printf("%s in %s, line %d\n",msg,file,line);
+	#endif
+
     std::stringstream ss;
 
     ss << msg << " in " << file << ", line " << line << std::endl;
@@ -29,6 +33,11 @@ void throw_ex( const char *msg, const char *file, const int line )
 
 void throw_ex( const char *msg )
 {
+
+	#ifdef __EMSCRIPTEN__
+		printf("%s\n",msg);
+	#endif
+
     throw std::runtime_error( msg );
 }
 

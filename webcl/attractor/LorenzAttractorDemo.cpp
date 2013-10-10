@@ -141,12 +141,16 @@ void LorenzAttractorDemo::init()
     loc = glGetUniformLocation(m_program, "windowHeight");
     glUniform1f(loc,float(windowHeight));
 
-    glPointSize(1.f);
+    #ifndef __EMSCRIPTEN__
+
+        glPointSize(1.f);
+
+    #endif
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // init frame buffers for filtering
 
-    int nFrameBuffers = global::par().isEnabled("filtering") ? 3 : 0;
+    int nFrameBuffers = 0;//global::par().isEnabled("filtering") ? 3 : 0;
     m_fbo.resize(nFrameBuffers+1);
     m_tex.resize(nFrameBuffers);
     m_fbo.back() = 0;

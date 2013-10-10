@@ -25,55 +25,110 @@ uniform sampler2D Texture0;
 
 uniform float windowWidth;
 uniform float windowHeight;
-/*
-uniform float blurPar[3] = float[]( /* #, #, */ 0.6, 0.15, 0.05 );                                   
- 
-vec4 gammaCorrection()
-{
-    float gamma = 0.1;
-    vec4 c = texture(Texture0, texCoord);
-    float l = (c.r+c.g+c.b)/3.0;
-    c.xyz *= pow(l,gamma)/l; 
-    return c;
-}
-                                   
-vec4 blurX()
-{    
-    float step = 1./windowHeight;
-    vec4 c = blurPar[0]*texture(Texture0, texCoord);      
-    for( int i = 1; i < 3; i++ )
-    {        
-         c += blurPar[i]*texture( Texture0, texCoord + vec2(0,step*i));
-         c += blurPar[i]*texture( Texture0, texCoord - vec2(0,step*i));
-    }        
-    return c;      
-}
 
-vec4 blurY()
-{   
-    float step = 1./windowWidth;
-    vec4 c = blurPar[0]*texture(Texture0, texCoord);      
-    for( int i = 1; i < 3; i++ )
-    {        
-         c += blurPar[i]*texture( Texture0, texCoord + vec2(step*i,0));
-         c += blurPar[i]*texture( Texture0, texCoord - vec2(step*i,0));
-    }
-    return c;    
-}
-*/
-vec4 render()
-{    
-    return color;    
-}
+//uniform float blurPar[3] = float[]( /* #, #, */ 0.6, 0.15, 0.05 );                                   
+//uniform vec3 blurPar = vec3(0.6, 0.15, 0.05);
+
+//
+//vec4 gammaCorrection()
+//
+//{
+//
+//    float gamma = 0.1;
+//
+//    vec4 c = texture(Texture0, texCoord);
+//
+//    float l = (c.r+c.g+c.b)/3.0;
+//
+//    c.xyz *= pow(l,gamma)/l; 
+//
+//    return c;
+//
+//}
+//
+//                                   
+//
+//vec4 blurX()
+//
+//{    
+//
+//    float step = 1./windowHeight;
+//
+//    vec4 c = blurPar.x*texture(Texture0, texCoord);      
+//
+//    //for( int i = 1; i < 3; i++ )
+//
+//    //{        
+//
+//         c += blurPar.y*texture( Texture0, texCoord + vec2(0,step));
+//
+//         c += blurPar.y*texture( Texture0, texCoord - vec2(0,step));
+//
+//         c += blurPar.z*texture( Texture0, texCoord + vec2(0,step*2));
+//
+//         c += blurPar.z*texture( Texture0, texCoord - vec2(0,step*2));         
+//
+//    //}        
+//
+//    return c;      
+//
+//}
+//
+//
+//
+//vec4 blurY()
+//
+//{   
+//
+//    float step = 1./windowWidth;
+//
+//    vec4 c = blurPar.x*texture(Texture0, texCoord);      
+//
+//    //for( int i = 1; i < 3; i++ )
+//
+//    //{        
+//
+//         c += blurPar.y*texture( Texture0, texCoord + vec2(0,step));
+//
+//         c += blurPar.y*texture( Texture0, texCoord - vec2(0,step));
+//
+//         c += blurPar.z*texture( Texture0, texCoord + vec2(0,step*2));
+//
+//         c += blurPar.z*texture( Texture0, texCoord - vec2(0,step*2));            
+//
+//    //}
+//
+//    return c;    
+//
+//}
+//
+//
+//
+//vec4 render()
+//
+//{    
+//
+//    return color;    
+//
+//}
 
 void main()
-{    
-    //if ( task == 0 )
-        gl_FragColor = render();
-    //else if ( task == 3 )
-    //    gl_FragColor = gammaCorrection();
-    //else if ( task == 1 )
-    //    gl_FragColor = blurX();
-    //else if ( task == 2 )
-    //    gl_FragColor = blurY();    
+{
+    gl_FragColor = color;
+//
+//    if ( task == 0 )
+//
+//        gl_FragColor = render();
+//
+//    else if ( task == 3 )
+//
+//        gl_FragColor = gammaCorrection();
+//
+//    else if ( task == 1 )
+//
+//        gl_FragColor = blurX();
+//
+//    else if ( task == 2 )
+//
+//        gl_FragColor = blurY();    
 }
