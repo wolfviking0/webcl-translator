@@ -108,8 +108,8 @@ void LorenzAttractorDemo::init()
     glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
     glBufferData(GL_ARRAY_BUFFER, nParticles*4*sizeof(float), global::par().getPtr("color"), GL_DYNAMIC_DRAW);
 
-    glGenVertexArrays( 1, &m_vaoParticles );
-    glBindVertexArray(m_vaoParticles);
+    //glGenVertexArrays( 1, &m_vaoParticles );
+    //glBindVertexArray(m_vaoParticles);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -154,7 +154,7 @@ void LorenzAttractorDemo::init()
     m_fbo.resize(nFrameBuffers+1);
     m_tex.resize(nFrameBuffers);
     m_fbo.back() = 0;
-
+    /*
     if ( nFrameBuffers )
     {
         glGenFramebuffers(nFrameBuffers, m_fbo.data());
@@ -178,10 +178,10 @@ void LorenzAttractorDemo::init()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-
+    */
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // setup a fullscreen billboard for filtering
-
+    /*
     if ( nFrameBuffers )
     {
         GLfloat verts[] = {    -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
@@ -212,7 +212,7 @@ void LorenzAttractorDemo::init()
 
         glBindVertexArray(0);
     }
-
+    */
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // enable blending
 

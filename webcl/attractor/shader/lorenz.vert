@@ -13,11 +13,11 @@
 // 3. This notice may not be removed or altered from any source distribution.
 
 //#version 400
+#version 100
 
 //layout(location = 0) in vec4 vertexPos;
 //layout(location = 1) in vec4 vertexColor;
 //layout(location = 2) in vec2 vertexTexCoord;
-
 attribute vec4 vertexPos;
 attribute vec4 vertexColor;
 attribute vec2 vertexTexCoord;

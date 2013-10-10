@@ -63,7 +63,7 @@ void LorenzAttractorOpenCLSolver::__init()
         error::throw_ex("no OpenCL platforms found",__FILE__,__LINE__);
 
     // TODO check if interop is supported
-    // global::par().disable("CL_GL_interop")
+    global::par().disable("CL_GL_interop");
 
     cl_context_properties context_properties[] =
     {
