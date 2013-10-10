@@ -46,7 +46,8 @@ all_sample: \
 	mandelbulb_sample 			\
 	qjulia_sample 				\
 	dxt_sample					\
-
+	attractor_sample					\
+	
 #	fft_sample					\
 #	smallpt_sample				\
 #	video_sample				\
@@ -109,6 +110,12 @@ dxt_sample:
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(DEBUG) \
 	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
 	-o ../build/$(FOLDER)/dxtcompressor.js
+	
+attractor_sample:
+	$(call chdir,attractor/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -s TOTAL_MEMORY=1024*1024*600 -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
+	-o ../build/$(FOLDER)/attractor.js
 
 #smallpt_sample:
 #	$(call chdir,smallpt/)
