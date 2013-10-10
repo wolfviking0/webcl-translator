@@ -16,10 +16,8 @@
 
 //layout( location = 0 ) out vec4 FragColor;
 
-attribute out vec4 FragColor;
-
-in vec2 texCoord;
-in vec4 color;
+varying vec2 texCoord;
+varying vec4 color;
 
 uniform int task;
 
@@ -27,7 +25,7 @@ uniform sampler2D Texture0;
 
 uniform float windowWidth;
 uniform float windowHeight;
-
+/*
 uniform float blurPar[3] = float[]( /* #, #, */ 0.6, 0.15, 0.05 );                                   
  
 vec4 gammaCorrection()
@@ -62,7 +60,7 @@ vec4 blurY()
     }
     return c;    
 }
-
+*/
 vec4 render()
 {    
     return color;    
@@ -70,12 +68,12 @@ vec4 render()
 
 void main()
 {    
-    if ( task == 0 )
-        FragColor = render();
-    else if ( task == 3 )
-        FragColor = gammaCorrection();
-    else if ( task == 1 )
-        FragColor = blurX();
-    else if ( task == 2 )
-        FragColor = blurY();    
+    //if ( task == 0 )
+        gl_FragColor = render();
+    //else if ( task == 3 )
+    //    gl_FragColor = gammaCorrection();
+    //else if ( task == 1 )
+    //    gl_FragColor = blurX();
+    //else if ( task == 2 )
+    //    gl_FragColor = blurY();    
 }
