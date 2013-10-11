@@ -18,7 +18,8 @@ var LibraryGL = {
     textures: [],
     uniforms: [],
     shaders: [],
-
+    vaos: [],
+    
 #if FULL_ES2
     clientBuffers: [],
 #endif
@@ -410,6 +411,8 @@ var LibraryGL = {
       GL.depthTextureExt = Module.ctx.getExtension("WEBGL_depth_texture") ||
                            Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
                            Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
+                           
+      GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');                           
     }
   },
 
@@ -1451,7 +1454,43 @@ var LibraryGL = {
     if (!fb) return 0;
     return Module.ctx.isFramebuffer(fb);
   },
+  
+  glGenVertexArrays_sig: 'vii',
+  glGenVertexArrays: function (n , arrays) {
+    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
+    for (var i = 0; i < n ; i++) {
+      var id = GL.getNewId(GL.vaos);
+      var vao = GL.vaoExt.createVertexArrayOES();
+      vao.name = id;
+      GL.vaos[id] = vao;
+      {{{ makeSetValue('arrays', 'i*4', 'id', 'i32') }}};
+    }
+  },
+  
+  glDeleteVertexArrays__sig: 'vii',
+  glDeleteVertexArrays: function(n, vaos) {
+    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
+    for (var i = 0; i < n; i++) {
+      var id = {{{ makeGetValue('vaos', 'i*4', 'i32') }}};
+      GL.vaoExt.deleteVertexArrayOES(GL.vaos[id]);
+      GL.vaos[id] = null;
+    }
+  },
+  
+  glBindVertexArray__sig: 'vi',
+  glBindVertexArray: function(vao) {
+    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
+    GL.vaoExt.bindVertexArrayOES(GL.vaos[vao]);
+  },
 
+  glIsVertexArray__sig: 'ii',
+  glIsVertexArray: function(array) {
+    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
+    var vao = GL.vaos[array];
+    if (!vao) return 0;
+    return GL.vaoExt.isVertexArrayOES(vao);
+  },
+  
 #if LEGACY_GL_EMULATION
 
   // GL emulation: provides misc. functionality not present in OpenGL ES 2.0 or WebGL
@@ -4007,6 +4046,7 @@ var LibraryGL = {
   },
 
   // Vertex array object (VAO) support. TODO: when the WebGL extension is popular, use that and remove this code and GL.vaos
+  /*
   glGenVertexArrays__deps: ['$GLEmulation'],
   glGenVertexArrays__sig: 'vii',
   glGenVertexArrays: function(n, vaos) {
@@ -4062,7 +4102,7 @@ var LibraryGL = {
       GLEmulation.currentVao = info; // set currentVao last, so the commands we ran here were not recorded
     }
   },
-
+  */
   // OpenGL Immediate Mode matrix routines.
   // Note that in the future we might make these available only in certain modes.
   glMatrixMode__deps: ['$GL', '$GLImmediateSetup', '$GLEmulation'], // emulation is not strictly needed, this is a workaround
@@ -4228,12 +4268,12 @@ var LibraryGL = {
 #endif
   }],
   glVertexPointer: function(){ throw 'Legacy GL function (glVertexPointer) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
-  glGenVertexArrays__deps: [function() {
-#if INCLUDE_FULL_LIBRARY == 0
-    warn('Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
-#endif
-  }],
-  glGenVertexArrays: function(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
+//   glGenVertexArrays__deps: [function() {
+// #if INCLUDE_FULL_LIBRARY == 0
+//     warn('Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
+// #endif
+//   }],
+//   glGenVertexArrays: function(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
   glMatrixMode__deps: [function() {
 #if INCLUDE_FULL_LIBRARY == 0
     warn('Legacy GL function (glMatrixMode) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');

@@ -161,11 +161,13 @@ void Application::mainLoop()
     int curFrame = 0;
     int exportStartFrame = global::par().getInt("exportStartFrame");
     int simulationEndFrame = global::par().getInt("simulationEndFrame");
-
+    
 #ifndef __EMSCRIPTEN__
     while (!glfwWindowShouldClose(m_window))
 #else
-    while (!glfwWindowShouldClose)      
+    printf("AL --> Temporary limit mainLoop\n");
+    int count = 1;
+    while (count--/*!glfwWindowShouldClose*/)      
 #endif            
     {
         float realTime = getRealTime();

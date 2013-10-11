@@ -108,8 +108,8 @@ void LorenzAttractorDemo::init()
     glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
     glBufferData(GL_ARRAY_BUFFER, nParticles*4*sizeof(float), global::par().getPtr("color"), GL_DYNAMIC_DRAW);
 
-    // Temporary --> glGenVertexArrays( 1, &m_vaoParticles );
-    // Temporary --> glBindVertexArray(m_vaoParticles);
+    glGenVertexArrays( 1, &m_vaoParticles );
+    glBindVertexArray(m_vaoParticles);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -260,8 +260,8 @@ void LorenzAttractorDemo::render(float simTime)
     glClear(GL_COLOR_BUFFER_BIT);
     glUniform1i(hTask,0);
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
-    
-    // Temporary --> glBindVertexArray(m_vaoParticles);
+     
+    glBindVertexArray(m_vaoParticles);
     glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();
