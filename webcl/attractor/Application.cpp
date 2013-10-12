@@ -289,9 +289,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 2;//256;
-    int nY = 2;//256;
-    int nZ = 2;//256;
+    int nX = 64;//2;//64;//128;//256;
+    int nY = 64;//2;//64;//128;//256;
+    int nZ = 64;//2;//64 -> 40fps;//128 -> 10fps;//256 -> 3fps;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);
@@ -302,7 +302,7 @@ void Application::setupLorenzAttractor()
     global::par().setString("kernelFilename","kernel/lorenz.cl");
     
     // Not enable filtering and cl_gl interop for now
-    //global::par().enable("CL_GL_interop");
+    global::par().enable("CL_GL_interop");
     //global::par().enable("filtering");
 
     void *onePiece = nullptr;
