@@ -4728,12 +4728,11 @@ var LibraryOpenCL = {
         return 0; 
       }
 
-
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createFromGLBuffer",[_flags,GL.buffers[bufobj]]);
 #endif      
       
-      _buffer = CL.cl_objects[context].createBuffer(_flags,GL.buffers[bufobj]);
+      _buffer = CL.cl_objects[context].createFromGLBuffer(_flags,GL.buffers[bufobj]);
 
     } catch (e) {
       var _error = CL.catchError(e);
