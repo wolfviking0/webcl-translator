@@ -115,7 +115,7 @@ void Application::init()
 #ifndef __EMSCRIPTEN__
     m_window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
 #else 
-    glfwOpenWindow(windowWidth, windowHeight, 5, 6, 5, 0, 0, 0, GLFW_WINDOW);
+    glfwOpenWindow(windowWidth, windowHeight, 8, 8, 8, 8, 0, 0, GLFW_WINDOW);
     glfwSetWindowTitle(windowTitle.c_str());
 #endif      
 
@@ -289,9 +289,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 64;//2;//64;//128;//256;
-    int nY = 64;//2;//64;//128;//256;
-    int nZ = 64;//2;//64 -> 40fps;//128 -> 10fps;//256 -> 3fps;
+    int nX = 32;//64;//128;//256;
+    int nY = 32;//64;//128;//256;
+    int nZ = 32;//64 -> 40fps;//128 -> 10fps;//256 -> 3fps;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);
@@ -302,7 +302,7 @@ void Application::setupLorenzAttractor()
     global::par().setString("kernelFilename","kernel/lorenz.cl");
     
     // Not enable filtering and cl_gl interop for now
-    global::par().enable("CL_GL_interop");
+    //global::par().enable("CL_GL_interop");
     //global::par().enable("filtering");
 
     void *onePiece = nullptr;
