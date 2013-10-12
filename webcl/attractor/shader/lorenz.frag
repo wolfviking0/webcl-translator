@@ -12,8 +12,6 @@
 //
 // 3. This notice may not be removed or altered from any source distribution.
 
-
-
 //uniform float blurPar[3] = float[]( /* #, #, */ 0.6, 0.15, 0.05 );                                   
 // 
 //vec4 gammaCorrection()
