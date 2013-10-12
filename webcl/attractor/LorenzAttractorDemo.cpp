@@ -150,7 +150,7 @@ void LorenzAttractorDemo::init()
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // init frame buffers for filtering
 
-    int nFrameBuffers = 0;//global::par().isEnabled("filtering") ? 3 : 0;
+    int nFrameBuffers = global::par().isEnabled("filtering") ? 3 : 0;
     m_fbo.resize(nFrameBuffers+1);
     m_tex.resize(nFrameBuffers);
     m_fbo.back() = 0;

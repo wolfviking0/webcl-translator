@@ -22,7 +22,9 @@
 #include "Solver.h"
 #include "Demo.h"
 #ifndef __EMSCRIPTEN__     
-  #include "FrameCaptor.h"
+    #include "FrameCaptor.h"
+#else
+    #include <emscripten/emscripten.h>
 #endif
 
 #include "global.h"
@@ -30,6 +32,9 @@
 
 #ifdef __EMSCRIPTEN__
 static bool glfwWindowShouldClose = false;
+static int framesLastSecond = 0;
+static int lastSecond = 0;
+static int curFrame = 0;
 #endif
   
 static Application *instance = nullptr;
@@ -134,7 +139,65 @@ void Application::init()
 
     glViewport(0, 0, windowWidth, windowHeight);
 
+    #ifdef __EMSCRIPTEN__
+    
+        setupLorenzAttractor();
+
+    #endif
+
 }
+
+#ifdef __EMSCRIPTEN__
+
+void Application::run()
+{
+    mainLoop();
+}
+
+void Application::mainLoop()
+{
+    if (glfwWindowShouldClose == true) {
+
+        emscripten_cancel_main_loop();
+            
+        glfwCloseWindow();
+
+        m_window = nullptr;
+
+        glfwTerminate();
+
+        return ;
+    }
+
+    float realTime = getRealTime();
+    ++framesLastSecond;
+    if ( lastSecond != (int)realTime )
+    {
+        lastSecond = (int)realTime;
+        std::cout << "FPS: " << framesLastSecond << std::endl;
+        framesLastSecond = 0;
+    }
+
+    // render and swap buffers
+    Demo::get()->render(m_simTime);
+
+    glfwSwapBuffers();
+
+    // step simulation
+    Solver::get()->step(m_simTime,m_simDeltaTime);
+
+    // exchanges information between solver and renderer if not already shared
+    Demo::get()->update();
+
+    // process UI events
+    glfwPollEvents();
+
+    m_simTime += m_simDeltaTime;
+
+    ++curFrame;
+}
+
+#else 
 
 void Application::run()
 {
@@ -142,11 +205,8 @@ void Application::run()
 
     mainLoop();
 
-#ifndef __EMSCRIPTEN__
     glfwDestroyWindow(m_window);
-#else
-    glfwCloseWindow();
-#endif    
+
     m_window = nullptr;
 
     glfwTerminate();
@@ -162,13 +222,7 @@ void Application::mainLoop()
     int exportStartFrame = global::par().getInt("exportStartFrame");
     int simulationEndFrame = global::par().getInt("simulationEndFrame");
     
-#ifndef __EMSCRIPTEN__
-    while (!glfwWindowShouldClose(m_window))
-#else
-    printf("AL --> Temporary limit mainLoop\n");
-    int count = 1;
-    while (count--/*!glfwWindowShouldClose*/)      
-#endif            
+    while (!glfwWindowShouldClose(m_window))          
     {
         float realTime = getRealTime();
         ++framesLastSecond;
@@ -182,17 +236,11 @@ void Application::mainLoop()
         // render and swap buffers
         Demo::get()->render(m_simTime);
 
-#ifndef __EMSCRIPTEN__
-        glfwSwapBuffers(m_window);
-#else
-        glfwSwapBuffers();
-#endif        
+        glfwSwapBuffers(m_window);     
   
-        // export the rendered frame
-#ifndef __EMSCRIPTEN__        
+        // export the rendered frame      
         if ( FrameCaptor::get() && curFrame >= exportStartFrame )
             FrameCaptor::get()->capture();
-#endif        
 
         // check if we should stop the simulation
         if ( simulationEndFrame && curFrame == simulationEndFrame )
@@ -213,12 +261,12 @@ void Application::mainLoop()
 
         //if ( curFrame%20 == 0 )
         //    std::cout << "simTime: " << m_simTime << std::endl;
-    }
-#ifndef __EMSCRIPTEN__     
+    }   
     if ( FrameCaptor::get() )
-        FrameCaptor::get()->release();
-#endif    
+        FrameCaptor::get()->release();  
 }
+
+#endif
 
 void Application::setCursorPos(float x, float y)
 {
@@ -241,9 +289,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 4;//256;
-    int nY = 4;//256;
-    int nZ = 4;//256;
+    int nX = 2;//256;
+    int nY = 2;//256;
+    int nZ = 2;//256;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);
@@ -252,8 +300,10 @@ void Application::setupLorenzAttractor()
     global::par().setString("fragmentShaderFilename","shader/lorenz.frag");
 
     global::par().setString("kernelFilename","kernel/lorenz.cl");
-    global::par().enable("CL_GL_interop");
-    global::par().enable("filtering");
+    
+    // Not enable filtering and cl_gl interop for now
+    //global::par().enable("CL_GL_interop");
+    //global::par().enable("filtering");
 
     void *onePiece = nullptr;
     //if ( posix_memalign(&buffer, 16, 8*nParticles*sizeof(float)) || buffer == nullptr )

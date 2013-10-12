@@ -19,6 +19,38 @@
 
 using namespace std;
 
+#ifdef __EMSCRIPTEN__
+
+#include <emscripten/emscripten.h>
+
+void sim(){
+
+    Application *app = Application::get();
+
+    if ( app == nullptr )
+    {
+        cerr << "ERROR: failed to create application" << endl;
+        exit( EXIT_FAILURE );
+    }
+
+    try
+    {
+        app->run();
+    }
+    catch(const exception &e)
+    {
+        cerr << "ERROR: " << e.what() << endl;
+        exit( EXIT_FAILURE );
+    }
+    catch(...)
+    {
+        cerr << "ERROR: unknown exception" << endl;
+        exit( EXIT_FAILURE );
+    }
+
+}
+
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -26,6 +58,11 @@ int main(int argc, char *argv[])
     global::par().setInt("windowWidth",512);
     global::par().setString("windowTitle","WebCL Lorenz Demo");
 
+    #ifdef __EMSCRIPTEN__
+    
+        emscripten_set_main_loop(sim, 0, true);
+
+    #else
 /*
     global::par().enable("export");
     global::par().setString("exportFilename","/media/ext4-data/No-Backup/opengl-export/1.avi");
@@ -54,6 +91,8 @@ int main(int argc, char *argv[])
         cerr << "ERROR: unknown exception" << endl;
         exit( EXIT_FAILURE );
     }
+    
+    #endif
 
     return 0;
 }
