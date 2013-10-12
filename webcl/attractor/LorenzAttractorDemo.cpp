@@ -232,6 +232,9 @@ void LorenzAttractorDemo::render(float simTime)
     GLuint hTime = glGetUniformLocation(m_program, "u_time");
     glUniform1f(hTime,simTime);
 
+    // GLuint fPointSize = glGetUniformLocation(m_program, "u_pointSize");
+    // glUniform1f(fPointSize,1.0f);
+
     GLuint hMVP = glGetUniformLocation(m_program, "u_matViewProjection");
     GLuint hTask = glGetUniformLocation(m_program, "u_task");
 
@@ -262,7 +265,7 @@ void LorenzAttractorDemo::render(float simTime)
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
      
     glBindVertexArray(m_vaoParticles);
-    glDrawArrays(GL_POINTS, 0, nParticles );
+    glDrawArrays(GL_LINES, 0, nParticles );
 
     glFinish();
 

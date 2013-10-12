@@ -302,7 +302,7 @@ void Application::setupLorenzAttractor()
     global::par().setString("kernelFilename","kernel/lorenz.cl");
     
     // Not enable filtering and cl_gl interop for now
-    //global::par().enable("CL_GL_interop");
+    global::par().enable("CL_GL_interop");
     //global::par().enable("filtering");
 
     void *onePiece = nullptr;
