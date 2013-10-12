@@ -12,24 +12,20 @@
 //
 // 3. This notice may not be removed or altered from any source distribution.
 
-//#version 400
 #version 100
 
-//layout(location = 0) in vec4 vertexPos;
-//layout(location = 1) in vec4 vertexColor;
-//layout(location = 2) in vec2 vertexTexCoord;
-attribute vec4 vertexPos;
-attribute vec4 vertexColor;
-attribute vec2 vertexTexCoord;
+uniform mat4 u_matViewProjection;
 
-varying vec4 color;
-varying vec2 texCoord;
+attribute vec4 a_position;
+attribute vec4 a_color;
+attribute vec2 a_texCoord0;
 
-uniform mat4 MVP;
+varying vec4 v_color;
+varying vec2 v_texCoord;
 
-void main()
-{    
-    texCoord = vertexTexCoord;
-    color = vertexColor;
-    gl_Position = MVP*vertexPos;    
+void main() {
+	
+	gl_Position = u_matViewProjection * a_position;
+	v_color = a_color;
+	v_texCoord = a_texCoord0;
 }

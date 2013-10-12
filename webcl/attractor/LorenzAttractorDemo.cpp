@@ -62,9 +62,9 @@ void LorenzAttractorDemo::init()
     if ( !m_program )
         error::throw_ex("unable to create GLSL program",__FILE__,__LINE__);
 
-    glBindAttribLocation(m_program, 0, "vertexPos");
-    glBindAttribLocation(m_program, 1, "vertexColor");
-    glBindAttribLocation(m_program, 2, "vertexTexCoord");
+    glBindAttribLocation(m_program, 0, "a_position");
+    glBindAttribLocation(m_program, 1, "a_color");
+    glBindAttribLocation(m_program, 2, "a_texCoord0");
 
     for ( auto it = shaders.cbegin(); it != shaders.cend(); ++it )
         glAttachShader(m_program, *it);
@@ -135,10 +135,10 @@ void LorenzAttractorDemo::init()
     int windowWidth = global::par().getInt("windowWidth");
     int windowHeight = global::par().getInt("windowHeight");
 
-    loc = glGetUniformLocation(m_program, "windowWidth");
+    loc = glGetUniformLocation(m_program, "u_width");
     glUniform1f(loc,float(windowWidth));
 
-    loc = glGetUniformLocation(m_program, "windowHeight");
+    loc = glGetUniformLocation(m_program, "u_height");
     glUniform1f(loc,float(windowHeight));
 
     #ifndef __EMSCRIPTEN__
@@ -229,11 +229,11 @@ void LorenzAttractorDemo::render(float simTime)
     float aspectRatio = float(windowWidth)/float(windowHeight);
 
     // set uniforms
-    GLuint hTime = glGetUniformLocation(m_program, "time");
+    GLuint hTime = glGetUniformLocation(m_program, "u_time");
     glUniform1f(hTime,simTime);
 
-    GLuint hMVP = glGetUniformLocation(m_program, "MVP");
-    GLuint hTask = glGetUniformLocation(m_program, "task");
+    GLuint hMVP = glGetUniformLocation(m_program, "u_matViewProjection");
+    GLuint hTask = glGetUniformLocation(m_program, "u_task");
 
     // set MVP
 
