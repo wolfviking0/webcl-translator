@@ -142,9 +142,10 @@ void LorenzAttractorDemo::init()
     glUniform1f(loc,float(windowHeight));
 
     #ifndef __EMSCRIPTEN__
-
         glPointSize(1.f);
-
+    #else
+        loc = glGetUniformLocation(m_program, "u_pointSize");
+        glUniform1f(loc,1.0f);
     #endif
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,9 +232,6 @@ void LorenzAttractorDemo::render(float simTime)
     // set uniforms
     GLuint hTime = glGetUniformLocation(m_program, "u_time");
     glUniform1f(hTime,simTime);
-
-    // GLuint fPointSize = glGetUniformLocation(m_program, "u_pointSize");
-    // glUniform1f(fPointSize,1.0f);
 
     GLuint hMVP = glGetUniformLocation(m_program, "u_matViewProjection");
     GLuint hTask = glGetUniformLocation(m_program, "u_task");
