@@ -289,9 +289,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 32;//64;//128;//256;
-    int nY = 32;//64;//128;//256;
-    int nZ = 32;//64 -> 40fps;//128 -> 10fps;//256 -> 3fps;
+    int nX = 128;//64;//128;//256;
+    int nY = 128;//64;//128;//256;
+    int nZ = 128;//64;//128;//256;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);
@@ -303,7 +303,7 @@ void Application::setupLorenzAttractor()
     
     // Not enable filtering and cl_gl interop for now
     global::par().enable("CL_GL_interop");
-    //global::par().enable("filtering");
+    global::par().enable("filtering");
 
     void *onePiece = nullptr;
     //if ( posix_memalign(&buffer, 16, 8*nParticles*sizeof(float)) || buffer == nullptr )

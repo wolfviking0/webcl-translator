@@ -174,8 +174,9 @@ void LorenzAttractorDemo::init()
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex[i], 0);
-            GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
-            glDrawBuffers(1, drawBuffers);
+            
+            //GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
+            //glDrawBuffers(1, drawBuffers);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -263,7 +264,7 @@ void LorenzAttractorDemo::render(float simTime)
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
      
     glBindVertexArray(m_vaoParticles);
-    glDrawArrays(GL_LINES, 0, nParticles );
+    glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();
 

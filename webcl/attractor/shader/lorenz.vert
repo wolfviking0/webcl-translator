@@ -15,7 +15,7 @@
 #version 100
 
 uniform mat4 u_matViewProjection;
-//uniform float u_pointSize;
+uniform float u_pointSize;
 
 attribute vec4 a_position;
 attribute vec4 a_color;
@@ -27,7 +27,7 @@ varying vec2 v_texCoord;
 void main() {
 	gl_PointSize = u_pointSize;
 	gl_Position = u_matViewProjection * a_position;
-	
+
 	v_color = a_color;
 	v_texCoord = a_texCoord0;
 }
