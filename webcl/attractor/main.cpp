@@ -20,8 +20,10 @@
 using namespace std;
 
 #ifdef __EMSCRIPTEN__
-
+#include <CL/OpenCL.h>
 #include <emscripten/emscripten.h>
+
+//int counter = 1000;
 
 void sim(){
 
@@ -36,6 +38,12 @@ void sim(){
     try
     {
         app->run();
+        // if (counter-- < 0) {
+        //     #ifdef __EMSCRIPTEN__
+        //         emscripten_cancel_main_loop();
+        //         webclEndProfile();
+        //     #endif
+        // }
     }
     catch(const exception &e)
     {
@@ -54,12 +62,15 @@ void sim(){
 
 int main(int argc, char *argv[])
 {
+
     global::par().setInt("windowHeight",512);
     global::par().setInt("windowWidth",512);
     global::par().setString("windowTitle","WebCL Lorenz Demo");
 
     #ifdef __EMSCRIPTEN__
-    
+     
+        webclBeginProfile("Profile Attractor webcl");
+
         emscripten_set_main_loop(sim, 0, true);
 
     #else
