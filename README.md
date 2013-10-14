@@ -6,15 +6,15 @@ webcl-translator
 General :
 ---------
 
-webcl-translator is an OpenCL to WebCL converter, it's based on the Emscripten LLVM-to-JavaScript compiler <https://github.com/kripken/emscripten>.
+webcl-translator is an OpenCL to WebCL converter, it's based on the [Emscripten](https://github.com/kripken/emscripten) LLVM-to-JavaScript compiler.
 
-Need Firefox 24 and WebCL plugin from Nokia research <http://webcl.nokiaresearch.com>
+Need Firefox 24 and [WebCL plugin](http://webcl.nokiaresearch.com) from Nokia research
 
 or
 
-Need webkit-webcl from Samsung research <https://github.com/SRA-SiliconValley/webkit-webcl>
+Need [webkit-webcl](https://github.com/SRA-SiliconValley/webkit-webcl) from Samsung research.
 
-Links to **demos**, **tutorial**, **FAQ**, etc: <https://github.com/wolfviking0/webcl-translator/wiki>
+Links to **demos**, **tutorial**, **patch**, etc: [Wiki](https://github.com/wolfviking0/webcl-translator/wiki)
 
 License :
 ---------
