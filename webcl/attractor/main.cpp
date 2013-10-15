@@ -17,58 +17,14 @@
 #include "global.h"
 #include "Application.h"
 
-using namespace std;
-
-#ifdef __EMSCRIPTEN__
-#include <CL/OpenCL.h>
-#include <emscripten/emscripten.h>
-
-//int counter = 1000;
-/*
-void sim(){
-
-    Application *app = Application::get();
-
-    if ( app == nullptr )
-    {
-        cerr << "ERROR: failed to create application" << endl;
-        exit( EXIT_FAILURE );
-    }
-
-    try
-    {
-        app->run();
-        // if (counter-- < 0) {
-        //     #ifdef __EMSCRIPTEN__
-        //         emscripten_cancel_main_loop();
-        //         webclEndProfile();
-        //     #endif
-        // }
-    }
-    catch(const exception &e)
-    {
-        cerr << "ERROR: " << e.what() << endl;
-        exit( EXIT_FAILURE );
-    }
-    catch(...)
-    {
-        cerr << "ERROR: unknown exception" << endl;
-        exit( EXIT_FAILURE );
-    }
-
-}
-*/
-#endif
-
 int main(int argc, char *argv[])
 {
 
     // Parse command line options
     //
-    int i;
     int use_gpu = 1;
     int use_interop = 0;
-    for(i = 0; i < argc && argv; i++)
+    for(int i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -95,20 +51,6 @@ int main(int argc, char *argv[])
       global::par().disable("CL_GL_interop");
     
     global::par().setString("windowTitle","WebCL Lorenz Demo");
-
-    #ifdef __EMSCRIPTEN__
-     
-        webclBeginProfile("Profile Attractor webcl");
-
-        //emscripten_set_main_loop(sim, 0, true);
-        Application *app = Application::get();
-        if ( app == nullptr )
-        {
-            cerr << "ERROR: failed to create application" << endl;
-            exit( EXIT_FAILURE );
-        }
-
-    #else
 /*
     global::par().enable("export");
     global::par().setString("exportFilename","/media/ext4-data/No-Backup/opengl-export/1.avi");
@@ -119,7 +61,7 @@ int main(int argc, char *argv[])
     Application *app = Application::get();
     if ( app == nullptr )
     {
-        cerr << "ERROR: failed to create application" << endl;
+        printf("ERROR: failed to create application\n");
         exit( EXIT_FAILURE );
     }
 
@@ -127,18 +69,16 @@ int main(int argc, char *argv[])
     {
         app->run();
     }
-    catch(const exception &e)
+    catch(const std::exception &e)
     {
-        cerr << "ERROR: " << e.what() << endl;
+        printf("ERROR: %s\n",e.what());
         exit( EXIT_FAILURE );
     }
     catch(...)
     {
-        cerr << "ERROR: unknown exception" << endl;
+        printf("ERROR: unknown exception\n");
         exit( EXIT_FAILURE );
     }
-    
-    #endif
 
     return 0;
 }

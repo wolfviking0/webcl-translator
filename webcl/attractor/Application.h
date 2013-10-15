@@ -15,14 +15,11 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-class GLFWwindow;
-
 class Application
 {
 
 protected:
 
-    GLFWwindow* m_window;
     float m_cursorX;
     float m_cursorY;
 
@@ -38,7 +35,6 @@ private:
     void operator=(const Application &) = delete;
 
     void setupLorenzAttractor();
-    void mainLoop();
 
 public:
 
@@ -54,10 +50,7 @@ public:
     void init ();
     void run ();
 
-    static float getRealTime();
     float getSimTime();
-
-    void setCursorPos(float x, float y);
 
 };
 

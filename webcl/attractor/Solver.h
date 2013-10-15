@@ -45,6 +45,8 @@ public:
 
     virtual void step(float time, float deltaTime) = 0;
 
+    virtual void cleanup() = 0;
+
 };
 
 

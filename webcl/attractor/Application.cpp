@@ -21,85 +21,69 @@
 #include "LorenzAttractorDemo.h"
 #include "Solver.h"
 #include "Demo.h"
-#ifndef __EMSCRIPTEN__     
-  #include "FrameCaptor.h"
+
+#ifdef __EMSCRIPTEN__
+    #include <emscripten/emscripten.h>
+    #include <GL/gl.h>
+    #include <GL/glut.h>
+    #include <CL/opencl.h>
 #else
-  #include <emscripten/emscripten.h>
-#include <CL/opencl.h>
-#include <GL/gl.h>
-#include <GL/glut.h>
-  #define USE_GLUT
+    #include <OpenGL/OpenGL.h>
+    #include <OpenGL/gl.h>
+    #include <OpenGL/CGLDevice.h>
+    #include <GLUT/glut.h>
+    #include <OpenCL/opencl.h>
 #endif
+
+#ifdef __APPLE__
+    #include <mach/mach_time.h>
+#endif
+
+#define SEPARATOR                       ("----------------------------------------------------------------------\n")
 
 #include "global.h"
 #include "error.h"
 
-#ifdef __EMSCRIPTEN__
-static bool glfwWindowShouldClose = false;
-static int framesLastSecond = 0;
-static int lastSecond = 0;
-static int curFrame = 0;
-#endif
-  
+static double TimeElapsed                       = 0;
+static int FrameCount                           = 0;
+static unsigned int ReportStatsInterval         = 30;
+
 static Application *instance = nullptr;
 
-Application *Application::get()
-{
-    if(!instance)
-    {
-        instance = new Application();
-        instance->init();
-    }
+#ifdef __EMSCRIPTEN__
 
-    return instance;
+void print_stack() {
+    printf("\n%s",SEPARATOR);
+    cl_uint size = 0;
+    webclPrintStackTrace(NULL,&size);
+
+    char* webcl_stack = (char*)malloc(size+1);
+    webcl_stack[size] = '\0';
+    
+    webclPrintStackTrace(webcl_stack,&size);
+    printf("%s\n",webcl_stack);
+
+    printf("%s",SEPARATOR);
+    free(webcl_stack);
+}
+#endif
+
+int end(int e) {
+    #ifdef __EMSCRIPTEN__
+        print_stack();
+    #endif
+    return e;
 }
 
-Application::Application()
+void Shutdown(void)
 {
-    m_window = nullptr;
-    m_simTime = 0.f;
-    m_simDeltaTime = 0.f;
-    m_cursorX = 0.f;
-    m_cursorY = 0.f;
-}
+    printf(SEPARATOR);
+    printf("Shuting down...\n");
 
-Application::~Application()
-{
-    if ( m_window )
-    {
-#ifndef __EMSCRIPTEN__
-        glfwDestroyWindow(m_window);
-#else        
-        glfwCloseWindow();
-#endif        
-        m_window = nullptr;
-    }
-}
+    Solver::get()->cleanup();
 
-void error_callback(int error, const char* description)
-{
-    error::throw_ex(description);
-}
-
-#ifndef __EMSCRIPTEN__     
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-#else
-void key_callback(int key,int action)  
-#endif  
-{
-    if (key == GLFW_KEY_ESC && action == GLFW_PRESS) {
-#ifndef __EMSCRIPTEN__      
-        glfwSetWindowShouldClose(window, GL_TRUE);
-#else
-        glfwWindowShouldClose = true;
-#endif    
-    }
-}
-
-void cursor_pos_callback(GLFWwindow* window, double dx,double dy)
-{
-    if (Application::get())
-        Application::get()->setCursorPos(float(dx),float(dy));
+    end(0);
+    exit(0);
 }
 
 void Keyboard( unsigned char key, int x, int y )
@@ -111,7 +95,7 @@ void Keyboard( unsigned char key, int x, int y )
 #ifdef __EMSCRIPTEN__
          webclEndProfile();
 #endif
-         exit(0);
+         Shutdown();
          break;
     }
     glutPostRedisplay();
@@ -121,21 +105,95 @@ void Display(void)
 {
   if (Application::get())
       Application::get()->run();
-  //printf("Display\n");
-  //Application *app = Application::get();
- // app->run();
 }
 
 void Idle(void)
 {
-    //printf("Idle\n");
     glutPostRedisplay();
+}
+
+static uint64_t GetCurrentTime()
+{
+    #ifdef __EMSCRIPTEN__
+        return emscripten_get_now();
+    #else
+        return mach_absolute_time();
+    #endif
+}
+
+static double SubtractTime( uint64_t uiEndTime, uint64_t uiStartTime )
+{
+    #ifdef __EMSCRIPTEN__
+        return 1e-3 * (uiEndTime - uiStartTime);
+    #else
+        static double s_dConversion = 0.0;
+        uint64_t uiDifference = uiEndTime - uiStartTime;
+        if( 0.0 == s_dConversion )
+        {
+            mach_timebase_info_data_t kTimebase;
+            kern_return_t kError = mach_timebase_info( &kTimebase );
+            if( kError == 0  )
+                s_dConversion = 1e-9 * (double) kTimebase.numer / (double) kTimebase.denom;
+        }
+            
+        return s_dConversion * (double) uiDifference; 
+    #endif
+}
+
+static void ReportStats(uint64_t uiStartTime, uint64_t uiEndTime)
+{
+    TimeElapsed += SubtractTime(uiEndTime, uiStartTime);
+
+    if(TimeElapsed && FrameCount && FrameCount > ReportStatsInterval) 
+    {
+        double fMs = (TimeElapsed * 1000.0 / (double) FrameCount);
+        double fFps = 1.0 / (fMs / 1000.0);
+
+#ifdef __EMSCRIPTEN__
+        printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
+                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU",
+                fMs, fFps, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
+#else
+        sprintf(StatsString, "[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
+                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", 
+                fMs, fFps, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
+        glutSetWindowTitle(StatsString);
+#endif
+
+        FrameCount = 0;
+        TimeElapsed = 0;
+    }    
+}
+
+Application *Application::get()
+{
+    if(!instance)
+    {
+#ifdef __EMSCRIPTEN__
+         webclBeginProfile("Profile Attractor webcl");
+#endif        
+        instance = new Application();
+        instance->init();
+    }
+
+    return instance;
+}
+
+Application::Application()
+{
+    m_simTime = 0.f;
+    m_simDeltaTime = 0.f;
+    m_cursorX = 0.f;
+    m_cursorY = 0.f;
+}
+
+Application::~Application()
+{
+
 }
 
 void Application::init()
 {
-  
-#ifdef USE_GLUT
   
     int windowWidth = global::par().getInt("windowWidth");
     int windowHeight = global::par().getInt("windowHeight");
@@ -151,201 +209,37 @@ void Application::init()
     glutIdleFunc(Idle);
     glutKeyboardFunc(Keyboard);
 
-    //atexit(Shutdown);
-#ifdef __EMSCRIPTEN__
-
     setupLorenzAttractor();
+            
+    atexit(Shutdown);
 
-#endif
-    
-    glutMainLoop();     
-    
-#else
-  
-    // initialize GLFW and create window, setup callbacks
-#ifndef __EMSCRIPTEN__
-    glfwSetErrorCallback(error_callback);
-#endif
-    
-    if( !glfwInit() )
-        error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
-
-    int windowWidth = global::par().getInt("windowWidth");
-    int windowHeight = global::par().getInt("windowHeight");
-    std::string windowTitle = global::par().getString("windowTitle");
-
-#ifndef __EMSCRIPTEN__
-    m_window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
-#else 
-    glfwOpenWindow(windowWidth, windowHeight, 8, 8, 8, 8, 0, 0, GLFW_WINDOW);
-    glfwSetWindowTitle(windowTitle.c_str());
-#endif      
-
-#ifndef __EMSCRIPTEN__
-    if( !m_window )
-    {
-        glfwTerminate();
-        error::throw_ex("unable to create GLFW window",__FILE__,__LINE__);
-    }
-
-    glfwMakeContextCurrent(m_window);
-
-    if ( glewInit() != GLEW_OK )
-        error::throw_ex("unable to initialize GLEW",__FILE__,__LINE__);
-
-    glfwSetKeyCallback(m_window,key_callback);
-#else
-    glfwSetKeyCallback(key_callback);    
-#endif    
-    //glfwSetCursorPosCallback(m_window, cursor_pos_callback);
-
-    glViewport(0, 0, windowWidth, windowHeight);
-
-    #ifdef __EMSCRIPTEN__
-    
-        setupLorenzAttractor();
-
-    #endif
-        
-#endif        
+    glutMainLoop();           
 }
 
-#ifdef __EMSCRIPTEN__
 
 void Application::run()
 {
-  /*
-    mainLoop();
-}
 
-void Application::mainLoop()
-{
-    if (glfwWindowShouldClose == true) {
-
-        emscripten_cancel_main_loop();
-            
-        glfwCloseWindow();
-
-        m_window = nullptr;
-
-        glfwTerminate();
-
-        return ;
-    }
-    */
-  
-  
-    float realTime = getRealTime();
-    ++framesLastSecond;
-    if ( lastSecond != (int)realTime )
-    {
-        lastSecond = (int)realTime;
-        std::cout << "FPS: " << framesLastSecond << std::endl;
-        framesLastSecond = 0;
-    }
-
+    FrameCount++;
+    uint64_t uiStartTime = GetCurrentTime();
     
     // render and swap buffers
     Demo::get()->render(m_simTime);
 
-    
-    //glfwSwapBuffers();
+    // swap buffer
     glutSwapBuffers();
-  
+
     // step simulation
     Solver::get()->step(m_simTime,m_simDeltaTime);
 
     // exchanges information between solver and renderer if not already shared
     Demo::get()->update();
 
-    // process UI events
-    //glfwPollEvents();*/
-
     m_simTime += m_simDeltaTime;
 
-    ++curFrame;
-}
+    uint64_t uiEndTime = GetCurrentTime();
 
-#else 
-
-void Application::run()
-{
-    setupLorenzAttractor();
-
-    mainLoop();
-
-    glfwDestroyWindow(m_window);
-
-    m_window = nullptr;
-
-    glfwTerminate();
-
-}
-
-void Application::mainLoop()
-{
-    int framesLastSecond = 0;
-    int lastSecond = 0;
-
-    int curFrame = 0;
-    int exportStartFrame = global::par().getInt("exportStartFrame");
-    int simulationEndFrame = global::par().getInt("simulationEndFrame");
-    
-    while (!glfwWindowShouldClose(m_window))          
-    {
-        float realTime = getRealTime();
-        ++framesLastSecond;
-        if ( lastSecond != (int)realTime )
-        {
-            lastSecond = (int)realTime;
-            std::cout << "FPS: " << framesLastSecond << std::endl;
-            framesLastSecond = 0;
-        }
-
-        // render and swap buffers
-        Demo::get()->render(m_simTime);
-
-        glfwSwapBuffers(m_window);     
-  
-        // export the rendered frame      
-        if ( FrameCaptor::get() && curFrame >= exportStartFrame )
-            FrameCaptor::get()->capture();
-
-        // check if we should stop the simulation
-        if ( simulationEndFrame && curFrame == simulationEndFrame )
-            break;
-
-        // step simulation
-        Solver::get()->step(m_simTime,m_simDeltaTime);
-
-        // exchanges information between solver and renderer if not already shared
-        Demo::get()->update();
-
-        // process UI events
-        glfwPollEvents();
-
-        m_simTime += m_simDeltaTime;
-
-        ++curFrame;
-
-        //if ( curFrame%20 == 0 )
-        //    std::cout << "simTime: " << m_simTime << std::endl;
-    }   
-    if ( FrameCaptor::get() )
-        FrameCaptor::get()->release();  
-}
-
-#endif
-
-void Application::setCursorPos(float x, float y)
-{
-    m_cursorX = x;
-    m_cursorY = y;
-}
-
-float Application::getRealTime()
-{
-    return glfwGetTime();
+    ReportStats(uiStartTime, uiEndTime);
 }
 
 float Application::getSimTime()
@@ -370,12 +264,10 @@ void Application::setupLorenzAttractor()
 
     global::par().setString("kernelFilename","kernel/lorenz.cl");
     
-    // Not enable filtering and cl_gl interop for now
-    //global::par().enable("CL_GL_interop");
     global::par().enable("filtering");
 
     void *onePiece = nullptr;
-    //if ( posix_memalign(&buffer, 16, 8*nParticles*sizeof(float)) || buffer == nullptr )
+
     onePiece = (float*) malloc(9*nParticles*sizeof(float)); // float4 pos, float4 color, float lifetime
     if ( onePiece == nullptr )
         error::throw_ex("memory allocation failed",__FILE__,__LINE__);
@@ -435,11 +327,6 @@ void Application::setupLorenzAttractor()
     global::par().setPtr("lifetime",(void*)lifetime);
 
     Demo::create(Demo::LorenzAttractor);
-    Solver::create(Solver::LorenzAttractorOpenCL);
-
-#ifndef __EMSCRIPTEN__     
-    if ( global::par().isEnabled("export") )
-        FrameCaptor::create(FrameCaptor::OpenCV);
-#endif    
+    Solver::create(Solver::LorenzAttractorOpenCL);  
 }
 

@@ -84,8 +84,9 @@ void LorenzAttractorOpenCLSolver::__init()
 
     vector<cl::Device> devices = m_context.getInfo<CL_CONTEXT_DEVICES>();
 
-    if( devices.empty() )
+    if( devices.empty() ) {
         error::throw_ex("no OpenCL devices found",__FILE__,__LINE__);
+    }
 
     // TODO need a machine with multiple gpu
 
@@ -215,5 +216,9 @@ void LorenzAttractorOpenCLSolver::__step(float time, float deltaTime)
         #endif
         m_queue.enqueueReadBuffer( m_memColor, CL_TRUE, 0, 4*nParticles*sizeof(float), global::par().getPtr("color") );
     }
+}
+
+void LorenzAttractorOpenCLSolver::cleanup() {
+    // \todo clean the opencl stuff
 }
 

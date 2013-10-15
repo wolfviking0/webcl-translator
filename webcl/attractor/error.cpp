@@ -23,6 +23,7 @@ void throw_ex( const char *msg, const char *file, const int line )
 {
 	#ifdef __EMSCRIPTEN__
 		printf("%s in %s, line %d\n",msg,file,line);
+		exit(1);
 	#endif
 
     std::stringstream ss;
@@ -36,6 +37,7 @@ void throw_ex( const char *msg )
 
 	#ifdef __EMSCRIPTEN__
 		printf("%s\n",msg);
+		exit(1);
 	#endif
 
     throw std::runtime_error( msg );

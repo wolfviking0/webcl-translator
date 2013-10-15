@@ -51,6 +51,8 @@ public:
     virtual void init() override;
     virtual void step(float time, float deltaTime) override;
 
+    virtual void cleanup();
+
 };
 
 #endif
