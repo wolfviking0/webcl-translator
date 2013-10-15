@@ -23,8 +23,6 @@
 
 #include "error.h"
 
-//#include <SOIL2/SOIL2.h>
-
 using namespace std;
 
 namespace gltools
@@ -61,7 +59,7 @@ GLuint compileShader( const string &filename, GLenum type )
 
     const GLchar* charSrc[] = {strSrc.c_str()};
 
-    glShaderSource(shader, 1, charSrc, nullptr);
+    glShaderSource(shader, 1, charSrc, NULL);
 
     glCompileShader( shader );
 
@@ -94,7 +92,7 @@ GLuint compileShader( const string &filename, GLenum type )
 
 ShaderContainer::~ShaderContainer()
 {
-    for_each(cbegin(),cend(),glDeleteShader);
+    for_each(begin(),end(),glDeleteShader);
 }
 
 }

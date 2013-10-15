@@ -23,7 +23,7 @@
 
 using namespace std;
 
-static Demo *instance = nullptr;
+static Demo *instance = NULL;
 
 Demo *Demo::get()
 {
@@ -41,7 +41,7 @@ void Demo::create(Type type)
             break;
     }
 
-    if ( instance == nullptr )
+    if ( instance == NULL )
         error::throw_ex("unable to create demo",__FILE__,__LINE__);
 
     instance->init();

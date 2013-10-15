@@ -24,6 +24,8 @@ int main(int argc, char *argv[])
     //
     int use_gpu = 1;
     int use_interop = 0;
+    int use_filter = 0;
+    
     for(int i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
@@ -37,6 +39,9 @@ int main(int argc, char *argv[])
       
         else if(strstr(argv[i], "interop"))
             use_interop = 1;
+     
+        else if(strstr(argv[i], "filter"))
+            use_filter = 1;
     }
 
     printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
@@ -49,6 +54,11 @@ int main(int argc, char *argv[])
       global::par().enable("CL_GL_interop");
     else
       global::par().disable("CL_GL_interop");
+
+    if (use_filter == 1)
+      global::par().enable("filtering");
+    else
+      global::par().disable("filtering");
     
     global::par().setString("windowTitle","WebCL Lorenz Demo");
 /*
@@ -59,7 +69,7 @@ int main(int argc, char *argv[])
 */
 
     Application *app = Application::get();
-    if ( app == nullptr )
+    if ( app == NULL )
     {
         printf("ERROR: failed to create application\n");
         exit( EXIT_FAILURE );

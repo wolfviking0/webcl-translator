@@ -113,9 +113,14 @@ dxt_sample:
 	
 attractor_sample:
 	$(call chdir,attractor/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(NO_DEBUG) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(FOLDER)/attractor.js
+
+attractor_sample_osx:
+	$(call chdir,attractor/)
+	clang++ Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	-o attractor.out
 
 #smallpt_sample:
 #	$(call chdir,smallpt/)

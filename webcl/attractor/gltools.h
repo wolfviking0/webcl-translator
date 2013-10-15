@@ -15,16 +15,17 @@
 #ifndef GLTOOLS_H_
 #define GLTOOLS_H_
 
-#include <GL/glew.h>
-#ifndef __EMSCRIPTEN__
-  #define GLFW_INCLUDE_GLU
-  #include <GLFW/glfw3.h>
-  #include <glm/glm.hpp>
-#else
-  #include <GL/glfw.h>
-#endif
+#include <glm/glm.hpp>
+
 #include <string>
 #include <list>
+
+#ifdef __EMSCRIPTEN__
+	#include <GL/glew.h>
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 
 namespace gltools
 {

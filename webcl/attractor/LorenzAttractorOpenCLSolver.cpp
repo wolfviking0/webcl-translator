@@ -19,11 +19,6 @@
 #include <vector>
 #include <cmath>
 
-// TODO platform specific
-#ifndef __EMSCRIPTEN__
-  #include <GL/glx.h>
-#endif
-
 using namespace std;
 
 #include "global.h"
@@ -64,12 +59,15 @@ void LorenzAttractorOpenCLSolver::__init()
 
     // TODO check if interop is supported
     //global::par().disable("CL_GL_interop");
+     #ifndef __EMSCRIPTEN__
+        CGLContextObj kCGLContext = CGLGetCurrentContext();              
+        CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+    #endif
 
     cl_context_properties context_properties[] =
     {
 #ifndef __EMSCRIPTEN__      
-        CL_GL_CONTEXT_KHR, (cl_context_properties) glXGetCurrentContext(),
-        CL_GLX_DISPLAY_KHR, (cl_context_properties) glXGetCurrentDisplay(),
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)kCGLShareGroup,
 #else
         CL_GL_CONTEXT_KHR, (cl_context_properties) 0,
         CL_GLX_DISPLAY_KHR, (cl_context_properties) 0,
@@ -92,7 +90,7 @@ void LorenzAttractorOpenCLSolver::__init()
 
     string kernelFilename(global::par().getString("kernelFilename"));
 
-    ifstream file(kernelFilename, ios::in);
+    ifstream file(kernelFilename.c_str(), ios::in);
     if ( !file.is_open() )
         error::throw_ex("unable to open kernel file",__FILE__,__LINE__);
 

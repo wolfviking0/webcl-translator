@@ -51,9 +51,9 @@ void LorenzAttractorDemo::init()
     shaders.push_back( gltools::compileShader(global::par().getString("vertexShaderFilename"), GL_VERTEX_SHADER) );
     shaders.push_back( gltools::compileShader(global::par().getString("fragmentShaderFilename"), GL_FRAGMENT_SHADER) );
 
-    string geometryShaderFilename (global::par().getString("geometryShaderFilename"));
-    if ( !geometryShaderFilename.empty() )
-        shaders.push_back( gltools::compileShader(geometryShaderFilename, GL_GEOMETRY_SHADER) );
+    //string geometryShaderFilename (global::par().getString("geometryShaderFilename"));
+    //if ( !geometryShaderFilename.empty() )
+    //    shaders.push_back( gltools::compileShader(geometryShaderFilename, GL_GEOMETRY_SHADER) );
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // build shader program
@@ -66,7 +66,7 @@ void LorenzAttractorDemo::init()
     glBindAttribLocation(m_program, 1, "a_color");
     glBindAttribLocation(m_program, 2, "a_texCoord0");
 
-    for ( auto it = shaders.cbegin(); it != shaders.cend(); ++it )
+    for ( auto it = shaders.begin(); it != shaders.end(); ++it )
         glAttachShader(m_program, *it);
 
     glLinkProgram(m_program);
@@ -108,17 +108,31 @@ void LorenzAttractorDemo::init()
     glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
     glBufferData(GL_ARRAY_BUFFER, nParticles*4*sizeof(float), global::par().getPtr("color"), GL_DYNAMIC_DRAW);
 
-    glGenVertexArrays( 1, &m_vaoParticles );
-    glBindVertexArray(m_vaoParticles);
+    #ifdef __EMSCRIPTEN__
+        glGenVertexArrays( 1, &m_vaoParticles );
+        glBindVertexArray(m_vaoParticles);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboPos);
-    glVertexAttribPointer( 0, 4, GL_FLOAT, GL_FALSE, 0, nullptr );
+        glBindBuffer(GL_ARRAY_BUFFER, m_vboPos);
+        glVertexAttribPointer( 0, 4, GL_FLOAT, GL_FALSE, 0, NULL );
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
-    glVertexAttribPointer( 1, 4, GL_FLOAT, GL_FALSE, 0, nullptr );
+        glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
+        glVertexAttribPointer( 1, 4, GL_FLOAT, GL_FALSE, 0, NULL );
+    #else 
+        glGenVertexArraysAPPLE( 1, &m_vaoParticles );
+        glBindVertexArrayAPPLE(m_vaoParticles);
+
+        glEnableVertexAttribArrayARB(0);
+        glEnableVertexAttribArrayARB(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_vboPos);
+        glVertexAttribPointerARB( 0, 4, GL_FLOAT, GL_FALSE, 0, NULL );
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_vboColor);
+        glVertexAttribPointerARB( 1, 4, GL_FLOAT, GL_FALSE, 0, NULL );
+    #endif
 
     // let the solver know the handles for interoperation
     if ( global::par().isEnabled("CL_GL_interop") )
@@ -166,17 +180,23 @@ void LorenzAttractorDemo::init()
         {
             glBindFramebuffer(GL_FRAMEBUFFER, m_fbo[i]);
 
-            if ( i > 0 )
+            if ( i > 0 ) 
                 glActiveTexture(GL_TEXTURE0);
 
             glBindTexture(GL_TEXTURE_2D, m_tex[i]);
+            
+            //loc = glGetUniformLocation(m_program, "Texture0");
+            //glUniform1i(loc,i);
+
             glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,windowWidth,windowHeight,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex[i], 0);
             
-            //GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
-            //glDrawBuffers(1, drawBuffers);
+            #ifndef __EMSCRIPTEN__
+                GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
+                glDrawBuffers(1, drawBuffers);
+            #endif
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -201,18 +221,33 @@ void LorenzAttractorDemo::init()
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, 6*2* sizeof(float), tex_coords, GL_STATIC_DRAW);
 
-        glGenVertexArrays( 1, &m_vaoScreen );
-        glBindVertexArray(m_vaoScreen);
+        #ifdef __EMSCRIPTEN__
+            glGenVertexArrays( 1, &m_vaoScreen );
+            glBindVertexArray(m_vaoScreen);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, nullptr );
-        glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+            glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, NULL );
+            glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 0, nullptr );
-        glEnableVertexAttribArray(2);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+            glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 0, NULL );
+            glEnableVertexAttribArray(2);
 
-        glBindVertexArray(0);
+            glBindVertexArray(0);
+        #else
+            glGenVertexArraysAPPLE( 1, &m_vaoScreen );
+            glBindVertexArrayAPPLE(m_vaoScreen);
+
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+            glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, NULL );
+            glEnableVertexAttribArrayARB(0);
+
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+            glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 0, NULL );
+            glEnableVertexAttribArrayARB(2);
+
+            glBindVertexArrayAPPLE(0);
+        #endif
     }
     
     //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +298,11 @@ void LorenzAttractorDemo::render(float simTime)
     glUniform1i(hTask,0);
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
      
-    glBindVertexArray(m_vaoParticles);
+    #ifdef __EMSCRIPTEN__
+        glBindVertexArray(m_vaoParticles);
+    #else
+        glBindVertexArrayAPPLE(m_vaoParticles);
+    #endif
     glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();
@@ -275,9 +314,18 @@ void LorenzAttractorDemo::render(float simTime)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_tex[i-1]);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        //glUniform1i(glGetUniformLocation(m_program, "Texture0"),i-1);
+
         glUniform1i(hTask,i);
         glUniformMatrix4fv(hMVP, 1, GL_FALSE, &identityMatrix[0][0]);
-        glBindVertexArray(m_vaoScreen);
+
+        #ifdef __EMSCRIPTEN__
+            glBindVertexArray(m_vaoScreen);
+        #else
+            glBindVertexArrayAPPLE(m_vaoScreen);
+        #endif
+
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
     }

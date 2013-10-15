@@ -18,7 +18,7 @@
 
 #include "error.h"
 
-static Solver *instance = nullptr;
+static Solver *instance = NULL;
 
 using namespace std;
 
@@ -29,7 +29,7 @@ Solver *Solver::get()
 
 void Solver::create(Type type)
 {
-    if ( Demo::get() == nullptr )
+    if ( Demo::get() == NULL )
         error::throw_ex("demo must be create before solver",__FILE__,__LINE__);
 
     switch ( type )
@@ -41,7 +41,7 @@ void Solver::create(Type type)
             break;
     }
 
-    if ( instance == nullptr )
+    if ( instance == NULL )
         error::throw_ex("unable to create solver",__FILE__,__LINE__);
 
     instance->init();

@@ -15,18 +15,22 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#include <unordered_map>
+#include <map>
 #include <string>
 
-#include <GL/gl.h>
+#ifdef __EMSCRIPTEN__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
 
 class Parameters
 {
-    std::unordered_map<std::string,int> ipar;
-    std::unordered_map<std::string,GLuint> gluipar;
-    std::unordered_map<std::string,float> fpar;
-    std::unordered_map<std::string,std::string> spar;
-    std::unordered_map<std::string,uintptr_t> ppar;
+    std::map<std::string,int> ipar;
+    std::map<std::string,GLuint> gluipar;
+    std::map<std::string,float> fpar;
+    std::map<std::string,std::string> spar;
+    std::map<std::string,uintptr_t> ppar;
 
 public:
 
@@ -116,7 +120,7 @@ public:
         ppar[key] = (uintptr_t)ptr;
     }
 
-    void *getPtr(const std::string &key, void *def = nullptr) const
+    void *getPtr(const std::string &key, void *def = NULL) const
     {
         auto it = ppar.find(key);
         if ( it != ppar.end() )

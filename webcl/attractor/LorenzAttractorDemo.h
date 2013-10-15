@@ -18,6 +18,12 @@
 #include "Demo.h"
 #include <vector>
 
+#ifdef __EMSCRIPTEN__
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl.h>
+#endif
+
 class LorenzAttractorDemo: public Demo
 {
     friend void Demo::create(Type type);

@@ -47,8 +47,9 @@
 static double TimeElapsed                       = 0;
 static int FrameCount                           = 0;
 static unsigned int ReportStatsInterval         = 30;
+static char StatsString[512]                    = "\0";
 
-static Application *instance = nullptr;
+static Application *instance = NULL;
 
 #ifdef __EMSCRIPTEN__
 
@@ -198,9 +199,11 @@ void Application::init()
     int windowWidth = global::par().getInt("windowWidth");
     int windowHeight = global::par().getInt("windowHeight");
     std::string windowTitle = global::par().getString("windowTitle");
-  
-    glutInit(NULL, (char**)NULL);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    
+    int argc = 0;
+    glutInit(&argc, NULL);
+    printf("Init \n");
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize (windowWidth, windowHeight);
     glutInitWindowPosition (0, 0);
     glutCreateWindow (windowTitle.c_str());
@@ -259,17 +262,20 @@ void Application::setupLorenzAttractor()
 
     global::par().setInt("nParticles",nParticles);
 
-    global::par().setString("vertexShaderFilename","shader/lorenz.vert");
-    global::par().setString("fragmentShaderFilename","shader/lorenz.frag");
+    #ifdef __EMSCRIPTEN__
+        global::par().setString("vertexShaderFilename","shader/lorenz.vert");
+        global::par().setString("fragmentShaderFilename","shader/lorenz.frag");
+    #else
+        global::par().setString("vertexShaderFilename","shader/lorenz_osx.vert");
+        global::par().setString("fragmentShaderFilename","shader/lorenz_osx.frag");
+    #endif
 
     global::par().setString("kernelFilename","kernel/lorenz.cl");
-    
-    global::par().enable("filtering");
 
-    void *onePiece = nullptr;
+    void *onePiece = NULL;
 
     onePiece = (float*) malloc(9*nParticles*sizeof(float)); // float4 pos, float4 color, float lifetime
-    if ( onePiece == nullptr )
+    if ( onePiece == NULL )
         error::throw_ex("memory allocation failed",__FILE__,__LINE__);
     // TODO write a reasonable memory manager, for now just keep the memory allocated till the end of the application
 

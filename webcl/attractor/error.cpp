@@ -21,8 +21,10 @@ namespace error
 
 void throw_ex( const char *msg, const char *file, const int line )
 {
+	
+	printf("%s in %s, line %d\n",msg,file,line);
+	
 	#ifdef __EMSCRIPTEN__
-		printf("%s in %s, line %d\n",msg,file,line);
 		exit(1);
 	#endif
 
@@ -35,8 +37,9 @@ void throw_ex( const char *msg, const char *file, const int line )
 void throw_ex( const char *msg )
 {
 
+	printf("%s\n",msg);
+
 	#ifdef __EMSCRIPTEN__
-		printf("%s\n",msg);
 		exit(1);
 	#endif
 
