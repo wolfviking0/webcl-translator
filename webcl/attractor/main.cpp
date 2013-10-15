@@ -24,7 +24,7 @@ using namespace std;
 #include <emscripten/emscripten.h>
 
 //int counter = 1000;
-
+/*
 void sim(){
 
     Application *app = Application::get();
@@ -57,7 +57,7 @@ void sim(){
     }
 
 }
-
+*/
 #endif
 
 int main(int argc, char *argv[])
@@ -100,7 +100,13 @@ int main(int argc, char *argv[])
      
         webclBeginProfile("Profile Attractor webcl");
 
-        emscripten_set_main_loop(sim, 0, true);
+        //emscripten_set_main_loop(sim, 0, true);
+        Application *app = Application::get();
+        if ( app == nullptr )
+        {
+            cerr << "ERROR: failed to create application" << endl;
+            exit( EXIT_FAILURE );
+        }
 
     #else
 /*

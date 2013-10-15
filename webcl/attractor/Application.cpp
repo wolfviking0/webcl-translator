@@ -22,9 +22,13 @@
 #include "Solver.h"
 #include "Demo.h"
 #ifndef __EMSCRIPTEN__     
-    #include "FrameCaptor.h"
+  #include "FrameCaptor.h"
 #else
-    #include <emscripten/emscripten.h>
+  #include <emscripten/emscripten.h>
+#include <CL/opencl.h>
+#include <GL/gl.h>
+#include <GL/glut.h>
+  #define USE_GLUT
 #endif
 
 #include "global.h"
@@ -98,8 +102,66 @@ void cursor_pos_callback(GLFWwindow* window, double dx,double dy)
         Application::get()->setCursorPos(float(dx),float(dy));
 }
 
+void Keyboard( unsigned char key, int x, int y )
+{
+   switch( key )
+   {
+      case 27:
+      case 'q':
+#ifdef __EMSCRIPTEN__
+         webclEndProfile();
+#endif
+         exit(0);
+         break;
+    }
+    glutPostRedisplay();
+}
+
+void Display(void)
+{
+  if (Application::get())
+      Application::get()->run();
+  //printf("Display\n");
+  //Application *app = Application::get();
+ // app->run();
+}
+
+void Idle(void)
+{
+    //printf("Idle\n");
+    glutPostRedisplay();
+}
+
 void Application::init()
 {
+  
+#ifdef USE_GLUT
+  
+    int windowWidth = global::par().getInt("windowWidth");
+    int windowHeight = global::par().getInt("windowHeight");
+    std::string windowTitle = global::par().getString("windowTitle");
+  
+    glutInit(NULL, (char**)NULL);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize (windowWidth, windowHeight);
+    glutInitWindowPosition (0, 0);
+    glutCreateWindow (windowTitle.c_str());
+    
+    glutDisplayFunc(Display);
+    glutIdleFunc(Idle);
+    glutKeyboardFunc(Keyboard);
+
+    //atexit(Shutdown);
+#ifdef __EMSCRIPTEN__
+
+    setupLorenzAttractor();
+
+#endif
+    
+    glutMainLoop();     
+    
+#else
+  
     // initialize GLFW and create window, setup callbacks
 #ifndef __EMSCRIPTEN__
     glfwSetErrorCallback(error_callback);
@@ -144,13 +206,15 @@ void Application::init()
         setupLorenzAttractor();
 
     #endif
-
+        
+#endif        
 }
 
 #ifdef __EMSCRIPTEN__
 
 void Application::run()
 {
+  /*
     mainLoop();
 }
 
@@ -168,7 +232,9 @@ void Application::mainLoop()
 
         return ;
     }
-
+    */
+  
+  
     float realTime = getRealTime();
     ++framesLastSecond;
     if ( lastSecond != (int)realTime )
@@ -178,11 +244,14 @@ void Application::mainLoop()
         framesLastSecond = 0;
     }
 
+    
     // render and swap buffers
     Demo::get()->render(m_simTime);
 
-    glfwSwapBuffers();
-
+    
+    //glfwSwapBuffers();
+    glutSwapBuffers();
+  
     // step simulation
     Solver::get()->step(m_simTime,m_simDeltaTime);
 
@@ -190,7 +259,7 @@ void Application::mainLoop()
     Demo::get()->update();
 
     // process UI events
-    glfwPollEvents();
+    //glfwPollEvents();*/
 
     m_simTime += m_simDeltaTime;
 
