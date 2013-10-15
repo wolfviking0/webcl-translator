@@ -63,8 +63,37 @@ void sim(){
 int main(int argc, char *argv[])
 {
 
+    // Parse command line options
+    //
+    int i;
+    int use_gpu = 1;
+    int use_interop = 0;
+    for(i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+          
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+      
+        else if(strstr(argv[i], "interop"))
+            use_interop = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+  
     global::par().setInt("windowHeight",512);
     global::par().setInt("windowWidth",512);
+    global::par().setInt("gpuDevice",use_gpu);
+    
+    if (use_interop == 1)
+      global::par().enable("CL_GL_interop");
+    else
+      global::par().disable("CL_GL_interop");
+    
     global::par().setString("windowTitle","WebCL Lorenz Demo");
 
     #ifdef __EMSCRIPTEN__
