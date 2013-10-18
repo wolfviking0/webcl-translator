@@ -104,6 +104,12 @@ qjulia_sample:
 	--preload-file qjulia_kernel.cl \
 	-o ../build/$(FOLDER)/qjulia.js
 
+popcorn_sample:
+	$(call chdir,popcorn/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(NO_DEBUG) \
+	--preload-file part2.cl \
+	-o ../build/$(FOLDER)/popcorn.js
+
 dxt_sample:
 	$(call chdir,dxtcompressor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
