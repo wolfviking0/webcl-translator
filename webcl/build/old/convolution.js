@@ -5252,9 +5252,6 @@ function copyTempDouble(ptr) {
       __exit(status);
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -5899,9 +5896,6 @@ function copyTempDouble(ptr) {
       }
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function __ZSt9terminatev() {
@@ -63779,7 +63773,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = 'b6733e16-fe4d-4faf-a303-3b2a2d0b282c';
+    var PACKAGE_UUID = '32ac78a5-2e5f-492c-912d-0e85aba08ed5';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

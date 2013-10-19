@@ -4802,9 +4802,6 @@ function copyTempDouble(ptr) {
       }
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -10130,9 +10127,6 @@ function copyTempDouble(ptr) {
     }
 ;
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function _memcpy(dest, src, num) {
@@ -17528,7 +17522,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = 'e5dee362-d88b-44a9-809b-f950e40a00d0';
+    var PACKAGE_UUID = 'ff3dc499-6c65-4472-af11-cc7938f841eb';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

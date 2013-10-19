@@ -4579,9 +4579,6 @@ function copyTempDouble(ptr) {
       return 0;
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -5536,9 +5533,6 @@ function copyTempDouble(ptr) {
       return 0;/*CL_SUCCESS*/
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function _abort() {

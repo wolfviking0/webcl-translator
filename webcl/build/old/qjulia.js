@@ -4578,9 +4578,6 @@ function copyTempDouble(ptr) {
       return 0;
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function __exit(status) {
@@ -4809,9 +4806,6 @@ function copyTempDouble(ptr) {
       GLUT.requestFullScreen();
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -11027,67 +11021,53 @@ function _Initialize($gpu) {
 function _Display() {
  var label = 0;
  var tempVarArgs = 0;
- var sp  = STACKTOP; STACKTOP = (STACKTOP + 16)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ var sp  = STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1) switch(label) {
   case 1: 
-   var $uiStartTime=sp;
+   var $uiStartTime;
    var $err;
-   var $uiEndTime=(sp)+(8);
+   var $uiEndTime;
    var $1=HEAP32[((4040)>>2)];
    var $2=((($1)+(1))|0);
    HEAP32[((4040)>>2)]=$2;
    var $3=_GetCurrentTime();
-   var $4$0 = $3>>>0; var $4$1 = (Math.abs($3) >= 1 ? ($3 > 0 ? Math.min(Math.floor(($3)/4294967296), 4294967295)>>>0 : (~~(Math.ceil(($3 - +(((~~($3)))>>>0))/4294967296)))>>>0) : 0);
-   var $st$0$0=(($uiStartTime)|0);
-   HEAP32[(($st$0$0)>>2)]=$4$0;
-   var $st$1$1=(($uiStartTime+4)|0);
-   HEAP32[(($st$1$1)>>2)]=$4$1;
+   $uiStartTime=$3;
    _glClearColor(0, 0, 0, 0);
    _glClear(16384);
-   var $5=HEAP32[((2432)>>2)];
-   var $6=($5|0)!=0;
-   if ($6) { label = 2; break; } else { label = 3; break; }
+   var $4=HEAP32[((2432)>>2)];
+   var $5=($4|0)!=0;
+   if ($5) { label = 2; break; } else { label = 3; break; }
   case 2: 
    _UpdateMu(2304, ((2344)|0), ((2328)|0));
-   var $8=HEAPF32[((2304)>>2)];
-   _Interpolate(((2312)|0), $8, ((2344)|0), ((2328)|0));
+   var $7=HEAPF32[((2304)>>2)];
+   _Interpolate(((2312)|0), $7, ((2344)|0), ((2328)|0));
    _UpdateColor(2376, ((2416)|0), ((2400)|0));
-   var $9=HEAPF32[((2376)>>2)];
-   _Interpolate(((2384)|0), $9, ((2416)|0), ((2400)|0));
+   var $8=HEAPF32[((2376)>>2)];
+   _Interpolate(((2384)|0), $8, ((2416)|0), ((2400)|0));
    label = 3; break;
   case 3: 
-   var $11=_Recompute();
-   $err=$11;
-   var $12=$err;
-   var $13=($12|0)!=0;
-   if ($13) { label = 4; break; } else { label = 5; break; }
+   var $10=_Recompute();
+   $err=$10;
+   var $11=$err;
+   var $12=($11|0)!=0;
+   if ($12) { label = 4; break; } else { label = 5; break; }
   case 4: 
-   var $15=$err;
-   var $16=_printf(((1880)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$15,tempVarArgs)); STACKTOP=tempVarArgs;
-   var $17=_end(1);
+   var $14=$err;
+   var $15=_printf(((1880)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$14,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $16=_end(1);
    _exit(1);
    throw "Reached an unreachable!";
   case 5: 
-   var $19=HEAP32[((4032)>>2)];
-   _RenderTexture($19);
+   var $18=HEAP32[((4032)>>2)];
+   _RenderTexture($18);
    _ReportInfo();
    _glFinish();
-   var $20=_GetCurrentTime();
-   var $21$0 = $20>>>0; var $21$1 = (Math.abs($20) >= 1 ? ($20 > 0 ? Math.min(Math.floor(($20)/4294967296), 4294967295)>>>0 : (~~(Math.ceil(($20 - +(((~~($20)))>>>0))/4294967296)))>>>0) : 0);
-   var $st$2$0=(($uiEndTime)|0);
-   HEAP32[(($st$2$0)>>2)]=$21$0;
-   var $st$3$1=(($uiEndTime+4)|0);
-   HEAP32[(($st$3$1)>>2)]=$21$1;
-   var $ld$4$0=(($uiStartTime)|0);
-   var $22$0=HEAP32[(($ld$4$0)>>2)];
-   var $ld$5$1=(($uiStartTime+4)|0);
-   var $22$1=HEAP32[(($ld$5$1)>>2)];
-   var $ld$6$0=(($uiEndTime)|0);
-   var $23$0=HEAP32[(($ld$6$0)>>2)];
-   var $ld$7$1=(($uiEndTime+4)|0);
-   var $23$1=HEAP32[(($ld$7$1)>>2)];
-   _ReportStats($22$0, $22$1, $23$0, $23$1);
+   var $19=_GetCurrentTime();
+   $uiEndTime=$19;
+   var $20=$uiStartTime;
+   var $21=$uiEndTime;
+   _ReportStats($20, $21);
    STACKTOP = sp;
    return;
   default: assert(0, "bad label: " + label);
@@ -11819,77 +11799,63 @@ function _ReportInfo() {
   default: assert(0, "bad label: " + label);
  }
 }
-function _ReportStats($uiStartTime$0, $uiStartTime$1, $uiEndTime$0, $uiEndTime$1) {
+function _ReportStats($uiStartTime, $uiEndTime) {
  var label = 0;
  var tempVarArgs = 0;
- var sp  = STACKTOP; STACKTOP = (STACKTOP + 16)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
+ var sp  = STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1) switch(label) {
   case 1: 
-   var $1=sp;
-   var $2=(sp)+(8);
+   var $1;
+   var $2;
    var $fMs;
    var $fFps;
-   var $st$0$0=(($1)|0);
-   HEAP32[(($st$0$0)>>2)]=$uiStartTime$0;
-   var $st$1$1=(($1+4)|0);
-   HEAP32[(($st$1$1)>>2)]=$uiStartTime$1;
-   var $st$2$0=(($2)|0);
-   HEAP32[(($st$2$0)>>2)]=$uiEndTime$0;
-   var $st$3$1=(($2+4)|0);
-   HEAP32[(($st$3$1)>>2)]=$uiEndTime$1;
-   var $ld$4$0=(($2)|0);
-   var $3$0=HEAP32[(($ld$4$0)>>2)];
-   var $ld$5$1=(($2+4)|0);
-   var $3$1=HEAP32[(($ld$5$1)>>2)];
-   var $4=(($3$0>>>0)+(($3$1>>>0)*4294967296));
-   var $ld$6$0=(($1)|0);
-   var $5$0=HEAP32[(($ld$6$0)>>2)];
-   var $ld$7$1=(($1+4)|0);
-   var $5$1=HEAP32[(($ld$7$1)>>2)];
-   var $6=(($5$0>>>0)+(($5$1>>>0)*4294967296));
-   var $7=_SubtractTime($4, $6);
-   var $8=$7;
+   $1=$uiStartTime;
+   $2=$uiEndTime;
+   var $3=$2;
+   var $4=$1;
+   var $5=_SubtractTime($3, $4);
+   var $6=$5;
+   var $7=HEAPF64[((2192)>>3)];
+   var $8=($7)+($6);
+   HEAPF64[((2192)>>3)]=$8;
    var $9=HEAPF64[((2192)>>3)];
-   var $10=($9)+($8);
-   HEAPF64[((2192)>>3)]=$10;
-   var $11=HEAPF64[((2192)>>3)];
-   var $12=$11 != 0;
-   if ($12) { label = 2; break; } else { label = 5; break; }
+   var $10=$9 != 0;
+   if ($10) { label = 2; break; } else { label = 5; break; }
   case 2: 
-   var $14=HEAP32[((4040)>>2)];
-   var $15=($14|0)!=0;
-   if ($15) { label = 3; break; } else { label = 5; break; }
+   var $12=HEAP32[((4040)>>2)];
+   var $13=($12|0)!=0;
+   if ($13) { label = 3; break; } else { label = 5; break; }
   case 3: 
-   var $17=HEAP32[((4040)>>2)];
-   var $18=HEAP32[((2296)>>2)];
-   var $19=($17>>>0) > ($18>>>0);
-   if ($19) { label = 4; break; } else { label = 5; break; }
+   var $15=HEAP32[((4040)>>2)];
+   var $16=HEAP32[((2296)>>2)];
+   var $17=($15>>>0) > ($16>>>0);
+   if ($17) { label = 4; break; } else { label = 5; break; }
   case 4: 
-   var $21=HEAPF64[((2192)>>3)];
-   var $22=($21)*(1000);
-   var $23=HEAP32[((4040)>>2)];
-   var $24=($23|0);
-   var $25=($22)/($24);
-   $fMs=$25;
-   var $26=$fMs;
-   var $27=($26)/(1000);
-   var $28=(1)/($27);
-   $fFps=$28;
-   var $ld$8$0=((4080)|0);
-   var $29$0=HEAP32[(($ld$8$0)>>2)];
-   var $ld$9$1=((4084)|0);
-   var $29$1=HEAP32[(($ld$9$1)>>2)];
-   var $$etemp$10$0=4;
-   var $$etemp$10$1=0;
-   var $30=(($29$0|0) == ($$etemp$10$0|0)) & (($29$1|0) == ($$etemp$10$1|0));
-   var $31=$30 ? (((2040)|0)) : (((2032)|0));
-   var $32=$fMs;
-   var $33=$fFps;
-   var $34=HEAP32[((2952)>>2)];
-   var $35=($34|0)!=0;
-   var $36=$35 ? (((1808)|0)) : (((1760)|0));
-   var $37=_printf(((1824)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$31,HEAPF64[(((tempVarArgs)+(8))>>3)]=$32,HEAPF64[(((tempVarArgs)+(16))>>3)]=$33,HEAP32[(((tempVarArgs)+(24))>>2)]=$36,tempVarArgs)); STACKTOP=tempVarArgs;
+   var $19=HEAPF64[((2192)>>3)];
+   var $20=($19)*(1000);
+   var $21=HEAP32[((4040)>>2)];
+   var $22=($21|0);
+   var $23=($20)/($22);
+   $fMs=$23;
+   var $24=$fMs;
+   var $25=($24)/(1000);
+   var $26=(1)/($25);
+   $fFps=$26;
+   var $ld$0$0=((4080)|0);
+   var $27$0=HEAP32[(($ld$0$0)>>2)];
+   var $ld$1$1=((4084)|0);
+   var $27$1=HEAP32[(($ld$1$1)>>2)];
+   var $$etemp$2$0=4;
+   var $$etemp$2$1=0;
+   var $28=(($27$0|0) == ($$etemp$2$0|0)) & (($27$1|0) == ($$etemp$2$1|0));
+   var $29=$28 ? (((2040)|0)) : (((2032)|0));
+   var $30=$fMs;
+   var $31=$fFps;
+   var $32=HEAP32[((2952)>>2)];
+   var $33=($32|0)!=0;
+   var $34=$33 ? (((1808)|0)) : (((1760)|0));
+   var $35=_printf(((1824)|0), (tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$29,HEAPF64[(((tempVarArgs)+(8))>>3)]=$30,HEAPF64[(((tempVarArgs)+(16))>>3)]=$31,HEAP32[(((tempVarArgs)+(24))>>2)]=$34,tempVarArgs)); STACKTOP=tempVarArgs;
    HEAP32[((4040)>>2)]=0;
    HEAPF64[((2192)>>3)]=0;
    label = 5; break;
@@ -16156,7 +16122,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = '6e378293-3b41-4342-bb28-c614780d2bb3';
+    var PACKAGE_UUID = '82155c82-37d3-4128-8ebe-763c2fa5f263';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

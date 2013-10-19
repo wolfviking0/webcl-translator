@@ -11442,9 +11442,10 @@ function copyTempDouble(ptr) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
         _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
+      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
+        console.info("/!\\ clCreateBuffer : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
+        _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {
-        // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
-        // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
         console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
       }
       try {
@@ -95133,7 +95134,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'd295b072-a3c4-49f9-8f0c-f087ce264829';
+    var PACKAGE_UUID = '2d149d49-f166-4a56-9fea-d97e746cd3c3';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

@@ -1440,10 +1440,10 @@ var LibraryOpenCL = {
       _host_ptr = new ArrayBuffer(size);
     } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
       _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
+    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
+      console.info("/!\\ clCreateBuffer : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
+      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
     } else if (flags_i64_1 & ~_flags) {
-      // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
-      // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
-
       console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
 
@@ -1597,9 +1597,6 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clCreateImage2D",[context,flags_i64_1,image_format,image_width,image_height,image_row_pitch,host_ptr,cl_errcode_ret]);
 #endif
-#if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clCreateImage2D : you don't call clSetTypePointer for host_ptr parameter");
-#endif
 
     var _id = null;
     var _image = null;
@@ -1611,9 +1608,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
 #endif
@@ -1634,9 +1628,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
 #endif
@@ -1656,9 +1647,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_IMAGE_FORMAT_DESCRIPTOR', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"image_format is NULL","");
 #endif
@@ -1666,17 +1654,79 @@ var LibraryOpenCL = {
       return 0; 
     }
 
-    // There are no possibility to know the size of the host_ptr --> @steven What do you thing ?
-    var _sizeInByte = 0;
-    var _size = 0;
+    console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info... need to be more tested");
+    var _type = FLOAT;
+    var _sizeType = 4;
+    var _sizeOrder = 1;    
+
+    switch (_channel_type) {
+      case webcl.SNORM_INT8:
+      case webcl.SIGNED_INT8:
+        _sizeType = 1;
+        _type = webcl.SIGNED_INT8;
+        break;
+      case webcl.UNORM_INT8:        
+      case webcl.UNSIGNED_INT8:
+        _sizeType = 1;
+        _type = webcl.UNSIGNED_INT8;
+        break;
+      case webcl.SNORM_INT16:
+      case webcl.SIGNED_INT16:
+        _sizeType = 2;
+        _type = webcl.SIGNED_INT16;
+        break;
+      case webcl.UNORM_INT16:        
+      case webcl.UNSIGNED_INT16:
+      case webcl.HALF_FLOAT:
+        _sizeType = 2;      
+        _type = webcl.UNSIGNED_INT16;
+        break;
+      case webcl.SIGNED_INT32:
+        _sizeType = 4;
+        _type = SIGNED_INT32;
+      case webcl.UNSIGNED_INT32:
+        _sizeType = 4;
+        _type = UNSIGNED_INT32;
+        break;        
+      case webcl.FLOAT:
+        _sizeType = 4;
+        _type = webcl.FLOAT;
+        break;
+      default:
+        console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
+    }
+
+    switch (_channel_type) {
+      case webcl.R:
+      case webcl.A:
+      case webcl.INTENSITY:
+      case webcl.LUMINANCE:
+        _sizeOrder = 1;
+        break;
+      case webcl.RG:
+      case webcl.RA:
+        _sizeOrder = 2;
+        break;
+      case webcl.RGB:
+        _sizeOrder = 3;
+        break; 
+      case webcl.RGBA:
+      case webcl.BGRA:
+      case webcl.ARGB:      
+        _sizeOrder = 4;
+        break;        
+      default:
+        console.error("clCreateImage2D : This channel order is not yet implemented => "+_channel_order);
+    }
+
+    var _sizeInByte = image_width * image_height * _sizeType * _sizeOrder;
+    var _size = image_width * image_height * _sizeOrder;
+
     if (host_ptr != 0 ) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
 #endif
@@ -1687,12 +1737,12 @@ var LibraryOpenCL = {
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
       _host_ptr = new ArrayBuffer(_sizeInByte);
     } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
+      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,_type);
+    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
+      // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested
+      console.info("/!\\ clCreateImage2D : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
+      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,_type);
     } else if (flags_i64_1 & ~_flags) {
-      // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
-      // ( Same question : clCreateBuffer )
-      // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
-
       console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
 
@@ -1716,9 +1766,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
 #endif
@@ -1731,9 +1778,6 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_image);
 
-#if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
-#endif
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
 #endif
@@ -2019,6 +2063,29 @@ var LibraryOpenCL = {
       return _error;
     }
 
+    var _sizeType = 1;
+    switch (_info.channelType) {
+      case webcl.SNORM_INT8:
+      case webcl.SIGNED_INT8:
+      case webcl.UNORM_INT8:        
+      case webcl.UNSIGNED_INT8:
+        _sizeType = 1;
+        break;
+      case webcl.SNORM_INT16:
+      case webcl.UNORM_INT16:        
+      case webcl.UNSIGNED_INT16:
+      case webcl.HALF_FLOAT:
+        _sizeType = 2;
+        break;
+      case webcl.SIGNED_INT32:
+      case webcl.UNSIGNED_INT32:  
+      case webcl.FLOAT:
+        _sizeType = 4;
+        break;
+      default:
+        console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
+    }
+
     switch (param_name) {
       case (webcl.IMAGE_FORMAT) :
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.channelOrder', 'i32') }}};
@@ -2026,8 +2093,7 @@ var LibraryOpenCL = {
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '8', 'i32') }}};
         break;
       case (webcl.IMAGE_ELEMENT_SIZE) :
-        //  Not sure how I can know the element size ... It's depending of the channelType I suppose --> @steven Your opinion about that ??
-        if (param_value != 0) {{{ makeSetValue('param_value', '0', '4', 'i32') }}};
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '_sizeType', 'i32') }}};
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
         break;
       case (webcl.IMAGE_ROW_PITCH) :
@@ -3679,8 +3745,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 #endif
-          // /!\ _host_ptr must be init with size --> @steven how i can have it ??
-          var _host_ptr = CL.getReferencePointerToArray(ptr,0,CL.cl_pn_type);
+
           var _event_wait_list = [];
           var _event = null;
           var _buffer_origin = [];
@@ -3692,6 +3757,9 @@ var LibraryOpenCL = {
             _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
+
+          console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr ... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -4015,8 +4083,6 @@ var LibraryOpenCL = {
 
         if (image in CL.cl_objects) {
 #endif
-          // /!\ _host_ptr must be init with size --> @steven how i can have it ??
-          var _host_ptr = CL.getReferencePointerToArray(ptr,0,CL.cl_pn_type);
           var _event_wait_list = [];
           var _event = null;
 
@@ -4027,6 +4093,9 @@ var LibraryOpenCL = {
             _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }          
+
+          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr ... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};

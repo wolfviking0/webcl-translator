@@ -4888,9 +4888,6 @@ function copyTempDouble(ptr) {
       }
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -5532,9 +5529,6 @@ function copyTempDouble(ptr) {
       return 0;/*CL_SUCCESS*/
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function _open(path, oflag, varargs) {
@@ -13638,7 +13632,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = 'a8465f7c-d946-4a7b-974d-7f2fc4f3831c';
+    var PACKAGE_UUID = '4489b36f-1c93-4205-ad39-4e44c7ba946f';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

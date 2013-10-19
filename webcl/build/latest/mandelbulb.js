@@ -5516,9 +5516,10 @@ function copyTempDouble(ptr) {
         _host_ptr = new ArrayBuffer(size);
       } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
         _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
+      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
+        console.info("/!\\ clCreateBuffer : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
+        _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {
-        // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... 
-        // may be i can do fake it using the same behavior than CL_MEM_COPY_HOST_PTR --> @steven What do you thing ??
         console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
       }
       try {
@@ -17254,7 +17255,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '26800df0-00bd-45ec-9ad8-39f592aa1b69';
+    var PACKAGE_UUID = 'be286753-ab1b-4fc5-8b34-721ab02da36e';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
