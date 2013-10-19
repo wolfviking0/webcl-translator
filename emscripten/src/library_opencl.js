@@ -297,11 +297,14 @@ var LibraryOpenCL = {
       for (var i = 0; i < parameter.length - 1 ; i++) {
         if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[i] instanceof ArrayBufferView)) || (parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
           CL.stack_trace += "[";  
-          for (var j = 0; j < parameter[i].length - 1 ; j++) {
+          for (var j = 0; j < Math.min(25,parameter[i].length - 1) ; j++) {
             CL.stack_trace += parameter[i][j] + ",";
           }
           if (parameter[i].length >= 1) {
             CL.stack_trace += parameter[i][parameter[i].length - 1];
+          }
+          if (parameter[i].length > 25) {
+            CL.stack_trace += " ...";
           }
           CL.stack_trace += "],";
         } else {
@@ -312,11 +315,14 @@ var LibraryOpenCL = {
       if (parameter.length >= 1) {
         if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[parameter.length - 1] instanceof ArrayBufferView)) || (parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array) ) { 
           CL.stack_trace += "[";  
-          for (var j = 0; j < parameter[parameter.length - 1].length - 1 ; j++) {
+          for (var j = 0; j < Math.min(25,parameter[parameter.length - 1].length - 1) ; j++) {
             CL.stack_trace += parameter[parameter.length - 1][j] + ",";
           }
-          if (parameter[i].length >= 1) {
+          if (parameter[parameter.length - 1].length >= 1) {
             CL.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
+          }
+          if (parameter[parameter.length - 1].length > 25) {
+            CL.stack_trace += " ...";
           }
           CL.stack_trace += "]";
         } else {
@@ -2431,7 +2437,7 @@ var LibraryOpenCL = {
 #endif
 
 #if OPENCL_CHECK_VALID_OBJECT
-    if (program in CL.cl_objects) {
+    if (!(program in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([webcl.INVALID_SAMPLER],CL.cl_objects[program]+" is not a valid OpenCL program","");
 #endif
