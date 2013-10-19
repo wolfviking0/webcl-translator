@@ -4354,7 +4354,7 @@ function copyTempDouble(ptr) {
                              Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
                              Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');                           
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},init:function () {
         if (typeof(webcl) === "undefined") {
           webcl = window.WebCL;
           if (typeof(webcl) === "undefined") {
@@ -4382,8 +4382,6 @@ function copyTempDouble(ptr) {
         if (obj !== undefined) {
           Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects[_id]=obj;
-          CL.cl_objects_counter++;
-          //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
         }
         return _id;      
       },parseKernel:function (kernel_string) {
@@ -4545,14 +4543,6 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
-      var count = 0;
-      for (obj in CL.cl_objects) {
-        console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
-      }
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function __exit(status) {
@@ -4781,9 +4771,6 @@ function copyTempDouble(ptr) {
       GLUT.requestFullScreen();
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -5316,8 +5303,6 @@ function copyTempDouble(ptr) {
       try {
         //CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5332,8 +5317,6 @@ function copyTempDouble(ptr) {
       try {
           CL.cl_objects[program].release();
           delete CL.cl_objects[program];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5348,8 +5331,6 @@ function copyTempDouble(ptr) {
       try {
           //CL.cl_objects[command_queue].release();
           delete CL.cl_objects[command_queue];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5364,8 +5345,6 @@ function copyTempDouble(ptr) {
       try {
         //CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5380,8 +5359,6 @@ function copyTempDouble(ptr) {
       try {
           //CL.cl_objects[context].release();
           delete CL.cl_objects[context];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -15896,7 +15873,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = 'b9c75214-d569-4cd7-9055-b5ebfb4b0378';
+    var PACKAGE_UUID = '1584ef3e-b129-4a00-b247-f250346d6362';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

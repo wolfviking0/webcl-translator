@@ -5020,7 +5020,7 @@ function copyTempDouble(ptr) {
                              Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
                              Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');                           
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},init:function () {
         if (typeof(webcl) === "undefined") {
           webcl = window.WebCL;
           if (typeof(webcl) === "undefined") {
@@ -5048,8 +5048,6 @@ function copyTempDouble(ptr) {
         if (obj !== undefined) {
           Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects[_id]=obj;
-          CL.cl_objects_counter++;
-          //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
         }
         return _id;      
       },parseKernel:function (kernel_string) {
@@ -5219,9 +5217,6 @@ function copyTempDouble(ptr) {
       __exit(status);
     }
   function _webclBeginProfile(name) {
-      // start profiling
-      console.profile(Pointer_stringify(name));
-      CL.cl_elapsed_time = Date.now();
       return 0;
     }
   function _strstr(ptr1, ptr2) {
@@ -5694,14 +5689,6 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;    
     }
   function _webclEndProfile() {
-      CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
-      console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
-      var count = 0;
-      for (obj in CL.cl_objects) {
-        console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
-      }
-      console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
       return 0;
     }
   function __ZSt9terminatev() {
@@ -63579,7 +63566,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = '908bd15c-49c5-4557-a491-04265ef53b92';
+    var PACKAGE_UUID = 'c4ac301a-f2fa-44ea-866f-bdfbcb319d26';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);

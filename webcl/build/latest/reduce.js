@@ -13962,7 +13962,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/reduce.data';
     var REMOTE_PACKAGE_NAME = 'reduce.data';
-    var PACKAGE_UUID = 'ae724fb7-a9c6-4039-b0b3-b35d66a0a8b9';
+    var PACKAGE_UUID = 'e64b3830-75f5-4ea1-a4e9-04fc9651529b';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
