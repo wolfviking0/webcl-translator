@@ -50,6 +50,7 @@ public:
     void init ();
     void run ();
 
+    float getRealTime();
     float getSimTime();
 
 };

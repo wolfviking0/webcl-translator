@@ -190,7 +190,11 @@ DivideUp(int a, int b)
     return ((a % b) != 0) ? (a / b + 1) : (a / b);
 }
 
+#ifdef __EMSCRIPTEN__
+static float
+#else
 static uint64_t
+#endif
 GetCurrentTime()
 {
     #ifdef __EMSCRIPTEN__
@@ -200,11 +204,16 @@ GetCurrentTime()
     #endif
 }
 
+#ifdef __EMSCRIPTEN__
+static float
+SubtractTime( float uiEndTime, float uiStartTime )
+#else
 static double
 SubtractTime( uint64_t uiEndTime, uint64_t uiStartTime )
+#endif 
 {
     #ifdef __EMSCRIPTEN__
-        return 1e-3 * (uiEndTime - uiStartTime);
+        return 0.001f * (uiEndTime - uiStartTime);
     #else
         static double s_dConversion = 0.0;
         uint64_t uiDifference = uiEndTime - uiStartTime;
@@ -278,7 +287,7 @@ static void DrawString(float x, float y, float color[4], char *buffer)
 #endif
 }
 
-static void DrawText(float x, float y, int light, char *format, ...)
+static void DrawText(float x, float y, int light, const char *format, ...)
 {
 #ifndef __EMSCRIPTEN__
     va_list args;
@@ -643,7 +652,9 @@ CreateComputeResult(void)
         clReleaseMemObject(ComputeResult);
     ComputeResult = 0;
     
-    clSetTypePointer(CL_UNSIGNED_INT8);
+    #ifdef __EMSCRIPTEN__
+        clSetTypePointer(CL_UNSIGNED_INT8);
+    #endif
     ComputeResult = clCreateBuffer(ComputeContext, CL_MEM_WRITE_ONLY, TextureTypeSize * 4 * TextureWidth * TextureHeight, NULL, NULL);
     if (!ComputeResult)
     {
@@ -677,7 +688,7 @@ SetupComputeDevices(int gpu)
             0,
         #else
             CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, 
-            (cl_context_properties)kCGLShareGroup
+            (cl_context_properties)kCGLShareGroup,
         #endif
             0
         };
@@ -808,7 +819,7 @@ SetupComputeKernel(void)
     const char* width_macro = "#define WIDTH";
     const char* height_macro = "#define HEIGHT";
     
-    char* preprocess = malloc(strlen(source) + 1024);
+    char* preprocess = (char*)malloc(strlen(source) + 1024);
     sprintf(preprocess, "\n%s (%d)\n%s (%d)\n%s", width_macro, Width, height_macro, Height, source); 
 #if (DEBUG_INFO)
     printf("%s", preprocess);
@@ -1050,7 +1061,11 @@ ReportInfo(void)
 
 static void 
 ReportStats(
+#ifdef __EMSCRIPTEN__    
+    float uiStartTime, float uiEndTime)
+#else
     uint64_t uiStartTime, uint64_t uiEndTime)
+#endif
 {
     TimeElapsed += SubtractTime(uiEndTime, uiStartTime);
 
@@ -1079,8 +1094,12 @@ static void
 Display(void)
 {
     FrameCount++;
+    #ifdef __EMSCRIPTEN__
+    float uiStartTime = GetCurrentTime();
+    #else
     uint64_t uiStartTime = GetCurrentTime();
-    
+    #endif
+
     glClearColor (0.0, 0.0, 0.0, 0.0);
     glClear (GL_COLOR_BUFFER_BIT);
  
@@ -1106,7 +1125,12 @@ Display(void)
     
     glFinish(); // for timing
     
+    #ifdef __EMSCRIPTEN__
+    float uiEndTime = GetCurrentTime();
+    #else
     uint64_t uiEndTime = GetCurrentTime();
+    #endif   
+     
     ReportStats(uiStartTime, uiEndTime);
     #ifndef __EMSCRIPTEN__
         DrawText(TextOffset[0], TextOffset[1], 1, (Animated == 0) ? "Press space to animate" : " ");

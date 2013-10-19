@@ -24,7 +24,7 @@ endif
 $(info )
 $(info )
 
-DEBUG = -O2 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
+DEBUG = -O0 -s OPENCL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
 
 NO_DEBUG = -02 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_GRAB_TRACE=0 -s OPENCL_PRINT_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
 
@@ -34,9 +34,8 @@ NO_DEBUG = -02 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OP
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#		
 
-all: all_sample
 
-all_sample: \
+all: \
 	hello_world_sample 			\
 	hello_world_cuda_sample		\
 	hello_world_2_sample		\
@@ -44,13 +43,20 @@ all_sample: \
 	reduce_sample 				\
 	scan_sample 				\
 	mandelbulb_sample 			\
+	popcorn_sample 				\
 	qjulia_sample 				\
 	dxt_sample					\
-	attractor_sample					\
+	attractor_sample			\
 	
 #	fft_sample					\
 #	smallpt_sample				\
 #	video_sample				\
+
+all_osx: \
+	mandelbulb_sample_osx \
+	qjulia_sample_osx \
+	popcorn_sample_osx \
+	attractor_sample_osx \
 
 copy_data:
 	mv build/$(FOLDER)/*.data build/
@@ -106,9 +112,9 @@ qjulia_sample:
 
 popcorn_sample:
 	$(call chdir,popcorn/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(NO_DEBUG) \
-	--preload-file part2.cl \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(DEBUG) \
 	-o ../build/$(FOLDER)/popcorn.js
+
 
 dxt_sample:
 	$(call chdir,dxtcompressor/)
@@ -123,9 +129,24 @@ attractor_sample:
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(FOLDER)/attractor.js
 
+mandelbulb_sample_osx:
+	$(call chdir,mandelbulb/)
+	clang++ -02 mandelbulbGPU.c displayfunc.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	-o mandelbulb.out
+
+qjulia_sample_osx:
+	$(call chdir,qjulia/)
+	clang++ -02 qjulia.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	-o qjulia.out
+
+popcorn_sample_osx:
+	$(call chdir,popcorn/)
+	clang++ -02 cll.cpp main.cpp part2.cpp util.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	-o popcorn.out
+
 attractor_sample_osx:
 	$(call chdir,attractor/)
-	clang++ Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	clang++ -02 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o attractor.out
 
 #smallpt_sample:

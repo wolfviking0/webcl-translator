@@ -22,10 +22,18 @@
 #include "Solver.h"
 #include "Demo.h"
 
+#define USE_GLUT
+
+//#define USE_GLFW
+
 #ifdef __EMSCRIPTEN__
     #include <emscripten/emscripten.h>
     #include <GL/gl.h>
-    #include <GL/glut.h>
+    #ifdef USE_GLUT
+        #include <GL/glut.h>
+    #elif defined(USE_GLFW)
+        #include <GL/glfw.h>
+    #endif
     #include <CL/opencl.h>
 #else
     #include <OpenGL/OpenGL.h>
@@ -46,8 +54,12 @@
 
 static double TimeElapsed                       = 0;
 static int FrameCount                           = 0;
-static unsigned int ReportStatsInterval         = 30;
+static unsigned int ReportStatsInterval         = 15;
 static char StatsString[512]                    = "\0";
+
+// static int framesLastSecond = 0;
+// static int lastSecond = 0;
+// static int curFrame = 0;
 
 static Application *instance = NULL;
 
@@ -89,6 +101,7 @@ void Shutdown(void)
 
 void Keyboard( unsigned char key, int x, int y )
 {
+#ifdef USE_GLUT    
    switch( key )
    {
       case 27:
@@ -100,6 +113,7 @@ void Keyboard( unsigned char key, int x, int y )
          break;
     }
     glutPostRedisplay();
+#endif    
 }
 
 void Display(void)
@@ -110,39 +124,52 @@ void Display(void)
 
 void Idle(void)
 {
+#ifdef USE_GLUT    
     glutPostRedisplay();
+#endif    
 }
+
+#ifdef __EMSCRIPTEN__
+static float GetCurrentTime()
+{
+    return emscripten_get_now();
+}
+
+static float SubtractTime( float uiEndTime, float uiStartTime )
+{
+    return 0.001f * (uiEndTime - uiStartTime);
+}
+
+#else
 
 static uint64_t GetCurrentTime()
 {
-    #ifdef __EMSCRIPTEN__
-        return emscripten_get_now();
-    #else
-        return mach_absolute_time();
-    #endif
+    return mach_absolute_time();
 }
 
 static double SubtractTime( uint64_t uiEndTime, uint64_t uiStartTime )
 {
-    #ifdef __EMSCRIPTEN__
-        return 1e-3 * (uiEndTime - uiStartTime);
-    #else
-        static double s_dConversion = 0.0;
-        uint64_t uiDifference = uiEndTime - uiStartTime;
-        if( 0.0 == s_dConversion )
-        {
-            mach_timebase_info_data_t kTimebase;
-            kern_return_t kError = mach_timebase_info( &kTimebase );
-            if( kError == 0  )
-                s_dConversion = 1e-9 * (double) kTimebase.numer / (double) kTimebase.denom;
-        }
-            
-        return s_dConversion * (double) uiDifference; 
-    #endif
+    static double s_dConversion = 0.0;
+    uint64_t uiDifference = uiEndTime - uiStartTime;
+    if( 0.0 == s_dConversion )
+    {
+        mach_timebase_info_data_t kTimebase;
+        kern_return_t kError = mach_timebase_info( &kTimebase );
+        if( kError == 0  )
+            s_dConversion = 1e-9 * (double) kTimebase.numer / (double) kTimebase.denom;
+    }
+        
+    return s_dConversion * (double) uiDifference; 
 }
+#endif
 
-static void ReportStats(uint64_t uiStartTime, uint64_t uiEndTime)
+#ifdef __EMSCRIPTEN__
+static void ReportStats(float uiStartTime, float uiEndTime)
 {
+#else
+static void ReportStats(uint64_t uiStartTime, uint64_t uiEndTime)
+{   
+#endif
     TimeElapsed += SubtractTime(uiEndTime, uiStartTime);
 
     if(TimeElapsed && FrameCount && FrameCount > ReportStatsInterval) 
@@ -151,14 +178,16 @@ static void ReportStats(uint64_t uiStartTime, uint64_t uiEndTime)
         double fFps = 1.0 / (fMs / 1000.0);
 
 #ifdef __EMSCRIPTEN__
-        printf("[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
-                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU",
+        printf("[%s] Particles: %d  Compute: %3.2f ms  Display: %3.2f fps (%s)\n",
+                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", global::par().getInt("nParticles"),
                 fMs, fFps, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
 #else
-        sprintf(StatsString, "[%s] Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
-                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", 
+#ifdef USE_GLUT        
+        sprintf(StatsString, "[%s]Particles: %d  Compute: %3.2f ms  Display: %3.2f fps (%s)\n", 
+                (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", global::par().getInt("nParticles"),
                 fMs, fFps, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
         glutSetWindowTitle(StatsString);
+#endif        
 #endif
 
         FrameCount = 0;
@@ -200,9 +229,10 @@ void Application::init()
     int windowHeight = global::par().getInt("windowHeight");
     std::string windowTitle = global::par().getString("windowTitle");
     
+#ifdef USE_GLUT    
     int argc = 0;
     glutInit(&argc, NULL);
-    printf("Init \n");
+    
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize (windowWidth, windowHeight);
     glutInitWindowPosition (0, 0);
@@ -211,26 +241,56 @@ void Application::init()
     glutDisplayFunc(Display);
     glutIdleFunc(Idle);
     glutKeyboardFunc(Keyboard);
+#elif defined(USE_GLFW)
+    if( !glfwInit() )
+        error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
+    glfwOpenWindow(windowWidth, windowHeight, 8, 8, 8, 8, 0, 0, GLFW_WINDOW);
+    glfwSetWindowTitle(windowTitle.c_str());
+#endif
 
     setupLorenzAttractor();
             
     atexit(Shutdown);
 
-    glutMainLoop();           
+#ifdef USE_GLUT
+    glutMainLoop(); 
+
+#elif defined(USE_GLFW)
+    glViewport(0, 0, windowWidth, windowHeight);
+
+    emscripten_set_main_loop(Display, 0, true);   
+#endif    
 }
 
 
 void Application::run()
 {
 
+    // float realTime = getRealTime();
+    // ++framesLastSecond;
+    // if ( lastSecond != (int)realTime )
+    // {
+    //     lastSecond = (int)realTime;
+    //     std::cout << "FPS: " << framesLastSecond << std::endl;
+    //     framesLastSecond = 0;
+    // }
+
     FrameCount++;
+    #ifdef __EMSCRIPTEN__
+    float uiStartTime = GetCurrentTime();
+    #else
     uint64_t uiStartTime = GetCurrentTime();
+    #endif
     
     // render and swap buffers
     Demo::get()->render(m_simTime);
 
     // swap buffer
+#ifdef USE_GLUT    
     glutSwapBuffers();
+#elif defined(USE_GLFW)
+    glfwSwapBuffers();
+#endif    
 
     // step simulation
     Solver::get()->step(m_simTime,m_simDeltaTime);
@@ -240,9 +300,24 @@ void Application::run()
 
     m_simTime += m_simDeltaTime;
 
+    #ifdef __EMSCRIPTEN__
+    float uiEndTime = GetCurrentTime();
+    #else
     uint64_t uiEndTime = GetCurrentTime();
+    #endif
 
     ReportStats(uiStartTime, uiEndTime);
+
+    // ++curFrame;
+}
+
+float Application::getRealTime()
+{
+#ifdef USE_GLFW
+    return glfwGetTime();
+#else
+    return 0.0f;
+#endif    
 }
 
 float Application::getSimTime()
@@ -255,9 +330,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 128;//64;//128;//256;
-    int nY = 128;//64;//128;//256;
-    int nZ = 128;//64;//128;//256;
+    int nX = 100;//128;//64;//128;//256;
+    int nY = 100;//128;//64;//128;//256;
+    int nZ = 100;//128;//64;//128;//256;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);

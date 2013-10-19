@@ -51,7 +51,7 @@ void appMotion(int x, int y);
 //quick random function to distribute our initial points
 float rand_float(float mn, float mx)
 {
-    float r = random() / (float) RAND_MAX;
+    float r = rand() / (float) RAND_MAX;
     return mn + (mx-mn)*r;
 }
 
@@ -123,7 +123,7 @@ void appRender()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_POINT_SMOOTH);
-    glPointSize(5.);
+    //glPointSize(5.);
     
     //printf("color buffer\n");
     glBindBuffer(GL_ARRAY_BUFFER, example->c_vbo);

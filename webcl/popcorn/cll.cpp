@@ -26,11 +26,11 @@ CL::CL()
     printf("platforms.size(): %d\n", platforms.size());
 
     deviceUsed = 0;
-    err = platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    err = platforms[0].getDevices(CL_DEVICE_TYPE_CPU, &devices);
     printf("getDevices: %s\n", oclErrorString(err));
     printf("devices.size(): %d\n", devices.size());
     int t = devices.front().getInfo<CL_DEVICE_TYPE>();
-    printf("type: device: %d CL_DEVICE_TYPE_GPU: %d \n", t, CL_DEVICE_TYPE_GPU);
+    printf("type: device: %d CL_DEVICE_TYPE_CPU: %d \n", t, CL_DEVICE_TYPE_CPU);
 
     // Define OS-specific context properties and create the OpenCL context
     // We setup OpenGL context sharing slightly differently on each OS
@@ -54,7 +54,7 @@ CL::CL()
         //cl_context cxGPUContext = clCreateContextFromType(props, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
         //printf("error? %s\n", oclErrorString(err));
         try{
-            context = cl::Context(props);   //had to edit line 1448 of cl.hpp to add this constructor
+            context = cl::Context(CL_DEVICE_TYPE_CPU, props);   //had to edit line 1448 of cl.hpp to add this constructor
         }
         catch (cl::Error er) {
             printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));
@@ -90,7 +90,7 @@ CL::CL()
             };
             //cl_context cxGPUContext = clCreateContext(props, 1, &cdDevices[uiDeviceUsed], NULL, NULL, &err);
             try{
-                context = cl::Context(CL_DEVICE_TYPE_GPU, props);
+                context = cl::Context(CL_DEVICE_TYPE_CPU, props);
             }
             catch (cl::Error er) {
                 printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));

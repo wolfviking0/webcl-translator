@@ -5,6 +5,10 @@
 
 #include <vector>
 
+#ifdef __APPLE__
+    #include <OpenGL/gl.h>
+#endif
+
 void CL::loadData(std::vector<Vec4> pos, std::vector<Vec4> vel, std::vector<Vec4> col)
 {
     //store the number of particles and the size in bytes of our arrays

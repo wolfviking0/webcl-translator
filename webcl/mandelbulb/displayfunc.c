@@ -323,7 +323,7 @@ void displayFunc(void) {
 
     glFlush();
     
-    SDL_GL_SwapBuffers();
+    glutSwapBuffers();
 }
 
 static double lastUserInputTime;
