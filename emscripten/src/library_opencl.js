@@ -96,14 +96,16 @@ var LibraryOpenCL = {
 
         kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
       
-        var _brace_start = kernel_string.indexOf("(");
-        var _brace_end = kernel_string.indexOf(")");  
-      
+        var _brace_start = kernel_string.indexOf("{");
+        var _kernel_temp_string = kernel_string.substr(0,_brace_start);
+  
+        var _bracket_end = _kernel_temp_string.lastIndexOf(")");  
+        var _bracket_start = _kernel_temp_string.lastIndexOf("(");
+
         var _kernels_name = "";
         // Search kernel Name
-        for (var i = _brace_start - 1; i >= 0 ; i--) {
+        for (var i = _bracket_start - 1; i >= 0 ; i--) {
           var _chara = kernel_string.charAt(i);
-
           if (_chara == ' ' && _kernels_name.length > 0) {
             break;
           } else if (_chara != ' ') {
@@ -111,12 +113,12 @@ var LibraryOpenCL = {
           }
         }
       
-        var _kernelsubstring = kernel_string.substr(_brace_start + 1,_brace_end - _brace_start - 1);
+        var _kernelsubstring = kernel_string.substr(_bracket_start + 1,_bracket_end - _bracket_start - 1);
         _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
       
         var _kernel_parameter = _kernelsubstring.split(",");
 
-        kernel_string = kernel_string.substr(_brace_end);
+        kernel_string = kernel_string.substr(_bracket_end);
         
         var _kernel_parameter_length = _kernel_parameter.length;
         var _parameter = new Array(_kernel_parameter_length);
@@ -218,13 +220,13 @@ var LibraryOpenCL = {
           _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new UInt8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
+          _host_ptr = new Uint8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new UInt16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
+          _host_ptr = new Uint16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new Int32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
+          _host_ptr = new Uint32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
           break;         
         default:
           _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
@@ -300,11 +302,11 @@ var LibraryOpenCL = {
           for (var j = 0; j < Math.min(25,parameter[i].length - 1) ; j++) {
             CL.stack_trace += parameter[i][j] + ",";
           }
+          if (parameter[i].length > 25) {
+            CL.stack_trace += " ... ,";
+          }
           if (parameter[i].length >= 1) {
             CL.stack_trace += parameter[i][parameter[i].length - 1];
-          }
-          if (parameter[i].length > 25) {
-            CL.stack_trace += " ...";
           }
           CL.stack_trace += "],";
         } else {
@@ -318,11 +320,11 @@ var LibraryOpenCL = {
           for (var j = 0; j < Math.min(25,parameter[parameter.length - 1].length - 1) ; j++) {
             CL.stack_trace += parameter[parameter.length - 1][j] + ",";
           }
+          if (parameter[parameter.length - 1].length > 25) {
+            CL.stack_trace += " ... ,";
+          }
           if (parameter[parameter.length - 1].length >= 1) {
             CL.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
-          }
-          if (parameter[parameter.length - 1].length > 25) {
-            CL.stack_trace += " ...";
           }
           CL.stack_trace += "]";
         } else {
@@ -1394,7 +1396,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clCreateBuffer",[flags_i64_1,size,host_ptr,cl_errcode_ret]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
+    if (CL.cl_pn_type == 0 && host_ptr != 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
 #endif
 
     var _id = null;
@@ -3208,18 +3210,15 @@ var LibraryOpenCL = {
 
       for (var i = 0; i < num_events; i++) {
         var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
-#if OPENCL_CHECK_VALID_OBJECT          
-        if (_event in CL.cl_objects) {
-#endif          
-          _events.push(_event) 
 #if OPENCL_CHECK_VALID_OBJECT  
-        } else {
+        if (!(_event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+          CL.webclEndStackTrace([webcl.INVALID_EVENT],_event+" is not a valid OpenCL event","");
 #endif    
-          return webcl.INVALID_EVENT;    
+          return webcl.INVALID_EVENT; 
         }
-#endif        
+#endif
+        _events.push(_event) 
       }
 
 #if OPENCL_GRAB_TRACE
@@ -4571,6 +4570,9 @@ var LibraryOpenCL = {
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_FORCE_CPU  
           } catch (e) {
+#if OPENCL_GRAB_TRACE
+            CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel<<FORCE CPU>>",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event]);
+#endif                
             CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,null,_event_wait_list);       
             // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event); 
             // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
@@ -4626,34 +4628,45 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueMarker",[command_queue,event]);
 #endif
 
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (kernel in CL.cl_objects) {
-#endif
-          var _event = null;
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
-#endif    
-  
-          CL.cl_objects[command_queue].enqueueMarker(_event);    
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
-#endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
 #endif
         return webcl.INVALID_COMMAND_QUEUE;
       }
-#endif
+#endif     
+
+    try { 
+
+// #if OPENCL_GRAB_TRACE
+//       CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".getInfo",[webcl.QUEUE_CONTEXT]);
+// #endif        
+//       var _context = CL.cl_objects[command_queue].getInfo(webcl.QUEUE_CONTEXT);      
+
+//       console.info("Context : "+_context);
+
+// #if OPENCL_GRAB_TRACE
+//       CL.webclCallStackTrace(""+_context+".createUserEvent",[]);
+// #endif    
+
+      var _event = null; //_context.createUserEvent();
+
+//       if (!(_event instanceof WebCLEvent)) {
+// #if OPENCL_GRAB_TRACE
+//         CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are not created","");
+// #endif
+//         return webcl.INVALID_EVENT;
+//       }
+
+// #if OPENCL_GRAB_TRACE
+//       CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
+// #endif    
+
+      CL.cl_objects[command_queue].enqueueMarker(_event);    
+
+      // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
     } catch (e) {
       var _error = CL.catchError(e);
 
