@@ -129,6 +129,12 @@ attractor_sample:
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(FOLDER)/attractor.js
 
+smallpt_sample:
+	$(call chdir,smallpt/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	--preload-file rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
+	-o ../build/$(FOLDER)/smallpt.js	
+
 mandelbulb_sample_osx:
 	$(call chdir,mandelbulb/)
 	clang++ -02 mandelbulbGPU.c displayfunc.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
@@ -149,11 +155,10 @@ attractor_sample_osx:
 	clang++ -02 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o attractor.out
 
-#smallpt_sample:
-#	$(call chdir,smallpt/)
-#	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) smallptGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(DEBUG) \
-#	--preload-file rendering_kernel_custom.cl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
-#	-o ../build/$(FOLDER)/smallpt.js
+smallpt_sample_osx:
+	$(call chdir,smallpt/)
+	clang++ -02 renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+	-o smallpt.out	
 
 #fft_sample:
 #	$(call chdir,fft/)

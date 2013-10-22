@@ -153,7 +153,7 @@ var LibraryOpenCL = {
             _value = webcl.SIGNED_INT32;
           } else {
 #if OPENCL_DEBUG   
-            console.error("Unknow parameter type use float by default ...");   
+            console.error("Unknow parameter type '"+_string+"', can be a struct, use float by default ...");
 #endif        
             _value = webcl.FLOAT;
           }
@@ -1393,7 +1393,7 @@ var LibraryOpenCL = {
     assert(flags_i64_2 == 0, 'Invalid flags i64');
     
 #if OPENCL_GRAB_TRACE
-    CL.webclBeginStackTrace("clCreateBuffer",[flags_i64_1,size,host_ptr,cl_errcode_ret]);
+    CL.webclBeginStackTrace("clCreateBuffer",[context,flags_i64_1,size,host_ptr,cl_errcode_ret]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
     if (CL.cl_pn_type == 0 && host_ptr != 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
