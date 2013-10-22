@@ -12,7 +12,12 @@ define chdir
    $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
 endef
 
+DEBUG = -O0 -s OPENCL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
+
+NO_DEBUG = -03 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_GRAB_TRACE=0 -s OPENCL_PRINT_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
+
 OLD=0
+DEB=0
 
 ifeq ($(OLD),1)
 FOLDER=old
@@ -21,12 +26,15 @@ else
 FOLDER=latest
 $(info ************  Old Library : Disabled ************)
 endif
+ifeq ($(DEB),1)
+MODE=$(DEBUG)
+$(info ************  Mode DEBUG : Enabled ************)
+else
+MODE=$(NO_DEBUG)
+$(info ************  Mode RELEASE : Enabled ************)
+endif
 $(info )
 $(info )
-
-DEBUG = -O0 -s OPENCL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_SET_POINTER=1 -s OPENCL_CHECK_VALID_OBJECT=1
-
-NO_DEBUG = -03 -s OPENCL_OLD_VERSION=$(OLD) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_GRAB_TRACE=0 -s OPENCL_PRINT_TRACE=0 -s OPENCL_CHECK_SET_POINTER=0 -s OPENCL_CHECK_VALID_OBJECT=0
 
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#
@@ -65,73 +73,73 @@ copy_data:
 
 hello_world_sample:
 	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(NO_DEBUG) -o ../build/$(FOLDER)/hello_world.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(MODE) -o ../build/$(FOLDER)/hello_world.js
 
 hello_world_cuda_sample:
 	$(call chdir,hello_world_cuda/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cuda.c $(DEBUG) -o ../build/$(FOLDER)/hello_world_cuda.js
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cuda.c $(MODE) -o ../build/$(FOLDER)/hello_world_cuda.js
 
 # Not yet working -> issue #315
 hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(MODE) \
 	--preload-file hello_world_2.cl \
 	-o ../build/$(FOLDER)/hello_world_2.js
 
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(MODE) \
 	--preload-file convolution_kernel.cl \
 	-o ../build/$(FOLDER)/convolution.js
 
 # Need memory 1024 * 1024 * 20
 scan_sample:
 	$(call chdir,scan/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(MODE) \
 	--preload-file scan_kernel.cl \
 	-o ../build/$(FOLDER)/scan.js
 
 reduce_sample:
 	$(call chdir,reduce/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c $(DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c $(MODE) \
 	--preload-file reduce_float_kernel.cl --preload-file reduce_float2_kernel.cl --preload-file reduce_float4_kernel.cl --preload-file reduce_int_kernel.cl --preload-file reduce_int2_kernel.cl --preload-file reduce_int4_kernel.cl \
 	-o ../build/$(FOLDER)/reduce.js
 
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file mandelbulb_kernel.cl \
 	-o ../build/$(FOLDER)/mandelbulb.js
 
 qjulia_sample:
 	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file qjulia_kernel.cl \
 	-o ../build/$(FOLDER)/qjulia.js
 
 popcorn_sample:
 	$(call chdir,popcorn/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(MODE) \
 	-o ../build/$(FOLDER)/popcorn.js
 
 
 dxt_sample:
 	$(call chdir,dxtcompressor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
 	-o ../build/$(FOLDER)/dxtcompressor.js
 	
 attractor_sample:
 	$(call chdir,attractor/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(NO_DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(FOLDER)/attractor.js
 
 smallpt_sample:
 	$(call chdir,smallpt/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s LEGACY_GL_EMULATION=1 $(DEBUG) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
 	-o ../build/$(FOLDER)/smallpt.js	
 
