@@ -15,6 +15,8 @@ Usage:
 
   --pre-run Will generate wrapper code that does preloading in Module.preRun. This is necessary if you add this
             code before the main file has been loading, which includes necessary components like addRunDependency.
+            (This is how emcc --preload-file etc. work, i.e., it is the normal mode of operation. However, for
+            data loaded later, say using emscripten_async_load_script, you do not need --pre-run.)
 
   --crunch=X Will compress dxt files to crn with quality level X. The crunch commandline tool must be present
              and CRUNCH should be defined in ~/.emscripten that points to it. JS crunch decompressing code will
@@ -591,8 +593,7 @@ if has_preloaded:
   ''' % (use_data, data_target) # use basename because from the browser's point of view, we need to find the datafile in the same dir as the html file
 
   code += r'''
-    if (!Module.preloadResults)
-      Module.preloadResults = {};
+    if (!Module.preloadResults) Module.preloadResults = {};
   '''
 
   if use_preload_cache:

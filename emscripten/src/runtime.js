@@ -32,8 +32,8 @@ var RuntimeGenerator = {
 
   stackEnter: function(initial, force) {
     if (initial === 0 && SKIP_STACK_IN_SMALL && !force) return '';
-    var ret = 'var sp  = ' + (ASM_JS ? '0; sp = ' : '') + 'STACKTOP';
-    if (initial > 0) ret += '; STACKTOP = (STACKTOP + ' + initial + ')|0';
+    var ret = 'var sp=' + (ASM_JS ? '0;sp=' : '') + 'STACKTOP';
+    if (initial > 0) ret += ';STACKTOP=(STACKTOP+' + initial + ')|0';
     if (USE_TYPED_ARRAYS == 2) {
       assert(initial % Runtime.STACK_ALIGN == 0);
       if (ASSERTIONS && Runtime.STACK_ALIGN == 4) {
@@ -42,9 +42,6 @@ var RuntimeGenerator = {
     }
     if (ASSERTIONS) {
       ret += '; (assert(' + asmCoercion('(STACKTOP|0) < (STACK_MAX|0)', 'i32') + ')|0)';
-    }
-    if (false) {
-      ret += '; _memset(' + asmCoercion('sp', 'i32') + ', 0, ' + initial + ')';
     }
     return ret;
   },
@@ -55,7 +52,7 @@ var RuntimeGenerator = {
     if (SAFE_HEAP) {
       ret += 'var i = sp; while ((i|0) < (STACKTOP|0)) { SAFE_HEAP_CLEAR(i|0); i = (i+1)|0 }';
     }
-    return ret += 'STACKTOP = sp';
+    return ret += 'STACKTOP=sp';
   },
 
   // An allocation that cannot normally be free'd (except through sbrk, which once
@@ -228,7 +225,8 @@ var Runtime = {
         size = field.substr(1)|0;
         alignSize = 1;
       } else {
-        throw 'Unclear type in struct: ' + field + ', in ' + type.name_ + ' :: ' + dump(Types.types[type.name_]);
+        assert(field[0] === '<', field); // assumed to be a vector type, if none of the above
+        size = alignSize = Types.types[field].flatSize; // fully aligned
       }
       if (type.packed) alignSize = 1;
       type.alignSize = Math.max(type.alignSize, alignSize);
@@ -240,6 +238,11 @@ var Runtime = {
       prev = curr;
       return curr;
     });
+    if (type.name_[0] === '[') {
+      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
+      // allocating a potentially huge array for [999999 x i8] etc.
+      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
+    }
     type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
     if (diffs.length == 0) {
       type.flatFactor = type.flatSize;

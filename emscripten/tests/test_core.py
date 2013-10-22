@@ -1073,7 +1073,6 @@ Succeeded!
     self.do_run(open(path_from_root('tests', 'cube2md5.cpp')).read(), open(path_from_root('tests', 'cube2md5.ok')).read())
 
   def test_cube2hash(self):
-
     try:
       old_chunk_size = os.environ.get('EMSCRIPT_MAX_CHUNK_SIZE') or ''
       os.environ['EMSCRIPT_MAX_CHUNK_SIZE'] = '1' # test splitting out each function to a chunk in emscripten.py (21 functions here)
@@ -1090,6 +1089,17 @@ Succeeded!
         self.do_run('', 'hash value: ' + output, [text], no_build=True)
     finally:
       os.environ['EMSCRIPT_MAX_CHUNK_SIZE'] = old_chunk_size
+
+    assert 'asm1' in test_modes
+    if self.run_name == 'asm1':
+      assert Settings.RELOOP
+      generated = open('src.cpp.o.js').read()
+      main = generated[generated.find('function _main'):]
+      main = main[:main.find('\n}')]
+      num_vars = 0
+      for v in re.findall('var [^;]+;', main):
+        num_vars += v.count(',') + 1
+      assert num_vars == 10, 'no variable elimination should have been run, but seeing %d' % num_vars
 
   def test_unaligned(self):
       if Settings.QUANTUM_SIZE == 1: return self.skip('No meaning to unaligned addresses in q1')
@@ -3841,25 +3851,26 @@ def process(filename):
       self.do_run(src, '4\n200\ndone\n')
 
   def test_inlinejs3(self):
-      if Settings.ASM_JS: return self.skip('asm does not support random code, TODO: something that works in asm')
-      src = r'''
-        #include <stdio.h>
-        #include <emscripten.h>
+    src = r'''
+      #include <stdio.h>
+      #include <emscripten.h>
 
-        int main() {
-          EM_ASM(Module.print('hello dere1'));
-          EM_ASM(
-            Module.print('hello dere2');
-          );
+      int main() {
+        EM_ASM(Module.print('hello dere1'));
+        EM_ASM(
+          Module.print('hello dere2');
+        );
+        for (int i = 0; i < 3; i++) {
           EM_ASM(
             Module.print('hello dere3');
             Module.print('hello dere' + 4);
           );
-          return 0;
         }
-        '''
+        return 0;
+      }
+      '''
 
-      self.do_run(src, 'hello dere1\nhello dere2\nhello dere3\nhello dere4\n')
+    self.do_run(src, 'hello dere1\nhello dere2\nhello dere3\nhello dere4\nhello dere3\nhello dere4\nhello dere3\nhello dere4\n')
 
   def test_memorygrowth(self):
     if Settings.USE_TYPED_ARRAYS == 0: return self.skip('memory growth is only supported with typed arrays')
@@ -7263,9 +7274,11 @@ date: 18.07.2013w; day 18, month  7, year 2013, extra: 201, 3
     self.do_run(src, expected, extra_emscripten_args=['-H', 'libc/langinfo.h'])
 
   def test_files(self):
+    self.banned_js_engines = [SPIDERMONKEY_ENGINE] # closure can generate variables called 'gc', which pick up js shell stuff
     if self.emcc_args is not None and '-O2' in self.emcc_args:
       self.emcc_args += ['--closure', '1'] # Use closure here, to test we don't break FS stuff
       self.emcc_args = filter(lambda x: x != '-g', self.emcc_args) # ensure we test --closure 1 --memory-init-file 1 (-g would disable closure)
+      self.emcc_args += ["-s", "CHECK_HEAP_ALIGN=0"] # disable heap align check here, it mixes poorly with closure
 
     Settings.CORRECT_SIGNS = 1 # Just so our output is what we expect. Can flip them both.
     post = '''
@@ -7749,7 +7762,7 @@ def process(filename):
     self.do_run(src, 'success', force_c=True, js_engines=[NODE_JS])
 
   def test_unistd_access(self):
-    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
+    self.clear()
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     for fs in ['MEMFS', 'NODEFS']:
       src = open(path_from_root('tests', 'unistd', 'access.c'), 'r').read()
@@ -7758,7 +7771,6 @@ def process(filename):
       self.do_run(src, expected, js_engines=[NODE_JS])
 
   def test_unistd_curdir(self):
-    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     src = open(path_from_root('tests', 'unistd', 'curdir.c'), 'r').read()
     expected = open(path_from_root('tests', 'unistd', 'curdir.out'), 'r').read()
@@ -7789,7 +7801,7 @@ def process(filename):
     self.do_run(src, expected)
 
   def test_unistd_truncate(self):
-    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
+    self.clear()
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     for fs in ['MEMFS', 'NODEFS']:
       src = open(path_from_root('tests', 'unistd', 'truncate.c'), 'r').read()
@@ -7817,6 +7829,7 @@ def process(filename):
     self.do_run(src, expected)
 
   def test_unistd_unlink(self):
+    self.clear()
     if self.emcc_args is None: return self.skip('requires emcc')
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     for fs in ['MEMFS', 'NODEFS']:
@@ -7825,7 +7838,7 @@ def process(filename):
       self.do_run(src, 'success', force_c=True, js_engines=[NODE_JS])
 
   def test_unistd_links(self):
-    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
+    self.clear()
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     for fs in ['MEMFS', 'NODEFS']:
       src = open(path_from_root('tests', 'unistd', 'links.c'), 'r').read()
@@ -7839,7 +7852,7 @@ def process(filename):
     self.do_run(src, expected)
 
   def test_unistd_io(self):
-    if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
+    self.clear()
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     if self.run_name == 'o2': return self.skip('non-asm optimized builds can fail with inline js')
     if self.emcc_args is None: return self.skip('requires emcc')
@@ -8084,11 +8097,7 @@ int main(int argc, char **argv) {
 
   def test_iostream(self):
     if Settings.QUANTUM_SIZE == 1: return self.skip("we don't support libcxx in q1")
-
-    if self.emcc_args is None:
-      if Building.LLVM_OPTS: return self.skip('optimizing bitcode before emcc can confuse libcxx inclusion')
-      self.emcc_args = [] # libc++ auto-inclusion is only done if we use emcc
-      Settings.SAFE_HEAP = 0 # Some spurious warnings from libc++ internals
+    if self.emcc_args is None: return self.skip('needs ta2 and emcc')
 
     src = '''
       #include <iostream>
@@ -8609,6 +8618,13 @@ void*:16
       assert ' & 255]()' not in original, 'big function table does not exist'
       assert ' & 255]()' in final, 'big function table exists'
 
+    assert 'asm1' in test_modes
+    if self.run_name == 'asm1':
+      generated = open('src.cpp.o.js').read()
+      main = generated[generated.find('function runPostSets'):]
+      main = main[:main.find('\n}')]
+      assert main.count('\n') == 7, 'must not emit too many postSets: %d' % main.count('\n')
+
   def test_gcc_unmangler(self):
     Settings.NAMED_GLOBALS = 1 # test coverage for this
 
@@ -8646,7 +8662,10 @@ void*:16
   def test_freetype(self):
     if self.emcc_args is None: return self.skip('requires emcc')
     if Settings.QUANTUM_SIZE == 1: return self.skip('TODO: Figure out and try to fix')
-    if Settings.ASM_JS and '-O2' not in self.emcc_args: return self.skip('mozilla bug 863867')
+
+    assert 'asm2g' in test_modes
+    if self.run_name == 'asm2g':
+      Settings.ALIASING_FUNCTION_POINTERS = 1 - Settings.ALIASING_FUNCTION_POINTERS # flip for some more coverage here
 
     if Settings.CORRECT_SIGNS == 0: Settings.CORRECT_SIGNS = 1 # Not sure why, but needed
 
@@ -9458,6 +9477,32 @@ def process(filename):
 
       Settings.ALIASING_FUNCTION_POINTERS = 1 - Settings.ALIASING_FUNCTION_POINTERS # flip the test
       self.do_run(src, '''Hello 7 from JS!''')
+
+  def test_demangle_stacks(self):
+    if Settings.ASM_JS: return self.skip('spidermonkey has stack trace issues')
+
+    src = r'''
+      #include<stdio.h>
+      #include<stdlib.h>
+
+      namespace NameSpace {
+        class Class {
+        public:
+          int Aborter(double x, char y, int *z) {
+            int addr = x+y+(int)z;
+            void *p = (void*)addr;
+            for (int i = 0; i < 100; i++) free(p); // will abort, should show proper stack trace
+          }
+        };
+      }
+
+      int main(int argc, char **argv) {
+        NameSpace::Class c;
+        c.Aborter(1.234, 'a', NULL);
+        return 0;
+      }
+    '''
+    self.do_run(src, 'NameSpace::Class::Aborter(double, char, int*)');
 
   def test_embind(self):
     if self.emcc_args is None: return self.skip('requires emcc')
@@ -10517,9 +10562,9 @@ o1 = make_run("o1", compiler=CLANG, emcc_args=["-O1", "-s", "ASM_JS=0", "-s", "S
 o2 = make_run("o2", compiler=CLANG, emcc_args=["-O2", "-s", "ASM_JS=0", "-s", "JS_CHUNK_SIZE=1024"])
 
 # asm.js
-asm1 = make_run("asm1", compiler=CLANG, emcc_args=["-O1", "-s", "CHECK_HEAP_ALIGN=1"])
+asm1 = make_run("asm1", compiler=CLANG, emcc_args=["-O1"])
 asm2 = make_run("asm2", compiler=CLANG, emcc_args=["-O2"])
-asm2g = make_run("asm2g", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "ASSERTIONS=1", "--memory-init-file", "1"])
+asm2g = make_run("asm2g", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "ASSERTIONS=1", "--memory-init-file", "1", "-s", "CHECK_HEAP_ALIGN=1"])
 asm2x86 = make_run("asm2x86", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "CHECK_HEAP_ALIGN=1"], env={"EMCC_LLVM_TARGET": "i386-pc-linux-gnu"})
 
 # Make custom runs with various options

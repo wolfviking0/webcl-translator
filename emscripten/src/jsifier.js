@@ -20,6 +20,7 @@ var functionStubSigs = {};
 
 // JSifier
 function JSify(data, functionsOnly, givenFunctions) {
+  //B.start('jsifier');
   var mainPass = !functionsOnly;
 
   var itemsDict = { type: [], GlobalVariableStub: [], functionStub: [], function: [], GlobalVariable: [], GlobalVariablePostSet: [] };
@@ -67,7 +68,9 @@ function JSify(data, functionsOnly, givenFunctions) {
 
     // Add additional necessary items for the main pass. We can now do this since types are parsed (types can be used through
     // generateStructInfo in library.js)
+    //B.start('jsifier-libload');
     LibraryManager.load();
+    //B.stop('jsifier-libload');
 
     if (phase == 'pre') {
       var libFuncsToInclude;
@@ -153,7 +156,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
       // Add current value(s)
       var currValue = values[i];
-      if (USE_TYPED_ARRAYS == 2 && typeData.fields[i] == 'i64') {
+      if (USE_TYPED_ARRAYS == 2 && (typeData.fields[i] == 'i64' || (typeData.flatFactor && typeData.fields[0] == 'i64'))) {
         // 'flatten' out the 64-bit value into two 32-bit halves
         var parts = parseI64Constant(currValue, true);
         ret[index++] = parts[0];
@@ -234,8 +237,8 @@ function JSify(data, functionsOnly, givenFunctions) {
   function globalVariableHandler(item) {
     function needsPostSet(value) {
       if (typeof value !== 'string') return false;
-      return value[0] in UNDERSCORE_OPENPARENS || value.substr(0, 14) === 'CHECK_OVERFLOW'
-                                               || value.substr(0, 6) === 'GLOBAL';
+      // (' is ok, as it is something we can indexize later into a concrete int: ('{{ FI_ ...
+      return /^([(_][^']|CHECK_OVERFLOW|GLOBAL).*/.test(value);
     }
 
     item.intertype = 'GlobalVariableStub';
@@ -272,20 +275,14 @@ function JSify(data, functionsOnly, givenFunctions) {
     }
 
     if (isBSS(item)) {
-      var length = calcAllocatedSize(item.type);
-      length = Runtime.alignMemory(length);
-
       // If using indexed globals, go ahead and early out (no need to explicitly
       // initialize).
-      if (!NAMED_GLOBALS) {
-        return;
-      }
+      if (!NAMED_GLOBALS) return;
+
       // If using named globals, we can at least shorten the call to allocate by
       // passing an integer representing the size of memory to alloc instead of
       // an array of 0s of size length.
-      else {
-        constant = length;
-      }
+      constant = Runtime.alignMemory(calcAllocatedSize(item.type));
     } else {
       if (item.external) {
         if (Runtime.isNumberType(item.type) || isPointerType(item.type)) {
@@ -308,6 +305,8 @@ function JSify(data, functionsOnly, givenFunctions) {
             JS: makeSetValue(makeGlobalUse(item.ident), i, value, structTypes[i], false, true) + ';' // ignore=true, since e.g. rtti and statics cause lots of safe_heap errors
           });
           constant[i] = '0';
+        } else {
+          if (typeof value === 'string') constant[i] = deParenCarefully(value);
         }
       });
 
@@ -324,12 +323,9 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
 
       // ensure alignment
-      constant = constant.concat(zeros(Runtime.alignMemory(constant.length) - constant.length));
-
-      // Special case: class vtables. We make sure they are null-terminated, to allow easy runtime operations
-      if (item.ident.substr(0, 5) == '__ZTV') {
-        constant = constant.concat(zeros(Runtime.alignMemory(QUANTUM_SIZE)));
-      }
+      var extra = Runtime.alignMemory(constant.length) - constant.length;
+      if (item.ident.substr(0, 5) == '__ZTV') extra += Runtime.alignMemory(QUANTUM_SIZE);
+      while (extra-- > 0) constant.push(0);
     }
 
     // NOTE: This is the only place that could potentially create static
@@ -347,7 +343,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       js += 'if (globalScope) { assert(!globalScope["' + item.ident + '"]); globalScope["' + item.ident + '"] = ' + item.ident + ' }';
     }
     if (item.external && !NAMED_GLOBALS) {
-      js = 'var ' + item.ident + ' = ' + js; // force an explicit naming, even if unnamed globals, for asm forwarding
+      js = 'var ' + item.ident + '=' + js; // force an explicit naming, even if unnamed globals, for asm forwarding
     }
     itemsDict.GlobalVariableStub.push({
       intertype: 'GlobalVariable',
@@ -405,6 +401,9 @@ function JSify(data, functionsOnly, givenFunctions) {
       var snippet = LibraryManager.library[ident];
       var redirectedIdent = null;
       var deps = LibraryManager.library[ident + '__deps'] || [];
+      deps.forEach(function(dep) {
+        if (typeof snippet === 'string' && !(dep in LibraryManager.library)) warn('missing library dependency ' + dep + ', make sure you are compiling with the right options (see #ifdefs in src/library*.js)');
+      });
       var isFunction = false;
 
       if (typeof snippet === 'string') {
@@ -418,7 +417,7 @@ function JSify(data, functionsOnly, givenFunctions) {
         }
         // In asm, we need to know about library functions. If there is a target, though, then no
         // need to consider this a library function - we will call directly to it anyhow
-        if (ASM_JS && !redirectedIdent && (typeof target == 'function' || /Math\.\w+/.exec(snippet))) {
+        if (ASM_JS && !redirectedIdent && (typeof target == 'function' || /Math_\w+/.exec(snippet))) {
           Functions.libraryFunctions[ident] = 1;
         }
       } else if (typeof snippet === 'object') {
@@ -508,6 +507,7 @@ function JSify(data, functionsOnly, givenFunctions) {
   // function splitter
   function functionSplitter(item) {
     item.lines.forEach(function(line) {
+      //B.start('jsifier-handle-' + line.intertype);
       Framework.currItem = line;
       line.funcData = item; // TODO: remove all these, access it globally
       switch (line.intertype) {
@@ -526,6 +526,9 @@ function JSify(data, functionsOnly, givenFunctions) {
         case 'load': line.JS = loadHandler(line); break;
         case 'extractvalue': line.JS = extractvalueHandler(line); break;
         case 'insertvalue': line.JS = insertvalueHandler(line); break;
+        case 'insertelement': line.JS = insertelementHandler(line); break;
+        case 'extracttelement': line.JS = extractelementHandler(line); break;
+        case 'shufflevector': line.JS = shufflevectorHandler(line); break;
         case 'indirectbr': line.JS = indirectbrHandler(line); break;
         case 'alloca': line.JS = allocaHandler(line); break;
         case 'va_arg': line.JS = va_argHandler(line); break;
@@ -536,11 +539,14 @@ function JSify(data, functionsOnly, givenFunctions) {
         case 'unreachable': line.JS = unreachableHandler(line); break;
         default: throw 'what is this line? ' + dump(line);
       }
-      assert(line.JS);
+      //if (ASM_JS) assert(line.JS.indexOf('var ') < 0, dump(line));
       if (line.assignTo) makeAssign(line);
       Framework.currItem = null;
+      //B.stop('jsifier-handle-' + line.intertype);
     });
+    //B.start('jsifier-frec');
     functionReconstructor(item);
+    //B.stop('jsifier-frec');
   }
 
   // function for filtering functions for label debugging
@@ -584,7 +590,7 @@ function JSify(data, functionsOnly, givenFunctions) {
     
     if (DLOPEN_SUPPORT) Functions.getIndex(func.ident);
 
-    func.JS += 'function ' + func.ident + '(' + paramIdents.join(', ') + ') {\n';
+    func.JS += 'function ' + func.ident + '(' + paramIdents.join(',') + '){\n';
 
     if (PGO) {
       func.JS += INDENTATION + 'PGOMonitor.called["' + func.ident + '"] = 1;\n';
@@ -593,13 +599,23 @@ function JSify(data, functionsOnly, givenFunctions) {
     if (ASM_JS) {
       // spell out argument types
       func.params.forEach(function(param) {
-        func.JS += INDENTATION + param.ident + ' = ' + asmCoercion(param.ident, param.type) + ';\n';
+        func.JS += INDENTATION + param.ident + '=' + deParen(asmCoercion(param.ident, param.type)) + ';\n';
       });
 
+      addVariable('label', 'i32', func);
+
+      if (func.setjmpTable) {
+        addVariable('setjmpLabel', 'i32', func);
+        addVariable('setjmpTable', 'i32', func);
+      }
+
       // spell out local variables
-      var vars = values(func.variables).filter(function(v) { return v.origin != 'funcparam' });
+      var vars = values(func.variables).filter(function(v) {
+        return v.origin !== 'funcparam' &&
+               (!isIllegalType(getImplementationType(v)) || v.ident.indexOf('$', 1) > 0); // not illegal, or a broken up illegal (we have illegal chunks explicitly anyhow)
+      });
       if (vars.length > 0) {
-        var chunkSize = 8;
+        var chunkSize = 20;
         var chunks = [];
         var i = 0;
         while (i < vars.length) {
@@ -608,22 +624,15 @@ function JSify(data, functionsOnly, givenFunctions) {
         }
         for (i = 0; i < chunks.length; i++) {
           func.JS += INDENTATION + 'var ' + chunks[i].map(function(v) {
-            var type = getImplementationType(v);
-            if (!isIllegalType(type) || v.ident.indexOf('$', 1) > 0) { // not illegal, or a broken up illegal
-              return v.ident + ' = ' + asmInitializer(type); //, func.variables[v.ident].impl);
-            } else {
-              return range(Math.ceil(getBits(type)/32)).map(function(i) {
-                return v.ident + '$' + i + '= 0';
-              }).join(',');
-            }
-          }).join(', ') + ';\n';
+            return v.ident + '=' + asmInitializer(getImplementationType(v)); //, func.variables[v.ident].impl);
+          }).join(',') + ';\n';
         }
       }
     }
 
-    if (true) { // TODO: optimize away when not needed
-      if (CLOSURE_ANNOTATIONS) func.JS += '/** @type {number} */';
-      func.JS += INDENTATION + 'var label = 0;\n';
+    if (CLOSURE_ANNOTATIONS) func.JS += '/** @type {number} */';
+    if (!ASM_JS) {
+      func.JS += INDENTATION + 'var label=0;\n';
     }
 
     if (ASM_JS) {
@@ -632,12 +641,12 @@ function JSify(data, functionsOnly, givenFunctions) {
         hasByVal = hasByVal || param.byVal;
       });
       if (hasByVal) {
-        func.JS += INDENTATION + 'var tempParam = 0;\n';
+        func.JS += INDENTATION + 'var tempParam=0;\n';
       }
     }
 
     if (func.hasVarArgsCall) {
-      func.JS += INDENTATION + 'var tempVarArgs = 0;\n';
+      func.JS += INDENTATION + 'var tempVarArgs=0;\n';
     }
 
     // Prepare the stack, if we need one. If we have other stack allocations, force the stack to be set up.
@@ -654,7 +663,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (param.byVal) {
         var type = removePointing(param.type);
         var typeInfo = Types.types[type];
-        func.JS += INDENTATION + (ASM_JS ? '' : 'var ') + 'tempParam = ' + param.ident + '; ' + param.ident + ' = ' + RuntimeGenerator.stackAlloc(typeInfo.flatSize) + ';' +
+        func.JS += INDENTATION + (ASM_JS ? '' : 'var ') + 'tempParam = ' + param.ident + '; ' + param.ident + '=' + RuntimeGenerator.stackAlloc(typeInfo.flatSize) + ';' +
                    makeCopyValues(param.ident, 'tempParam', typeInfo.flatSize, 'null', null, param.byVal) + ';\n';
       }
     });
@@ -665,14 +674,14 @@ function JSify(data, functionsOnly, givenFunctions) {
     function walkBlock(block, indent) {
       if (!block) return '';
       dprint('relooping', 'walking block: ' + block.type + ',' + block.entries + ' : ' + block.labels.length);
-      function getLabelLines(label, indent, relooping) {
+      function getLabelLines(label, relooping) {
         if (!label) return '';
         var ret = '';
         if ((LABEL_DEBUG >= 2) && functionNameFilterTest(func.ident)) {
-          ret += indent + "Module.print(INDENT + '" + func.ident + ":" + label.ident + "');\n";
+          ret += INDENTATION + "Module.print(INDENT + '" + func.ident + ":" + label.ident + "');\n";
         }
         if (EXECUTION_TIMEOUT > 0) {
-          ret += indent + 'if (Date.now() - START_TIME >= ' + (EXECUTION_TIMEOUT*1000) + ') throw "Timed out!" + (new Error().stack);\n';
+          ret += INDENTATION + 'if (Date.now() - START_TIME >= ' + (EXECUTION_TIMEOUT*1000) + ') throw "Timed out!" + (new Error().stack);\n';
         }
         
         if (PRINT_SPLIT_FILE_MARKER && Debugging.on && Debugging.getAssociatedSourceFile(label.lines[label.lines.length-1].lineNum)) {
@@ -685,6 +694,7 @@ function JSify(data, functionsOnly, givenFunctions) {
         var i = 0;
         return ret + label.lines.map(function(line) {
           var JS = line.JS;
+          if (!relooping) JS = INDENTATION + JS;
           if (relooping && i == label.lines.length-1) {
             if (line.intertype == 'branch' || line.intertype == 'switch') {
               JS = ''; // just branching operations - done in the relooper, so nothing need be done here
@@ -695,12 +705,10 @@ function JSify(data, functionsOnly, givenFunctions) {
           i++;
           // invoke instructions span two lines, and the debug info is located
           // on the second line, hence the +1
-          return JS + (Debugging.on ? Debugging.getComment(line.lineNum + (line.intertype === 'invoke' ? 1 : 0)) : '');
-        })
-                                .join('\n')
-                                .split('\n') // some lines include line breaks
-                                .map(function(line) { return indent + line })
-                                .join('\n');
+          if (Debugging.on) JS += Debugging.getComment(line.lineNum + (line.intertype === 'invoke' ? 1 : 0));
+          //assert(JS.indexOf('\n') < 0, JS);
+          return JS;
+        }).join('\n');
       }
       var ret = '';
       if (!RELOOP || func.forceEmulated) { // TODO: also if just 1 label?
@@ -719,19 +727,19 @@ function JSify(data, functionsOnly, givenFunctions) {
               ret += 'dummy: 0';
               ret += '};\n';
             } else {
-              ret += 'var setjmpLabel = 0;\n';
-              ret += 'var setjmpTable = ' + RuntimeGenerator.stackAlloc(4 * (MAX_SETJMPS + 1) * 2) + ';\n';
+              ret += makeVarDef('setjmpLabel') + '=0;\n';
+              ret += makeVarDef('setjmpTable') + '=' + RuntimeGenerator.stackAlloc(4 * (MAX_SETJMPS + 1) * 2) + ';\n';
               ret += makeSetValue('setjmpTable', '0', '0', 'i32') + ';'; // initialize first entry to 0
             }
           }
-          ret += indent + 'while(1) ';
+          ret += indent + 'while(1)';
           if (func.setjmpTable && !ASM_JS) {
             ret += 'try { ';
           }
-          ret += 'switch(' + asmCoercion('label', 'i32') + ') {\n';
+          ret += 'switch(' + asmCoercion('label', 'i32') + '){\n';
           ret += block.labels.map(function(label) {
-            return indent + INDENTATION + 'case ' + getLabelId(label.ident) + ': ' + (SHOW_LABELS ? '// ' + getOriginalLabelId(label.ident) : '') + '\n'
-                          + getLabelLines(label, indent + INDENTATION + INDENTATION);
+            return INDENTATION + 'case ' + getLabelId(label.ident) + ': ' + (SHOW_LABELS ? '// ' + getOriginalLabelId(label.ident) : '') + '\n'
+                          + getLabelLines(label);
           }).join('\n') + '\n';
           if (func.setjmpTable && ASM_JS) {
             // emit a label in which we write to the proper local variable, before jumping to the actual label
@@ -748,12 +756,21 @@ function JSify(data, functionsOnly, givenFunctions) {
           if (func.setjmpTable && !ASM_JS) {
             ret += ' } catch(e) { if (!e.longjmp || !(e.id in mySetjmpIds)) throw(e); setjmpTable[setjmpLabels[e.id]](e.value) }';
           }
+          if (ASM_JS && func.returnType !== 'void') {
+            // Add a return
+            if (func.returnType in Runtime.FLOAT_TYPES) {
+              ret += ' return +0;\n';
+            } else {
+              ret += ' return 0;\n';
+            }
+          }
         } else {
-          ret += (SHOW_LABELS ? indent + '/* ' + block.entries[0] + ' */' : '') + '\n' + getLabelLines(block.labels[0], indent);
+          ret += (SHOW_LABELS ? indent + '/* ' + block.entries[0] + ' */' : '') + '\n' + getLabelLines(block.labels[0]);
         }
         ret += '\n';
       } else {
         // Reloop multiple blocks using the compiled relooper
+        //B.start('jsifier-reloop');
 
         //Relooper.setDebug(1);
         Relooper.init();
@@ -764,7 +781,7 @@ function JSify(data, functionsOnly, givenFunctions) {
         // add blocks
         for (var i = 0; i < block.labels.length; i++) {
           var label = block.labels[i];
-          var content = getLabelLines(label, '', true);
+          var content = getLabelLines(label, true);
           //printErr(func.ident + ' : ' + label.ident + ' : ' + content + '\n');
           var last = label.lines[label.lines.length-1];
           if (!last.signedIdent) {
@@ -803,6 +820,7 @@ function JSify(data, functionsOnly, givenFunctions) {
         }
         ret += Relooper.render(blockMap[block.entries[0]]);
         Relooper.cleanup();
+        //B.stop('jsifier-reloop');
       }
       return ret;
     }
@@ -810,9 +828,17 @@ function JSify(data, functionsOnly, givenFunctions) {
     // Finalize function
     if (LABEL_DEBUG && functionNameFilterTest(func.ident)) func.JS += "  INDENT = INDENT.substr(0, INDENT.length-2);\n";
     // Ensure a return in a function with a type that returns, even if it lacks a return (e.g., if it aborts())
-    if (RELOOP && func.lines.length > 0 && func.returnType != 'void') {
-      var returns = func.labels.filter(function(label) { return label.lines[label.lines.length-1].intertype == 'return' }).length;
-      if (returns == 0) func.JS += INDENTATION + 'return ' + asmCoercion('0', func.returnType);
+    if (RELOOP && ASM_JS && func.lines.length > 0 && func.returnType != 'void') {
+      var lastCurly = func.JS.lastIndexOf('}');
+      var lastReturn = func.JS.lastIndexOf('return ');
+      if ((lastCurly < 0 && lastReturn < 0) || // no control flow, no return
+          (lastCurly >= 0 && lastReturn < lastCurly)) { // control flow, no return past last join
+        if (func.returnType in Runtime.FLOAT_TYPES) {
+          func.JS += ' return +0;\n';
+        } else {
+          func.JS += ' return 0;\n';
+        }
+      }
     }
     func.JS += '}\n';
     
@@ -898,6 +924,11 @@ function JSify(data, functionsOnly, givenFunctions) {
 
   // Function lines
   function valueHandler(item) {
+    if (item.vars) {
+      item.vars.forEach(function(v) {
+        addVariable(v[0], v[1]);
+      });
+    }
     return item.ident;
   }
   function noopHandler(item) {
@@ -914,6 +945,14 @@ function JSify(data, functionsOnly, givenFunctions) {
     var impl = VAR_EMULATED;
     if (item.pointer.intertype == 'value') {
       impl = getVarImpl(item.funcData, item.ident);
+    }
+    if (item.valueType[item.valueType.length-1] === '>') {
+      // vector store TODO: move to makeSetValue?
+      var base = getVectorBaseType(item.valueType);
+      return '(' + makeSetValue(item.ident,  0, value + '.x', base, 0, 0, item.align) + ',' +
+                   makeSetValue(item.ident,  4, value + '.y', base, 0, 0, item.align) + ',' +
+                   makeSetValue(item.ident,  8, value + '.z', base, 0, 0, item.align) + ',' +
+                   makeSetValue(item.ident, 12, value + '.w', base, 0, 0, item.align) + ')';
     }
     switch (impl) {
       case VAR_NATIVIZED:
@@ -959,7 +998,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       var parts = label.split('|');
       var trueLabel = parts[1] || '';
       var oldLabel = parts[2] || '';
-      var labelSetting = oldLabel ? 'label = ' + getLabelId(oldLabel) + ';' +
+      var labelSetting = oldLabel ? 'label=' + getLabelId(oldLabel) + ';' +
                          (SHOW_LABELS ? ' /* to: ' + getOriginalLabelId(cleanLabel(oldLabel)) + ' */' : '') : ''; // TODO: optimize away the setting
       if (label[1] == 'R') {
         if (label[2] == 'N') { // BRNOL: break, no label setting
@@ -980,7 +1019,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
     } else {
       if (!labelIsVariable) label = getLabelId(label);
-      return pre + 'label = ' + label + ';' + (SHOW_LABELS ? ' /* to: ' + getOriginalLabelId(cleanLabel(label)) + ' */' : '') + ' break;';
+      return pre + 'label=' + label + ';' + (SHOW_LABELS ? ' /* to: ' + getOriginalLabelId(cleanLabel(label)) + ' */' : '') + 'break;';
     }
   }
 
@@ -1002,14 +1041,14 @@ function JSify(data, functionsOnly, givenFunctions) {
     var labelSets = phiSets[label];
     // FIXME: Many of the |var |s here are not needed, but without them we get slowdowns with closure compiler. TODO: remove this workaround.
     if (labelSets.length == 1) {
-      return (ASM_JS ? '' : 'var ') + labelSets[0].ident + ' = ' + labelSets[0].valueJS + ';';
+      return (ASM_JS ? '' : 'var ') + labelSets[0].ident + '=' + labelSets[0].valueJS + ';';
     }
     // TODO: eliminate unneeded sets (to undefined etc.)
     var deps = {}; // for each ident we will set, which others it depends on
-    var valueJSes = {};
+    var map = {};
     labelSets.forEach(function(labelSet) {
       deps[labelSet.ident] = {};
-      valueJSes[labelSet.ident] = labelSet.valueJS;
+      map[labelSet.ident] = labelSet;
     });
     labelSets.forEach(function(labelSet) {
       walkInterdata(labelSet.value, function mark(item) {
@@ -1028,14 +1067,18 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
       for (var i = 0; i < idents.length; i++) {
         if (keys(deps[idents[i]]).length == 0) {
-          post = 'var ' + idents[i] + ' = ' + valueJSes[idents[i]] + ';' + post;
+          post = idents[i] + '=' + map[idents[i]].valueJS + ';' + post;
+          if (!ASM_JS) post = 'var ' + post;
+          else addVariable(idents[i], map[idents[i]].value.type);
           remove(idents[i]);
           continue mainLoop;
         }
       }
       // If we got here, we have circular dependencies, and must break at least one.
-      pre += 'var ' + idents[0] + '$phi = ' + valueJSes[idents[0]] + ';';
-      post += 'var ' + idents[0] + ' = ' + idents[0] + '$phi;';
+      pre += makeVarDef(idents[0]) + '$phi=' + map[idents[0]].valueJS + ';';
+      post += makeVarDef(idents[0]) + '=' + idents[0] + '$phi;';
+      addVariable(idents[0] + '$phi', map[idents[0]].value.type);
+      addVariable(idents[0], map[idents[0]].value.type);
       remove(idents[0]);
     }
     return pre + post;
@@ -1062,10 +1105,10 @@ function JSify(data, functionsOnly, givenFunctions) {
       var labelTrue = (item.labelTrueJS = getPhiSetsForLabel(phiSets, item.labelTrue)) + makeBranch(item.labelTrue, item.currLabelId);
       var labelFalse = (item.labelFalseJS = getPhiSetsForLabel(phiSets, item.labelFalse)) + makeBranch(item.labelFalse, item.currLabelId);
       if (labelTrue == ';' && labelFalse == ';') return ';';
-      var head = 'if (' + condition + ') { ';
-      var head2 = 'if (!(' + condition + ')) { ';
-      var else_ = ' } else { ';
-      var tail = ' }';
+      var head = 'if(' + condition + '){';
+      var head2 = 'if(!(' + condition + ')){';
+      var else_ = '}else{';
+      var tail = '}';
       if (labelTrue == ';') {
         return head2 + labelFalse + tail;
       } else if (labelFalse == ';') {
@@ -1112,7 +1155,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       item.groupedLabels = [];
     }
     if (!useIfs) {
-      ret += 'switch(' + signedIdent + ') {\n';
+      ret += 'switch(' + signedIdent + '){';
     }
     // process target labels, sorting them so output is consistently ordered
     keys(targetLabels).sort().forEach(function(targetLabel) {
@@ -1125,17 +1168,17 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (useIfs) {
         value = targetLabels[targetLabel].map(function(value) {
           return makeComparison(signedIdent, '==', makeSignOp(value, item.type, 're'), item.type)
-        }).join(' | ');
-        ret += 'if (' + value + ') {\n';
+        }).join('|');
+        ret += 'if(' + value + '){';
       } else {
         value = targetLabels[targetLabel].map(function(value) {
           return 'case ' + makeSignOp(value, item.type, 're') + ':';
-        }).join(' ');
-        ret += value + '{\n';
+        }).join('');
+        ret += value + '{';
       }
       var phiSet = getPhiSetsForLabel(phiSets, targetLabel);
-      ret += INDENTATION + '' + phiSet + makeBranch(targetLabel, item.currLabelId || null) + '\n';
-      ret += '}\n';
+      ret += INDENTATION + '' + phiSet + makeBranch(targetLabel, item.currLabelId || null);
+      ret += '}';
       if (RELOOP) {
         item.groupedLabels.push({
           label: targetLabel,
@@ -1146,15 +1189,15 @@ function JSify(data, functionsOnly, givenFunctions) {
     });
     var phiSet = item.defaultLabelJS = getPhiSetsForLabel(phiSets, item.defaultLabel);
     if (useIfs) {
-      if (item.switchLabels.length > 0) ret += 'else {\n';
-      ret += phiSet + makeBranch(item.defaultLabel, item.currLabelId) + '\n';
-      if (item.switchLabels.length > 0) ret += '}\n';
+      if (item.switchLabels.length > 0) ret += 'else{';
+      ret += phiSet + makeBranch(item.defaultLabel, item.currLabelId) + '';
+      if (item.switchLabels.length > 0) ret += '}';
     } else {
-      ret += 'default: {\n';
-      ret += phiSet + makeBranch(item.defaultLabel, item.currLabelId) + '\n';
-      ret += '}\n';
+      ret += 'default:{';
+      ret += phiSet + makeBranch(item.defaultLabel, item.currLabelId) + '';
+      ret += '}';
 
-      ret += '} break; \n'; // finish switch and break, to move control flow properly (breaks from makeBranch just broke out of the switch)
+      ret += '}break;'; // finish switch and break, to move control flow properly (breaks from makeBranch just broke out of the switch)
     }
     if (item.value) {
       ret += ' ' + toNiceIdent(item.value);
@@ -1162,10 +1205,11 @@ function JSify(data, functionsOnly, givenFunctions) {
     return ret;
   }
   function returnHandler(item) {
-    var ret = RuntimeGenerator.stackExit(item.funcData.initialStack, item.funcData.otherStackAllocations) + ';\n';
+    var ret = RuntimeGenerator.stackExit(item.funcData.initialStack, item.funcData.otherStackAllocations);
+    if (ret.length > 0) ret += ';';
     if (LABEL_DEBUG && functionNameFilterTest(item.funcData.ident)) {
-      ret += "Module.print(INDENT + 'Exiting: " + item.funcData.ident + "');\n"
-          +  "INDENT = INDENT.substr(0, INDENT.length-2);\n";
+      ret += "Module.print(INDENT + 'Exiting: " + item.funcData.ident + "');"
+          +  "INDENT = INDENT.substr(0, INDENT.length-2);";
     }
     ret += 'return';
     var value = item.value ? finalizeLLVMParameter(item.value) : null;
@@ -1191,7 +1235,7 @@ function JSify(data, functionsOnly, givenFunctions) {
     // in an assignment
     var disabled = DISABLE_EXCEPTION_CATCHING == 2  && !(item.funcData.ident in EXCEPTION_CATCHING_WHITELIST); 
     var phiSets = calcPhiSets(item);
-    var call_ = makeFunctionCall(item.ident, item.params, item.funcData, item.type, ASM_JS && !disabled, !!item.assignTo || !item.standalone, true);
+    var call_ = makeFunctionCall(item, item.params, item.funcData, item.type, ASM_JS && !disabled, !!item.assignTo || !item.standalone, true);
 
     var ret;
 
@@ -1217,11 +1261,16 @@ function JSify(data, functionsOnly, givenFunctions) {
     ret = makeVarArgsCleanup(ret);
 
     if (item.assignTo) {
-      ret = 'var ' + item.assignTo + ' = ' + ret;
-      if (USE_TYPED_ARRAYS == 2 && isIllegalType(item.type)) {
+      var illegal = USE_TYPED_ARRAYS == 2 && isIllegalType(item.type);
+      var assignTo = illegal ? item.assignTo + '$r' : item.assignTo;
+      ret = makeVarDef(assignTo) + '=' + ret;
+      if (ASM_JS) addVariable(assignTo, item.type);
+      if (illegal) {
         var bits = getBits(item.type);
         for (var i = 0; i < bits/32; i++) {
-          ret += 'var ' + item.assignTo + '$' + i + ' = ' + (i == 0 ? item.assignTo : 'tempRet' + (i-1)) + ';'
+          var v = item.assignTo + '$' + i;
+          ret += makeVarDef(v) + '=' + (i == 0 ? assignTo : 'tempRet' + (i-1)) + ';'
+          if (ASM_JS) addVariable(v, 'i32');
         }
       }
       item.assignTo = null;
@@ -1252,8 +1301,12 @@ function JSify(data, functionsOnly, givenFunctions) {
     }
   }
   function landingpadHandler(item) {
+    if (ASM_JS) {
+      addVariable(item.assignTo + '$0', 'i32');
+      addVariable(item.assignTo + '$1', 'i32');
+    }
     if (DISABLE_EXCEPTION_CATCHING && !(item.funcData.ident in EXCEPTION_CATCHING_WHITELIST) && USE_TYPED_ARRAYS == 2) {
-      ret = makeVarDef(item.assignTo) + '$0 = 0; ' + item.assignTo + '$1 = 0;';
+      ret = makeVarDef(item.assignTo) + '$0 = 0; ' + makeVarDef(item.assignTo) + '$1 = 0;';
       item.assignTo = null;
       if (VERBOSE) warnOnce('landingpad, but exceptions are disabled!');
       return ret;
@@ -1261,13 +1314,21 @@ function JSify(data, functionsOnly, givenFunctions) {
     var catchTypeArray = item.catchables.map(finalizeLLVMParameter).map(function(element) { return asmCoercion(element, 'i32') }).join(',');
     var ret = asmCoercion('___cxa_find_matching_catch(-1, -1' + (catchTypeArray.length > 0 ? ',' + catchTypeArray : '') +')', 'i32');
     if (USE_TYPED_ARRAYS == 2) {
-      ret = makeVarDef(item.assignTo) + '$0 = ' + ret + '; ' + item.assignTo + '$1 = tempRet0;';
+      ret = makeVarDef(item.assignTo) + '$0 = ' + ret + '; ' + makeVarDef(item.assignTo) + '$1 = tempRet0;';
       item.assignTo = null;
     }
     return ret;
   }
   function loadHandler(item) {
     var value = finalizeLLVMParameter(item.pointer);
+    if (item.valueType[item.valueType.length-1] === '>') {
+      // vector load
+      var base = getVectorBaseType(item.valueType);
+      return base + '32x4(' + makeGetValue(value,  0, base, 0, item.unsigned, 0, item.align) + ',' +
+                              makeGetValue(value,  4, base, 0, item.unsigned, 0, item.align) + ',' +
+                              makeGetValue(value,  8, base, 0, item.unsigned, 0, item.align) + ',' +
+                              makeGetValue(value, 12, base, 0, item.unsigned, 0, item.align) + ')';
+    }
     var impl = item.ident ? getVarImpl(item.funcData, item.ident) : VAR_EMULATED;
     switch (impl) {
       case VAR_NATIVIZED: {
@@ -1307,13 +1368,45 @@ function JSify(data, functionsOnly, givenFunctions) {
       item.ident = 'tempValue';
       ret += item.ident + ' = [' + makeEmptyStruct(item.type) + '], ';
     }
-    return ret + item.ident + '.f' + item.indexes[0][0].text + ' = ' + finalizeLLVMParameter(item.value) + ', ' + item.ident + ')';
+    return ret + item.ident + '.f' + item.indexes[0][0].text + '=' + finalizeLLVMParameter(item.value) + ', ' + item.ident + ')';
+  }
+  function insertelementHandler(item) {
+    var base = getVectorBaseType(item.type);
+    var ident = ensureVector(item.ident, base);
+    //return ident + '.with' + SIMDLane[finalizeLLVMParameter(item.index)] + '(' + finalizeLLVMParameter(item.value) + ')';
+    return 'SIMD.with' + SIMDLane[finalizeLLVMParameter(item.index)] + '(' + ident + ',' + finalizeLLVMParameter(item.value) + ')';
+  }
+  function extractelementHandler(item) {
+    var base = getVectorBaseType(item.type);
+    var ident = ensureVector(item.ident, base);
+    var index = finalizeLLVMParameter(item.value);
+    assert(isNumber(index));
+    return ident + '.' + simdLane[index];
+  }
+  function shufflevectorHandler(item) {
+    var base = getVectorBaseType(item.type);
+    var first = ensureVector(item.ident, base);
+    var second = ensureVector(finalizeLLVMParameter(item.value), base);
+    var mask;
+    if (item.mask.intertype === 'value') {
+      assert(item.mask.ident === 'zeroinitializer');
+      mask = [0, 0, 0, 0];
+    } else {
+      assert(item.mask.intertype === 'vector');
+      mask = item.mask.idents;
+    }
+    for (var i = 0; i < 4; i++) assert(mask[0] == 0 || mask == 1);
+    i = 0;
+    return base + '32x4(' + mask.map(function(m) {
+      return (m == 1 ? second : first) + '.' + simdLane[i++];
+    }).join(',') + ')';
   }
   function indirectbrHandler(item) {
     var phiSets = calcPhiSets(item);
-    var js = 'var ibr = ' + finalizeLLVMParameter(item.value) + ';\n';
+    var js = makeVarDef('ibr') + '=' + finalizeLLVMParameter(item.value) + ';';
+    if (ASM_JS) addVariable('ibr', 'i32');
     for (var targetLabel in phiSets) {
-      js += 'if (' + makeComparison('ibr', '==', targetLabel, 'i32') + ') { ' + getPhiSetsForLabel(phiSets, targetLabel) + ' }\n';
+      js += 'if(' + makeComparison('ibr', '==', targetLabel, 'i32') + '){' + getPhiSetsForLabel(phiSets, targetLabel) + '}';
     }
     return js + makeBranch('ibr', item.currLabelId, true);
   }
@@ -1322,7 +1415,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (item.allocatedSize === 0) return ''; // This will not actually be shown - it's nativized
       return asmCoercion(getFastValue('sp', '+', item.allocatedIndex.toString()), 'i32');
     } else {
-      return RuntimeGenerator.stackAlloc(getFastValue(calcAllocatedSize(item.allocatedType), '*', item.allocatedNum));
+      return RuntimeGenerator.stackAlloc(getFastValue(calcAllocatedSize(item.allocatedType), '*', item.ident));
     }
   }
   function va_argHandler(item) {
@@ -1332,7 +1425,7 @@ function JSify(data, functionsOnly, givenFunctions) {
     
     // store current list offset in tempInt, advance list offset by STACK_ALIGN, return list entry stored at tempInt
     return '(tempInt=' + makeGetValue(ident, Runtime.QUANTUM_SIZE, '*') + ',' +
-                         makeSetValue(ident, Runtime.QUANTUM_SIZE, 'tempInt + ' + move, '*') + ',' +
+                         makeSetValue(ident, Runtime.QUANTUM_SIZE, 'tempInt + ' + move, '*', null, null, null, null, ',') + ',' +
                          makeGetValue(makeGetValue(ident, 0, '*'), 'tempInt', item.type) + ')';
   }
 
@@ -1349,7 +1442,9 @@ function JSify(data, functionsOnly, givenFunctions) {
     return ret;
   }
 
-  function makeFunctionCall(ident, params, funcData, type, forceByPointer, hasReturn, invoke) {
+  function makeFunctionCall(item, params, funcData, type, forceByPointer, hasReturn, invoke) {
+    var ident = item.ident;
+
     // We cannot compile assembly. See comment in intertyper.js:'Call'
     assert(ident != 'asm', 'Inline assembly cannot be compiled to JavaScript!');
 
@@ -1368,7 +1463,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       var callIdent = LibraryManager.getRootIdent(simpleIdent);
       if (callIdent) {
         simpleIdent = callIdent; // ident may not be in library, if all there is is ident__inline, but in this case it is
-        if (callIdent.indexOf('.') < 0) {
+        if (callIdent.indexOf('Math_') !== 0) {
           callIdent = '_' + callIdent; // Not Math.*, so add the normal prefix
         }
       } else {
@@ -1499,6 +1594,9 @@ function JSify(data, functionsOnly, givenFunctions) {
         if (trueType !== returnType && !isIdenticallyImplemented(trueType, returnType)) {
           if (VERBOSE) warnOnce('Fixing function call based on return type from signature, on ' + [callIdent, returnType, trueType]);
           returnType = trueType;
+          if (trueType === 'void') {
+            item.assignTo = null;
+          }
         }
       }
     }
@@ -1526,7 +1624,7 @@ function JSify(data, functionsOnly, givenFunctions) {
       if (!ASM_JS || functionTableCall) callIdent = Functions.getTable(sig) + '[' + callIdent + ']';
     }
 
-    var ret = callIdent + '(' + args.join(', ') + ')';
+    var ret = callIdent + '(' + args.join(',') + ')';
     if (ASM_JS) { // TODO: do only when needed (library functions and Math.*?) XXX && simpleIdent in Functions.libraryFunctions) {
       ret = asmCoercion(ret, returnType);
       if (simpleIdent == 'abort' && funcData.returnType != 'void') {
@@ -1537,7 +1635,7 @@ function JSify(data, functionsOnly, givenFunctions) {
     if (ASM_JS && funcData.setjmpTable) {
       // check if a longjmp was done. If a setjmp happened, check if ours. If ours, go to a special label to handle it.
       // otherwise, just return - the call to us must also have been an invoke, so the setjmp propagates that way
-      ret += '; if (((__THREW__|0) != 0) & ((threwValue|0) != 0)) { setjmpLabel = ' + asmCoercion('_testSetjmp(' + makeGetValue('__THREW__', 0, 'i32') + ', setjmpTable)', 'i32') + '; if ((setjmpLabel|0) > 0) { label = ' + SETJMP_LABEL + '; break } else return ' + (funcData.returnType != 'void' ? asmCoercion('0', funcData.returnType) : '') + ' } __THREW__ = threwValue = 0;\n';
+      ret += '; if (((__THREW__|0) != 0) & ((threwValue|0) != 0)) { setjmpLabel = ' + asmCoercion('_testSetjmp(' + makeGetValue('__THREW__', 0, 'i32') + ', setjmpTable)', 'i32') + '; if ((setjmpLabel|0) > 0) { label = ' + SETJMP_LABEL + '; break } else return ' + (funcData.returnType != 'void' ? asmCoercion('0', funcData.returnType) : '') + ' } __THREW__ = threwValue = 0;';
     }
 
     return ret;
@@ -1558,7 +1656,7 @@ function JSify(data, functionsOnly, givenFunctions) {
   function getelementptrHandler(item) { return finalizeLLVMFunctionCall(item) }
   function callHandler(item) {
     if (item.standalone && LibraryManager.isStubFunction(item.ident)) return ';';
-    var ret = makeFunctionCall(item.ident, item.params, item.funcData, item.type, false, !!item.assignTo || !item.standalone) + (item.standalone ? ';' : '');
+    var ret = makeFunctionCall(item, item.params, item.funcData, item.type, false, !!item.assignTo || !item.standalone) + (item.standalone ? ';' : '');
     return makeVarArgsCleanup(ret);
   }
 
@@ -1769,6 +1867,9 @@ function JSify(data, functionsOnly, givenFunctions) {
       print('// Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included');
       print('var i64Math = null;');
     }
+    if (Types.usesSIMD) {
+      print(read('simd.js'));
+    }
 
     if (CORRUPTION_CHECK) {
       assert(!ASM_JS, 'corruption checker is not compatible with asm.js');
@@ -1805,21 +1906,19 @@ function JSify(data, functionsOnly, givenFunctions) {
     var shellParts = read(shellFile).split('{{BODY}}');
     print(processMacros(preprocess(shellParts[1])));
     // Print out some useful metadata
-    if (EMIT_GENERATED_FUNCTIONS || PGO) {
+    if (RUNNING_JS_OPTS || PGO) {
       var generatedFunctions = JSON.stringify(keys(Functions.implementedFunctions).filter(function(func) {
         return IGNORED_FUNCTIONS.indexOf(func.ident) < 0;
       }));
       if (PGO) {
         print('PGOMonitor.allGenerated = ' + generatedFunctions + ';\nremoveRunDependency("pgo");\n');
       }
-      if (EMIT_GENERATED_FUNCTIONS) {
+      if (RUNNING_JS_OPTS) {
         print('// EMSCRIPTEN_GENERATED_FUNCTIONS: ' + generatedFunctions + '\n');
       }
     }
 
     PassManager.serialize();
-
-    return null;
   }
 
   // Data
@@ -1849,13 +1948,18 @@ function JSify(data, functionsOnly, givenFunctions) {
       }
     }
 
+    //B.start('jsifier-handle-gv');
     sortGlobals(data.globalVariables).forEach(globalVariableHandler);
+    //B.stop('jsifier-handle-gv');
     data.aliass.forEach(aliasHandler);
     data.functions.forEach(functionSplitter);
   }
 
+  //B.start('jsifier-fc');
   finalCombiner();
+  //B.stop('jsifier-fc');
 
   dprint('framework', 'Big picture: Finishing JSifier, main pass=' + mainPass);
+  //B.stop('jsifier');
 }
 

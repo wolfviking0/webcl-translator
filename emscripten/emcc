@@ -127,19 +127,32 @@ Most normal gcc/g++ options will work, for example:
   --version                Display compiler version information
 
 Options that are modified or new in %s include:
-  -O0                      No optimizations (default)
+
+  -O0                      No optimizations (default). This is the recommended
+                           setting for starting to port a project, as it
+                           includes various assertions.
+
   -O1                      Simple optimizations, including asm.js, LLVM -O1
-                           optimizations, and no runtime assertions
+                           optimizations, relooping, and no runtime assertions
                            or C++ exception catching (to re-enable
                            C++ exception catching, use
-                           -s DISABLE_EXCEPTION_CATCHING=0 ).
-                           (For details on the affects of different
-                           opt levels, see apply_opt_level() in
-                           tools/shared.py and also src/settings.js.)
-  -O2                      As -O1, plus the relooper (loop recreation),
-                           LLVM -O3 optimizations, and
+                           -s DISABLE_EXCEPTION_CATCHING=0 ), and enables
 
                               -s ALIASING_FUNCTION_POINTERS=1
+
+                           This is the recommended setting when you want a
+                           reasonably optimized build that is generated as
+                           quickly as possible (it is much faster than -O2).
+
+                           (Note: for details on the affects of different
+                           opt levels, see apply_opt_level() in
+                           tools/shared.py and also src/settings.js.)
+
+  -O2                      As -O1, plus various js-level optimizations and
+                           LLVM -O3 optimizations. This is the recommended
+                           setting for a release build: slower compilation
+                           time in return for the smallest and fastest
+                           output.
 
   -O3                      As -O2, plus dangerous optimizations that may
                            break the generated code! This adds
@@ -227,6 +240,10 @@ Options that are modified or new in %s include:
                            2: -O2 LLVM optimizations
                            3: -O3 LLVM optimizations (default in -O2+)
 
+                           You can also specify arbitrary LLVM options, e.g.
+
+                             --llvm-opts "['-O3', '-somethingelse']"
+
   --llvm-lto <level>       0: No LLVM LTO (default)
                            1: LLVM LTO is performed
                            2: We combine all the bitcode and run LLVM opt -O3
@@ -257,6 +274,9 @@ Options that are modified or new in %s include:
                            Note: If closure compiler hits an out-of-memory,
                            try adjusting JAVA_HEAP_SIZE in the environment
                            (for example, to 4096m for 4GB).
+
+                           Note: Closure is only run if js opts are being
+                           done (-O2 or above, or --js-opts 1).
 
   --js-transform <cmd>     <cmd> will be called on the generated code
                            before it is optimized. This lets you modify
@@ -933,7 +953,7 @@ try:
   if default_cxx_std:
     newargs = newargs + [default_cxx_std]
 
-  if js_opts is None: js_opts = True
+  if js_opts is None: js_opts = opt_level >= 2
   if llvm_opts is None: llvm_opts = LLVM_OPT_LEVEL[opt_level]
   if llvm_lto is None and opt_level >= 3: llvm_lto = 3
   if opt_level == 0: debug_level = 4
@@ -1105,6 +1125,16 @@ try:
       shared.Settings.CORRECT_OVERFLOWS = 1
     assert not shared.Settings.PGO, 'cannot run PGO in ASM_JS mode'
 
+    heap = 4096
+    while heap < shared.Settings.TOTAL_MEMORY:
+      if heap <= 16*1024*1024:
+        heap *= 2
+      else:
+        heap += 16*1024*1024
+    if heap != shared.Settings.TOTAL_MEMORY:
+      logging.warning('increasing TOTAL_MEMORY to %d to be more reasonable for asm.js' % heap)
+      shared.Settings.TOTAL_MEMORY = heap
+
   if shared.Settings.CORRECT_SIGNS >= 2 or shared.Settings.CORRECT_OVERFLOWS >= 2 or shared.Settings.CORRECT_ROUNDINGS >= 2:
     debug_level = 4 # must keep debug info to do line-by-line operations
 
@@ -1161,6 +1191,9 @@ try:
   if proxy_to_worker:
     shared.Settings.PROXY_TO_WORKER = 1
 
+  if js_opts:
+    shared.Settings.RUNNING_JS_OPTS = 1
+
   ## Compile source code to bitcode
 
   logging.debug('compiling to bitcode')
@@ -1215,7 +1248,7 @@ try:
         file_suffix = filename_type_suffix(input_file)
         if file_suffix.endswith(SOURCE_SUFFIXES):
           temp_file = temp_files[i]
-          logging.debug('optimizing %s with -O%d' % (input_file, llvm_opts))
+          logging.debug('optimizing %s with -O%s' % (input_file, llvm_opts))
           shared.Building.llvm_opt(temp_file, llvm_opts)
 
   # If we were just asked to generate bitcode, stop there
@@ -1621,7 +1654,7 @@ try:
   # Embed and preload files
   if len(preload_files) + len(embed_files) > 0:
     logging.debug('setting up files')
-    file_args = []
+    file_args = ['--pre-run']
     if len(preload_files) > 0:
       file_args.append('--preload')
       file_args += preload_files
@@ -1632,11 +1665,8 @@ try:
       file_args += ['--compress', Compression.encoder, Compression.decoder, Compression.js_name]
     if use_preload_cache:
       file_args.append('--use-preload-cache')
-    code = execute([shared.PYTHON, shared.FILE_PACKAGER, unsuffixed(target) + '.data'] + file_args, stdout=PIPE)[0]
-    src = open(final).read().replace('// {{PRE_RUN_ADDITIONS}}', '// {{PRE_RUN_ADDITIONS}}\n' + code)
-    final += '.files.js'
-    open(final, 'w').write(src)
-    if DEBUG: save_intermediate('files')
+    file_code = execute([shared.PYTHON, shared.FILE_PACKAGER, unsuffixed(target) + '.data'] + file_args, stdout=PIPE)[0]
+    pre_js = file_code + pre_js
 
   # Apply pre and postjs files
   if pre_js or post_js:
@@ -1704,7 +1734,7 @@ try:
     global final, js_optimizer_queue, js_optimizer_extra_info
     if len(js_optimizer_extra_info) == 0:
       js_optimizer_extra_info = None
-    if len(js_optimizer_queue) > 0 and not(len(js_optimizer_queue) == 1 and js_optimizer_queue[0] == 'last'):
+    if len(js_optimizer_queue) > 0 and not(not shared.Settings.ASM_JS and len(js_optimizer_queue) == 1 and js_optimizer_queue[0] == 'last'):
       if DEBUG != '2':
         if shared.Settings.ASM_JS:
           js_optimizer_queue = ['asm'] + js_optimizer_queue
@@ -1739,7 +1769,10 @@ try:
       else:
         return 'eliminate'
 
-    js_optimizer_queue += [get_eliminate(), 'simplifyExpressions']
+    js_optimizer_queue += [get_eliminate()]
+
+    if opt_level >= 2:
+      js_optimizer_queue += ['simplifyExpressions']
 
   if closure and not shared.Settings.ASM_JS:
     flush_js_optimizer_queue()

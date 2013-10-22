@@ -25,6 +25,7 @@ var SHADOW_FLIP = { i64: 'double', double: 'i64' }; //, i32: 'float', float: 'i3
 // Analyzer
 
 function analyzer(data, sidePass) {
+  //B.start('analyzer');
   var mainPass = !sidePass;
 
   var item = { items: data };
@@ -188,7 +189,7 @@ function analyzer(data, sidePass) {
     if (USE_TYPED_ARRAYS == 2) {
       function getLegalVars(base, bits, allowLegal) {
         bits = bits || 32; // things like pointers are all i32, but show up as 0 bits from getBits
-        if (allowLegal && bits <= 32) return [{ ident: base + ('i' + bits in Runtime.INT_TYPES ? '' : '$0'), bits: bits }];
+        if (allowLegal && bits <= 32) return [{ intertype: 'value', ident: base + ('i' + bits in Runtime.INT_TYPES ? '' : '$0'), bits: bits, type: 'i' + bits }];
         if (isNumber(base)) return getLegalLiterals(base, bits);
         if (base[0] == '{') {
           warnOnce('seeing source of illegal data ' + base + ', likely an inline struct - assuming zeroinit');
@@ -198,7 +199,7 @@ function analyzer(data, sidePass) {
         var i = 0;
         if (base == 'zeroinitializer' || base == 'undef') base = 0;
         while (bits > 0) {
-          ret[i] = { ident: base ? base + '$' + i : '0', bits: Math.min(32, bits) };
+          ret[i] = { intertype: 'value', ident: base ? base + '$' + i : '0', bits: Math.min(32, bits), type: 'i' + Math.min(32, bits) };
           bits -= 32;
           i++;
         }
@@ -209,7 +210,7 @@ function analyzer(data, sidePass) {
         var ret = new Array(Math.ceil(bits/32));
         var i = 0;
         while (bits > 0) {
-          ret[i] = { ident: (parsed[i]|0).toString(), bits: Math.min(32, bits) }; // resign all values
+          ret[i] = { intertype: 'value', ident: (parsed[i]|0).toString(), bits: Math.min(32, bits), type: 'i' + Math.min(32, bits) }; // resign all values
           bits -= 32;
           i++;
         }
@@ -225,7 +226,8 @@ function analyzer(data, sidePass) {
             return getLegalLiterals(value.ident, bits);
           } else if (value.intertype == 'structvalue') {
             return getLegalStructuralParts(value).map(function(part) {
-              return { ident: part.ident, bits: part.type.substr(1) };
+              part.bits = part.type.substr(1); // can be some nested IR, like LLVM calls
+              return part;
             });
           } else {
             return getLegalVars(value.ident, bits);
@@ -550,11 +552,7 @@ function analyzer(data, sidePass) {
                       return {
                         intertype: 'phiparam',
                         label: param.label,
-                        value: {
-                         intertype: 'value',
-                         ident: values[k++][j].ident,
-                         type: 'i' + element.bits,
-                        }
+                        value: values[k++][j]
                       };
                     })
                   });
@@ -783,13 +781,14 @@ function analyzer(data, sidePass) {
                   assert(PRECISE_I64_MATH, 'Must have precise i64 math for non-constant 64-bit shifts');
                   Types.preciseI64MathUsed = 1;
                   value.intertype = 'value';
-                  value.ident = 'var ' + value.assignTo + '$0 = ' +
+                  value.ident = makeVarDef(value.assignTo) + '$0=' +
                       asmCoercion('_bitshift64' + value.op[0].toUpperCase() + value.op.substr(1) + '(' + 
                         asmCoercion(sourceElements[0].ident, 'i32') + ',' +
                         asmCoercion(sourceElements[1].ident, 'i32') + ',' +
                         asmCoercion(value.params[1].ident + '$0', 'i32') + ')', 'i32'
                       ) + ';' +
-                      'var ' + value.assignTo + '$1 = tempRet0;';
+                      makeVarDef(value.assignTo) + '$1=tempRet0;';
+                  value.vars = [[value.assignTo + '$0', 'i32'], [value.assignTo + '$1', 'i32']];
                   value.assignTo = null;
                   i++;
                   continue;
@@ -801,27 +800,65 @@ function analyzer(data, sidePass) {
                 var whole = shifts >= 0 ? Math.floor(shifts/32) : Math.ceil(shifts/32);
                 var fraction = Math.abs(shifts % 32);
                 if (signed) {
-                  var signedFill = '(' + makeSignOp(sourceElements[sourceElements.length-1].ident, 'i' + sourceElements[sourceElements.length-1].bits, 're', 1, 1) + ' < 0 ? -1 : 0)';
-                  var signedKeepAlive = { intertype: 'value', ident: sourceElements[sourceElements.length-1].ident, type: 'i32' };
+                  var signedFill = {
+                    intertype: 'mathop',
+                    op: 'select',
+                    variant: 's',
+                    type: 'i32',
+                    params: [{
+                      intertype: 'mathop',
+                      op: 'icmp',
+                      variant: 'slt',
+                      type: 'i32',
+                      params: [
+                        { intertype: 'value', ident: sourceElements[sourceElements.length-1].ident, type: 'i' + Math.min(sourceBits, 32) },
+                        { intertype: 'value', ident: '0', type: 'i32' }
+                      ]
+                    },
+                      { intertype: 'value', ident: '-1', type: 'i32' },
+                      { intertype: 'value', ident: '0', type: 'i32' },
+                    ]
+                  };
                 }
                 for (var j = 0; j < targetElements.length; j++) {
-                  var result = {
-                    intertype: 'value',
-                    ident: (j + whole >= 0 && j + whole < sourceElements.length) ? sourceElements[j + whole].ident : (signed ? signedFill : '0'),
-                    params: [(signed && j + whole > sourceElements.length) ? signedKeepAlive : null],
-                    type: 'i32',
-                  };
-                  if (j == 0 && sourceBits < 32) {
-                    // zext sign correction
-                    result.ident = makeSignOp(result.ident, 'i' + sourceBits, isUnsignedOp(value.op) ? 'un' : 're', 1, 1);
+                  var inBounds = j + whole >= 0 && j + whole < sourceElements.length;
+                  var result;
+                  if (inBounds || !signed) {
+                    result = {
+                      intertype: 'value',
+                      ident: inBounds ? sourceElements[j + whole].ident : '0',
+                      type: 'i' + Math.min(sourceBits, 32),
+                    };
+                    if (j == 0 && sourceBits < 32) {
+                      // zext sign correction
+                      var result2 = {
+                        intertype: 'mathop',
+                        op: isUnsignedOp(value.op) ? 'zext' : 'sext',
+                        params: [result, {
+                          intertype: 'type',
+                          ident: 'i32',
+                          type: 'i' + sourceBits
+                        }],
+                        type: 'i32'
+                      };
+                      result = result2;
+                    }
+                  } else {
+                    // out of bounds and signed
+                    result = copy(signedFill);
                   }
                   if (fraction != 0) {
-                    var other = {
-                      intertype: 'value',
-                      ident: (j + sign + whole >= 0 && j + sign + whole < sourceElements.length) ? sourceElements[j + sign + whole].ident : (signed ? signedFill : '0'),
-                      params: [(signed && j + sign + whole > sourceElements.length) ? signedKeepAlive : null],
-                      type: 'i32',
-                    };
+                    var other;
+                    var otherInBounds = j + sign + whole >= 0 && j + sign + whole < sourceElements.length;
+                    if (otherInBounds || !signed) {
+                      other = {
+                        intertype: 'value',
+                        ident: otherInBounds ? sourceElements[j + sign + whole].ident : '0',
+                        type: 'i32',
+                      };
+                    } else {
+                      other = copy(signedFill);
+                    }
                     other = {
                       intertype: 'mathop',
                       op: shiftOp,
@@ -871,10 +908,17 @@ function analyzer(data, sidePass) {
                 }
                 if (targetBits <= 32) {
                   // We are generating a normal legal type here
-                  legalValue = {
-                    intertype: 'value',
-                    ident: targetElements[0].ident + (targetBits < 32 ? '&' + (Math.pow(2, targetBits)-1) : ''),
-                    type: 'rawJS'
+                  legalValue = { intertype: 'value', ident: targetElements[0].ident, type: 'i32' };
+                  if (targetBits < 32) {
+                    legalValue = {
+                      intertype: 'mathop',
+                      op: 'and',
+                      type: 'i32',
+                      params: [
+                        legalValue,
+                        { intertype: 'value', ident: (Math.pow(2, targetBits)-1).toString(), type: 'i32' }
+                      ]
+                    }
                   };
                   legalValue.assignTo = item.assignTo;
                   toAdd.push(legalValue);
@@ -923,11 +967,10 @@ function analyzer(data, sidePass) {
       var subType = check[2];
       addTypeInternal(subType); // needed for anonymous structure definitions (see below)
 
-      // Huge structural types are represented very inefficiently, both here and in generated JS. Best to avoid them - for example static char x[10*1024*1024]; is bad, while static char *x = malloc(10*1024*1024) is fine.
-      if (num >= 10*1024*1024) warnOnce('warning: very large fixed-size structural type: ' + type + ' - can you reduce it? (compilation may be slow)');
+      var fields = [subType, subType]; // Two, so we get the flatFactor right. We care about the flatFactor, not the size here. see calculateStructAlignment
       Types.types[nonPointing] = {
         name_: nonPointing,
-        fields: range(num).map(function() { return subType }),
+        fields: fields,
         lineNum: '?'
       };
       newTypes[nonPointing] = 1;
@@ -936,7 +979,7 @@ function analyzer(data, sidePass) {
       if (!Types.types[zerod]) {
         Types.types[zerod] = {
           name_: zerod,
-          fields: [subType, subType], // Two, so we get the flatFactor right. We care about the flatFactor, not the size here
+          fields: fields,
           lineNum: '?'
         };
         newTypes[zerod] = 1;
@@ -950,6 +993,20 @@ function analyzer(data, sidePass) {
       var packed = type[0] == '<';
       var internal = type;
       if (packed) {
+        if (type[1] !== '{') {
+          // vector type, <4 x float> etc.
+          var size = getVectorSize(type);
+          Types.types[type] = {
+            name_: type,
+            fields: zeros(size).map(function() {
+              return getVectorNativeType(type);
+            }),
+            packed: false,
+            flatSize: 4*size,
+            lineNum: '?'
+          };
+          return;
+        }
         if (internal[internal.length-1] != '>') {
           warnOnce('ignoring type ' + internal);
           return; // function pointer or such
@@ -964,7 +1021,7 @@ function analyzer(data, sidePass) {
       internal = internal.substr(2, internal.length-4);
       Types.types[type] = {
         name_: type,
-        fields: splitTokenList(tokenize(internal).tokens).map(function(segment) {
+        fields: splitTokenList(tokenize(internal)).map(function(segment) {
           return segment[0].text;
         }),
         packed: packed,
@@ -1116,7 +1173,7 @@ function analyzer(data, sidePass) {
             rawLinesIndex: i
           };
           if (variable.origin === 'alloca') {
-            variable.allocatedNum = item.allocatedNum;
+            variable.allocatedNum = item.ident;
           }
           if (variable.origin === 'call') {
             variable.type = getReturnType(variable.type);
@@ -1607,9 +1664,9 @@ function analyzer(data, sidePass) {
       var lines = func.labels[0].lines;
       for (var i = 0; i < lines.length; i++) {
         var item = lines[i];
-        if (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.allocatedNum)) break;
+        if (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.ident)) break;
         item.allocatedSize = func.variables[item.assignTo].impl === VAR_EMULATED ?
-          calcAllocatedSize(item.allocatedType)*item.allocatedNum: 0;
+          calcAllocatedSize(item.allocatedType)*item.ident: 0;
         if (USE_TYPED_ARRAYS === 2) {
           // We need to keep the stack aligned
           item.allocatedSize = Runtime.forceAlign(item.allocatedSize, Runtime.STACK_ALIGN);
@@ -1618,7 +1675,7 @@ function analyzer(data, sidePass) {
       var index = 0;
       for (var i = 0; i < lines.length; i++) {
         var item = lines[i];
-        if (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.allocatedNum)) break;
+        if (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.ident)) break;
         item.allocatedIndex = index;
         index += item.allocatedSize;
         delete item.allocatedSize;
@@ -1646,7 +1703,7 @@ function analyzer(data, sidePass) {
 
         for (var i = 0; i < lines.length; i++) {
           var item = lines[i];
-          if (!finishedInitial && (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.allocatedNum))) {
+          if (!finishedInitial && (!item.assignTo || item.intertype != 'alloca' || !isNumber(item.ident))) {
             finishedInitial = true;
           }
           if (item.intertype == 'alloca' && finishedInitial) {
@@ -1705,6 +1762,7 @@ function analyzer(data, sidePass) {
   stackAnalyzer();
   relooper();
 
+  //B.stop('analyzer');
   return item;
 }
 

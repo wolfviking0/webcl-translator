@@ -208,15 +208,6 @@ var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
-var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
-var OPENCL_GRAB_TRACE = 0 // Grab all the wecl call
-var OPENCL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
-var OPENCL_PROFILE = 0 // Enable console.profile
-var OPENCL_FORCE_CPU = 0 // change clEnqueueNDRangeKernel for force CPU 
-var OPENCL_CHECK_SET_POINTER = 0 // Check if set pointer was call before function taking (void *) parameter
-var OPENCL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
-var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
-
 var GL_ASSERTIONS = 0; // Adds extra checks for error situations in the GL library. Can impact performance.
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime
                   // option, in this case GL.debug.
@@ -436,14 +427,15 @@ var EXPLICIT_ZEXT = 0; // If 1, generate an explicit conversion of zext i1 to i3
 
 var NECESSARY_BLOCKADDRS = []; // List of (function, block) for all block addresses that are taken.
 
-var EMIT_GENERATED_FUNCTIONS = 0; // whether to emit the list of generated functions, needed for external JS optimization passes
-
 var JS_CHUNK_SIZE = 10240; // Used as a maximum size before breaking up expressions and lines into smaller pieces
 
 var EXPORT_NAME = 'Module'; // Global variable to export the module as for environments without a standardized module
                             // loading system (e.g. the browser and SM shell).
 
+var RUNNING_JS_OPTS = 0; // whether js opts will be run, after the main compiler
+
 var COMPILER_ASSERTIONS = 0; // costly (slow) compile-time assertions
+var COMPILER_FASTPATHS = 1; // use fast-paths to speed up compilation
 
 // Compiler debugging options
 var DEBUG_TAGS_SHOWING = [];

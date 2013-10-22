@@ -185,7 +185,6 @@ if (SAFE_HEAP) USE_BSS = 0; // must initialize heap for safe heap
 assert(!(USE_TYPED_ARRAYS === 2 && QUANTUM_SIZE !== 4), 'For USE_TYPED_ARRAYS == 2, must have normal QUANTUM_SIZE of 4');
 if (ASM_JS) {
   assert(!ALLOW_MEMORY_GROWTH, 'Cannot grow asm.js heap');
-  assert((TOTAL_MEMORY&(TOTAL_MEMORY-1)) == 0, 'asm.js heap must be power of 2');
 }
 assert(!(!NAMED_GLOBALS && BUILD_AS_SHARED_LIB), 'shared libraries must have named globals');
 
@@ -207,7 +206,12 @@ if (phase == 'pre') {
 if (VERBOSE) printErr('VERBOSE is on, this generates a lot of output and can slow down compilation');
 
 // Load struct and define information.
-var temp = JSON.parse(read(STRUCT_INFO));
+try {
+  var temp = JSON.parse(read(STRUCT_INFO));
+} catch(e) {
+  printErr('cannot load struct info at ' + STRUCT_INFO + ' : ' + e + ', trying in current dir');
+  temp = JSON.parse(read('struct_info.compiled.json'));
+}
 C_STRUCTS = temp.structs;
 C_DEFINES = temp.defines;
 
@@ -281,6 +285,7 @@ function compile(raw) {
 
     //dumpInterProf();
     //printErr(phase + ' paths (fast, slow): ' + [fastPaths, slowPaths]);
+    B.print(phase);
 
     phase = null;
 
@@ -304,6 +309,8 @@ function compile(raw) {
   }
 }
 
+B = new Benchmarker();
+
 if (ll_file) {
   if (ll_file.indexOf(String.fromCharCode(10)) == -1) {
     compile(read(ll_file));
@@ -311,4 +318,8 @@ if (ll_file) {
     compile(ll_file); // we are given raw .ll
   }
 }
+
+//var M = keys(tokenCacheMisses).map(function(m) { return [m, misses[m]] }).sort(function(a, b) { return a[1] - b[1] });
+//printErr(dump(M.slice(M.length-10)));
+//printErr('hits: ' + hits);
 

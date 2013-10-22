@@ -230,9 +230,9 @@ function isFunctionDef(token, out) {
   if (nonPointing[0] != '(' || nonPointing.substr(-1) != ')')
     return false;
   if (nonPointing === '()') return true;
-  if (!token.item) return false;
+  if (!token.tokens) return false;
   var fail = false;
-  var segments = splitTokenList(token.item.tokens);
+  var segments = splitTokenList(token.tokens);
   segments.forEach(function(segment) {
     var subtext = segment[0].text;
     fail = fail || segment.length > 1 || !(isType(subtext) || subtext == '...');
@@ -280,7 +280,7 @@ function isFunctionType(type, out) {
     i--;
   }
   assert(argText);
-  return isFunctionDef({ text: argText, item: tokenize(argText.substr(1, argText.length-2), true) }, out);
+  return isFunctionDef({ text: argText, tokens: tokenize(argText.substr(1, argText.length-2)) }, out);
 }
 
 function getReturnType(type) {
@@ -322,6 +322,32 @@ function countNormalArgs(type, out, legalized) {
   }
   if (isVarArgsFunctionType(type)) ret--;
   return ret;
+}
+
+function getVectorSize(type) {
+  return parseInt(type.substring(1, type.indexOf(' ')));
+}
+
+function getVectorBaseType(type) {
+  Types.usesSIMD = true;
+  switch (type) {
+    case '<2 x float>':
+    case '<4 x float>': return 'float';
+    case '<2 x i32>':
+    case '<4 x i32>': return 'uint';
+    default: throw 'unknown vector type ' + type;
+  }
+}
+
+function getVectorNativeType(type) {
+  Types.usesSIMD = true;
+  switch (type) {
+    case '<2 x float>':
+    case '<4 x float>': return 'float';
+    case '<2 x i32>':
+    case '<4 x i32>': return 'i32';
+    default: throw 'unknown vector type ' + type;
+  }
 }
 
 function addIdent(token) {
@@ -376,7 +402,6 @@ var SPLIT_TOKEN_LIST_SPLITTERS = set(',', 'to'); // 'to' can separate parameters
 function splitTokenList(tokens) {
   if (tokens.length == 0) return [];
   if (!tokens.slice) tokens = tokens.tokens;
-  if (tokens.slice(-1)[0].text != ',') tokens.push({text:','});
   var ret = [];
   var seg = [];
   for (var i = 0; i < tokens.length; i++) {
@@ -386,24 +411,22 @@ function splitTokenList(tokens) {
       seg = [];
     } else if (token.text == ';') {
       ret.push(seg);
-      break;
+      return ret;
     } else {
       seg.push(token);
     }
   }
+  if (seg.length) ret.push(seg);
   return ret;
 }
 
 function parseParamTokens(params) {
   if (params.length === 0) return [];
   var ret = [];
-  if (params[params.length-1].text != ',') {
-    params.push({ text: ',' });
-  }
   var anonymousIndex = 0;
   while (params.length > 0) {
     var i = 0;
-    while (params[i].text != ',') i++;
+    while (i < params.length && params[i].text != ',') i++;
     var segment = params.slice(0, i);
     params = params.slice(i+1);
     segment = cleanSegment(segment);
@@ -588,6 +611,16 @@ function parseLLVMSegment(segment) {
     return parseBlockAddress(segment);
   } else {
     type = segment[0].text;
+    if (type[type.length-1] === '>' && segment[1].text[0] === '<') {
+      // vector literal
+      return {
+        intertype: 'vector',
+        idents: splitTokenList(segment[1].tokens).map(function(pair) {
+          return pair[1].text;
+        }),
+        type: type
+      };
+    }
     Types.needAnalysis[type] = 0;
     return {
       intertype: 'value',
@@ -618,13 +651,13 @@ function parseLLVMFunctionCall(segment) {
   segment = cleanSegment(segment);
   // Remove additional modifiers
   var variant = null;
-  if (!segment[2] || !segment[2].item) {
+  if (!segment[2] || !segment[2].tokens) {
     variant = segment.splice(2, 1)[0];
     if (variant && variant.text) variant = variant.text; // needed for mathops
   }
   assertTrue(['inreg', 'byval'].indexOf(segment[1].text) == -1);
   assert(segment[1].text in PARSABLE_LLVM_FUNCTIONS);
-  while (!segment[2].item) {
+  while (!segment[2].tokens) {
     segment.splice(2, 1); // Remove modifiers
     if (!segment[2]) throw 'Invalid segment!';
   }
@@ -633,15 +666,15 @@ function parseLLVMFunctionCall(segment) {
   if (type === '?') {
     if (intertype === 'getelementptr') {
       type = '*'; // a pointer, we can easily say, this is
-    } else if (segment[2].item.tokens.slice(-2)[0].text === 'to') {
-      type = segment[2].item.tokens.slice(-1)[0].text;
+    } else if (segment[2].tokens.slice(-2)[0].text === 'to') {
+      type = segment[2].tokens.slice(-1)[0].text;
     }
   }
   var ret = {
     intertype: intertype,
     variant: variant,
     type: type,
-    params: parseParamTokens(segment[2].item.tokens)
+    params: parseParamTokens(segment[2].tokens)
   };
   Types.needAnalysis[ret.type] = 0;
   ret.ident = toNiceIdent(ret.params[0].ident || 'NOIDENT');
@@ -763,10 +796,10 @@ function splitI64(value, floatConversion) {
   if (floatConversion && ASM_JS) lowInput = asmFloatToInt(lowInput);
   var low = lowInput + '>>>0';
   var high = makeInlineCalculation(
-    asmCoercion('Math.abs(VALUE)', 'double') + ' >= ' + asmEnsureFloat('1', 'double') + ' ? ' +
+    asmCoercion('Math_abs(VALUE)', 'double') + ' >= ' + asmEnsureFloat('1', 'double') + ' ? ' +
       '(VALUE > ' + asmEnsureFloat('0', 'double') + ' ? ' +
-               asmCoercion('Math.min(' + asmCoercion('Math.floor((VALUE)/' + asmEnsureFloat(4294967296, 'float') + ')', 'double') + ', ' + asmEnsureFloat(4294967295, 'float') + ')', 'i32') + '>>>0' +
-               ' : ' + asmFloatToInt(asmCoercion('Math.ceil((VALUE - +((' + asmFloatToInt('VALUE') + ')>>>0))/' + asmEnsureFloat(4294967296, 'float') + ')', 'double')) + '>>>0' + 
+               asmCoercion('Math_min(' + asmCoercion('Math_floor((VALUE)/' + asmEnsureFloat(4294967296, 'float') + ')', 'double') + ', ' + asmEnsureFloat(4294967295, 'float') + ')', 'i32') + '>>>0' +
+               ' : ' + asmFloatToInt(asmCoercion('Math_ceil((VALUE - +((' + asmFloatToInt('VALUE') + ')>>>0))/' + asmEnsureFloat(4294967296, 'float') + ')', 'double')) + '>>>0' + 
       ')' +
     ' : 0',
     value,
@@ -914,13 +947,13 @@ function parseI64Constant(str, legalized) {
 }
 
 function parseNumerical(value, type) {
-  if ((!type || type == 'double' || type == 'float') && (value.substr && value.substr(0,2) == '0x')) {
+  if ((!type || type === 'double' || type === 'float') && /^0x/.test(value)) {
     // Hexadecimal double value, as the llvm docs say,
     // "The one non-intuitive notation for constants is the hexadecimal form of floating point constants."
     value = IEEEUnHex(value);
   } else if (USE_TYPED_ARRAYS == 2 && isIllegalType(type)) {
     return value; // do not parseFloat etc., that can lead to loss of precision
-  } else if (value == 'null') {
+  } else if (value === 'null') {
     // NULL *is* 0, in C/C++. No JS null! (null == 0 is false, etc.)
     value = '0';
   } else if (value === 'true') {
@@ -930,7 +963,10 @@ function parseNumerical(value, type) {
   }
   if (isNumber(value)) {
     var ret = parseFloat(value); // will change e.g. 5.000000e+01 to 50
-    if (type in Runtime.FLOAT_TYPES && value[0] == '-' && ret === 0) return '-0'; // fix negative 0, toString makes it 0
+    if (type === 'double' || type === 'float') {
+      if (value[0] === '-' && ret === 0) return '-.0'; // fix negative 0, toString makes it 0
+      if (!RUNNING_JS_OPTS) ret = asmEnsureFloat(ret, type);
+    }
     return ret.toString();
   } else {
     return value;
@@ -997,9 +1033,11 @@ function generateStructTypes(type) {
   var ret = new Array(size);
   var index = 0;
   function add(typeData) {
+    var array = typeData.name_[0] === '['; // arrays just have 2 elements in their fields, see calculateStructAlignment
+    var num = array ? parseInt(typeData.name_.substr(1)) : typeData.fields.length;
     var start = index;
-    for (var i = 0; i < typeData.fields.length; i++) {
-      var type = typeData.fields[i];
+    for (var i = 0; i < num; i++) {
+      var type = array ? typeData.fields[0] : typeData.fields[i];
       if (!SAFE_HEAP && isPointerType(type)) type = '*'; // do not include unneeded type names without safe heap
       if (Runtime.isNumberType(type) || isPointerType(type)) {
         if (USE_TYPED_ARRAYS == 2 && type == 'i64') {
@@ -1022,7 +1060,10 @@ function generateStructTypes(type) {
         }
         add(Types.types[type]);
       }
-      var more = (i+1 < typeData.fields.length ? typeData.flatIndexes[i+1] : typeData.flatSize) - (index - start);
+      var more = array ? (i+1)*typeData.flatSize/num : (
+        (i+1 < typeData.fields.length ? typeData.flatIndexes[i+1] : typeData.flatSize)
+      );
+      more -= index - start;
       for (var j = 0; j < more; j++) {
         ret[index++] = 0;
       }
@@ -1136,7 +1177,16 @@ function asmEnsureFloat(value, type) { // ensures that a float type has either 5
   if (!ASM_JS) return value;
   // coerce if missing a '.', or if smaller than 1, so could be 1e-5 which has no .
   if (type in Runtime.FLOAT_TYPES && isNumber(value) && (value.toString().indexOf('.') < 0 || Math.abs(value) < 1)) {
-    return '(+(' + value + '))';
+    if (RUNNING_JS_OPTS) {
+      return '(+' + value + ')'; // JS optimizer will run, we must do +x, and it will be corrected later
+    } else {
+      // ensure a .
+      value = value.toString();
+      if (value.indexOf('.') >= 0 || /[IN]/.test(value)) return value; // if already dotted, or Infinity or NaN, nothing to do here
+      var e = value.indexOf('e');
+      if (e < 0) return value + '.0';
+      return value.substr(0, e) + '.0' + value.substr(e);
+    }
   } else {
     return value;
   }
@@ -1144,7 +1194,11 @@ function asmEnsureFloat(value, type) { // ensures that a float type has either 5
 
 function asmInitializer(type, impl) {
   if (type in Runtime.FLOAT_TYPES) {
-    return '+0';
+    if (RUNNING_JS_OPTS) {
+      return '+0';
+    } else {
+      return '.0';
+    }
   } else {
     return '0';
   }
@@ -1519,7 +1573,7 @@ function getFastValue(a, op, b, type) {
     if (a === '2' && isIntImplemented(type)) {
       return '(1 << (' + b + '))';
     }
-    return 'Math.pow(' + a + ', ' + b + ')';
+    return 'Math_pow(' + a + ', ' + b + ')';
   }
   if ((op === '+' || op === '*') && aNumber !== null) { // if one of them is a number, keep it last
     var c = b;
@@ -1551,7 +1605,7 @@ function getFastValue(a, op, b, type) {
       if ((aNumber !== null && Math.abs(a) < TWO_TWENTY) || (bNumber !== null && Math.abs(b) < TWO_TWENTY) || (bits < 32 && !ASM_JS)) {
         return '(((' + a + ')*(' + b + '))&' + ((Math.pow(2, bits)-1)|0) + ')'; // keep a non-eliminatable coercion directly on this
       }
-      return '(Math.imul(' + a + ',' + b + ')|0)';
+      return '(Math_imul(' + a + ',' + b + ')|0)';
     }
   } else if (op === '/') {
     if (a === '0' && !(type in Runtime.FLOAT_TYPES)) { // careful on floats, since 0*NaN is not 0
@@ -1755,11 +1809,13 @@ function makeGetSlabs(ptr, type, allowMultiple, unsigned) {
     switch(type) {
       case 'i1': case 'i8': return [unsigned ? 'HEAPU8' : 'HEAP8']; break;
       case 'i16': return [unsigned ? 'HEAPU16' : 'HEAP16']; break;
+      case '<4 x i32>': case 'uint':
       case 'i32': case 'i64': return [unsigned ? 'HEAPU32' : 'HEAP32']; break;
       case 'double': {
         if (TARGET_LE32) return ['HEAPF64']; // in le32, we do have the ability to assume 64-bit alignment
         // otherwise, fall through to float
       }
+      case '<4 x float>':
       case 'float': return ['HEAPF32'];
       default: {
         throw 'what, exactly, can we do for unknown types in TA2?! ' + [new Error().stack, ptr, type, allowMultiple, unsigned];
@@ -1888,8 +1944,10 @@ function handleOverflow(text, bits) {
   if (CHECK_OVERFLOWS) return 'CHECK_OVERFLOW(' + text + ', ' + bits + ', ' + Math.floor(correctSpecificOverflow()) + ')';
   if (!correct) return text;
   if (bits == 32) {
+    if (isNumber(text)) return text | 0;
     return '((' + text + ')|0)';
   } else if (bits < 32) {
+    if (isNumber(text)) return text & (Math.pow(2, bits) - 1);
     return '((' + text + ')&' + (Math.pow(2, bits) - 1) + ')';
   } else {
     return text; // We warned about this earlier
@@ -1965,6 +2023,8 @@ function finalizeLLVMParameter(param, noIndexizeFunctions) {
     return param.ident; // we don't really want the type here
   } else if (param.intertype == 'mathop') {
     return processMathop(param);
+  } else if (param.intertype === 'vector') {
+    return 'float32x4(' + param.idents.join(',') + ')';
   } else {
     throw 'invalid llvm parameter: ' + param.intertype;
   }
@@ -1979,7 +2039,7 @@ function makeComparison(a, op, b, type) {
     return asmCoercion(a, type) + op + asmCoercion(b, type);
   } else {
     assert(type == 'i64');
-    return asmCoercion(a + '$0', 'i32') + op + asmCoercion(b + '$0', 'i32') + ' & ' +
+    return asmCoercion(a + '$0', 'i32') + op + asmCoercion(b + '$0', 'i32') + '&' +
            asmCoercion(a + '$1', 'i32') + op + asmCoercion(b + '$1', 'i32');
   }
 }
@@ -2047,12 +2107,12 @@ function makeRounding(value, bits, signed, floatConversion) {
                                                              // as |0, but &-1 hints to the js optimizer that this is a rounding correction
     // Do Math.floor, which is reasonably fast, if we either don't care, or if we can be sure
     // the value is non-negative
-    if (!correctRoundings() || (!signed && !floatConversion)) return 'Math.floor(' + value + ')';
+    if (!correctRoundings() || (!signed && !floatConversion)) return 'Math_floor(' + value + ')';
     // We are left with >32 bits signed, or a float conversion. Check and correct inline
     // Note that if converting a float, we may have the wrong sign at this point! But, we have
     // been rounded properly regardless, and we will be sign-corrected later when actually used, if
     // necessary.
-    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? Math.floor(VALUE) : Math.ceil(VALUE)', value, 'tempBigIntR');
+    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? Math_floor(VALUE) : Math_ceil(VALUE)', value, 'tempBigIntR');
   } else {
     // asm.js mode, cleaner refactoring of this function as well. TODO: use in non-asm case, most of this
     if (floatConversion && bits <= 32) {
@@ -2067,9 +2127,9 @@ function makeRounding(value, bits, signed, floatConversion) {
       }
     }
     // Math.floor is reasonably fast if we don't care about corrections (and even correct if unsigned)
-    if (!correctRoundings() || !signed) return 'Math.floor(' + value + ')';
+    if (!correctRoundings() || !signed) return 'Math_floor(' + value + ')';
     // We are left with >32 bits
-    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? Math.floor(VALUE) : Math.ceil(VALUE)', value, 'tempBigIntR');
+    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? Math_floor(VALUE) : Math_ceil(VALUE)', value, 'tempBigIntR');
   }
 }
 
@@ -2080,7 +2140,7 @@ function makeIsNaN(value) {
 
 function makeFloat(value, type) {
   if (TO_FLOAT32 && type == 'float') {
-    return 'Math.toFloat32(' + value + ')';
+    return 'Math_toFloat32(' + value + ')';
   }
   return value;
 }
@@ -2156,7 +2216,13 @@ function processMathop(item) {
       // If this is in legalization mode, steal the assign and assign into two vars
       if (legalizedI64s) {
         assert(item.assignTo);
-        var ret = 'var ' + item.assignTo + '$0 = ' + result[0] + '; var ' + item.assignTo + '$1 = ' + result[1] + ';';
+        if (ASM_JS) {
+          var ret = item.assignTo + '$0=' + result[0] + ';' + item.assignTo + '$1=' + result[1] + ';';
+          addVariable(item.assignTo + '$0', 'i32');
+          addVariable(item.assignTo + '$1', 'i32');
+        } else {
+          var ret = 'var ' + item.assignTo + '$0=' + result[0] + ';var ' + item.assignTo + '$1=' + result[1] + ';';
+        } 
         item.assignTo = null;
         return ret;
       } else {
@@ -2294,6 +2360,34 @@ function processMathop(item) {
     }
   }
 
+  if (type[0] === '<' && type[type.length-1] !== '*') {
+    // vector/SIMD operation
+    Types.usesSIMD = true;
+    switch (op) {
+      case 'fadd': return 'SIMD.add(' + idents[0] + ',' + idents[1] + ')';
+      case 'fsub': return 'SIMD.sub(' + idents[0] + ',' + idents[1] + ')';
+      case 'fmul': return 'SIMD.mul(' + idents[0] + ',' + idents[1] + ')';
+      case 'fdiv': return 'SIMD.div(' + idents[0] + ',' + idents[1] + ')';
+      case 'add' : return 'SIMD.addu32(' + idents[0] + ',' + idents[1] + ')';
+      case 'sub' : return 'SIMD.subu32(' + idents[0] + ',' + idents[1] + ')';
+      case 'mul' : return 'SIMD.mulu32(' + idents[0] + ',' + idents[1] + ')';
+      case 'udiv': return 'SIMD.divu32(' + idents[0] + ',' + idents[1] + ')';
+      case 'bitcast': {
+        var inType = item.params[0].type;
+        var outType = item.type;
+        if (inType === '<4 x float>') {
+          assert(outType === '<4 x i32>');
+          return 'SIMD.float32x4BitsToUint32x4(' + idents[0] + ')';
+        } else {
+          assert(inType === '<4 x i32>');
+          assert(outType === '<4 x float>');
+          return 'SIMD.uint32x4BitsToFloat32x4(' + idents[0] + ')';
+        }
+      }
+      default: throw 'vector op todo: ' + dump(item);
+    }
+  }
+
   switch (op) {
     // basic integer ops
     case 'add': return handleOverflow(getFastValue(idents[0], '+', idents[1], item.type), bits);
@@ -2307,7 +2401,7 @@ function processMathop(item) {
         dprint('Warning: 64 bit OR - precision limit may be hit on llvm line ' + item.lineNum);
         return 'Runtime.or64(' + idents[0] + ', ' + idents[1] + ')';
       }
-      return idents[0] + ' | ' + idents[1];
+      return idents[0] + '|' + idents[1];
     }
     case 'and': {
       if (bits > 32) {
@@ -2315,7 +2409,7 @@ function processMathop(item) {
         dprint('Warning: 64 bit AND - precision limit may be hit on llvm line ' + item.lineNum);
         return 'Runtime.and64(' + idents[0] + ', ' + idents[1] + ')';
       }
-      return idents[0] + ' & ' + idents[1];
+      return idents[0] + '&' + idents[1];
     }
     case 'xor': {
       if (bits > 32) {
@@ -2323,21 +2417,21 @@ function processMathop(item) {
         dprint('Warning: 64 bit XOR - precision limit may be hit on llvm line ' + item.lineNum);
         return 'Runtime.xor64(' + idents[0] + ', ' + idents[1] + ')';
       }
-      return idents[0] + ' ^ ' + idents[1];
+      return idents[0] + '^' + idents[1];
     }
     case 'shl': {
       if (bits > 32) return idents[0] + '*' + getFastValue(2, 'pow', idents[1]);
-      return idents[0] + ' << ' + idents[1];
+      return idents[0] + '<<' + idents[1];
     }
     case 'ashr': {
       if (bits > 32) return integerizeBignum(idents[0] + '/' + getFastValue(2, 'pow', idents[1]));
-      if (bits === 32) return originalIdents[0] + ' >> ' + idents[1]; // No need to reSign in this case
-      return idents[0] + ' >> ' + idents[1];
+      if (bits === 32) return originalIdents[0] + '>>' + idents[1]; // No need to reSign in this case
+      return idents[0] + '>>' + idents[1];
     }
     case 'lshr': {
       if (bits > 32) return integerizeBignum(idents[0] + '/' + getFastValue(2, 'pow', idents[1]));
-      if (bits === 32) return originalIdents[0] + ' >>> ' + idents[1]; // No need to unSign in this case
-      return idents[0] + ' >>> ' + idents[1];
+      if (bits === 32) return originalIdents[0] + '>>>' + idents[1]; // No need to unSign in this case
+      return idents[0] + '>>>' + idents[1];
     }
     // basic float ops
     case 'fadd': return makeFloat(getFastValue(idents[0], '+', idents[1], item.type), item.type);
@@ -2352,10 +2446,10 @@ function processMathop(item) {
     //       Note that with typed arrays, these become 0 when written. So that is a potential difference with non-typed array runs.
     case 'icmp': {
       switch (variant) {
-        case 'uge': case 'sge': return idents[0] + ' >= ' + idents[1];
-        case 'ule': case 'sle': return idents[0] + ' <= ' + idents[1];
-        case 'ugt': case 'sgt': return idents[0] + ' > ' + idents[1];
-        case 'ult': case 'slt': return idents[0] + ' < ' + idents[1];
+        case 'uge': case 'sge': return idents[0] + '>=' + idents[1];
+        case 'ule': case 'sle': return idents[0] + '<=' + idents[1];
+        case 'ugt': case 'sgt': return idents[0] + '>' + idents[1];
+        case 'ult': case 'slt': return idents[0] + '<' + idents[1];
         // We use loose comparisons, which allows false == 0 to be true, etc. Ditto in fcmp
         case 'ne': case 'eq': {
           // We must sign them, so we do not compare -1 to 255 (could have unsigned them both too)
@@ -2371,14 +2465,14 @@ function processMathop(item) {
       switch (variant) {
         // TODO 'o' ones should be 'ordered (no NaN) and',
         //      'u' ones should be 'unordered or'.
-        case 'uge': case 'oge': return idents[0] + ' >= ' + idents[1];
-        case 'ule': case 'ole': return idents[0] + ' <= ' + idents[1];
-        case 'ugt': case 'ogt': return idents[0] + ' > ' + idents[1];
-        case 'ult': case 'olt': return idents[0] + ' < ' + idents[1];
-        case 'une': case 'one': return idents[0] + ' != ' + idents[1];
-        case 'ueq': case 'oeq': return idents[0] + ' == ' + idents[1];
-        case 'ord': return '!' + makeIsNaN(idents[0]) + ' & !' + makeIsNaN(idents[1]);
-        case 'uno': return makeIsNaN(idents[0]) + ' | ' + makeIsNaN(idents[1]);
+        case 'uge': case 'oge': return idents[0] + '>=' + idents[1];
+        case 'ule': case 'ole': return idents[0] + '<=' + idents[1];
+        case 'ugt': case 'ogt': return idents[0] + '>' + idents[1];
+        case 'ult': case 'olt': return idents[0] + '<' + idents[1];
+        case 'une': case 'one': return idents[0] + '!=' + idents[1];
+        case 'ueq': case 'oeq': return idents[0] + '==' + idents[1];
+        case 'ord': return '!' + makeIsNaN(idents[0]) + '&!' + makeIsNaN(idents[1]);
+        case 'uno': return makeIsNaN(idents[0]) + '|' + makeIsNaN(idents[1]);
         case 'true': return '1';
         default: throw 'Unknown fcmp variant: ' + variant;
       }
@@ -2394,7 +2488,7 @@ function processMathop(item) {
     }
     case 'fpext': case 'sext': return idents[0];
     case 'fptrunc': return idents[0];
-    case 'select': return idents[0] + ' ? ' + asmEnsureFloat(idents[1], item.type) + ' : ' + asmEnsureFloat(idents[2], item.type);
+    case 'select': return idents[0] + '?' + asmEnsureFloat(idents[1], item.type) + ':' + asmEnsureFloat(idents[2], item.type);
     case 'ptrtoint': case 'inttoptr': {
       var ret = '';
       if (QUANTUM_SIZE == 1) {
@@ -2412,7 +2506,7 @@ function processMathop(item) {
       // truncating can change the number, e.g. by truncating to an i1
       // in order to get the first bit
       assert(bitsLeft <= 32, 'Cannot truncate to more than 32 bits, since we use a native & op');
-      return '((' + idents[0] + ') & ' + (Math.pow(2, bitsLeft)-1) + ')';
+      return '((' + idents[0] + ')&' + (Math.pow(2, bitsLeft)-1) + ')';
     }
     case 'bitcast': {
       // Most bitcasts are no-ops for us. However, the exception is int to float and float to int
@@ -2450,13 +2544,6 @@ function walkInterdata(item, pre, post, obj) {
       if (walkInterdata(item.params[i], pre, post,  obj)) return true;
     }
   }
-  if (item.possibleVars) { // other attributes that might contain interesting data; here, variables
-    var box = { intertype: 'value', ident: '' };
-    for (i = 0; i <= item.possibleVars.length; i++) {
-      box.ident = item[item.possibleVars[i]];
-      if (walkInterdata(box, pre, post,  obj)) return true;
-    }
-  }
   return post && post(item, originalObj, obj);
 }
 
@@ -2476,11 +2563,10 @@ function walkAndModifyInterdata(item, pre) {
       if (repl = walkAndModifyInterdata(item.params[i], pre)) item.params[i] = repl;
     }
   }
-  // Ignore possibleVars because we can't replace them anyhow
 }
 
 function parseBlockAddress(segment) {
-  return { intertype: 'blockaddress', func: toNiceIdent(segment[2].item.tokens[0].text), label: toNiceIdent(segment[2].item.tokens[2].text), type: 'i32' };
+  return { intertype: 'blockaddress', func: toNiceIdent(segment[2].tokens[0].text), label: toNiceIdent(segment[2].tokens[2].text), type: 'i32' };
 }
 
 function finalizeBlockAddress(param) {
@@ -2551,5 +2637,44 @@ function makePrintChars(s, sep) {
 function parseAlign(text) { // parse ", align \d+"
   if (!text) return QUANTUM_SIZE;
   return parseInt(text.substr(8));
+}
+
+function deParen(text) {
+  if (text[0] === '(') return text.substr(1, text.length-2);
+  return text;
+}
+
+function deParenCarefully(text) {
+  if (text[0] === '(' && text.indexOf('(', 1) < 0 && text[text.length-1] === ')') return text.substr(1, text.length-2);
+  return text;
+}
+
+function addVariable(ident, type, funcData) {
+  funcData = funcData || Framework.currItem.funcData;
+  assert(type);
+  var old = funcData.variables[ident];
+  if (old) {
+    assert(old.type === type);
+  } else {
+    funcData.variables[ident] = {
+      ident: ident,
+      type: type,
+      origin: 'added',
+      lineNum: 0,
+      rawLinesIndex: 0,
+      hasValueTaken: false,
+      pointingLevels: 0,
+      uses: 0,
+      impl: VAR_EMULATED
+    };
+  }
+}
+
+var SIMDLane = ['X', 'Y', 'Z', 'W'];
+var simdLane = ['x', 'y', 'z', 'w'];
+
+function ensureVector(ident, base) {
+  Types.usesSIMD = true;
+  return ident == 0 ? base + '32x4.zero()' : ident;
 }
 

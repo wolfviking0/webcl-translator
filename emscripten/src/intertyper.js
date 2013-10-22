@@ -5,158 +5,147 @@
 
 var fastPaths = 0, slowPaths = 0;
 
+var tokenCache = {};
+[',', '{', '}', 'i32', 'label', ';', '4', '0', '1', '2', '255', 'align', 'i8*', 'i8', 'i16', 'getelementptr', 'inbounds', 'unnamed_addr', 'x', 'load', 'preds', 'br', 'i32*', 'i1', 'store', '<label>', 'constant', 'c', 'private', 'null', 'internal', 'to', 'bitcast', 'define', 'nounwind', 'nocapture', '%this', 'call', '...'].forEach(function(text) { tokenCache[text] = { text: text } });
+
+//var tokenCacheMisses = {};
+
 // Line tokenizer
-function tokenizer(item, inner) {
-  //assert(item.lineNum != 40000);
-  //if (item.lineNum) print(item.lineNum);
+function tokenize(text) {
   var tokens = [];
   var quotes = 0;
   var lastToken = null;
-  var CHUNKSIZE = 64; // How much forward to peek forward. Too much means too many string segments copied
-  // Note: '{' is not an encloser, as its use in functions is split over many lines
   var enclosers = {
     '[': 0,
     ']': '[',
     '(': 0,
     ')': '(',
     '<': 0,
-    '>': '<'
+    '>': '<',
+    '{': 0,
+    '}': '{',
   };
   var totalEnclosing = 0;
   function makeToken(text) {
     if (text.length == 0) return;
-    // merge certain tokens
-    if (lastToken && ( (lastToken.text == '%' && text[0] == '"') || /^\**$/.test(text) ) ) {
+    // merge *..* into last token
+    if (lastToken && text[0] === '*') {
+      //assert(/^\**$/.test(text));
+      //assert(!(lastToken.text in tokenCache));
       lastToken.text += text;
       return;
     }
+
+    var cached = tokenCache[text];
+    if (cached) {
+      //assert(cached.text === text);
+      tokens.push(cached);
+      lastToken = cached;
+      return;
+    }
+    //tokenCacheMisses[text] = (misses[text] || 0) + 1;
 
     var token = {
       text: text
     };
     if (text[0] in enclosers) {
-      token.item = tokenizer({
-        lineText: text.substr(1, text.length-2)
-      }, true);
+      token.tokens = tokenize(text.substr(1, text.length-2));
       token.type = text[0];
     }
-    // merge certain tokens
+    // merge function definitions together
     if (lastToken && isType(lastToken.text) && isFunctionDef(token)) {
-      lastToken.text += ' ' + text;
-    } else if (lastToken && text[0] == '}') { // }, }*, etc.
-      var openBrace = tokens.length-1;
-      while (tokens[openBrace].text.substr(-1) != '{') openBrace --;
-      token = combineTokens(tokens.slice(openBrace+1));
-      tokens.splice(openBrace, tokens.length-openBrace+1);
-      tokens.push(token);
-      token.type = '{';
-      token.text = '{ ' + token.text + ' }';
-      var pointingLevelsToAdd = pointingLevels(text) - pointingLevels(token.text);
-      while (pointingLevelsToAdd > 0) {
-        token.text += '*';
-        pointingLevelsToAdd--;
+      if (lastToken.text in tokenCache) {
+        // create a copy of the cached value
+        lastToken = tokens[tokens.length-1] = { text: lastToken.text };
       }
-      lastToken = token;
+      lastToken.text += ' ' + text;
     } else {
       tokens.push(token);
       lastToken = token;
     }
   }
   // Split using meaningful characters
-  var lineText = item.lineText + ' ';
-  var re = /[\[\]\(\)<>, "]/g;
+  var lineText = text + ' ';
+  var re = /[\[\]\(\)<>{}, "]/g;
   var segments = lineText.split(re);
   segments.pop();
   var len = segments.length;
   var i = -1;
-  var curr = '';
-  var segment, letter;
+  var start = 0;
+  var segment, letter, last;
+  if (lineText[0] === '}') {
+    tokens.push(tokenCache['}']); // end of function and landingpads have an unmatched {
+  }
   for (var s = 0; s < len; s++) {
     segment = segments[s];
     i += segment.length + 1;
+    last = letter;
     letter = lineText[i];
-    curr += segment;
     switch (letter) {
       case ' ':
         if (totalEnclosing == 0 && quotes == 0) {
-          makeToken(curr);
-          curr = '';
-        } else {
-          curr += ' ';
+          makeToken(lineText.substring(start, i));
+          start = i+1;
         }
         break;
       case '"':
         if (totalEnclosing == 0) {
           if (quotes == 0) {
-            if (curr == '@' || curr == '%') {
-              curr += '"';
+            if (start === i-1 && (lineText[start] == '@' || lineText[start] == '%')) {
             } else {
-              makeToken(curr);
-              curr = '"';
+              makeToken(lineText.substring(start, i));
+              start = i;
             }
           } else {
-            makeToken(curr + '"');
-            curr = '';
+            makeToken(lineText.substring(start, i+1));
+            start = i+1;
           }
-        } else {
-          curr += '"';
         }
         quotes = 1-quotes;
         break;
       case ',':
         if (totalEnclosing == 0 && quotes == 0) {
-          makeToken(curr);
-          curr = '';
-          tokens.push({ text: ',' });
-        } else {
-          curr += ',';
+          makeToken(lineText.substring(start, i));
+          start = i+1;
+          tokens.push(tokenCache[',']);
         }
         break;
       default:
         assert(letter in enclosers);
         if (quotes) {
-          curr += letter;
           break;
         }
         if (letter in ENCLOSER_STARTERS) {
           if (totalEnclosing == 0) {
-            makeToken(curr);
-            curr = '';
+            makeToken(lineText.substring(start, i));
+            start = i;
           }
-          curr += letter;
           enclosers[letter]++;
           totalEnclosing++;
         } else {
           enclosers[enclosers[letter]]--;
           totalEnclosing--;
           if (totalEnclosing == 0) {
-            makeToken(curr + letter);
-            curr = '';
-          } else {
-            curr += letter;
+            makeToken(lineText.substring(start, i+1));
+            start = i+1;
           }
         }
     }
   }
-  var newItem = {
-    tokens: tokens,
-    indent: lineText.search(/[^ ]/),
-    lineNum: item.lineNum
-  };
-  return newItem;
-}
-
-function tokenize(text) {
-  return tokenizer({ lineText: text }, true);
+  if (last === '{') {
+    tokens.push(tokenCache['{']); // beginning of function and landingpads have an unmatched {
+  }
+  return tokens;
 }
 
 // Handy sets
 
-var ENCLOSER_STARTERS = set('[', '(', '<');
+var ENCLOSER_STARTERS = set('[', '(', '<', '{');
 var ENCLOSER_ENDERS = {
   '[': ']',
   '(': ')',
-  '<': '>'
+  '<': '>',
+  '{': '}'
 };
 var ZEROINIT_UNDEF = set('zeroinitializer', 'undef');
 var NSW_NUW = set('nsw', 'nuw');
@@ -164,6 +153,7 @@ var NSW_NUW = set('nsw', 'nuw');
 // Intertyper
 
 function intertyper(lines, sidePass, baseLineNums) {
+  //B.start('intertyper');
   var mainPass = !sidePass;
   baseLineNums = baseLineNums || [[0,0]]; // each pair [#0,#1] means "starting from line #0, the base line num is #1"
 
@@ -251,7 +241,7 @@ function intertyper(lines, sidePass, baseLineNums) {
       if (mainPass && /^}.*/.test(line)) {
         inFunction = false;
         if (mainPass) {
-          var func = funcHeaderHandler(tokenizer({ lineText: currFunctionLines[0], lineNum: currFunctionLineNum }, true));
+          var func = funcHeaderHandler({ tokens: tokenize(currFunctionLines[0], currFunctionLineNum) });
 
           if (SKIP_STACK_IN_SMALL && /emscripten_autodebug/.exec(func.ident)) {
             warnOnce('Disabling SKIP_STACK_IN_SMALL because we are apparently processing autodebugger data');
@@ -282,10 +272,6 @@ function intertyper(lines, sidePass, baseLineNums) {
 
   function triager(item) {
     assert(!item.intertype);
-    if (item.indent == 2 && (eq = findTokenText(item, '=')) >= 0) {
-      item.assignTo = toNiceIdent(combineTokens(item.tokens.slice(0, eq)).text);
-      item.tokens = item.tokens.slice(eq+1);
-    }
     var token0Text = item.tokens[0].text;
     var token1Text = item.tokens[1] ? item.tokens[1].text : null;
     var tokensLength = item.tokens.length;
@@ -327,6 +313,12 @@ function intertyper(lines, sidePass, baseLineNums) {
         return va_argHandler(item);
       if (tokensLength >= 3 && token0Text == 'landingpad')
         return landingpadHandler(item);
+      if (token0Text === 'insertelement')
+        return insertElementHandler(item);
+      if (token0Text === 'extractelement')
+        return extractElementHandler(item);
+      if (token0Text === 'shufflevector')
+        return shuffleVectorHandler(item);
       if (token0Text == 'fence')
         return null;
     } else if (item.indent === 0) {
@@ -336,7 +328,7 @@ function intertyper(lines, sidePass, baseLineNums) {
         return labelHandler(item);
       if (tokensLength >= 4 && token0Text == 'declare')
         return externalHandler(item);
-      if (tokensLength >= 3 && token1Text == '=')
+      if (item.assignTo)
         return globalHandler(item);
       if (tokensLength >= 4 && token0Text == 'define' &&
          item.tokens.slice(-1)[0].text == '{')
@@ -401,10 +393,10 @@ function intertyper(lines, sidePass, baseLineNums) {
             return { intertype: 'struct', type: segment[0].text, contents: handleSegments(segment[1].tokens) };
           } else if (segment[1].type && segment[1].type == '<') {
             Types.needAnalysis[segment[0].text] = 0;
-            return { intertype: 'struct', type: segment[0].text, contents: handleSegments(segment[1].item.tokens[0].tokens) };
+            return { intertype: 'struct', type: segment[0].text, contents: handleSegments(segment[1].tokens[0].tokens) };
           } else if (segment[1].type && segment[1].type == '[') {
             Types.needAnalysis[segment[0].text] = 0;
-            return { intertype: 'list', type: segment[0].text, contents: handleSegments(segment[1].item.tokens) };
+            return { intertype: 'list', type: segment[0].text, contents: handleSegments(segment[1].tokens) };
           } else if (segment.length == 2) {
             Types.needAnalysis[segment[0].text] = 0;
             return { intertype: 'value', type: segment[0].text, ident: toNiceIdent(segment[1].text) };
@@ -431,33 +423,33 @@ function intertyper(lines, sidePass, baseLineNums) {
         return { intertype: 'string', text: value.text.substr(1, value.text.length-2) };
       } else {
         if (value.type == '<') { // <{ i8 }> etc.
-          value = value.item.tokens;
+          value = value.tokens;
         }
         var contents;
-        if (value.item) {
+        if (value.type && value.type !== '{') {
           // list of items
-          contents = value.item.tokens;
+          contents = value.tokens;
         } else if (value.type == '{') {
           // struct
           contents = value.tokens;
         } else if (value[0]) {
           contents = value[0];
         } else {
-          throw '// interfailzzzzzzzzzzzzzz ' + dump(value.item) + ' ::: ' + dump(value);
+          throw '// interfailzzzzzzzzzzzzzz ' + dump(value);
         }
         return { intertype: 'segments', contents: handleSegments(contents) };
       }
     }
 
-    cleanOutTokens(LLVM.VISIBILITIES, item.tokens, 2);
-    if (item.tokens[2].text == 'alias') {
-      cleanOutTokens(LLVM.LINKAGES, item.tokens, 3);
-      cleanOutTokens(LLVM.VISIBILITIES, item.tokens, 3);
+    cleanOutTokens(LLVM.VISIBILITIES, item.tokens, 0);
+    if (item.tokens[0].text == 'alias') {
+      cleanOutTokens(LLVM.LINKAGES, item.tokens, 1);
+      cleanOutTokens(LLVM.VISIBILITIES, item.tokens, 1);
       var last = getTokenIndexByText(item.tokens, ';');
       var ret = {
         intertype: 'alias',
-        ident: toNiceIdent(item.tokens[0].text),
-        value: parseLLVMSegment(item.tokens.slice(3, last)),
+        ident: item.assignTo,
+        value: parseLLVMSegment(item.tokens.slice(1, last)),
         lineNum: item.lineNum
       };
       ret.type = ret.value.type;
@@ -467,18 +459,18 @@ function intertyper(lines, sidePass, baseLineNums) {
       }
       return ret;
     }
-    if (item.tokens[2].text == 'type') {
+    if (item.tokens[0].text == 'type') {
       var fields = [];
       var packed = false;
-      if (Runtime.isNumberType(item.tokens[3].text)) {
+      if (Runtime.isNumberType(item.tokens[1].text)) {
         // Clang sometimes has |= i32| instead of |= { i32 }|
-        fields = [item.tokens[3].text];
-      } else if (item.tokens[3].text != 'opaque') {
-        if (item.tokens[3].type == '<') {
+        fields = [item.tokens[1].text];
+      } else if (item.tokens[1].text != 'opaque') {
+        if (item.tokens[1].type == '<') {
           packed = true;
-          item.tokens[3] = item.tokens[3].item.tokens[0];
+          item.tokens[1] = item.tokens[1].tokens[0];
         }
-        var subTokens = item.tokens[3].tokens;
+        var subTokens = item.tokens[1].tokens;
         if (subTokens) {
           subTokens.push({text:','});
           while (subTokens[0]) {
@@ -491,38 +483,40 @@ function intertyper(lines, sidePass, baseLineNums) {
       }
       return {
         intertype: 'type',
-        name_: item.tokens[0].text,
+        name_: item.assignTo,
         fields: fields,
         packed: packed,
         lineNum: item.lineNum
       };
     } else {
       // variable
-      var ident = item.tokens[0].text;
+      var ident = item.assignTo;
       var private_ = findTokenText(item, 'private') >= 0 || findTokenText(item, 'internal') >= 0;
       var named = findTokenText(item, 'unnamed_addr') < 0;
-      cleanOutTokens(LLVM.GLOBAL_MODIFIERS, item.tokens, [2, 3]);
+      cleanOutTokens(LLVM.GLOBAL_MODIFIERS, item.tokens, [0, 1]);
       var external = false;
-      if (item.tokens[2].text === 'external') {
+      if (item.tokens[0].text === 'external') {
         external = true;
-        item.tokens.splice(2, 1);
+        item.tokens.splice(0, 1);
       }
       var ret = {
         intertype: 'globalVariable',
-        ident: toNiceIdent(ident),
-        type: item.tokens[2].text,
+        ident: ident,
+        type: item.tokens[0].text,
         external: external,
         private_: private_,
         named: named,
         lineNum: item.lineNum
       };
       noteGlobalVariable(ret);
-      if (ident == '@llvm.global_ctors') {
+      if (ident == '_llvm_global_ctors') {
         ret.ctors = [];
-        if (item.tokens[3].item) {
-          var subTokens = item.tokens[3].item.tokens;
+        var subTokens = item.tokens[1].tokens;
+        if (subTokens) {
           splitTokenList(subTokens).forEach(function(segment) {
-            var ctor = toNiceIdent(segment[1].tokens.slice(-1)[0].text);
+            var parsed = parseLLVMSegment(segment);
+            assert(parsed.intertype === 'structvalue');
+            var ctor = toNiceIdent(parsed.params[1].ident);
             ret.ctors.push(ctor);
             if (ASM_JS) { // must export the global constructors from asm.js module, so mark as implemented and exported
               Functions.implementedFunctions[ctor] = 'v';
@@ -531,14 +525,14 @@ function intertyper(lines, sidePass, baseLineNums) {
           });
         }
       } else if (!external) {
-        if (item.tokens[3] && item.tokens[3].text != ';') {
-          if (item.tokens[3].text == 'c') {
-            item.tokens.splice(3, 1);
+        if (item.tokens[1] && item.tokens[1].text != ';') {
+          if (item.tokens[1].text == 'c') {
+            item.tokens.splice(1, 1);
           }
-          if (item.tokens[3].text in PARSABLE_LLVM_FUNCTIONS) {
-            ret.value = parseLLVMFunctionCall(item.tokens.slice(2));
+          if (item.tokens[1].text in PARSABLE_LLVM_FUNCTIONS) {
+            ret.value = parseLLVMFunctionCall(item.tokens);
           } else {
-            ret.value = scanConst(item.tokens[3], ret.type);
+            ret.value = scanConst(item.tokens[1], ret.type);
           }
         } else {
           ret.value = { intertype: 'value', ident: '0', value: '0', type: ret.type };
@@ -552,7 +546,7 @@ function intertyper(lines, sidePass, baseLineNums) {
     item.tokens = item.tokens.filter(function(token) {
       return !(token.text in LLVM.LINKAGES || token.text in LLVM.PARAM_ATTR || token.text in LLVM.FUNC_ATTR || token.text in LLVM.CALLING_CONVENTIONS);
     });
-    var params = parseParamTokens(item.tokens[2].item.tokens);
+    var params = parseParamTokens(item.tokens[2].tokens);
     if (sidePass) dprint('unparsedFunctions', 'Processing function: ' + item.tokens[1].text);
     return {
       intertype: 'function',
@@ -637,9 +631,9 @@ function intertyper(lines, sidePass, baseLineNums) {
     while (!isType(item.tokens[first].text)) first++;
     Types.needAnalysis[item.tokens[first].text] = 0;
     var last = getTokenIndexByText(item.tokens, ';');
-    var segment = [ item.tokens[first], { text: 'getelementptr' }, null, { item: {
+    var segment = [ item.tokens[first], { text: 'getelementptr' }, null, {
       tokens: item.tokens.slice(first, last)
-    } } ];
+    } ];
     var data = parseLLVMFunctionCall(segment);
     item.intertype = 'getelementptr';
     item.type = '*'; // We need type info to determine this - all we know is it's a pointer
@@ -678,7 +672,7 @@ function intertyper(lines, sidePass, baseLineNums) {
       assert((item.tokens[5].text.match(/=/g) || []).length <= 1, 'we only support at most 1 exported variable from inline js: ' + item.ident);
       var i = 0;
       var params = [], args = [];
-      splitTokenList(tokensLeft[3].item.tokens).map(function(element) {
+      splitTokenList(tokensLeft[3].tokens).map(function(element) {
         var ident = toNiceIdent(element[1].text);
         var type = element[0].text;
         params.push('$' + (i++));
@@ -697,7 +691,7 @@ function intertyper(lines, sidePass, baseLineNums) {
       }
       item.params = [];
     } else {
-      item.params = parseParamTokens(tokensLeft[0].item.tokens);
+      item.params = parseParamTokens(tokensLeft[0].tokens);
     }
     item.ident = toNiceIdent(item.ident);
     if (type === 'invoke') {
@@ -765,16 +759,43 @@ function intertyper(lines, sidePass, baseLineNums) {
     Types.needAnalysis[item.type] = 0;
     return item;
   }
+  function insertElementHandler(item) {
+    var last = getTokenIndexByText(item.tokens, ';');
+    item.intertype = 'insertelement';
+    item.type = item.tokens[1].text;
+    item.ident = toNiceIdent(item.tokens[2].text);
+    var segments = splitTokenList(item.tokens.slice(4, last));
+    item.value = parseLLVMSegment(segments[0]);
+    item.index = parseLLVMSegment(segments[1]);
+    return item;
+  }
+  function extractElementHandler(item) {
+    var last = getTokenIndexByText(item.tokens, ';');
+    item.intertype = 'extracttelement';
+    item.type = item.tokens[1].text;
+    item.ident = toNiceIdent(item.tokens[2].text);
+    item.value = parseLLVMSegment(item.tokens.slice(4));
+    return item;
+  }
+  function shuffleVectorHandler(item) {
+    var last = getTokenIndexByText(item.tokens, ';');
+    item.intertype = 'shufflevector';
+    item.type = item.tokens[1].text; // Of the origin aggregate, as well as the result
+    Types.needAnalysis[item.type] = 0;
+    item.ident = toNiceIdent(item.tokens[2].text);
+    var segments = splitTokenList(item.tokens.slice(4, last));
+    item.value = parseLLVMSegment(segments[0]);
+    item.mask = parseLLVMSegment(segments[1]);
+    return item;
+  }
   // 'alloca'
-  var allocaPossibleVars = ['allocatedNum'];
   function allocaHandler(item) {
     item.intertype = 'alloca';
     item.allocatedType = item.tokens[1].text;
     if (item.tokens.length > 3 && Runtime.isNumberType(item.tokens[3].text)) {
-      item.allocatedNum = toNiceIdent(item.tokens[4].text);
-      item.possibleVars = allocaPossibleVars;
+      item.ident = toNiceIdent(item.tokens[4].text);
     } else {
-      item.allocatedNum = 1;
+      item.ident = 1;
     }
     item.type = addPointing(item.tokens[1].text); // type of pointer we will get
     Types.needAnalysis[item.type] = 0;
@@ -790,7 +811,7 @@ function intertyper(lines, sidePass, baseLineNums) {
     Types.needAnalysis[item.type] = 0;
     var last = getTokenIndexByText(item.tokens, ';');
     item.params = splitTokenList(item.tokens.slice(2, last)).map(function(segment) {
-      var subSegments = splitTokenList(segment[0].item.tokens);
+      var subSegments = splitTokenList(segment[0].tokens);
       var ret = {
         intertype: 'phiparam',
         label: toNiceIdent(subSegments[1][0].text),
@@ -850,6 +871,7 @@ function intertyper(lines, sidePass, baseLineNums) {
       // TODO: also remove 2nd param?
     } else if (item.op in LLVM.COMPS) {
       item.type = 'i1';
+      if (item.params[1].intertype === 'type') item.params[1].intertype = 'value'; // parsed as type, but comparisons have just values there
     }
     if (USE_TYPED_ARRAYS == 2) {
       // Some specific corrections, since 'i64' is special
@@ -927,7 +949,7 @@ function intertyper(lines, sidePass, baseLineNums) {
   function switchHandler(item) {
     function parseSwitchLabels(item) {
       var ret = [];
-      var tokens = item.item.tokens;
+      var tokens = item.tokens;
       while (tokens.length > 0) {
         ret.push({
           value: tokens[1].text,
@@ -960,7 +982,7 @@ function intertyper(lines, sidePass, baseLineNums) {
     while (item.tokens[1].text in LLVM.LINKAGES || item.tokens[1].text in LLVM.PARAM_ATTR || item.tokens[1].text in LLVM.VISIBILITIES || item.tokens[1].text in LLVM.CALLING_CONVENTIONS) {
       item.tokens.splice(1, 1);
     }
-    var params = parseParamTokens(item.tokens[3].item.tokens);
+    var params = parseParamTokens(item.tokens[3].tokens);
     return {
       intertype: 'functionStub',
       ident: toNiceIdent(item.tokens[2].text),
@@ -1013,7 +1035,8 @@ function intertyper(lines, sidePass, baseLineNums) {
         noteGlobalVariable(ret);
       }
     } else if (phase === 'funcs') {
-      if (m = /^  (%[\w\d\._]+) = (getelementptr|load) ([%\w\d\._ ,\*\-@]+)$/.exec(line.lineText)) {
+      // TODO: (void)call, store
+      if (m = /^  (%[\w\d\._]+) = (getelementptr|load|icmp) ([%\w\d\._ ,\*\-@]+)$/.exec(line.lineText)) {
         var assignTo = m[1];
         var intertype = m[2];
         var args = m[3];
@@ -1067,15 +1090,37 @@ function intertyper(lines, sidePass, baseLineNums) {
             }
             break;
           }
+          case 'icmp': {
+            var parts = args.split(' ');
+            assert(parts.length === 4);
+            ret = {
+              intertype: 'mathop',
+              op: 'icmp',
+              variant: parts[0],
+              lineNum: line.lineNum,
+              assignTo: toNiceIdent(assignTo),
+              params: [{
+                intertype: 'value',
+                ident: toNiceIdent(parts[2].substr(0, parts[2].length-1)),
+                type: parts[1]
+              }, {
+                intertype: 'value',
+                ident: toNiceIdent(parts[3]),
+                type: parts[1]
+              }],
+              type: 'i1',
+            };
+            break;
+          }
           default: throw 'unexpected fast path type ' + intertype;
         }
-        //else if (line.lineText.indexOf(' = load ') > 0) printErr('close: ' + JSON.stringify(line.lineText));
       }
+      //else if (line.lineText.indexOf(' = icmp ') > 0) printErr('close: ' + JSON.stringify(line.lineText));
     }
     if (ret) {
       if (COMPILER_ASSERTIONS) {
-        //printErr(['\n', JSON.stringify(ret), '\n', JSON.stringify(triager(tokenizer(line)))]);
-        var normal = triager(tokenizer(line));
+        //printErr(['\n', dump(ret), '\n', dump(triager(tokenizer(line)))]);
+        var normal = triager(tokenize(line));
         delete normal.tokens;
         delete normal.indent;
         assert(sortedJsonCompare(normal, ret), 'fast path: ' + dump(normal) + '\n vs \n' + dump(ret));
@@ -1087,17 +1132,46 @@ function intertyper(lines, sidePass, baseLineNums) {
   // Input
 
   lineSplitter().forEach(function(line) {
-    var item = tryFastPaths(line);
-    if (item) {
-      finalResults.push(item);
-      fastPaths++;
-      return;
+    var item;
+    if (COMPILER_FASTPATHS) {
+      item = tryFastPaths(line);
+      if (item) {
+        finalResults.push(item);
+        fastPaths++;
+        return;
+      }
     }
     slowPaths++;
 
     //var time = Date.now();
 
-    var t = tokenizer(line);
+    // parse out the assignment
+    var indent = 0, assignTo = null;
+    if (phase === 'pre') {
+      var m = /^([%@\w\d\._\-]+|[%@]"[^"]+") = (.*)/.exec(line.lineText);
+      if (m) {
+        assignTo = m[1];
+        line.lineText = m[2];
+      }
+    } else if (phase === 'funcs') {
+      var m = /^  ([%@\w\d\._\-]+|[%@]"[^"]+") = (.*)/.exec(line.lineText);
+      if (m) {
+        indent = 2;
+        assignTo = m[1];
+        line.lineText = m[2];
+      }
+    }
+
+    var tokens = tokenize(line.lineText);
+    var t = {
+      tokens: tokens,
+      indent: indent || line.lineText.search(/[^ ]/),
+      lineNum: line.lineNum
+    };
+
+    if (assignTo) {
+      t.assignTo = t.tokens[0].text !== 'type' ? toNiceIdent(assignTo) : assignTo;
+    }
     item = triager(t);
 
     /*
@@ -1111,10 +1185,11 @@ function intertyper(lines, sidePass, baseLineNums) {
     finalResults.push(item);
     if (item.tokens) item.tokens = null; // We do not need tokens, past the intertyper. Clean them up as soon as possible here.
   });
+  //B.stop('intertyper');
   return finalResults;
 }
 
-// intertyper profiler
+// intertyper profiling
 
 /*
 var interProf = {};
@@ -1122,4 +1197,5 @@ function dumpInterProf() {
   printErr('\nintertyper/' + phase + ' (ms | n): ' + JSON.stringify(keys(interProf).sort(function(x, y) { return interProf[y].ms - interProf[x].ms }).map(function(x) { return x + ' : ' + interProf[x].ms + ' | ' + interProf[x].n }), null, ' ') + '\n');
 }
 */
+//var hits = 0;
 

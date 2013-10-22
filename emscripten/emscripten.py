@@ -49,15 +49,8 @@ if STDERR_FILE:
   logging.info('logging stderr in js compiler phase into %s' % STDERR_FILE)
   STDERR_FILE = open(STDERR_FILE, 'w')
 
-def process_funcs((i, funcs, meta, settings_file, compiler, forwarded_file, libraries, compiler_engine, temp_files, DEBUG)):
+def process_funcs((i, funcs_file, meta, settings_file, compiler, forwarded_file, libraries, compiler_engine, DEBUG)):
   try:
-    funcs_file = temp_files.get('.func_%d.ll' % i).name
-    f = open(funcs_file, 'w')
-    f.write(funcs)
-    funcs = None
-    f.write('\n')
-    f.write(meta)
-    f.close()
     #print >> sys.stderr, 'running', str([settings_file, funcs_file, 'funcs', forwarded_file] + libraries).replace("'/", "'") # can use this in src/compiler_funcs.html arguments,
     #                                                                                                                         # just copy temp dir to under this one
     out = jsrun.run_js(
@@ -100,42 +93,42 @@ def emscript(infile, settings, outfile, libraries=[], compiler_engine=None,
   ll = open(infile).read()
   scan(ll, settings)
   total_ll_size = len(ll)
-  ll = None # allow collection
   if DEBUG: logging.debug('  emscript: scan took %s seconds' % (time.time() - t))
 
   # Split input into the relevant parts for each phase
-  pre = []
-  funcs = [] # split up functions here, for parallelism later
-  meta = [] # needed by each function XXX
 
   if DEBUG: t = time.time()
-  in_func = False
-  ll_lines = open(infile).readlines()
-  curr_func = None
-  for line in ll_lines:
-    if in_func:
-      curr_func.append(line)
-      if line.startswith('}'):
-        in_func = False
-        funcs.append((curr_func[0], ''.join(curr_func))) # use the entire line as the identifier
-        # pre needs to know about all implemented functions, even for non-pre func
-        pre.append(curr_func[0])
-        pre.append(line)
-        curr_func = None
-    else:
-      if line.startswith(';'): continue
-      if line.startswith('define '):
-        in_func = True
-        curr_func = [line]
-      elif line.find(' = type { ') > 0:
-        pre.append(line) # type
-      elif line.startswith('!'):
-        if line.startswith('!llvm.module'): continue # we can ignore that
-        meta.append(line) # metadata
-      else:
-        pre.append(line) # pre needs it so we know about globals in pre and funcs. So emit globals there
-  ll_lines = None
-  meta = ''.join(meta)
+
+  pre = []
+  funcs = [] # split up functions here, for parallelism later
+
+  meta_start = ll.find('\n!')
+  if meta_start > 0:
+    meta = ll[meta_start:]
+  else:
+    meta = ''
+    meta_start = -1
+
+  start = ll.find('\n') if ll[0] == ';' else 0 # ignore first line, which contains ; ModuleID = '/dir name'
+
+  func_start = start
+  last = func_start
+  while 1:
+    last = func_start
+    func_start = ll.find('\ndefine ', func_start)
+    if func_start > last:
+      pre.append(ll[last:min(func_start+1, meta_start)] + '\n')
+    if func_start < 0:
+      pre.append(ll[last:meta_start] + '\n')
+      break
+    header = ll[func_start+1:ll.find('\n', func_start+1)+1]
+    end = ll.find('\n}', func_start)
+    last = end+3
+    funcs.append((header, ll[func_start+1:last]))
+    pre.append(header + '}\n')
+    func_start = last
+  ll = None
+
   if DEBUG and len(meta) > 1024*1024: logging.debug('emscript warning: large amounts of metadata, will slow things down')
   if DEBUG: logging.debug('  emscript: split took %s seconds' % (time.time() - t))
 
@@ -195,6 +188,7 @@ def emscript(infile, settings, outfile, libraries=[], compiler_engine=None,
       jcache.set(shortkey, keys, out)
   pre, forwarded_data = out.split('//FORWARDED_DATA:')
   forwarded_file = temp_files.get('.json').name
+  pre_input = None
   open(forwarded_file, 'w').write(forwarded_data)
   if DEBUG: logging.debug('  emscript: phase 1 took %s seconds' % (time.time() - t))
 
@@ -254,11 +248,20 @@ def emscript(infile, settings, outfile, libraries=[], compiler_engine=None,
 
     if DEBUG: logging.debug('  emscript: phase 2 working on %d chunks %s (intended chunk size: %.2f MB, meta: %.2f MB, forwarded: %.2f MB, total: %.2f MB)' % (len(chunks), ('using %d cores' % cores) if len(chunks) > 1 else '', chunk_size/(1024*1024.), len(meta)/(1024*1024.), len(forwarded_data)/(1024*1024.), total_ll_size/(1024*1024.)))
 
-    commands = [
-      (i, chunk, meta, settings_file, compiler, forwarded_file, libraries, compiler_engine,# + ['--prof'],
-       temp_files, DEBUG)
-      for i, chunk in enumerate(chunks)
-    ]
+    commands = []
+    for i in range(len(chunks)):
+      funcs_file = temp_files.get('.func_%d.ll' % i).name
+      f = open(funcs_file, 'w')
+      f.write(chunks[i])
+      if not jcache:
+        chunks[i] = None # leave chunks array alive (need its length later)
+      f.write('\n')
+      f.write(meta)
+      f.close()
+      commands.append(
+        (i, funcs_file, meta, settings_file, compiler, forwarded_file, libraries, compiler_engine,# + ['--prof'],
+         DEBUG)
+      )
 
     if len(chunks) > 1:
       pool = multiprocessing.Pool(processes=cores)
@@ -300,6 +303,7 @@ def emscript(infile, settings, outfile, libraries=[], compiler_engine=None,
   for func_js, curr_forwarded_data in outputs:
     curr_forwarded_json = json.loads(curr_forwarded_data)
     forwarded_json['Types']['hasInlineJS'] = forwarded_json['Types']['hasInlineJS'] or curr_forwarded_json['Types']['hasInlineJS']
+    forwarded_json['Types']['usesSIMD'] = forwarded_json['Types']['usesSIMD'] or curr_forwarded_json['Types']['usesSIMD']
     forwarded_json['Types']['preciseI64MathUsed'] = forwarded_json['Types']['preciseI64MathUsed'] or curr_forwarded_json['Types']['preciseI64MathUsed']
     for key, value in curr_forwarded_json['Functions']['blockAddresses'].iteritems():
       forwarded_json['Functions']['blockAddresses'][key] = value
@@ -346,7 +350,7 @@ def emscript(infile, settings, outfile, libraries=[], compiler_engine=None,
     else:
       curr = i
       i += settings['FUNCTION_POINTER_ALIGNMENT']
-    #logging.debug('function indexing', indexed, curr, sig)
+    #logging.debug('function indexing ' + str([indexed, curr, sig]))
     forwarded_json['Functions']['indexedFunctions'][indexed] = curr # make sure not to modify this python object later - we use it in indexize
 
   def split_32(x):

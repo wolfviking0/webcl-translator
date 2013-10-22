@@ -31,8 +31,8 @@ Most normal gcc/g++ options will work, for example:
   --version                Display compiler version information
 
 Options that are modified or new in %s include:
-  -O0                      No optimizations (default)
-''' % (shortcompiler, shortcompiler), output[0].replace('\r', ''), output[1].replace('\r', ''))
+
+  -O0                      No optimizations (default)''' % (shortcompiler, shortcompiler), output[0].replace('\r', ''), output[1].replace('\r', ''))
 
       # emcc src.cpp ==> writes a.out.js
       self.clear()
@@ -125,8 +125,6 @@ Options that are modified or new in %s include:
         (['-o', 'something.js', '-O0'],                   0, None, 0, 0),
         (['-o', 'something.js', '-O1'],                   1, None, 0, 0),
         (['-o', 'something.js', '-O1', '-g'],             1, None, 0, 0), # no closure since debug
-        (['-o', 'something.js', '-O1', '--closure', '1'], 1, None, 1, 0),
-        (['-o', 'something.js', '-O1', '--closure', '1', '-s', 'ASM_JS=0'], 1, None, 1, 0),
         (['-o', 'something.js', '-O2'],                   2, None, 0, 1),
         (['-o', 'something.js', '-O2', '-g'],             2, None, 0, 0),
         (['-o', 'something.js', '-Os'],                   2, None, 0, 1),
@@ -169,13 +167,13 @@ Options that are modified or new in %s include:
           # closure has not been run, we can do some additional checks. TODO: figure out how to do these even with closure
           assert '._main = ' not in generated, 'closure compiler should not have been run'
           if keep_debug:
-            assert ('(label)' in generated or '(label | 0)' in generated) == (opt_level <= 1), 'relooping should be in opt >= 2'
+            assert ('(label)' in generated or '(label | 0)' in generated) == (opt_level <= 0), 'relooping should be in opt >= 1'
             assert ('assert(STACKTOP < STACK_MAX' in generated) == (opt_level == 0), 'assertions should be in opt == 0'
-            assert 'var $i;' in generated or 'var $i_0' in generated or 'var $storemerge3;' in generated or 'var $storemerge4;' in generated or 'var $i_04;' in generated or 'var $original = 0' in generated, 'micro opts should always be on'
+            assert 'var $i;' in generated or 'var $i_0' in generated or 'var $storemerge3;' in generated or 'var $storemerge4;' in generated or '$i_04' in generated or '$i_05' in generated or 'var $original = 0' in generated, 'micro opts should always be on'
           if opt_level >= 2 and '-g' in params:
             assert re.search('HEAP8\[\$?\w+ ?\+ ?\(+\$?\w+ ?', generated) or re.search('HEAP8\[HEAP32\[', generated), 'eliminator should create compound expressions, and fewer one-time vars' # also in -O1, but easier to test in -O2
           assert ('_puts(' in generated) == (opt_level >= 1), 'with opt >= 1, llvm opts are run and they should optimize printf to puts'
-          if opt_level == 0 or '-g' in params: assert 'function _main() {' in generated, 'Should be unminified, including whitespace'
+          if opt_level == 0 or '-g' in params: assert 'function _main() {' in generated or 'function _main(){' in generated, 'Should be unminified'
           elif opt_level >= 2: assert ('function _main(){' in generated or '"use asm";var a=' in generated), 'Should be whitespace-minified'
 
       # emcc -s RELOOP=1 src.cpp ==> should pass -s to emscripten.py. --typed-arrays is a convenient alias for -s USE_TYPED_ARRAYS
@@ -390,6 +388,7 @@ f.close()
   def test_unaligned_memory(self):
     open(os.path.join(self.get_dir(), 'test.cpp'), 'w').write(r'''
       #include <stdio.h>
+      #include <stdarg.h>
 
       typedef unsigned char   Bit8u;
       typedef unsigned short  Bit16u;
@@ -397,6 +396,9 @@ f.close()
 
       int main()
       {
+        va_list argp;
+        va_arg(argp, char *); // check for compilation error, #1705
+
         Bit8u data[4] = {0x01,0x23,0x45,0x67};
 
         printf("data: %x\n", *(Bit32u*)data);
@@ -1471,6 +1473,8 @@ f.close()
       assert os.path.exists('a.out.js')
 
   def test_toobig(self):
+    # very large [N x i8], we should not oom in the compiler
+    self.clear()
     open(os.path.join(self.get_dir(), 'main.cpp'), 'w').write(r'''
       #include <stdio.h>
 
@@ -1494,8 +1498,8 @@ f.close()
       }
     ''')
     output = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp')], stderr=PIPE).communicate()[1]
-    assert 'Emscripten failed' in output, output
-    assert 'warning: very large fixed-size structural type' in output, output
+    print output
+    assert os.path.exists('a.out.js')
 
   def test_prepost(self):
     open(os.path.join(self.get_dir(), 'main.cpp'), 'w').write('''
@@ -1647,6 +1651,8 @@ f.close()
        ['asm', 'outline']),
       (path_from_root('tools', 'test-js-optimizer-asm-outline3.js'), open(path_from_root('tools', 'test-js-optimizer-asm-outline3-output.js')).read(),
        ['asm', 'outline']),
+      (path_from_root('tools', 'test-js-optimizer-asm-minlast.js'), open(path_from_root('tools', 'test-js-optimizer-asm-minlast-output.js')).read(),
+       ['asm', 'minifyWhitespace', 'last']),
     ]:
       print input
       output = Popen(listify(NODE_JS) + [path_from_root('tools', 'js-optimizer.js'), input] + passes, stdin=PIPE, stdout=PIPE).communicate()[0]
@@ -1666,19 +1672,15 @@ f.close()
     try:
       os.environ['EMCC_DEBUG'] = '1'
       os.environ['EMCC_CORES'] = '2' # standardize over machines
-      for asm, linkable, chunks, js_chunks in [
-          (0, 0, 2, 2), (0, 1, 2, 4),
-          (1, 0, 2, 2), (1, 1, 2, 4)
+      for asm, linkable, chunks in [
+          (0, 0, 2), (0, 1, 2),
+          (1, 0, 2), (1, 1, 2)
         ]:
-        print asm, linkable, chunks, js_chunks
+        print asm, linkable, chunks
         output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp'), '-O1', '-s', 'LINKABLE=%d' % linkable, '-s', 'ASM_JS=%d' % asm] + (['-O2'] if asm else []), stdout=PIPE, stderr=PIPE).communicate()
         ok = False
         for c in range(chunks, chunks+2):
           ok = ok or ('phase 2 working on %d chunks' % c in err)
-        assert ok, err
-        ok = False
-        for c in range(js_chunks, js_chunks+2):
-          ok = ok or ('splitting up js optimization into %d chunks' % c in err)
         assert ok, err
     finally:
       del os.environ['EMCC_DEBUG']
@@ -1909,4 +1911,151 @@ done.
     assert not os.path.exists('a.out.js')
     assert '''tests/hello_world.c"''' in out
     assert '''printf("hello, world!''' in out
+
+  def test_demangle(self):
+    open('src.cpp', 'w').write('''
+      #include <stdio.h>
+      #include <emscripten.h>
+      void two(char c) {
+        EM_ASM(Module.print(stackTrace()));
+      }
+      void one(int x) {
+        two(x % 17);
+      }
+      int main() {
+        EM_ASM(Module.print(demangle('__Znwj'))); // check for no aborts
+        EM_ASM(Module.print(demangle('_main')));
+        EM_ASM(Module.print(demangle('__Z2f2v')));
+        EM_ASM(Module.print(demangle('__Z12abcdabcdabcdi')));
+        EM_ASM(Module.print(demangle('__Z4testcsifdPvPiPc')));
+        EM_ASM(Module.print(demangle('__ZN4test5moarrEcslfdPvPiPc')));
+        EM_ASM(Module.print(demangle('__ZN4Waka1f12a234123412345pointEv')));
+        EM_ASM(Module.print(demangle('__Z3FooIiEvv')));
+        EM_ASM(Module.print(demangle('__Z3FooIidEvi')));
+        EM_ASM(Module.print(demangle('__ZN3Foo3BarILi5EEEvv')));
+        EM_ASM(Module.print(demangle('__ZNK10__cxxabiv120__si_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib')));
+        EM_ASM(Module.print(demangle('__Z9parsewordRPKciRi')));
+        EM_ASM(Module.print(demangle('__Z5multiwahtjmxyz')));
+        EM_ASM(Module.print(demangle('__Z1aA32_iPA5_c')));
+        one(17);
+        return 0;
+      }
+    ''')
+
+    Popen([PYTHON, EMCC, 'src.cpp', '-s', 'LINKABLE=1']).communicate()
+    output = run_js('a.out.js')
+    self.assertContained('''main
+f2()
+abcdabcdabcd(int)
+test(char, short, int, float, double, void*, int*, char*)
+test::moarr(char, short, long, float, double, void*, int*, char*)
+Waka::f::a23412341234::point()
+void Foo<int>()
+void Foo<int, double>(int)
+void Foo::Bar<5>()
+__cxxabiv1::__si_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, void*, int, bool)
+parseword(char*&, int, int&)
+multi(wchar_t, signed char, unsigned char, unsigned short, unsigned int, unsigned long, long long, unsigned long long, ...)
+a(int [32], char [5]*)
+''', output)
+    # test for multiple functions in one stack trace
+    assert 'one(int)' in output
+    assert 'two(char)' in output
+
+  def test_module_exports_with_closure(self):
+    # This test checks that module.export is retained when JavaScript is minified by compiling with --closure 1
+    # This is important as if module.export is not present the Module object will not be visible to node.js
+    # Run with ./runner.py other.test_module_exports_with_closure
+
+    # First make sure test.js isn't present.
+    try_delete(path_from_root('tests', 'Module-exports', 'test.js'))
+    assert not os.path.exists(path_from_root('tests', 'Module-exports', 'test.js'))
+
+    # compile with -O2 --closure 0
+    Popen([PYTHON, EMCC, path_from_root('tests', 'Module-exports', 'test.c'), '-o', path_from_root('tests', 'Module-exports', 'test.js'), '-O2', '--closure', '0', '--pre-js', path_from_root('tests', 'Module-exports', 'setup.js'), '-s', 'EXPORTED_FUNCTIONS=["_bufferTest"]'], stdout=PIPE, stderr=PIPE).communicate()
+
+    # Check that compilation was successful
+    assert os.path.exists(path_from_root('tests', 'Module-exports', 'test.js'))
+    test_js_closure_0 = open(path_from_root('tests', 'Module-exports', 'test.js')).read()
+
+    # Check that test.js compiled with --closure 0 contains "module['exports'] = Module;"
+    assert "module['exports'] = Module;" in test_js_closure_0
+
+    # Check that main.js (which requires test.js) completes successfully when run in node.js
+    # in order to check that the exports are indeed functioning correctly.
+    if NODE_JS in JS_ENGINES:
+      self.assertContained('bufferTest finished', run_js(path_from_root('tests', 'Module-exports', 'main.js'), engine=NODE_JS))
+
+    # Delete test.js again and check it's gone.
+    try_delete(path_from_root('tests', 'Module-exports', 'test.js'))
+    assert not os.path.exists(path_from_root('tests', 'Module-exports', 'test.js'))
+
+    # compile with -O2 --closure 1
+    Popen([PYTHON, EMCC, path_from_root('tests', 'Module-exports', 'test.c'), '-o', path_from_root('tests', 'Module-exports', 'test.js'), '-O2', '--closure', '1', '--pre-js', path_from_root('tests', 'Module-exports', 'setup.js'), '-s', 'EXPORTED_FUNCTIONS=["_bufferTest"]'], stdout=PIPE, stderr=PIPE).communicate()
+
+    # Check that compilation was successful
+    assert os.path.exists(path_from_root('tests', 'Module-exports', 'test.js'))
+    test_js_closure_1 = open(path_from_root('tests', 'Module-exports', 'test.js')).read()
+
+    # Check that test.js compiled with --closure 1 contains "module.exports", we want to verify that
+    # "module['exports']" got minified to "module.exports" when compiling with --closure 1
+    assert "module.exports" in test_js_closure_1
+
+    # Check that main.js (which requires test.js) completes successfully when run in node.js
+    # in order to check that the exports are indeed functioning correctly.
+    if NODE_JS in JS_ENGINES:
+      self.assertContained('bufferTest finished', run_js(path_from_root('tests', 'Module-exports', 'main.js'), engine=NODE_JS))
+
+    # Tidy up files that might have been created by this test.
+    try_delete(path_from_root('tests', 'Module-exports', 'test.js'))
+    try_delete(path_from_root('tests', 'Module-exports', 'test.js.map'))
+
+  def test_simd(self):
+    self.clear()
+    Popen([PYTHON, EMCC, path_from_root('tests', 'linpack.c'), '-O2', '-DSP', '--llvm-opts', '''['-O3', '-vectorize', '-vectorize-loops', '-bb-vectorize-vector-bits=128', '-force-vector-width=4']''']).communicate()
+    self.assertContained('Unrolled Single  Precision', run_js('a.out.js'))
+
+  def test_simd2(self):
+    self.clear()
+    open('src.cpp', 'w').write(r'''
+#include <stdio.h>
+
+#include <emscripten/vector.h>
+
+int main(int argc, char **argv) {
+  float data[8];
+  for (int i = 0; i < 32; i++) data[i] = (1+i+argc)*(2+i+argc*argc);
+  {
+    float32x4 *a = (float32x4*)&data[0];
+    float32x4 *b = (float32x4*)&data[4];
+    float32x4 c, d;
+    c = *a;
+    d = *b;
+    printf("floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    c = c+d;
+    printf("floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    d = c*d;
+    printf("floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+  }
+  {
+    uint32x4 *a = (uint32x4*)&data[0];
+    uint32x4 *b = (uint32x4*)&data[4];
+    uint32x4 c, d, e, f;
+    c = *a;
+    d = *b;
+    printf("uints! %d, %d, %d, %d   %d, %d, %d, %d\n", c[0], c[1], c[2], c[3], d[0], d[1], d[2], d[3]);
+    e = c+d;
+    f = c-d;
+    printf("uints! %d, %d, %d, %d   %d, %d, %d, %d\n", e[0], e[1], e[2], e[3], f[0], f[1], f[2], f[3]);
+  }
+  return 0;
+}
+    ''')
+    Popen([PYTHON, EMCC, 'src.cpp', '-O2']).communicate()
+    self.assertContained('''floats! 6, 12, 20, 30   42, 56, 72, 90
+floats! 48, 68, 92, 120   42, 56, 72, 90
+floats! 48, 68, 92, 120   2016, 3808, 6624, 10800
+uints! 1086324736, 1094713344, 1101004800, 1106247680   1109917696, 1113587712, 1116733440, 1119092736
+uints! -2098724864, -2086666240, -2077229056, -2069626880   -23592960, -18874368, -15728640, -12845056
+''', run_js('a.out.js'))
 

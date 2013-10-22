@@ -3008,8 +3008,8 @@ LibraryManager.library = {
     return ret;
   },
 
-  abs: 'Math.abs',
-  labs: 'Math.abs',
+  abs: 'Math_abs',
+  labs: 'Math_abs',
 #if USE_TYPED_ARRAYS == 2
   llabs__deps: [function() { Types.preciseI64MathUsed = 1 }],
   llabs: function(lo, hi) {
@@ -3802,8 +3802,8 @@ LibraryManager.library = {
     p1 = p1|0; p2 = p2|0; num = num|0;
     var i = 0, v1 = 0, v2 = 0;
     while ((i|0) < (num|0)) {
-      var v1 = {{{ makeGetValueAsm('p1', 'i', 'i8', true) }}};
-      var v2 = {{{ makeGetValueAsm('p2', 'i', 'i8', true) }}};
+      v1 = {{{ makeGetValueAsm('p1', 'i', 'i8', true) }}};
+      v2 = {{{ makeGetValueAsm('p2', 'i', 'i8', true) }}};
       if ((v1|0) != (v2|0)) return ((v1|0) > (v2|0) ? 1 : -1)|0;
       i = (i+1)|0;
     }
@@ -4227,9 +4227,9 @@ LibraryManager.library = {
     var ret = 0;
     ret = {{{ makeGetValueAsm('ctlz_i8', 'x >>> 24', 'i8') }}};
     if ((ret|0) < 8) return ret|0;
-    var ret = {{{ makeGetValueAsm('ctlz_i8', '(x >> 16)&0xff', 'i8') }}};
+    ret = {{{ makeGetValueAsm('ctlz_i8', '(x >> 16)&0xff', 'i8') }}};
     if ((ret|0) < 8) return (ret + 8)|0;
-    var ret = {{{ makeGetValueAsm('ctlz_i8', '(x >> 8)&0xff', 'i8') }}};
+    ret = {{{ makeGetValueAsm('ctlz_i8', '(x >> 8)&0xff', 'i8') }}};
     if ((ret|0) < 8) return (ret + 16)|0;
     return ({{{ makeGetValueAsm('ctlz_i8', 'x&0xff', 'i8') }}} + 24)|0;
   },
@@ -4263,9 +4263,9 @@ LibraryManager.library = {
     var ret = 0;
     ret = {{{ makeGetValueAsm('cttz_i8', 'x & 0xff', 'i8') }}};
     if ((ret|0) < 8) return ret|0;
-    var ret = {{{ makeGetValueAsm('cttz_i8', '(x >> 8)&0xff', 'i8') }}};
+    ret = {{{ makeGetValueAsm('cttz_i8', '(x >> 8)&0xff', 'i8') }}};
     if ((ret|0) < 8) return (ret + 8)|0;
-    var ret = {{{ makeGetValueAsm('cttz_i8', '(x >> 16)&0xff', 'i8') }}};
+    ret = {{{ makeGetValueAsm('cttz_i8', '(x >> 16)&0xff', 'i8') }}};
     if ((ret|0) < 8) return (ret + 16)|0;
     return ({{{ makeGetValueAsm('cttz_i8', 'x >>> 24', 'i8') }}} + 24)|0;
   },
@@ -4296,16 +4296,16 @@ LibraryManager.library = {
   },
 
   llvm_trap: function() {
-    throw 'trap! ' + new Error().stack;
+    abort('trap!');
   },
 
   __assert_fail: function(condition, filename, line, func) {
     ABORT = true;
-    throw 'Assertion failed: ' + Pointer_stringify(condition) + ', at: ' + [filename ? Pointer_stringify(filename) : 'unknown filename', line, func ? Pointer_stringify(func) : 'unknown function'] + ' at ' + new Error().stack;
+    throw 'Assertion failed: ' + Pointer_stringify(condition) + ', at: ' + [filename ? Pointer_stringify(filename) : 'unknown filename', line, func ? Pointer_stringify(func) : 'unknown function'] + ' at ' + stackTrace();
   },
 
   __assert_func: function(filename, line, func, condition) {
-    throw 'Assertion failed: ' + (condition ? Pointer_stringify(condition) : 'unknown condition') + ', at: ' + [filename ? Pointer_stringify(filename) : 'unknown filename', line, func ? Pointer_stringify(func) : 'unknown function'] + ' at ' + new Error().stack;
+    throw 'Assertion failed: ' + (condition ? Pointer_stringify(condition) : 'unknown condition') + ', at: ' + [filename ? Pointer_stringify(filename) : 'unknown filename', line, func ? Pointer_stringify(func) : 'unknown function'] + ' at ' + stackTrace();
   },
 
   __cxa_guard_acquire: function(variable) {
@@ -4353,7 +4353,7 @@ LibraryManager.library = {
       ___cxa_throw.initialized = true;
     }
 #if EXCEPTION_DEBUG
-    Module.printErr('Compiled code throwing an exception, ' + [ptr,type,destructor] + ', at ' + new Error().stack);
+    Module.printErr('Compiled code throwing an exception, ' + [ptr,type,destructor] + ', at ' + stackTrace());
 #endif
     {{{ makeSetValue('_llvm_eh_exception.buf', '0', 'ptr', 'void*') }}}
     {{{ makeSetValue('_llvm_eh_exception.buf', QUANTUM_SIZE, 'type', 'void*') }}}
@@ -4702,30 +4702,30 @@ LibraryManager.library = {
   // math.h
   // ==========================================================================
 
-  cos: 'Math.cos',
-  cosf: 'Math.cos',
-  cosl: 'Math.cos',
-  sin: 'Math.sin',
-  sinf: 'Math.sin',
-  sinl: 'Math.sin',
-  tan: 'Math.tan',
-  tanf: 'Math.tan',
-  tanl: 'Math.tan',
-  acos: 'Math.acos',
-  acosf: 'Math.acos',
-  acosl: 'Math.acos',
-  asin: 'Math.asin',
-  asinf: 'Math.asin',
-  asinl: 'Math.asin',
-  atan: 'Math.atan',
-  atanf: 'Math.atan',
-  atanl: 'Math.atan',
-  atan2: 'Math.atan2',
-  atan2f: 'Math.atan2',
-  atan2l: 'Math.atan2',
-  exp: 'Math.exp',
-  expf: 'Math.exp',
-  expl: 'Math.exp',
+  cos: 'Math_cos',
+  cosf: 'Math_cos',
+  cosl: 'Math_cos',
+  sin: 'Math_sin',
+  sinf: 'Math_sin',
+  sinl: 'Math_sin',
+  tan: 'Math_tan',
+  tanf: 'Math_tan',
+  tanl: 'Math_tan',
+  acos: 'Math_acos',
+  acosf: 'Math_acos',
+  acosl: 'Math_acos',
+  asin: 'Math_asin',
+  asinf: 'Math_asin',
+  asinl: 'Math_asin',
+  atan: 'Math_atan',
+  atanf: 'Math_atan',
+  atanl: 'Math_atan',
+  atan2: 'Math_atan2',
+  atan2f: 'Math_atan2',
+  atan2l: 'Math_atan2',
+  exp: 'Math_exp',
+  expf: 'Math_exp',
+  expl: 'Math_exp',
 
   // The erf and erfc functions are inspired from
   // http://www.digitalmars.com/archives/cplusplus/3634.html
@@ -4787,32 +4787,32 @@ LibraryManager.library = {
   },
   erff: 'erf',
   erfl: 'erf',
-  log: 'Math.log',
-  logf: 'Math.log',
-  logl: 'Math.log',
-  sqrt: 'Math.sqrt',
-  sqrtf: 'Math.sqrt',
-  sqrtl: 'Math.sqrt',
-  fabs: 'Math.abs',
-  fabsf: 'Math.abs',
-  fabsl: 'Math.abs',
-  ceil: 'Math.ceil',
-  ceilf: 'Math.ceil',
-  ceill: 'Math.ceil',
-  floor: 'Math.floor',
-  floorf: 'Math.floor',
-  floorl: 'Math.floor',
-  pow: 'Math.pow',
-  powf: 'Math.pow',
-  powl: 'Math.pow',
-  llvm_sqrt_f32: 'Math.sqrt',
-  llvm_sqrt_f64: 'Math.sqrt',
-  llvm_pow_f32: 'Math.pow',
-  llvm_pow_f64: 'Math.pow',
-  llvm_log_f32: 'Math.log',
-  llvm_log_f64: 'Math.log',
-  llvm_exp_f32: 'Math.exp',
-  llvm_exp_f64: 'Math.exp',
+  log: 'Math_log',
+  logf: 'Math_log',
+  logl: 'Math_log',
+  sqrt: 'Math_sqrt',
+  sqrtf: 'Math_sqrt',
+  sqrtl: 'Math_sqrt',
+  fabs: 'Math_abs',
+  fabsf: 'Math_abs',
+  fabsl: 'Math_abs',
+  ceil: 'Math_ceil',
+  ceilf: 'Math_ceil',
+  ceill: 'Math_ceil',
+  floor: 'Math_floor',
+  floorf: 'Math_floor',
+  floorl: 'Math_floor',
+  pow: 'Math_pow',
+  powf: 'Math_pow',
+  powl: 'Math_pow',
+  llvm_sqrt_f32: 'Math_sqrt',
+  llvm_sqrt_f64: 'Math_sqrt',
+  llvm_pow_f32: 'Math_pow',
+  llvm_pow_f64: 'Math_pow',
+  llvm_log_f32: 'Math_log',
+  llvm_log_f64: 'Math_log',
+  llvm_exp_f32: 'Math_exp',
+  llvm_exp_f64: 'Math_exp',
   ldexp: function(x, exp_) {
     return x * Math.pow(2, exp_);
   },
@@ -8611,6 +8611,15 @@ LibraryManager.library = {
     } while (curr != 0);
     Module.print(intArrayToString(__formatString(_emscripten_jcache_printf_.buffer, varargs)).replace('\\n', ''));
     Runtime.stackAlloc(-4*i); // free up the stack space we know is ok to free
+  },
+
+  emscripten_asm_const: function(code) {
+    // code is a constant string on the heap, so we can cache these
+    if (!Runtime.asmConstCache) Runtime.asmConstCache = {};
+    var func = Runtime.asmConstCache[code];
+    if (func) return func();
+    func = Runtime.asmConstCache[code] = eval('(function(){ ' + Pointer_stringify(code) + ' })'); // new Function does not allow upvars in node
+    return func();
   },
 
   //============================

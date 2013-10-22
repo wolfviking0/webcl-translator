@@ -18,8 +18,7 @@ var LibraryGL = {
     textures: [],
     uniforms: [],
     shaders: [],
-    vaos: [],
-    
+
 #if FULL_ES2
     clientBuffers: [],
 #endif
@@ -375,6 +374,9 @@ var LibraryGL = {
     },
 #endif
 
+    // In WebGL, extensions must be explicitly enabled to be active, see http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.14.14
+    // In GLES2, all extensions are enabled by default without additional operations. Init all extensions we need to give to GLES2 user
+    // code here, so that GLES2 code can operate without changing behavior.
     initExtensions: function() {
       if (GL.initExtensions.done) return;
       GL.initExtensions.done = true;
@@ -395,6 +397,7 @@ var LibraryGL = {
       GL.generateTempBuffers();
 #endif
 
+      // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
       GL.compressionExt = Module.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
                           Module.ctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
                           Module.ctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
@@ -405,14 +408,80 @@ var LibraryGL = {
 
       GL.floatExt = Module.ctx.getExtension('OES_texture_float');
 
-      GL.elementIndexUintExt = Module.ctx.getExtension('OES_element_index_uint');
-      GL.standardDerivativesExt = Module.ctx.getExtension('OES_standard_derivatives');
+      // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
+      // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
+      // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
+      // here, as long as they don't produce a performance impact for users that might not be using those extensions.
+      // E.g. debugging-related extensions should probably be off by default.
+      var automaticallyEnabledExtensions = [ "OES_texture_float", "OES_texture_half_float", "OES_standard_derivatives",
+                                             "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_depth_texture",
+                                             "OES_element_index_uint", "EXT_texture_filter_anisotropic", "ANGLE_instanced_arrays",
+                                             "OES_texture_float_linear", "OES_texture_half_float_linear", "WEBGL_compressed_texture_atc",
+                                             "WEBGL_compressed_texture_pvrtc", "EXT_color_buffer_half_float", "WEBGL_color_buffer_float",
+                                             "EXT_frag_depth", "EXT_sRGB", "WEBGL_draw_buffers", "WEBGL_shared_resources" ];
 
-      GL.depthTextureExt = Module.ctx.getExtension("WEBGL_depth_texture") ||
-                           Module.ctx.getExtension("MOZ_WEBGL_depth_texture") ||
-                           Module.ctx.getExtension("WEBKIT_WEBGL_depth_texture");
-                           
-      GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');                           
+      function shouldEnableAutomatically(extension) {
+        for(var i in automaticallyEnabledExtensions) {
+          var include = automaticallyEnabledExtensions[i];
+          if (ext.indexOf(include) != -1) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      var extensions = Module.ctx.getSupportedExtensions();
+      for(var e in extensions) {
+        var ext = extensions[e].replace('MOZ_', '').replace('WEBKIT_', '');
+        if (automaticallyEnabledExtensions.indexOf(ext) != -1) {
+          Module.ctx.getExtension(ext); // Calling .getExtension enables that extension permanently, no need to store the return value to be enabled.
+        }
+      }
+    },
+
+    // In WebGL, uniforms in a shader program are accessed through an opaque object type 'WebGLUniformLocation'.
+    // In GLES2, uniforms are accessed via indices. Therefore we must generate a mapping of indices -> WebGLUniformLocations
+    // to provide the client code the API that uses indices.
+    // This function takes a linked GL program and generates a mapping table for the program.
+    // NOTE: Populating the uniform table is performed eagerly at glLinkProgram time, so glLinkProgram should be considered
+    //       to be a slow/costly function call. Calling glGetUniformLocation is relatively fast, since it is always a read-only
+    //       lookup to the table populated in this function call.
+    populateUniformTable: function(program) {
+#if GL_ASSERTIONS
+      GL.validateGLObjectID(GL.programs, program, 'populateUniformTable', 'program');
+#endif
+      var p = GL.programs[program];
+      GL.uniformTable[program] = {};
+      var ptable = GL.uniformTable[program];
+      // A program's uniformTable maps the string name of an uniform to an integer location of that uniform.
+      // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
+      var numUniforms = Module.ctx.getProgramParameter(p, Module.ctx.ACTIVE_UNIFORMS);
+      for (var i = 0; i < numUniforms; ++i) {
+        var u = Module.ctx.getActiveUniform(p, i);
+
+        var name = u.name;
+        // Strip off any trailing array specifier we might have got, e.g. "[0]".
+        if (name.indexOf(']', name.length-1) !== -1) {
+          var ls = name.lastIndexOf('[');
+          name = name.slice(0, ls);
+        }
+
+        // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then 
+        // only store the string 'colors' in ptable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
+        // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
+        var loc = Module.ctx.getUniformLocation(p, name);
+        var id = GL.getNewId(GL.uniforms);
+        ptable[name] = [u.size, id];
+        GL.uniforms[id] = loc;
+
+        for (var j = 1; j < u.size; ++j) {
+          var n = name + '['+j+']';
+          loc = Module.ctx.getUniformLocation(p, n);
+          id = GL.getNewId(GL.uniforms);
+
+          GL.uniforms[id] = loc;
+        }
+      }
     }
   },
 
@@ -434,7 +503,13 @@ var LibraryGL = {
       case 0x1F02 /* GL_VERSION */:
         return allocate(intArrayFromString(Module.ctx.getParameter(name_)), 'i8', ALLOC_NORMAL);
       case 0x1F03 /* GL_EXTENSIONS */:
-        return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ')), 'i8', ALLOC_NORMAL);
+        var exts = Module.ctx.getSupportedExtensions();
+        var gl_exts = [];
+        for (i in exts) {
+          gl_exts.push(exts[i]);
+          gl_exts.push("GL_" + exts[i]);
+        }
+        return allocate(intArrayFromString(gl_exts.join(' ')), 'i8', ALLOC_NORMAL); // XXX this leaks! TODO: Cache all results like this in library_gl.js to be clean and nice and avoid leaking.
       case 0x8B8C /* GL_SHADING_LANGUAGE_VERSION */:
         return allocate(intArrayFromString('OpenGL ES GLSL 1.00 (WebGL)'), 'i8', ALLOC_NORMAL);
       default:
@@ -814,6 +889,7 @@ var LibraryGL = {
   glGetUniformfv: function(program, location, params) {
 #if GL_ASSERTIONS
     GL.validateGLObjectID(GL.programs, program, 'glGetUniformfv', 'program');
+    GL.validateGLObjectID(GL.uniforms, location, 'glGetUniformfv', 'location');
 #endif
     var data = Module.ctx.getUniform(GL.programs[program], GL.uniforms[location]);
     if (typeof data == 'number') {
@@ -829,6 +905,7 @@ var LibraryGL = {
   glGetUniformiv: function(program, location, params) {
 #if GL_ASSERTIONS
     GL.validateGLObjectID(GL.programs, program, 'glGetUniformiv', 'program');
+    GL.validateGLObjectID(GL.uniforms, location, 'glGetUniformiv', 'location');
 #endif
     var data = Module.ctx.getUniform(GL.programs[program], GL.uniforms[location]);
     if (typeof data == 'number' || typeof data == 'boolean') {
@@ -846,16 +923,31 @@ var LibraryGL = {
     GL.validateGLObjectID(GL.programs, program, 'glGetUniformLocation', 'program');
 #endif
     name = Pointer_stringify(name);
+
+    var arrayOffset = 0;
+    // If user passed an array accessor "[index]", parse the array index off the accessor.
+    if (name.indexOf(']', name.length-1) !== -1) {
+      var ls = name.lastIndexOf('[');
+      var arrayIndex = name.slice(ls+1, -1);
+      if (arrayIndex.length > 0) {
+        arrayOffset = parseInt(arrayIndex);
+        if (arrayOffset < 0) {
+          return -1;
+        }
+      }
+      name = name.slice(0, ls);
+    }
+
     var ptable = GL.uniformTable[program];
-    if (!ptable) ptable = GL.uniformTable[program] = {};
-    var id = ptable[name];
-    if (id) return id;
-    var loc = Module.ctx.getUniformLocation(GL.programs[program], name);
-    if (!loc) return -1;
-    id = GL.getNewId(GL.uniforms);
-    GL.uniforms[id] = loc;
-    ptable[name] = id;
-    return id;
+    if (!ptable) {
+      return -1;
+    }
+    var uniformInfo = ptable[name]; // returns pair [ dimension_of_uniform_array, uniform_location ]
+    if (uniformInfo && arrayOffset < uniformInfo[0]) { // Check if user asked for an out-of-bounds element, i.e. for 'vec4 colors[3];' user could ask for 'colors[10]' which should return -1.
+      return uniformInfo[1]+arrayOffset;
+    } else {
+      return -1;
+    }
   },
 
   glGetVertexAttribfv__sig: 'viii',
@@ -926,54 +1018,81 @@ var LibraryGL = {
 
   glUniform1f__sig: 'vif',
   glUniform1f: function(location, v0) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform1f', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform1f(location, v0);
   },
 
   glUniform2f__sig: 'viff',
   glUniform2f: function(location, v0, v1) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform2f', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform2f(location, v0, v1);
   },
 
   glUniform3f__sig: 'vifff',
   glUniform3f: function(location, v0, v1, v2) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform3f', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform3f(location, v0, v1, v2);
   },
 
   glUniform4f__sig: 'viffff',
   glUniform4f: function(location, v0, v1, v2, v3) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform4f', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform4f(location, v0, v1, v2, v3);
   },
 
   glUniform1i__sig: 'vii',
   glUniform1i: function(location, v0) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform1i', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform1i(location, v0);
   },
 
   glUniform2i__sig: 'viii',
   glUniform2i: function(location, v0, v1) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform2i', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform2i(location, v0, v1);
   },
 
   glUniform3i__sig: 'viiii',
   glUniform3i: function(location, v0, v1, v2) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform3i', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform3i(location, v0, v1, v2);
   },
 
   glUniform4i__sig: 'viiiii',
   glUniform4i: function(location, v0, v1, v2, v3) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform4i', 'location');
+#endif
     location = GL.uniforms[location];
     Module.ctx.uniform4i(location, v0, v1, v2, v3);
   },
 
   glUniform1iv__sig: 'viii',
   glUniform1iv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform1iv', 'location');
+#endif
     location = GL.uniforms[location];
     value = {{{ makeHEAPView('32', 'value', 'value+count*4') }}};
     Module.ctx.uniform1iv(location, value);
@@ -981,6 +1100,9 @@ var LibraryGL = {
 
   glUniform2iv__sig: 'viii',
   glUniform2iv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform2iv', 'location');
+#endif
     location = GL.uniforms[location];
     count *= 2;
     value = {{{ makeHEAPView('32', 'value', 'value+count*4') }}};
@@ -989,6 +1111,9 @@ var LibraryGL = {
 
   glUniform3iv__sig: 'viii',
   glUniform3iv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform3iv', 'location');
+#endif
     location = GL.uniforms[location];
     count *= 3;
     value = {{{ makeHEAPView('32', 'value', 'value+count*4') }}};
@@ -997,6 +1122,9 @@ var LibraryGL = {
 
   glUniform4iv__sig: 'viii',
   glUniform4iv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform4iv', 'location');
+#endif
     location = GL.uniforms[location];
     count *= 4;
     value = {{{ makeHEAPView('32', 'value', 'value+count*4') }}};
@@ -1005,6 +1133,9 @@ var LibraryGL = {
 
   glUniform1fv__sig: 'viii',
   glUniform1fv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform1fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1019,6 +1150,9 @@ var LibraryGL = {
 
   glUniform2fv__sig: 'viii',
   glUniform2fv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform2fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1034,6 +1168,9 @@ var LibraryGL = {
 
   glUniform3fv__sig: 'viii',
   glUniform3fv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform3fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1050,6 +1187,9 @@ var LibraryGL = {
 
   glUniform4fv__sig: 'viii',
   glUniform4fv: function(location, count, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniform4fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1067,6 +1207,9 @@ var LibraryGL = {
 
   glUniformMatrix2fv__sig: 'viiii',
   glUniformMatrix2fv: function(location, count, transpose, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniformMatrix2fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1083,6 +1226,9 @@ var LibraryGL = {
 
   glUniformMatrix3fv__sig: 'viiii',
   glUniformMatrix3fv: function(location, count, transpose, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniformMatrix3fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1099,6 +1245,9 @@ var LibraryGL = {
 
   glUniformMatrix4fv__sig: 'viiii',
   glUniformMatrix4fv: function(location, count, transpose, value) {
+#if GL_ASSERTIONS
+    GL.validateGLObjectID(GL.uniforms, location, 'glUniformMatrix4fv', 'location');
+#endif
     location = GL.uniforms[location];
     var view;
     if (count == 1) {
@@ -1343,6 +1492,7 @@ var LibraryGL = {
 #endif
     Module.ctx.linkProgram(GL.programs[program]);
     GL.uniformTable[program] = {}; // uniforms no longer keep the same names after linking
+    GL.populateUniformTable(program);
   },
 
   glGetProgramInfoLog__sig: 'viiii',
@@ -1454,43 +1604,7 @@ var LibraryGL = {
     if (!fb) return 0;
     return Module.ctx.isFramebuffer(fb);
   },
-  
-  glGenVertexArrays_sig: 'vii',
-  glGenVertexArrays: function (n , arrays) {
-    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
-    for (var i = 0; i < n ; i++) {
-      var id = GL.getNewId(GL.vaos);
-      var vao = GL.vaoExt.createVertexArrayOES();
-      vao.name = id;
-      GL.vaos[id] = vao;
-      {{{ makeSetValue('arrays', 'i*4', 'id', 'i32') }}};
-    }
-  },
-  
-  glDeleteVertexArrays__sig: 'vii',
-  glDeleteVertexArrays: function(n, vaos) {
-    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
-    for (var i = 0; i < n; i++) {
-      var id = {{{ makeGetValue('vaos', 'i*4', 'i32') }}};
-      GL.vaoExt.deleteVertexArrayOES(GL.vaos[id]);
-      GL.vaos[id] = null;
-    }
-  },
-  
-  glBindVertexArray__sig: 'vi',
-  glBindVertexArray: function(vao) {
-    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
-    GL.vaoExt.bindVertexArrayOES(GL.vaos[vao]);
-  },
 
-  glIsVertexArray__sig: 'ii',
-  glIsVertexArray: function(array) {
-    assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
-    var vao = GL.vaos[array];
-    if (!vao) return 0;
-    return GL.vaoExt.isVertexArrayOES(vao);
-  },
-  
 #if LEGACY_GL_EMULATION
 
   // GL emulation: provides misc. functionality not present in OpenGL ES 2.0 or WebGL
@@ -3933,7 +4047,10 @@ var LibraryGL = {
     _glColor4f({{{ makeGetValue('p', '0', 'float') }}}, {{{ makeGetValue('p', '4', 'float') }}}, {{{ makeGetValue('p', '8', 'float') }}}, {{{ makeGetValue('p', '12', 'float') }}});
   },
 
-  glColor4ubv: function() { throw 'glColor4ubv not implemented' },
+  glColor4ubv__deps: ['glColor4ub'],
+  glColor4ubv: function(p) {
+    _glColor4ub({{{ makeGetValue('p', '0', 'i8') }}}, {{{ makeGetValue('p', '1', 'i8') }}}, {{{ makeGetValue('p', '2', 'i8') }}}, {{{ makeGetValue('p', '3', 'i8') }}});
+	},
 
   glFogf: function(pname, param) { // partial support, TODO
     switch(pname) {
@@ -4046,7 +4163,6 @@ var LibraryGL = {
   },
 
   // Vertex array object (VAO) support. TODO: when the WebGL extension is popular, use that and remove this code and GL.vaos
-  /*
   glGenVertexArrays__deps: ['$GLEmulation'],
   glGenVertexArrays__sig: 'vii',
   glGenVertexArrays: function(n, vaos) {
@@ -4102,7 +4218,7 @@ var LibraryGL = {
       GLEmulation.currentVao = info; // set currentVao last, so the commands we ran here were not recorded
     }
   },
-  */
+
   // OpenGL Immediate Mode matrix routines.
   // Note that in the future we might make these available only in certain modes.
   glMatrixMode__deps: ['$GL', '$GLImmediateSetup', '$GLEmulation'], // emulation is not strictly needed, this is a workaround
@@ -4268,12 +4384,12 @@ var LibraryGL = {
 #endif
   }],
   glVertexPointer: function(){ throw 'Legacy GL function (glVertexPointer) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
-//   glGenVertexArrays__deps: [function() {
-// #if INCLUDE_FULL_LIBRARY == 0
-//     warn('Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
-// #endif
-//   }],
-//   glGenVertexArrays: function(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
+  glGenVertexArrays__deps: [function() {
+#if INCLUDE_FULL_LIBRARY == 0
+    warn('Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
+#endif
+  }],
+  glGenVertexArrays: function(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
   glMatrixMode__deps: [function() {
 #if INCLUDE_FULL_LIBRARY == 0
     warn('Legacy GL function (glMatrixMode) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
@@ -4357,6 +4473,7 @@ var LibraryGL = {
     return 1 /* GL_TRUE */;
   },
 
+  gluOrtho2D__deps: ['glOrtho'],
   gluOrtho2D: function(left, right, bottom, top) {
     _glOrtho(left, right, bottom, top, -1, 1);
   },

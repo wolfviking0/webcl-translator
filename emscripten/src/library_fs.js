@@ -1,5 +1,5 @@
 mergeInto(LibraryManager.library, {
-  $FS__deps: ['$ERRNO_CODES', '$ERRNO_MESSAGES', '__setErrNo', '$VFS', '$PATH', '$TTY', '$MEMFS', '$IDBFS', '$NODEFS', 'stdin', 'stdout', 'stderr', 'fflush'],
+  $FS__deps: ['$ERRNO_CODES', '$ERRNO_MESSAGES', '__setErrNo', '$PATH', '$TTY', '$MEMFS', '$IDBFS', '$NODEFS', 'stdin', 'stdout', 'stderr', 'fflush'],
   $FS__postset: 'FS.staticInit();' +
                 '__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });' +
                 '__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });' +
@@ -27,24 +27,10 @@ mergeInto(LibraryManager.library, {
     // to modify the filesystem freely before run() is called.
     ignorePermissions: true,
     
-    ErrnoError: (function() {
-      function ErrnoError(errno) {
-        this.errno = errno;
-        for (var key in ERRNO_CODES) {
-          if (ERRNO_CODES[key] === errno) {
-            this.code = key;
-            break;
-          }
-        }
-        this.message = ERRNO_MESSAGES[errno];
-      };
-      ErrnoError.prototype = new Error();
-      ErrnoError.prototype.constructor = ErrnoError;
-      return ErrnoError;
-    }()),
+    ErrnoError: null, // set during init
 
     handleFSError: function(e) {
-      if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
+      if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
       return ___setErrNo(e.errno);
     },
 
@@ -1078,7 +1064,25 @@ mergeInto(LibraryManager.library, {
       {{{ makeSetValue(makeGlobalUse('_stderr'), 0, 'stderr.fd', 'void*') }}};
       assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
     },
+    ensureErrnoError: function() {
+      if (FS.ErrnoError) return;
+      FS.ErrnoError = function ErrnoError(errno) {
+        this.errno = errno;
+        for (var key in ERRNO_CODES) {
+          if (ERRNO_CODES[key] === errno) {
+            this.code = key;
+            break;
+          }
+        }
+        this.message = ERRNO_MESSAGES[errno];
+        this.stack = stackTrace();
+      };
+      FS.ErrnoError.prototype = new Error();
+      FS.ErrnoError.prototype.constructor = FS.ErrnoError;
+    },
     staticInit: function() {
+      FS.ensureErrnoError();
+
       FS.nameTable = new Array(4096);
 
       FS.root = FS.createNode(null, '/', {{{ cDefine('S_IFDIR') }}} | 0777, 0);
@@ -1090,6 +1094,8 @@ mergeInto(LibraryManager.library, {
     init: function(input, output, error) {
       assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
       FS.init.initialized = true;
+
+      FS.ensureErrnoError();
 
       // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
       Module['stdin'] = input || Module['stdin'];

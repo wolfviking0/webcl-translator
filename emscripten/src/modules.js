@@ -229,6 +229,8 @@ var Types = {
 
   hasInlineJS: false, // whether the program has inline JS anywhere
 
+  usesSIMD: false,
+
   // Set to true if we actually use precise i64 math: If PRECISE_I64_MATH is set, and also such math is actually
   // needed (+,-,*,/,% - we do not need it for bitops), or PRECISE_I64_MATH is 2 (forced)
   preciseI64MathUsed: (PRECISE_I64_MATH == 2)
@@ -285,11 +287,7 @@ var Functions = {
     } else {
       if (!singlePhase) return 'NO_INDEX'; // Should not index functions in post
       ret = this.indexedFunctions[ident];
-      if (!ret) {
-        ret = this.nextIndex;
-        this.nextIndex += FUNCTION_POINTER_ALIGNMENT;
-        this.indexedFunctions[ident] = ret;
-      }
+      assert(ret);
       ret = ret.toString();
     }
     if (SIDE_MODULE && sig) { // sig can be undefined for the GL library functions
@@ -340,7 +338,7 @@ var Functions = {
         if (table[i]) {
           var libName = LibraryManager.getRootIdent(table[i].substr(1));
           if (libName && typeof libName == 'string') {
-            table[i] = (libName.indexOf('.') < 0 ? '_' : '') + libName;
+            table[i] = (libName.indexOf('Math_') < 0 ? '_' : '') + libName;
           }
         }
         if (ASM_JS) {
@@ -411,14 +409,8 @@ var LibraryManager = {
 
   load: function() {
     if (this.library) return;
-    
-    var library_opencl = 'library_opencl.js';
 
-    if (OPENCL_OLD_VERSION) { 
-      library_opencl = 'library_old_opencl.js';
-    }
-
-    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_idbfs.js', 'library_memfs.js', 'library_nodefs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js', 'library_cuda.js', library_opencl].concat(additionalLibraries);
+    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_idbfs.js', 'library_memfs.js', 'library_nodefs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js'].concat(additionalLibraries);
     for (var i = 0; i < libraries.length; i++) {
       eval(processMacros(preprocess(read(libraries[i]))));
     }
@@ -467,6 +459,7 @@ var PassManager = {
       print('\n//FORWARDED_DATA:' + JSON.stringify({
         Types: {
           hasInlineJS: Types.hasInlineJS,
+          usesSIMD: Types.usesSIMD,
           preciseI64MathUsed: Types.preciseI64MathUsed
         },
         Functions: {

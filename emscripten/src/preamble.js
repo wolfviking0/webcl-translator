@@ -36,7 +36,7 @@ var SAFE_HEAP_ERRORS = 0;
 var ACCEPTABLE_SAFE_HEAP_ERRORS = 0;
 
 function SAFE_HEAP_ACCESS(dest, type, store, ignore, storeValue) {
-  //if (dest === A_NUMBER) Module.print ([dest, type, store, ignore, storeValue] + ' ' + new Error().stack); // Something like this may be useful, in debugging
+  //if (dest === A_NUMBER) Module.print ([dest, type, store, ignore, storeValue] + ' ' + stackTrace()); // Something like this may be useful, in debugging
 
   assert(dest > 0, 'segmentation fault');
 
@@ -63,7 +63,7 @@ function SAFE_HEAP_ACCESS(dest, type, store, ignore, storeValue) {
       try {
         if (HEAP[dest].toString() === 'NaN') error = false; // NaN is acceptable, as a double value
       } catch(e){}
-      if (error) throw('Warning: Reading an invalid value at ' + dest + ' :: ' + new Error().stack + '\n');
+      if (error) throw('Warning: Reading an invalid value at ' + dest + ' :: ' + stackTrace() + '\n');
     }
 #endif
     if (type === null) return;
@@ -72,14 +72,14 @@ function SAFE_HEAP_ACCESS(dest, type, store, ignore, storeValue) {
     if (!ignore)
       assert(history, 'Must have a history for a safe heap load! ' + dest + ':' + type); // Warning - bit fields in C structs cause loads+stores for each store, so
                                                                                          //           they will show up here...
-//    assert((history && history[0]) /* || HEAP[dest] === 0 */, "Loading from where there was no store! " + dest + ',' + HEAP[dest] + ',' + type + ', \n\n' + new Error().stack + '\n');
+//    assert((history && history[0]) /* || HEAP[dest] === 0 */, "Loading from where there was no store! " + dest + ',' + HEAP[dest] + ',' + type + ', \n\n' + stackTrace() + '\n');
 //    if (history[0].type !== type) {
     if (history !== type && !ignore) {
       Module.print('Load-store consistency assumption failure! ' + dest);
       Module.print('\n');
       Module.print(JSON.stringify(history));
       Module.print('\n');
-      Module.print('LOAD: ' + type + ', ' + new Error().stack);
+      Module.print('LOAD: ' + type + ', ' + stackTrace());
       Module.print('\n');
       SAFE_HEAP_ERRORS++;
       assert(SAFE_HEAP_ERRORS <= ACCEPTABLE_SAFE_HEAP_ERRORS, 'Load-store consistency assumption failure!');
@@ -93,9 +93,9 @@ function SAFE_HEAP_STORE(dest, value, type, ignore) {
 #endif
 
   if (!ignore && !value && (value === null || value === undefined)) {
-    throw('Warning: Writing an invalid value of ' + JSON.stringify(value) + ' at ' + dest + ' :: ' + new Error().stack + '\n');
+    throw('Warning: Writing an invalid value of ' + JSON.stringify(value) + ' at ' + dest + ' :: ' + stackTrace() + '\n');
   }
-  //if (!ignore && (value === Infinity || value === -Infinity || isNaN(value))) throw [value, typeof value, new Error().stack];
+  //if (!ignore && (value === Infinity || value === -Infinity || isNaN(value))) throw [value, typeof value, stackTrace()];
 
   SAFE_HEAP_ACCESS(dest, type, true, ignore, value);
   if (dest in HEAP_WATCHED) {
@@ -640,6 +640,144 @@ function stringToUTF32(str, outPtr) {
 }
 Module['stringToUTF32'] = stringToUTF32;
 
+function demangle(func) {
+  try {
+    if (typeof func === 'number') func = Pointer_stringify(func);
+    if (func[0] !== '_') return func;
+    if (func[1] !== '_') return func; // C function
+    if (func[2] !== 'Z') return func;
+    var i = 3;
+    // params, etc.
+    var basicTypes = {
+      'v': 'void',
+      'b': 'bool',
+      'c': 'char',
+      's': 'short',
+      'i': 'int',
+      'l': 'long',
+      'f': 'float',
+      'd': 'double',
+      'w': 'wchar_t',
+      'a': 'signed char',
+      'h': 'unsigned char',
+      't': 'unsigned short',
+      'j': 'unsigned int',
+      'm': 'unsigned long',
+      'x': 'long long',
+      'y': 'unsigned long long',
+      'z': '...'
+    };
+    function dump(x) {
+      //return;
+      if (x) Module.print(x);
+      Module.print(func);
+      var pre = '';
+      for (var a = 0; a < i; a++) pre += ' ';
+      Module.print (pre + '^');
+    }
+    var subs = [];
+    function parseNested() {
+      i++;
+      if (func[i] === 'K') i++;
+      var parts = [];
+      while (func[i] !== 'E') {
+        if (func[i] === 'S') { // substitution
+          i++;
+          var next = func.indexOf('_', i);
+          var num = func.substring(i, next) || 0;
+          parts.push(subs[num] || '?');
+          i = next+1;
+          continue;
+        }
+        var size = parseInt(func.substr(i));
+        var pre = size.toString().length;
+        if (!size || !pre) { i--; break; } // counter i++ below us
+        var curr = func.substr(i + pre, size);
+        parts.push(curr);
+        subs.push(curr);
+        i += pre + size;
+      }
+      i++; // skip E
+      return parts;
+    }
+    function parse(rawList, limit, allowVoid) { // main parser
+      limit = limit || Infinity;
+      var ret = '', list = [];
+      function flushList() {
+        return '(' + list.join(', ') + ')';
+      }
+      var name;
+      if (func[i] !== 'N') {
+        // not namespaced
+        if (func[i] === 'K') i++;
+        var size = parseInt(func.substr(i));
+        if (size) {
+          var pre = size.toString().length;
+          name = func.substr(i + pre, size);
+          i += pre + size;
+        }
+      } else {
+        // namespaced N-E
+        name = parseNested().join('::');
+        limit--;
+        if (limit === 0) return rawList ? [name] : name;
+      }
+      if (func[i] === 'I') {
+        i++;
+        var iList = parse(true);
+        var iRet = parse(true, 1, true);
+        ret += iRet[0] + ' ' + name + '<' + iList.join(', ') + '>';
+      } else {
+        ret = name;
+      }
+      paramLoop: while (i < func.length && limit-- > 0) {
+        //dump('paramLoop');
+        var c = func[i++];
+        if (c in basicTypes) {
+          list.push(basicTypes[c]);
+        } else {
+          switch (c) {
+            case 'P': list.push(parse(true, 1, true)[0] + '*'); break; // pointer
+            case 'R': list.push(parse(true, 1, true)[0] + '&'); break; // reference
+            case 'L': { // literal
+              i++; // skip basic type
+              var end = func.indexOf('E', i);
+              var size = end - i;
+              list.push(func.substr(i, size));
+              i += size + 2; // size + 'EE'
+              break;
+            }
+            case 'A': { // array
+              var size = parseInt(func.substr(i));
+              i += size.toString().length;
+              if (func[i] !== '_') throw '?';
+              i++; // skip _
+              list.push(parse(true, 1, true)[0] + ' [' + size + ']');
+              break;
+            }
+            case 'E': break paramLoop;
+            default: ret += '?' + c; break paramLoop;
+          }
+        }
+      }
+      if (!allowVoid && list.length === 1 && list[0] === 'void') list = []; // avoid (void)
+      return rawList ? list : ret + flushList();
+    }
+    return parse();
+  } catch(e) {
+    return func;
+  }
+}
+
+function demangleAll(text) {
+  return text.replace(/__Z[\w\d_]+/g, function(x) { var y = demangle(x); return x === y ? x : (x + ' [' + y + ']') });
+}
+
+function stackTrace() {
+  var stack = new Error().stack;
+  return stack ? demangleAll(stack) : '(no stack trace available)'; // Stack trace is not available at least on IE10 and Safari 6.
+}
+
 // Memory management
 
 var PAGE_SIZE = 4096;
@@ -942,6 +1080,24 @@ if (!Math['toFloat32']) Math['toFloat32'] = function(x) {
 };
 Math.toFloat32 = Math['toFloat32'];
 #endif
+
+var Math_abs = Math.abs;
+var Math_cos = Math.cos;
+var Math_sin = Math.sin;
+var Math_tan = Math.tan;
+var Math_acos = Math.acos;
+var Math_asin = Math.asin;
+var Math_atan = Math.atan;
+var Math_atan2 = Math.atan2;
+var Math_exp = Math.exp;
+var Math_log = Math.log;
+var Math_sqrt = Math.sqrt;
+var Math_ceil = Math.ceil;
+var Math_floor = Math.floor;
+var Math_pow = Math.pow;
+var Math_imul = Math.imul;
+var Math_toFloat32 = Math.toFloat32;
+var Math_min = Math.min;
 
 // A counter of dependencies for calling run(). If we need to
 // do asynchronous work before running, increment this and
