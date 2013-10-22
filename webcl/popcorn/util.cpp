@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string>
 #include <string.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 //OpenGL stuff
 #include <GL/glew.h>
@@ -10,6 +13,48 @@
 #include "cll.h"
 #include "util.h"
 
+GLuint compileShader( const char* fname, GLenum type )
+{
+    std::string filename(fname);
+
+    std::ifstream file(filename.c_str());
+    if(!file.is_open())
+    {
+        std::string str("unable to open shader file ");
+        str += filename;
+        printf("%s\n",str.c_str());
+    }
+
+    GLuint shader = glCreateShader(type);
+    if (!shader)
+        printf("unable to create shader object\n");
+
+    std::stringstream ss;
+    ss << file.rdbuf();
+    file.close();
+
+    std::string strSrc = ss.str();
+
+    const GLchar* charSrc[] = {strSrc.c_str()};
+
+    glShaderSource(shader, 1, charSrc, NULL);
+
+    glCompileShader( shader );
+
+    GLint res;
+    glGetShaderiv( shader, GL_COMPILE_STATUS, &res );
+    if( res == GL_FALSE )
+    {
+        glDeleteShader(shader);
+
+        std::string str("failed to compile shader ");
+        str += filename;
+        printf("%s\n",str.c_str());
+
+    }
+
+    return shader;
+}
 
 GLuint createVBO(const void* data, int dataSize, GLenum target, GLenum usage)
 {

@@ -6,10 +6,11 @@
 
 const char* oclErrorString(cl_int error);
 
+GLuint compileShader( const char* filename, GLenum type );
+
 //create a VBO
 //target is usually GL_ARRAY_BUFFER 
 //usage is usually GL_DYNAMIC_DRAW
 GLuint createVBO(const void* data, int dataSize, GLenum target, GLenum usage);
-
 
 #endif

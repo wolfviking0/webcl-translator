@@ -73,10 +73,13 @@ int main(int argc, char** argv)
 
     //initialize our particle system with positions, velocities and color
     int num = NUM_PARTICLES;
-    std::vector<Vec4> pos(num);
-    std::vector<Vec4> vel(num);
-    std::vector<Vec4> color(num);
-
+    //std::vector<Vec4> pos(num);
+    //std::vector<Vec4> vel(num);
+    //std::vector<Vec4> color(num);
+    float* pos = (float*)malloc(num*4*sizeof(float));
+    float* vel = (float*)malloc(num*4*sizeof(float));
+    float* color = (float*)malloc(num*4*sizeof(float));
+    
     //fill our vectors with initial data
     for(int i = 0; i < num; i++)
     {
@@ -85,7 +88,13 @@ int main(int argc, char** argv)
         float x = rad*sin(2*3.14 * i/num);
         float z = 0.0f;// -.1 + .2f * i/num;
         float y = rad*cos(2*3.14 * i/num);
-        pos[i] = Vec4(x, y, z, 1.0f);
+
+        pos[i*4] = x;
+        pos[(i*4)+1] = y;
+        pos[(i*4)+2] = z;
+        pos[(i*4)+3] = 1.0f;
+
+        //pos[i] = Vec4(x, y, z, 1.0f);
         
         //give some initial velocity 
         //float xr = rand_float(-.1, .1);
@@ -93,10 +102,21 @@ int main(int argc, char** argv)
         //the life is the lifetime of the particle: 1 = alive 0 = dead
         //as you will see in part2.cl we reset the particle when it dies
         float life_r = rand_float(0.f, 1.f);
-        vel[i] = Vec4(0.0, 0.0, 3.0f, life_r);
+                
+        vel[i*4] = 0.0f;
+        vel[(i*4)+1] = 0.0f;
+        vel[(i*4)+2] = 3.0f;
+        vel[(i*4)+3] = life_r;
+
+        //vel[i] = Vec4(0.0, 0.0, 3.0f, life_r);
 
         //just make them red and full alpha
-        color[i] = Vec4(1.0f, 0.0f,0.0f, 1.0f);
+        color[i*4] = 1.0f;
+        color[(i*4)+1] = 0.0f;
+        color[(i*4)+2] = 0.0f;
+        color[(i*4)+3] = 1.0f;
+
+        //color[i] = Vec4(1.0f, 0.0f,0.0f, 1.0f);
     }
 
     //our load data function sends our initial values to the GPU
@@ -118,7 +138,7 @@ void appRender()
 
     //this updates the particle system by calling the kernel
     example->runKernel();
-
+    /*
     //render the particles from VBOs
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -141,12 +161,12 @@ void appRender()
     glDisableClientState(GL_NORMAL_ARRAY);
 
     //printf("draw arrays\n");
-    glDrawArrays(GL_POINTS, 0, example->num);
+    glDrawArrays(GL_POINTS, 0, 20000);
 
     //printf("disable stuff\n");
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
-    
+    */
     glutSwapBuffers();
 }
 
@@ -181,15 +201,15 @@ void init_gl(int argc, char** argv)
     glViewport(0, 0, window_width, window_height);
 
     // projection
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(90.0, (GLfloat)window_width / (GLfloat) window_height, 0.1, 1000.0);
+    //glMatrixMode(GL_PROJECTION);
+    //glLoadIdentity();
+    //gluPerspective(90.0, (GLfloat)window_width / (GLfloat) window_height, 0.1, 1000.0);
 
     // set view matrix
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glTranslatef(0.0, 0.0, translate_z);
+    //glMatrixMode(GL_MODELVIEW);
+    //glLoadIdentity();
+    //glTranslatef(0.0, 0.0, translate_z);
 
 }
 
@@ -267,8 +287,9 @@ void appMotion(int x, int y)
 
     // set view matrix
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    //glMatrixMode(GL_MODELVIEW);
+    //glLoadIdentity();
+
     glTranslatef(0.0, 0.0, translate_z);
     glRotatef(rotate_x, 1.0, 0.0, 0.0);
     glRotatef(rotate_y, 0.0, 1.0, 0.0);

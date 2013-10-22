@@ -120,9 +120,9 @@ qjulia_sample:
 
 popcorn_sample:
 	$(call chdir,popcorn/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s LEGACY_GL_EMULATION=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s FULL_ES2=1 $(MODE) \
+	--preload-file popcorn.frag --preload-file popcorn.vert \
 	-o ../build/$(FOLDER)/popcorn.js
-
 
 dxt_sample:
 	$(call chdir,dxtcompressor/)

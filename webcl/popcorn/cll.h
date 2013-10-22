@@ -31,12 +31,16 @@ class CL {
 
         //These are arrays we will use in this tutorial
         std::vector<cl::Memory> cl_vbos;  //0: position vbo, 1: color vbo
+        std::vector<GLuint> gl_shaders;  //0: vert, 1:frag
+        GLuint p_vao; //particles vertex array
+
         cl::Buffer cl_velocities;  //particle velocities
         cl::Buffer cl_pos_gen;  //want to have the start points for reseting particles
         cl::Buffer cl_vel_gen;  //want to have the start velocities for reseting particles
-        
-        int p_vbo;   //position vbo
-        int c_vbo;   //colors vbo
+            
+        GLuint m_program;
+        GLuint p_vbo;   //position vbo
+        GLuint c_vbo;   //colors vbo
         int num;    //the number of particles
         size_t array_size; //the size of our arrays num * sizeof(Vec4)
 
@@ -48,7 +52,7 @@ class CL {
         //load an OpenCL program from a string
         void loadProgram(std::string kernel_source);
         //setup the data for the kernel 
-        void loadData(std::vector<Vec4> pos, std::vector<Vec4> vel, std::vector<Vec4> color);
+        void loadData(float* pos, float* vel, float* color);
         //these are implemented in part1.cpp (in the future we will make these more general)
         void popCorn();
         //execute the kernel

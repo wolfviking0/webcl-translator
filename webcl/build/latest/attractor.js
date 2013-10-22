@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = 'bbaf1cfa-b5c7-480d-9c93-547fb759b868';
+    var PACKAGE_UUID = 'b6fad92d-bce9-4163-970f-9df321154e51';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
