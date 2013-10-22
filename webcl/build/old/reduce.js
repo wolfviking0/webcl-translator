@@ -63,7 +63,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/reduce.data';
     var REMOTE_PACKAGE_NAME = 'reduce.data';
-    var PACKAGE_UUID = '454e5f66-9639-4f87-98c4-d1c13a30e6e1';
+    var PACKAGE_UUID = '270b444c-9cd9-4fa0-ab34-d04e0660309e';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4479,7 +4479,7 @@ function copyTempDouble(ptr) {
         ptr = (ptr+1)|0;
       }
     }var _llvm_memset_p0i8_i32=_memset;
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
       },getNewId:function (table) {
         var ret = GL.counter++;
@@ -4689,6 +4689,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions

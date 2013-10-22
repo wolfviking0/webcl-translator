@@ -4305,7 +4305,7 @@ function copyTempDouble(ptr) {
       var stdout = HEAP32[((_stdout)>>2)];
       return _fprintf(stdout, format, varargs);
     }
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
       },getNewId:function (table) {
         var ret = GL.counter++;
@@ -4515,6 +4515,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions

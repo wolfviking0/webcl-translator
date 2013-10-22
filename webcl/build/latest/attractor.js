@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = '90dc3a43-f0d0-4b2c-99b9-856d4fccc2fa';
+    var PACKAGE_UUID = 'bbaf1cfa-b5c7-480d-9c93-547fb759b868';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4518,7 +4518,7 @@ function copyTempDouble(ptr) {
       var stdout = HEAP32[((_stdout)>>2)];
       return _fprintf(stdout, format, varargs);
     }
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],clientBuffers:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],clientBuffers:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
       },getNewId:function (table) {
         var ret = GL.counter++;
@@ -4765,6 +4765,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -6328,8 +6329,20 @@ function copyTempDouble(ptr) {
       }
       Module.ctx.bufferData(target, HEAPU8.subarray(data, data+size), usage);
     }
-  function _glGenVertexArrays(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; }
-;
+  function _glGenVertexArrays(n , arrays) {
+      assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
+      for (var i = 0; i < n ; i++) {
+        var id = GL.getNewId(GL.vaos);
+        var vao = GL.vaoExt.createVertexArrayOES();
+        vao.name = id;
+        GL.vaos[id] = vao;
+        HEAP32[(((arrays)+(i*4))>>2)]=id;
+      }
+    }
+  function _glBindVertexArray(vao) {
+      assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
+      GL.vaoExt.bindVertexArrayOES(GL.vaos[vao]);
+    }
   function _glEnableVertexAttribArray(index) {
       var cb = GL.clientBuffers[index];
       assert(cb, index);

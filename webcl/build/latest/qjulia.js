@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = '8c4b2932-b086-4f0d-b4f5-e9752a9d5797';
+    var PACKAGE_UUID = '0e914ff7-0a40-47da-b8f4-50b26232c135';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4425,7 +4425,7 @@ function copyTempDouble(ptr) {
       var stdout = HEAP32[((_stdout)>>2)];
       return _fprintf(stdout, format, varargs);
     }
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
       },getNewId:function (table) {
         var ret = GL.counter++;
@@ -4635,6 +4635,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -5967,12 +5968,6 @@ function copyTempDouble(ptr) {
       }
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
-  function _glEnableVertexAttribArray(index) {
-      Module.ctx.enableVertexAttribArray(index);
-    }
-  function _glDisableVertexAttribArray(index) {
-      Module.ctx.disableVertexAttribArray(index);
-    }
   function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
       Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
     }
