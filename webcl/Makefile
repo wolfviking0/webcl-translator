@@ -31,7 +31,7 @@ MODE=$(DEBUG)
 $(info ************  Mode DEBUG : Enabled ************)
 else
 MODE=$(NO_DEBUG)
-$(info ************  Mode RELEASE : Enabled ************)
+$(info ************  Mode DEBUG : Disabled ************)
 endif
 $(info )
 $(info )

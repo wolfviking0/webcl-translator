@@ -61,7 +61,7 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
   Module['arguments'] = process['argv'].slice(2);
-  module.exports = Module;
+  module['exports'] = Module;
 }
 else if (ENVIRONMENT_IS_SHELL) {
   Module['print'] = print;
@@ -283,7 +283,8 @@ var Runtime = {
         size = field.substr(1)|0;
         alignSize = 1;
       } else {
-        throw 'Unclear type in struct: ' + field + ', in ' + type.name_ + ' :: ' + dump(Types.types[type.name_]);
+        assert(field[0] === '<', field); // assumed to be a vector type, if none of the above
+        size = alignSize = Types.types[field].flatSize; // fully aligned
       }
       if (type.packed) alignSize = 1;
       type.alignSize = Math.max(type.alignSize, alignSize);
@@ -295,6 +296,11 @@ var Runtime = {
       prev = curr;
       return curr;
     });
+    if (type.name_[0] === '[') {
+      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
+      // allocating a potentially huge array for [999999 x i8] etc.
+      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
+    }
     type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
     if (diffs.length == 0) {
       type.flatFactor = type.flatSize;
@@ -553,7 +559,7 @@ function setValue(ptr, value, type, noSafe) {
       case 'i8': HEAP8[(ptr)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
-      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,Math.abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math.min(Math.floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
+      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,Math_abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math_min(Math_floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
       case 'float': HEAPF32[((ptr)>>2)]=value; break;
       case 'double': HEAPF64[((ptr)>>3)]=value; break;
       default: abort('invalid type for setValue: ' + type);
@@ -763,6 +769,141 @@ function stringToUTF32(str, outPtr) {
   HEAP32[(((outPtr)+(iChar*4))>>2)]=0
 }
 Module['stringToUTF32'] = stringToUTF32;
+function demangle(func) {
+  try {
+    if (typeof func === 'number') func = Pointer_stringify(func);
+    if (func[0] !== '_') return func;
+    if (func[1] !== '_') return func; // C function
+    if (func[2] !== 'Z') return func;
+    var i = 3;
+    // params, etc.
+    var basicTypes = {
+      'v': 'void',
+      'b': 'bool',
+      'c': 'char',
+      's': 'short',
+      'i': 'int',
+      'l': 'long',
+      'f': 'float',
+      'd': 'double',
+      'w': 'wchar_t',
+      'a': 'signed char',
+      'h': 'unsigned char',
+      't': 'unsigned short',
+      'j': 'unsigned int',
+      'm': 'unsigned long',
+      'x': 'long long',
+      'y': 'unsigned long long',
+      'z': '...'
+    };
+    function dump(x) {
+      //return;
+      if (x) Module.print(x);
+      Module.print(func);
+      var pre = '';
+      for (var a = 0; a < i; a++) pre += ' ';
+      Module.print (pre + '^');
+    }
+    var subs = [];
+    function parseNested() {
+      i++;
+      if (func[i] === 'K') i++;
+      var parts = [];
+      while (func[i] !== 'E') {
+        if (func[i] === 'S') { // substitution
+          i++;
+          var next = func.indexOf('_', i);
+          var num = func.substring(i, next) || 0;
+          parts.push(subs[num] || '?');
+          i = next+1;
+          continue;
+        }
+        var size = parseInt(func.substr(i));
+        var pre = size.toString().length;
+        if (!size || !pre) { i--; break; } // counter i++ below us
+        var curr = func.substr(i + pre, size);
+        parts.push(curr);
+        subs.push(curr);
+        i += pre + size;
+      }
+      i++; // skip E
+      return parts;
+    }
+    function parse(rawList, limit, allowVoid) { // main parser
+      limit = limit || Infinity;
+      var ret = '', list = [];
+      function flushList() {
+        return '(' + list.join(', ') + ')';
+      }
+      var name;
+      if (func[i] !== 'N') {
+        // not namespaced
+        if (func[i] === 'K') i++;
+        var size = parseInt(func.substr(i));
+        if (size) {
+          var pre = size.toString().length;
+          name = func.substr(i + pre, size);
+          i += pre + size;
+        }
+      } else {
+        // namespaced N-E
+        name = parseNested().join('::');
+        limit--;
+        if (limit === 0) return rawList ? [name] : name;
+      }
+      if (func[i] === 'I') {
+        i++;
+        var iList = parse(true);
+        var iRet = parse(true, 1, true);
+        ret += iRet[0] + ' ' + name + '<' + iList.join(', ') + '>';
+      } else {
+        ret = name;
+      }
+      paramLoop: while (i < func.length && limit-- > 0) {
+        //dump('paramLoop');
+        var c = func[i++];
+        if (c in basicTypes) {
+          list.push(basicTypes[c]);
+        } else {
+          switch (c) {
+            case 'P': list.push(parse(true, 1, true)[0] + '*'); break; // pointer
+            case 'R': list.push(parse(true, 1, true)[0] + '&'); break; // reference
+            case 'L': { // literal
+              i++; // skip basic type
+              var end = func.indexOf('E', i);
+              var size = end - i;
+              list.push(func.substr(i, size));
+              i += size + 2; // size + 'EE'
+              break;
+            }
+            case 'A': { // array
+              var size = parseInt(func.substr(i));
+              i += size.toString().length;
+              if (func[i] !== '_') throw '?';
+              i++; // skip _
+              list.push(parse(true, 1, true)[0] + ' [' + size + ']');
+              break;
+            }
+            case 'E': break paramLoop;
+            default: ret += '?' + c; break paramLoop;
+          }
+        }
+      }
+      if (!allowVoid && list.length === 1 && list[0] === 'void') list = []; // avoid (void)
+      return rawList ? list : ret + flushList();
+    }
+    return parse();
+  } catch(e) {
+    return func;
+  }
+}
+function demangleAll(text) {
+  return text.replace(/__Z[\w\d_]+/g, function(x) { var y = demangle(x); return x === y ? x : (x + ' [' + y + ']') });
+}
+function stackTrace() {
+  var stack = new Error().stack;
+  return stack ? demangleAll(stack) : '(no stack trace available)'; // Stack trace is not available at least on IE10 and Safari 6.
+}
 // Memory management
 var PAGE_SIZE = 4096;
 function alignMemoryPage(x) {
@@ -960,6 +1101,23 @@ if (!Math['imul']) Math['imul'] = function(a, b) {
   return (al*bl + ((ah*bl + al*bh) << 16))|0;
 };
 Math.imul = Math['imul'];
+var Math_abs = Math.abs;
+var Math_cos = Math.cos;
+var Math_sin = Math.sin;
+var Math_tan = Math.tan;
+var Math_acos = Math.acos;
+var Math_asin = Math.asin;
+var Math_atan = Math.atan;
+var Math_atan2 = Math.atan2;
+var Math_exp = Math.exp;
+var Math_log = Math.log;
+var Math_sqrt = Math.sqrt;
+var Math_ceil = Math.ceil;
+var Math_floor = Math.floor;
+var Math_pow = Math.pow;
+var Math_imul = Math.imul;
+var Math_toFloat32 = Math.toFloat32;
+var Math_min = Math.min;
 // A counter of dependencies for calling run(). If we need to
 // do asynchronous work before running, increment this and
 // decrement it. Incrementing must happen in a place like
@@ -1135,7 +1293,6 @@ function copyTempDouble(ptr) {
       HEAP32[((___errno_state)>>2)]=value
       return value;
     }
-  var VFS=undefined;
   var TTY={ttys:[],init:function () {
         // https://github.com/kripken/emscripten/pull/1555
         // if (ENVIRONMENT_IS_NODE) {
@@ -1381,6 +1538,7 @@ function copyTempDouble(ptr) {
           delete old_node.parent.contents[old_node.name];
           old_node.name = new_name;
           new_dir.contents[new_name] = old_node;
+          old_node.parent = new_dir;
         },unlink:function (parent, name) {
           delete parent.contents[name];
         },rmdir:function (parent, name) {
@@ -1884,17 +2042,8 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:function ErrnoError(errno) {
-          this.errno = errno;
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
-            }
-          }
-          this.message = ERRNO_MESSAGES[errno];
-        },handleFSError:function (e) {
-        if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + new Error().stack;
+    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,handleFSError:function (e) {
+        if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
         return ___setErrNo(e.errno);
       },lookupPath:function (path, opts) {
         path = PATH.resolve(FS.cwd(), path);
@@ -2764,7 +2913,23 @@ function copyTempDouble(ptr) {
         var stderr = FS.open('/dev/stderr', 'w');
         HEAP32[((_stderr)>>2)]=stderr.fd;
         assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
+      },ensureErrnoError:function () {
+        if (FS.ErrnoError) return;
+        FS.ErrnoError = function ErrnoError(errno) {
+          this.errno = errno;
+          for (var key in ERRNO_CODES) {
+            if (ERRNO_CODES[key] === errno) {
+              this.code = key;
+              break;
+            }
+          }
+          this.message = ERRNO_MESSAGES[errno];
+          this.stack = stackTrace();
+        };
+        FS.ErrnoError.prototype = new Error();
+        FS.ErrnoError.prototype.constructor = FS.ErrnoError;
       },staticInit:function () {
+        FS.ensureErrnoError();
         FS.nameTable = new Array(4096);
         FS.root = FS.createNode(null, '/', 16384 | 0777, 0);
         FS.mount(MEMFS, {}, '/');
@@ -2773,6 +2938,7 @@ function copyTempDouble(ptr) {
       },init:function (input, output, error) {
         assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
         FS.init.initialized = true;
+        FS.ensureErrnoError();
         // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
         Module['stdin'] = input || Module['stdin'];
         Module['stdout'] = output || Module['stdout'];
@@ -3494,13 +3660,20 @@ function copyTempDouble(ptr) {
             }
           }, false);
         }
-      },createContext:function (canvas, useWebGL, setInModule) {
+      },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
         var ctx;
         try {
           if (useWebGL) {
-            ctx = canvas.getContext('experimental-webgl', {
+            var contextAttributes = {
+              antialias: false,
               alpha: false
-            });
+            };
+            if (webGLContextAttributes) {
+              for (var attribute in webGLContextAttributes) {
+                contextAttributes[attribute] = webGLContextAttributes[attribute];
+              }
+            }
+            ctx = canvas.getContext('experimental-webgl', contextAttributes);
           } else {
             ctx = canvas.getContext('2d');
           }
@@ -3740,8 +3913,8 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
 var FUNCTION_TABLE = [0, 0];
 // EMSCRIPTEN_START_FUNCS
-function _main() {
- var label = 0;
+function _main(){
+ var label=0;
  return 0;
 }
 Module["_main"] = _main;
@@ -3822,6 +3995,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
       Module['noExitRuntime'] = true;
       return;
     } else {
+      if (e && typeof e === 'object' && e.stack) Module.printErr('exception thrown: ' + [e, e.stack]);
       throw e;
     }
   } finally {
@@ -3886,7 +4060,7 @@ function abort(text) {
   }
   ABORT = true;
   EXITSTATUS = 1;
-  throw 'abort() at ' + (new Error().stack);
+  throw 'abort() at ' + stackTrace();
 }
 Module['abort'] = Module.abort = abort;
 // {{PRE_RUN_ADDITIONS}}
