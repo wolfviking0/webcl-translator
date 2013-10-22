@@ -208,6 +208,15 @@ var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
+var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
+var OPENCL_GRAB_TRACE = 0 // Grab all the wecl call
+var OPENCL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
+var OPENCL_PROFILE = 0 // Enable console.profile
+var OPENCL_FORCE_CPU = 0 // change clEnqueueNDRangeKernel for force CPU 
+var OPENCL_CHECK_SET_POINTER = 0 // Check if set pointer was call before function taking (void *) parameter
+var OPENCL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
+var OPENCL_OLD_VERSION = 0 // Use old opencl version (without respect WD)
+
 var GL_ASSERTIONS = 0; // Adds extra checks for error situations in the GL library. Can impact performance.
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime
                   // option, in this case GL.debug.
