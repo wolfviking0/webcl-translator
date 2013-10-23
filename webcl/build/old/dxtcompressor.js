@@ -61,7 +61,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '420e2131-b8ad-4b9c-b388-b6c5287e2004';
+    var PACKAGE_UUID = '25d29e86-8612-4c08-b6de-17d5ec538543';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -7155,6 +7155,12 @@ function copyTempDouble(ptr) {
       }
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
   function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
       Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
     }

@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = 'bf8b92f9-edff-4a77-824b-d7d87581c5b4';
+    var PACKAGE_UUID = '17487dd2-96d2-4b62-922b-b91a5796c9e4';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -6886,6 +6886,12 @@ function copyTempDouble(ptr) {
       }
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
   function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
       Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
     }

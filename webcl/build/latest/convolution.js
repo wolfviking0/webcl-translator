@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = 'f0fa93eb-bbbf-4e30-aef9-83fec202608d';
+    var PACKAGE_UUID = '128c80a0-e0df-4079-8ee3-6cb7e31a99b5';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -5160,6 +5160,13 @@ function copyTempDouble(ptr) {
               _devices.push(CL.cl_objects[_device]);
           }
         }
+        // If device_list is NULL value, the program executable is built for all devices associated with program.
+        if (_devices.length == 0) {
+          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
+          for (var i = 0; i < _info.length ; i++) {
+            _devices.push(_info[i]);
+          }
+        }
         // Need to call this code inside the callback event WebCLCallback.
         // if (pfn_notify != 0) {
         //  FUNCTION_TABLE[pfn_notify](program, user_data);
@@ -5228,14 +5235,9 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _command = null;
       // Context must be created
-      if (device == 0) {
-        if (cl_errcode_ret != 0) {
-          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
-        }
-        return 0; 
-      }
+      // Context must be created
       try { 
-        _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+        _command = CL.cl_objects[context].createCommandQueue(CL.cl_objects[device],properties_1);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {

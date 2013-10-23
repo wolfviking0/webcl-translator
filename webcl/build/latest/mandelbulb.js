@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = 'b66a324b-3a44-4f0e-97b7-2fa635b96b09';
+    var PACKAGE_UUID = 'cd1d74fc-fe8a-4e5a-a61f-682f2a801898';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -5439,7 +5439,7 @@ function copyTempDouble(ptr) {
         if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
       } else if(typeof(_info) == "object") {
-        if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
+        if ( (_info instanceof WebCLPlatform) || ((typeof(WebCLContextProperties) !== "undefined") && (_info instanceof WebCLContextProperties)) ) {
           var _id = CL.udid(_info);
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
@@ -5522,14 +5522,9 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _command = null;
       // Context must be created
-      if (device == 0) {
-        if (cl_errcode_ret != 0) {
-          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
-        }
-        return 0; 
-      }
+      // Context must be created
       try { 
-        _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+        _command = CL.cl_objects[context].createCommandQueue(CL.cl_objects[device],properties_1);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {
@@ -5572,6 +5567,13 @@ function copyTempDouble(ptr) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
               _devices.push(CL.cl_objects[_device]);
+          }
+        }
+        // If device_list is NULL value, the program executable is built for all devices associated with program.
+        if (_devices.length == 0) {
+          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
+          for (var i = 0; i < _info.length ; i++) {
+            _devices.push(_info[i]);
           }
         }
         // Need to call this code inside the callback event WebCLCallback.
@@ -6625,6 +6627,12 @@ function copyTempDouble(ptr) {
       }
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
   function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
       Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
     }

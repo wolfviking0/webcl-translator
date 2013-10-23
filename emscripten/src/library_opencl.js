@@ -1196,7 +1196,9 @@ var LibraryOpenCL = {
     }
 #endif    
 
-    if (device == 0) {
+    // Context must be created
+#if OPENCL_CHECK_VALID_OBJECT    
+    if (!(device in CL.cl_objects)) {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_DEVICE', 'i32') }}};
       }
@@ -1206,14 +1208,15 @@ var LibraryOpenCL = {
 #endif
       return 0; 
     }
+#endif    
 
     try { 
 
 #if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[device,properties_1]);
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[CL.cl_objects[device],properties_1]);
 #endif      
 
-      _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+      _command = CL.cl_objects[context].createCommandQueue(CL.cl_objects[device],properties_1);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -2513,6 +2516,17 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT
           }
 #endif          
+        }
+      }
+
+      // If device_list is NULL value, the program executable is built for all devices associated with program.
+      if (_devices.length == 0) {
+#if OPENCL_GRAB_TRACE
+        CL.webclCallStackTrace(CL.cl_objects[program]+".getInfo",[webcl.PROGRAM_DEVICES]);
+#endif          
+        var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
+        for (var i = 0; i < _info.length ; i++) {
+          _devices.push(_info[i]);
         }
       }
 

@@ -51,11 +51,11 @@ all: \
 	reduce_sample 				\
 	scan_sample 				\
 	mandelbulb_sample 			\
-	popcorn_sample 				\
 	qjulia_sample 				\
-	dxt_sample					\
 	attractor_sample			\
-	
+	dxt_sample					\
+
+#	popcorn_sample 				\	
 #	fft_sample					\
 #	smallpt_sample				\
 #	video_sample				\

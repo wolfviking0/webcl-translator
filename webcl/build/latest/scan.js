@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = '99b251a6-b95d-43d7-b627-9908c8a98e91';
+    var PACKAGE_UUID = 'e32d3c96-a261-4adf-b072-0c741dd4cd97';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -5326,14 +5326,9 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _command = null;
       // Context must be created
-      if (device == 0) {
-        if (cl_errcode_ret != 0) {
-          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_DEVICE;
-        }
-        return 0; 
-      }
+      // Context must be created
       try { 
-        _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
+        _command = CL.cl_objects[context].createCommandQueue(CL.cl_objects[device],properties_1);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {
@@ -5376,6 +5371,13 @@ function copyTempDouble(ptr) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
               _devices.push(CL.cl_objects[_device]);
+          }
+        }
+        // If device_list is NULL value, the program executable is built for all devices associated with program.
+        if (_devices.length == 0) {
+          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
+          for (var i = 0; i < _info.length ; i++) {
+            _devices.push(_info[i]);
           }
         }
         // Need to call this code inside the callback event WebCLCallback.

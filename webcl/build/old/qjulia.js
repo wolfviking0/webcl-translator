@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = 'fc30814e-d590-41da-994e-ff9015a162b3';
+    var PACKAGE_UUID = '4de34c86-f8ec-4ab0-98f7-0ab132292203';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -6007,6 +6007,12 @@ function copyTempDouble(ptr) {
       }
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
+  function _glEnableVertexAttribArray(index) {
+      Module.ctx.enableVertexAttribArray(index);
+    }
+  function _glDisableVertexAttribArray(index) {
+      Module.ctx.disableVertexAttribArray(index);
+    }
   function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
       Module.ctx.vertexAttribPointer(index, size, type, normalized, stride, ptr);
     }
