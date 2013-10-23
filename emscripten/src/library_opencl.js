@@ -1210,7 +1210,7 @@ var LibraryOpenCL = {
     try { 
 
 #if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[properties_1]);
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createCommandQueue",[device,properties_1]);
 #endif      
 
       _command = CL.cl_objects[context].createCommandQueue(device,properties_1);
