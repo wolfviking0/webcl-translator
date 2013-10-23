@@ -1133,7 +1133,7 @@ var LibraryOpenCL = {
 
     } else if(typeof(_info) == "object") {
 
-      if ( (_info instanceof WebCLPlatform) || (_info instanceof WebCLContextProperties)) {
+      if ( (_info instanceof WebCLPlatform) || ((typeof(WebCLContextProperties) !== "undefined") && (_info instanceof WebCLContextProperties)) ) {
      
         var _id = CL.udid(_info);
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
