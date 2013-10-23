@@ -30,6 +30,8 @@
         text-align: center;
       }
     </style>
+    <!-- Add preRun: [memoryprofiler_add_hooks]-->
+    <script src='memoryprofiler.js'></script>
    	<script src="settings.js"></script>
   </head>
   <body>
@@ -37,7 +39,7 @@
       <div class="inner">
 
         <header>
-          <h1>webcl-translator</h1>
+          <h1>WebCL-Translator <script>if(OLD == "latest") { document.write("V2.0"); } else { document.write("V1.0"); } </script></h1>
           <h2><script>document.write(TITLE);</script></h2>
         </header>
         
@@ -109,21 +111,28 @@
           			includeJS("qjulia.js");
           			break; //------------
 
-				    case '7':
+            case '7':
+                includeJS("attractor.js");
+                break; //------------                
+              
+            case '8':
+                includeJS("popcorn.js");
+                break; //------------                
+          /*
+            case '9':
+                includeJS("dxtcompressor.js");
+                break; //------------
+ 
+            case '10':
 		        	  includeJS("smallpt.js");
           			break; //------------
-          
-		        case '8':
+          */
+          /*
 		          	includeJS("fft.js");
         		  	break; //------------
-
-		        case '9':
-            		includeJS("dxtcompressor.js");
-           			break; //------------
-
-        		case '10':
           			includeJS("videodecode.js");
           			break; //------------
+            */
 
        			default:
           			includeJS("hello_world.js"); 
