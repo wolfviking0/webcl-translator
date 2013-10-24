@@ -297,7 +297,17 @@ var LibraryOpenCL = {
     webclCallParameterStackTrace: function(parameter) {
       
       for (var i = 0; i < parameter.length - 1 ; i++) {
-        if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[i] instanceof ArrayBufferView)) || (parameter[i] instanceof ArrayBuffer) || (parameter[i] instanceof Array)){ 
+        if ( 
+          (parameter[i] instanceof Uint8Array)    ||
+          (parameter[i] instanceof Uint16Array)   ||
+          (parameter[i] instanceof Uint32Array)   ||
+          (parameter[i] instanceof Int8Array)     ||
+          (parameter[i] instanceof Int16Array)    ||
+          (parameter[i] instanceof Int32Array)    ||
+          (parameter[i] instanceof Float32Array)  ||          
+          (parameter[i] instanceof ArrayBuffer)   ||           
+          (parameter[i] instanceof Array)){ 
+
           CL.stack_trace += "[";  
           for (var j = 0; j < Math.min(25,parameter[i].length - 1) ; j++) {
             CL.stack_trace += parameter[i][j] + ",";
@@ -315,7 +325,17 @@ var LibraryOpenCL = {
       }
 
       if (parameter.length >= 1) {
-        if ( ((typeof(ArrayBufferView) !== "undefined") && (parameter[parameter.length - 1] instanceof ArrayBufferView)) || (parameter[parameter.length - 1] instanceof ArrayBuffer) || (parameter[parameter.length - 1] instanceof Array) ) { 
+        if ( 
+          (parameter[parameter.length - 1] instanceof Uint8Array)    ||
+          (parameter[parameter.length - 1] instanceof Uint16Array)   ||
+          (parameter[parameter.length - 1] instanceof Uint32Array)   ||
+          (parameter[parameter.length - 1] instanceof Int8Array)     ||
+          (parameter[parameter.length - 1] instanceof Int16Array)    ||
+          (parameter[parameter.length - 1] instanceof Int32Array)    ||
+          (parameter[parameter.length - 1] instanceof Float32Array)  ||          
+          (parameter[parameter.length - 1] instanceof ArrayBuffer)   ||           
+          (parameter[parameter.length - 1] instanceof Array)){ 
+
           CL.stack_trace += "[";  
           for (var j = 0; j < Math.min(25,parameter[parameter.length - 1].length - 1) ; j++) {
             CL.stack_trace += parameter[parameter.length - 1][j] + ",";
@@ -2955,16 +2975,16 @@ var LibraryOpenCL = {
       if (_sig == webcl.LOCAL) {
 
         // Not yet implemented in browser
-        var _array = null;//new Uint32Array([arg_size]);
+        var _array = new Uint32Array([arg_size]);
 
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif     
         // WD --> 
-        //CL.cl_objects[kernel].setArg(arg_index,_array);
+        CL.cl_objects[kernel].setArg(arg_index,_array);
 
         // WebKit -->
-        CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+        //CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
 
       } else {
 
@@ -2978,6 +2998,7 @@ var LibraryOpenCL = {
           CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
 
         } else {
+
           var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
 
 #if OPENCL_GRAB_TRACE
@@ -2985,58 +3006,61 @@ var LibraryOpenCL = {
 #endif        
 
           // WD --> 
-          //CL.cl_objects[kernel].setArg(arg_index,_array);
-          
-          // WebKit -->     
-          var _size = (arg_size>>(_array.BYTES_PER_ELEMENT>>1));
+          // \todo need to be remove when webkit will respect the WD
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            CL.cl_objects[kernel].setArg(arg_index,_array);
+          } else {
+            // WebKit -->     
+            var _size = (arg_size>>(_array.BYTES_PER_ELEMENT>>1));
 
-          var _type;
-          switch(_sig) {
-            case webcl.SIGNED_INT8:
-              _type = WebCLKernelArgumentTypes.CHAR;
-              break;
-            case webcl.SIGNED_INT16:
-              _type = WebCLKernelArgumentTypes.SHORT;
-              break;
-            case webcl.SIGNED_INT32:
-              _type = WebCLKernelArgumentTypes.INT;
-              break;
-            case webcl.UNSIGNED_INT8:
-              _type = WebCLKernelArgumentTypes.UCHAR;
-              break;
-            case webcl.UNSIGNED_INT16:
-              _type = WebCLKernelArgumentTypes.USHORT;
-              break;
-            case webcl.UNSIGNED_INT32:
-              _type = WebCLKernelArgumentTypes.UINT;
-              break;
-            default:
-              _type = WebCLKernelArgumentTypes.FLOAT;
-              break;
-          }
-
-          if ( _size > 1) {
-
-            if (_size == 2) {
-              _type |= WebCLKernelArgumentTypes.VEC2;
-            } else if (_size == 3) {
-              _type |= WebCLKernelArgumentTypes.VEC3;
-            } else if (_size == 4) {
-              _type |= WebCLKernelArgumentTypes.VEC4;
-            } else if (_size == 8) {
-              _type |= WebCLKernelArgumentTypes.VEC8;
-            } else if (_size == 16) {
-              _type |= WebCLKernelArgumentTypes.VEC16;
+            var _type;
+            switch(_sig) {
+              case webcl.SIGNED_INT8:
+                _type = WebCLKernelArgumentTypes.CHAR;
+                break;
+              case webcl.SIGNED_INT16:
+                _type = WebCLKernelArgumentTypes.SHORT;
+                break;
+              case webcl.SIGNED_INT32:
+                _type = WebCLKernelArgumentTypes.INT;
+                break;
+              case webcl.UNSIGNED_INT8:
+                _type = WebCLKernelArgumentTypes.UCHAR;
+                break;
+              case webcl.UNSIGNED_INT16:
+                _type = WebCLKernelArgumentTypes.USHORT;
+                break;
+              case webcl.UNSIGNED_INT32:
+                _type = WebCLKernelArgumentTypes.UINT;
+                break;
+              default:
+                _type = WebCLKernelArgumentTypes.FLOAT;
+                break;
             }
 
-            var _values = Array.apply( [], _array);
+            if ( _size > 1) {
 
-            CL.cl_objects[kernel].setArg(arg_index, _values, _type);
+              if (_size == 2) {
+                _type |= WebCLKernelArgumentTypes.VEC2;
+              } else if (_size == 3) {
+                _type |= WebCLKernelArgumentTypes.VEC3;
+              } else if (_size == 4) {
+                _type |= WebCLKernelArgumentTypes.VEC4;
+              } else if (_size == 8) {
+                _type |= WebCLKernelArgumentTypes.VEC8;
+              } else if (_size == 16) {
+                _type |= WebCLKernelArgumentTypes.VEC16;
+              }
 
-          } else {
+              var _values = Array.apply( [], _array);
 
-            CL.cl_objects[kernel].setArg(arg_index,CL.getPointerToValue(arg_value,_sig),_type);
+              CL.cl_objects[kernel].setArg(arg_index, _values, _type);
 
+            } else {
+
+              CL.cl_objects[kernel].setArg(arg_index,CL.getPointerToValue(arg_value,_sig),_type);
+
+            }
           }
         }
       }
@@ -4530,34 +4554,42 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
 
-          // WD --> 
-          // Workink Draft take CLuint[3]
-          // var _global_work_offset = [];
-          // var _global_work_size = [];
-          // var _local_work_size = [];
-          
-          // WebKit -->
-          // Webkit take UInt32Array     
-          var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
-          var _global_work_size = new Int32Array(work_dim);
-          var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+          var _global_work_offset
+          var _global_work_size; 
+          var _local_work_size;
 
+          // \todo need to be remove when webkit will be respect the WD
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            // WD --> 
+            // Workink Draft take CLuint[3]
+            _global_work_offset = [];
+            _global_work_size = [];
+            _local_work_size = [];
+          } else {
+            // WebKit -->
+            // Webkit take UInt32Array     
+            var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+            var _global_work_size = new Int32Array(work_dim);
+            var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+          }
           for (var i = 0; i < work_dim; i++) {
-            //_global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
+            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
 
-            //if (global_work_offset != 0)
-            //  _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
+              if (global_work_offset != 0)
+                _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
             
-            //if (local_work_size != 0)
-            //  _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
-            
-            _global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
+              if (local_work_size != 0)
+                _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
+            } else {
+              _global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
 
-            if (_global_work_offset)
-              _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
-            
-            if (_local_work_size)
-              _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
+              if (_global_work_offset)
+                _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
+              
+              if (_local_work_size)
+                _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
+            }
           }
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -4579,15 +4611,27 @@ var LibraryOpenCL = {
 #if OPENCL_FORCE_CPU  
           try {
 #endif            
-          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
-          // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+            // \todo need to be remove when webkit will be respect the WD
+            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
+            } else {
+              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
+            }
+
+            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+            // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_FORCE_CPU  
           } catch (e) {
 #if OPENCL_GRAB_TRACE
             CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel<<FORCE CPU>>",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event]);
-#endif                
-            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,null,_event_wait_list);       
+#endif      
+            // \todo need to be remove when webkit will be respect the WD
+            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list);  
+            } else {
+              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,null,_event_wait_list);  
+            }
+
             // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event); 
             // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
           }
