@@ -2,6 +2,8 @@ var LibraryOpenCL = {
 
   $CL__deps: ['$GL'],
   $CL: {
+    // Init
+    cl_init: 0,
     // Private array of chars to use
     cl_digits: [1,2,3,4,5,6,7,8,9,0],
     // Kernel parser
@@ -17,15 +19,17 @@ var LibraryOpenCL = {
 #endif
 
     init: function() {
-      console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-      if (typeof(webcl) === "undefined") {
-        webcl = window.WebCL;
+      if (CL.cl_init == 0) {
+        console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
         if (typeof(webcl) === "undefined") {
-          console.error("This browser has not WebCL implementation !!! \n");
-          console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+          webcl = window.WebCL;
+          if (typeof(webcl) === "undefined") {
+            console.error("This browser has not WebCL implementation !!! \n");
+            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+          }
         }
+        CL.cl_init = 1;
       }
-
       // Add webcl constant for double
       // webcl.FLOAT64 = 0x10DF;
     },
@@ -782,6 +786,9 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clCreateContext",[properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret]);
 #endif
 
+    // Init webcl variable if necessary
+    CL.init();
+    
     var _id = null;
     var _context = null;
 
@@ -2974,12 +2981,15 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif     
-        // WD --> 
-        CL.cl_objects[kernel].setArg(arg_index,_array);
-
-        // WebKit -->
-        //CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-
+        
+        // \todo need to be remove when webkit will respect the WD
+        if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+          // WD --> 
+          CL.cl_objects[kernel].setArg(arg_index,_array);
+        } else {
+          // WebKit -->
+          CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+        }
       } else {
 
         var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
@@ -2999,9 +3009,9 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif        
 
-          // WD --> 
           // \todo need to be remove when webkit will respect the WD
           if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            // WD --> 
             CL.cl_objects[kernel].setArg(arg_index,_array);
           } else {
             // WebKit -->     

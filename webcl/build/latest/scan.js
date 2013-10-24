@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = 'cd254e0f-f32f-49a3-bbd7-eed509b419f4';
+    var PACKAGE_UUID = '3e2b6f83-fd66-4696-b878-32d3f225b7e6';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -1661,14 +1661,17 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
-        console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-        if (typeof(webcl) === "undefined") {
-          webcl = window.WebCL;
+      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+        if (CL.cl_init == 0) {
+          console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           if (typeof(webcl) === "undefined") {
-            console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            webcl = window.WebCL;
+            if (typeof(webcl) === "undefined") {
+              console.error("This browser has not WebCL implementation !!! \n");
+              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            }
           }
+          CL.cl_init = 1;
         }
         // Add webcl constant for double
         // webcl.FLOAT64 = 0x10DF;
@@ -1925,19 +1928,23 @@ function copyTempDouble(ptr) {
         if (_sig == webcl.LOCAL) {
           // Not yet implemented in browser
           var _array = new Uint32Array([arg_size]);
-          // WD --> 
-          CL.cl_objects[kernel].setArg(arg_index,_array);
-          // WebKit -->
-          //CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+          // \todo need to be remove when webkit will respect the WD
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            // WD --> 
+            CL.cl_objects[kernel].setArg(arg_index,_array);
+          } else {
+            // WebKit -->
+            CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+          }
         } else {
           var _value = HEAP32[((arg_value)>>2)];
           if (_value in CL.cl_objects) {
             CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
           } else {
             var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
-            // WD --> 
             // \todo need to be remove when webkit will respect the WD
             if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              // WD --> 
               CL.cl_objects[kernel].setArg(arg_index,_array);
             } else {
               // WebKit -->     
@@ -5271,6 +5278,8 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clCreateContext(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
+      // Init webcl variable if necessary
+      CL.init();
       var _id = null;
       var _context = null;
       try { 

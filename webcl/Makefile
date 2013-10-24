@@ -101,7 +101,7 @@ scan_sample:
 
 reduce_sample:
 	$(call chdir,reduce/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c -s TOTAL_MEMORY=1024*1024*50 $(MODE) \
 	--preload-file reduce_float_kernel.cl --preload-file reduce_float2_kernel.cl --preload-file reduce_float4_kernel.cl --preload-file reduce_int_kernel.cl --preload-file reduce_int2_kernel.cl --preload-file reduce_int4_kernel.cl \
 	-o ../build/$(FOLDER)/reduce.js
 

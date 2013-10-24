@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = 'd54f5f13-6505-4657-bcc8-007012c222b9';
+    var PACKAGE_UUID = '0bffa892-cd28-45aa-bd42-b9fe6c8b44fb';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4822,14 +4822,17 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
-        console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-        if (typeof(webcl) === "undefined") {
-          webcl = window.WebCL;
+      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+        if (CL.cl_init == 0) {
+          console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           if (typeof(webcl) === "undefined") {
-            console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            webcl = window.WebCL;
+            if (typeof(webcl) === "undefined") {
+              console.error("This browser has not WebCL implementation !!! \n");
+              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            }
           }
+          CL.cl_init = 1;
         }
         // Add webcl constant for double
         // webcl.FLOAT64 = 0x10DF;
@@ -6495,19 +6498,23 @@ function copyTempDouble(ptr) {
         if (_sig == webcl.LOCAL) {
           // Not yet implemented in browser
           var _array = new Uint32Array([arg_size]);
-          // WD --> 
-          CL.cl_objects[kernel].setArg(arg_index,_array);
-          // WebKit -->
-          //CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+          // \todo need to be remove when webkit will respect the WD
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+            // WD --> 
+            CL.cl_objects[kernel].setArg(arg_index,_array);
+          } else {
+            // WebKit -->
+            CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+          }
         } else {
           var _value = HEAP32[((arg_value)>>2)];
           if (_value in CL.cl_objects) {
             CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
           } else {
             var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
-            // WD --> 
             // \todo need to be remove when webkit will respect the WD
             if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              // WD --> 
               CL.cl_objects[kernel].setArg(arg_index,_array);
             } else {
               // WebKit -->     
