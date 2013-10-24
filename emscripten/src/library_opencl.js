@@ -17,6 +17,7 @@ var LibraryOpenCL = {
 #endif
 
     init: function() {
+      console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
       if (typeof(webcl) === "undefined") {
         webcl = window.WebCL;
         if (typeof(webcl) === "undefined") {
@@ -1469,11 +1470,8 @@ var LibraryOpenCL = {
 
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
       _host_ptr = new ArrayBuffer(size);
-    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
-    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
-      console.info("/!\\ clCreateBuffer : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
-      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
+    } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
+      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
     } else if (flags_i64_1 & ~_flags) {
       console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
@@ -1767,12 +1765,8 @@ var LibraryOpenCL = {
       
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
       _host_ptr = new ArrayBuffer(_sizeInByte);
-    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
+    } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
       _host_ptr = CL.getCopyPointerToArray(host_ptr,size,_type);
-    } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
-      // /!\ For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested
-      console.info("/!\\ clCreateImage2D : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
-      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,_type);
     } else if (flags_i64_1 & ~_flags) {
       console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }

@@ -28,13 +28,29 @@
 
 #include "displayfunc.h"
 
+static float VertexPos[4][2]            = { { -1.0f, -1.0f },
+                                            { +1.0f, -1.0f },
+                                            { +1.0f, +1.0f },
+                                            { -1.0f, +1.0f } };
+static float TexCoords[4][2];
+
+static unsigned int TextureId					= 0;
+static unsigned int TextureTarget               = GL_TEXTURE_2D;
+static unsigned int TextureInternal             = GL_RGBA;
+static unsigned int TextureFormat               = GL_RGBA;
+static unsigned int TextureType                 = GL_UNSIGNED_BYTE;
+static unsigned int TextureWidth               	= 0;
+static unsigned int TextureHeight      			= 0;
+static size_t TextureTypeSize           		= sizeof(char);
+static unsigned int ActiveTextureUnit           = GL_TEXTURE1_ARB;
+
 RenderConfig *config;
 
 static bool printHelp = true;
 static bool showWorkLoad = true;
 
 double WallClockTime() {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
 	struct timeval t;
 	gettimeofday(&t, NULL);
 
@@ -49,6 +65,11 @@ double WallClockTime() {
 static double totalElapsedTime = 0.0;
 
 static void UpdateRendering() {
+	const VECTOR_CLASS<RenderDevice *> devices = config->GetRenderDevice();
+	for (size_t i = 0; i < devices.size(); ++i) {
+		RenderDevice::RenderThread(devices[i]);
+	}
+
 	int startSampleCount = config->currentSample;
 	if (startSampleCount == 0)
 		totalElapsedTime = 0.0;
@@ -60,21 +81,32 @@ static void UpdateRendering() {
 
 	const int samples = config->currentSample - startSampleCount;
 	const double sampleSec = samples * config->height * config->width / elapsedTime;
+
+	#ifndef __EMSCRIPTEN__
 	sprintf(config->captionBuffer, "[Rendering time %.3f sec (pass %d)][Avg. sample/sec %.1fK][Instant sample/sec %.1fK]",
 			elapsedTime, config->currentSample,
 			config->currentSample * config->height * config->width / totalElapsedTime / 1000.f,
 			sampleSec / 1000.f);
+	#else
+	printf("[Rendering time %.3f sec (pass %d)][Avg. sample/sec %.1fK][Instant sample/sec %.1fK]\n",
+			elapsedTime, config->currentSample,
+			config->currentSample * config->height * config->width / totalElapsedTime / 1000.f,
+			sampleSec / 1000.f);
+	#endif
 }
 
 static void PrintString(void *font, const char *string) {
 	int len, i;
 
+#ifndef __EMSCRIPTEN__
 	len = (int)strlen(string);
 	for (i = 0; i < len; i++)
 		glutBitmapCharacter(font, string[i]);
+#endif	
 }
 
 static void PrintHelpAndDevices() {
+#ifndef __EMSCRIPTEN__	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.f, 0.f, 0.f, 0.5f);
@@ -146,9 +178,11 @@ static void PrintHelpAndDevices() {
 
 	glRasterPos2i(12, offset);
 	PrintString(GLUT_BITMAP_9_BY_15, "OpenCL Devices:");
+#endif	
 }
 
 static void PrintCaptions() {
+#ifndef __EMSCRIPTEN__	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.f, 0.f, 0.f, 0.8f);
@@ -174,12 +208,120 @@ static void PrintCaptions() {
 	// Title
 	glRasterPos2i(4, config->height - 10);
 	PrintString(GLUT_BITMAP_8_BY_13, "SmallptGPU V2.0 (Written by David Bucciarelli)");
+#endif
+}
+
+static void CreateTexture(unsigned int width, unsigned int height)
+{    
+    if(TextureId)
+        glDeleteTextures(1, &TextureId);
+    TextureId = 0;
+    
+    printf("Creating Texture %d x %d...\n", width, height);
+
+    TextureWidth = width;
+    TextureHeight = height;
+    
+#ifndef __EMSCRIPTEN__
+    glActiveTextureARB(ActiveTextureUnit);
+#else
+    glActiveTexture(ActiveTextureUnit);
+#endif
+    
+    glGenTextures(1, &TextureId);
+    glBindTexture(TextureTarget, TextureId);
+
+#ifndef __EMSCRIPTEN__
+    glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(TextureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
+#endif
+    glTexParameteri(TextureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(TextureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(TextureTarget, 0, TextureInternal, TextureWidth, TextureHeight, 0, 
+                 TextureFormat, TextureType, 0);
+    glBindTexture(TextureTarget, 0);
+}
+
+static void RenderTexture( unsigned int width, unsigned int height, void *pvData )
+{
+    glDisable( GL_LIGHTING );
+
+    glViewport( 0, 0, width, height );
+
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+    
+    glEnable( TextureTarget );
+    glBindTexture( TextureTarget, TextureId );
+
+    
+    if(pvData) {
+        glTexSubImage2D(TextureTarget, 0, 0, 0, TextureWidth, TextureHeight, 
+                        TextureFormat, TextureType, pvData);
+    }
+    
+#ifdef __EMSCRIPTEN__
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    glBegin( GL_QUADS );
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f( 0.0f, 0.0f );
+        glVertex3f( -1.0f, -1.0f, 0.0f );
+        
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f( 0.0f, 1.0f );
+        glVertex3f( -1.0f, 1.0f, 0.0f );
+        
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f( 1.0f, 1.0f );
+        glVertex3f( 1.0f, 1.0f, 0.0f );
+        
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f( 1.0f, 0.0f );
+        glVertex3f( 1.0f, -1.0f, 0.0f );
+    }
+#else
+    glTexParameteri(TextureTarget, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
+
+    glBegin( GL_QUADS );
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glTexCoord2f( 0.0f, 0.0f );
+        glVertex3f( -1.0f, -1.0f, 0.0f );
+
+        glTexCoord2f( 0.0f, 1.0f );
+        glVertex3f( -1.0f, 1.0f, 0.0f );
+
+        glTexCoord2f( 1.0f, 1.0f );
+        glVertex3f( 1.0f, 1.0f, 0.0f );
+
+        glTexCoord2f( 1.0f, 0.0f );
+        glVertex3f( 1.0f, -1.0f, 0.0f );
+    }
+#endif
+    glEnd();
+    glBindTexture( TextureTarget, 0 );
+    glDisable( TextureTarget );
 }
 
 void displayFunc(void) {
+
+#ifndef __EMSCRIPTEN__
 	glRasterPos2i(0, 0);
 	glDrawPixels(config->width, config->height, GL_RGBA, GL_UNSIGNED_BYTE, config->pixels);
+#else
+  	RenderTexture(config->width, config->height,config->pixels);    
+#endif
 
+#ifndef __EMSCRIPTEN__	
 	if (showWorkLoad) {
 		const VECTOR_CLASS<RenderDevice *> devices = config->GetRenderDevice();
 		int start = 0;
@@ -227,6 +369,7 @@ void displayFunc(void) {
 
 		glPopMatrix();
 	}
+#endif	
 
 	glutSwapBuffers();
 }
@@ -453,6 +596,37 @@ void idleFunc(void) {
 	glutPostRedisplay();
 }
 
+static int SetupGraphics( unsigned int width, unsigned int height)
+{
+    CreateTexture(width, height);
+
+    glClearColor (0.0, 0.0, 0.0, 0.0);
+
+    glDisable(GL_DEPTH_TEST);
+    glActiveTexture(GL_TEXTURE0);
+    glViewport(0, 0, width, height);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    TexCoords[3][0] = 0.0f;
+    TexCoords[3][1] = 0.0f;
+    TexCoords[2][0] = width;
+    TexCoords[2][1] = 0.0f;
+    TexCoords[1][0] = width;
+    TexCoords[1][1] = height;
+    TexCoords[0][0] = 0.0f;
+    TexCoords[0][1] = height;
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 0, VertexPos);
+    glClientActiveTexture(GL_TEXTURE0);
+    glTexCoordPointer(2, GL_FLOAT, 0, TexCoords);
+    return GL_NO_ERROR;
+}
+
 void InitGlut(int argc, char *argv[], unsigned int width, unsigned int height) {
 	glutInitWindowSize(width, height);
 	glutInitWindowPosition(0, 0);
@@ -460,6 +634,8 @@ void InitGlut(int argc, char *argv[], unsigned int width, unsigned int height) {
 	glutInit(&argc, argv);
 
 	glutCreateWindow("SmallptGPU V2.0 (Written by David Bucciarelli)");
+
+	SetupGraphics(width, height);
 }
 
 void RunGlut() {

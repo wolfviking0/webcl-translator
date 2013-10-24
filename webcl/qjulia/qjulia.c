@@ -891,6 +891,10 @@ SetupComputeKernel(void)
     err = clGetDeviceInfo(ComputeDeviceId, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_workgroup_item_size), &max_workgroup_item_size, &returned_size);
     if (err != CL_SUCCESS)
     {
+        // max_workgroup_item_size[0] = 1024;
+        // max_workgroup_item_size[1] = 1;
+        // max_workgroup_item_size[2] = 1;        
+        
         printf("Error: Failed to retrieve device info!\n");
         return end(EXIT_FAILURE);
     }

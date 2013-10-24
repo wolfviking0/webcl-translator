@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/old/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '17487dd2-96d2-4b62-922b-b91a5796c9e4';
+    var PACKAGE_UUID = '8ecbc1e2-979b-4c86-8e4b-6820dfef8f26';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -14342,7 +14342,6 @@ function _CreateTexture($width,$height){
  var $i;
  $1=$width;
  $2=$height;
- _glGenTextures(3,3256);
  var $3=$1;
  var $4=$2;
  var $5=_printf(192,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$3,HEAP32[(((tempVarArgs)+(8))>>2)]=$4,tempVarArgs)); STACKTOP=tempVarArgs;

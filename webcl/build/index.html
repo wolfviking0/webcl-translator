@@ -78,11 +78,9 @@
               textArea.rows = "10";
             }
             
-            var arg = initArguments();
-            
-            loadModule(arg);
-            
-			switch(SAMPLE) {
+            loadModule(PARAM);
+            alert(PARAM);
+			      switch(SAMPLE) {
         		case '0':
           			includeJS("hello_world.js");     
           			break;//------------
@@ -109,20 +107,16 @@
 
         		case '6':
           			includeJS("qjulia.js");
-          			break; //------------
-
-            case '7':
-                includeJS("attractor.js");
-                break; //------------                
+          			break; //------------    
               
-            case '8':
-                includeJS("popcorn.js");
-                break; //------------                
-          /*
-            case '9':
-                includeJS("dxtcompressor.js");
+            case '7':
+                includeJS("smallpt.js");
                 break; //------------
- 
+
+            case '8':
+                includeJS("attractor.js");
+                break; //------------                 
+          /*
             case '10':
 		        	  includeJS("smallpt.js");
           			break; //------------

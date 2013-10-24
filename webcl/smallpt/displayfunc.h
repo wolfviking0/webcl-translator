@@ -24,7 +24,7 @@
 #ifndef _DISPLAYFUNC_H
 #define	_DISPLAYFUNC_H
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
 #include <sys/time.h>
 #elif defined (WIN32)
 #include <windows.h>

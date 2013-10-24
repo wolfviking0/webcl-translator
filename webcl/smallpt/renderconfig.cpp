@@ -123,9 +123,10 @@ void RenderConfig::SetUpOpenCL(const bool useCPUs, const bool useGPUs,
 	// Platform info
 	VECTOR_CLASS<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
-	for (size_t i = 0; i < platforms.size(); ++i)
-		cerr << "OpenCL Platform " << i << ": " <<
-			platforms[i].getInfo<CL_PLATFORM_VENDOR>().c_str() << endl;
+	#ifndef __EMSCRIPTEN__
+		for (size_t i = 0; i < platforms.size(); ++i)
+			cerr << "OpenCL Platform " << i << ": " << platforms[i].getInfo<CL_PLATFORM_VENDOR>().c_str() << endl;
+	#endif
 
 	if (platforms.size() == 0)
 		throw runtime_error("Unable to find an appropiate OpenCL platform");
@@ -141,9 +142,9 @@ void RenderConfig::SetUpOpenCL(const bool useCPUs, const bool useGPUs,
 	VECTOR_CLASS<cl::Device> selectedDevices;
 	for (size_t i = 0; i < devices.size(); ++i) {
 		cl_int type = devices[i].getInfo<CL_DEVICE_TYPE>();
-		cerr << "OpenCL Device name " << i << ": " <<
-				devices[i].getInfo<CL_DEVICE_NAME>().c_str() << endl;
-
+		#ifndef __EMSCRIPTEN__
+			cerr << "OpenCL Device name " << i << ": " << devices[i].getInfo<CL_DEVICE_NAME>().c_str() << endl;
+		#endif
 		string stype;
 		switch (type) {
 			case CL_DEVICE_TYPE_ALL:
@@ -168,8 +169,7 @@ void RenderConfig::SetUpOpenCL(const bool useCPUs, const bool useGPUs,
 		}
 
 		cerr << "OpenCL Device type " << i << ": " << stype << endl;
-		cerr << "OpenCL Device units " << i << ": " <<
-				devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << endl;
+		cerr << "OpenCL Device units " << i << ": " << devices[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << endl;
 	}
 
 	if (selectedDevices.size() == 0)

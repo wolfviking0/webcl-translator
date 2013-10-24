@@ -24,8 +24,8 @@
 #ifndef _RENDERCONFIG_H
 #define	_RENDERCONFIG_H
 
-#include <cstdio>
-#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
 #include <fstream>
 #include <iostream>
 #include <string>

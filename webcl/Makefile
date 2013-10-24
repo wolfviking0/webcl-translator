@@ -52,18 +52,17 @@ all: \
 	scan_sample 				\
 	mandelbulb_sample 			\
 	qjulia_sample 				\
+	smallpt_sample              \
 	attractor_sample			\
 	dxt_sample					\
-
-#	popcorn_sample 				\	
+	
 #	fft_sample					\
-#	smallpt_sample				\
 #	video_sample				\
 
 all_osx: \
 	mandelbulb_sample_osx \
 	qjulia_sample_osx \
-	popcorn_sample_osx \
+	smallpt_sample_osx \
 	attractor_sample_osx \
 
 copy_data:
@@ -118,12 +117,6 @@ qjulia_sample:
 	--preload-file qjulia_kernel.cl \
 	-o ../build/$(FOLDER)/qjulia.js
 
-popcorn_sample:
-	$(call chdir,popcorn/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) cll.cpp main.cpp part2.cpp util.cpp -s FULL_ES2=1 $(MODE) \
-	--preload-file popcorn.frag --preload-file popcorn.vert \
-	-o ../build/$(FOLDER)/popcorn.js
-
 dxt_sample:
 	$(call chdir,dxtcompressor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
@@ -139,7 +132,7 @@ attractor_sample:
 
 smallpt_sample:
 	$(call chdir,smallpt/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s LEGACY_GL_EMULATION=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s TOTAL_MEMORY=1024*1024*50 -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
 	-o ../build/$(FOLDER)/smallpt.js	
 
@@ -152,11 +145,6 @@ qjulia_sample_osx:
 	$(call chdir,qjulia/)
 	clang++ -02 qjulia.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o qjulia.out
-
-popcorn_sample_osx:
-	$(call chdir,popcorn/)
-	clang++ -02 cll.cpp main.cpp part2.cpp util.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-	-o popcorn.out
 
 attractor_sample_osx:
 	$(call chdir,attractor/)

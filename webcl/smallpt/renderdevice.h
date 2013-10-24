@@ -64,6 +64,9 @@ public:
 	}
 
 	void UpdateCameraBuffer(Camera *camera) {
+		#ifdef __EMSCRIPTEN__
+			//clSetTypePointer(CL_FLOAT);
+		#endif
 		queue->enqueueWriteBuffer(
 				*cameraBuffer,
 				CL_FALSE,
@@ -73,6 +76,9 @@ public:
 	}
 
 	void UpdateSceneBuffer(Sphere *spheres) {
+		#ifdef __EMSCRIPTEN__
+			//clSetTypePointer(CL_FLOAT);
+		#endif
 		queue->enqueueWriteBuffer(
 				*sphereBuffer,
 				CL_FALSE,
@@ -98,9 +104,9 @@ public:
 	unsigned int GetWorkOffset() const { return workOffset; }
 	size_t GetWorkAmount() const { return workAmount; }
 
-private:
 	static void RenderThread(RenderDevice *renderDevice);
 
+private:
 	string ReadSources(const string &fileName);
 
 	void SetKernelArgs() {
@@ -132,6 +138,9 @@ private:
 	}
 
 	void ReadPixelBuffer() {
+		#ifdef __EMSCRIPTEN__
+			clSetTypePointer(CL_UNSIGNED_INT32);
+		#endif
 		queue->enqueueReadBuffer(
 				*pixelBuffer,
 				CL_FALSE,
@@ -141,6 +150,7 @@ private:
 	}
 
 	void FinishExecuteKernel() {
+		#ifndef __EMSCRIPTEN__
 		kernelExecutionTime.wait();
 
 		// Check kernel execution time
@@ -148,6 +158,7 @@ private:
 		kernelExecutionTime.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_START, &t1);
 		kernelExecutionTime.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_END, &t2);
 		exeTime += (t2 - t1) / 1e9;
+		#endif
 	}
 
 	string deviceName;

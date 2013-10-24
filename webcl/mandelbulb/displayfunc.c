@@ -661,8 +661,6 @@ void timerFunc(const int id) {
 
 static void CreateTexture(unsigned int width, unsigned int height)
 {    
-
-    glGenTextures( 3, TextureIds );
     
     printf("Creating Texture 1 %d x %d...\n", width, height);
   	printf("Creating Texture 2 %d x %d...\n", MU_RECT_SIZE, MU_RECT_SIZE);

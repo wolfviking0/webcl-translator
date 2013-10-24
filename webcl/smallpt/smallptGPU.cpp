@@ -36,6 +36,11 @@ int main(int argc, char *argv[]) {
 		cerr << "Usage: " << argv[0] << endl;
 		cerr << "Usage: " << argv[0] << " <use CPU devices (0 or 1)> <use GPU devices (0 or 1)> <GPU workgroup size (0=default value or anything > 0 and power of 2)> <window width> <window height> <scene file>" << endl;
 
+		printf("Argc : %d\n",argc);
+		#ifdef __EMSCRIPTEN__
+			argc = 1;
+		#endif
+
 		// It is important to initialize OpenGL before OpenCL
 		unsigned int width;
 		unsigned int height;
@@ -43,8 +48,8 @@ int main(int argc, char *argv[]) {
 			width = atoi(argv[4]);
 			height = atoi(argv[5]);
 		} else if (argc == 1) {
-			width = 1024;
-			height = 768;
+			width = 512;
+			height = 512;
 		} else
 			exit(-1);
 

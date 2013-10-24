@@ -32,7 +32,12 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 	/*renderThread(NULL), threadStartBarrier(startBarrier), threadEndBarrier(endBarrier),*/
 	sphereCount(sceneSphereCount), colorBuffer(NULL), pixelBuffer(NULL), seedBuffer(NULL),
 	pixels(NULL), colors(NULL), seeds(NULL), exeUnitCount(0.0), exeTime(0.0) {
-	deviceName = device.getInfo<CL_DEVICE_NAME > ().c_str();
+	#ifndef __EMSCRIPTEN__
+		deviceName = device.getInfo<CL_DEVICE_NAME > ().c_str();
+	#else
+		deviceName = "WebCLDevice";
+	#endif
+	
 
 	// Allocate a context with the selected device
 	cl::Platform platform = device.getInfo<CL_DEVICE_PLATFORM>();
@@ -56,11 +61,11 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 	try {
 		VECTOR_CLASS<cl::Device> buildDevice;
 		buildDevice.push_back(device);
-#if defined(__APPLE__)
-		program.build(buildDevice, "-I. -D__APPLE__");
-#else
-		program.build(buildDevice, "-I.");
-#endif
+// #if defined(__APPLE__)
+// 		program.build(buildDevice, "-I. -D__APPLE__");
+// #else
+		program.build(buildDevice, "");
+// #endif
 		cl::string result = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
 		cerr << "[Device::" << deviceName << "]" << " Compilation result: " << result.c_str() << endl;
 	} catch (cl::Error err) {
@@ -85,9 +90,12 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 	//renderThread = new boost::thread(boost::bind(RenderDevice::RenderThread, this));
 
 	// Create camera buffer
+	#ifdef __EMSCRIPTEN__
+		//clSetTypePointer(CL_FLOAT);
+	#endif
 	cameraBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
-			CL_MEM_READ_ONLY, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
+			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
 #else
 			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
 #endif
@@ -95,9 +103,12 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 				camera);
 	cerr << "[Device::" << deviceName << "] Camera buffer size: " << (sizeof(Camera) / 1024) << "Kb" << endl;
 
+	#ifdef __EMSCRIPTEN__
+		//clSetTypePointer(CL_FLOAT);
+	#endif
 	sphereBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
-			CL_MEM_READ_ONLY, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
+			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
 #else
 			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
 #endif
@@ -189,9 +200,12 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 	pixels = screenPixels;
 
 	colors = new Vec[workAmount];
+	#ifdef __EMSCRIPTEN__
+		//clSetTypePointer(CL_FLOAT);
+	#endif
 	colorBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
-			CL_MEM_READ_WRITE, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
+			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
 #else
 			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
 #endif
@@ -199,8 +213,11 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 			colors);
 	cerr << "[Device::" << deviceName << "] Color buffer size: " << (sizeof(Vec) * workAmount / 1024) << "Kb" << endl;
 
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_UNSIGNED_INT32);
+	#endif
 	pixelBuffer = new cl::Buffer(*context,
-			CL_MEM_WRITE_ONLY,
+			CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
 			sizeof(unsigned int) * workAmount,
 			&pixels[workOffset]);
 	cerr << "[Device::" << deviceName << "] Pixel buffer size: " << (sizeof(unsigned int) * workAmount / 1024) << "Kb" << endl;
@@ -212,9 +229,12 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 			seeds[i] = 2;
 	}
 
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_UNSIGNED_INT32);
+	#endif
 	seedBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
-			CL_MEM_READ_WRITE, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
+			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
 #else
 			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
 #endif
