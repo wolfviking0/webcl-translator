@@ -40,11 +40,6 @@ and Enforcer's http://www.fractalforums.com/mandelbulb-implementation/realtime-r
 
 #include "displayfunc.h"
 
-int USE_GL_ATTACHMENTS = 0;
-
-extern unsigned int TextureIds[3];
-extern unsigned int TextureTarget;
-
 /* Options */
 static int useCPU = 0;
 static int useGPU = 1;
@@ -54,7 +49,6 @@ static cl_context context;
 static cl_device_id *devices = NULL;
 static cl_mem pixelBuffer;
 static cl_mem configBuffer;
-static cl_mem computeImage;
 static cl_command_queue commandQueue;
 static cl_program program;
 static cl_kernel kernel;
@@ -98,53 +92,15 @@ static void FreeBuffers() {
 		exit(-1);
 	}
 
-  if (USE_GL_ATTACHMENTS)
-      clReleaseMemObject(ComputeImage);
-  
 	free(pixels);
 }
 
 static void AllocateBuffers() {
-  
-  int err = 0;
+	const int pixelCount = config.width * config.height;
+	pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
+
 	cl_int status;
-
-  const int pixelCount = config.width * config.height;  
 	cl_uint sizeBytes = 3 * sizeof(float) * pixelCount;
-  
-  if (USE_GL_ATTACHMENTS) {
-
-      if(computeImage)
-          clReleaseMemObject(computeImage);
-      computeImage = 0;
-      
-      printf("Allocating compute result image in device memory...\n");
-      computeImage = clCreateFromGLTexture2D(context, CL_MEM_WRITE_ONLY, TextureTarget, 0, TextureIds[0], &err);
-      if (!ComputeImage || err != CL_SUCCESS)
-      {
-          printf("Failed to create OpenGL texture reference! %d\n", err);
-          return;
-      }
-
-  } else {
-
-      if (pixels)
-          free(pixels);
-
-      printf("Allocating compute result image in host memory...\n");
-
-    	pixels = (float *)malloc(sizeBytes);
-      if(!pixels)
-      {
-          printf("Failed to create host image buffer!\n");
-          return;
-      }
-       
-      memset(pixels, 0, sizeBytes);
-
-  }
-
-  
 	#ifdef __EMSCRIPTEN__
 		clSetTypePointer(CL_FLOAT);
 	#endif
@@ -158,8 +114,6 @@ static void AllocateBuffers() {
 		fprintf(stderr, "Failed to create OpenCL pixel buffer: %d\n", status);
 		exit(-1);
     }
-
-
 
 	sizeBytes = sizeof(RenderingConfig);
 	#ifdef __EMSCRIPTEN__
@@ -273,27 +227,12 @@ static void SetUpOpenCL() {
 		free(platforms);
 	}
 
-  if (USE_GL_ATTACHMENTS == 1) {
-  	cl_context_properties cps[3] ={
-  		CL_CONTEXT_PLATFORM,
-  		(cl_context_properties) platform,
-  		0
-  	};
-  } else {
-  	cl_context_properties cps[7] ={
-  		CL_CONTEXT_PLATFORM,
-  		(cl_context_properties) platform,
-#ifdef __EMSCRIPTEN__
-      CL_CGL_SHAREGROUP_KHR,
-      0,
-#else
-      CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, 
-      (cl_context_properties)kCGLShareGroup,
-#endif
-      0
-  	};
-  }
-    
+	cl_context_properties cps[3] ={
+		CL_CONTEXT_PLATFORM,
+		(cl_context_properties) platform,
+		0
+	};
+
 	cl_context_properties *cprops = (NULL == platform) ? NULL : cps;
 
 	context = clCreateContextFromType(
@@ -679,55 +618,25 @@ void UpdateRendering() {
 
 	//--------------------------------------------------------------------------
 
-  if (USE_GL_ATTACHMENTS == 1) {
-
-      err = clEnqueueAcquireGLObjects(commandQueue, 1, &computeImage, 0, 0, 0);
-      if (err != CL_SUCCESS)
-      {
-          printf("Failed to acquire GL object! %d\n", err);
-          return end(EXIT_FAILURE);
-      }
-
-      size_t origin[] = { 0, 0, 0 };
-      size_t region[] = { config.width , config.height, 1 };
-      err = clEnqueueCopyBufferToImage(commandQueue, pixelBuffer, computeImage, 
-                                       0, origin, region, 0, NULL, 0);
-      
-      if(err != CL_SUCCESS)
-      {
-          printf("Failed to copy buffer to image! %d\n", err);
-          return end(EXIT_FAILURE);
-      }
-      
-      err = clEnqueueReleaseGLObjects(commandQueue, 1, &computeImage, 0, 0, 0);
-      if (err != CL_SUCCESS)
-      {
-          printf("Failed to release GL object! %d\n", err);
-          return end(EXIT_FAILURE);
-      }
-
-  } else {
-
-  	/* Enqueue readBuffer */
-  	cl_event event;
-  	#ifdef __EMSCRIPTEN__
-  		clSetTypePointer(CL_FLOAT);
-  	#endif
-  	status = clEnqueueReadBuffer(
-  			commandQueue,
-  			pixelBuffer,
-  			CL_TRUE,
-  			0,
-  			3 * config.width * config.height * sizeof(float),
-  			pixels,
-  			0,
-  			NULL,
-  			&event);
-  	if (status != CL_SUCCESS) {
-  		fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
-  		exit(-1);
-  	}
-  }
+	/* Enqueue readBuffer */
+	cl_event event;
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);
+	#endif
+	status = clEnqueueReadBuffer(
+			commandQueue,
+			pixelBuffer,
+			CL_TRUE,
+			0,
+			3 * config.width * config.height * sizeof(float),
+			pixels,
+			0,
+			NULL,
+			&event);
+	if (status != CL_SUCCESS) {
+		fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
+		exit(-1);
+	}
 
 	/* Wait for read buffer to finish execution */
   /*
