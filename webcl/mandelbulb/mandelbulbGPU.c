@@ -40,7 +40,9 @@ and Enforcer's http://www.fractalforums.com/mandelbulb-implementation/realtime-r
 
 #include "displayfunc.h"
 
-int USE_GL_ATTACHMENTS = 1; // enable OpenGL attachments for Compute results
+int USE_GL_ATTACHMENTS = 0; // enable OpenGL attachments for Compute results
+
+extern unsigned int TextureIds[3];
 
 /* Options */
 static int useCPU = 0;
@@ -51,6 +53,7 @@ static cl_context context;
 static cl_device_id *devices = NULL;
 static cl_mem pixelBuffer;
 static cl_mem configBuffer;
+static cl_mem computeImage;
 static cl_command_queue commandQueue;
 static cl_program program;
 static cl_kernel kernel;
@@ -74,7 +77,7 @@ void print_stack() {
 }
 #endif
 
-static int end(int e) {
+int end(int e) {
     #ifdef __EMSCRIPTEN__
         print_stack();
     #endif
@@ -94,28 +97,51 @@ static void FreeBuffers() {
 		exit(-1);
 	}
 
+    if (USE_GL_ATTACHMENTS)
+        clReleaseMemObject(computeImage);
+
 	free(pixels);
 }
 
 static void AllocateBuffers() {
-	const int pixelCount = config.width * config.height;
-	pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
 
 	cl_int status;
+	const int pixelCount = config.width * config.height;
 	cl_uint sizeBytes = 3 * sizeof(float) * pixelCount;
-	#ifdef __EMSCRIPTEN__
-		clSetTypePointer(CL_FLOAT);
-	#endif
-    pixelBuffer = clCreateBuffer(
-            context,
-            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-            sizeBytes,
-            pixels,
-            &status);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to create OpenCL pixel buffer: %d\n", status);
-		exit(-1);
-    }
+
+    if (USE_GL_ATTACHMENTS) {
+
+        if(computeImage)
+            clReleaseMemObject(computeImage);
+        computeImage = 0;
+        
+        printf("Allocating compute result image in device memory... %d\n");
+        computeImage = clCreateFromGLTexture2D(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, TextureIds[0], &status);
+        if (!computeImage || status != CL_SUCCESS)
+        {
+            printf("Failed to create OpenGL texture reference! %d\n", status);
+            exit(-1);
+        }
+
+    } else {
+
+		pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
+
+		#ifdef __EMSCRIPTEN__
+			clSetTypePointer(CL_FLOAT);
+		#endif
+	    pixelBuffer = clCreateBuffer(
+	            context,
+	            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+	            sizeBytes,
+	            pixels,
+	            &status);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to create OpenCL pixel buffer: %d\n", status);
+			exit(-1);
+	    }
+
+	}	
 
 	sizeBytes = sizeof(RenderingConfig);
 	#ifdef __EMSCRIPTEN__
@@ -229,7 +255,7 @@ static void SetUpOpenCL() {
 		free(platforms);
 	}
 
-	/*
+	
     if (USE_GL_ATTACHMENTS == 1) {
 
         #ifndef __EMSCRIPTEN__
@@ -237,7 +263,7 @@ static void SetUpOpenCL() {
             CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
         #endif
 
-        cl_context_properties properties[] = { 
+        cl_context_properties cps[5] = { 
         	CL_CONTEXT_PLATFORM,
 			(cl_context_properties) platform,
         #ifdef __EMSCRIPTEN__
@@ -250,18 +276,21 @@ static void SetUpOpenCL() {
             0
         };
 
-        // Create a context from a CGL share group
-        //
-        context = clCreateContext(properties, 0, 0, NULL, 0, 0);
-  
-        if (!context)
-        {
-            printf("Error: Failed to create a compute context!\n");
-            exit(-1);
-        }
+		cl_context_properties *cprops = (NULL == platform) ? NULL : cps;
+
+		context = clCreateContextFromType(
+				cprops,
+				useGPU==1?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU,
+				NULL,
+				NULL,
+				&status);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to open OpenCL context\n");
+			exit(-1);
+		}
 
     } else {
-	*/
+	
 		cl_context_properties cps[3] ={
 			CL_CONTEXT_PLATFORM,
 			(cl_context_properties) platform,
@@ -280,7 +309,7 @@ static void SetUpOpenCL() {
 			fprintf(stderr, "Failed to open OpenCL context\n");
 			exit(-1);
 		}
-	//}
+	}
 
     /* Get the size of device list data */
 	size_t deviceListSize;
@@ -654,26 +683,57 @@ void UpdateRendering() {
 
 	//--------------------------------------------------------------------------
 
-	/* Enqueue readBuffer */
-	cl_event event;
-	#ifdef __EMSCRIPTEN__
-		clSetTypePointer(CL_FLOAT);
-	#endif
-	status = clEnqueueReadBuffer(
-			commandQueue,
-			pixelBuffer,
-			CL_TRUE,
-			0,
-			3 * config.width * config.height * sizeof(float),
-			pixels,
-			0,
-			NULL,
-			&event);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
-		exit(-1);
-	}
+  	if (USE_GL_ATTACHMENTS == 1) {
+  		int err;
 
+        err = clEnqueueAcquireGLObjects(commandQueue, 1, &computeImage, 0, 0, 0);
+        if (err != CL_SUCCESS)
+        {
+            printf("Failed to acquire GL object! %d\n", err);
+            exit(-1);
+        }
+
+        size_t origin[] = { 0, 0, 0 };
+        size_t region[] = { config.width, config.height, 1 };
+        err = clEnqueueCopyBufferToImage(commandQueue, pixelBuffer, computeImage, 
+                                         0, origin, region, 0, NULL, 0);
+        
+        if(err != CL_SUCCESS)
+        {
+            printf("Failed to copy buffer to image! %d\n", err);
+            exit(-1);
+        }
+        
+        err = clEnqueueReleaseGLObjects(commandQueue, 1, &computeImage, 0, 0, 0);
+        if (err != CL_SUCCESS)
+        {
+            printf("Failed to release GL object! %d\n", err);
+            exit(-1);
+        }
+
+    } else {
+
+		/* Enqueue readBuffer */
+		cl_event event;
+		#ifdef __EMSCRIPTEN__
+			clSetTypePointer(CL_FLOAT);
+		#endif
+		status = clEnqueueReadBuffer(
+				commandQueue,
+				pixelBuffer,
+				CL_TRUE,
+				0,
+				3 * config.width * config.height * sizeof(float),
+				pixels,
+				0,
+				NULL,
+				&event);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to read the OpenCL pixel buffer: %d\n", status);
+			exit(-1);
+		}
+	
+	}
 	/* Wait for read buffer to finish execution */
   /*
 	status = clWaitForEvents(1, &event);
@@ -779,8 +839,8 @@ int main(int argc, char *argv[]) {
 
 	config.width = 512;
 	config.height = 512;
-	config.enableShadow = 1;
-	config.superSamplingSize = 2;
+	config.enableShadow = 0;//1;
+	config.superSamplingSize = 0;//2;
 
 	config.actvateFastRendering = 1;
 	config.maxIterations = 6;
@@ -816,11 +876,11 @@ int main(int argc, char *argv[]) {
 
 	/*------------------------------------------------------------------------*/
 
-	SetUpOpenCL();
+	InitGlut(argc, argv, "MadelbulbGPU V1.0 (Written by David Bucciarelli)");
 
 	/*------------------------------------------------------------------------*/
 
-	InitGlut(argc, argv, "MadelbulbGPU V1.0 (Written by David Bucciarelli)");
+	SetUpOpenCL();
 
     glutMainLoop();
 

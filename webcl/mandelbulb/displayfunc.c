@@ -67,8 +67,8 @@ double WallClockTime() {
 #endif
 }
 
-static unsigned int TextureIds[3];
-static unsigned int TextureTarget               = GL_TEXTURE_2D;
+unsigned int TextureIds[3];
+static unsigned int TextureTarget = GL_TEXTURE_2D;
 static unsigned int TextureInternal             = GL_RGB;
 static unsigned int TextureInternal2            = GL_RGBA;
 static unsigned int TextureFormat               = GL_RGB;
