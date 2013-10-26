@@ -211,60 +211,6 @@ var LibraryOpenCL = {
       return _host_ptr;
     },
 
-    getCopyPointerToArray: function(ptr,size,type) {  
-      var _host_ptr = null;
-            
-      switch(type) {
-        case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
-          break;
-        case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
-          break;
-        case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
-          break;         
-        default:
-          _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
-          break;
-      }
-
-      return _host_ptr;
-    },
-
-    getPointerToValue: function(ptr,type) {  
-      var _value = null;
-            
-      switch(type) {
-        case webcl.SIGNED_INT8:
-        case webcl.UNSIGNED_INT8:          
-          _value = {{{ makeGetValue('ptr', '0', 'i8') }}}
-          break;
-        case webcl.SIGNED_INT16:
-        case webcl.UNSIGNED_INT16:
-          _value = {{{ makeGetValue('ptr', '0', 'i16') }}}
-          break;
-        case webcl.SIGNED_INT32:
-        case webcl.UNSIGNED_INT32:
-          _value = {{{ makeGetValue('ptr', '0', 'i32') }}}
-          break;         
-        default:
-          _value = {{{ makeGetValue('ptr', '0', 'float') }}}
-          break;
-      }
-      
-      return _value;
-    },
-
     catchError: function(e) {
       console.error(e);
       var _error = -1;
@@ -1478,7 +1424,7 @@ var LibraryOpenCL = {
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
       _host_ptr = new ArrayBuffer(size);
     } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
+      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
     } else if (flags_i64_1 & ~_flags) {
       console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
@@ -1490,7 +1436,7 @@ var LibraryOpenCL = {
 #endif      
     
       if (_host_ptr != null) {
-        _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
+        _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
       } else
         _buffer = CL.cl_objects[context].createBuffer(_flags,size);
 
@@ -1773,7 +1719,7 @@ var LibraryOpenCL = {
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
       _host_ptr = new ArrayBuffer(_sizeInByte);
     } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,_type);
+      _host_ptr = CL.getReferencePointerToArray(host_ptr,size,_type);
     } else if (flags_i64_1 & ~_flags) {
       console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
@@ -1787,7 +1733,7 @@ var LibraryOpenCL = {
 #endif      
 
       if (_host_ptr != null)
-        _image = CL.cl_objects[context].createImage(_flags,_descriptor,_host_ptr.buffer);
+        _image = CL.cl_objects[context].createImage(_flags,_descriptor,_host_ptr);
       else
         _image = CL.cl_objects[context].createImage(_flags,_descriptor);
 
@@ -2975,21 +2921,14 @@ var LibraryOpenCL = {
 
       if (_sig == webcl.LOCAL) {
 
-        // Not yet implemented in browser
         var _array = new Uint32Array([arg_size]);
 
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif     
         
-        // \todo need to be remove when webkit will respect the WD
-        if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-          // WD --> 
-          CL.cl_objects[kernel].setArg(arg_index,_array);
-        } else {
-          // WebKit -->
-          CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
-        }
+        CL.cl_objects[kernel].setArg(arg_index,_array);
+
       } else {
 
         var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
@@ -3009,63 +2948,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
 #endif        
 
-          // \todo need to be remove when webkit will respect the WD
-          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-            // WD --> 
-            CL.cl_objects[kernel].setArg(arg_index,_array);
-          } else {
-            // WebKit -->     
-            var _size = (arg_size>>(_array.BYTES_PER_ELEMENT>>1));
-
-            var _type;
-            switch(_sig) {
-              case webcl.SIGNED_INT8:
-                _type = WebCLKernelArgumentTypes.CHAR;
-                break;
-              case webcl.SIGNED_INT16:
-                _type = WebCLKernelArgumentTypes.SHORT;
-                break;
-              case webcl.SIGNED_INT32:
-                _type = WebCLKernelArgumentTypes.INT;
-                break;
-              case webcl.UNSIGNED_INT8:
-                _type = WebCLKernelArgumentTypes.UCHAR;
-                break;
-              case webcl.UNSIGNED_INT16:
-                _type = WebCLKernelArgumentTypes.USHORT;
-                break;
-              case webcl.UNSIGNED_INT32:
-                _type = WebCLKernelArgumentTypes.UINT;
-                break;
-              default:
-                _type = WebCLKernelArgumentTypes.FLOAT;
-                break;
-            }
-
-            if ( _size > 1) {
-
-              if (_size == 2) {
-                _type |= WebCLKernelArgumentTypes.VEC2;
-              } else if (_size == 3) {
-                _type |= WebCLKernelArgumentTypes.VEC3;
-              } else if (_size == 4) {
-                _type |= WebCLKernelArgumentTypes.VEC4;
-              } else if (_size == 8) {
-                _type |= WebCLKernelArgumentTypes.VEC8;
-              } else if (_size == 16) {
-                _type |= WebCLKernelArgumentTypes.VEC16;
-              }
-
-              var _values = Array.apply( [], _array);
-
-              CL.cl_objects[kernel].setArg(arg_index, _values, _type);
-
-            } else {
-
-              CL.cl_objects[kernel].setArg(arg_index,CL.getPointerToValue(arg_value,_sig),_type);
-
-            }
-          }
+          CL.cl_objects[kernel].setArg(arg_index,_array);
+    
         }
       }
     } catch (e) {
@@ -3890,7 +3774,7 @@ var LibraryOpenCL = {
 #endif
           var _event = null;
           var _event_wait_list = [];
-          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -3974,7 +3858,7 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
           
-          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
 
           var _buffer_origin = [];
           var _host_origin = [];
@@ -4226,7 +4110,7 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
           
-          var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
+          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
 
           var _origin = [];
           var _region = [];
