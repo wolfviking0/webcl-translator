@@ -156,11 +156,13 @@ void LorenzAttractorDemo::init()
     glUniform1f(loc,float(windowHeight));
 
     #ifndef __EMSCRIPTEN__
-        glPointSize(1.f);
+        glPointSize(2.f);
     #else
         loc = glGetUniformLocation(m_program, "u_pointSize");
-        glUniform1f(loc,1.0f);
+        glUniform1f(loc,2.0f);
     #endif
+
+    createTexture();
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // init frame buffers for filtering
@@ -258,6 +260,47 @@ void LorenzAttractorDemo::init()
 
 }
 
+unsigned char* LorenzAttractorDemo::createGaussianMap(int N)
+{
+    float *M = new float[2*N*N];
+    unsigned char *B = new unsigned char[4*N*N];
+    float X,Y,Y2,Dist;
+    float Incr = 2.0f/N;
+    int i=0;  
+    int j = 0;
+    Y = -1.0f;
+    //float mmax = 0;
+    for (int y=0; y<N; y++, Y+=Incr)
+    {
+        Y2=Y*Y;
+        X = -1.0f;
+        for (int x=0; x<N; x++, X+=Incr, i+=2, j+=4)
+        {
+            Dist = (float)sqrtf(X*X+Y2);
+            if (Dist>1) Dist=1;
+            M[i+1] = M[i] = evalHermite(1.0f,0,0,0,Dist);
+            B[j+3] = B[j+2] = B[j+1] = B[j] = (unsigned char)(M[i] * 255);
+        }
+    }
+    delete [] M;
+    return(B);
+}    
+
+void LorenzAttractorDemo::createTexture()
+{
+    const int resolution = 32;
+    unsigned char* data = createGaussianMap(resolution);
+    glGenTextures(1, (GLuint*)&m_sprite_texture);
+    glBindTexture(GL_TEXTURE_2D, m_sprite_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolution, resolution, 0, GL_RGBA, GL_UNSIGNED_BYTE,NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, NULL);
+
+    delete data;
+}
+
 void LorenzAttractorDemo::render(float simTime)
 {
     int nParticles = global::par().getInt("nParticles");
@@ -291,10 +334,17 @@ void LorenzAttractorDemo::render(float simTime)
     //glm::vec3 color = glm::rgbColor(glm::vec3(hue,1.f,1.f));
     //loc = glGetUniformLocation(m_program, "color");
     //glUniform3fv(loc, 1, &color[0]);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glEnable(GL_BLEND);
+    glDepthMask(GL_FALSE);
 
     // render particles
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo[0]);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_sprite_texture);
+
     glUniform1i(hTask,0);
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
      
@@ -306,6 +356,8 @@ void LorenzAttractorDemo::render(float simTime)
     glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
 
     // apply filters
     for ( int i = 1; i < (int)m_fbo.size(); ++i )

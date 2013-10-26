@@ -68,7 +68,7 @@ uniform sampler2D Texture0;
 vec4 gammaCorrection()
 {
     float gamma = 0.1;
-    vec4 c = texture2D(Texture0, v_texCoord);
+    vec4 c = texture2D(Texture0, gl_PointCoord);
     float l = (c.r+c.g+c.b)/3.0;
     c.xyz *= pow(l,gamma)/l; 
     return c;
@@ -77,13 +77,13 @@ vec4 gammaCorrection()
 vec4 blurX()
 {    
     float step = 1./u_height;
-    vec4 c = 0.6 * texture2D(Texture0, v_texCoord);      
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
     
-    c += 0.15 * texture2D( Texture0, v_texCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, v_texCoord - vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
 
-    c += 0.05 * texture2D( Texture0, v_texCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, v_texCoord - vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
       
     return c;      
 }
@@ -91,20 +91,22 @@ vec4 blurX()
 vec4 blurY()
 {   
     float step = 1./u_width;
-    vec4 c = 0.6 * texture2D(Texture0, v_texCoord);      
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
 
-    c += 0.15 * texture2D( Texture0, v_texCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, v_texCoord - vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
 
-    c += 0.05 * texture2D( Texture0, v_texCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, v_texCoord - vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
       
     return c;    
 }
 
 vec4 render()
 {    
-    return v_color;    
+    vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, gl_PointCoord);
+    //return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
+    return v_color;
 }
 
 void main()
@@ -145,9 +147,14 @@ varying vec4 v_color;
 varying vec2 v_texCoord;
 
 void main() {
-	gl_PointSize = u_pointSize;
-	gl_Position = u_matViewProjection * a_position;
-
+	float pointSize = 500.0 * u_pointSize;
+	vec4 vert = vec4(a_position);
+	vert.w = 1.0;
+	vec4 pos_eye = vec4(u_matViewProjection * vert);
+	
+	gl_PointSize = max(2.0, pointSize / (1.0-pos_eye.z));
+	gl_Position = pos_eye;           
+	
 	v_color = a_color;
 	v_texCoord = a_texCoord0;
 }

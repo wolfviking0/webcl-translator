@@ -170,9 +170,10 @@ smallpt_sample_osx:
 		
 
 clean:
-	rm -f build/$(FOLDER)/*.data
-	rm -f build/$(FOLDER)/*.js
-	rm -f build/$(FOLDER)/*.map
+	$(call chdir,build/)
+	rm -f $(FOLDER)/*.data
+	rm -f $(FOLDER)/*.js
+	rm -f $(FOLDER)/*.map
 	$(CXX) --clear-cache
 
 	

@@ -35,10 +35,12 @@ and Enforcer's http://www.fractalforums.com/mandelbulb-implementation/realtime-r
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
-#include <CL/cl.h>
+#include <CL/opencl.h>
 #endif
 
 #include "displayfunc.h"
+
+int USE_GL_ATTACHMENTS = 1; // enable OpenGL attachments for Compute results
 
 /* Options */
 static int useCPU = 0;
@@ -227,24 +229,58 @@ static void SetUpOpenCL() {
 		free(platforms);
 	}
 
-	cl_context_properties cps[3] ={
-		CL_CONTEXT_PLATFORM,
-		(cl_context_properties) platform,
-		0
-	};
+	/*
+    if (USE_GL_ATTACHMENTS == 1) {
 
-	cl_context_properties *cprops = (NULL == platform) ? NULL : cps;
+        #ifndef __EMSCRIPTEN__
+            CGLContextObj kCGLContext = CGLGetCurrentContext();              
+            CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+        #endif
 
-	context = clCreateContextFromType(
-			cprops,
-			useGPU==1?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU,
-			NULL,
-			NULL,
-			&status);
-	if (status != CL_SUCCESS) {
-		fprintf(stderr, "Failed to open OpenCL context\n");
-		exit(-1);
-	}
+        cl_context_properties properties[] = { 
+        	CL_CONTEXT_PLATFORM,
+			(cl_context_properties) platform,
+        #ifdef __EMSCRIPTEN__
+            CL_CGL_SHAREGROUP_KHR,
+            0,
+        #else
+            CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, 
+            (cl_context_properties)kCGLShareGroup,
+        #endif
+            0
+        };
+
+        // Create a context from a CGL share group
+        //
+        context = clCreateContext(properties, 0, 0, NULL, 0, 0);
+  
+        if (!context)
+        {
+            printf("Error: Failed to create a compute context!\n");
+            exit(-1);
+        }
+
+    } else {
+	*/
+		cl_context_properties cps[3] ={
+			CL_CONTEXT_PLATFORM,
+			(cl_context_properties) platform,
+			0
+		};
+
+		cl_context_properties *cprops = (NULL == platform) ? NULL : cps;
+
+		context = clCreateContextFromType(
+				cprops,
+				useGPU==1?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU,
+				NULL,
+				NULL,
+				&status);
+		if (status != CL_SUCCESS) {
+			fprintf(stderr, "Failed to open OpenCL context\n");
+			exit(-1);
+		}
+	//}
 
     /* Get the size of device list data */
 	size_t deviceListSize;

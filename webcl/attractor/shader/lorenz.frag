@@ -29,7 +29,7 @@ uniform sampler2D Texture0;
 vec4 gammaCorrection()
 {
     float gamma = 0.1;
-    vec4 c = texture2D(Texture0, v_texCoord);
+    vec4 c = texture2D(Texture0, gl_PointCoord);
     float l = (c.r+c.g+c.b)/3.0;
     c.xyz *= pow(l,gamma)/l; 
     return c;
@@ -38,13 +38,13 @@ vec4 gammaCorrection()
 vec4 blurX()
 {    
     float step = 1./u_height;
-    vec4 c = 0.6 * texture2D(Texture0, v_texCoord);      
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
     
-    c += 0.15 * texture2D( Texture0, v_texCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, v_texCoord - vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
 
-    c += 0.05 * texture2D( Texture0, v_texCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, v_texCoord - vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
       
     return c;      
 }
@@ -52,20 +52,22 @@ vec4 blurX()
 vec4 blurY()
 {   
     float step = 1./u_width;
-    vec4 c = 0.6 * texture2D(Texture0, v_texCoord);      
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
 
-    c += 0.15 * texture2D( Texture0, v_texCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, v_texCoord - vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
 
-    c += 0.05 * texture2D( Texture0, v_texCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, v_texCoord - vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
       
     return c;    
 }
 
 vec4 render()
 {    
-    return v_color;    
+    vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, gl_PointCoord);
+    //return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
+    return v_color;
 }
 
 void main()

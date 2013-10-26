@@ -25,9 +25,14 @@ varying vec4 v_color;
 varying vec2 v_texCoord;
 
 void main() {
-	gl_PointSize = u_pointSize;
-	gl_Position = u_matViewProjection * a_position;
-
+	float pointSize = 500.0 * u_pointSize;
+	vec4 vert = vec4(a_position);
+	vert.w = 1.0;
+	vec4 pos_eye = vec4(u_matViewProjection * vert);
+	
+	gl_PointSize = max(2.0, pointSize / (1.0-pos_eye.z));
+	gl_Position = pos_eye;           
+	
 	v_color = a_color;
 	v_texCoord = a_texCoord0;
 }

@@ -32,6 +32,7 @@ class LorenzAttractorDemo: public Demo
     GLuint m_vboColor;
     GLuint m_vaoParticles;
     GLuint m_program;
+    GLuint m_sprite_texture;
 
     std::vector<GLuint> m_fbo;
     std::vector<GLuint> m_tex;
@@ -47,6 +48,20 @@ public:
     virtual void update() override;
 
     virtual void init() override;
+
+    inline float evalHermite(float pA, float pB, float vA, float vB, float u)
+    {
+        float u2=(u*u), u3=u2*u;
+        float B0 = 2*u3 - 3*u2 + 1;
+        float B1 = -2*u3 + 3*u2;
+        float B2 = u3 - 2*u2 + u;
+        float B3 = u3 - u;
+        return( B0*pA + B1*pB + B2*vA + B3*vB );
+    }
+
+    virtual unsigned char* createGaussianMap(int N);
+    
+    virtual void createTexture();
 };
 
 #endif

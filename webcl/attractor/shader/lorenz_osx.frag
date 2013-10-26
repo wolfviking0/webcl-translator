@@ -65,7 +65,8 @@ vec4 blurY()
 
 vec4 render()
 {    
-    return v_color;    
+    vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, v_texCoord);
+    return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
 }
 
 void main()
