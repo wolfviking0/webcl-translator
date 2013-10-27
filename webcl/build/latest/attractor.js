@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = '94380925-72be-44d7-9047-e6cb3704bfdb';
+    var PACKAGE_UUID = 'b0cc6b39-434b-4f07-8b1b-ba93da15ac6a';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4931,6 +4931,32 @@ function copyTempDouble(ptr) {
           _kernel_start = kernel_string.indexOf("__kernel");
         }
         return _kernel_struct;
+      },getArray:function (size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array(size);
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array(size);
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array(size);
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array(size);
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array(size);
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array(size);
+            break;         
+          default:
+            _host_ptr = new Float32Array(size);
+            break;
+        }
+        return _host_ptr;
       },getReferencePointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         switch(type) {
@@ -6729,7 +6755,7 @@ function copyTempDouble(ptr) {
       }
       var _host_ptr = null;
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-        _host_ptr = new ArrayBuffer(size);
+        _host_ptr = CL.getArray(size,CL.cl_pn_type);
       } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
         _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {
