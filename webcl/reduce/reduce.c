@@ -680,7 +680,7 @@ int main(int argc, char **argv)
         err = CL_SUCCESS;
         err |= clSetKernelArg(kernels[i],  0, sizeof(cl_mem), &pass_output);  
         err |= clSetKernelArg(kernels[i],  1, sizeof(cl_mem), &pass_input);
-        err |= clSetKernelArg(kernels[i],  2, shared_size,    NULL);
+        //err |= clSetKernelArg(kernels[i],  2, shared_size,    NULL);
         err |= clSetKernelArg(kernels[i],  3, sizeof(int),    &entries);
         if (err != CL_SUCCESS)
         {

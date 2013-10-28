@@ -352,6 +352,7 @@ var LibraryOpenCL = {
 
 #if OPENCL_PRINT_TRACE
       console.info(CL.stack_trace);
+      //alert(CL.stack_trace);
       CL.stack_trace = "";
 #endif   
 
@@ -1033,7 +1034,10 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[context] = CL.cl_objects[context];
-        
+       
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
     return webcl.SUCCESS;
   },
 
@@ -1053,6 +1057,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (context in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
       return webcl.SUCCESS;
     }
 
@@ -1263,7 +1270,10 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[command_queue] = CL.cl_objects[command_queue];
-        
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
     return webcl.SUCCESS;
   },
 
@@ -1282,6 +1292,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (command_queue in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
       return webcl.SUCCESS;
     }
 
@@ -1820,7 +1833,11 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[memobj] = CL.cl_objects[memobj];
-        
+
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif        
+
     return webcl.SUCCESS;
   },
 
@@ -1839,6 +1856,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (memobj in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
       return webcl.SUCCESS;
     }
 
@@ -2205,7 +2225,10 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[sampler] = CL.cl_objects[sampler];
-        
+
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif        
     return webcl.SUCCESS;
   },
 
@@ -2225,6 +2248,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (sampler in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
       return webcl.SUCCESS;
     }
 
@@ -2429,6 +2455,9 @@ var LibraryOpenCL = {
 
     CL.cl_objects_retains[program] = CL.cl_objects[program];
         
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif   
     return webcl.SUCCESS;
   },
 
@@ -2448,6 +2477,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (program in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
       return webcl.SUCCESS;
     }
 
@@ -2870,7 +2902,10 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[kernel] = CL.cl_objects[kernel];
-        
+
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif   
     return webcl.SUCCESS;
   },
 
@@ -2890,6 +2925,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (kernel in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif   
       return webcl.SUCCESS;
     }
 
@@ -3341,7 +3379,10 @@ var LibraryOpenCL = {
 #endif 
 
     CL.cl_objects_retains[event] = CL.cl_objects[event];
-        
+       
+#if OPENCL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif           
     return webcl.SUCCESS;
   },
 
@@ -3361,6 +3402,9 @@ var LibraryOpenCL = {
 
     // If is an object retain don't release it ...
     if (event in CL.cl_objects_retains) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif   
       return webcl.SUCCESS;
     }
 
