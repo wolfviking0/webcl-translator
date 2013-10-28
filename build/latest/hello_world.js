@@ -4572,13 +4572,17 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
-        if (typeof(webcl) === "undefined") {
-          webcl = window.WebCL;
+      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+        if (CL.cl_init == 0) {
+          console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           if (typeof(webcl) === "undefined") {
-            console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            webcl = window.WebCL;
+            if (typeof(webcl) === "undefined") {
+              console.error("This browser has not WebCL implementation !!! \n");
+              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            }
           }
+          CL.cl_init = 1;
         }
         // Add webcl constant for double
         // webcl.FLOAT64 = 0x10DF;
@@ -4677,6 +4681,32 @@ function copyTempDouble(ptr) {
           _kernel_start = kernel_string.indexOf("__kernel");
         }
         return _kernel_struct;
+      },getArray:function (size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array(size);
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array(size);
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array(size);
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array(size);
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array(size);
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array(size);
+            break;         
+          default:
+            _host_ptr = new Float32Array(size);
+            break;
+        }
+        return _host_ptr;
       },getReferencePointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         switch(type) {
@@ -4703,52 +4733,6 @@ function copyTempDouble(ptr) {
             break;
         }
         return _host_ptr;
-      },getCopyPointerToArray:function (ptr,size,type) {  
-        var _host_ptr = null;
-        switch(type) {
-          case webcl.SIGNED_INT8:
-            _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
-            break;
-          case webcl.SIGNED_INT16:
-            _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
-            break;
-          case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;
-          case webcl.UNSIGNED_INT8:
-            _host_ptr = new Uint8Array( HEAPU8.subarray((ptr),(ptr+size)) );
-            break;
-          case webcl.UNSIGNED_INT16:
-            _host_ptr = new Uint16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
-            break;
-          case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;         
-          default:
-            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
-            break;
-        }
-        return _host_ptr;
-      },getPointerToValue:function (ptr,type) {  
-        var _value = null;
-        switch(type) {
-          case webcl.SIGNED_INT8:
-          case webcl.UNSIGNED_INT8:          
-            _value = HEAP8[(ptr)]
-            break;
-          case webcl.SIGNED_INT16:
-          case webcl.UNSIGNED_INT16:
-            _value = HEAP16[((ptr)>>1)]
-            break;
-          case webcl.SIGNED_INT32:
-          case webcl.UNSIGNED_INT32:
-            _value = HEAP32[((ptr)>>2)]
-            break;         
-          default:
-            _value = HEAPF32[((ptr)>>2)]
-            break;
-        }
-        return _value;
       },catchError:function (e) {
         console.error(e);
         var _error = -1;
@@ -4834,6 +4818,8 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clCreateContext(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
+      // Init webcl variable if necessary
+      CL.init();
       var _id = null;
       var _context = null;
       try { 
@@ -5173,18 +5159,15 @@ function copyTempDouble(ptr) {
       }
       var _host_ptr = null;
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-        _host_ptr = new ArrayBuffer(size);
-      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) {
-        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
-      } else if (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) {
-        console.info("/!\\ clCreateBuffer : For the CL_MEM_USE_HOST_PTR (1 << 3)... need to be more tested");
+        _host_ptr = CL.getArray(size,CL.cl_pn_type);
+      } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
         _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {
         console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
       }
       try {
         if (_host_ptr != null) {
-          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr.buffer);
+          _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
         } else
           _buffer = CL.cl_objects[context].createBuffer(_flags,size);
       } catch (e) {
@@ -5204,7 +5187,7 @@ function copyTempDouble(ptr) {
       try { 
             var _event = null;
             var _event_wait_list = [];
-            var _host_ptr = CL.getCopyPointerToArray(ptr,cb,CL.cl_pn_type);
+            var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
             for (var i = 0; i < num_events_in_wait_list; i++) {
               var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
               if (_event_wait in CL.cl_objects) {
@@ -5229,63 +5212,15 @@ function copyTempDouble(ptr) {
       try {
         var _sig = CL.cl_objects[kernel].sig[arg_index];
         if (_sig == webcl.LOCAL) {
-          // Not yet implemented in browser
-          var _array = null;//new Uint32Array([arg_size]);
-          // WD --> 
-          //CL.cl_objects[kernel].setArg(arg_index,_array);
-          // WebKit -->
-          CL.cl_objects[kernel].setArg(arg_index,arg_size,WebCLKernelArgumentTypes.LOCAL_MEMORY_SIZE);
+          var _array = new Uint32Array([arg_size]);
+          CL.cl_objects[kernel].setArg(arg_index,_array);
         } else {
           var _value = HEAP32[((arg_value)>>2)];
           if (_value in CL.cl_objects) {
             CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
           } else {
             var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
-            // WD --> 
-            //CL.cl_objects[kernel].setArg(arg_index,_array);
-            // WebKit -->     
-            var _size = (arg_size>>(_array.BYTES_PER_ELEMENT>>1));
-            var _type;
-            switch(_sig) {
-              case webcl.SIGNED_INT8:
-                _type = WebCLKernelArgumentTypes.CHAR;
-                break;
-              case webcl.SIGNED_INT16:
-                _type = WebCLKernelArgumentTypes.SHORT;
-                break;
-              case webcl.SIGNED_INT32:
-                _type = WebCLKernelArgumentTypes.INT;
-                break;
-              case webcl.UNSIGNED_INT8:
-                _type = WebCLKernelArgumentTypes.UCHAR;
-                break;
-              case webcl.UNSIGNED_INT16:
-                _type = WebCLKernelArgumentTypes.USHORT;
-                break;
-              case webcl.UNSIGNED_INT32:
-                _type = WebCLKernelArgumentTypes.UINT;
-                break;
-              default:
-                _type = WebCLKernelArgumentTypes.FLOAT;
-                break;
-            }
-            if ( _size > 1) {
-              if (_size == 2) {
-                _type |= WebCLKernelArgumentTypes.VEC2;
-              } else if (_size == 3) {
-                _type |= WebCLKernelArgumentTypes.VEC3;
-              } else if (_size == 4) {
-                _type |= WebCLKernelArgumentTypes.VEC4;
-              } else if (_size == 8) {
-                _type |= WebCLKernelArgumentTypes.VEC8;
-              } else if (_size == 16) {
-                _type |= WebCLKernelArgumentTypes.VEC16;
-              }
-              var _values = Array.apply( [], _array);
-              CL.cl_objects[kernel].setArg(arg_index, _values, _type);
-            } else {
-              CL.cl_objects[kernel].setArg(arg_index,CL.getPointerToValue(arg_value,_sig),_type);
-            }
+            CL.cl_objects[kernel].setArg(arg_index,_array);
           }
         }
       } catch (e) {
@@ -5324,27 +5259,37 @@ function copyTempDouble(ptr) {
       try { 
             var _event = null;
             var _event_wait_list = [];
-            // WD --> 
-            // Workink Draft take CLuint[3]
-            // var _global_work_offset = [];
-            // var _global_work_size = [];
-            // var _local_work_size = [];
-            // WebKit -->
-            // Webkit take UInt32Array     
-            var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
-            var _global_work_size = new Int32Array(work_dim);
-            var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+            var _global_work_offset
+            var _global_work_size; 
+            var _local_work_size;
+            // \todo need to be remove when webkit will be respect the WD
+            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+              // WD --> 
+              // Workink Draft take CLuint[3]
+              _global_work_offset = [];
+              _global_work_size = [];
+              _local_work_size = [];
+            } else {
+              // WebKit -->
+              // Webkit take UInt32Array     
+              var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
+              var _global_work_size = new Int32Array(work_dim);
+              var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
+            }
             for (var i = 0; i < work_dim; i++) {
-              //_global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
-              //if (global_work_offset != 0)
-              //  _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
-              //if (local_work_size != 0)
-              //  _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
-              _global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
-              if (_global_work_offset)
-                _global_work_offset[i] = HEAP32[(((global_work_offset)+(i*4))>>2)];
-              if (_local_work_size)
-                _local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
+              if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+                _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
+                if (global_work_offset != 0)
+                  _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
+                if (local_work_size != 0)
+                  _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
+              } else {
+                _global_work_size[i] = HEAP32[(((global_work_size)+(i*4))>>2)];
+                if (_global_work_offset)
+                  _global_work_offset[i] = HEAP32[(((global_work_offset)+(i*4))>>2)];
+                if (_local_work_size)
+                  _local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
+              }
             }
             for (var i = 0; i < num_events_in_wait_list; i++) {
               var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
@@ -5354,9 +5299,14 @@ function copyTempDouble(ptr) {
                 return webcl.INVALID_EVENT;    
               }
             }
-            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);       
-            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
-            // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+              // \todo need to be remove when webkit will be respect the WD
+              if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+                CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
+              } else {
+                CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
+              }
+              // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+              // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

@@ -3,7 +3,6 @@ var SAMPLE = 0;
 var MEMORY = 0;
 var USE_GL = 0;
 var OLD = "latest";
-var MODE = "cpu";
 var TITLE = "";
 var PARAM = [];
 
@@ -32,15 +31,9 @@ for (var i = 0; i < urlParts.length; i++) {
   } else if (eltParts[0].toLowerCase() == "title") {
     TITLE = eltParts[1];
     TITLE = TITLE.replace(/%20/gi, " ");
-  } else if (eltParts[0].toLowerCase() == "mode") {
-	  MODE = eltParts[1];
-  } else if (eltParts[0].toLowerCase() == "param") {
-    var paramParts = eltParts[1].split(',');
-	  for (var j = 0; j < paramParts.length; j++) {
-      PARAM.push(paramParts[j]);
-    }
+  } else {
+    PARAM.push(eltParts);
   } 
-
 }
 
 function includeJS(jsFile) {
@@ -50,17 +43,6 @@ function includeJS(jsFile) {
   if (typeof fileref!="undefined") {
     document.getElementsByTagName("head")[0].appendChild(fileref);
   }
-}
-
-function initArguments() {
-  var argv = [];
-  argv[0] = MODE;
-          
-  for (var i = 0; i < PARAM.length; i++) {
-	  argv[i+1] = PARAM[i];
-  }
-
-  return argv;
 }
 
 function loadModule(argv) {
