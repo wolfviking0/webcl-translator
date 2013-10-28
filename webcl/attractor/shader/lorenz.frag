@@ -66,18 +66,11 @@ vec4 blurY()
 vec4 render()
 {    
     vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, gl_PointCoord);
-    //return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
-    return v_color;
+    return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
 }
 
 void main()
 {    
     if ( u_task == 0 )
-        gl_FragColor = render();
-    else if ( u_task == 3 )
-        gl_FragColor = gammaCorrection();
-    else if ( u_task == 1 )
-        gl_FragColor = blurX();
-    else if ( u_task == 2 )
-        gl_FragColor = blurY();   
+        gl_FragColor = render(); 
 }

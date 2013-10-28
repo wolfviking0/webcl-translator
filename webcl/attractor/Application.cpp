@@ -104,13 +104,21 @@ void Keyboard( unsigned char key, int x, int y )
 #ifdef USE_GLUT    
    switch( key )
    {
-      case 27:
-      case 'q':
+    case 27:
+    case 'q':
 #ifdef __EMSCRIPTEN__
          webclEndProfile();
 #endif
          Shutdown();
          break;
+    case '+':
+        if (Application::get())
+            //Application::get()->zoomIn();
+        break;         
+    case '-':
+        if (Application::get())
+            //Application::get()->zoomOut();
+        break;                 
     }
     glutPostRedisplay();
 #endif    
@@ -330,9 +338,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 100;//128;//64;//128;//256;
-    int nY = 100;//128;//64;//128;//256;
-    int nZ = 100;//128;//64;//128;//256;
+    int nX = 128;//128;//64;//128;//256;
+    int nY = 128;//128;//64;//128;//256;
+    int nZ = 64;//128;//64;//128;//256;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);

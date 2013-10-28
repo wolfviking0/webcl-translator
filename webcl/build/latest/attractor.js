@@ -52,8 +52,8 @@ Module['FS_createPath']('/', 'shader', true, true);
       },
     };
       new DataRequest(0, 1646, 0, 0).open('GET', '/kernel/lorenz.cl');
-    new DataRequest(1646, 4297, 0, 0).open('GET', '/shader/lorenz.frag');
-    new DataRequest(4297, 5695, 0, 0).open('GET', '/shader/lorenz.vert');
+    new DataRequest(1646, 4083, 0, 0).open('GET', '/shader/lorenz.frag');
+    new DataRequest(4083, 5481, 0, 0).open('GET', '/shader/lorenz.vert');
     if (!Module.expectedDataFileDownloads) {
       Module.expectedDataFileDownloads = 0;
       Module.finishedDataFileDownloads = 0;
@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = 'ff713548-e2c1-4d5a-b4af-1ad03b0ac7a9';
+    var PACKAGE_UUID = '15895f38-6d90-4d0a-8b50-4f5aa372ff09';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -9224,9 +9224,9 @@ function __ZN11Application20setupLorenzAttractorEv($this){
  HEAPF32[(($105)>>2)]=0;
  var $106=(($104+16)|0);
  HEAPF32[(($106)>>2)]=0.01666666753590107;
- $nX=100;
- $nY=100;
- $nZ=100;
+ $nX=128;
+ $nY=128;
+ $nZ=64;
  var $107=$nX;
  var $108=$nY;
  var $109=(Math_imul($107,$108)|0);
@@ -39698,16 +39698,17 @@ function __ZN19LorenzAttractorDemo13createTextureEv($this){
  var $9=(($2+20)|0);
  var $10=HEAP32[(($9)>>2)];
  _glBindTexture(3553,$10);
- _glTexImage2D(3553,0,6408,32,32,0,6408,5121,0);
+ var $11=$data;
+ _glTexImage2D(3553,0,6408,32,32,0,6408,5121,$11);
  _glTexParameteri(3553,10241,9987);
  _glTexParameteri(3553,10240,9729);
  _glGenerateMipmap(3553);
  _glBindTexture(3553,0);
- var $11=$data;
- var $12=($11|0)==0;
- if($12){label=3;break;}else{label=2;break;}
+ var $12=$data;
+ var $13=($12|0)==0;
+ if($13){label=3;break;}else{label=2;break;}
  case 2: 
- __ZdlPv($11);
+ __ZdlPv($12);
  label=3;break;
  case 3: 
  return;
@@ -41450,12 +41451,12 @@ function __ZN3glm3dotIfEET_RKNS_6detail5tvec3IS1_EES6_($x,$y){
  var $31=($21)+($30);
  return $31;
 }
-// WARNING: content after a branch in a label, line: 5526
-// WARNING: content after a branch in a label, line: 5528
+// WARNING: content after a branch in a label, line: 5527
 // WARNING: content after a branch in a label, line: 5529
 // WARNING: content after a branch in a label, line: 5530
 // WARNING: content after a branch in a label, line: 5531
 // WARNING: content after a branch in a label, line: 5532
+// WARNING: content after a branch in a label, line: 5533
 function __ZN3glm6detail7tmat4x4IfEC2IiEERKT_($this,$s){
  var label=0;
  var sp=STACKTOP;STACKTOP=(STACKTOP+104)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
@@ -44025,12 +44026,12 @@ function __ZN2cl7NDRangeD1Ev($this){
  __ZN2cl7NDRangeD2Ev($2);
  return;
 }
-// WARNING: content after a branch in a label, line: 7386
-// WARNING: content after a branch in a label, line: 7388
+// WARNING: content after a branch in a label, line: 7387
 // WARNING: content after a branch in a label, line: 7389
 // WARNING: content after a branch in a label, line: 7390
 // WARNING: content after a branch in a label, line: 7391
 // WARNING: content after a branch in a label, line: 7392
+// WARNING: content after a branch in a label, line: 7393
 function __ZN27LorenzAttractorOpenCLSolverC2Ev($this){
  var label=0;
  var sp=STACKTOP;STACKTOP=(STACKTOP+40)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
@@ -50721,12 +50722,12 @@ function __ZN2cl6detail16ReferenceHandlerIP7_cl_memE7releaseES3_($memory){
  var $3=_clReleaseMemObject($2);
  return $3;
 }
-// WARNING: content after a branch in a label, line: 14633
-// WARNING: content after a branch in a label, line: 14635
+// WARNING: content after a branch in a label, line: 14634
 // WARNING: content after a branch in a label, line: 14636
 // WARNING: content after a branch in a label, line: 14637
 // WARNING: content after a branch in a label, line: 14638
 // WARNING: content after a branch in a label, line: 14639
+// WARNING: content after a branch in a label, line: 14640
 function __ZNKSt3__16vectorIN2cl6MemoryENS_9allocatorIS2_EEE8max_sizeEv($this){
  var label=0;
  var sp=STACKTOP;STACKTOP=(STACKTOP+56)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
@@ -51672,12 +51673,12 @@ function __ZNSt3__113__vector_baseINS_4pairIPKcjEENS_9allocatorIS4_EEED2Ev($this
   default: assert(0, "bad label: " + label);
  }
 }
-// WARNING: content after a branch in a label, line: 15565
-// WARNING: content after a branch in a label, line: 15567
+// WARNING: content after a branch in a label, line: 15566
 // WARNING: content after a branch in a label, line: 15568
 // WARNING: content after a branch in a label, line: 15569
 // WARNING: content after a branch in a label, line: 15570
 // WARNING: content after a branch in a label, line: 15571
+// WARNING: content after a branch in a label, line: 15572
 function __ZNKSt3__16vectorINS_4pairIPKcjEENS_9allocatorIS4_EEE8max_sizeEv($this){
  var label=0;
  var sp=STACKTOP;STACKTOP=(STACKTOP+56)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
@@ -52484,18 +52485,18 @@ function __ZNSt3__16vectorIN2cl6DeviceENS_9allocatorIS2_EEE18__construct_at_endI
   default: assert(0, "bad label: " + label);
  }
 }
-// WARNING: content after a branch in a label, line: 16524
-// WARNING: content after a branch in a label, line: 16526
+// WARNING: content after a branch in a label, line: 16525
 // WARNING: content after a branch in a label, line: 16527
 // WARNING: content after a branch in a label, line: 16528
 // WARNING: content after a branch in a label, line: 16529
 // WARNING: content after a branch in a label, line: 16530
-// WARNING: content after a branch in a label, line: 16705
-// WARNING: content after a branch in a label, line: 16707
+// WARNING: content after a branch in a label, line: 16531
+// WARNING: content after a branch in a label, line: 16706
 // WARNING: content after a branch in a label, line: 16708
 // WARNING: content after a branch in a label, line: 16709
 // WARNING: content after a branch in a label, line: 16710
 // WARNING: content after a branch in a label, line: 16711
+// WARNING: content after a branch in a label, line: 16712
 function __ZNSt3__16vectorIN2cl6DeviceENS_9allocatorIS2_EEE10deallocateEv($this){
  var label=0;
  var sp=STACKTOP;STACKTOP=(STACKTOP+40)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);

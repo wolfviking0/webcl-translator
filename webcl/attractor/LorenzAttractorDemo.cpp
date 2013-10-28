@@ -292,7 +292,7 @@ void LorenzAttractorDemo::createTexture()
     unsigned char* data = createGaussianMap(resolution);
     glGenTextures(1, (GLuint*)&m_sprite_texture);
     glBindTexture(GL_TEXTURE_2D, m_sprite_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolution, resolution, 0, GL_RGBA, GL_UNSIGNED_BYTE,NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolution, resolution, 0, GL_RGBA, GL_UNSIGNED_BYTE,data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_2D);
