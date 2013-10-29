@@ -39,7 +39,7 @@ public:
 
     static void create(Type type);
 
-    virtual void render(float simTime) = 0;
+    virtual void render(float simTime, float eyeDist) = 0;
     virtual void update() = 0;
     virtual void init() = 0;
 };

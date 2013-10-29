@@ -26,6 +26,8 @@ protected:
     float m_simTime;
     float m_simDeltaTime;
 
+    float m_eyeDist;
+    
 private:
 
     Application();
@@ -49,6 +51,8 @@ public:
 
     void init ();
     void run ();
+    void zoomIn ();
+    void zoomOut ();
 
     float getRealTime();
     float getSimTime();

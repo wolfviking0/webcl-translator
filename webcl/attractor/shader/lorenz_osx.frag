@@ -72,11 +72,5 @@ vec4 render()
 void main()
 {    
     if ( u_task == 0 )
-        gl_FragColor = render();
-    else if ( u_task == 3 )
-        gl_FragColor = gammaCorrection();
-    else if ( u_task == 1 )
-        gl_FragColor = blurX();
-    else if ( u_task == 2 )
-        gl_FragColor = blurY();   
+        gl_FragColor = render(); 
 }

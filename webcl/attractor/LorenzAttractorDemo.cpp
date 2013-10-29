@@ -301,7 +301,7 @@ void LorenzAttractorDemo::createTexture()
     delete data;
 }
 
-void LorenzAttractorDemo::render(float simTime)
+void LorenzAttractorDemo::render(float simTime,float eyeDist)
 {
     int nParticles = global::par().getInt("nParticles");
     int windowWidth = global::par().getInt("windowWidth");
@@ -316,8 +316,6 @@ void LorenzAttractorDemo::render(float simTime)
     GLuint hTask = glGetUniformLocation(m_program, "u_task");
 
     // set MVP
-
-    float eyeDist = 100.f;
     float eyeAzimuth = simTime*0.4;
     float eyeZ = 25.f;
     glm::vec3 eye(eyeDist*cos(eyeAzimuth),eyeDist*sin(eyeAzimuth),eyeZ);
@@ -327,7 +325,7 @@ void LorenzAttractorDemo::render(float simTime)
 
     glm::mat4 M = glm::mat4(1.f);
     glm::mat4 V  = glm::lookAt(eye, glm::vec3(0.f,0.f,eyeZ), glm::vec3(0.f,0.f,1.f) );
-    glm::mat4 P = glm::perspective(25.f, aspectRatio, 10.f, 200.0f);
+    glm::mat4 P = glm::perspective(25.f, aspectRatio, 10.f, 400.0f);
     glm::mat4 MVP = P*V*M;
 
     //float hue = 180.f*(1.f+sin(time*0.1f));

@@ -156,6 +156,12 @@ smallpt_sample_osx:
 	clang++ -02 renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o smallpt.out	
 
+
+#smalllux_sample_osx:
+#	$(call chdir,smalllux/)
+#	clang++ -02 displayfunc.cpp intersectiondevice.cpp mesh.cpp path.cpp qbvhaccel.cpp renderthread.cpp scene.cpp smallluxGPU.cpp plymesh/rply.cpp core/bbox.cpp core/matrix4x4.cpp core/transform.cpp -I./core -I./plymesh -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
+#	-o smalllux.out	
+
 #fft_sample:
 #	$(call chdir,fft/)
 #	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) fft_execute.cpp fft_kernelstring.cpp fft_setup.cpp main.cpp $(DEBUG) \

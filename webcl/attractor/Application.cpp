@@ -111,13 +111,13 @@ void Keyboard( unsigned char key, int x, int y )
 #endif
          Shutdown();
          break;
-    case '+':
+    case 'i':
         if (Application::get())
-            //Application::get()->zoomIn();
+            Application::get()->zoomIn();
         break;         
-    case '-':
+    case 'o':
         if (Application::get())
-            //Application::get()->zoomOut();
+            Application::get()->zoomOut();
         break;                 
     }
     glutPostRedisplay();
@@ -223,6 +223,7 @@ Application::Application()
     m_simDeltaTime = 0.f;
     m_cursorX = 0.f;
     m_cursorY = 0.f;
+    m_eyeDist = 100.f;
 }
 
 Application::~Application()
@@ -291,7 +292,7 @@ void Application::run()
     #endif
     
     // render and swap buffers
-    Demo::get()->render(m_simTime);
+    Demo::get()->render(m_simTime,m_eyeDist);
 
     // swap buffer
 #ifdef USE_GLUT    
@@ -317,6 +318,18 @@ void Application::run()
     ReportStats(uiStartTime, uiEndTime);
 
     // ++curFrame;
+}
+
+void Application::zoomOut() {
+    m_eyeDist += 5.0f;
+    if (m_eyeDist > 350.f) m_eyeDist = 350.f;
+    //printf("m_eyeDist : %f\n",m_eyeDist);
+}
+
+void Application::zoomIn() {
+    m_eyeDist -= 5.0f;
+    if (m_eyeDist < 50.f) m_eyeDist = 50.f;
+    //printf("m_eyeDist : %f\n",m_eyeDist);    
 }
 
 float Application::getRealTime()

@@ -43,7 +43,7 @@ class LorenzAttractorDemo: public Demo
     ~LorenzAttractorDemo();
 
 public:
-    virtual void render(float simTime) override;
+    virtual void render(float simTime, float eyeDist) override;
 
     virtual void update() override;
 
