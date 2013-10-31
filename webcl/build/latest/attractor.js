@@ -62,7 +62,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = '1d70a6cb-9e4d-4024-a3a7-85f32dc862bf';
+    var PACKAGE_UUID = '2bed7ef1-09e6-446f-a960-4113665129ec';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4931,55 +4931,29 @@ function copyTempDouble(ptr) {
           _kernel_start = kernel_string.indexOf("__kernel");
         }
         return _kernel_struct;
-      },getArray:function (size,type) {  
+      },getCopyPointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         switch(type) {
           case webcl.SIGNED_INT8:
-            _host_ptr = new Int8Array(size);
+            _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
             break;
           case webcl.SIGNED_INT16:
-            _host_ptr = new Int16Array(size);
+            _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
             break;
           case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array(size);
+            _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
           case webcl.UNSIGNED_INT8:
-            _host_ptr = new Uint8Array(size);
+            _host_ptr = new Uint8Array( HEAPU8.subarray((ptr),(ptr+size)) );
             break;
           case webcl.UNSIGNED_INT16:
-            _host_ptr = new Uint16Array(size);
+            _host_ptr = new Uint16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
             break;
           case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array(size);
+            _host_ptr = new Uint32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;         
           default:
-            _host_ptr = new Float32Array(size);
-            break;
-        }
-        return _host_ptr;
-      },getCopyPointerToArray:function (size,type) {  
-        var _host_ptr = null;
-        switch(type) {
-          case webcl.SIGNED_INT8:
-            _host_ptr = new Int8Array(size);
-            break;
-          case webcl.SIGNED_INT16:
-            _host_ptr = new Int16Array(size);
-            break;
-          case webcl.SIGNED_INT32:
-            _host_ptr = new Int32Array(size);
-            break;
-          case webcl.UNSIGNED_INT8:
-            _host_ptr = new Uint8Array(size);
-            break;
-          case webcl.UNSIGNED_INT16:
-            _host_ptr = new Uint16Array(size);
-            break;
-          case webcl.UNSIGNED_INT32:
-            _host_ptr = new Uint32Array(size);
-            break;         
-          default:
-            _host_ptr = new Float32Array(size);
+            _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
             break;
         }
         return _host_ptr;
@@ -6781,7 +6755,7 @@ function copyTempDouble(ptr) {
       }
       var _host_ptr = null;
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-        _host_ptr = CL.getArray(size,CL.cl_pn_type);
+        _host_ptr = new ArrayBuffer(size);
       } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
         _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {

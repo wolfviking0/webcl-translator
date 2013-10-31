@@ -180,64 +180,34 @@ var LibraryOpenCL = {
     
       return _kernel_struct;
     },
-
-    getArray: function(size,type) {  
-      var _host_ptr = null;
-
-      switch(type) {
-        case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(size);
-          break;
-        case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(size);
-          break;
-        case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(size);
-          break;
-        case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array(size);
-          break;
-        case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array(size);
-          break;
-        case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array(size);
-          break;         
-        default:
-          _host_ptr = new Float32Array(size);
-          break;
-      }
-      
-      return _host_ptr;
-    },
     
-    getCopyPointerToArray: function(size,type) {  
+    getCopyPointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
       switch(type) {
         case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array(size);
+          _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
           break;
         case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array(size);
+          _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
           break;
         case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array(size);
+          _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array(size);
+          _host_ptr = new Uint8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array(size);
+          _host_ptr = new Uint16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
           break;
         case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array(size);
+          _host_ptr = new Uint32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
           break;         
         default:
-          _host_ptr = new Float32Array(size);
+          _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
           break;
       }
-      
+
       return _host_ptr;
     },
 
@@ -1495,7 +1465,7 @@ var LibraryOpenCL = {
     var _host_ptr = null;
 
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-      _host_ptr = CL.getArray(size,CL.cl_pn_type);
+      _host_ptr = new ArrayBuffer(size);
     } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
       _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
     } else if (flags_i64_1 & ~_flags) {
@@ -1789,7 +1759,7 @@ var LibraryOpenCL = {
     }
       
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-      _host_ptr = CL.getArray(size,CL.cl_pn_type);
+      _host_ptr = new ArrayBuffer(size);
     } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
       _host_ptr = CL.getCopyPointerToArray(host_ptr,size,_type);
     } else if (flags_i64_1 & ~_flags) {
