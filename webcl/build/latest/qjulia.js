@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/latest/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = 'e23abff8-56e1-4945-be69-6a136d371265';
+    var PACKAGE_UUID = '8e72627f-97b3-41d5-bff1-c34b020f2999';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -4802,6 +4802,32 @@ function copyTempDouble(ptr) {
         }
         return _kernel_struct;
       },getArray:function (size,type) {  
+        var _host_ptr = null;
+        switch(type) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array(size);
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array(size);
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array(size);
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array(size);
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array(size);
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array(size);
+            break;         
+          default:
+            _host_ptr = new Float32Array(size);
+            break;
+        }
+        return _host_ptr;
+      },getCopyPointerToArray:function (size,type) {  
         var _host_ptr = null;
         switch(type) {
           case webcl.SIGNED_INT8:
@@ -9959,7 +9985,7 @@ function copyTempDouble(ptr) {
       if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
         _host_ptr = CL.getArray(size,CL.cl_pn_type);
       } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-        _host_ptr = CL.getReferencePointerToArray(host_ptr,size,CL.cl_pn_type);      
+        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
       } else if (flags_i64_1 & ~_flags) {
         console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
       }
