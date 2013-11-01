@@ -21,12 +21,8 @@
     <script src="javascripts/main.js" type="text/javascript"></script>
 
     <script type="text/javascript">
-      function onclickurl(radio, sample, gl, parameter) {
-        var mode = "cpu";
-        if(document.getElementById(radio).checked) {
-          mode = "gpu";
-        } 
-        return window.open('build/index.html?sample='+sample+'&mode='+mode+'&gl='+gl+'&'+parameter,'MyWindow',width=512,height=512);
+      function onclickurl(page, sample, gl, parameter) {
+        return window.open('http://wolfviking0.github.io/webcl-translator/build/'+page+'.html?sample='+sample+'&gl='+gl+'&'+parameter,'MyWindow',width=512,height=512);
       }
     </script>
 
@@ -50,229 +46,289 @@
 
         <section id="main_content">
           <h3>
-          <a name="demo-webcl" class="anchor" href="#demo-webcl"><span class="octicon octicon-link"></span></a>Demos WebCL</h3>
-          <!-- BEGIN DEMO SAMPLE TABLE -->
+          <a name="samples-webcl" class="anchor" href="#samples-webcl"><span class="octicon octicon-link"></span></a>Samples WebCL</h3>
           <table>
-            <!-- 1 -->
             <tr>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device1',0, 'off','title=Hello World&files=hello_world.js'); return false;">
-                Hello World
-                </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device2',1, 'off','title=Hello World 2&files=hello_world_2_kernel.js,hello_world_2.js'); return false;">
-                Hello World 2
-                </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device3',2, 'off','title=Convolution&files=convolution_kernel.js,convolution.js'); return false;">
-                Convolution
-                </a>
-              </th>
+              <th>Title</th> <th>Compatibility</th> <th>CPU</th> <th>GPU</th>      
             </tr>
             <tr>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device1" name="hello_world" type="radio" checked>
-                <label for="gpu-device1" onclick="">GPU</label>
-                
-                <input id="cpu-device1" name="hello_world" type="radio">	
-                <label for="cpu-device1" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device2" name="hello_world_2" type="radio" checked>
-                <label for="gpu-device2" onclick="">GPU</label>
-                
-                <input id="cpu-device2" name="hello_world_2" type="radio">	
-                <label for="cpu-device2" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device3" name="convolution" type="radio" checked>
-                <label for="gpu-device3" onclick="">GPU</label>
-                
-                <input id="cpu-device3" name="convolution" type="radio">  
-                <label for="cpu-device3" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
+              <td>Hello World</td> <td>[Webkit/Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',0, 'off','title=Hello World&cpu'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',0, 'off','title=Hello World&gpu'); return false;">
+                here
+                </a>
+              </td>  
             </tr>
-            <!-- 2 -->
-            <tr>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device4',3,'off','title=Scan&files=scan_kernel.js,scan.js'); return false;">
-                  Scan
+            <tr>  
+              <td>Hello World 2</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',1, 'off','title=Hello World 2&cpu'); return false;">
+                here
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device5',4,'off','title=Reduce&files=reduce_kernel.js,reduce.js'); return false;">
-                  Reduce
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',1, 'off','title=Hello World 2&gpu'); return false;">
+                here
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:green" href="#" onClick="MyWindow=onclickurl('gpu-device6',5,'on','title=Mandelbulb&files=mandelbulb_kernel.js,mandelbulb.js'); return false;">
-                  Mandelbulb
-                </a>
-              </th>
+              </td>   
             </tr>
-            <tr>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device4" name="scan" type="radio" checked>
-                <label for="gpu-device4" onclick="">GPU</label>
-                
-                <input id="cpu-device4" name="scan" type="radio">  
-                <label for="cpu-device4" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th>
-                <div class="switch candy blue">
-                <input id="gpu-device5" name="reduce" type="radio" checked>
-                <label for="gpu-device5" onclick="">GPU</label>
-                
-                <input id="cpu-device5" name="reduce" type="radio">  
-                <label for="cpu-device5" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device6" name="mandelbulb" type="radio" checked>
-                <label for="gpu-device6" onclick="">GPU</label>
-                
-                <input id="cpu-device6" name="mandelbulb" type="radio">  
-                <label for="cpu-device6" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              
+            <tr>  
+              <td>Convolution</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',2, 'off','title=Convolution&cpu'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',2, 'off','title=Convolution&gpu'); return false;">
+                here
+                </a>
+              </td>   
             </tr>
-            <!-- 3 -->
-            <tr>
-              <th style="width: 100px;">
-                <a style="color:orange" href="#" onClick="MyWindow=onclickurl('gpu-device7',6,'on','title=QJulia&files=qjulia_kernel.js,qjulia.js'); return false;">
-                  QJulia
+            <tr>  
+              <td>Scan</td> <td>[Webkit/Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',3, 'off','title=Scan&cpu'); return false;">
+                here
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-              	<a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device8',7,'on','title=Smallpt&files=smallpt_kernel.js,smallpt.js'); return false;">
-                  Smallpt
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',3, 'off','title=Scan&gpu'); return false;">
+                here
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-  
-              </th>
+              </td>   
+            </tr>
+            <!--
+            <tr>  
+              <td>Reduce</td> <td>[]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int'); return false;">
+                GPU(Int) 
+                </a>
+                &nbsp;
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float'); return false;">
+                GPU(Float) 
+                </a>
+              </td>
             </tr>
             <tr>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device7" name="qjulia" type="radio" checked>
-                <label for="gpu-device7" onclick="">GPU</label>
-                
-                <input id="cpu-device7" name="qjulia" type="radio">  
-                <label for="cpu-device7" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device8" name="smallpt" type="radio" checked>
-                <label for="gpu-device8" onclick="">GPU</label>
-                
-                <input id="cpu-device8" name="smallpt" type="radio">  
-                <label for="cpu-device8" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-            </tr>
-            <!-- 
-            <tr>
-              <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device10','on','title=Dxt Compressor&files='); return false;">
-                  DXT
+              <td></td> <td></td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int2'); return false;">
+                GPU(Int2)
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device11','off','title=FFT&files='); return false;">
-                  FFT
+                &nbsp;
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float2'); return false;">
+                GPU(Float2)
                 </a>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <a style="color:red" href="#" onClick="MyWindow=onclickurl('gpu-device12','on','title=Video Decoder&files='); return false;">
-                  Decoder
-                </a>
-              </th>
+              </td>
             </tr>
             <tr>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device10" name="dxt" type="radio" checked>
-                <label for="gpu-device10" onclick="">GPU</label>
-                
-                <input id="cpu-device10" name="dxt" type="radio">  
-                <label for="cpu-device10" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device11" name="fft" type="radio" checked>
-                <label for="gpu-device11" onclick="">GPU</label>
-                
-                <input id="cpu-device11" name="fft" type="radio">  
-                <label for="cpu-device11" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
-              <td>&nbsp;</td>
-              <th style="width: 100px;">
-                <div class="switch candy blue">
-                <input id="gpu-device12" name="videodecode" type="radio" checked>
-                <label for="gpu-device12" onclick="">GPU</label>
-                
-                <input id="cpu-device12" name="videodecode" type="radio">  
-                <label for="cpu-device12" onclick="">CPU</label>
-                
-                <span class="slide-button"></span>
-                </div>
-              </th>
+              <td></td> <td></td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int4'); return false;">
+                GPU(Int4)
+                </a>
+                &nbsp;
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float4'); return false;">
+                GPU(Float4)
+                </a>
+              </td>   
             </tr>
-            -->
+          -->
           </table>
-          <!-- END DEMO SAMPLE TABLE -->
+          <hr/>
+          <h3>
+          <a name="demos-webcl" class="anchor" href="#demos-webcl"><span class="octicon octicon-link"></span></a>Demos WebCL</h3>
+          <table>
+            <tr>
+              <th>Title</th> <th>Compatibility</th> <th>CPU</th> <th>GPU</th>     
+            </tr>
+            <tr>
+              <td>Mandelbulb</td> <td>[Webkit/Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',5, 'on','title=Mandelbulb&cpu'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',5, 'on','title=Mandelbulb&gpu'); return false;">
+                here
+                </a>
+              </td>  
+            </tr>
+            <tr>  
+              <td>QJulia Copying</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',6, 'on','title=QJulia Copying&cpu'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',6, 'on','title=QJulia Copying&gpu'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>QJulia Attached</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',6, 'on','title=QJulia Attached&cpu&interop'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',6, 'on','title=QJulia Attached&gpu&interop'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Attractor Copying</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',8, 'on','title=Attractor Copying&cpu'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',8, 'on','title=Attractor Copying&gpu'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Attractor Attached</td> <td>[Webkit]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',8, 'on','title=Attractor Attached&cpu&interop'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('translator',8, 'on','title=Attractor Attached&gpu&interop'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+          </table>
+
+          <hr/>
+          <h3>
+          <a name="ocltoys-webcl" class="anchor" href="#ocltoys-webcl"><span class="octicon octicon-link"></span></a>OCLToys WebCL</h3>
+          <table>
+            <tr>
+              <th>Title</th> <th>Compatibility</th><th>CPU</th> <th>GPU</th>     
+            </tr>
+            <tr>
+              <td>jugCLer</td> <td>[Webkit/Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',0, 'on','title=jugCLer&-o&ALL_CPUS&-w&512'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',0, 'on','title=jugCLer&-o&ALL_GPUS&-w&512'); return false;">
+                here
+                </a>
+              </td> 
+            </tr>
+            <tr>  
+              <td>Mandelgpu</td> <td>[Webkit/Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',2, 'on','title=Mandelgpu&-o&ALL_CPUS&-w&512'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',2, 'on','title=Mandelgpu&-o&ALL_GPUS&-w&512'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>
+              <td>Smallptgpu Simple</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Simple&-o&ALL_CPUS&-w&512&-n&scenes/simple.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Simple&-o&ALL_GPUS&-w&512&-n&scenes/simple.scn'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Smallptgpu Caustic</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic&-o&ALL_CPUS&-w&512&-n&scenes/caustic.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic&-o&ALL_GPUS&-w&512&-n&scenes/caustic.scn'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Smallptgpu Caustic3</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic3&-o&ALL_CPUS&-w&512&-n&scenes/caustic3.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic3&-o&ALL_GPUS&-w&512&-n&scenes/caustic3.scn'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Smallptgpu Cornell</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell&-o&ALL_CPUS&-w&512&-n&scenes/cornell.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell&-o&ALL_GPUS&-w&512&-n&scenes/cornell.scn'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Smallptgpu Cornell Fog</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell Fog&-o&ALL_CPUS&-w&512&-n&scenes/cornell_fog.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell Fog&-o&ALL_GPUS&-w&512&-n&scenes/cornell_fog.scn'); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>  
+              <td>Smallptgpu Cornell SSS</td> <td>[Firefox]</td> 
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell SSS&-o&ALL_CPUS&-w&512&-n&scenes/cornell_sss.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td>
+                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell SSS&-o&ALL_GPUS&-w&512&-n&scenes/cornell_sss.scn'); return false;">
+                here 
+                </a>
+              </td>   
+            </tr>
+          </table>
+        
           <!-- 
           <h3>
           <a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
