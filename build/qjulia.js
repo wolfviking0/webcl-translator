@@ -58,7 +58,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/qjulia.data';
     var REMOTE_PACKAGE_NAME = 'qjulia.data';
-    var PACKAGE_UUID = 'd8cc4d05-625f-4886-b740-09cd5b010e9c';
+    var PACKAGE_UUID = '03c3219e-376a-45cb-b3ad-1da85e0011fd';
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -12411,75 +12411,79 @@ function _SetupComputeKernel(){
  var $99=($98|0)!=0;
  if($99){label=21;break;}else{label=22;break;}
  case 21: 
- var $101=_printf(576,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $102=_end(1);
- $1=$102;
- label=32;break;
+ var $101=(($max_workgroup_item_size)|0);
+ HEAP32[(($101)>>2)]=1024;
+ var $102=(($max_workgroup_item_size+4)|0);
+ HEAP32[(($102)>>2)]=1;
+ var $103=(($max_workgroup_item_size+8)|0);
+ HEAP32[(($103)>>2)]=1;
+ var $104=_printf(576,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ label=22;break;
  case 22: 
- var $104=HEAP32[((3512)>>2)];
- var $105=($104>>>0)>1;
- if($105){label=23;break;}else{label=24;break;}
+ var $106=HEAP32[((3512)>>2)];
+ var $107=($106>>>0)>1;
+ if($107){label=23;break;}else{label=24;break;}
  case 23: 
- var $107=HEAP32[((3512)>>2)];
- var $108=HEAP32[((2136)>>2)];
- var $109=(((($107>>>0))/(($108>>>0)))&-1);
- var $113=$109;label=25;break;
+ var $109=HEAP32[((3512)>>2)];
+ var $110=HEAP32[((2136)>>2)];
+ var $111=(((($109>>>0))/(($110>>>0)))&-1);
+ var $115=$111;label=25;break;
  case 24: 
- var $111=HEAP32[((3512)>>2)];
- var $113=$111;label=25;break;
+ var $113=HEAP32[((3512)>>2)];
+ var $115=$113;label=25;break;
  case 25: 
- var $113;
- HEAP32[((2944)>>2)]=$113;
- var $114=HEAP32[((3512)>>2)];
- var $115=HEAP32[((2944)>>2)];
- var $116=(((($114>>>0))/(($115>>>0)))&-1);
- HEAP32[((2948)>>2)]=$116;
+ var $115;
+ HEAP32[((2944)>>2)]=$115;
+ var $116=HEAP32[((3512)>>2)];
+ var $117=HEAP32[((2944)>>2)];
+ var $118=(((($116>>>0))/(($117>>>0)))&-1);
+ HEAP32[((2948)>>2)]=$118;
  $i=0;
  label=26;break;
  case 26: 
- var $118=$i;
- var $119=($118|0)<2;
- if($119){label=27;break;}else{label=31;break;}
+ var $120=$i;
+ var $121=($120|0)<2;
+ if($121){label=27;break;}else{label=31;break;}
  case 27: 
- var $121=$i;
- var $122=((2944+($121<<2))|0);
- var $123=HEAP32[(($122)>>2)];
- var $124=$i;
- var $125=(($max_workgroup_item_size+($124<<2))|0);
- var $126=HEAP32[(($125)>>2)];
- var $127=($123>>>0)>($126>>>0);
- if($127){label=28;break;}else{label=29;break;}
+ var $123=$i;
+ var $124=((2944+($123<<2))|0);
+ var $125=HEAP32[(($124)>>2)];
+ var $126=$i;
+ var $127=(($max_workgroup_item_size+($126<<2))|0);
+ var $128=HEAP32[(($127)>>2)];
+ var $129=($125>>>0)>($128>>>0);
+ if($129){label=28;break;}else{label=29;break;}
  case 28: 
- var $129=$i;
- var $130=$i;
- var $131=((2944+($130<<2))|0);
- var $132=HEAP32[(($131)>>2)];
- var $133=$i;
- var $134=$i;
- var $135=(($max_workgroup_item_size+($134<<2))|0);
- var $136=HEAP32[(($135)>>2)];
- var $137=_printf(448,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$129,HEAP32[(((tempVarArgs)+(8))>>2)]=$132,HEAP32[(((tempVarArgs)+(16))>>2)]=$133,HEAP32[(((tempVarArgs)+(24))>>2)]=$136,tempVarArgs)); STACKTOP=tempVarArgs;
- var $138=$i;
- var $139=(($max_workgroup_item_size+($138<<2))|0);
- var $140=HEAP32[(($139)>>2)];
- var $141=$i;
- var $142=((2944+($141<<2))|0);
- HEAP32[(($142)>>2)]=$140;
+ var $131=$i;
+ var $132=$i;
+ var $133=((2944+($132<<2))|0);
+ var $134=HEAP32[(($133)>>2)];
+ var $135=$i;
+ var $136=$i;
+ var $137=(($max_workgroup_item_size+($136<<2))|0);
+ var $138=HEAP32[(($137)>>2)];
+ var $139=_printf(448,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$131,HEAP32[(((tempVarArgs)+(8))>>2)]=$134,HEAP32[(((tempVarArgs)+(16))>>2)]=$135,HEAP32[(((tempVarArgs)+(24))>>2)]=$138,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $140=$i;
+ var $141=(($max_workgroup_item_size+($140<<2))|0);
+ var $142=HEAP32[(($141)>>2)];
+ var $143=$i;
+ var $144=((2944+($143<<2))|0);
+ HEAP32[(($144)>>2)]=$142;
  label=29;break;
  case 29: 
  label=30;break;
  case 30: 
- var $145=$i;
- var $146=((($145)+(1))|0);
- $i=$146;
+ var $147=$i;
+ var $148=((($147)+(1))|0);
+ $i=$148;
  label=26;break;
  case 31: 
- var $148=_printf(1936,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $150=_printf(1936,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
  $1=0;
  label=32;break;
  case 32: 
- var $150=$1;
- STACKTOP=sp;return $150;
+ var $152=$1;
+ STACKTOP=sp;return $152;
   default: assert(0, "bad label: " + label);
  }
 }
