@@ -79,7 +79,59 @@
             }
             
             loadModule(PARAM);
-          	includeJS("qjulia.js");     
+            
+			      switch(SAMPLE) {
+        		case '0':
+          			includeJS("hello_world.js");     
+          			break;//------------
+
+        		case '1':  
+          			includeJS("hello_world_2.js");
+ 					      break;//------------
+        
+        		case '2':  
+          			includeJS("convolution.js");
+          			break;//------------
+        
+        		case '3':   
+          			includeJS("scan.js");
+		          	break; //------------
+ 
+       			case '4':
+          			includeJS("reduce.js");
+          			break; //------------
+
+            case '5':
+                includeJS("mandelbulb.js");
+                break; //------------
+
+        		case '6':
+          			includeJS("qjulia.js");
+          			break; //------------    
+              
+            case '7':
+                includeJS("smallpt.js");
+                break; //------------
+
+            case '8':
+                includeJS("attractor.js");
+                break; //------------                 
+          /*
+            case '10':
+		        	  includeJS("smallpt.js");
+          			break; //------------
+          */
+          /*
+		          	includeJS("fft.js");
+        		  	break; //------------
+          			includeJS("videodecode.js");
+          			break; //------------
+            */
+
+       			default:
+          			includeJS("hello_world.js"); 
+          			break;
+      		}
         
         	</script>
         </section>
