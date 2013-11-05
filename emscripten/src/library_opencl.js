@@ -21,12 +21,16 @@ var LibraryOpenCL = {
     init: function() {
       if (CL.cl_init == 0) {
         console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-        if (typeof(webcl) === "undefined") {
-          webcl = window.WebCL;
+        if (typeof window !== 'undefined') { // Not nodejs
           if (typeof(webcl) === "undefined") {
-            console.error("This browser has not WebCL implementation !!! \n");
-            console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            webcl = window.WebCL;
+            if (typeof(webcl) === "undefined") {
+              console.error("This browser has not WebCL implementation !!! \n");
+              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+            }
           }
+        } else {
+          //webcl = require('../webcl');
         }
         CL.cl_init = 1;
       }
@@ -363,7 +367,8 @@ var LibraryOpenCL = {
   webclBeginProfile: function(name) {
 #if OPENCL_PROFILE
     // start profiling
-    console.profile(Pointer_stringify(name));
+    if (typeof window !== 'undefined') // Not nodejs
+      console.profile(Pointer_stringify(name));
     CL.cl_elapsed_time = Date.now();
 #endif
     return 0;
@@ -372,7 +377,9 @@ var LibraryOpenCL = {
   webclEndProfile: function() {
 #if OPENCL_PROFILE
     CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-    console.profileEnd();
+    
+    if (typeof window !== 'undefined') // Not nodejs
+      console.profileEnd();
     
     console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
     var count = 0;
