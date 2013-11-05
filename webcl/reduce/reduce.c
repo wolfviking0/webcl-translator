@@ -469,8 +469,13 @@ int main(int argc, char **argv)
     err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_workgroup_item_size), &max_workgroup_item_size, &returned_size);
     if (err != CL_SUCCESS)
     {
+        
+        max_workgroup_item_size[0] = 1024;
+        max_workgroup_item_size[1] = 1;
+        max_workgroup_item_size[2] = 1;  
+
         printf("Error: Failed to retrieve device info!\n");
-        return EXIT_FAILURE;
+        //return EXIT_FAILURE;
     }
 
     cl_char vendor_name[1024] = {0};
@@ -680,7 +685,7 @@ int main(int argc, char **argv)
         err = CL_SUCCESS;
         err |= clSetKernelArg(kernels[i],  0, sizeof(cl_mem), &pass_output);  
         err |= clSetKernelArg(kernels[i],  1, sizeof(cl_mem), &pass_input);
-        //err |= clSetKernelArg(kernels[i],  2, shared_size,    NULL);
+        err |= clSetKernelArg(kernels[i],  2, shared_size,    NULL);
         err |= clSetKernelArg(kernels[i],  3, sizeof(int),    &entries);
         if (err != CL_SUCCESS)
         {
