@@ -21,17 +21,24 @@ var LibraryOpenCL = {
     init: function() {
       if (CL.cl_init == 0) {
         console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-        if (typeof window !== 'undefined') { // Not nodejs
+        
+        var nodejs = (typeof window === 'undefined');
+        if(nodejs) {
+          webcl = require('../webcl');
+        } else {
           if (typeof(webcl) === "undefined") {
             webcl = window.WebCL;
-            if (typeof(webcl) === "undefined") {
-              console.error("This browser has not WebCL implementation !!! \n");
-              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
-            }
           }
-        } else {
-          //webcl = require('../webcl');
         }
+
+        if (webcl == undefined) {
+          alert("Unfortunately your system does not support WebCL. " +
+          "Make sure that you have WebKit Samsung or Firefox Nokia plugin");
+
+          console.error("Unfortunately your system does not support WebCL.\n");
+          console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
+        }
+
         CL.cl_init = 1;
       }
       // Add webcl constant for double
