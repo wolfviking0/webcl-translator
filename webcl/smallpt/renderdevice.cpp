@@ -57,7 +57,11 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 
 	// Compile sources
 	cl::Program::Sources source(1, make_pair(src.c_str(), src.length()));
-	cl::Program program = cl::Program(*context, source);
+	
+	// \todo remove this for back to the original version
+	// \todo temporary solve the crash
+	// cl::Program program = cl::Program(*context, source);
+	program = cl::Program(*context, source);
 	try {
 		VECTOR_CLASS<cl::Device> buildDevice;
 		buildDevice.push_back(device);

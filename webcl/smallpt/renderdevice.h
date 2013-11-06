@@ -166,6 +166,10 @@ private:
 	// boost::barrier *threadStartBarrier;
 	// boost::barrier *threadEndBarrier;
 
+	// \todo remove this for back to the original version
+	// \todo temporary solve the crash
+	cl::Program program;
+
 	cl::Context *context;
 	cl::CommandQueue *queue;
 	cl::Kernel *kernel;
