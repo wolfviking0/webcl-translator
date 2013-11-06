@@ -8,6 +8,8 @@ var LibraryOpenCL = {
     cl_digits: [1,2,3,4,5,6,7,8,9,0],
     // Kernel parser
     cl_kernels_sig: {},
+    // Structs Kernels parser
+    cl_structs_sig: {},
     // Pointer type (void*)
     cl_pn_type: 0,
     cl_objects: {},
@@ -87,9 +89,31 @@ var LibraryOpenCL = {
       return _id;      
     },
 
-    parseStruct: function(kernel_string) {
+    parseType: function(string) {
+      var _value = -1;
 
+      if (string.indexOf("float") >= 0 ) {
+        _value = webcl.FLOAT;
+      } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
+        _value = webcl.UNSIGNED_INT8;
+      } else if ( string.indexOf("char") >= 0 ) {
+        _value = webcl.SIGNED_INT8;
+      } else if ( (string.indexOf("ushort") >= 0 ) || (string.indexOf("unsigned short") >= 0 ) ) {
+        _value = webcl.UNSIGNED_INT16;
+      } else if ( string.indexOf("short") >= 0 ) {
+        _value = webcl.SIGNED_INT16;                     
+      } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
+        _value = webcl.UNSIGNED_INT32;            
+      } else if ( string.indexOf("int") >= 0 ) {
+        _value = webcl.SIGNED_INT32;
+      }
 
+      return _value;
+    },
+
+    parseStruct: function(kernel_string, struct_name) {
+      console.info("parseStruct : "+struct_name);
+      return [];
     },
 
     parseKernel: function(kernel_string) {
@@ -105,8 +129,9 @@ var LibraryOpenCL = {
       //
       // --------------------------------------------------------------------
                   
-      var _kernel_struct = {};
-    
+      var _kernel_struct_map = {};
+      var _kernel_parameter_map = {};
+
       kernel_string = kernel_string.replace(/\n/g, " ");
       kernel_string = kernel_string.replace(/\r/g, " ");
       kernel_string = kernel_string.replace(/\t/g, " ");
@@ -136,8 +161,6 @@ var LibraryOpenCL = {
         }
       
         var _kernelsubstring = kernel_string.substr(_bracket_start + 1,_bracket_end - _bracket_start - 1);
-        //var _kernelorigsubstring = _kernelsubstring; // Usefull for have the struct name
-
         //_kernelsubstring = _kernelsubstring.replace(/\ /g, "");
       
         var _kernel_parameter = _kernelsubstring.split(",");
@@ -148,35 +171,17 @@ var LibraryOpenCL = {
         var _parameter = new Array(_kernel_parameter_length);
         for (var i = 0; i < _kernel_parameter_length; i ++) {
 
-          var _value = 0;
-          var _string = _kernel_parameter[i]
-        
+          var _string = _kernel_parameter[i];
+
+          // Data Type
+          // float, uchar, unsigned char, uint, unsigned int, int. 
+          var _value = CL.parseType(_string);
+
           // Adress space
           // __global, __local, __constant, __private. 
           if (_string.indexOf("__local") >= 0 ) {
             _value = webcl.LOCAL;
-          } 
-          
-          // Data Type
-          // float, uchar, unsigned char, uint, unsigned int, int. 
-          else if (_string.indexOf("float") >= 0 ) {
-            _value = webcl.FLOAT;
-          // } else if (_string.indexOf("double") >= 0 ) {
-          //  _value = webcl.FLOAT64;
-          } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
-            _value = webcl.UNSIGNED_INT8;
-          } else if ( _string.indexOf("char") >= 0 ) {
-            _value = webcl.SIGNED_INT8;
-          } else if ( (_string.indexOf("ushort") >= 0 ) || (_string.indexOf("unsigned short") >= 0 ) ) {
-            _value = webcl.UNSIGNED_INT16;
-          } else if ( _string.indexOf("short") >= 0 ) {
-            _value = webcl.SIGNED_INT16;                     
-          } else if ( (_string.indexOf("uint") >= 0 ) || (_string.indexOf("unsigned int") >= 0 ) ) {
-            _value = webcl.UNSIGNED_INT32;            
-          } else if ( _string.indexOf("int") >= 0 ) {
-            _value = webcl.SIGNED_INT32;
-          } else {
-
+          } else if (_value == -1) {
             var _pointer_start = _string.lastIndexOf("*"); 
             if (_pointer_start != -1) {
               var _kernels_struct_name = "";
@@ -190,34 +195,44 @@ var LibraryOpenCL = {
                   _kernels_struct_name = _chara + _kernels_struct_name;
                 }
               }
-#if OPENCL_DEBUG   
-              console.error("Unknow parameter type '"+_kernels_struct_name+"', can be a struct, use float by default ...");
-#endif                 
+              _kernel_struct_map[_kernels_struct_name] = [];
+              _value = _kernels_struct_name;         
+
             } else {
 #if OPENCL_DEBUG   
               console.error("Unknow parameter type '"+_string+"', can be a struct, use float by default ...");
 #endif        
+              _value = webcl.FLOAT;
             }
-
-            _value = webcl.FLOAT;
           }
           
           _parameter[i] = _value;
         }
         
-        _kernel_struct[_kernels_name] = _parameter;
+        _kernel_parameter_map[_kernels_name] = _parameter;
         
         _kernel_start = kernel_string.indexOf("__kernel");
       }
       
 #if OPENCL_DEBUG
-      for (var name in _kernel_struct) {
+      for (var name in _kernel_parameter_map) {
         console.info("Kernel NAME : " + name);      
-        console.info("Kernel PARAMETER NUM : "+_kernel_struct[name].length);
+        console.info("Kernel PARAMETER NUM : "+_kernel_parameter_map[name].length);
+      }
+#endif 
+
+      for (var name in _kernel_struct_map) {
+        _kernel_struct_map[name] = CL.parseStruct(kernel_string,name);
+      }
+
+#if OPENCL_DEBUG
+      for (var name in _kernel_struct_map) {
+        console.info("Kernel contains Struct NAME : " + name);      
+        console.info("Struct Variable NUM : "+_kernel_struct_map[name].length);
       }
 #endif 
     
-      return _kernel_struct;
+      return [_kernel_parameter_map,_kernel_struct_map];
     },
     
     getCopyPointerToArray: function(ptr,size,type) {  
@@ -2436,7 +2451,10 @@ var LibraryOpenCL = {
   
       var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
   
-      CL.cl_kernels_sig = CL.parseKernel(_string);
+      var _kernelInfo = CL.parseKernel(_string);
+      
+      CL.cl_kernels_sig = _kernelInfo[0];
+      CL.cl_structs_sig = _kernelInfo[1];
 
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
