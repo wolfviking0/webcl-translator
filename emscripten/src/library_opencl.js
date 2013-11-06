@@ -87,6 +87,11 @@ var LibraryOpenCL = {
       return _id;      
     },
 
+    parseStruct: function(kernel_string) {
+
+
+    },
+
     parseKernel: function(kernel_string) {
       
       // Experimental parse of Kernel
@@ -96,6 +101,7 @@ var LibraryOpenCL = {
       // Step 3 : Search brace '(' and ')'
       // Step 4 : Split all inside the brace by ',' after removing all space
       // Step 5 : For each parameter search Adress Space and Data Type
+      // Step 6 : If unknow type try to extract the name type (only for pointer parameter for now ...)
       //
       // --------------------------------------------------------------------
                   
@@ -130,7 +136,9 @@ var LibraryOpenCL = {
         }
       
         var _kernelsubstring = kernel_string.substr(_bracket_start + 1,_bracket_end - _bracket_start - 1);
-        _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
+        //var _kernelorigsubstring = _kernelsubstring; // Usefull for have the struct name
+
+        //_kernelsubstring = _kernelsubstring.replace(/\ /g, "");
       
         var _kernel_parameter = _kernelsubstring.split(",");
 
@@ -168,9 +176,29 @@ var LibraryOpenCL = {
           } else if ( _string.indexOf("int") >= 0 ) {
             _value = webcl.SIGNED_INT32;
           } else {
+
+            var _pointer_start = _string.lastIndexOf("*"); 
+            if (_pointer_start != -1) {
+              var _kernels_struct_name = "";
+              // Search Parameter type Name
+              for (var j = _pointer_start - 1; j >= 0 ; j--) {
+
+                var _chara = _string.charAt(j);
+                if (_chara == ' ' && _kernels_struct_name.length > 0) {
+                  break;
+                } else if (_chara != ' ') {
+                  _kernels_struct_name = _chara + _kernels_struct_name;
+                }
+              }
 #if OPENCL_DEBUG   
-            console.error("Unknow parameter type '"+_string+"', can be a struct, use float by default ...");
+              console.error("Unknow parameter type '"+_kernels_struct_name+"', can be a struct, use float by default ...");
+#endif                 
+            } else {
+#if OPENCL_DEBUG   
+              console.error("Unknow parameter type '"+_string+"', can be a struct, use float by default ...");
 #endif        
+            }
+
             _value = webcl.FLOAT;
           }
           
