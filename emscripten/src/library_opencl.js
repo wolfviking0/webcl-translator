@@ -89,6 +89,28 @@ var LibraryOpenCL = {
       return _id;      
     },
 
+    stringType: function(pn_type) {
+      switch(pn_type) {
+        case webcl.SIGNED_INT8:
+          return 'INT8';
+        case webcl.SIGNED_INT16:
+          return 'INT16';
+        case webcl.SIGNED_INT32:
+          return 'INT32';
+        case webcl.UNSIGNED_INT8:
+          return 'UINT8';
+        case webcl.UNSIGNED_INT16:
+          return 'UINT16';
+        case webcl.UNSIGNED_INT32:
+          return 'UINT32';
+        case webcl.FLOAT:
+          return 'FLOAT';
+        default:
+          if (typeof(pn_type) == "string") return 'Struct';
+          return 'UNKNOWN';
+      }
+    },
+
     parseType: function(string) {
       var _value = -1;
 
@@ -104,16 +126,83 @@ var LibraryOpenCL = {
         _value = webcl.SIGNED_INT16;                     
       } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
         _value = webcl.UNSIGNED_INT32;            
-      } else if ( string.indexOf("int") >= 0 ) {
+      } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
         _value = webcl.SIGNED_INT32;
       }
 
+      //console.info("->" +string+" - "+_value);
       return _value;
     },
 
-    parseStruct: function(kernel_string, struct_name) {
-      console.info("parseStruct : "+struct_name);
-      return [];
+    parseStruct: function(kernel_string, struct_name, struct_map) {
+
+      // search pattern : struct_name { } ;
+      var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
+
+      // search pattern : { } struct_name;
+      var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
+
+      var _res = kernel_string.match(_re_before);
+      var _contains_struct = "";
+      
+      if (_res != null && _res.length == 2) {
+        _contains_struct = _res[1];
+      } else {
+        _res = kernel_string.match(_re_after);
+        if (_res != null && _res.length == 2) {
+            _contains_struct = _res[1];
+        } else {
+#if OPENCL_DEBUG   
+          console.error("Unknow Structure '"+struct_name+"', not found inside the kernel ...");
+#endif
+          return [];
+        }
+      }
+
+      var _result = [];
+
+      if (_contains_struct.length > 0) {
+        console.info("Struct : "+struct_name + " => " +_contains_struct);
+
+        var _var = _contains_struct.split(";");
+
+        for (var i = 0; i < _var.length-1; i++ ) {
+          var _subvar = _var[i].split(","); // Need for unsigned int width, height;
+          var _type = CL.parseType(_var[i]);
+          var _arrayNum = 0;
+          _res = _var[i].match(/[0-9]+/); // Need for float mu[4];
+          if (_res != null) _arrayNum = _res;
+        
+          if ( _type != -1) {
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              _result.push(_type);
+            }
+          } else {
+            var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
+            var _name = "";
+            var _start = _struct.lastIndexOf(" "); 
+            for (var j = _start - 1; j >= 0 ; j--) {
+              var _chara = _struct.charAt(j);
+              if (_chara == ' ' && _name.length > 0) {
+                break;
+              } else if (_chara != ' ') {
+                _name = _chara + _name;
+              }
+            }
+            
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              _result.push(_name);
+            }
+
+            if (!(_name in struct_map && struct_map[_name].length > 0)) {
+              struct_map[_name] = [];
+              struct_map[_name] = CL.parseStruct(kernel_string,_name,struct_map);
+            }
+          }
+        }
+      }
+
+      return _result;
     },
 
     parseKernel: function(kernel_string) {
@@ -132,9 +221,17 @@ var LibraryOpenCL = {
       var _kernel_struct_map = {};
       var _kernel_parameter_map = {};
 
+      // Remove all comments ...
+      kernel_string = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
+, "");
+      
+      // Remove all char \n \r \t ...
       kernel_string = kernel_string.replace(/\n/g, " ");
       kernel_string = kernel_string.replace(/\r/g, " ");
       kernel_string = kernel_string.replace(/\t/g, " ");
+      
+      // Keep a good version for the struct parser
+      var _orig_kernel_string = kernel_string;
       
       // Search kernel function __kernel 
       var _kernel_start = kernel_string.indexOf("__kernel");
@@ -182,7 +279,11 @@ var LibraryOpenCL = {
           if (_string.indexOf("__local") >= 0 ) {
             _value = webcl.LOCAL;
           } else if (_value == -1) {
-            var _pointer_start = _string.lastIndexOf("*"); 
+            _string = _string.replace(/^\s+|\s+$/g, "");
+            _string = _string.replace("*", "");
+
+            var _pointer_start = _string.lastIndexOf(" "); 
+
             if (_pointer_start != -1) {
               var _kernels_struct_name = "";
               // Search Parameter type Name
@@ -213,25 +314,43 @@ var LibraryOpenCL = {
         
         _kernel_start = kernel_string.indexOf("__kernel");
       }
+
+      for (var name in _kernel_struct_map) {
+        _kernel_struct_map[name] = CL.parseStruct(_orig_kernel_string,name,_kernel_struct_map);
+      }
       
-#if OPENCL_DEBUG
+//#if OPENCL_DEBUG
       for (var name in _kernel_parameter_map) {
         console.info("Kernel NAME : " + name);      
-        console.info("Kernel PARAMETER NUM : "+_kernel_parameter_map[name].length);
+        var _length = _kernel_parameter_map[name].length;
+        console.info("Kernel PARAMETER NUM : "+_length);
+        var _str = "";
+        for (var i = 0; i < _length ; i++) {
+          var _type = _kernel_parameter_map[name][i];
+          _str += _type + "("+CL.stringType(_type)+")";
+          if (i < _length - 1) _str += ", ";
+        }
+
+        console.info("\t" + _str);          
       }
-#endif 
 
       for (var name in _kernel_struct_map) {
-        _kernel_struct_map[name] = CL.parseStruct(kernel_string,name);
-      }
+        console.info("Kernel contains Struct NAME : " + name);   
+        var _length = _kernel_struct_map[name].length;   
+        console.info("Struct Variable NUM : "+_length);
+        var _str = "";
+        for (var i = 0; i < _length ; i++) {
+          var _type = _kernel_struct_map[name][i];
+          _str += _type + "("+CL.stringType(_type)+")";
+          if (i < _length - 1) _str += ", ";
+        }
 
-#if OPENCL_DEBUG
-      for (var name in _kernel_struct_map) {
-        console.info("Kernel contains Struct NAME : " + name);      
-        console.info("Struct Variable NUM : "+_kernel_struct_map[name].length);
+        console.info("\t" + _str);        
       }
-#endif 
-    
+//#endif 
+
+      //e_x_i_t
+
       return [_kernel_parameter_map,_kernel_struct_map];
     },
     
