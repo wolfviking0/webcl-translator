@@ -134,6 +134,105 @@ var LibraryOpenCL = {
       return _value;
     },
 
+    parseKernel: function(kernel_string) {
+
+#if 0
+      console.info("Original Kernel String : ");
+      console.info("--------------------------------------------------------------------");
+      console.info(kernel_string);
+      console.info("--------------------------------------------------------------------");
+#endif
+
+      // Experimental parse of Kernel
+      // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+      // --------------------------------------------------------------------------------
+      // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
+      // Step 2 : Search pattern __kernel ... ( ... )
+      // Step 3 : For each kernel
+      // Step 3 . 1 : Search Open Brace
+      // Step 3 . 2 : Search Kernel Name
+      // Step 3 . 3 : Search Kernel Parameter
+      // Step 3 . 4 : Grab { name : [ param, ... ] }
+      // --------------------------------------------------------------------------------
+
+      // Remove all comments ...
+      var _mini_kernel_string  = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
+, "");
+      
+      // Remove all char \n \r \t ...
+      _mini_kernel_string = _mini_kernel_string.replace(/\n/g, " ");
+      _mini_kernel_string = _mini_kernel_string.replace(/\r/g, " ");
+
+      // Remove all the multispace
+      _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
+
+      // Search pattern : __kernel ... ( ... )
+      var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+
+      if (_matches == null) {
+        console.error("/!\\ Not found kernel !!!");
+        return;
+      }
+
+      for (var i = 0; i < _matches.length; i ++) {
+        // Search the open Brace
+        var _brace = _matches[i].lastIndexOf("(");
+
+        // Part before '('
+        var _first_part = _matches[i].substr(0,_brace);
+        _first_part = _first_part.replace(/^\s+|\s+$/g, ""); // trim
+
+        // Part after ')'
+        var _second_part = _matches[i].substr(_brace+1,_matches[i].length-_brace-2);
+        _second_part = _second_part.replace(/^\s+|\s+$/g, ""); // trim
+
+        // Search name part
+        var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
+
+        // Search parameter part
+        var _param = [];
+        var _array = _second_part.split(","); 
+        for (var j = 0; j < _array.length; j++) {
+          var _type = CL.parseType(_array[j]);
+          if (_type == -1) {
+            console.info("/!\\ Error type need to parse struct");            
+            _param.push(webcl.FLOAT);
+          } else {
+            _param.push(_type);
+          }
+        }        
+
+        CL.cl_kernels_sig[_name] = _param;
+
+      }
+
+#if 0         
+      console.info("Mini Kernel String : ");
+      console.info("--------------------------------------------------------------------");
+      console.info(_mini_kernel_string);
+      console.info("--------------------------------------------------------------------");
+#endif
+
+      for (var name in CL.cl_kernels_sig) {
+        var _length = CL.cl_kernels_sig[name].length;
+        var _str = "";
+        for (var i = 0; i < _length ; i++) {
+          var _type = CL.cl_kernels_sig[name][i];
+          _str += _type + "("+CL.stringType(_type)+")";
+          if (i < _length - 1) _str += ", ";
+        }
+
+        console.info("Kernel " + name + "(" + _length + ")");  
+        console.info("\t" + _str);          
+      }
+
+      return _mini_kernel_string;
+
+    },
+
+    // *****************************************************************
+    // *****************************************************************
+    /*
     parseStruct: function(kernel_string, struct_name, struct_map) {
 
       // search pattern : struct_name { } ;
@@ -205,7 +304,7 @@ var LibraryOpenCL = {
       return _result;
     },
 
-    parseKernel: function(kernel_string) {
+    oldParseKernel: function(kernel_string) {
       
       // Experimental parse of Kernel
       // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
@@ -353,6 +452,9 @@ var LibraryOpenCL = {
 
       return [_kernel_parameter_map,_kernel_struct_map];
     },
+    */
+    // *****************************************************************
+    // *****************************************************************
     
     getCopyPointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
@@ -2569,11 +2671,10 @@ var LibraryOpenCL = {
     try {
   
       var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
-  
-      var _kernelInfo = CL.parseKernel(_string);
-      
-      CL.cl_kernels_sig = _kernelInfo[0];
-      CL.cl_structs_sig = _kernelInfo[1];
+
+      CL.parseKernel(_string);
+
+      //CL.cl_kernels_sig = CL.oldParseKernel(_string)[0];
 
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
