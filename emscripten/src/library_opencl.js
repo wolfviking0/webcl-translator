@@ -194,7 +194,9 @@ var LibraryOpenCL = {
         var _array = _second_part.split(","); 
         for (var j = 0; j < _array.length; j++) {
           var _type = CL.parseType(_array[j]);
-          if (_type == -1) {
+          if (_array.indexOf("__local") >= 0 ) {
+            _param.push(webcl.LOCAL);
+          } else if (_type == -1) {
             console.info("/!\\ Error type need to parse struct");            
             _param.push(webcl.FLOAT);
           } else {
