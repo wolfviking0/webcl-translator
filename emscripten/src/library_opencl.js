@@ -105,8 +105,10 @@ var LibraryOpenCL = {
           return 'UINT32';
         case webcl.FLOAT:
           return 'FLOAT';
+        case webcl.LOCAL:
+          return '__local';          
         default:
-          if (typeof(pn_type) == "string") return 'Struct';
+          if (typeof(pn_type) == "string") return 'struct';
           return 'UNKNOWN';
       }
     },
@@ -130,8 +132,90 @@ var LibraryOpenCL = {
         _value = webcl.SIGNED_INT32;
       }
 
-      //console.info("->" +string+" - "+_value);
       return _value;
+    },
+
+    parseStruct: function(kernel_string,struct_name) {
+
+      // Experimental parse of Struct
+      // Search kernel function like 'struct_name { }' or '{ } struct_name'
+      // --------------------------------------------------------------------------------
+      // Step 1 : Search pattern struct_name { }
+      // Step 2 : if no result : Search pattern { } struct_name
+      // Step 3 : if no result : return
+      // Step 4 : split by ; // Num of variable of the structure  : int toto; float tata;
+      // Step 5 : split by , // Num of variable for each type     : float toto,tata,titi;
+      // Step 6 : Search pattern [num] // Array Variable          : float toto[4];
+      // Step 7 : Search type of the line
+      // Step 8 : if exist add type else search other struct
+      // --------------------------------------------------------------------------------
+
+      CL.cl_structs_sig[struct_name] = [];
+
+      // search pattern : struct_name { } ;
+      var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
+
+      // search pattern : { } struct_name;
+      var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
+
+      var _res = kernel_string.match(_re_before);
+      var _contains_struct = "";
+      
+      if (_res != null && _res.length == 2) {
+        _contains_struct = _res[1];
+      } else {
+        _res = kernel_string.match(_re_after);
+        if (_res != null && _res.length == 2) {
+            _contains_struct = _res[1];
+        } else {
+#if OPENCL_DEBUG   
+          console.error("Unknow Structure '"+struct_name+"', not found inside the kernel ...");
+#endif
+          return;
+        }
+      }
+
+      var _var = _contains_struct.split(";");
+      for (var i = 0; i < _var.length-1; i++ ) {
+        // Need for unsigned int width, height;
+        var _subvar = _var[i].split(","); 
+        
+        // Get type of the line
+        var _type = CL.parseType(_var[i]);
+      
+        // Need for float mu[4];
+        var _arrayNum = 0;
+        _res = _var[i].match(/[0-9]+/); 
+        if (_res != null) _arrayNum = _res;
+      
+        if ( _type != -1) {
+          for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+            CL.cl_structs_sig[struct_name].push(_type);
+          }
+        } else {
+          // Search name of the parameter
+          var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
+          var _name = "";
+          var _start = _struct.lastIndexOf(" "); 
+          for (var j = _start - 1; j >= 0 ; j--) {
+            var _chara = _struct.charAt(j);
+            if (_chara == ' ' && _name.length > 0) {
+              break;
+            } else if (_chara != ' ') {
+              _name = _chara + _name;
+            }
+          }
+          
+          // If struct is unknow search it
+          if (!(_name in CL.cl_structs_sig && CL.cl_structs_sig[_name].length > 0)) {
+            CL.parseStruct(kernel_string,_name);
+          }
+
+          for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+            CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);  
+          }
+        }
+      }
     },
 
     parseKernel: function(kernel_string) {
@@ -144,6 +228,12 @@ var LibraryOpenCL = {
 #endif
 
       // Experimental parse of Kernel
+      // ----------------------------
+      //
+      // /!\ The minify kernel could be use by the program but some trouble with line
+      // /!\ containing macro #define, for the moment only use the minify kernel for 
+      // /!\ parsing __kernel and struct
+      //
       // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
       // --------------------------------------------------------------------------------
       // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
@@ -189,16 +279,49 @@ var LibraryOpenCL = {
         // Search name part
         var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
 
+        // Do not reparse again if the file was already parse (ie: Reduce sample)
+        if (_name in CL.cl_kernels_sig) return;
+
         // Search parameter part
         var _param = [];
         var _array = _second_part.split(","); 
         for (var j = 0; j < _array.length; j++) {
           var _type = CL.parseType(_array[j]);
-          if (_array.indexOf("__local") >= 0 ) {
+          if (_array[j].indexOf("__local") >= 0 ) {
             _param.push(webcl.LOCAL);
           } else if (_type == -1) {
-            console.info("/!\\ Error type need to parse struct");            
-            _param.push(webcl.FLOAT);
+                       
+            _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
+            _array[j] = _array[j].replace("*", "");
+
+            var _start = _array[j].lastIndexOf(" "); 
+            if (_start != -1) {
+              var _kernels_struct_name = "";
+              // Search Parameter type Name
+              for (var k = _start - 1; k >= 0 ; k--) {
+
+                var _chara = _array[j].charAt(k);
+                if (_chara == ' ' && _kernels_struct_name.length > 0) {
+                  break;
+                } else if (_chara != ' ') {
+                  _kernels_struct_name = _chara + _kernels_struct_name;
+                }
+              }
+
+              // Parse struct only if is not already inside the map
+              if (!(_kernels_struct_name in CL.cl_structs_sig))
+                CL.parseStruct(_mini_kernel_string, _kernels_struct_name);
+            
+              // Add the name of the struct inside the map of param kernel
+              _param.push(_kernels_struct_name);         
+
+            } else {
+#if OPENCL_DEBUG
+              console.error("Unknow parameter type inside '"+_array[j]+"', can be a struct, use float by default ...");
+#endif        
+              _param.push(webcl.FLOAT);
+            }
+
           } else {
             _param.push(_type);
           }
@@ -228,236 +351,23 @@ var LibraryOpenCL = {
         console.info("\t" + _str);          
       }
 
+      for (var name in CL.cl_structs_sig) {
+        var _length = CL.cl_structs_sig[name].length;
+        var _str = "";
+        for (var i = 0; i < _length ; i++) {
+          var _type = CL.cl_structs_sig[name][i];
+          _str += _type + "("+CL.stringType(_type)+")";
+          if (i < _length - 1) _str += ", ";
+        }
+
+        console.info("\n\tStruct " + name + "(" + _length + ")");  
+        console.info("\t\t" + _str);              
+      }
+
       return _mini_kernel_string;
 
     },
 
-    // *****************************************************************
-    // *****************************************************************
-    /*
-    parseStruct: function(kernel_string, struct_name, struct_map) {
-
-      // search pattern : struct_name { } ;
-      var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
-
-      // search pattern : { } struct_name;
-      var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
-
-      var _res = kernel_string.match(_re_before);
-      var _contains_struct = "";
-      
-      if (_res != null && _res.length == 2) {
-        _contains_struct = _res[1];
-      } else {
-        _res = kernel_string.match(_re_after);
-        if (_res != null && _res.length == 2) {
-            _contains_struct = _res[1];
-        } else {
-#if OPENCL_DEBUG   
-          console.error("Unknow Structure '"+struct_name+"', not found inside the kernel ...");
-#endif
-          return [];
-        }
-      }
-
-      var _result = [];
-
-      if (_contains_struct.length > 0) {
-        console.info("Struct : "+struct_name + " => " +_contains_struct);
-
-        var _var = _contains_struct.split(";");
-
-        for (var i = 0; i < _var.length-1; i++ ) {
-          var _subvar = _var[i].split(","); // Need for unsigned int width, height;
-          var _type = CL.parseType(_var[i]);
-          var _arrayNum = 0;
-          _res = _var[i].match(/[0-9]+/); // Need for float mu[4];
-          if (_res != null) _arrayNum = _res;
-        
-          if ( _type != -1) {
-            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
-              _result.push(_type);
-            }
-          } else {
-            var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
-            var _name = "";
-            var _start = _struct.lastIndexOf(" "); 
-            for (var j = _start - 1; j >= 0 ; j--) {
-              var _chara = _struct.charAt(j);
-              if (_chara == ' ' && _name.length > 0) {
-                break;
-              } else if (_chara != ' ') {
-                _name = _chara + _name;
-              }
-            }
-            
-            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
-              _result.push(_name);
-            }
-
-            if (!(_name in struct_map && struct_map[_name].length > 0)) {
-              struct_map[_name] = [];
-              struct_map[_name] = CL.parseStruct(kernel_string,_name,struct_map);
-            }
-          }
-        }
-      }
-
-      return _result;
-    },
-
-    oldParseKernel: function(kernel_string) {
-      
-      // Experimental parse of Kernel
-      // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
-      // Step 1 : Search __kernel
-      // Step 2 : Search kernel name (before the open brace)
-      // Step 3 : Search brace '(' and ')'
-      // Step 4 : Split all inside the brace by ',' after removing all space
-      // Step 5 : For each parameter search Adress Space and Data Type
-      // Step 6 : If unknow type try to extract the name type (only for pointer parameter for now ...)
-      //
-      // --------------------------------------------------------------------
-                  
-      var _kernel_struct_map = {};
-      var _kernel_parameter_map = {};
-
-      // Remove all comments ...
-      kernel_string = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
-, "");
-      
-      // Remove all char \n \r \t ...
-      kernel_string = kernel_string.replace(/\n/g, " ");
-      kernel_string = kernel_string.replace(/\r/g, " ");
-      kernel_string = kernel_string.replace(/\t/g, " ");
-      
-      // Keep a good version for the struct parser
-      var _orig_kernel_string = kernel_string;
-      
-      // Search kernel function __kernel 
-      var _kernel_start = kernel_string.indexOf("__kernel");
-
-      while (_kernel_start >= 0) {
-
-        kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
-      
-        var _brace_start = kernel_string.indexOf("{");
-        var _kernel_temp_string = kernel_string.substr(0,_brace_start);
-  
-        var _bracket_end = _kernel_temp_string.lastIndexOf(")");  
-        var _bracket_start = _kernel_temp_string.lastIndexOf("(");
-
-        var _kernels_name = "";
-        // Search kernel Name
-        for (var i = _bracket_start - 1; i >= 0 ; i--) {
-          var _chara = kernel_string.charAt(i);
-          if (_chara == ' ' && _kernels_name.length > 0) {
-            break;
-          } else if (_chara != ' ') {
-            _kernels_name = _chara + _kernels_name;
-          }
-        }
-      
-        var _kernelsubstring = kernel_string.substr(_bracket_start + 1,_bracket_end - _bracket_start - 1);
-        //_kernelsubstring = _kernelsubstring.replace(/\ /g, "");
-      
-        var _kernel_parameter = _kernelsubstring.split(",");
-
-        kernel_string = kernel_string.substr(_bracket_end);
-        
-        var _kernel_parameter_length = _kernel_parameter.length;
-        var _parameter = new Array(_kernel_parameter_length);
-        for (var i = 0; i < _kernel_parameter_length; i ++) {
-
-          var _string = _kernel_parameter[i];
-
-          // Data Type
-          // float, uchar, unsigned char, uint, unsigned int, int. 
-          var _value = CL.parseType(_string);
-
-          // Adress space
-          // __global, __local, __constant, __private. 
-          if (_string.indexOf("__local") >= 0 ) {
-            _value = webcl.LOCAL;
-          } else if (_value == -1) {
-            _string = _string.replace(/^\s+|\s+$/g, "");
-            _string = _string.replace("*", "");
-
-            var _pointer_start = _string.lastIndexOf(" "); 
-
-            if (_pointer_start != -1) {
-              var _kernels_struct_name = "";
-              // Search Parameter type Name
-              for (var j = _pointer_start - 1; j >= 0 ; j--) {
-
-                var _chara = _string.charAt(j);
-                if (_chara == ' ' && _kernels_struct_name.length > 0) {
-                  break;
-                } else if (_chara != ' ') {
-                  _kernels_struct_name = _chara + _kernels_struct_name;
-                }
-              }
-              _kernel_struct_map[_kernels_struct_name] = [];
-              _value = _kernels_struct_name;         
-
-            } else {
-#if OPENCL_DEBUG   
-              console.error("Unknow parameter type '"+_string+"', can be a struct, use float by default ...");
-#endif        
-              _value = webcl.FLOAT;
-            }
-          }
-          
-          _parameter[i] = _value;
-        }
-        
-        _kernel_parameter_map[_kernels_name] = _parameter;
-        
-        _kernel_start = kernel_string.indexOf("__kernel");
-      }
-
-      for (var name in _kernel_struct_map) {
-        _kernel_struct_map[name] = CL.parseStruct(_orig_kernel_string,name,_kernel_struct_map);
-      }
-      
-//#if OPENCL_DEBUG
-      for (var name in _kernel_parameter_map) {
-        console.info("Kernel NAME : " + name);      
-        var _length = _kernel_parameter_map[name].length;
-        console.info("Kernel PARAMETER NUM : "+_length);
-        var _str = "";
-        for (var i = 0; i < _length ; i++) {
-          var _type = _kernel_parameter_map[name][i];
-          _str += _type + "("+CL.stringType(_type)+")";
-          if (i < _length - 1) _str += ", ";
-        }
-
-        console.info("\t" + _str);          
-      }
-
-      for (var name in _kernel_struct_map) {
-        console.info("Kernel contains Struct NAME : " + name);   
-        var _length = _kernel_struct_map[name].length;   
-        console.info("Struct Variable NUM : "+_length);
-        var _str = "";
-        for (var i = 0; i < _length ; i++) {
-          var _type = _kernel_struct_map[name][i];
-          _str += _type + "("+CL.stringType(_type)+")";
-          if (i < _length - 1) _str += ", ";
-        }
-
-        console.info("\t" + _str);        
-      }
-//#endif 
-
-      //e_x_i_t
-
-      return [_kernel_parameter_map,_kernel_struct_map];
-    },
-    */
-    // *****************************************************************
-    // *****************************************************************
-    
     getCopyPointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
@@ -2673,10 +2583,7 @@ var LibraryOpenCL = {
     try {
   
       var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
-
       CL.parseKernel(_string);
-
-      //CL.cl_kernels_sig = CL.oldParseKernel(_string)[0];
 
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createProgramWithSource",[_string]);
