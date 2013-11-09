@@ -539,7 +539,7 @@ var LibraryOpenCL = {
 
 #if OPENCL_PRINT_TRACE
       console.info(CL.stack_trace);
-      //alert(CL.stack_trace);
+      //alert(CL.stack_trace); // Useful for step by step debugging
       CL.stack_trace = "";
 #endif   
 
@@ -622,11 +622,6 @@ var LibraryOpenCL = {
   },
 
   clGetPlatformIDs: function(num_entries,platforms,num_platforms) {
-
-    // Test UDID 
-    // for (var i = 0 ; i < 100000; i++) {
-    //   CL.udid();
-    // }
 
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetPlatformIDs",[num_entries,platforms,num_platforms]);
@@ -2722,6 +2717,12 @@ var LibraryOpenCL = {
 
       var _devices = [];
       var _option = (options == 0) ? "" : Pointer_stringify(options); 
+
+      // \todo need to be remove when webkit work with -D
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
+        _option = _option.replace(/-D/g, "-D ");
+        _option = _option.replace(/-D\s{2,}/g, "-D ");
+      }
 
       if (device_list != 0 && num_devices > 0 ) {
         for (var i = 0; i < num_devices ; i++) {
