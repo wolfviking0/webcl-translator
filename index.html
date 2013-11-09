@@ -16,7 +16,8 @@
 
     <script type="text/javascript">
       function onclickurl(page, sample, gl, parameter) {
-        return window.open('http://wolfviking0.github.io/webcl-translator/build/'+page+'.html?sample='+sample+'&gl='+gl+'&'+parameter);
+        // http://wolfviking0.github.io/webcl-translator
+        return window.open('./build/'+page+'.html?sample='+sample+'&gl='+gl+'&'+parameter);
       }
     </script>
 
@@ -97,44 +98,38 @@
                 </a>
               </td>   
             </tr>
-            <!--
             <tr>  
-              <td>Reduce</td> <td>[]</td> 
-              <td>
+              <td>Reduce GPU (int)</td> <td align="center">[Webkit/Firefox]</td> 
+              <td align="center" colspan="2">
                 <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int'); return false;">
-                GPU(Int) 
+                0
                 </a>
                 &nbsp;
-                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float'); return false;">
-                GPU(Float) 
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td></td> <td></td> 
-              <td>
                 <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int2'); return false;">
-                GPU(Int2)
+                2
                 </a>
                 &nbsp;
-                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float2'); return false;">
-                GPU(Float2)
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td></td> <td></td> 
-              <td>
                 <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&int4'); return false;">
-                GPU(Int4)
-                </a>
-                &nbsp;
-                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float4'); return false;">
-                GPU(Float4)
+                4
                 </a>
               </td>   
             </tr>
-          -->
+            <tr>  
+              <td>Reduce GPU (float)</td> <td align="center">[Webkit/Firefox]</td> 
+              <td align="center" colspan="2">
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float'); return false;">
+                0
+                </a>
+                &nbsp;
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float2'); return false;">
+                2
+                </a>
+                &nbsp;
+                <a href="#" onClick="MyWindow=onclickurl('translator',4, 'off','title=Reduce&gpu&float4'); return false;">
+                4
+                </a>
+              </td>   
+            </tr>            
           </table>
           <hr/>
           <h3>
@@ -182,6 +177,45 @@
                 </a>
               </td>   
             </tr>
+            <tr>
+              <td>Smallptgpu Simple</td> <td align="center">[Webkit]</td> 
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Simple&1&0&0&512&512&scenes/simple.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Simple&0&1&0&512&512&scenes/simple.scn); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>
+              <td>Smallptgpu Caustic</td> <td align="center">[Webkit]</td> 
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Caustic&1&0&0&512&512&scenes/caustic.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Caustic&0&1&0&512&512&scenes/caustic.scn); return false;">
+                here
+                </a>
+              </td>   
+            </tr>
+            <tr>
+              <td>Smallptgpu Cornell</td> <td align="center">[Webkit]</td> 
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Cornell&1&0&0&512&512&scenes/cornell.scn'); return false;">
+                here
+                </a>
+              </td>
+              <td align="center">
+                <a href="#" onClick="MyWindow=onclickurl('translator',7, 'on','title=Smallptgpu Cornell&0&1&0&512&512&scenes/cornell.scn); return false;">
+                here
+                </a>
+              </td>   
+            </tr>            
             <tr>  
               <td>Attractor Copying</td> <td align="center">[Webkit]</td> 
               <td align="center">
@@ -243,32 +277,6 @@
                 </a>
               </td>   
             </tr>
-            <tr>
-              <td>Smallptgpu Simple</td> <td align="center">[Firefox]</td> 
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Simple&-o&ALL_CPUS&-w&512&-n&scenes/simple.scn'); return false;">
-                here
-                </a>
-              </td>
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Simple&-o&ALL_GPUS&-w&512&-n&scenes/simple.scn'); return false;">
-                here
-                </a>
-              </td>   
-            </tr>
-            <tr>  
-              <td>Smallptgpu Caustic</td> <td align="center">[Firefox]</td> 
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic&-o&ALL_CPUS&-w&512&-n&scenes/caustic.scn'); return false;">
-                here
-                </a>
-              </td>
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic&-o&ALL_GPUS&-w&512&-n&scenes/caustic.scn'); return false;">
-                here
-                </a>
-              </td>   
-            </tr>
             <tr>  
               <td>Smallptgpu Caustic3</td> <td align="center">[Firefox]</td> 
               <td align="center">
@@ -278,19 +286,6 @@
               </td>
               <td align="center">
                 <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Caustic3&-o&ALL_GPUS&-w&512&-n&scenes/caustic3.scn'); return false;">
-                here
-                </a>
-              </td>   
-            </tr>
-            <tr>  
-              <td>Smallptgpu Cornell</td> <td align="center">[Firefox]</td> 
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell&-o&ALL_CPUS&-w&512&-n&scenes/cornell.scn'); return false;">
-                here
-                </a>
-              </td>
-              <td align="center">
-                <a href="#" onClick="MyWindow=onclickurl('ocltoys',3, 'on','title=Smallptgpu Cornell&-o&ALL_GPUS&-w&512&-n&scenes/cornell.scn'); return false;">
                 here
                 </a>
               </td>   

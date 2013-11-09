@@ -4572,15 +4572,22 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:0,cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-          if (typeof(webcl) === "undefined") {
-            webcl = window.WebCL;
+          var nodejs = (typeof window === 'undefined');
+          if(nodejs) {
+            webcl = require('../webcl');
+          } else {
             if (typeof(webcl) === "undefined") {
-              console.error("This browser has not WebCL implementation !!! \n");
-              console.error("Use WebKit Samsung or Firefox Nokia plugin\n");     
+              webcl = window.WebCL;
             }
+          }
+          if (webcl == undefined) {
+            alert("Unfortunately your system does not support WebCL. " +
+            "Make sure that you have WebKit Samsung or Firefox Nokia plugin");
+            console.error("Unfortunately your system does not support WebCL.\n");
+            console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           }
           CL.cl_init = 1;
         }
@@ -4608,79 +4615,216 @@ function copyTempDouble(ptr) {
           //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
         }
         return _id;      
+      },stringType:function (pn_type) {
+        switch(pn_type) {
+          case webcl.SIGNED_INT8:
+            return 'INT8';
+          case webcl.SIGNED_INT16:
+            return 'INT16';
+          case webcl.SIGNED_INT32:
+            return 'INT32';
+          case webcl.UNSIGNED_INT8:
+            return 'UINT8';
+          case webcl.UNSIGNED_INT16:
+            return 'UINT16';
+          case webcl.UNSIGNED_INT32:
+            return 'UINT32';
+          case webcl.FLOAT:
+            return 'FLOAT';
+          case webcl.LOCAL:
+            return '__local';          
+          default:
+            if (typeof(pn_type) == "string") return 'struct';
+            return 'UNKNOWN';
+        }
+      },parseType:function (string) {
+        var _value = -1;
+        if (string.indexOf("float") >= 0 ) {
+          _value = webcl.FLOAT;
+        } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT8;
+        } else if ( string.indexOf("char") >= 0 ) {
+          _value = webcl.SIGNED_INT8;
+        } else if ( (string.indexOf("ushort") >= 0 ) || (string.indexOf("unsigned short") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT16;
+        } else if ( string.indexOf("short") >= 0 ) {
+          _value = webcl.SIGNED_INT16;                     
+        } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT32;            
+        } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
+          _value = webcl.SIGNED_INT32;
+        }
+        return _value;
+      },parseStruct:function (kernel_string,struct_name) {
+        // Experimental parse of Struct
+        // Search kernel function like 'struct_name { }' or '{ } struct_name'
+        // --------------------------------------------------------------------------------
+        // Step 1 : Search pattern struct_name { }
+        // Step 2 : if no result : Search pattern { } struct_name
+        // Step 3 : if no result : return
+        // Step 4 : split by ; // Num of variable of the structure  : int toto; float tata;
+        // Step 5 : split by , // Num of variable for each type     : float toto,tata,titi;
+        // Step 6 : Search pattern [num] // Array Variable          : float toto[4];
+        // Step 7 : Search type of the line
+        // Step 8 : if exist add type else search other struct
+        // --------------------------------------------------------------------------------
+        CL.cl_structs_sig[struct_name] = [];
+        // search pattern : struct_name { } ;
+        var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
+        // search pattern : { } struct_name;
+        var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
+        var _res = kernel_string.match(_re_before);
+        var _contains_struct = "";
+        if (_res != null && _res.length == 2) {
+          _contains_struct = _res[1];
+        } else {
+          _res = kernel_string.match(_re_after);
+          if (_res != null && _res.length == 2) {
+              _contains_struct = _res[1];
+          } else {
+            return;
+          }
+        }
+        var _var = _contains_struct.split(";");
+        for (var i = 0; i < _var.length-1; i++ ) {
+          // Need for unsigned int width, height;
+          var _subvar = _var[i].split(","); 
+          // Get type of the line
+          var _type = CL.parseType(_var[i]);
+          // Need for float mu[4];
+          var _arrayNum = 0;
+          _res = _var[i].match(/[0-9]+/); 
+          if (_res != null) _arrayNum = _res;
+          if ( _type != -1) {
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              CL.cl_structs_sig[struct_name].push(_type);
+            }
+          } else {
+            // Search name of the parameter
+            var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
+            var _name = "";
+            var _start = _struct.lastIndexOf(" "); 
+            for (var j = _start - 1; j >= 0 ; j--) {
+              var _chara = _struct.charAt(j);
+              if (_chara == ' ' && _name.length > 0) {
+                break;
+              } else if (_chara != ' ') {
+                _name = _chara + _name;
+              }
+            }
+            // If struct is unknow search it
+            if (!(_name in CL.cl_structs_sig && CL.cl_structs_sig[_name].length > 0)) {
+              CL.parseStruct(kernel_string,_name);
+            }
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);  
+            }
+          }
+        }
       },parseKernel:function (kernel_string) {
         // Experimental parse of Kernel
-        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
-        // Step 1 : Search __kernel
-        // Step 2 : Search kernel name (before the open brace)
-        // Step 3 : Search brace '(' and ')'
-        // Step 4 : Split all inside the brace by ',' after removing all space
-        // Step 5 : For each parameter search Adress Space and Data Type
+        // ----------------------------
         //
-        // --------------------------------------------------------------------
-        var _kernel_struct = {};
-        kernel_string = kernel_string.replace(/\n/g, " ");
-        kernel_string = kernel_string.replace(/\r/g, " ");
-        kernel_string = kernel_string.replace(/\t/g, " ");
-        // Search kernel function __kernel 
-        var _kernel_start = kernel_string.indexOf("__kernel");
-        while (_kernel_start >= 0) {
-          kernel_string = kernel_string.substr(_kernel_start,kernel_string.length-_kernel_start);
-          var _brace_start = kernel_string.indexOf("{");
-          var _kernel_temp_string = kernel_string.substr(0,_brace_start);
-          var _bracket_end = _kernel_temp_string.lastIndexOf(")");  
-          var _bracket_start = _kernel_temp_string.lastIndexOf("(");
-          var _kernels_name = "";
-          // Search kernel Name
-          for (var i = _bracket_start - 1; i >= 0 ; i--) {
-            var _chara = kernel_string.charAt(i);
-            if (_chara == ' ' && _kernels_name.length > 0) {
-              break;
-            } else if (_chara != ' ') {
-              _kernels_name = _chara + _kernels_name;
-            }
-          }
-          var _kernelsubstring = kernel_string.substr(_bracket_start + 1,_bracket_end - _bracket_start - 1);
-          _kernelsubstring = _kernelsubstring.replace(/\ /g, "");
-          var _kernel_parameter = _kernelsubstring.split(",");
-          kernel_string = kernel_string.substr(_bracket_end);
-          var _kernel_parameter_length = _kernel_parameter.length;
-          var _parameter = new Array(_kernel_parameter_length);
-          for (var i = 0; i < _kernel_parameter_length; i ++) {
-            var _value = 0;
-            var _string = _kernel_parameter[i]
-            // Adress space
-            // __global, __local, __constant, __private. 
-            if (_string.indexOf("__local") >= 0 ) {
-              _value = webcl.LOCAL;
-            } 
-            // Data Type
-            // float, uchar, unsigned char, uint, unsigned int, int. 
-            else if (_string.indexOf("float") >= 0 ) {
-              _value = webcl.FLOAT;
-            // } else if (_string.indexOf("double") >= 0 ) {
-            //  _value = webcl.FLOAT64;
-            } else if ( (_string.indexOf("uchar") >= 0 ) || (_string.indexOf("unsigned char") >= 0 ) ) {
-              _value = webcl.UNSIGNED_INT8;
-            } else if ( _string.indexOf("char") >= 0 ) {
-              _value = webcl.SIGNED_INT8;
-            } else if ( (_string.indexOf("ushort") >= 0 ) || (_string.indexOf("unsigned short") >= 0 ) ) {
-              _value = webcl.UNSIGNED_INT16;
-            } else if ( _string.indexOf("short") >= 0 ) {
-              _value = webcl.SIGNED_INT16;                     
-            } else if ( (_string.indexOf("uint") >= 0 ) || (_string.indexOf("unsigned int") >= 0 ) ) {
-              _value = webcl.UNSIGNED_INT32;            
-            } else if ( _string.indexOf("int") >= 0 ) {
-              _value = webcl.SIGNED_INT32;
-            } else {
-              _value = webcl.FLOAT;
-            }
-            _parameter[i] = _value;
-          }
-          _kernel_struct[_kernels_name] = _parameter;
-          _kernel_start = kernel_string.indexOf("__kernel");
+        // /!\ The minify kernel could be use by the program but some trouble with line
+        // /!\ containing macro #define, for the moment only use the minify kernel for 
+        // /!\ parsing __kernel and struct
+        //
+        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+        // --------------------------------------------------------------------------------
+        // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
+        // Step 2 : Search pattern __kernel ... ( ... )
+        // Step 3 : For each kernel
+        // Step 3 . 1 : Search Open Brace
+        // Step 3 . 2 : Search Kernel Name
+        // Step 3 . 3 : Search Kernel Parameter
+        // Step 3 . 4 : Grab { name : [ param, ... ] }
+        // --------------------------------------------------------------------------------
+        // Remove all comments ...
+        var _mini_kernel_string  = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
+  , "");
+        // Remove all char \n \r \t ...
+        _mini_kernel_string = _mini_kernel_string.replace(/\n/g, " ");
+        _mini_kernel_string = _mini_kernel_string.replace(/\r/g, " ");
+        // Remove all the multispace
+        _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
+        // Search pattern : __kernel ... ( ... )
+        var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+        if (_matches == null) {
+          console.error("/!\\ Not found kernel !!!");
+          return;
         }
-        return _kernel_struct;
+        for (var i = 0; i < _matches.length; i ++) {
+          // Search the open Brace
+          var _brace = _matches[i].lastIndexOf("(");
+          // Part before '('
+          var _first_part = _matches[i].substr(0,_brace);
+          _first_part = _first_part.replace(/^\s+|\s+$/g, ""); // trim
+          // Part after ')'
+          var _second_part = _matches[i].substr(_brace+1,_matches[i].length-_brace-2);
+          _second_part = _second_part.replace(/^\s+|\s+$/g, ""); // trim
+          // Search name part
+          var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
+          // Do not reparse again if the file was already parse (ie: Reduce sample)
+          if (_name in CL.cl_kernels_sig) return;
+          // Search parameter part
+          var _param = [];
+          var _array = _second_part.split(","); 
+          for (var j = 0; j < _array.length; j++) {
+            var _type = CL.parseType(_array[j]);
+            if (_array[j].indexOf("__local") >= 0 ) {
+              _param.push(webcl.LOCAL);
+            } else if (_type == -1) {
+              _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
+              _array[j] = _array[j].replace("*", "");
+              var _start = _array[j].lastIndexOf(" "); 
+              if (_start != -1) {
+                var _kernels_struct_name = "";
+                // Search Parameter type Name
+                for (var k = _start - 1; k >= 0 ; k--) {
+                  var _chara = _array[j].charAt(k);
+                  if (_chara == ' ' && _kernels_struct_name.length > 0) {
+                    break;
+                  } else if (_chara != ' ') {
+                    _kernels_struct_name = _chara + _kernels_struct_name;
+                  }
+                }
+                // Parse struct only if is not already inside the map
+                if (!(_kernels_struct_name in CL.cl_structs_sig))
+                  CL.parseStruct(_mini_kernel_string, _kernels_struct_name);
+                // Add the name of the struct inside the map of param kernel
+                _param.push(_kernels_struct_name);         
+              } else {
+                _param.push(webcl.FLOAT);
+              }
+            } else {
+              _param.push(_type);
+            }
+          }        
+          CL.cl_kernels_sig[_name] = _param;
+        }
+        for (var name in CL.cl_kernels_sig) {
+          var _length = CL.cl_kernels_sig[name].length;
+          var _str = "";
+          for (var i = 0; i < _length ; i++) {
+            var _type = CL.cl_kernels_sig[name][i];
+            _str += _type + "("+CL.stringType(_type)+")";
+            if (i < _length - 1) _str += ", ";
+          }
+          console.info("Kernel " + name + "(" + _length + ")");  
+          console.info("\t" + _str);          
+        }
+        for (var name in CL.cl_structs_sig) {
+          var _length = CL.cl_structs_sig[name].length;
+          var _str = "";
+          for (var i = 0; i < _length ; i++) {
+            var _type = CL.cl_structs_sig[name][i];
+            _str += _type + "("+CL.stringType(_type)+")";
+            if (i < _length - 1) _str += ", ";
+          }
+          console.info("\n\tStruct " + name + "(" + _length + ")");  
+          console.info("\t\t" + _str);              
+        }
+        return _mini_kernel_string;
       },getCopyPointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         switch(type) {
@@ -4750,7 +4894,8 @@ function copyTempDouble(ptr) {
     }
   function _webclBeginProfile(name) {
       // start profiling
-      console.profile(Pointer_stringify(name));
+      if (typeof window !== 'undefined') // Not nodejs
+        console.profile(Pointer_stringify(name));
       CL.cl_elapsed_time = Date.now();
       return 0;
     }
@@ -5039,7 +5184,7 @@ function copyTempDouble(ptr) {
       // Context must be created
       try {
         var _string = Pointer_stringify(HEAP32[((strings)>>2)]); 
-        CL.cl_kernels_sig = CL.parseKernel(_string);
+        CL.parseKernel(_string);
         _program = CL.cl_objects[context].createProgram(_string);
       } catch (e) {
         var _error = CL.catchError(e);
@@ -5426,7 +5571,8 @@ function copyTempDouble(ptr) {
     }
   function _webclEndProfile() {
       CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-      console.profileEnd();
+      if (typeof window !== 'undefined') // Not nodejs
+        console.profileEnd();
       console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
       var count = 0;
       for (obj in CL.cl_objects) {
