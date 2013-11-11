@@ -141,7 +141,7 @@ var LibraryOpenCL = {
       } else if ( string.indexOf("sampler_t") >= 0 ) {
         _value = webcl.SAMPLER;
       }
-      console.info(""+string+" - "+_value);
+
       return _value;
     },
 
