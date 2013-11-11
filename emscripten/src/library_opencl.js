@@ -41,10 +41,12 @@ var LibraryOpenCL = {
           console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
         }
 
+        // Add webcl constant for parser
+        webcl["SAMPLER"] = 0x1300;
+        webcl["IMAGE2D"] = 0x1301;
+
         CL.cl_init = 1;
       }
-      // Add webcl constant for double
-      // webcl.FLOAT64 = 0x10DF;
     },
     
     udid: function (obj) {    
@@ -106,7 +108,11 @@ var LibraryOpenCL = {
         case webcl.FLOAT:
           return 'FLOAT';
         case webcl.LOCAL:
-          return '__local';          
+          return '__local';   
+        case webcl.SAMPLER:
+          return 'sampler_t';   
+        case webcl.IMAGE2D:
+          return 'image2d_t';          
         default:
           if (typeof(pn_type) == "string") return 'struct';
           return 'UNKNOWN';
@@ -130,8 +136,12 @@ var LibraryOpenCL = {
         _value = webcl.UNSIGNED_INT32;            
       } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
         _value = webcl.SIGNED_INT32;
+      } else if ( string.indexOf("image2d_t") >= 0 ) {
+        _value = webcl.IMAGE2D;
+      } else if ( string.indexOf("sampler_t") >= 0 ) {
+        _value = webcl.SAMPLER;
       }
-
+      console.info(""+string+" - "+_value);
       return _value;
     },
 
