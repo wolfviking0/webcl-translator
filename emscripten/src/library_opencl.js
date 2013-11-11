@@ -1874,8 +1874,7 @@ var LibraryOpenCL = {
       return 0; 
     }
 
-    console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info... need to be more tested");
-    var _type = FLOAT;
+    var _type = webcl.FLOAT;
     var _sizeType = 4;
     var _sizeOrder = 1;    
 
@@ -1916,7 +1915,7 @@ var LibraryOpenCL = {
         console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
     }
 
-    switch (_channel_type) {
+    switch (_channel_order) {
       case webcl.R:
       case webcl.A:
       case webcl.INTENSITY:
@@ -1941,22 +1940,22 @@ var LibraryOpenCL = {
 
     var _size = image_width * image_height * _sizeOrder;
 
-    if (host_ptr != 0 ) {
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
-      }
+    console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
 
-#if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
-#endif
-
-      return 0;
-    }
+//     if (host_ptr != 0 ) {
+//       if (cl_errcode_ret != 0) {
+//         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
+//       }
+// #if OPENCL_GRAB_TRACE
+//       CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
+// #endif
+//       return 0;
+//     }
       
     if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-      _host_ptr = new ArrayBuffer(size);
+      _host_ptr = new ArrayBuffer(_size);
     } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,_type);
+      _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type);
     } else if (flags_i64_1 & ~_flags) {
       console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
     }
