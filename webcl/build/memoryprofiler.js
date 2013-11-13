@@ -7,10 +7,18 @@ var MEMORYPROFILER_DETAILED_HEAP_USAGE = true;
 
 // CONFIGURATION: Allocations of memory blocks larger than this threshold will get their detailed callstack captured and logged at runtime.
 // Warning: This can be extremely slow. Set to a very very large value like 1024*1024*1024*4 to disable.
-var MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE = 1*1024;
+var MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE = 16*1024*1024;
 if (typeof new Error().stack === 'undefined') { // Disable callstack tracking if stack information is not available in this browser (at least IE and Safari don't have this)
   MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE = 1024*1024*1024*4;
 }
+
+// Controls whether all outstanding allocation are printed to html page by callstack.
+var MEMORYPROFILER_ALLOC_STATS = false;
+// If MEMORYPROFILER_ALLOC_STATS = true, then all callstacks that have recorded more than the following number of allocations will be printed to html page.
+var MEMORYPROFILER_ALLOC_STATS_MIN_REPORTED = 100;
+// Tracks data for the above.
+var memoryprofiler_alloc_site_stats = {}; 
+var memoryprofiler_alloc_site_ptrs = {};
 
 // CONFIGURATION: If true, we hook into Runtime.stackAlloc to be able to catch better estimate of the maximum used STACK space.
 // You might only ever want to set this to false for performance reasons. Since stack allocations may occur often, this might impact
@@ -94,20 +102,35 @@ function memoryprofiler_add_hooks() {
       memoryprofiler_prerun_mallocs[ptr] = size;
     }
 
+    if (MEMORYPROFILER_ALLOC_STATS) {
+      var loc = new Error().stack.toString();//.split('\n');
+//      for(var i in loc) {
+        var str = loc;//[i];
+        if (!memoryprofiler_alloc_site_stats[str]) {
+          memoryprofiler_alloc_site_stats[str] = 1;
+        } else {
+          memoryprofiler_alloc_site_stats[str]++;
+        }
+ //     }
+      memoryprofiler_alloc_site_ptrs[ptr] = loc;
+    }
     // If this is a large enough allocation, track its detailed callstack info.
     if (size > MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE) {
       // A very very hacky way to get the caller function as string. TODO: Once emscripten_get_callstack_js lands, use that instead.
       var loc = new Error().stack.toString();
       var nl = loc.indexOf('\n')+1;
-      nl = loc.indexOf('\n', nl)+1;
+      loc = loc.substr(nl);
+      loc = loc.replace(/\n/g, '<br />');
+//      nl = loc.indexOf('\n', nl)+1;
+      /*
       if (nl != -1 && loc[nl] != '_') {
         nl = loc.indexOf('\n', nl)+1;
       }
       if (nl != -1 && loc.substr(nl, 4) == '__Zn') {
         nl = loc.indexOf('\n', nl)+1;
       }
-      var nl2 = loc.indexOf('\n', nl);
-      var caller = loc.substr(nl, nl2-nl);
+      var nl2 = loc.indexOf('\n', nl);*/
+      var caller = loc;//.substr(nl, nl2-nl);
       memoryprofiler_ptr_to_loc[ptr] = caller;
       if (memoryprofiler_loc_to_size[caller] > 0)
         memoryprofiler_loc_to_size[caller] += size;
@@ -126,6 +149,17 @@ function memoryprofiler_add_hooks() {
       delete memoryprofiler_ptr_to_size[ptr];
       delete memoryprofiler_prerun_mallocs[ptr]; // Also free if this happened to be a _malloc performed at preRun time.
       memoryprofiler_stacktop_watermark = Math.max(memoryprofiler_stacktop_watermark, STACKTOP);
+
+      if (MEMORYPROFILER_ALLOC_STATS) {
+        var loc = memoryprofiler_alloc_site_ptrs[ptr];
+        if (loc) {
+//          for(var i in loc) {
+            var str = loc;//[i];
+            memoryprofiler_alloc_site_stats[str]--;
+//          }
+        }
+        memoryprofiler_alloc_site_ptrs[ptr] = null;
+      }
 
       // Decrement per-alloc stats if this was a large allocation.
       if (sz > MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE) {
@@ -169,7 +203,7 @@ function memoryprofiler_add_hooks() {
   memoryprofiler = document.getElementById('memoryprofiler');
   if (!memoryprofiler) {
     var div = document.createElement("div");
-    div.innerHTML = "<div style='border: 2px solid black; padding: 2px;'><canvas style='border: 1px solid black;' id='memoryprofiler_canvas' width='800' height='50'></canvas><div id='memoryprofiler'></div>";
+    div.innerHTML = "<div style='border: 2px solid black; padding: 2px;'><canvas style='border: 1px solid black;' id='memoryprofiler_canvas' width='800' height='50'></canvas>MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE=<input id='memoryprofiler_min_tracked_alloc_size' type=number onChange='MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE=this.value;' value="+MEMORYPROFILER_TRACK_CALLSTACK_MIN_SIZE+"></input><br/><input type='checkbox' onchange='MEMORYPROFILER_ALLOC_STATS=this.checked;'>Print allocation statistics by callstack to html log (warning: slow!)</input><input type='button' value='Clear alloc stats' onclick='memoryprofiler_alloc_site_stats = {}; memoryprofiler_alloc_site_ptrs = {};'></input><div id='memoryprofiler'></div>";
     document.body.appendChild(div);
     memoryprofiler = document.getElementById('memoryprofiler');
   }
@@ -224,9 +258,30 @@ function memoryprofiler_fillLine(startBytes, endBytes) {
   memoryprofiler_canvas_context.fillRect(x0,0,x1+1-x0,memoryprofiler_canvas.height);
 }
 
+function memoryprofiler_count_openal_audiodata_size() {
+  if (typeof AL == "undefined" || !AL.currentContext) {
+    return 0;
+  }
+
+  var totalMemory = 0;
+
+  for(var i in AL.currentContext.buf) {
+    var buffer = AL.currentContext.buf[i];
+    for(var channel = 0; channel < buffer.numberOfChannels; ++channel) {
+      totalMemory += buffer.getChannelData(channel).length * 4;
+    }
+  }
+  return totalMemory;
+}
+
 // Main UI update entry point.
 function memoryprofiler_update_ui() {
 
+  function colorBar(color) {
+//    return '<span style="padding:0px; border:solid 1px black; width:32px;height:18px; display:inline-block;"><span style="display:inline-block; width:30px; height: 16px; background-color:'+color+'; margin: 1px;"></span></span>';
+    return '<span style="padding:0px; border:solid 1px black; width:28px;height:14px; vertical-align:middle; display:inline-block; background-color:'+color+';"></span>';
+  }
+  
   // Naive function to compute how many bits will be needed to represent the number 'n' in binary. This will be our pointer 'word width' in the UI.
   function nBits(n) {
     var i = 0;
@@ -247,28 +302,29 @@ function memoryprofiler_update_ui() {
   }
   var width = (nBits(TOTAL_MEMORY)+3)/4; // Pointer 'word width'
   memoryprofiler.innerHTML = 'Total HEAP size: ' + formatBytes(TOTAL_MEMORY) + '.';
-  memoryprofiler.innerHTML += '<br />STATIC memory area size (black bar): ' + formatBytes(STATICTOP-STATIC_BASE);
+  memoryprofiler.innerHTML += '<br />'+colorBar('#202020')+'STATIC memory area size: ' + formatBytes(STATICTOP-STATIC_BASE);
   memoryprofiler.innerHTML += '. STATIC_BASE: ' + toHex(STATIC_BASE, width);
   memoryprofiler.innerHTML += '. STATICTOP: ' + toHex(STATICTOP, width) + '.';
   
-  memoryprofiler.innerHTML += '<br />STACK memory area size (light red bar): ' + formatBytes(STACK_MAX-STACK_BASE);
+  memoryprofiler.innerHTML += '<br />'+colorBar('#FF8080')+'STACK memory area size: ' + formatBytes(STACK_MAX-STACK_BASE);
   memoryprofiler.innerHTML += '. STACK_BASE: ' + toHex(STACK_BASE, width);
   memoryprofiler.innerHTML += '. STACKTOP: ' + toHex(STACKTOP, width);
   memoryprofiler.innerHTML += '. STACK_MAX: ' + toHex(STACK_MAX, width) + '.';
-  memoryprofiler.innerHTML += '<br />STACK memory area used now (should be zero): ' + formatBytes(STACKTOP-STACK_BASE) + '. STACK watermark highest seen usage (yellow, approximate lower-bound!): ' + formatBytes(memoryprofiler_stacktop_watermark-STACK_BASE);
+  memoryprofiler.innerHTML += '<br />STACK memory area used now (should be zero): ' + formatBytes(STACKTOP-STACK_BASE) + '.'+colorBar('#FFFF00')+' STACK watermark highest seen usage (approximate lower-bound!): ' + formatBytes(memoryprofiler_stacktop_watermark-STACK_BASE);
   
-  memoryprofiler.innerHTML += '<br />DYNAMIC memory area size (light green bar): ' + formatBytes(DYNAMICTOP-DYNAMIC_BASE);
+  memoryprofiler.innerHTML += '<br />'+colorBar('#70FF70')+'DYNAMIC memory area size: ' + formatBytes(DYNAMICTOP-DYNAMIC_BASE);
   memoryprofiler.innerHTML += '. DYNAMIC_BASE: ' + toHex(DYNAMIC_BASE, width);
   memoryprofiler.innerHTML += '. DYNAMICTOP: ' + toHex(DYNAMICTOP, width) + '.';
-  memoryprofiler.innerHTML += '<br />DYNAMIC memory area used (shades of blue): ' + formatBytes(memoryprofiler_total_mem_allocated) + ' (' + (memoryprofiler_total_mem_allocated*100.0/(TOTAL_MEMORY-DYNAMIC_BASE)).toFixed(2) + '% of all free memory)';
+  memoryprofiler.innerHTML += '<br />'+colorBar('#6699CC')+colorBar('#003366')+colorBar('#0000FF')+'DYNAMIC memory area used: ' + formatBytes(memoryprofiler_total_mem_allocated) + ' (' + (memoryprofiler_total_mem_allocated*100.0/(TOTAL_MEMORY-DYNAMIC_BASE)).toFixed(2) + '% of all free memory)';
   
   var preloadedMemoryUsed = 0;
   for(i in memoryprofiler_prerun_mallocs) {
     preloadedMemoryUsed += memoryprofiler_prerun_mallocs[i]|0;
   }
-  memoryprofiler.innerHTML += '<br />Preloaded memory used, most likely memory reserved by files in the virtual filesystem (shades of orange): ' + formatBytes(preloadedMemoryUsed);
+  memoryprofiler.innerHTML += '<br />'+colorBar('#FF9900')+colorBar('#FFDD33')+'Preloaded memory used, most likely memory reserved by files in the virtual filesystem : ' + formatBytes(preloadedMemoryUsed);
 
-  memoryprofiler.innerHTML += '<br />Unallocated HEAP space (white bar): ' + formatBytes(TOTAL_MEMORY - DYNAMICTOP);
+  memoryprofiler.innerHTML += '<br />OpenAL audio data: ' + formatBytes(memoryprofiler_count_openal_audiodata_size()) + ' (outside HEAP)';
+  memoryprofiler.innerHTML += '<br />'+colorBar('#FFFFFF')+'Unallocated HEAP space: ' + formatBytes(TOTAL_MEMORY - DYNAMICTOP);
   memoryprofiler.innerHTML += '<br /># of total malloc()s/free()s performed in app lifetime: ' + memoryprofiler_num_allocs + '/' + memoryprofiler_num_frees + ' (delta: ' + (memoryprofiler_num_allocs-memoryprofiler_num_frees) + ')';
   
   // Background clear
@@ -328,7 +384,31 @@ function memoryprofiler_update_ui() {
       memoryprofiler.innerHTML += '<b>'+formatBytes(memoryprofiler_loc_to_size[i]|0)+'</b>: ' + i + '<br />';
     }
   }
-  
+
+  if (!isEmpty(memoryprofiler_alloc_site_stats)) {
+    var calls = [];
+    for(var i in memoryprofiler_alloc_site_stats) {
+      var numcalls = memoryprofiler_alloc_site_stats[i];
+      if (numcalls >= MEMORYPROFILER_ALLOC_STATS_MIN_REPORTED) {
+        calls.push(i);
+      }
+    }
+
+    calls.sort(function(a,b) { return memoryprofiler_alloc_site_stats[b] - memoryprofiler_alloc_site_stats[a]; });
+    memoryprofiler.innerHTML += '<h4>Allocated pointers by call stack:<h4>';
+    var ndemangled = 10;
+    for(var i in calls) {
+      var callstack = calls[i];
+      var numcalls = memoryprofiler_alloc_site_stats[callstack];
+      if (ndemangled > 0) {
+        callstack = demangleAll(callstack);
+        callstack = callstack.split('\n').join('<br />');
+        --ndemangled;
+      }
+      memoryprofiler.innerHTML += callstack + ': <b>' + numcalls + '</b><br /><br />';
+    }
+  }
+
   // Reset watermark for until next UI update.
 //  memoryprofiler_stacktop_watermark = STACK_BASE;
 }
