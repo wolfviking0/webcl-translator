@@ -49,7 +49,6 @@
 //
 
 ////////////////////////////////////////////////////////////////////////////////
-#define MIN_ERROR       (1e-7)
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -60,36 +59,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef __EMSCRIPTEN__
-    #include <GL/gl.h>
-    #include <GL/glut.h>
     #include <CL/opencl.h>
 #else
-#include <OpenCL/opencl.h>
+	#include <OpenCL/opencl.h>
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
 
-// Use a static data size for simplicity
-//
-#define DATA_SIZE (128)
-
-////////////////////////////////////////////////////////////////////////////////
-
-// Simple compute kernel which computes the square of an input array 
-//
-const char *KernelSource = "\n" \
-"__kernel void square(                                                       \n" \
-"   __global float* input,                                              \n" \
-"   __global float* output,                                             \n" \
-"   const unsigned int count)                                           \n" \
-"{                                                                      \n" \
-"   int i = get_global_id(0);                                           \n" \
-"   if(i < count)                                                       \n" \
-"       output[i] = input[i] * input[i];                                \n" \
-"}                                                                      \n" \
-"\n";
-
-////////////////////////////////////////////////////////////////////////////////
 #ifdef __EMSCRIPTEN__
 void print_stack() {
     printf("\n___________________________________\n");
@@ -109,646 +84,37 @@ void print_stack() {
 
 int end(int e) {
     #ifdef __EMSCRIPTEN__
+        webclEndProfile();
         print_stack();
     #endif
     return e;
 }
 
-void pfn_notify_program(cl_program program, void *user_data) {
-    printf("%d) %d : pfn_notify call\n",(size_t)user_data,(size_t)program); 
-}
-
-int __main(int argc, char** argv)
-{
-/*
-    printf("\nTEST : clGetDeviceIDs\n");
-    printf("-----------------------\n");   
-
-    cl_device_id first_device_id;
-    cl_uint num_devices;
-
-    cl_device_type array_type[5] = {CL_DEVICE_TYPE_ALL,CL_DEVICE_TYPE_GPU,CL_DEVICE_TYPE_DEFAULT,CL_DEVICE_TYPE_ACCELERATOR,CL_DEVICE_TYPE_CPU};
-
-    for (int i = 0 ; i < 5 ; i ++) {
-        printf("clGetDeviceIDs type : %llu\n",array_type[i]);
-        err = clGetDeviceIDs(0, array_type[i], 0, 0, 0 );
-        printf("%d) %d\n",++counter,err);
-
-        err = clGetDeviceIDs(0, 0, 0, 0, 0 );
-        printf("%d) %d\n",++counter,err);
-
-        err = clGetDeviceIDs(0, array_type[i], 1, 0, &num_devices );
-        printf("%d) %d - %d\n",++counter,err,(int)num_devices);
-
-        err = clGetDeviceIDs(0, array_type[i], 1, &first_device_id, 0 );
-        printf("%d) %d - %d\n",++counter,err,(int)first_device_id);
-
-        err = clGetDeviceIDs(0, array_type[i], 2, &first_device_id, &num_devices );
-        printf("%d) %d - %d - %d\n",++counter,err,(int)first_device_id,(int)num_devices);
-
-        err = clGetDeviceIDs(first_platform_id, array_type[i], 1, 0, &num_devices );
-        printf("%d) %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)num_devices);
-
-        err = clGetDeviceIDs(first_platform_id, array_type[i], 1, &first_device_id, 0 );
-        printf("%d) %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)first_device_id);
-
-        err = clGetDeviceIDs(first_platform_id, array_type[i], 2, &first_device_id, &num_devices );
-        printf("%d) %d - %d - %d - %d\n",++counter,err,(int)first_platform_id,(int)first_device_id,(int)num_devices);
-    }
-
-    printf("\nTEST : clGetDeviceInfo\n");
-    printf("-----------------------\n");   
-
-    cl_device_info array_info[75] = {CL_DEVICE_TYPE,CL_DEVICE_VENDOR_ID,CL_DEVICE_MAX_COMPUTE_UNITS,CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,CL_DEVICE_MAX_WORK_GROUP_SIZE ,CL_DEVICE_MAX_WORK_ITEM_SIZES,CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,CL_DEVICE_MAX_CLOCK_FREQUENCY,CL_DEVICE_ADDRESS_BITS,CL_DEVICE_MAX_READ_IMAGE_ARGS,CL_DEVICE_MAX_WRITE_IMAGE_ARGS,CL_DEVICE_MAX_MEM_ALLOC_SIZE,CL_DEVICE_IMAGE2D_MAX_WIDTH,CL_DEVICE_IMAGE2D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_WIDTH,CL_DEVICE_IMAGE3D_MAX_HEIGHT,CL_DEVICE_IMAGE3D_MAX_DEPTH,CL_DEVICE_IMAGE_SUPPORT,CL_DEVICE_MAX_PARAMETER_SIZE,CL_DEVICE_MAX_SAMPLERS,CL_DEVICE_MEM_BASE_ADDR_ALIGN,CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE,CL_DEVICE_SINGLE_FP_CONFIG,CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,CL_DEVICE_GLOBAL_MEM_SIZE,CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,CL_DEVICE_MAX_CONSTANT_ARGS,CL_DEVICE_LOCAL_MEM_TYPE,CL_DEVICE_LOCAL_MEM_SIZE,CL_DEVICE_ERROR_CORRECTION_SUPPORT,CL_DEVICE_PROFILING_TIMER_RESOLUTION,CL_DEVICE_ENDIAN_LITTLE,CL_DEVICE_AVAILABLE,CL_DEVICE_COMPILER_AVAILABLE,CL_DEVICE_EXECUTION_CAPABILITIES,CL_DEVICE_QUEUE_PROPERTIES,CL_DEVICE_NAME,CL_DEVICE_VENDOR ,CL_DRIVER_VERSION,CL_DEVICE_PROFILE,CL_DEVICE_VERSION,CL_DEVICE_EXTENSIONS,CL_DEVICE_PLATFORM,CL_DEVICE_DOUBLE_FP_CONFIG ,CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,CL_DEVICE_HOST_UNIFIED_MEMORY,CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT,CL_DEVICE_NATIVE_VECTOR_WIDTH_INT,CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG,CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,CL_DEVICE_OPENCL_C_VERSION  ,CL_DEVICE_LINKER_AVAILABLE  ,CL_DEVICE_BUILT_IN_KERNELS  ,CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,CL_DEVICE_IMAGE_MAX_ARRAY_SIZE,CL_DEVICE_PARENT_DEVICE,CL_DEVICE_PARTITION_MAX_SUB_DEVICES,CL_DEVICE_PARTITION_PROPERTIES,CL_DEVICE_PARTITION_AFFINITY_DOMAIN,CL_DEVICE_PARTITION_TYPE,CL_DEVICE_REFERENCE_COUNT,CL_DEVICE_PREFERRED_INTEROP_USER_SYNC,CL_DEVICE_PRINTF_BUFFER_SIZE,CL_DEVICE_IMAGE_PITCH_ALIGNMENT,CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT};
-
-    size = 0;
-    cl_int value = 0;
-
-    for (int i = 0 ; i < 75 ; i ++) {
-        err = clGetDeviceInfo(first_device_id, array_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_info[i],err,size,value);        
-    }
-   
-    // Return char *
-    // CL_DEVICE_EXTENSIONS
-
-    size = 0;
-    char extensions[1024];
-
-    err = clGetDeviceInfo(first_device_id, CL_DEVICE_EXTENSIONS, 1024, &extensions, &size);
-    printf("%d) %d : %d - %d => %s\n",++counter,CL_DEVICE_EXTENSIONS,err,size,extensions);       
-
-    // Return array[3]
-    //CL_DEVICE_MAX_WORK_ITEM_SIZES
-
-    cl_int array[3];
-    err = clGetDeviceInfo(first_device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(array), &array, &size);
-    printf("%d) %d : %d - %d => %d, %d , %d\n",++counter,CL_DEVICE_MAX_WORK_ITEM_SIZES,err,size,array[0],array[1],array[2]);       
-
-    // Return 64 bit
-    //CL_DEVICE_MAX_MEM_ALLOC_SIZE
-    //CL_DEVICE_GLOBAL_MEM_SIZE
-
-    cl_ulong ul;
-    err = clGetDeviceInfo(first_device_id, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &ul, &size);
-    printf("%d) %d : %d - %d => %llu\n",++counter,CL_DEVICE_MAX_MEM_ALLOC_SIZE,err,size,ul);       
-    
-    ul = 0;
-    err = clGetDeviceInfo(first_device_id, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(cl_ulong), &ul, &size);
-    printf("%d) %d : %d - %d => %llu\n",++counter,CL_DEVICE_GLOBAL_MEM_SIZE,err,size,ul);     
-
-
-    printf("\nTEST : clCreateContext\n");
-    printf("-----------------------\n");   
-
-    cl_int cl_errcode_ret = 0;
-    cl_context context;
-    cl_context contextFromType;
-
-    context = clCreateContext(0,0,0,NULL,NULL,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);       
-
-    context = clCreateContext(0,1,0,NULL,NULL,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);   
-
-    context = clCreateContext(0,0,&first_device_id,NULL,NULL,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);    
-
-    context = clCreateContext(0,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context);   
-
-    {
-        cl_context_properties properties[] = { 
-            CL_CONTEXT_PLATFORM,
-            (cl_context_properties)0,
-            CL_CGL_SHAREGROUP_KHR,
-            (cl_context_properties)0,
-            0
-        };
-
-        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
-        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
-    }
-
-    {    
-        cl_context_properties properties[] = { 
-            CL_CONTEXT_PLATFORM,
-            (cl_context_properties)first_platform_id,
-            CL_GL_CONTEXT_KHR,
-            (cl_context_properties)0,
-            CL_CGL_SHAREGROUP_KHR,
-            (cl_context_properties)0,            
-            0
-        };  
-
-        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
-        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
-    }
-
-    {
-        cl_context_properties properties[] = { 
-            CL_CONTEXT_PLATFORM,
-            (cl_context_properties)first_platform_id,
-            0
-        };
-
-        context = clCreateContext(properties,1,&first_device_id,NULL,NULL,&cl_errcode_ret);
-        printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)context); 
-    }
-
-    printf("\nTEST : clCreateContextFromType\n");
-    printf("-----------------------\n");   
-
-    for (int i = 0 ; i < 5 ; i ++) {
-        printf("clCreateContextFromType type : %llu\n",array_type[i]);
-        contextFromType = clCreateContextFromType(0,array_type[i],NULL,NULL,&cl_errcode_ret);
-        
-        printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
-
-        {
-
-            contextFromType = clCreateContextFromType(0,array_type[i],NULL,NULL,&cl_errcode_ret);
-            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
-
-            cl_context_properties properties[] = { 
-                CL_CONTEXT_PLATFORM,
-                (cl_context_properties)0,
-                CL_CGL_SHAREGROUP_KHR,
-                (cl_context_properties)0,
-                0
-            };
-
-            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
-            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
-        }
-
-        {    
-            cl_context_properties properties[] = { 
-                CL_CONTEXT_PLATFORM,
-                (cl_context_properties)first_platform_id,
-                CL_GL_CONTEXT_KHR,
-                (cl_context_properties)0,
-                CL_CGL_SHAREGROUP_KHR,
-                (cl_context_properties)0,    
-                0
-            };  
-
-            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
-            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
-        }
-
-        {
-            cl_context_properties properties[] = { 
-                CL_CONTEXT_PLATFORM,
-                (cl_context_properties)first_platform_id,
-                0
-            };
-
-            contextFromType = clCreateContextFromType(properties,array_type[i],NULL,NULL,&cl_errcode_ret);
-            printf("%d) %d : %llu => %d\n",++counter,cl_errcode_ret,array_type[i],(int)contextFromType); 
-        }
-    }
-
-    printf("\nTEST : clGetContextInfo\n");
-    printf("-----------------------\n");   
-    
-    size = 0;
-    value = 0;
-
-    cl_context_info array_context_info[5] = {CL_CONTEXT_REFERENCE_COUNT,CL_CONTEXT_NUM_DEVICES,CL_CONTEXT_DEVICES,CL_CONTEXT_PROPERTIES,CL_CONTEXT_PLATFORM};
-
-    for (int i = 0; i < 5; i++) {
-        err = clGetContextInfo(contextFromType, array_context_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_context_info[i],err,size,value);   
-    }
-
-
-    printf("\nTEST : clReleaseContext\n");
-    printf("-----------------------\n");   
-
-    err = clReleaseContext(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseContext(contextFromType);
-    printf("%d) %d : %d\n",++counter,err,(int)contextFromType); 
-
-    printf("\nTEST : clCreateCommandQueue\n");
-    printf("-----------------------\n");   
-
-    cl_command_queue queue;
-    queue = clCreateCommandQueue(0,0,0,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-
-    queue = clCreateCommandQueue(context,0,0,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-
-    queue = clCreateCommandQueue(context,first_device_id,0,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-
-    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-    
-    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-
-    queue = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
-    printf("%d) %d : %d\n",++counter,cl_errcode_ret,(int)queue); 
-
-
-    printf("\nTEST : clGetCommandQueueInfo\n");
-    printf("-----------------------\n");   
-
-    cl_command_queue queue_to_release = clCreateCommandQueue(context,first_device_id,CL_QUEUE_PROFILING_ENABLE,&cl_errcode_ret);
-    cl_command_queue_info array_command_info[4] = {CL_QUEUE_CONTEXT,CL_QUEUE_DEVICE,CL_QUEUE_REFERENCE_COUNT,CL_QUEUE_PROPERTIES};
-
-    for (int i = 0; i < 4; i++) {
-        err = clGetCommandQueueInfo(queue_to_release, array_command_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_command_info[i],err,size,value);   
-    }
-
-    printf("\nTEST : clReleaseCommandQueue\n");
-    printf("-----------------------\n");  
-
-    err = clReleaseCommandQueue(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseCommandQueue(queue_to_release);
-    printf("%d) %d : %d\n",++counter,err,(int)queue_to_release); 
-
-    printf("\nTEST : clCreateBuffer\n");
-    printf("-----------------------\n");  
-
-    cl_mem_flags array_buffer_flags[3] = {CL_MEM_READ_WRITE,CL_MEM_WRITE_ONLY,CL_MEM_READ_ONLY};
-    cl_mem buff;
-
-    int pixelCount = 10;
-
-    float * pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
-    cl_uint sizeBytes = 3 * sizeof(float) * pixelCount;
-
-    int * pixels2 = (int *)malloc(3 * sizeof(int) * pixelCount);
-    cl_uint sizeBytes2 = 3 * sizeof(int) * pixelCount;
-
-    for(i = 0; i < pixelCount; i++) {
-        pixels[i] = rand() / (float)RAND_MAX;
-        pixels2[i] = (int)(100 * (rand() / (float)RAND_MAX));
-    }
-
-    for (int i = 0; i < 3; i++) {
-        buff = clCreateBuffer(context, array_buffer_flags[i], sizeof(cl_int), NULL, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
-
-        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_ALLOC_HOST_PTR, sizeBytes, NULL , &cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
-
-        clSetTypePointer(CL_FLOAT);
-        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes ,pixels, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);   
-
-        clSetTypePointer(CL_SIGNED_INT32);
-        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, sizeBytes2, pixels2, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);     
-
-        buff = clCreateBuffer(context, array_buffer_flags[i] | CL_MEM_USE_HOST_PTR, sizeBytes2, pixels2, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)buff,cl_errcode_ret);                   
-    }
-
-    printf("\nTEST : clCreateSubBuffer\n");
-    printf("--------------------------\n");  
-
-    cl_buffer_region region1 = 
-    {
-        0 * sizeof(int), 
-        5 * sizeof(int)
-    };
-
-    cl_buffer_region region2 = 
-    {
-        -1 * sizeof(int), 
-        5 * sizeof(int)
-    };
-
-    cl_buffer_region region3 = 
-    {
-        6 * sizeof(int), 
-        2 * sizeof(int)
-    };
-
-    cl_buffer_region region4 = 
-    {
-        6 * sizeof(int), 
-        -2 * sizeof(int)
-    };
-        
-    cl_mem subbuffer = NULL;
-
-    for (int i = 0; i < 3; i++) {
-        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region2,&cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
-
-        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region3,&cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
-
-        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region4,&cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);   
-
-        subbuffer = clCreateSubBuffer(buff,array_buffer_flags[i],CL_BUFFER_CREATE_TYPE_REGION,&region3,&cl_errcode_ret);
-        printf("%d) %lld : %d - %d\n",++counter,array_buffer_flags[i],(int)subbuffer,cl_errcode_ret);           
-    }
-
-    printf("\nTEST : clCreateImage2D\n");
-    printf("--------------------------\n");  
-
-    cl_mem image;
- 
-    cl_image_format img_fmt;
-    img_fmt.image_channel_order = CL_RGBA;
-    img_fmt.image_channel_data_type = CL_FLOAT;
-
-    cl_image_format img_fmt2;
-    img_fmt2.image_channel_order = CL_RGBA;
-    img_fmt2.image_channel_data_type = CL_UNORM_INT8;
-
-    cl_image_format img_fmt3;
-    img_fmt3.image_channel_order = CL_ARGB;
-    img_fmt3.image_channel_data_type = CL_UNSIGNED_INT32;
-
-    size_t width, height;
-    width = height = 10;
- 
-    for (int i = 0; i < 3; i++) {
-        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt, width, height, 0, 0, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt.image_channel_order ,img_fmt.image_channel_data_type );           
-
-        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt3, width, height, 0, 0, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt3.image_channel_order ,img_fmt3.image_channel_data_type );           
-    
-        image = clCreateImage2D(context, array_buffer_flags[i] | CL_MEM_COPY_HOST_PTR, &img_fmt2, width, height, 0, pixels2, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt2.image_channel_order ,img_fmt2.image_channel_data_type );    
-
-        image = clCreateImage2D(context, array_buffer_flags[i], &img_fmt2, width, height, 0, 0, &cl_errcode_ret);
-        printf("%d) %lld : %d - %d (%dx%d)\n",++counter,array_buffer_flags[i],(int)image,cl_errcode_ret,img_fmt2.image_channel_order ,img_fmt2.image_channel_data_type );              
-    }
-
-    printf("\nTEST : clGetMemObjectInfo\n");
-    printf("---------------------------\n");   
-
-    cl_mem_info array_mem_info[9] = {CL_MEM_TYPE,CL_MEM_FLAGS,CL_MEM_SIZE,CL_MEM_HOST_PTR,CL_MEM_MAP_COUNT,CL_MEM_REFERENCE_COUNT,CL_MEM_REFERENCE_COUNT,CL_MEM_ASSOCIATED_MEMOBJECT,CL_MEM_OFFSET};
-
-    for (int i = 0; i < 9; i++) {
-        err = clGetMemObjectInfo(subbuffer, array_mem_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_mem_info[i],err,size,value);   
-    }
-    
-    err = clGetMemObjectInfo(buff, array_mem_info[8], sizeof(cl_int), &value, &size);
-    printf("%d) %d : %d - %d => %d\n",++counter,array_mem_info[8],err,size,value);       
-
-    printf("\nTEST : clGetImageInfo\n");
-    printf("-----------------------\n");   
-
-    cl_mem_info array_img_info[7] = {CL_IMAGE_FORMAT,CL_IMAGE_ELEMENT_SIZE,CL_IMAGE_ROW_PITCH,CL_IMAGE_ROW_PITCH,CL_IMAGE_WIDTH,CL_IMAGE_HEIGHT,CL_IMAGE_DEPTH};
-
-    for (int i = 0; i < 7; i++) {
-        err = clGetImageInfo(image, array_img_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_img_info[i],err,size,value);   
-    }
-
-    printf("\nTEST : clReleaseMemObject\n");
-    printf("-----------------------\n");  
-
-    err = clReleaseMemObject(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseMemObject(subbuffer);
-    printf("%d) %d : %d\n",++counter,err,(int)subbuffer); 
-
-    err = clReleaseMemObject(image);
-    printf("%d) %d : %d\n",++counter,err,(int)image); 
-
-
-    printf("\nTEST : clGetSupportedImageFormats\n");
-    printf("-----------------------------------\n");  
-
-    cl_uint uiNumSupportedFormats = 0;
-
-    for (int i = 0; i < 3; i++) {
-        err = clGetSupportedImageFormats(context, array_buffer_flags[i] , CL_MEM_OBJECT_IMAGE2D, 0, NULL, &uiNumSupportedFormats);
-        printf("\n%d) %d : %d\n",++counter,err,(int)uiNumSupportedFormats); 
-
-        cl_image_format ImageFormats[uiNumSupportedFormats];
-
-        err = clGetSupportedImageFormats(context, array_buffer_flags[i] , CL_MEM_OBJECT_IMAGE2D, uiNumSupportedFormats, ImageFormats, NULL);
-
-        for(unsigned int i = 0; i < uiNumSupportedFormats; i++) {  
-            printf("%d) %d : (%dx%d)\n",++counter,err,(int)ImageFormats[i].image_channel_order,(int)ImageFormats[i].image_channel_data_type); 
-        }
-    }
-                
-    printf("\nTEST : clCreateSampler\n");
-    printf("--------------------------\n");  
-
-    cl_addressing_mode addr[5] = {CL_ADDRESS_NONE,CL_ADDRESS_CLAMP_TO_EDGE,CL_ADDRESS_CLAMP,CL_ADDRESS_REPEAT,CL_ADDRESS_MIRRORED_REPEAT};
-    cl_filter_mode filter[2] = {CL_FILTER_NEAREST,CL_FILTER_LINEAR};
-    cl_int boolean[2] = {CL_TRUE,CL_FALSE};
-      
-    for (int i = 0; i < 5 ; i++) {
-      for (int j = 0; j < 2 ; j++) {
-        for (int k = 0; k < 2 ; k++) {
-          cl_sampler sampler = clCreateSampler ( context, boolean[k], addr[i], filter[j], &cl_errcode_ret);
-          printf("%d) %d - %d (%dx%dx%d)\n",++counter,(int)sampler,cl_errcode_ret,boolean[k], addr[i], filter[j]); 
- 
-        } 
-      } 
-    }
-    
-    cl_sampler sampler = clCreateSampler ( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &cl_errcode_ret);
-    
-    printf("\nTEST : clGetSamplerInfo\n");
-    printf("-----------------------\n");   
-    
-    cl_sampler_info array_sampler_info[5] = {CL_SAMPLER_REFERENCE_COUNT,CL_SAMPLER_CONTEXT,CL_SAMPLER_NORMALIZED_COORDS,CL_SAMPLER_ADDRESSING_MODE,CL_SAMPLER_FILTER_MODE};
-
-    for (int i = 0; i < 5; i++) {
-        err = clGetSamplerInfo(sampler, array_sampler_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_sampler_info[i],err,size,value);   
-    }
-    
-    printf("\nTEST : clReleaseSampler\n");
-    printf("-----------------------\n");  
-
-    err = clReleaseSampler(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseSampler(sampler);
-    printf("%d) %d : %d\n",++counter,err,(int)sampler); 
-
-    printf("\nTEST : clCreateProgramWithSource\n");
-    printf("-----------------------\n");  
-    
-    cl_program program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &cl_errcode_ret);
-    printf("%d) %d - %d\n",++counter,(int)program,cl_errcode_ret); 
-    
-    printf("\nTEST : clReleaseProgram\n");
-    printf("-------------------------\n");  
-
-    cl_program program2 = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &cl_errcode_ret);
-    err = clReleaseProgram(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseProgram(program2);
-    printf("%d) %d : %d\n",++counter,err,(int)program2); 
-
-    printf("\nTEST : clBuildProgram\n");
-    printf("-------------------------\n");  
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    printf("%d) %d : %d\n",++counter,err,(int)program); 
-
-    err = clBuildProgram(program, 1, first_device_id, NULL, NULL, NULL);
-    printf("%d) %d : %d\n",++counter,err,(int)program,(int)first_device_id); 
-
-    char* options[14];
-    options[0] = strdup("-D name");
-    options[1] = strdup("-D name=definition");
-    options[2] = strdup("-cl-opt-disable");
-    options[3] = strdup("-cl-single-precision-constant");
-    options[4] = strdup("-cl-denorms-are-zero");
-    options[5] = strdup("-cl-mad-enable");
-    options[6] = strdup("-cl-no-signed-zeros");
-    options[7] = strdup("-cl-unsafe-math-optimizations");
-    options[8] = strdup("-cl-finite-math-only");
-    options[9] = strdup("-cl-fast-relaxed-math");
-    options[10] = strdup("-W");
-    options[11] = strdup("-Werror");
-    options[12] = strdup("-cl-std=");
-
-    for (int i = 0; i < 14; i++) {
-        err = clBuildProgram(program, 1, first_device_id, options[i], NULL, NULL);
-        printf("%d) %d : %d : %s\n",++counter,err,(int)program,(int)first_device_id,options[i]); 
-    }
-
-    err = clBuildProgram(program, 1, first_device_id, NULL, pfn_notify_program,++counter);    
-    printf("%d) %d : %d : %d\n",++counter,err,(int)program,(int)first_device_id,pfn_notify_program); 
-
-    printf("\nTEST : clGetProgramBuildInfo\n");
-    printf("-----------------------\n");   
-    
-    size = 0;
-    value = 0;
-
-    cl_program_build_info array_program_build_info[3] = {CL_PROGRAM_BUILD_STATUS,CL_PROGRAM_BUILD_OPTIONS,CL_PROGRAM_BUILD_LOG};
-
-    for (int i = 0; i < 3; i++) {
-        err = clGetProgramBuildInfo(program, first_device_id, array_program_build_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_program_build_info[i],err,size,value);   
-    }
-
-    printf("\nTEST : clGetProgramInfo\n");
-    printf("-----------------------\n");   
-    
-    size = 0;
-    value = 0;
-
-    cl_program_info array_program_info[7] = {CL_PROGRAM_REFERENCE_COUNT,CL_PROGRAM_CONTEXT,CL_PROGRAM_NUM_DEVICES,CL_PROGRAM_DEVICES,CL_PROGRAM_SOURCE,CL_PROGRAM_BINARY_SIZES,CL_PROGRAM_BINARIES};
-
-    for (int i = 0; i < 7; i++) {
-        err = clGetProgramInfo(program, array_program_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_program_info[i],err,size,value);   
-    }
-
-    printf("\nTEST : clCreateKernel\n");
-    printf("-----------------------\n");   
-    cl_kernel kernel;
-
-    kernel = clCreateKernel(program, 0, &err);
-    printf("%d) %d : %d\n",++counter,(int)program,err);
-
-    kernel = clCreateKernel(program, "", &err);
-    printf("%d) %d : %d\n",++counter,(int)program,err);
-
-    kernel = clCreateKernel(program, "square", &err);
-    printf("%d) %d : %d\n",++counter,(int)program,err);
-
-    printf("\nTEST : clCreateKernelsInProgram\n");
-    printf("---------------------------------\n");   
-    
-    err = clCreateKernelsInProgram(program,0,NULL,&size);
-    printf("%d) %d : %d - %d\n",++counter,(int)program,err,size);
-
-    cl_kernel kernel2;
-
-    err = clCreateKernelsInProgram(program,1,&kernel2,&size);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)program,err,size,(int)kernel2);
-
-    printf("\nTEST : clReleaseKernel\n");
-    printf("-----------------------\n");   
-
-    err = clReleaseKernel(NULL);
-    printf("%d) %d : %d\n",++counter,err,0); 
-
-    err = clReleaseKernel(kernel2);
-    printf("%d) %d : %d\n",++counter,err,(int)kernel2); 
-
-    printf("\nTEST : clSetKernelArg\n");
-    printf("-----------------------\n");   
-
-    unsigned int count = 512;
-    float data[count];
-    for(i = 0; i < count; i++)
-        data[i] = rand() / (float)RAND_MAX;
-
-    cl_mem input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, NULL);
-    cl_mem output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);
-
-    err = 0;
-    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 0, sizeof(cl_mem), (int)input);
-
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 1, sizeof(cl_mem), (int)output);    
-
-    err |= clSetKernelArg(kernel, 2, 1024, NULL);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 2, 1024, NULL);   
-
-    err |= clSetKernelArg(kernel, 3, 1024, NULL);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 3, sizeof(unsigned int), (int)count);    
-
-    err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &count);
-    printf("%d) %d : %d - %d => %d\n",++counter,(int)kernel, 2, sizeof(unsigned int), (int)count);    
-    
-    
-    printf("\nTEST : clGetKernelWorkGroupInfo\n");
-    printf("---------------------------------\n");   
-    
-    size = 0;
-    value = 0;
-
-    cl_kernel_work_group_info array_kernel_work_info[6] = {CL_KERNEL_GLOBAL_WORK_SIZE,CL_KERNEL_WORK_GROUP_SIZE,CL_KERNEL_COMPILE_WORK_GROUP_SIZE,CL_KERNEL_LOCAL_MEM_SIZE,CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,CL_KERNEL_PRIVATE_MEM_SIZE};
-
-    for (int i = 0; i < 6; i++) {
-        err = clGetKernelWorkGroupInfo(kernel, first_device_id, array_kernel_work_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_kernel_work_info[i],err,size,value);   
-    }
-
-    printf("\nTEST : clGetKernelInfo\n");
-    printf("-----------------------\n");   
-    
-    size = 0;
-    value = 0;
-
-    cl_kernel_info array_kernel_info[6] = {CL_KERNEL_FUNCTION_NAME,CL_KERNEL_NUM_ARGS,CL_KERNEL_REFERENCE_COUNT,CL_KERNEL_CONTEXT,CL_KERNEL_PROGRAM,CL_KERNEL_ATTRIBUTES};
-
-    for (int i = 0; i < 6; i++) {
-        err = clGetKernelInfo(kernel, array_kernel_info[i], sizeof(cl_int), &value, &size);
-        printf("%d) %d : %d - %d => %d\n",++counter,array_kernel_info[i],err,size,value);   
-    }
-
-    printf("\n\n\n\n\n\n\nTEST : Hello World Sample\n");
-    printf("-----------------------\n");   
-    //main_2(argc,argv);
-    printf("\n\n\n\n\n\n\n");
-*/
-    return end(EXIT_SUCCESS);
-}
+////////////////////////////////////////////////////////////////////////////////
+
+// Use a static data size for simplicity
+//
+#define DATA_SIZE (1024)
+
+#define MIN_ERROR       (1e-7)
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Simple compute kernel which computes the square of an input array 
+//
+const char *KernelSource = "\n" \
+"__kernel void square(                                                       \n" \
+"   __global float* input,                                              \n" \
+"   __global float* output,                                             \n" \
+"   const unsigned int count)                                           \n" \
+"{                                                                      \n" \
+"   int i = get_global_id(0);                                           \n" \
+"   if(i < count)                                                       \n" \
+"       output[i] = input[i] * input[i];                                \n" \
+"}                                                                      \n" \
+"\n";
+
+////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
 {
@@ -770,8 +136,6 @@ int main(int argc, char** argv)
     cl_mem input;                       // device memory used for the input array
     cl_mem output;                      // device memory used for the output array
     
-    int i;
-
     #ifdef __EMSCRIPTEN__
         webclBeginProfile("Profile hello_world webcl");
     #endif
@@ -780,7 +144,8 @@ int main(int argc, char** argv)
     // Parse command line options
     //
     int use_gpu = 1;
-    for(i = 0; i < argc && argv; i++)
+    int i = 0;
+    for(; i < argc && argv; i++)
     {
         if(!argv[i])
             continue;
@@ -793,27 +158,25 @@ int main(int argc, char** argv)
     }
 
     printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
-
+    
     // Fill our data set with random float values
     //
     unsigned int count = DATA_SIZE;
-    for(i = 0; i < count; i++)
+	i = 0;
+    for(; i < count; i++)
         data[i] = rand() / (float)RAND_MAX;
     
-    printf("Call : clGetDeviceIDs ... [%d , %d , %d , %d , %d]\n",NULL, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, device_id, NULL);
-
+    // Connect to a compute device
+    //
     err = clGetDeviceIDs(NULL, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
         return end(EXIT_FAILURE);
     }
-
-    printf("Res : clGetDeviceIDs ... [%d , %ld]\n\n",err,(size_t)device_id);
-
+  
     // Create a compute context 
     //
-    printf("Call : clCreateContext ... [%d , %d , %ld , %d , %d]\n",0, 1, device_id, NULL, NULL, err);    
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context)
     {
@@ -821,60 +184,8 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
-    printf("Res : clCreateContext ... [%d , %ld]\n\n",err,(size_t)context);
-    
-    size_t returned_size;
-    cl_char vendor_name[1024] = {0};
-    cl_char device_name[1024] = {0};
-    cl_bool image_support;
-        
-    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), vendor_name, returned_size);    
-    err = clGetDeviceInfo(device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), vendor_name, &returned_size);
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to retrieve device info : CL_DEVICE_VENDOR!\n");
-    }
-
-    printf("Res : clGetDeviceInfo ... [%d , %d , %s]\n\n",err,returned_size,vendor_name);
-
-    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, returned_size);    
-
-    err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(device_name), device_name, &returned_size);
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to retrieve device info : CL_DEVICE_NAME!\n");
-    }
-
-    printf("Res : clGetDeviceInfo ... [%d , %d , %s]\n\n",err,returned_size,device_name);
-
-    printf("Call : clGetDeviceInfo ... [%ld , %d , %d , %d , %d]\n",device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(image_support), image_support, returned_size);    
-
-    err = clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(image_support), &image_support, &returned_size);
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to retrieve device info : CL_DEVICE_IMAGE_SUPPORT!\n");
-    }
-
-    printf("Res : clGetDeviceInfo ... [%d , %d , %d]\n\n",err,returned_size,image_support);
-    
-    unsigned int device_count;
-    cl_device_id device_ids[16];
-
-    printf("Call : clGetContextInfo ... [%ld , %d , %d , %d , %d]\n",context, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, returned_size);  
-    err = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, &returned_size);
-    if(err)
-    {
-        printf("Error: Failed to retrieve compute devices for context!\n");
-        return end(EXIT_FAILURE);
-    }
-    
-    printf("Res : clGetContextInfo ... [%d , %d , %d]\n\n",err,returned_size,device_ids);
-
-    device_count = returned_size / sizeof(cl_device_id);
-    
     // Create a command commands
     //
-    printf("Call : clCreateCommandQueue ... [%ld , %ld , %d , %d]\n",context, device_id, 0,err); 
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands)
     {
@@ -882,11 +193,8 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
-    printf("Res : clCreateCommandQueue ... [%d , %ld]\n\n",err,commands);
-
     // Create the compute program from the source buffer
     //
-    printf("Call : clCreateProgramWithSource ... [%ld , %d , %s , %d, %d]\n",context,1, KernelSource, 0,err);    
     program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
     if (!program)
     {
@@ -894,11 +202,8 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
-    printf("Res : clCreateProgramWithSource ... [%d , %ld]\n\n",err,program);
-
     // Build the program executable
     //
-    printf("Call : clBuildProgram ... [%ld , %d , %d , %d , %d , %d]\n",program, 0, NULL, NULL, NULL, NULL);          
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -908,98 +213,72 @@ int main(int argc, char** argv)
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
-        return end(1);
+        end(1);        
+        exit(1);
     }
-
-    printf("Res : clBuildProgram ... [%d]\n\n",err);
 
     // Create the compute kernel in the program we wish to run
     //
-    printf("Call : clCreateKernel ... [%ld , %s , %d]\n",program, "square", err);                 
     kernel = clCreateKernel(program, "square", &err);
     if (!kernel || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute kernel!\n");
-        return end(1);
+        end(1);        
+        exit(1);
     }
-   
-    printf("Res : clCreateKernel ... [%d , %ld]\n\n",err,kernel);
 
     // Create the input and output arrays in device memory for our calculation
     //
-    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_READ_ONLY, sizeof(float) * count, NULL, NULL); 
-    clSetTypePointer(CL_FLOAT);                    
     input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count, NULL, NULL);
-
-    printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,input);
-
-    printf("Call : clCreateBuffer ... [%ld , %d , %d , %d , %d]\n",context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);    
-    clSetTypePointer(CL_FLOAT); 
     output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * count, NULL, NULL);
-   
-    printf("Res : clCreateBuffer ... [%d , %ld]\n\n",err,output);
-
     if (!input || !output)
     {
         printf("Error: Failed to allocate device memory!\n");
-        return end(1);
+        end(1);        
+        exit(1);
     }    
     
     // Write our data set into the input array in device memory 
     //
-    printf("Call : clEnqueueWriteBuffer ... [%ld , %ld , %d , %d , %d , [%f,%f,%f ...] , %d , %d , %d]\n",commands, input, CL_TRUE, 0, sizeof(float) * count, data[0], data[1], data[2], 0, NULL, NULL);  
-    clSetTypePointer(CL_FLOAT);                      
+    #ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);                               
+	#endif
     err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * count, data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write to source array!\n");
-        return end(1);
+        end(1);        
+        exit(1);
     }
-    
-    printf("Res : clEnqueueWriteBuffer ... [%d]\n\n",err);
 
     // Set the arguments to our compute kernel
-    //                   
+    //
     err = 0;
-    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %ld]\n",kernel,0,sizeof(cl_mem), input);       
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-    printf("Res : clSetKernelArg ... [%d]\n\n",err);
-
-    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %ld]\n",kernel,1,sizeof(cl_mem), output);       
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-    printf("Res : clSetKernelArg ... [%d]\n\n",err);
-
-    printf("Call : clSetKernelArg ... [%ld , %ld , %d , %d]\n",kernel,2,sizeof(unsigned int), count);       
     err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &count);
-    printf("Res : clSetKernelArg ... [%d]\n\n",err);
-
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to set kernel arguments! %d\n", err);
-        return end(1);
+        end(1);        
+        exit(1);
     }
 
     // Get the maximum work group size for executing the kernel on the device
     //
-    printf("Call : clGetKernelWorkGroupInfo ... [%ld , %ld , %d , %d , %d , %d]\n",kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), local, NULL);
-
     err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to retrieve kernel work group info! %d\n", err);
-        return end(1);
+        end(1);
+        exit(1);
     }
-
-    printf("Res : clGetKernelWorkGroupInfo ... [%d , %d]\n\n",err,local);
 
     // Execute the kernel over the entire range of our 1d input data set
     // using the maximum number of work group items for this device
     //
     global = count;
-    printf("Call : clEnqueueNDRangeKernel ... [%ld , %ld , %d , %d , %d , %d, %d , %d, %d]\n",commands, kernel, 1, NULL, global, local, 0, NULL, NULL);  
     err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
-    printf("Res : clEnqueueNDRangeKernel ... [%d]\n\n",err);
-
     if (err)
     {
         printf("Error: Failed to execute kernel!\n");
@@ -1008,21 +287,19 @@ int main(int argc, char** argv)
 
     // Wait for the command commands to get serviced before reading back results
     //
-    printf("Call : clFinish ...\n");        
     clFinish(commands);
-    printf("Res : clFinish ...\n\n");        
 
     // Read back the results from the device to verify the output
     //
-    printf("Call : clEnqueueReadBuffer ... [%ld , %ld , %d , %d , %d , %d , %d , %d , %d]\n",commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL);  
-    clSetTypePointer(CL_FLOAT);                               
+	#ifdef __EMSCRIPTEN__
+		clSetTypePointer(CL_FLOAT);                               
+	#endif
     err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL );  
-    printf("Res : clEnqueueReadBuffer ... [%d ,  [%f,%f,%f ...] ]\n\n",err, results[0], results[1], results[2]);
-    
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
-        return end(1);
+        end(1);
+        exit(1);
     }
     
     // Validate our results
@@ -1030,15 +307,14 @@ int main(int argc, char** argv)
     correct = 0;
     for(i = 0; i < count; i++)
     {
-        #ifdef __EMSCRIPTEN__
-        if ((results[i] - (data[i] * data[i])) < MIN_ERROR)
-        #else    
-        if(results[i] == data[i] * data[i])
-        #endif
-            correct++;
+	    #ifdef __EMSCRIPTEN__
+    	    if ((results[i] - (data[i] * data[i])) < MIN_ERROR)
+	    	    correct++;
+    	#else    
+	        if(results[i] == data[i] * data[i])
+		        correct++;
+        #endif        
     }
-    
-    printf("Connecting to \"%s\" \"%s\" ... Image Support %d : Devices count %d\n", vendor_name, device_name, image_support, device_count);
     
     // Print a brief summary detailing the results
     //
@@ -1053,10 +329,5 @@ int main(int argc, char** argv)
     clReleaseCommandQueue(commands);
     clReleaseContext(context);
 
-    #ifdef __EMSCRIPTEN__
-        webclEndProfile();
-    #endif
-
-    return end(EXIT_SUCCESS);
+    return end(0);
 }
-
