@@ -1,69 +1,12 @@
 
-(function() {
-  if (typeof Module == 'undefined') Module = {};
-  if (!Module['preRun']) Module['preRun'] = [];
-  Module["preRun"].push(function() {
-function assert(check, msg) {
-  if (!check) throw msg + new Error().stack;
+var Module;
+if (typeof Module === 'undefined') Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module.expectedDataFileDownloads) {
+  Module.expectedDataFileDownloads = 0;
+  Module.finishedDataFileDownloads = 0;
 }
-    function DataRequest(start, end, crunched, audio) {
-      this.start = start;
-      this.end = end;
-      this.crunched = crunched;
-      this.audio = audio;
-    }
-    DataRequest.prototype = {
-      requests: {},
-      open: function(mode, name) {
-        this.name = name;
-        this.requests[name] = this;
-        Module['addRunDependency']('fp ' + this.name);
-      },
-      send: function() {},
-      onload: function() {
-        var byteArray = this.byteArray.subarray(this.start, this.end);
-        if (this.crunched) {
-          var ddsHeader = byteArray.subarray(0, 128);
-          var that = this;
-          requestDecrunch(this.name, byteArray.subarray(128), function(ddsData) {
-            byteArray = new Uint8Array(ddsHeader.length + ddsData.length);
-            byteArray.set(ddsHeader, 0);
-            byteArray.set(ddsData, 128);
-            that.finish(byteArray);
-          });
-        } else {
-          this.finish(byteArray);
-        }
-      },
-      finish: function(byteArray) {
-        var that = this;
-        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
-          Module['removeRunDependency']('fp ' + that.name);
-        }, function() {
-          if (that.audio) {
-            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
-          } else {
-            Runtime.warn('Preloading file ' + that.name + ' failed');
-          }
-        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
-        this.requests[this.name] = null;
-      },
-    };
-      new DataRequest(0, 6961, 0, 0).open('GET', '/reduce_float_kernel.cl');
-    new DataRequest(6961, 14189, 0, 0).open('GET', '/reduce_float2_kernel.cl');
-    new DataRequest(14189, 21875, 0, 0).open('GET', '/reduce_float4_kernel.cl');
-    new DataRequest(21875, 28803, 0, 0).open('GET', '/reduce_int_kernel.cl');
-    new DataRequest(28803, 35995, 0, 0).open('GET', '/reduce_int2_kernel.cl');
-    new DataRequest(35995, 43642, 0, 0).open('GET', '/reduce_int4_kernel.cl');
-    if (!Module.expectedDataFileDownloads) {
-      Module.expectedDataFileDownloads = 0;
-      Module.finishedDataFileDownloads = 0;
-    }
-    Module.expectedDataFileDownloads++;
-    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    var PACKAGE_NAME = '../build/reduce.data';
-    var REMOTE_PACKAGE_NAME = 'reduce.data';
-    var PACKAGE_UUID = '6b158f4c-3d16-4601-ac0e-17db9488d684';
+Module.expectedDataFileDownloads++;
+(function() {
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -91,9 +34,9 @@ function assert(check, msg) {
             num++;
           }
           total = Math.ceil(total * Module.expectedDataFileDownloads/num);
-          Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
+          if (Module['setStatus']) Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
         } else if (!Module.dataFileDownloads) {
-          Module['setStatus']('Downloading data...');
+          if (Module['setStatus']) Module['setStatus']('Downloading data...');
         }
       };
       xhr.onload = function(event) {
@@ -102,6 +45,64 @@ function assert(check, msg) {
       };
       xhr.send(null);
     };
+    function handleError(error) {
+      console.error('package error:', error);
+    };
+      var fetched = null, fetchedCallback = null;
+      fetchRemotePackage('reduce.data', function(data) {
+        if (fetchedCallback) {
+          fetchedCallback(data);
+          fetchedCallback = null;
+        } else {
+          fetched = data;
+        }
+      }, handleError);
+  function runWithFS() {
+function assert(check, msg) {
+  if (!check) throw msg + new Error().stack;
+}
+    function DataRequest(start, end, crunched, audio) {
+      this.start = start;
+      this.end = end;
+      this.crunched = crunched;
+      this.audio = audio;
+    }
+    DataRequest.prototype = {
+      requests: {},
+      open: function(mode, name) {
+        this.name = name;
+        this.requests[name] = this;
+        Module['addRunDependency']('fp ' + this.name);
+      },
+      send: function() {},
+      onload: function() {
+        var byteArray = this.byteArray.subarray(this.start, this.end);
+          this.finish(byteArray);
+      },
+      finish: function(byteArray) {
+        var that = this;
+        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
+          Module['removeRunDependency']('fp ' + that.name);
+        }, function() {
+          if (that.audio) {
+            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
+          } else {
+            Module.printErr('Preloading file ' + that.name + ' failed');
+          }
+        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+        this.requests[this.name] = null;
+      },
+    };
+      new DataRequest(0, 6961, 0, 0).open('GET', '/reduce_float_kernel.cl');
+    new DataRequest(6961, 14189, 0, 0).open('GET', '/reduce_float2_kernel.cl');
+    new DataRequest(14189, 21875, 0, 0).open('GET', '/reduce_float4_kernel.cl');
+    new DataRequest(21875, 28803, 0, 0).open('GET', '/reduce_int_kernel.cl');
+    new DataRequest(28803, 35995, 0, 0).open('GET', '/reduce_int2_kernel.cl');
+    new DataRequest(35995, 43642, 0, 0).open('GET', '/reduce_int4_kernel.cl');
+    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    var PACKAGE_NAME = '../build/reduce.data';
+    var REMOTE_PACKAGE_NAME = 'reduce.data';
+    var PACKAGE_UUID = '43df5b22-7fce-4632-b925-c702fe1a5cb2';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -120,13 +121,21 @@ function assert(check, msg) {
           Module['removeRunDependency']('datafile_../build/reduce.data');
     };
     Module['addRunDependency']('datafile_../build/reduce.data');
-    function handleError(error) {
-      console.error('package error:', error);
-    };
     if (!Module.preloadResults) Module.preloadResults = {};
       Module.preloadResults[PACKAGE_NAME] = {fromCache: false};
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, processPackageData, handleError);
-      });
+      if (fetched) {
+        processPackageData(fetched);
+        fetched = null;
+      } else {
+        fetchedCallback = processPackageData;
+      }
+  }
+  if (Module['calledRun']) {
+    runWithFS();
+  } else {
+    if (!Module['preRun']) Module['preRun'] = [];
+    Module["preRun"].push(runWithFS); // FS is not initialized yet, wait for it
+  }
 })();
 // Note: Some Emscripten settings will significantly limit the speed of the generated code.
 // Note: Some Emscripten settings may limit the speed of the generated code.
@@ -167,15 +176,15 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 if (ENVIRONMENT_IS_NODE) {
   // Expose functionality in the same simple way that the shells work
   // Note that we pollute the global namespace here, otherwise we break in node
-  Module['print'] = function(x) {
+  Module['print'] = function print(x) {
     process['stdout'].write(x + '\n');
   };
-  Module['printErr'] = function(x) {
+  Module['printErr'] = function printErr(x) {
     process['stderr'].write(x + '\n');
   };
   var nodeFS = require('fs');
   var nodePath = require('path');
-  Module['read'] = function(filename, binary) {
+  Module['read'] = function read(filename, binary) {
     filename = nodePath['normalize'](filename);
     var ret = nodeFS['readFileSync'](filename);
     // The path is absolute if the normalized version is the same as the resolved.
@@ -186,8 +195,8 @@ if (ENVIRONMENT_IS_NODE) {
     if (ret && !binary) ret = ret.toString();
     return ret;
   };
-  Module['readBinary'] = function(filename) { return Module['read'](filename, true) };
-  Module['load'] = function(f) {
+  Module['readBinary'] = function readBinary(filename) { return Module['read'](filename, true) };
+  Module['load'] = function load(f) {
     globalEval(read(f));
   };
   Module['arguments'] = process['argv'].slice(2);
@@ -199,9 +208,9 @@ else if (ENVIRONMENT_IS_SHELL) {
   if (typeof read != 'undefined') {
     Module['read'] = read;
   } else {
-    Module['read'] = function() { throw 'no read() available (jsc?)' };
+    Module['read'] = function read() { throw 'no read() available (jsc?)' };
   }
-  Module['readBinary'] = function(f) {
+  Module['readBinary'] = function readBinary(f) {
     return read(f, 'binary');
   };
   if (typeof scriptArgs != 'undefined') {
@@ -212,7 +221,7 @@ else if (ENVIRONMENT_IS_SHELL) {
   this['Module'] = Module;
 }
 else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
-  Module['read'] = function(url) {
+  Module['read'] = function read(url) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.send(null);
@@ -222,10 +231,10 @@ else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
     Module['arguments'] = arguments;
   }
   if (typeof console !== 'undefined') {
-    Module['print'] = function(x) {
+    Module['print'] = function print(x) {
       console.log(x);
     };
-    Module['printErr'] = function(x) {
+    Module['printErr'] = function printErr(x) {
       console.log(x);
     };
   } else {
@@ -251,7 +260,7 @@ function globalEval(x) {
   eval.call(null, x);
 }
 if (!Module['load'] == 'undefined' && Module['read']) {
-  Module['load'] = function(f) {
+  Module['load'] = function load(f) {
     globalEval(Module['read'](f));
   };
 }
@@ -343,6 +352,8 @@ var Runtime = {
           var bits = parseInt(type.substr(1));
           assert(bits % 8 === 0);
           return bits/8;
+        } else {
+          return 0;
         }
       }
     }
@@ -412,9 +423,16 @@ var Runtime = {
         // bN, large number field, like a [N x i8]
         size = field.substr(1)|0;
         alignSize = 1;
-      } else {
-        assert(field[0] === '<', field); // assumed to be a vector type, if none of the above
+      } else if (field[0] === '<') {
+        // vector type
         size = alignSize = Types.types[field].flatSize; // fully aligned
+      } else if (field[0] === 'i') {
+        // illegal integer field, that could not be legalized because it is an internal structure field
+        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
+        size = alignSize = parseInt(field.substr(1))/8;
+        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
+      } else {
+        assert(false, 'invalid type for calculateStructAlignment');
       }
       if (type.packed) alignSize = 1;
       type.alignSize = Math.max(type.alignSize, alignSize);
@@ -508,7 +526,7 @@ var Runtime = {
   getFuncWrapper: function (func, sig) {
     assert(sig);
     if (!Runtime.funcWrappers[func]) {
-      Runtime.funcWrappers[func] = function() {
+      Runtime.funcWrappers[func] = function dynCall_wrapper() {
         return Runtime.dynCall(sig, func, arguments);
       };
     }
@@ -558,7 +576,7 @@ var Runtime = {
       buffer.length = 0;
       return ret;
     }
-    this.processJSString = function(string) {
+    this.processJSString = function processJSString(string) {
       string = unescape(encodeURIComponent(string));
       var ret = [];
       for (var i = 0; i < string.length; i++) {
@@ -905,6 +923,10 @@ function demangle(func) {
     if (func[0] !== '_') return func;
     if (func[1] !== '_') return func; // C function
     if (func[2] !== 'Z') return func;
+    switch (func[3]) {
+      case 'n': return 'operator new()';
+      case 'd': return 'operator delete()';
+    }
     var i = 3;
     // params, etc.
     var basicTypes = {
@@ -937,7 +959,7 @@ function demangle(func) {
     var subs = [];
     function parseNested() {
       i++;
-      if (func[i] === 'K') i++;
+      if (func[i] === 'K') i++; // ignore const
       var parts = [];
       while (func[i] !== 'E') {
         if (func[i] === 'S') { // substitution
@@ -946,6 +968,11 @@ function demangle(func) {
           var num = func.substring(i, next) || 0;
           parts.push(subs[num] || '?');
           i = next+1;
+          continue;
+        }
+        if (func[i] === 'C') { // constructor
+          parts.push(parts[parts.length-1]);
+          i += 2;
           continue;
         }
         var size = parseInt(func.substr(i));
@@ -959,6 +986,7 @@ function demangle(func) {
       i++; // skip E
       return parts;
     }
+    var first = true;
     function parse(rawList, limit, allowVoid) { // main parser
       limit = limit || Infinity;
       var ret = '', list = [];
@@ -966,21 +994,22 @@ function demangle(func) {
         return '(' + list.join(', ') + ')';
       }
       var name;
-      if (func[i] !== 'N') {
+      if (func[i] === 'N') {
+        // namespaced N-E
+        name = parseNested().join('::');
+        limit--;
+        if (limit === 0) return rawList ? [name] : name;
+      } else {
         // not namespaced
-        if (func[i] === 'K') i++;
+        if (func[i] === 'K' || (first && func[i] === 'L')) i++; // ignore const and first 'L'
         var size = parseInt(func.substr(i));
         if (size) {
           var pre = size.toString().length;
           name = func.substr(i + pre, size);
           i += pre + size;
         }
-      } else {
-        // namespaced N-E
-        name = parseNested().join('::');
-        limit--;
-        if (limit === 0) return rawList ? [name] : name;
       }
+      first = false;
       if (func[i] === 'I') {
         i++;
         var iList = parse(true);
@@ -1223,7 +1252,7 @@ function reSign(value, bits, ignore, sig) {
   }
   return value;
 }
-if (!Math['imul']) Math['imul'] = function(a, b) {
+if (!Math['imul']) Math['imul'] = function imul(a, b) {
   var ah  = a >>> 16;
   var al = a & 0xffff;
   var bh  = b >>> 16;
@@ -1246,7 +1275,7 @@ var Math_ceil = Math.ceil;
 var Math_floor = Math.floor;
 var Math_pow = Math.pow;
 var Math_imul = Math.imul;
-var Math_toFloat32 = Math.toFloat32;
+var Math_fround = Math.fround;
 var Math_min = Math.min;
 // A counter of dependencies for calling run(). If we need to
 // do asynchronous work before running, increment this and
@@ -1256,9 +1285,9 @@ var Math_min = Math.min;
 // it happens right before run - run will be postponed until
 // the dependencies are met.
 var runDependencies = 0;
-var runDependencyTracking = {};
 var runDependencyWatcher = null;
 var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
+var runDependencyTracking = {};
 function addRunDependency(id) {
   runDependencies++;
   if (Module['monitorRunDependencies']) {
@@ -1399,24 +1428,19 @@ function copyTempDouble(ptr) {
           dir = dir.substr(0, dir.length - 1);
         }
         return root + dir;
-      },basename:function (path, ext) {
+      },basename:function (path) {
         // EMSCRIPTEN return '/'' for '/', not an empty string
         if (path === '/') return '/';
-        var f = PATH.splitPath(path)[2];
-        if (ext && f.substr(-1 * ext.length) === ext) {
-          f = f.substr(0, f.length - ext.length);
-        }
-        return f;
+        var lastSlash = path.lastIndexOf('/');
+        if (lastSlash === -1) return path;
+        return path.substr(lastSlash+1);
       },extname:function (path) {
         return PATH.splitPath(path)[3];
       },join:function () {
         var paths = Array.prototype.slice.call(arguments, 0);
-        return PATH.normalize(paths.filter(function(p, index) {
-          if (typeof p !== 'string') {
-            throw new TypeError('Arguments to path.join must be strings');
-          }
-          return p;
-        }).join('/'));
+        return PATH.normalize(paths.join('/'));
+      },join2:function (l, r) {
+        return PATH.normalize(l + '/' + r);
       },resolve:function () {
         var resolvedPath = '',
           resolvedAbsolute = false;
@@ -1587,58 +1611,78 @@ function copyTempDouble(ptr) {
             tty.output.push(TTY.utf8.processCChar(val));
           }
         }}};
-  var MEMFS={CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+  var MEMFS={ops_table:null,CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
         return MEMFS.createNode(null, '/', 16384 | 0777, 0);
       },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
           // no supported
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
         }
+        if (!MEMFS.ops_table) {
+          MEMFS.ops_table = {
+            dir: {
+              node: {
+                getattr: MEMFS.node_ops.getattr,
+                setattr: MEMFS.node_ops.setattr,
+                lookup: MEMFS.node_ops.lookup,
+                mknod: MEMFS.node_ops.mknod,
+                mknod: MEMFS.node_ops.mknod,
+                rename: MEMFS.node_ops.rename,
+                unlink: MEMFS.node_ops.unlink,
+                rmdir: MEMFS.node_ops.rmdir,
+                readdir: MEMFS.node_ops.readdir,
+                symlink: MEMFS.node_ops.symlink
+              },
+              stream: {
+                llseek: MEMFS.stream_ops.llseek
+              }
+            },
+            file: {
+              node: {
+                getattr: MEMFS.node_ops.getattr,
+                setattr: MEMFS.node_ops.setattr
+              },
+              stream: {
+                llseek: MEMFS.stream_ops.llseek,
+                read: MEMFS.stream_ops.read,
+                write: MEMFS.stream_ops.write,
+                allocate: MEMFS.stream_ops.allocate,
+                mmap: MEMFS.stream_ops.mmap
+              }
+            },
+            link: {
+              node: {
+                getattr: MEMFS.node_ops.getattr,
+                setattr: MEMFS.node_ops.setattr,
+                readlink: MEMFS.node_ops.readlink
+              },
+              stream: {}
+            },
+            chrdev: {
+              node: {
+                getattr: MEMFS.node_ops.getattr,
+                setattr: MEMFS.node_ops.setattr
+              },
+              stream: FS.chrdev_stream_ops
+            },
+          };
+        }
         var node = FS.createNode(parent, name, mode, dev);
         if (FS.isDir(node.mode)) {
-          node.node_ops = {
-            getattr: MEMFS.node_ops.getattr,
-            setattr: MEMFS.node_ops.setattr,
-            lookup: MEMFS.node_ops.lookup,
-            mknod: MEMFS.node_ops.mknod,
-            mknod: MEMFS.node_ops.mknod,
-            rename: MEMFS.node_ops.rename,
-            unlink: MEMFS.node_ops.unlink,
-            rmdir: MEMFS.node_ops.rmdir,
-            readdir: MEMFS.node_ops.readdir,
-            symlink: MEMFS.node_ops.symlink
-          };
-          node.stream_ops = {
-            llseek: MEMFS.stream_ops.llseek
-          };
+          node.node_ops = MEMFS.ops_table.dir.node;
+          node.stream_ops = MEMFS.ops_table.dir.stream;
           node.contents = {};
         } else if (FS.isFile(node.mode)) {
-          node.node_ops = {
-            getattr: MEMFS.node_ops.getattr,
-            setattr: MEMFS.node_ops.setattr
-          };
-          node.stream_ops = {
-            llseek: MEMFS.stream_ops.llseek,
-            read: MEMFS.stream_ops.read,
-            write: MEMFS.stream_ops.write,
-            allocate: MEMFS.stream_ops.allocate,
-            mmap: MEMFS.stream_ops.mmap
-          };
+          node.node_ops = MEMFS.ops_table.file.node;
+          node.stream_ops = MEMFS.ops_table.file.stream;
           node.contents = [];
           node.contentMode = MEMFS.CONTENT_FLEXIBLE;
         } else if (FS.isLink(node.mode)) {
-          node.node_ops = {
-            getattr: MEMFS.node_ops.getattr,
-            setattr: MEMFS.node_ops.setattr,
-            readlink: MEMFS.node_ops.readlink
-          };
-          node.stream_ops = {};
+          node.node_ops = MEMFS.ops_table.link.node;
+          node.stream_ops = MEMFS.ops_table.link.stream;
         } else if (FS.isChrdev(node.mode)) {
-          node.node_ops = {
-            getattr: MEMFS.node_ops.getattr,
-            setattr: MEMFS.node_ops.setattr
-          };
-          node.stream_ops = FS.chrdev_stream_ops;
+          node.node_ops = MEMFS.ops_table.chrdev.node;
+          node.stream_ops = MEMFS.ops_table.chrdev.stream;
         }
         node.timestamp = Date.now();
         // add the new node to the parent
@@ -1693,7 +1737,7 @@ function copyTempDouble(ptr) {
             else while (attr.size > contents.length) contents.push(0);
           }
         },lookup:function (parent, name) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+          throw FS.genericErrors[ERRNO_CODES.ENOENT];
         },mknod:function (parent, name, mode, dev) {
           return MEMFS.createNode(parent, name, mode, dev);
         },rename:function (old_node, new_dir, new_name) {
@@ -1763,9 +1807,9 @@ function copyTempDouble(ptr) {
           if (length && contents.length === 0 && position === 0 && buffer.subarray) {
             // just replace it with the new data
             assert(buffer.length);
-            if (canOwn && buffer.buffer === HEAP8.buffer && offset === 0) {
-              node.contents = buffer; // this is a subarray of the heap, and we can own it
-              node.contentMode = MEMFS.CONTENT_OWNING;
+            if (canOwn && offset === 0) {
+              node.contents = buffer; // this could be a subarray of Emscripten HEAP, or allocated from some other source.
+              node.contentMode = (buffer.buffer === HEAP8.buffer) ? MEMFS.CONTENT_OWNING : MEMFS.CONTENT_FIXED;
             } else {
               node.contents = new Uint8Array(buffer.subarray(offset, offset+length));
               node.contentMode = MEMFS.CONTENT_FIXED;
@@ -1872,7 +1916,7 @@ function copyTempDouble(ptr) {
           return callback(null);
         }
         var completed = 0;
-        var done = function(err) {
+        function done(err) {
           if (err) return callback(err);
           if (++completed >= total) {
             return callback(null);
@@ -1881,7 +1925,7 @@ function copyTempDouble(ptr) {
         // create a single transaction to handle and IDB reads / writes we'll need to do
         var db = src.type === 'remote' ? src.db : dst.db;
         var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
-        transaction.onerror = function() { callback(this.error); };
+        transaction.onerror = function transaction_onerror() { callback(this.error); };
         var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
         for (var path in create) {
           if (!create.hasOwnProperty(path)) continue;
@@ -1903,8 +1947,8 @@ function copyTempDouble(ptr) {
           } else {
             // save file to IDB
             var req = store.put(entry, path);
-            req.onsuccess = function() { done(null); };
-            req.onerror = function() { done(this.error); };
+            req.onsuccess = function req_onsuccess() { done(null); };
+            req.onerror = function req_onerror() { done(this.error); };
           }
         }
         for (var path in remove) {
@@ -1926,18 +1970,18 @@ function copyTempDouble(ptr) {
           } else {
             // delete file from IDB
             var req = store.delete(path);
-            req.onsuccess = function() { done(null); };
-            req.onerror = function() { done(this.error); };
+            req.onsuccess = function req_onsuccess() { done(null); };
+            req.onerror = function req_onerror() { done(this.error); };
           }
         }
       },getLocalSet:function (mount, callback) {
         var files = {};
-        var isRealDir = function(p) {
+        function isRealDir(p) {
           return p !== '.' && p !== '..';
         };
-        var toAbsolute = function(root) {
+        function toAbsolute(root) {
           return function(p) {
-            return PATH.join(root, p);
+            return PATH.join2(root, p);
           }
         };
         var check = FS.readdir(mount.mountpoint)
@@ -1977,17 +2021,17 @@ function copyTempDouble(ptr) {
         } catch (e) {
           return onerror(e);
         }
-        req.onupgradeneeded = function() {
+        req.onupgradeneeded = function req_onupgradeneeded() {
           db = req.result;
           db.createObjectStore(IDBFS.DB_STORE_NAME);
         };
-        req.onsuccess = function() {
+        req.onsuccess = function req_onsuccess() {
           db = req.result;
           // add to the cache
           IDBFS.dbs[name] = db;
           callback(null, db);
         };
-        req.onerror = function() {
+        req.onerror = function req_onerror() {
           callback(this.error);
         };
       },getRemoteSet:function (mount, callback) {
@@ -1995,9 +2039,9 @@ function copyTempDouble(ptr) {
         IDBFS.getDB(mount.mountpoint, function(err, db) {
           if (err) return callback(err);
           var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
-          transaction.onerror = function() { callback(this.error); };
+          transaction.onerror = function transaction_onerror() { callback(this.error); };
           var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
-          store.openCursor().onsuccess = function(event) {
+          store.openCursor().onsuccess = function store_openCursor_onsuccess(event) {
             var cursor = event.target.result;
             if (!cursor) {
               return callback(null, { type: 'remote', db: db, files: files });
@@ -2007,7 +2051,9 @@ function copyTempDouble(ptr) {
           };
         });
       }};
-  var NODEFS={mount:function (mount) {
+  var NODEFS={isWindows:false,staticInit:function () {
+        NODEFS.isWindows = !!process.platform.match(/^win/);
+      },mount:function (mount) {
         assert(ENVIRONMENT_IS_NODE);
         return NODEFS.createNode(null, '/', NODEFS.getMode(mount.opts.root), 0);
       },createNode:function (parent, name, mode, dev) {
@@ -2022,6 +2068,11 @@ function copyTempDouble(ptr) {
         var stat;
         try {
           stat = fs.lstatSync(path);
+          if (NODEFS.isWindows) {
+            // On Windows, directories return permission bits 'rw-rw-rw-', even though they have 'rwxrwxrwx', so 
+            // propagate write bits to execute bits.
+            stat.mode = stat.mode | ((stat.mode & 146) >> 1);
+          }
         } catch (e) {
           if (!e.code) throw e;
           throw new FS.ErrnoError(ERRNO_CODES[e.code]);
@@ -2036,6 +2087,12 @@ function copyTempDouble(ptr) {
         parts.push(node.mount.opts.root);
         parts.reverse();
         return PATH.join.apply(null, parts);
+      },flagsToPermissionStringMap:{0:"r",1:"r+",2:"r+",64:"r",65:"r+",66:"r+",129:"rx+",193:"rx+",514:"w+",577:"w",578:"w+",705:"wx",706:"wx+",1024:"a",1025:"a",1026:"a+",1089:"a",1090:"a+",1153:"ax",1154:"ax+",1217:"ax",1218:"ax+",4096:"rs",4098:"rs+"},flagsToPermissionString:function (flags) {
+        if (flags in NODEFS.flagsToPermissionStringMap) {
+          return NODEFS.flagsToPermissionStringMap[flags];
+        } else {
+          return flags;
+        }
       },node_ops:{getattr:function (node) {
           var path = NODEFS.realPath(node);
           var stat;
@@ -2044,6 +2101,14 @@ function copyTempDouble(ptr) {
           } catch (e) {
             if (!e.code) throw e;
             throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+          }
+          // node.js v0.10.20 doesn't report blksize and blocks on Windows. Fake them with default blksize of 4096.
+          // See http://support.microsoft.com/kb/140365
+          if (NODEFS.isWindows && !stat.blksize) {
+            stat.blksize = 4096;
+          }
+          if (NODEFS.isWindows && !stat.blocks) {
+            stat.blocks = (stat.size+stat.blksize-1)/stat.blksize|0;
           }
           return {
             dev: stat.dev,
@@ -2080,7 +2145,7 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES[e.code]);
           }
         },lookup:function (parent, name) {
-          var path = PATH.join(NODEFS.realPath(parent), name);
+          var path = PATH.join2(NODEFS.realPath(parent), name);
           var mode = NODEFS.getMode(path);
           return NODEFS.createNode(parent, name, mode);
         },mknod:function (parent, name, mode, dev) {
@@ -2100,7 +2165,7 @@ function copyTempDouble(ptr) {
           return node;
         },rename:function (oldNode, newDir, newName) {
           var oldPath = NODEFS.realPath(oldNode);
-          var newPath = PATH.join(NODEFS.realPath(newDir), newName);
+          var newPath = PATH.join2(NODEFS.realPath(newDir), newName);
           try {
             fs.renameSync(oldPath, newPath);
           } catch (e) {
@@ -2108,7 +2173,7 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES[e.code]);
           }
         },unlink:function (parent, name) {
-          var path = PATH.join(NODEFS.realPath(parent), name);
+          var path = PATH.join2(NODEFS.realPath(parent), name);
           try {
             fs.unlinkSync(path);
           } catch (e) {
@@ -2116,7 +2181,7 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES[e.code]);
           }
         },rmdir:function (parent, name) {
-          var path = PATH.join(NODEFS.realPath(parent), name);
+          var path = PATH.join2(NODEFS.realPath(parent), name);
           try {
             fs.rmdirSync(path);
           } catch (e) {
@@ -2132,7 +2197,7 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(ERRNO_CODES[e.code]);
           }
         },symlink:function (parent, newName, oldPath) {
-          var newPath = PATH.join(NODEFS.realPath(parent), newName);
+          var newPath = PATH.join2(NODEFS.realPath(parent), newName);
           try {
             fs.symlinkSync(oldPath, newPath);
           } catch (e) {
@@ -2151,7 +2216,7 @@ function copyTempDouble(ptr) {
           var path = NODEFS.realPath(stream.node);
           try {
             if (FS.isFile(stream.node.mode)) {
-              stream.nfd = fs.openSync(path, stream.flags);
+              stream.nfd = fs.openSync(path, NODEFS.flagsToPermissionString(stream.flags));
             }
           } catch (e) {
             if (!e.code) throw e;
@@ -2159,7 +2224,7 @@ function copyTempDouble(ptr) {
           }
         },close:function (stream) {
           try {
-            if (FS.isFile(stream.node.mode)) {
+            if (FS.isFile(stream.node.mode) && stream.nfd) {
               fs.closeSync(stream.nfd);
             }
           } catch (e) {
@@ -2218,7 +2283,7 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,handleFSError:function (e) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,genericErrors:{},handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
         return ___setErrNo(e.errno);
       },lookupPath:function (path, opts) {
@@ -2241,7 +2306,7 @@ function copyTempDouble(ptr) {
             break;
           }
           current = FS.lookupNode(current, parts[i]);
-          current_path = PATH.join(current_path, parts[i]);
+          current_path = PATH.join2(current_path, parts[i]);
           // jump to the mount's root node if this is a mountpoint
           if (FS.isMountpoint(current)) {
             current = current.mount.root;
@@ -2267,9 +2332,11 @@ function copyTempDouble(ptr) {
         var path;
         while (true) {
           if (FS.isRoot(node)) {
-            return path ? PATH.join(node.mount.mountpoint, path) : node.mount.mountpoint;
+            var mount = node.mount.mountpoint;
+            if (!path) return mount;
+            return mount[mount.length-1] !== '/' ? mount + '/' + path : mount + path;
           }
-          path = path ? PATH.join(node.name, path) : node.name;
+          path = path ? node.name + '/' + path : node.name;
           node = node.parent;
         }
       },hashName:function (parentid, name) {
@@ -2311,44 +2378,47 @@ function copyTempDouble(ptr) {
         // if we failed to find it in the cache, call into the VFS
         return FS.lookup(parent, name);
       },createNode:function (parent, name, mode, rdev) {
-        var node = {
-          id: FS.nextInode++,
-          name: name,
-          mode: mode,
-          node_ops: {},
-          stream_ops: {},
-          rdev: rdev,
-          parent: null,
-          mount: null
-        };
-        if (!parent) {
-          parent = node;  // root node sets parent to itself
+        if (!FS.FSNode) {
+          FS.FSNode = function(parent, name, mode, rdev) {
+            this.id = FS.nextInode++;
+            this.name = name;
+            this.mode = mode;
+            this.node_ops = {};
+            this.stream_ops = {};
+            this.rdev = rdev;
+            this.parent = null;
+            this.mount = null;
+            if (!parent) {
+              parent = this;  // root node sets parent to itself
+            }
+            this.parent = parent;
+            this.mount = parent.mount;
+            FS.hashAddNode(this);
+          };
+          // compatibility
+          var readMode = 292 | 73;
+          var writeMode = 146;
+          FS.FSNode.prototype = {};
+          // NOTE we must use Object.defineProperties instead of individual calls to
+          // Object.defineProperty in order to make closure compiler happy
+          Object.defineProperties(FS.FSNode.prototype, {
+            read: {
+              get: function() { return (this.mode & readMode) === readMode; },
+              set: function(val) { val ? this.mode |= readMode : this.mode &= ~readMode; }
+            },
+            write: {
+              get: function() { return (this.mode & writeMode) === writeMode; },
+              set: function(val) { val ? this.mode |= writeMode : this.mode &= ~writeMode; }
+            },
+            isFolder: {
+              get: function() { return FS.isDir(this.mode); },
+            },
+            isDevice: {
+              get: function() { return FS.isChrdev(this.mode); },
+            },
+          });
         }
-        node.parent = parent;
-        node.mount = parent.mount;
-        // compatibility
-        var readMode = 292 | 73;
-        var writeMode = 146;
-        // NOTE we must use Object.defineProperties instead of individual calls to
-        // Object.defineProperty in order to make closure compiler happy
-        Object.defineProperties(node, {
-          read: {
-            get: function() { return (node.mode & readMode) === readMode; },
-            set: function(val) { val ? node.mode |= readMode : node.mode &= ~readMode; }
-          },
-          write: {
-            get: function() { return (node.mode & writeMode) === writeMode; },
-            set: function(val) { val ? node.mode |= writeMode : node.mode &= ~writeMode; }
-          },
-          isFolder: {
-            get: function() { return FS.isDir(node.mode); },
-          },
-          isDevice: {
-            get: function() { return FS.isChrdev(node.mode); },
-          },
-        });
-        FS.hashAddNode(node);
-        return node;
+        return new FS.FSNode(parent, name, mode, rdev);
       },destroyNode:function (node) {
         FS.hashRemoveNode(node);
       },isRoot:function (node) {
@@ -2453,24 +2523,38 @@ function copyTempDouble(ptr) {
       },getStream:function (fd) {
         return FS.streams[fd];
       },createStream:function (stream, fd_start, fd_end) {
+        if (!FS.FSStream) {
+          FS.FSStream = function(){};
+          FS.FSStream.prototype = {};
+          // compatibility
+          Object.defineProperties(FS.FSStream.prototype, {
+            object: {
+              get: function() { return this.node; },
+              set: function(val) { this.node = val; }
+            },
+            isRead: {
+              get: function() { return (this.flags & 2097155) !== 1; }
+            },
+            isWrite: {
+              get: function() { return (this.flags & 2097155) !== 0; }
+            },
+            isAppend: {
+              get: function() { return (this.flags & 1024); }
+            }
+          });
+        }
+        if (stream.__proto__) {
+          // reuse the object
+          stream.__proto__ = FS.FSStream.prototype;
+        } else {
+          var newStream = new FS.FSStream();
+          for (var p in stream) {
+            newStream[p] = stream[p];
+          }
+          stream = newStream;
+        }
         var fd = FS.nextfd(fd_start, fd_end);
         stream.fd = fd;
-        // compatibility
-        Object.defineProperties(stream, {
-          object: {
-            get: function() { return stream.node; },
-            set: function(val) { stream.node = val; }
-          },
-          isRead: {
-            get: function() { return (stream.flags & 2097155) !== 1; }
-          },
-          isWrite: {
-            get: function() { return (stream.flags & 2097155) !== 0; }
-          },
-          isAppend: {
-            get: function() { return (stream.flags & 1024); }
-          }
-        });
         FS.streams[fd] = stream;
         return stream;
       },closeStream:function (fd) {
@@ -2502,7 +2586,7 @@ function copyTempDouble(ptr) {
         }
         var completed = 0;
         var total = FS.mounts.length;
-        var done = function(err) {
+        function done(err) {
           if (err) {
             return callback(err);
           }
@@ -2820,7 +2904,6 @@ function copyTempDouble(ptr) {
           timestamp: Math.max(atime, mtime)
         });
       },open:function (path, flags, mode, fd_start, fd_end) {
-        path = PATH.normalize(path);
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 0666 : mode;
         if ((flags & 64)) {
@@ -2829,13 +2912,18 @@ function copyTempDouble(ptr) {
           mode = 0;
         }
         var node;
-        try {
-          var lookup = FS.lookupPath(path, {
-            follow: !(flags & 131072)
-          });
-          node = lookup.node;
-        } catch (e) {
-          // ignore
+        if (typeof path === 'object') {
+          node = path;
+        } else {
+          path = PATH.normalize(path);
+          try {
+            var lookup = FS.lookupPath(path, {
+              follow: !(flags & 131072)
+            });
+            node = lookup.node;
+          } catch (e) {
+            // ignore
+          }
         }
         // perhaps we need to create the node
         if ((flags & 64)) {
@@ -3104,6 +3192,11 @@ function copyTempDouble(ptr) {
         };
         FS.ErrnoError.prototype = new Error();
         FS.ErrnoError.prototype.constructor = FS.ErrnoError;
+        // Some errors may happen quite a bit, to avoid overhead we reuse them (and suffer a lack of stack info)
+        [ERRNO_CODES.ENOENT].forEach(function(code) {
+          FS.genericErrors[code] = new FS.ErrnoError(code);
+          FS.genericErrors[code].stack = '<generic error, no stack>';
+        });
       },staticInit:function () {
         FS.ensureErrnoError();
         FS.nameTable = new Array(4096);
@@ -3178,7 +3271,7 @@ function copyTempDouble(ptr) {
         };
         return ret;
       },createFolder:function (parent, name, canRead, canWrite) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var path = PATH.join2(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         var mode = FS.getMode(canRead, canWrite);
         return FS.mkdir(path, mode);
       },createPath:function (parent, path, canRead, canWrite) {
@@ -3187,7 +3280,7 @@ function copyTempDouble(ptr) {
         while (parts.length) {
           var part = parts.pop();
           if (!part) continue;
-          var current = PATH.join(parent, part);
+          var current = PATH.join2(parent, part);
           try {
             FS.mkdir(current);
           } catch (e) {
@@ -3197,11 +3290,11 @@ function copyTempDouble(ptr) {
         }
         return current;
       },createFile:function (parent, name, properties, canRead, canWrite) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var path = PATH.join2(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         var mode = FS.getMode(canRead, canWrite);
         return FS.create(path, mode);
       },createDataFile:function (parent, name, data, canRead, canWrite, canOwn) {
-        var path = name ? PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name) : parent;
+        var path = name ? PATH.join2(typeof parent === 'string' ? parent : FS.getPath(parent), name) : parent;
         var mode = FS.getMode(canRead, canWrite);
         var node = FS.create(path, mode);
         if (data) {
@@ -3211,15 +3304,15 @@ function copyTempDouble(ptr) {
             data = arr;
           }
           // make sure we can write to the file
-          FS.chmod(path, mode | 146);
-          var stream = FS.open(path, 'w');
+          FS.chmod(node, mode | 146);
+          var stream = FS.open(node, 'w');
           FS.write(stream, data, 0, data.length, 0, canOwn);
           FS.close(stream);
-          FS.chmod(path, mode);
+          FS.chmod(node, mode);
         }
         return node;
       },createDevice:function (parent, name, input, output) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var path = PATH.join2(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         var mode = FS.getMode(!!input, !!output);
         if (!FS.createDevice.major) FS.createDevice.major = 64;
         var dev = FS.makedev(FS.createDevice.major++, 0);
@@ -3272,7 +3365,7 @@ function copyTempDouble(ptr) {
         });
         return FS.mkdev(path, mode, dev);
       },createLink:function (parent, name, target, canRead, canWrite) {
-        var path = PATH.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
+        var path = PATH.join2(typeof parent === 'string' ? parent : FS.getPath(parent), name);
         return FS.symlink(target, path);
       },forceLoadFile:function (obj) {
         if (obj.isDevice || obj.isFolder || obj.link || obj.contents) return true;
@@ -3297,11 +3390,11 @@ function copyTempDouble(ptr) {
         if (typeof XMLHttpRequest !== 'undefined') {
           if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
           // Lazy chunked Uint8Array (implements get and length from Uint8Array). Actual getting is abstracted away for eventual reuse.
-          var LazyUint8Array = function() {
+          function LazyUint8Array() {
             this.lengthKnown = false;
             this.chunks = []; // Loaded chunks. Index is the chunk number
           }
-          LazyUint8Array.prototype.get = function(idx) {
+          LazyUint8Array.prototype.get = function LazyUint8Array_get(idx) {
             if (idx > this.length-1 || idx < 0) {
               return undefined;
             }
@@ -3309,10 +3402,10 @@ function copyTempDouble(ptr) {
             var chunkNum = Math.floor(idx / this.chunkSize);
             return this.getter(chunkNum)[chunkOffset];
           }
-          LazyUint8Array.prototype.setDataGetter = function(getter) {
+          LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
             this.getter = getter;
           }
-          LazyUint8Array.prototype.cacheLength = function() {
+          LazyUint8Array.prototype.cacheLength = function LazyUint8Array_cacheLength() {
               // Find length
               var xhr = new XMLHttpRequest();
               xhr.open('HEAD', url, false);
@@ -3395,7 +3488,7 @@ function copyTempDouble(ptr) {
         var keys = Object.keys(node.stream_ops);
         keys.forEach(function(key) {
           var fn = node.stream_ops[key];
-          stream_ops[key] = function() {
+          stream_ops[key] = function forceLoadLazyFile() {
             if (!FS.forceLoadFile(node)) {
               throw new FS.ErrnoError(ERRNO_CODES.EIO);
             }
@@ -3403,7 +3496,7 @@ function copyTempDouble(ptr) {
           };
         });
         // use a custom read function
-        stream_ops.read = function(stream, buffer, offset, length, position) {
+        stream_ops.read = function stream_ops_read(stream, buffer, offset, length, position) {
           if (!FS.forceLoadFile(node)) {
             throw new FS.ErrnoError(ERRNO_CODES.EIO);
           }
@@ -3429,7 +3522,7 @@ function copyTempDouble(ptr) {
         Browser.init();
         // TODO we should allow people to just pass in a complete filename instead
         // of parent and name being that we just join them anyways
-        var fullname = name ? PATH.resolve(PATH.join(parent, name)) : parent;
+        var fullname = name ? PATH.resolve(PATH.join2(parent, name)) : parent;
         function processData(byteArray) {
           function finish(byteArray) {
             if (!dontCreateFile) {
@@ -3472,12 +3565,12 @@ function copyTempDouble(ptr) {
         } catch (e) {
           return onerror(e);
         }
-        openRequest.onupgradeneeded = function() {
+        openRequest.onupgradeneeded = function openRequest_onupgradeneeded() {
           console.log('creating db');
           var db = openRequest.result;
           db.createObjectStore(FS.DB_STORE_NAME);
         };
-        openRequest.onsuccess = function() {
+        openRequest.onsuccess = function openRequest_onsuccess() {
           var db = openRequest.result;
           var transaction = db.transaction([FS.DB_STORE_NAME], 'readwrite');
           var files = transaction.objectStore(FS.DB_STORE_NAME);
@@ -3487,8 +3580,8 @@ function copyTempDouble(ptr) {
           }
           paths.forEach(function(path) {
             var putRequest = files.put(FS.analyzePath(path).object.contents, path);
-            putRequest.onsuccess = function() { ok++; if (ok + fail == total) finish() };
-            putRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
+            putRequest.onsuccess = function putRequest_onsuccess() { ok++; if (ok + fail == total) finish() };
+            putRequest.onerror = function putRequest_onerror() { fail++; if (ok + fail == total) finish() };
           });
           transaction.onerror = onerror;
         };
@@ -3503,7 +3596,7 @@ function copyTempDouble(ptr) {
           return onerror(e);
         }
         openRequest.onupgradeneeded = onerror; // no database to load from
-        openRequest.onsuccess = function() {
+        openRequest.onsuccess = function openRequest_onsuccess() {
           var db = openRequest.result;
           try {
             var transaction = db.transaction([FS.DB_STORE_NAME], 'readonly');
@@ -3518,7 +3611,7 @@ function copyTempDouble(ptr) {
           }
           paths.forEach(function(path) {
             var getRequest = files.get(path);
-            getRequest.onsuccess = function() {
+            getRequest.onsuccess = function getRequest_onsuccess() {
               if (FS.analyzePath(path).exists) {
                 FS.unlink(path);
               }
@@ -3526,7 +3619,7 @@ function copyTempDouble(ptr) {
               ok++;
               if (ok + fail == total) finish();
             };
-            getRequest.onerror = function() { fail++; if (ok + fail == total) finish() };
+            getRequest.onerror = function getRequest_onerror() { fail++; if (ok + fail == total) finish() };
           });
           transaction.onerror = onerror;
         };
@@ -3628,7 +3721,9 @@ function copyTempDouble(ptr) {
             try {
               var url = 'ws://' + addr + ':' + port;
               // the node ws library API is slightly different than the browser's
-              var opts = ENVIRONMENT_IS_NODE ? {} : ['binary'];
+              var opts = ENVIRONMENT_IS_NODE ? {headers: {'websocket-protocol': ['binary']}} : ['binary'];
+              // If node we use the ws library.
+              var WebSocket = ENVIRONMENT_IS_NODE ? require('ws') : window['WebSocket'];
               ws = new WebSocket(url, opts);
               ws.binaryType = 'arraybuffer';
             } catch (e) {
@@ -3675,7 +3770,7 @@ function copyTempDouble(ptr) {
               peer.socket.close();
             }
           };
-          var handleMessage = function(data) {
+          function handleMessage(data) {
             assert(typeof data !== 'string' && data.byteLength !== undefined);  // must receive an ArrayBuffer
             data = new Uint8Array(data);  // make a typed array view on the array buffer
             // if this is the port message, override the peer's port with it
@@ -3707,7 +3802,7 @@ function copyTempDouble(ptr) {
             });
           } else {
             peer.socket.onopen = handleOpen;
-            peer.socket.onmessage = function(event) {
+            peer.socket.onmessage = function peer_socket_onmessage(event) {
               handleMessage(event.data);
             };
           }
@@ -4438,14 +4533,14 @@ function copyTempDouble(ptr) {
   function _emscripten_get_now() {
       if (!_emscripten_get_now.actual) {
         if (ENVIRONMENT_IS_NODE) {
-            _emscripten_get_now.actual = function() {
+            _emscripten_get_now.actual = function _emscripten_get_now_actual() {
               var t = process['hrtime']();
               return t[0] * 1e3 + t[1] / 1e6;
             }
         } else if (typeof dateNow !== 'undefined') {
           _emscripten_get_now.actual = dateNow;
         } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
-          _emscripten_get_now.actual = function() { return window['performance']['now'](); };
+          _emscripten_get_now.actual = function _emscripten_get_now_actual() { return window['performance']['now'](); };
         } else {
           _emscripten_get_now.actual = Date.now;
         }
@@ -4479,8 +4574,12 @@ function copyTempDouble(ptr) {
         ptr = (ptr+1)|0;
       }
     }var _llvm_memset_p0i8_i32=_memset;
-  var GL={counter:1,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],uniformTable:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
         Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+      },recordError:function recordError(errorCode) {
+        if (!GL.lastError) {
+          GL.lastError = errorCode;
+        }
       },getNewId:function (table) {
         var ret = GL.counter++;
         for (var i = table.length; i < ret; i++) {
@@ -4689,6 +4788,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
+        // Tested on WebKit and FF25
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -4719,25 +4819,31 @@ function copyTempDouble(ptr) {
         }
       },populateUniformTable:function (program) {
         var p = GL.programs[program];
-        GL.uniformTable[program] = {};
-        var ptable = GL.uniformTable[program];
-        // A program's uniformTable maps the string name of an uniform to an integer location of that uniform.
+        GL.programInfos[program] = {
+          uniforms: {},
+          maxUniformLength: 0, // This is eagerly computed below, since we already enumerate all uniforms anyway.
+          maxAttributeLength: -1 // This is lazily computed and cached, computed when/if first asked, "-1" meaning not computed yet.
+        };
+        var ptable = GL.programInfos[program];
+        var utable = ptable.uniforms;
+        // A program's uniform table maps the string name of an uniform to an integer location of that uniform.
         // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
         var numUniforms = Module.ctx.getProgramParameter(p, Module.ctx.ACTIVE_UNIFORMS);
         for (var i = 0; i < numUniforms; ++i) {
           var u = Module.ctx.getActiveUniform(p, i);
           var name = u.name;
+          ptable.maxUniformLength = Math.max(ptable.maxUniformLength, name.length+1);
           // Strip off any trailing array specifier we might have got, e.g. "[0]".
           if (name.indexOf(']', name.length-1) !== -1) {
             var ls = name.lastIndexOf('[');
             name = name.slice(0, ls);
           }
           // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then 
-          // only store the string 'colors' in ptable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
+          // only store the string 'colors' in utable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
           // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
           var loc = Module.ctx.getUniformLocation(p, name);
           var id = GL.getNewId(GL.uniforms);
-          ptable[name] = [u.size, id];
+          utable[name] = [u.size, id];
           GL.uniforms[id] = loc;
           for (var j = 1; j < u.size; ++j) {
             var n = name + '['+j+']';
@@ -4763,10 +4869,11 @@ function copyTempDouble(ptr) {
             console.error("Unfortunately your system does not support WebCL.\n");
             console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           }
+          // Add webcl constant for parser
+          webcl["SAMPLER"] = 0x1300;
+          webcl["IMAGE2D"] = 0x1301;
           CL.cl_init = 1;
         }
-        // Add webcl constant for double
-        // webcl.FLOAT64 = 0x10DF;
       },udid:function (obj) {    
         var _id;
         if (obj !== undefined) {
@@ -4806,7 +4913,11 @@ function copyTempDouble(ptr) {
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
-            return '__local';          
+            return '__local';   
+          case webcl.SAMPLER:
+            return 'sampler_t';   
+          case webcl.IMAGE2D:
+            return 'image2d_t';          
           default:
             if (typeof(pn_type) == "string") return 'struct';
             return 'UNKNOWN';
@@ -4827,6 +4938,10 @@ function copyTempDouble(ptr) {
           _value = webcl.UNSIGNED_INT32;            
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
+        } else if ( string.indexOf("image2d_t") >= 0 ) {
+          _value = webcl.IMAGE2D;
+        } else if ( string.indexOf("sampler_t") >= 0 ) {
+          _value = webcl.SAMPLER;
         }
         return _value;
       },parseStruct:function (kernel_string,struct_name) {
@@ -5398,6 +5513,11 @@ function copyTempDouble(ptr) {
       try {
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
+        // \todo need to be remove when webkit work with -D
+        if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
+          _option = _option.replace(/-D/g, "-D ");
+          _option = _option.replace(/-D\s{2,}/g, "-D ");
+        }
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
@@ -6052,10 +6172,10 @@ function copyTempDouble(ptr) {
         // (possibly modified) data. For example, a plugin might decompress a file, or it
         // might create some side data structure for use later (like an Image element, etc.).
         var imagePlugin = {};
-        imagePlugin['canHandle'] = function(name) {
+        imagePlugin['canHandle'] = function imagePlugin_canHandle(name) {
           return !Module.noImageDecoding && /\.(jpg|jpeg|png|bmp)$/i.test(name);
         };
-        imagePlugin['handle'] = function(byteArray, name, onload, onerror) {
+        imagePlugin['handle'] = function imagePlugin_handle(byteArray, name, onload, onerror) {
           var b = null;
           if (Browser.hasBlobConstructor) {
             try {
@@ -6076,7 +6196,7 @@ function copyTempDouble(ptr) {
           var url = Browser.URLObject.createObjectURL(b);
           assert(typeof url == 'string', 'createObjectURL must return a url as a string');
           var img = new Image();
-          img.onload = function() {
+          img.onload = function img_onload() {
             assert(img.complete, 'Image ' + name + ' could not be decoded');
             var canvas = document.createElement('canvas');
             canvas.width = img.width;
@@ -6087,7 +6207,7 @@ function copyTempDouble(ptr) {
             Browser.URLObject.revokeObjectURL(url);
             if (onload) onload(byteArray);
           };
-          img.onerror = function(event) {
+          img.onerror = function img_onerror(event) {
             console.log('Image ' + url + ' could not be decoded');
             if (onerror) onerror();
           };
@@ -6095,10 +6215,10 @@ function copyTempDouble(ptr) {
         };
         Module['preloadPlugins'].push(imagePlugin);
         var audioPlugin = {};
-        audioPlugin['canHandle'] = function(name) {
+        audioPlugin['canHandle'] = function audioPlugin_canHandle(name) {
           return !Module.noAudioDecoding && name.substr(-4) in { '.ogg': 1, '.wav': 1, '.mp3': 1 };
         };
-        audioPlugin['handle'] = function(byteArray, name, onload, onerror) {
+        audioPlugin['handle'] = function audioPlugin_handle(byteArray, name, onload, onerror) {
           var done = false;
           function finish(audio) {
             if (done) return;
@@ -6122,7 +6242,7 @@ function copyTempDouble(ptr) {
             assert(typeof url == 'string', 'createObjectURL must return a url as a string');
             var audio = new Audio();
             audio.addEventListener('canplaythrough', function() { finish(audio) }, false); // use addEventListener due to chromium bug 124926
-            audio.onerror = function(event) {
+            audio.onerror = function audio_onerror(event) {
               if (done) return;
               console.log('warning: browser could not fully decode audio ' + name + ', trying slower base64 approach');
               function encode64(data) {
@@ -6258,16 +6378,20 @@ function copyTempDouble(ptr) {
                                    canvas['mozRequestFullScreen'] ||
                                    (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
         canvas.requestFullScreen();
-      },requestAnimationFrame:function (func) {
-        if (!window.requestAnimationFrame) {
-          window.requestAnimationFrame = window['requestAnimationFrame'] ||
-                                         window['mozRequestAnimationFrame'] ||
-                                         window['webkitRequestAnimationFrame'] ||
-                                         window['msRequestAnimationFrame'] ||
-                                         window['oRequestAnimationFrame'] ||
-                                         window['setTimeout'];
+      },requestAnimationFrame:function requestAnimationFrame(func) {
+        if (typeof window === 'undefined') { // Provide fallback to setTimeout if window is undefined (e.g. in Node.js)
+          setTimeout(func, 1000/60);
+        } else {
+          if (!window.requestAnimationFrame) {
+            window.requestAnimationFrame = window['requestAnimationFrame'] ||
+                                           window['mozRequestAnimationFrame'] ||
+                                           window['webkitRequestAnimationFrame'] ||
+                                           window['msRequestAnimationFrame'] ||
+                                           window['oRequestAnimationFrame'] ||
+                                           window['setTimeout'];
+          }
+          window.requestAnimationFrame(func);
         }
-        window.requestAnimationFrame(func);
       },safeCallback:function (func) {
         return function() {
           if (!ABORT) return func.apply(null, arguments);
@@ -6367,7 +6491,7 @@ function copyTempDouble(ptr) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.responseType = 'arraybuffer';
-        xhr.onload = function() {
+        xhr.onload = function xhr_onload() {
           if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
             onload(xhr.response);
           } else {
@@ -6427,15 +6551,15 @@ function copyTempDouble(ptr) {
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
 __ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
-if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); }
+if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); NODEFS.staticInit(); }
 __ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 GL.init()
-Module["requestFullScreen"] = function(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
-  Module["requestAnimationFrame"] = function(func) { Browser.requestAnimationFrame(func) };
-  Module["setCanvasSize"] = function(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
-  Module["pauseMainLoop"] = function() { Browser.mainLoop.pause() };
-  Module["resumeMainLoop"] = function() { Browser.mainLoop.resume() };
-  Module["getUserMedia"] = function() { Browser.getUserMedia() }
+Module["requestFullScreen"] = function Module_requestFullScreen(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
+  Module["requestAnimationFrame"] = function Module_requestAnimationFrame(func) { Browser.requestAnimationFrame(func) };
+  Module["setCanvasSize"] = function Module_setCanvasSize(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
+  Module["pauseMainLoop"] = function Module_pauseMainLoop() { Browser.mainLoop.pause() };
+  Module["resumeMainLoop"] = function Module_resumeMainLoop() { Browser.mainLoop.resume() };
+  Module["getUserMedia"] = function Module_getUserMedia() { Browser.getUserMedia() }
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
@@ -7738,13 +7862,13 @@ function _main($argc,$argv){
  case 32: 
  var $97=$use_gpu;
  var $98=($97|0)==1;
- var $99=$98?1816:1808;
+ var $99=($98?1816:1808);
  var $100=_printf(1824,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$99,tempVarArgs)); STACKTOP=tempVarArgs;
  var $101=HEAP8[(64)];
  var $102=(($101)&1);
  var $103=($102&1);
  var $104=($103|0)==1;
- var $105=$104?1856:96;
+ var $105=($104?1856:96);
  var $106=HEAP32[((80)>>2)];
  var $107=_printf(1768,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$105,HEAP32[(((tempVarArgs)+(8))>>2)]=$106,tempVarArgs)); STACKTOP=tempVarArgs;
  var $108=HEAP32[((72)>>2)];
@@ -7797,9 +7921,9 @@ function _main($argc,$argv){
  case 36: 
  var $146=$use_gpu;
  var $147=($146|0)!=0;
- var $148=$147?4:2;
+ var $148=($147?4:2);
  var $149$0=$148;
- var $149$1=(((($148|0)<0))|0)?-1:0;
+ var $149$1=((((($148|0)<0))|0)?-1:0);
  var $150=_clGetDeviceIDs(0,$149$0,$149$1,1,$device_id,0);
  HEAP32[(($err)>>2)]=$150;
  var $151=HEAP32[(($err)>>2)];
@@ -7877,7 +8001,7 @@ function _main($argc,$argv){
  var $200=_printf(1496,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 48)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$191,HEAP32[(((tempVarArgs)+(8))>>2)]=$192,HEAP32[(((tempVarArgs)+(16))>>2)]=$193,HEAP32[(((tempVarArgs)+(24))>>2)]=$195,HEAP32[(((tempVarArgs)+(32))>>2)]=$197,HEAP32[(((tempVarArgs)+(40))>>2)]=$199,tempVarArgs)); STACKTOP=tempVarArgs;
  var $201=HEAP8[(64)];
  var $202=(($201)&1);
- var $203=$202?4:4;
+ var $203=($202?4:4);
  $typesize=$203;
  $filename=0;
  var $204=HEAP32[((80)>>2)];
@@ -7885,19 +8009,19 @@ function _main($argc,$argv){
  case 45: 
  var $206=HEAP8[(64)];
  var $207=(($206)&1);
- var $208=$207?1472:1448;
+ var $208=($207?1472:1448);
  $filename=$208;
  label=49;break;
  case 46: 
  var $210=HEAP8[(64)];
  var $211=(($210)&1);
- var $212=$211?1424:1400;
+ var $212=($211?1424:1400);
  $filename=$212;
  label=49;break;
  case 47: 
  var $214=HEAP8[(64)];
  var $215=(($214)&1);
- var $216=$215?1376:1352;
+ var $216=($215?1376:1352);
  $filename=$216;
  label=49;break;
  case 48: 
@@ -7952,7 +8076,7 @@ function _main($argc,$argv){
  $buffer_size=$249;
  var $250=HEAP8[(64)];
  var $251=(($250)&1);
- var $252=$251?4313:4318;
+ var $252=($251?4313:4318);
  var $253=_clSetTypePointer($252);
  var $254=$context;
  var $255=$buffer_size;
@@ -7984,7 +8108,7 @@ function _main($argc,$argv){
  $input_data=$271;
  var $272=HEAP8[(64)];
  var $273=(($272)&1);
- var $274=$273?4313:4318;
+ var $274=($273?4313:4318);
  var $275=_clSetTypePointer($274);
  var $276=$commands;
  var $277=$input_buffer;
@@ -8326,7 +8450,7 @@ function _main($argc,$argv){
  var $532=HEAP32[((72)>>2)];
  var $533=HEAP8[(64)];
  var $534=(($533)&1);
- var $535=$534?1856:96;
+ var $535=($534?1856:96);
  var $536=HEAP32[((80)>>2)];
  var $537=($536|0)<=1;
  if($537){label=91;break;}else{label=92;break;}
@@ -8335,7 +8459,7 @@ function _main($argc,$argv){
  case 92: 
  var $540=HEAP32[((80)>>2)];
  var $541=($540|0)==2;
- var $542=$541?384:376;
+ var $542=($541?384:376);
  var $544=$542;label=93;break;
  case 93: 
  var $544;
@@ -8464,7 +8588,7 @@ function _main($argc,$argv){
  _memset($622, 0, $625);
  var $626=HEAP8[(64)];
  var $627=(($626)&1);
- var $628=$627?4313:4318;
+ var $628=($627?4313:4318);
  var $629=_clSetTypePointer($628);
  var $630=$commands;
  var $631=HEAP32[(($pass_output)>>2)];
@@ -9138,8 +9262,8 @@ function _malloc($bytes){
  var $188=$187&-8;
  var $189=((($188)-($8))|0);
  var $190=($189>>>0)<($rsize_0_i>>>0);
- var $_rsize_0_i=$190?$189:$rsize_0_i;
- var $_v_0_i=$190?$185:$v_0_i;
+ var $_rsize_0_i=($190?$189:$rsize_0_i);
+ var $_v_0_i=($190?$185:$v_0_i);
  var $t_0_i=$185;var $v_0_i=$_v_0_i;var $rsize_0_i=$_rsize_0_i;label=29;break;
  case 32: 
  var $192=$v_0_i;
@@ -9473,7 +9597,7 @@ function _malloc($bytes){
  var $407=($403|0)==0;
  var $408=($403|0)==($406|0);
  var $or_cond_i=$407|$408;
- var $rst_1_i=$or_cond_i?$rst_0_i:$403;
+ var $rst_1_i=($or_cond_i?$rst_0_i:$403);
  var $409=($406|0)==0;
  var $410=$sizebits_0_i<<1;
  if($409){var $v_2_i=$v_1_i;var $rsize_2_i=$rsize_1_i;var $t_1_i=$rst_1_i;label=90;break;}else{var $v_0_i118=$v_1_i;var $rsize_0_i117=$rsize_1_i;var $t_0_i116=$406;var $sizebits_0_i=$410;var $rst_0_i=$rst_1_i;label=87;break;}
@@ -9532,8 +9656,8 @@ function _malloc($bytes){
  var $448=$447&-8;
  var $449=((($448)-($349))|0);
  var $450=($449>>>0)<($rsize_329_i>>>0);
- var $_rsize_3_i=$450?$449:$rsize_329_i;
- var $t_2_v_3_i=$450?$t_228_i:$v_330_i;
+ var $_rsize_3_i=($450?$449:$rsize_329_i);
+ var $t_2_v_3_i=($450?$t_228_i:$v_330_i);
  var $451=(($t_228_i+16)|0);
  var $452=HEAP32[(($451)>>2)];
  var $453=($452|0)==0;
@@ -10134,8 +10258,8 @@ function _malloc($bytes){
  case 187: 
  var $835=_sbrk($ssize_0_i);
  var $836=($835|0)==($809|0);
- var $ssize_0__i=$836?$ssize_0_i:0;
- var $__i=$836?$809:-1;
+ var $ssize_0__i=($836?$ssize_0_i:0);
+ var $__i=($836?$809:-1);
  var $tbase_0_i=$__i;var $tsize_0_i=$ssize_0__i;var $br_0_i=$835;var $ssize_1_i=$ssize_0_i;label=190;break;
  case 188: 
  var $838=HEAP32[((1916)>>2)];
@@ -10149,8 +10273,8 @@ function _malloc($bytes){
  var $845=HEAP32[(($800)>>2)];
  var $846=(($844+$845)|0);
  var $847=($843|0)==($846|0);
- var $_3_i=$847?$840:0;
- var $_4_i=$847?$843:-1;
+ var $_3_i=($847?$840:0);
+ var $_4_i=($847?$843:-1);
  var $tbase_0_i=$_4_i;var $tsize_0_i=$_3_i;var $br_0_i=$843;var $ssize_1_i=$840;label=190;break;
  case 190: 
  var $ssize_1_i;
@@ -10214,8 +10338,8 @@ function _malloc($bytes){
  var $881=((($879)-($880))|0);
  var $882=((($nb_0)+(40))|0);
  var $883=($881>>>0)>($882>>>0);
- var $_tsize_1_i=$883?$881:$tsize_1_i;
- var $_tbase_1_i=$883?$876:-1;
+ var $_tsize_1_i=($883?$881:$tsize_1_i);
+ var $_tbase_1_i=($883?$876:-1);
  var $884=($_tbase_1_i|0)==-1;
  if($884){label=340;break;}else{var $tsize_244_i=$_tsize_1_i;var $tbase_245_i=$_tbase_1_i;label=201;break;}
  case 201: 
@@ -10980,7 +11104,7 @@ function _malloc($bytes){
  var $1350=(($890+16)|0);
  var $1351=$1350;
  var $1352=($1349>>>0)<($1351>>>0);
- var $1353=$1352?$1327:$1349;
+ var $1353=($1352?$1327:$1349);
  var $1354=(($1353+8)|0);
  var $1355=$1354;
  var $1356=((($tsize_244_i)-(40))|0);
@@ -13885,11 +14009,10 @@ ExitStatus.prototype.constructor = ExitStatus;
 var initialStackTop;
 var preloadStartTime = null;
 var calledMain = false;
-var calledRun = false;
 dependenciesFulfilled = function runCaller() {
   // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
-  if (!calledRun && shouldRunNow) run();
-  if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
+  if (!Module['calledRun'] && shouldRunNow) run();
+  if (!Module['calledRun']) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
 }
 Module['callMain'] = Module.callMain = function callMain(args) {
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on __ATMAIN__)');
@@ -13953,7 +14076,7 @@ function run(args) {
   function doRun() {
     ensureInitRuntime();
     preMain();
-    calledRun = true;
+    Module['calledRun'] = true;
     if (Module['_main'] && shouldRunNow) {
       Module['callMain'](args);
     }
