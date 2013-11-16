@@ -82,8 +82,8 @@ var RuntimeGenerator = {
   // Rounding is inevitable if the number is large. This is a particular problem for small negative numbers
   // (-1 will be rounded!), so handle negatives separately and carefully
   makeBigInt: function(low, high, unsigned) {
-    var unsignedRet = '(' + asmCoercion(makeSignOp(low, 'i32', 'un', 1, 1), 'float') + '+(' + asmCoercion(makeSignOp(high, 'i32', 'un', 1, 1), 'float') + '*' + asmEnsureFloat(4294967296, 'float') + '))';
-    var signedRet = '(' + asmCoercion(makeSignOp(low, 'i32', 'un', 1, 1), 'float') + '+(' + asmCoercion(makeSignOp(high, 'i32', 're', 1, 1), 'float') + '*' + asmEnsureFloat(4294967296, 'float') + '))';
+    var unsignedRet = '(' + asmCoercion(makeSignOp(low, 'i32', 'un', 1, 1), 'double') + '+(' + asmCoercion(makeSignOp(high, 'i32', 'un', 1, 1), 'double') + '*' + asmEnsureFloat(4294967296, 'double') + '))';
+    var signedRet = '(' + asmCoercion(makeSignOp(low, 'i32', 'un', 1, 1), 'double') + '+(' + asmCoercion(makeSignOp(high, 'i32', 're', 1, 1), 'double') + '*' + asmEnsureFloat(4294967296, 'double') + '))';
     if (typeof unsigned === 'string') return '(' + unsigned + ' ? ' + unsignedRet + ' : ' + signedRet + ')';
     return unsigned ? unsignedRet : signedRet;
   }
@@ -145,7 +145,7 @@ var Runtime = {
   //! @param type The type, by name.
   getNativeTypeSize: function(type) {
 #if QUANTUM_SIZE == 1
-     return 1;
+    return 1;
 #else
     switch (type) {
       case 'i1': case 'i8': return 1;
@@ -161,6 +161,8 @@ var Runtime = {
           var bits = parseInt(type.substr(1));
           assert(bits % 8 === 0);
           return bits/8;
+        } else {
+          return 0;
         }
       }
     }
@@ -224,9 +226,16 @@ var Runtime = {
         // bN, large number field, like a [N x i8]
         size = field.substr(1)|0;
         alignSize = 1;
-      } else {
-        assert(field[0] === '<', field); // assumed to be a vector type, if none of the above
+      } else if (field[0] === '<') {
+        // vector type
         size = alignSize = Types.types[field].flatSize; // fully aligned
+      } else if (field[0] === 'i') {
+        // illegal integer field, that could not be legalized because it is an internal structure field
+        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
+        size = alignSize = parseInt(field.substr(1))/8;
+        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
+      } else {
+        assert(false, 'invalid type for calculateStructAlignment');
       }
       if (type.packed) alignSize = 1;
       type.alignSize = Math.max(type.alignSize, alignSize);
@@ -385,7 +394,7 @@ var Runtime = {
   getFuncWrapper: function(func, sig) {
     assert(sig);
     if (!Runtime.funcWrappers[func]) {
-      Runtime.funcWrappers[func] = function() {
+      Runtime.funcWrappers[func] = function dynCall_wrapper() {
         return Runtime.dynCall(sig, func, arguments);
       };
     }
@@ -443,7 +452,7 @@ var Runtime = {
       buffer.length = 0;
       return ret;
     }
-    this.processJSString = function(string) {
+    this.processJSString = function processJSString(string) {
       string = unescape(encodeURIComponent(string));
       var ret = [];
       for (var i = 0; i < string.length; i++) {

@@ -338,13 +338,18 @@ If manually bisecting:
       ("somefile.txt@/directory/file.txt", "/directory/file.txt"),
       ("somefile.txt@/directory/file.txt", "directory/file.txt"),
       (absolute_src_path + "@/directory/file.txt", "directory/file.txt")]
-    
+
     for test in test_cases:
       (srcpath, dstpath) = test
       print 'Testing', srcpath, dstpath
       make_main(dstpath)
       Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', srcpath, '-o', 'page.html']).communicate()
       self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
+
+    # Test that '--no-heap-copy' works.
+    make_main('somefile.txt')
+    Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', 'somefile.txt', '--no-heap-copy', '-o', 'page.html']).communicate()
+    self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
 
     # By absolute path
 
@@ -869,6 +874,124 @@ keydown(100);keyup(100); // trigger the end
   def test_glut_wheelevents(self):
     self.btest('glut_wheelevents.c', '1')
 
+  def test_sdl_joystick_1(self):
+    # Generates events corresponding to the Working Draft of the HTML5 Gamepad API.
+    # http://www.w3.org/TR/2012/WD-gamepad-20120529/#gamepad-interface
+    open(os.path.join(self.get_dir(), 'pre.js'), 'w').write('''
+      var gamepads = [];
+      // Spoof this function.
+      navigator['getGamepads'] = function() {
+        return gamepads;
+      };
+      window['addNewGamepad'] = function(id, numAxes, numButtons) {
+        var index = gamepads.length;
+        gamepads.push({
+          axes: new Array(numAxes),
+          buttons: new Array(numButtons),
+          id: id,
+          index: index
+        });
+        var i;
+        for (i = 0; i < numAxes; i++) gamepads[index].axes[i] = 0;
+        for (i = 0; i < numButtons; i++) gamepads[index].buttons[i] = 0;
+      };
+      window['simulateGamepadButtonDown'] = function (index, button) {
+        gamepads[index].buttons[button] = 1;
+      };
+      window['simulateGamepadButtonUp'] = function (index, button) {
+        gamepads[index].buttons[button] = 0;
+      };
+      window['simulateAxisMotion'] = function (index, axis, value) {
+        gamepads[index].axes[axis] = value;
+      };
+    ''')
+    open(os.path.join(self.get_dir(), 'sdl_joystick.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_joystick.c')).read()))
+
+    Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'sdl_joystick.c'), '-O2', '--minify', '0', '-o', 'page.html', '--pre-js', 'pre.js']).communicate()
+    self.run_browser('page.html', '', '/report_result?2')
+
+  def test_sdl_joystick_2(self):
+    # Generates events corresponding to the Editor's Draft of the HTML5 Gamepad API.
+    # https://dvcs.w3.org/hg/gamepad/raw-file/default/gamepad.html#idl-def-Gamepad
+    open(os.path.join(self.get_dir(), 'pre.js'), 'w').write('''
+      var gamepads = [];
+      // Spoof this function.
+      navigator['getGamepads'] = function() {
+        return gamepads;
+      };
+      window['addNewGamepad'] = function(id, numAxes, numButtons) {
+        var index = gamepads.length;
+        gamepads.push({
+          axes: new Array(numAxes),
+          buttons: new Array(numButtons),
+          id: id,
+          index: index
+        });
+        var i;
+        for (i = 0; i < numAxes; i++) gamepads[index].axes[i] = 0;
+        // Buttons are objects
+        for (i = 0; i < numButtons; i++) gamepads[index].buttons[i] = { pressed: false, value: 0 };
+      };
+      // FF mutates the original objects.
+      window['simulateGamepadButtonDown'] = function (index, button) {
+        gamepads[index].buttons[button].pressed = true;
+        gamepads[index].buttons[button].value = 1;
+      };
+      window['simulateGamepadButtonUp'] = function (index, button) {
+        gamepads[index].buttons[button].pressed = false;
+        gamepads[index].buttons[button].value = 0;
+      };
+      window['simulateAxisMotion'] = function (index, axis, value) {
+        gamepads[index].axes[axis] = value;
+      };
+    ''')
+    open(os.path.join(self.get_dir(), 'sdl_joystick.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_joystick.c')).read()))
+
+    Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'sdl_joystick.c'), '-O2', '--minify', '0', '-o', 'page.html', '--pre-js', 'pre.js']).communicate()
+    self.run_browser('page.html', '', '/report_result?2')
+
+  def test_webgl_context_attributes(self):
+    # Javascript code to check the attributes support we want to test in the WebGL implementation 
+    # (request the attribute, create a context and check its value afterwards in the context attributes).
+    # Tests will succeed when an attribute is not supported.
+    open(os.path.join(self.get_dir(), 'check_webgl_attributes_support.js'), 'w').write('''
+      mergeInto(LibraryManager.library, {
+        webglAntialiasSupported: function() {
+          canvas = document.createElement('canvas');
+          context = canvas.getContext('experimental-webgl', {antialias: true});
+          attributes = context.getContextAttributes();
+          return attributes.antialias;
+        },
+        webglDepthSupported: function() {
+          canvas = document.createElement('canvas');
+          context = canvas.getContext('experimental-webgl', {depth: true});
+          attributes = context.getContextAttributes();
+          return attributes.depth;
+        },
+        webglStencilSupported: function() {
+          canvas = document.createElement('canvas');
+          context = canvas.getContext('experimental-webgl', {stencil: true});
+          attributes = context.getContextAttributes();
+          return attributes.stencil;
+       }
+      });
+    ''')
+    
+    # Copy common code file to temporary directory
+    filepath = path_from_root('tests/test_webgl_context_attributes_common.c')
+    temp_filepath = os.path.join(self.get_dir(), os.path.basename(filepath))
+    shutil.copyfile(filepath, temp_filepath)
+    
+    # perform tests with attributes activated 
+    self.btest('test_webgl_context_attributes_glut.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
+    self.btest('test_webgl_context_attributes_sdl.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
+    self.btest('test_webgl_context_attributes_glfw.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
+    
+    # perform tests with attributes desactivated
+    self.btest('test_webgl_context_attributes_glut.c', '1', args=['--js-library', 'check_webgl_attributes_support.js'])
+    self.btest('test_webgl_context_attributes_sdl.c', '1', args=['--js-library', 'check_webgl_attributes_support.js'])
+    self.btest('test_webgl_context_attributes_glfw.c', '1', args=['--js-library', 'check_webgl_attributes_support.js'])
+    
   def test_emscripten_get_now(self):
     self.btest('emscripten_get_now.cpp', '1')
 
@@ -941,6 +1064,11 @@ keydown(100);keyup(100); // trigger the end
     # use closure to check for a possible bug with closure minifying away newer Audio() attributes
     Popen([PYTHON, EMCC, '-O2', '--closure', '1', '--minify', '0', os.path.join(self.get_dir(), 'sdl_audio_beep.cpp'), '-s', 'DISABLE_EXCEPTION_CATCHING=0', '-o', 'page.html']).communicate()
     self.run_browser('page.html', '', '/report_result?1')
+
+  def test_sdl_canvas_size(self):
+    self.btest('sdl_canvas_size.c', reference='screenshot-gray-purple.png', reference_slack=1,
+      args=['-O2', '--minify', '0', '--shell-file', path_from_root('tests', 'sdl_canvas_size.html'), '--preload-file', path_from_root('tests', 'screenshot.png') + '@/', '-s', 'LEGACY_GL_EMULATION=1'],
+      message='You should see an image with gray at the top.')
 
   def test_sdl_gl_read(self):
     # SDL, OpenGL, readPixels
@@ -1017,6 +1145,12 @@ keydown(100);keyup(100); // trigger the end
     open(os.path.join(self.get_dir(), 'glfw.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'glfw.c')).read()))
 
     Popen([PYTHON, EMCC, '-O2', os.path.join(self.get_dir(), 'glfw.c'), '-o', 'page.html', '-s', 'LEGACY_GL_EMULATION=1']).communicate()
+    self.run_browser('page.html', '', '/report_result?1')
+
+  def test_egl(self):
+    open(os.path.join(self.get_dir(), 'test_egl.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'test_egl.c')).read()))
+
+    Popen([PYTHON, EMCC, '-O2', os.path.join(self.get_dir(), 'test_egl.c'), '-o', 'page.html']).communicate()
     self.run_browser('page.html', '', '/report_result?1')
 
   def test_egl_width_height(self):
@@ -1315,6 +1449,9 @@ keydown(100);keyup(100); // trigger the end
   # def test_gles2_uniform_arrays(self):
   #  self.btest('gles2_uniform_arrays.cpp', args=['-s', 'GL_ASSERTIONS=1'], expected=['1'])
 
+  def test_gles2_conformance(self):
+    self.btest('gles2_conformance.cpp', args=['-s', 'GL_ASSERTIONS=1'], expected=['1'])
+
   def test_matrix_identity(self):
     self.btest('gl_matrix_identity.c', expected=['-1882984448', '460451840'], args=['-s', 'LEGACY_GL_EMULATION=1'])
 
@@ -1519,3 +1656,7 @@ keydown(100);keyup(100); // trigger the end
     Popen([PYTHON, EMCC, path_from_root('tests', 'browser_module.cpp'), '-o', 'module.js', '-O2', '-s', 'SIDE_MODULE=1', '-s', 'DLOPEN_SUPPORT=1', '-s', 'EXPORTED_FUNCTIONS=["_one", "_two"]']).communicate()
     self.btest('browser_main.cpp', args=['-O2', '-s', 'MAIN_MODULE=1', '-s', 'DLOPEN_SUPPORT=1'], expected='8')
 
+  def test_mmap_file(self):
+    open(self.in_dir('data.dat'), 'w').write('data from the file ' + ('.' * 9000))
+    for extra_args in [[], ['--no-heap-copy']]:
+      self.btest(path_from_root('tests', 'mmap_file.c'), expected='1', args=['--preload-file', 'data.dat'] + extra_args)

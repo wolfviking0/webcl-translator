@@ -11,6 +11,7 @@ var LibraryGL = {
 #endif
 
     counter: 1, // 0 is reserved as 'null' in gl
+    lastError: 0,
     buffers: [],
     programs: [],
     framebuffers: [],
@@ -41,7 +42,13 @@ var LibraryGL = {
       8  // GL_DOUBLE
     ],
 
-    uniformTable: {}, // name => uniform ID. the uID must be identical until relinking, cannot create a new uID each call to glGetUniformLocation
+    programInfos: {}, // Stores additional information needed for each shader program. Each entry is of form:
+    /* { uniforms: {}, // Maps ints back to the opaque WebGLUniformLocation objects.
+         maxUniformLength: int, // Cached in order to implement glGetProgramiv(GL_ACTIVE_UNIFORM_MAX_LENGTH)
+         maxAttributeLength: int // Cached in order to implement glGetProgramiv(GL_ACTIVE_ATTRIBUTE_MAX_LENGTH)
+       } */
+
+    stringCache: {},
 
     packAlignment: 4,   // default alignment is 4 bytes
     unpackAlignment: 4, // default alignment is 4 bytes
@@ -50,6 +57,13 @@ var LibraryGL = {
       Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
     },
 
+    // Records a GL error condition that occurred, stored until user calls glGetError() to fetch it. As per GLES2 spec, only the first error 
+    // is remembered, and subsequent errors are discarded until the user has cleared the stored error by a call to glGetError().
+    recordError: function recordError(errorCode) {
+      if (!GL.lastError) {
+        GL.lastError = errorCode;
+      }
+    },
     // Get a new ID for a texture/buffer/etc., while keeping the table dense and fast. Creation is farely rare so it is worth optimizing lookups later.
     getNewId: function(table) {
       var ret = GL.counter++;
@@ -241,7 +255,9 @@ var LibraryGL = {
           sizePerPixel = 2;
           break;
         case 0x1406 /* GL_FLOAT */:
+#if ASSERTIONS
           assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
+#endif
           switch (format) {
             case 0x1907 /* GL_RGB */:
               sizePerPixel = 3*4;
@@ -274,7 +290,7 @@ var LibraryGL = {
     },
 
 #if FULL_ES2
-    calcBufLength: function(size, type, stride, count) {
+    calcBufLength: function calcBufLength(size, type, stride, count) {
       if (stride > 0) {
         return count * stride;  // XXXvlad this is not exactly correct I don't think
       }
@@ -284,7 +300,7 @@ var LibraryGL = {
 
     usedTempBuffers: [],
 
-    preDrawHandleClientVertexAttribBindings: function(count) {
+    preDrawHandleClientVertexAttribBindings: function preDrawHandleClientVertexAttribBindings(count) {
       GL.resetBufferBinding = false;
 
       var used = GL.usedTempBuffers;
@@ -318,7 +334,7 @@ var LibraryGL = {
       }
     },
 
-    postDrawHandleClientVertexAttribBindings: function() {
+    postDrawHandleClientVertexAttribBindings: function postDrawHandleClientVertexAttribBindings() {
       if (GL.resetBufferBinding) {
         Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, GL.buffers[GL.currArrayBuffer]);
       }
@@ -409,6 +425,7 @@ var LibraryGL = {
 
       GL.floatExt = Module.ctx.getExtension('OES_texture_float');
 
+      // Tested on WebKit and FF25
       GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
 
       // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
@@ -454,15 +471,23 @@ var LibraryGL = {
       GL.validateGLObjectID(GL.programs, program, 'populateUniformTable', 'program');
 #endif
       var p = GL.programs[program];
-      GL.uniformTable[program] = {};
-      var ptable = GL.uniformTable[program];
-      // A program's uniformTable maps the string name of an uniform to an integer location of that uniform.
+      GL.programInfos[program] = {
+        uniforms: {},
+        maxUniformLength: 0, // This is eagerly computed below, since we already enumerate all uniforms anyway.
+        maxAttributeLength: -1 // This is lazily computed and cached, computed when/if first asked, "-1" meaning not computed yet.
+      };
+
+      var ptable = GL.programInfos[program];
+      var utable = ptable.uniforms;
+      // A program's uniform table maps the string name of an uniform to an integer location of that uniform.
       // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
       var numUniforms = Module.ctx.getProgramParameter(p, Module.ctx.ACTIVE_UNIFORMS);
       for (var i = 0; i < numUniforms; ++i) {
         var u = Module.ctx.getActiveUniform(p, i);
 
         var name = u.name;
+        ptable.maxUniformLength = Math.max(ptable.maxUniformLength, name.length+1);
+
         // Strip off any trailing array specifier we might have got, e.g. "[0]".
         if (name.indexOf(']', name.length-1) !== -1) {
           var ls = name.lastIndexOf('[');
@@ -470,11 +495,11 @@ var LibraryGL = {
         }
 
         // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then 
-        // only store the string 'colors' in ptable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
+        // only store the string 'colors' in utable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
         // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
         var loc = Module.ctx.getUniformLocation(p, name);
         var id = GL.getNewId(GL.uniforms);
-        ptable[name] = [u.size, id];
+        utable[name] = [u.size, id];
         GL.uniforms[id] = loc;
 
         for (var j = 1; j < u.size; ++j) {
@@ -500,11 +525,14 @@ var LibraryGL = {
 
   glGetString__sig: 'ii',
   glGetString: function(name_) {
+    if (GL.stringCache[name_]) return GL.stringCache[name_];
+    var ret; 
     switch(name_) {
       case 0x1F00 /* GL_VENDOR */:
       case 0x1F01 /* GL_RENDERER */:
       case 0x1F02 /* GL_VERSION */:
-        return allocate(intArrayFromString(Module.ctx.getParameter(name_)), 'i8', ALLOC_NORMAL);
+        ret = allocate(intArrayFromString(Module.ctx.getParameter(name_)), 'i8', ALLOC_NORMAL);
+        break;
       case 0x1F03 /* GL_EXTENSIONS */:
         var exts = Module.ctx.getSupportedExtensions();
         var gl_exts = [];
@@ -512,12 +540,20 @@ var LibraryGL = {
           gl_exts.push(exts[i]);
           gl_exts.push("GL_" + exts[i]);
         }
-        return allocate(intArrayFromString(gl_exts.join(' ')), 'i8', ALLOC_NORMAL); // XXX this leaks! TODO: Cache all results like this in library_gl.js to be clean and nice and avoid leaking.
+        ret = allocate(intArrayFromString(gl_exts.join(' ')), 'i8', ALLOC_NORMAL);
+        break;
       case 0x8B8C /* GL_SHADING_LANGUAGE_VERSION */:
-        return allocate(intArrayFromString('OpenGL ES GLSL 1.00 (WebGL)'), 'i8', ALLOC_NORMAL);
+        ret = allocate(intArrayFromString('OpenGL ES GLSL 1.00 (WebGL)'), 'i8', ALLOC_NORMAL);
+        break;
       default:
-        throw 'Failure: Invalid glGetString value: ' + name_;
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetString: Unknown parameter ' + name_ + '!');
+#endif
+        return 0;
     }
+    GL.stringCache[name_] = ret;
+    return ret;
   },
 
   glGetIntegerv__sig: 'vii',
@@ -526,6 +562,7 @@ var LibraryGL = {
       case 0x8DFA: // GL_SHADER_COMPILER
         {{{ makeSetValue('p', '0', '1', 'i32') }}};
         return;
+      case 0x8DF8: // GL_SHADER_BINARY_FORMATS
       case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
         {{{ makeSetValue('p', '0', '0', 'i32') }}};
         return;
@@ -545,7 +582,11 @@ var LibraryGL = {
         {{{ makeSetValue('p', '0', 'result ? 1 : 0', 'i8') }}};
         break;
       case "string":
-        throw 'Native code calling glGetIntegerv(' + name_ + ') on a name which returns a string!';
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetIntegerv: Native code calling glGetIntegerv(' + name_ + ') on a name which returns a string!');
+#endif
+        return;
       case "object":
         if (result === null) {
           {{{ makeSetValue('p', '0', '0', 'i32') }}};
@@ -567,18 +608,45 @@ var LibraryGL = {
         } else if (result instanceof WebGLTexture) {
           {{{ makeSetValue('p', '0', 'result.name | 0', 'i32') }}};
         } else {
-          throw 'Unknown object returned from WebGL getParameter';
+          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+          Module.printErr('GL_INVALID_ENUM in glGetIntegerv: Unknown object returned from WebGL getParameter(' + name_ + ')!');
+#endif
+          return;
         }
         break;
-      case "undefined":
-        throw 'Native code calling glGetIntegerv(' + name_ + ') and it returns undefined';
       default:
-        throw 'Why did we hit the default case?';
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetIntegerv: Native code calling glGetIntegerv(' + name_ + ') and it returns ' + result + ' of type ' + typeof(result) + '!');
+#endif
+        return;
     }
   },
 
   glGetFloatv__sig: 'vii',
   glGetFloatv: function(name_, p) {
+    switch(name_) {
+      case 0x8DFA: // GL_SHADER_COMPILER
+        {{{ makeSetValue('p', '0', '1', 'float') }}};
+        return;
+      case 0x8DF8: // GL_SHADER_BINARY_FORMATS
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetFloatv(GL_SHADER_BINARY_FORMATS): Invalid parameter type!');
+#endif
+        return;
+      case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+        {{{ makeSetValue('p', '0', '0', 'float') }}};
+        return;
+      case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+        // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+        // so implement it ourselves to allow C++ GLES2 code get the length.
+        var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+        {{{ makeSetValue('p', '0', 'formats.length', 'float') }}};
+        return;
+    }
+    
     var result = Module.ctx.getParameter(name_);
     switch (typeof(result)) {
       case "number":
@@ -591,7 +659,11 @@ var LibraryGL = {
           {{{ makeSetValue('p', '0', '0', 'float') }}};
       case "object":
         if (result === null) {
-          throw 'Native code calling glGetFloatv(' + name_ + ') and it returns null';
+          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+          Module.printErr('GL_INVALID_ENUM in glGetFloatv: Native code calling glGetFloatv(' + name_ + ') and it returns null!');
+#endif
+          return;
         } else if (result instanceof Float32Array ||
                    result instanceof Uint32Array ||
                    result instanceof Int32Array ||
@@ -610,18 +682,45 @@ var LibraryGL = {
         } else if (result instanceof WebGLTexture) {
           {{{ makeSetValue('p', '0', 'result.name | 0', 'float') }}};
         } else {
-          throw 'Unknown object returned from WebGL getParameter';
+          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+          Module.printErr('GL_INVALID_ENUM in glGetFloatv: Native code calling glGetFloatv(' + name_ + ') and it returns ' + result + ' of type ' + typeof(result) + '!');
+#endif
+          return;
         }
         break;
-      case "undefined":
-        throw 'Native code calling glGetFloatv(' + name_ + ') and it returns undefined';
       default:
-        throw 'Why did we hit the default case?';
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetFloatv: Native code calling glGetFloatv(' + name_ + ') and it returns ' + result + ' of type ' + typeof(result) + '!');
+#endif
+        return;
     }
   },
 
   glGetBooleanv__sig: 'vii',
   glGetBooleanv: function(name_, p) {
+    switch(name_) {
+      case 0x8DFA: // GL_SHADER_COMPILER
+        {{{ makeSetValue('p', '0', '1', 'i8') }}};
+        return;
+      case 0x8DF8: // GL_SHADER_BINARY_FORMATS
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetBooleanv(GL_SHADER_BINARY_FORMATS): Invalid parameter type!');
+#endif
+        return;
+      case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+        {{{ makeSetValue('p', '0', '0', 'i8') }}};
+        return;
+      case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+        // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+        // so implement it ourselves to allow C++ GLES2 code get the length.
+        var hasCompressedFormats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/).length > 0 ? 1 : 0;
+        {{{ makeSetValue('p', '0', 'hasCompressedFormats', 'i8') }}};
+        return;
+    }
+
     var result = Module.ctx.getParameter(name_);
     switch (typeof(result)) {
       case "number":
@@ -631,7 +730,11 @@ var LibraryGL = {
         {{{ makeSetValue('p', '0', 'result != 0', 'i8') }}};
         break;
       case "string":
-        throw 'Native code calling glGetBooleanv(' + name_ + ') on a name which returns a string!';
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetBooleanv: Native code calling glGetBooleanv(' + name_ + ') on a name which returns a string!');
+#endif
+        return;
       case "object":
         if (result === null) {
           {{{ makeSetValue('p', '0', '0', 'i8') }}};
@@ -649,13 +752,19 @@ var LibraryGL = {
                    result instanceof WebGLTexture) {
           {{{ makeSetValue('p', '0', '1', 'i8') }}}; // non-zero ID is always 1!
         } else {
-          throw 'Unknown object returned from WebGL getParameter';
+          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+          Module.printErr('GL_INVALID_ENUM in glGetBooleanv: Unknown object returned from WebGL getParameter(' + name_ + ')!');
+#endif
+          return;
         }
         break;
-      case "undefined":
-          throw 'Unknown object returned from WebGL getParameter';
       default:
-        throw 'Why did we hit the default case?';
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetBooleanv: Native code calling glGetBooleanv(' + name_ + ') and it returns ' + result + ' of type ' + typeof(result) + '!');
+#endif
+        return;
     }
   },
 
@@ -683,7 +792,9 @@ var LibraryGL = {
 
   glCompressedTexImage2D__sig: 'viiiiiiii',
   glCompressedTexImage2D: function(target, level, internalFormat, width, height, border, imageSize, data) {
+#if ASSERTIONS
     assert(GL.compressionExt);
+#endif
     if (data) {
       data = {{{ makeHEAPView('U8', 'data', 'data+imageSize') }}};
     } else {
@@ -694,7 +805,9 @@ var LibraryGL = {
 
   glCompressedTexSubImage2D__sig: 'viiiiiiiii',
   glCompressedTexSubImage2D: function(target, level, xoffset, yoffset, width, height, format, imageSize, data) {
+#if ASSERTIONS
     assert(GL.compressionExt);
+#endif
     if (data) {
       data = {{{ makeHEAPView('U8', 'data', 'data+imageSize') }}};
     } else {
@@ -728,7 +841,9 @@ var LibraryGL = {
 
   glReadPixels__sig: 'viiiiiii',
   glReadPixels: function(x, y, width, height, format, type, pixels) {
+#if ASSERTIONS
     assert(type == 0x1401 /* GL_UNSIGNED_BYTE */);
+#endif
     var sizePerPixel;
     switch (format) {
       case 0x1907 /* GL_RGB */:
@@ -737,7 +852,12 @@ var LibraryGL = {
       case 0x1908 /* GL_RGBA */:
         sizePerPixel = 4;
         break;
-      default: throw 'unsupported glReadPixels format';
+      default: 
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glReadPixels: Unsupported format ' + format + '!');
+#endif
+        return;
     }
     var totalSize = width*height*sizePerPixel;
     Module.ctx.readPixels(x, y, width, height, format, type, HEAPU8.subarray(pixels, pixels + totalSize));
@@ -941,11 +1061,12 @@ var LibraryGL = {
       name = name.slice(0, ls);
     }
 
-    var ptable = GL.uniformTable[program];
+    var ptable = GL.programInfos[program];
     if (!ptable) {
       return -1;
     }
-    var uniformInfo = ptable[name]; // returns pair [ dimension_of_uniform_array, uniform_location ]
+    var utable = ptable.uniforms;
+    var uniformInfo = utable[name]; // returns pair [ dimension_of_uniform_array, uniform_location ]
     if (uniformInfo && arrayOffset < uniformInfo[0]) { // Check if user asked for an out-of-bounds element, i.e. for 'vec4 colors[3];' user could ask for 'colors[10]' which should return -1.
       return uniformInfo[1]+arrayOffset;
     } else {
@@ -1360,7 +1481,9 @@ var LibraryGL = {
     {{{ makeSetValue('count', '0', 'len', 'i32') }}};
     for (var i = 0; i < len; ++i) {
       var id = GL.shaders.indexOf(result[i]);
+#if ASSERTIONS
       assert(id !== -1, 'shader not bound to local id');
+#endif
       {{{ makeSetValue('shaders', 'i*4', 'id', 'i32') }}};
     }
   },
@@ -1431,6 +1554,47 @@ var LibraryGL = {
 #endif
     if (pname == 0x8B84) { // GL_INFO_LOG_LENGTH
       {{{ makeSetValue('p', '0', 'Module.ctx.getProgramInfoLog(GL.programs[program]).length + 1', 'i32') }}};
+    } else if (pname == 0x8B87 /* GL_ACTIVE_UNIFORM_MAX_LENGTH */) {
+      var ptable = GL.programInfos[program];
+      if (ptable) {
+        {{{ makeSetValue('p', '0', 'ptable.maxUniformLength', 'i32') }}};
+        return;
+      } else if (program < GL.counter) {
+#if GL_ASSERTIONS
+        Module.printErr("A GL object " + program + " that is not a program object was passed to glGetProgramiv!");
+#endif
+        GL.recordError(0x0502 /* GL_INVALID_OPERATION */);
+      } else {
+#if GL_ASSERTIONS
+        Module.printErr("A GL object " + program + " that did not come from GL was passed to glGetProgramiv!");
+#endif
+        GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+      }
+    } else if (pname == 0x8B8A /* GL_ACTIVE_ATTRIBUTE_MAX_LENGTH */) {
+      var ptable = GL.programInfos[program];
+      if (ptable) {
+        if (ptable.maxAttributeLength == -1) {
+          var program = GL.programs[program];
+          var numAttribs = Module.ctx.getProgramParameter(program, Module.ctx.ACTIVE_ATTRIBUTES);
+          ptable.maxAttributeLength = 0; // Spec says if there are no active attribs, 0 must be returned.
+          for(var i = 0; i < numAttribs; ++i) {
+            var activeAttrib = Module.ctx.getActiveAttrib(program, i);
+            ptable.maxAttributeLength = Math.max(ptable.maxAttributeLength, activeAttrib.name.length+1);
+          }
+        }
+        {{{ makeSetValue('p', '0', 'ptable.maxAttributeLength', 'i32') }}};
+        return;
+      } else if (program < GL.counter) {
+#if GL_ASSERTIONS
+        Module.printErr("A GL object " + program + " that is not a program object was passed to glGetProgramiv!");
+#endif
+        GL.recordError(0x0502 /* GL_INVALID_OPERATION */);
+      } else {
+#if GL_ASSERTIONS
+        Module.printErr("A GL object " + program + " that did not come from GL was passed to glGetProgramiv!");
+#endif
+        GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+      }
     } else {
       {{{ makeSetValue('p', '0', 'Module.ctx.getProgramParameter(GL.programs[program], pname)', 'i32') }}};
     }
@@ -1458,7 +1622,7 @@ var LibraryGL = {
     Module.ctx.deleteProgram(program);
     program.name = 0;
     GL.programs[program] = null;
-    GL.uniformTable[program] = null;
+    GL.programInfos[program] = null;
   },
 
   glAttachShader__sig: 'vii',
@@ -1494,7 +1658,7 @@ var LibraryGL = {
     GL.validateGLObjectID(GL.programs, program, 'glLinkProgram', 'program');
 #endif
     Module.ctx.linkProgram(GL.programs[program]);
-    GL.uniformTable[program] = {}; // uniforms no longer keep the same names after linking
+    GL.programInfos[program] = null; // uniforms no longer keep the same names after linking
     GL.populateUniformTable(program);
   },
 
@@ -1610,7 +1774,9 @@ var LibraryGL = {
 
   glGenVertexArrays__sig: 'vii',
   glGenVertexArrays: function (n , arrays) {
+#if ASSERTIONS    
     assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
+#endif    
     for (var i = 0; i < n ; i++) {
       var id = GL.getNewId(GL.vaos);
       var vao = GL.vaoExt.createVertexArrayOES();
@@ -1622,7 +1788,9 @@ var LibraryGL = {
   
   glDeleteVertexArrays__sig: 'vii',
   glDeleteVertexArrays: function(n, vaos) {
+#if ASSERTIONS    
     assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');
+#endif    
     for (var i = 0; i < n; i++) {
       var id = {{{ makeGetValue('vaos', 'i*4', 'i32') }}};
       GL.vaoExt.deleteVertexArrayOES(GL.vaos[id]);
@@ -1632,13 +1800,17 @@ var LibraryGL = {
   
   glBindVertexArray__sig: 'vi',
   glBindVertexArray: function(vao) {
+#if ASSERTIONS
     assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
+#endif
     GL.vaoExt.bindVertexArrayOES(GL.vaos[vao]);
   },
 
   glIsVertexArray__sig: 'ii',
   glIsVertexArray: function(array) {
+#if ASSERTIONS
     assert(GL.vaoExt, 'Must have OES_vertex_array_object to use vao');    
+#endif    
     var vao = GL.vaos[array];
     if (!vao) return 0;
     return GL.vaoExt.isVertexArrayOES(vao);
@@ -1702,7 +1874,7 @@ var LibraryGL = {
       };
 
       var glEnable = _glEnable;
-      _glEnable = function(cap) {
+      _glEnable = function _glEnable(cap) {
         // Clean up the renderer on any change to the rendering state. The optimization of
         // skipping renderer setup is aimed at the case of multiple glDraw* right after each other
         if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
@@ -1724,7 +1896,7 @@ var LibraryGL = {
       };
 
       var glDisable = _glDisable;
-      _glDisable = function(cap) {
+      _glDisable = function _glDisable(cap) {
         if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
         if (cap == 0x0B60 /* GL_FOG */) {
           GLEmulation.fogEnabled = false;
@@ -1742,7 +1914,7 @@ var LibraryGL = {
         }
         glDisable(cap);
       };
-      _glIsEnabled = function(cap) {
+      _glIsEnabled = function _glIsEnabled(cap) {
         if (cap == 0x0B60 /* GL_FOG */) {
           return GLEmulation.fogEnabled ? 1 : 0;
         } else if (!(cap in validCapabilities)) {
@@ -1752,7 +1924,7 @@ var LibraryGL = {
       };
 
       var glGetBooleanv = _glGetBooleanv;
-      _glGetBooleanv = function(pname, p) {
+      _glGetBooleanv = function _glGetBooleanv(pname, p) {
         var attrib = GLEmulation.getAttributeFromCapability(pname);
         if (attrib !== null) {
           var result = GL.immediate.enabledClientAttributes[attrib];
@@ -1763,7 +1935,7 @@ var LibraryGL = {
       };
 
       var glGetIntegerv = _glGetIntegerv;
-      _glGetIntegerv = function(pname, params) {
+      _glGetIntegerv = function _glGetIntegerv(pname, params) {
         switch (pname) {
           case 0x84E2: pname = Module.ctx.MAX_TEXTURE_IMAGE_UNITS /* fake it */; break; // GL_MAX_TEXTURE_UNITS
           case 0x8B4A: { // GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB
@@ -1813,17 +1985,17 @@ var LibraryGL = {
             return;
           }
           case 0x8088: { // GL_TEXTURE_COORD_ARRAY_SIZE
-            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture];
             {{{ makeSetValue('params', '0', 'attribute ? attribute.size : 0', 'i32') }}};
             return;
           }
           case 0x8089: { // GL_TEXTURE_COORD_ARRAY_TYPE
-            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture];
             {{{ makeSetValue('params', '0', 'attribute ? attribute.type : 0', 'i32') }}};
             return;
           }
           case 0x808A: { // GL_TEXTURE_COORD_ARRAY_STRIDE
-            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0];
+            var attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture];
             {{{ makeSetValue('params', '0', 'attribute ? attribute.stride : 0', 'i32') }}};
             return;
           }
@@ -1832,14 +2004,17 @@ var LibraryGL = {
       };
 
       var glGetString = _glGetString;
-      _glGetString = function(name_) {
+      _glGetString = function _glGetString(name_) {
+        if (GL.stringCache[name_]) return GL.stringCache[name_];
         switch(name_) {
           case 0x1F03 /* GL_EXTENSIONS */: // Add various extensions that we can support
-            return allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ') +
+            var ret = allocate(intArrayFromString(Module.ctx.getSupportedExtensions().join(' ') +
                    ' GL_EXT_texture_env_combine GL_ARB_texture_env_crossbar GL_ATI_texture_env_combine3 GL_NV_texture_env_combine4 GL_EXT_texture_env_dot3 GL_ARB_multitexture GL_ARB_vertex_buffer_object GL_EXT_framebuffer_object GL_ARB_vertex_program GL_ARB_fragment_program GL_ARB_shading_language_100 GL_ARB_shader_objects GL_ARB_vertex_shader GL_ARB_fragment_shader GL_ARB_texture_cube_map GL_EXT_draw_range_elements' +
                    (GL.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
                    (GL.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
             ), 'i8', ALLOC_NORMAL);
+            GL.stringCache[name_] = ret;
+            return ret;
         }
         return glGetString(name_);
       };
@@ -1853,7 +2028,7 @@ var LibraryGL = {
       GL.shaderOriginalSources = {};
 #endif
       var glCreateShader = _glCreateShader;
-      _glCreateShader = function(shaderType) {
+      _glCreateShader = function _glCreateShader(shaderType) {
         var id = glCreateShader(shaderType);
         GL.shaderInfos[id] = {
           type: shaderType,
@@ -1863,7 +2038,7 @@ var LibraryGL = {
       };
 
       var glShaderSource = _glShaderSource;
-      _glShaderSource = function(shader, count, string, length) {
+      _glShaderSource = function _glShaderSource(shader, count, string, length) {
         var source = GL.getSource(shader, count, string, length);
 #if GL_DEBUG
         console.log("glShaderSource: Input: \n" + source);
@@ -1976,7 +2151,7 @@ var LibraryGL = {
       };
 
       var glCompileShader = _glCompileShader;
-      _glCompileShader = function(shader) {
+      _glCompileShader = function _glCompileShader(shader) {
         Module.ctx.compileShader(GL.shaders[shader]);
 #if GL_DEBUG
         if (!Module.ctx.getShaderParameter(GL.shaders[shader], Module.ctx.COMPILE_STATUS)) {
@@ -1991,14 +2166,14 @@ var LibraryGL = {
 
       GL.programShaders = {};
       var glAttachShader = _glAttachShader;
-      _glAttachShader = function(program, shader) {
+      _glAttachShader = function _glAttachShader(program, shader) {
         if (!GL.programShaders[program]) GL.programShaders[program] = [];
         GL.programShaders[program].push(shader);
         glAttachShader(program, shader);
       };
 
       var glDetachShader = _glDetachShader;
-      _glDetachShader = function(program, shader) {
+      _glDetachShader = function _glDetachShader(program, shader) {
         var programShader = GL.programShaders[program];
         if (!programShader) {
           Module.printErr('WARNING: _glDetachShader received invalid program: ' + program);
@@ -2010,7 +2185,7 @@ var LibraryGL = {
       };
 
       var glUseProgram = _glUseProgram;
-      _glUseProgram = function(program) {
+      _glUseProgram = function _glUseProgram(program) {
 #if GL_DEBUG
         if (GL.debug) {
           Module.printErr('[using program with shaders]');
@@ -2027,7 +2202,7 @@ var LibraryGL = {
       }
 
       var glDeleteProgram = _glDeleteProgram;
-      _glDeleteProgram = function(program) {
+      _glDeleteProgram = function _glDeleteProgram(program) {
         glDeleteProgram(program);
         if (program == GL.currProgram) GL.currProgram = 0;
       };
@@ -2035,12 +2210,12 @@ var LibraryGL = {
       // If attribute 0 was not bound, bind it to 0 for WebGL performance reasons. Track if 0 is free for that.
       var zeroUsedPrograms = {};
       var glBindAttribLocation = _glBindAttribLocation;
-      _glBindAttribLocation = function(program, index, name) {
+      _glBindAttribLocation = function _glBindAttribLocation(program, index, name) {
         if (index == 0) zeroUsedPrograms[program] = true;
         glBindAttribLocation(program, index, name);
       };
       var glLinkProgram = _glLinkProgram;
-      _glLinkProgram = function(program) {
+      _glLinkProgram = function _glLinkProgram(program) {
         if (!(program in zeroUsedPrograms)) {
           Module.ctx.bindAttribLocation(GL.programs[program], 0, 'a_position');
         }
@@ -2048,11 +2223,13 @@ var LibraryGL = {
       };
 
       var glBindBuffer = _glBindBuffer;
-      _glBindBuffer = function(target, buffer) {
+      _glBindBuffer = function _glBindBuffer(target, buffer) {
         glBindBuffer(target, buffer);
         if (target == Module.ctx.ARRAY_BUFFER) {
           if (GLEmulation.currentVao) {
+#if ASSERTIONS
             assert(GLEmulation.currentVao.arrayBuffer == buffer || GLEmulation.currentVao.arrayBuffer == 0 || buffer == 0, 'TODO: support for multiple array buffers in vao');
+#endif
             GLEmulation.currentVao.arrayBuffer = buffer;
           }
         } else if (target == Module.ctx.ELEMENT_ARRAY_BUFFER) {
@@ -2061,7 +2238,7 @@ var LibraryGL = {
       };
 
       var glGetFloatv = _glGetFloatv;
-      _glGetFloatv = function(pname, params) {
+      _glGetFloatv = function _glGetFloatv(pname, params) {
         if (pname == 0x0BA6) { // GL_MODELVIEW_MATRIX
           HEAPF32.set(GL.immediate.matrix['m'], params >> 2);
         } else if (pname == 0x0BA7) { // GL_PROJECTION_MATRIX
@@ -2084,7 +2261,7 @@ var LibraryGL = {
       };
 
       var glHint = _glHint;
-      _glHint = function(target, mode) {
+      _glHint = function _glHint(target, mode) {
         if (target == 0x84EF) { // GL_TEXTURE_COMPRESSION_HINT
           return;
         }
@@ -2092,21 +2269,21 @@ var LibraryGL = {
       };
 
       var glEnableVertexAttribArray = _glEnableVertexAttribArray;
-      _glEnableVertexAttribArray = function(index) {
+      _glEnableVertexAttribArray = function _glEnableVertexAttribArray(index) {
         glEnableVertexAttribArray(index);
         GLEmulation.enabledVertexAttribArrays[index] = 1;
         if (GLEmulation.currentVao) GLEmulation.currentVao.enabledVertexAttribArrays[index] = 1;
       };
 
       var glDisableVertexAttribArray = _glDisableVertexAttribArray;
-      _glDisableVertexAttribArray = function(index) {
+      _glDisableVertexAttribArray = function _glDisableVertexAttribArray(index) {
         glDisableVertexAttribArray(index);
         delete GLEmulation.enabledVertexAttribArrays[index];
         if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledVertexAttribArrays[index];
       };
 
       var glVertexAttribPointer = _glVertexAttribPointer;
-      _glVertexAttribPointer = function(index, size, type, normalized, stride, pointer) {
+      _glVertexAttribPointer = function _glVertexAttribPointer(index, size, type, normalized, stride, pointer) {
         glVertexAttribPointer(index, size, type, normalized, stride, pointer);
         if (GLEmulation.currentVao) { // TODO: avoid object creation here? likely not hot though
           GLEmulation.currentVao.vertexAttribPointers[index] = [index, size, type, normalized, stride, pointer];
@@ -2138,9 +2315,6 @@ var LibraryGL = {
   glGetShaderPrecisionFormat__sig: 'v',
   glGetShaderPrecisionFormat: function() { throw 'glGetShaderPrecisionFormat: TODO' },
 
-  glShaderBinary__sig: 'v',
-  glShaderBinary: function() { throw 'glShaderBinary: TODO' },
-
   glDeleteObject__sig: 'vi',
   glDeleteObject: function(id) {
     if (GL.programs[id]) {
@@ -2150,11 +2324,6 @@ var LibraryGL = {
     } else {
       Module.printErr('WARNING: deleteObject received invalid id: ' + id);
     }
-  },
-
-  glReleaseShaderCompiler__sig: 'v',
-  glReleaseShaderCompiler: function() {
-    // NOP (as allowed by GLES 2.0 spec)
   },
 
   glGetObjectParameteriv__sig: 'viii',
@@ -2192,7 +2361,9 @@ var LibraryGL = {
 
   glBindProgram__sig: 'vii',
   glBindProgram: function(type, id) {
+#if ASSERTIONS
     assert(id == 0);
+#endif
   },
 
   glGetPointerv: function(name, p) {
@@ -2203,8 +2374,13 @@ var LibraryGL = {
       case 0x8090: // GL_COLOR_ARRAY_POINTER
         attribute = GLImmediate.clientAttributes[GLImmediate.COLOR]; break;
       case 0x8092: // GL_TEXTURE_COORD_ARRAY_POINTER
-        attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0]; break;
-      default: throw 'TODO: glGetPointerv for ' + name;
+        attribute = GLImmediate.clientAttributes[GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture]; break;
+      default:
+        GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+        Module.printErr('GL_INVALID_ENUM in glGetPointerv: Unsupported name ' + name + '!');
+#endif
+        return;
     }
     {{{ makeSetValue('p', '0', 'attribute ? attribute.pointer : 0', 'i32') }}};
   },
@@ -2225,14 +2401,14 @@ var LibraryGL = {
       function CNaiveListMap() {
         var list = [];
 
-        this.insert = function(key, val) {
+        this.insert = function CNaiveListMap_insert(key, val) {
           if (this.contains(key|0)) return false;
           list.push([key, val]);
           return true;
         };
 
         var __contains_i;
-        this.contains = function(key) {
+        this.contains = function CNaiveListMap_contains(key) {
           for (__contains_i = 0; __contains_i < list.length; ++__contains_i) {
             if (list[__contains_i][0] === key) return true;
           }
@@ -2240,7 +2416,7 @@ var LibraryGL = {
         };
 
         var __get_i;
-        this.get = function(key) {
+        this.get = function CNaiveListMap_get(key) {
           for (__get_i = 0; __get_i < list.length; ++__get_i) {
             if (list[__get_i][0] === key) return list[__get_i][1];
           }
@@ -2274,7 +2450,7 @@ var LibraryGL = {
         function CNLNode() {
           var map = new CNaiveListMap();
 
-          this.child = function(keyFrag) {
+          this.child = function CNLNode_child(keyFrag) {
             if (!map.contains(keyFrag|0)) {
               map.insert(keyFrag|0, new CNLNode());
             }
@@ -2282,11 +2458,11 @@ var LibraryGL = {
           };
 
           this.value = undefined;
-          this.get = function() {
+          this.get = function CNLNode_get() {
             return this.value;
           };
 
-          this.set = function(val) {
+          this.set = function CNLNode_set(val) {
             this.value = val;
           };
         }
@@ -2294,22 +2470,22 @@ var LibraryGL = {
         function CKeyView(root) {
           var cur;
 
-          this.reset = function() {
+          this.reset = function CKeyView_reset() {
             cur = root;
             return this;
           };
           this.reset();
 
-          this.next = function(keyFrag) {
+          this.next = function CKeyView_next(keyFrag) {
             cur = cur.child(keyFrag);
             return this;
           };
 
-          this.get = function() {
+          this.get = function CKeyView_get() {
             return cur.get();
           };
 
-          this.set = function(val) {
+          this.set = function CKeyView_set(val) {
             cur.set(val);
           };
         };
@@ -2317,17 +2493,17 @@ var LibraryGL = {
         var root;
         var staticKeyView;
 
-        this.createKeyView = function() {
+        this.createKeyView = function CNLNode_createKeyView() {
           return new CKeyView(root);
         }
 
-        this.clear = function() {
+        this.clear = function CNLNode_clear() {
           root = new CNLNode();
           staticKeyView = this.createKeyView();
         };
         this.clear();
 
-        this.getStaticKeyView = function() {
+        this.getStaticKeyView = function CNLNode_getStaticKeyView() {
           staticKeyView.reset();
           return staticKeyView;
         };
@@ -2561,7 +2737,7 @@ var LibraryGL = {
           GL_SRC_ALPHA
         ];
 
-        this.traverseState = function(keyView) {
+        this.traverseState = function CTexEnv_traverseState(keyView) {
           keyView.next(this.mode);
           keyView.next(this.colorCombiner);
           keyView.next(this.alphaCombiner);
@@ -2597,7 +2773,7 @@ var LibraryGL = {
         this.enabled_tex3D   = false;
         this.enabled_texCube = false;
 
-        this.traverseState = function(keyView) {
+        this.traverseState = function CTexUnit_traverseState(keyView) {
           var texUnitType = this.getTexType();
           keyView.next(texUnitType);
           if (!texUnitType) return;
@@ -2606,11 +2782,11 @@ var LibraryGL = {
       };
 
       // Class impls:
-      CTexUnit.prototype.enabled = function() {
+      CTexUnit.prototype.enabled = function CTexUnit_enabled() {
         return this.getTexType() != 0;
       }
 
-      CTexUnit.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+      CTexUnit.prototype.genPassLines = function CTexUnit_genPassLines(passOutputVar, passInputVar, texUnitID) {
         if (!this.enabled()) {
           return ["vec4 " + passOutputVar + " = " + passInputVar + ";"];
         }
@@ -2618,7 +2794,7 @@ var LibraryGL = {
         return this.env.genPassLines(passOutputVar, passInputVar, texUnitID);
       }
 
-      CTexUnit.prototype.getTexType = function() {
+      CTexUnit.prototype.getTexType = function CTexUnit_getTexType() {
         if (this.enabled_texCube) {
           return GL_TEXTURE_CUBE_MAP;
         } else if (this.enabled_tex3D) {
@@ -2631,7 +2807,7 @@ var LibraryGL = {
         return 0;
       }
 
-      CTexEnv.prototype.genPassLines = function(passOutputVar, passInputVar, texUnitID) {
+      CTexEnv.prototype.genPassLines = function CTexEnv_genPassLines(passOutputVar, passInputVar, texUnitID) {
         switch (this.mode) {
           case GL_REPLACE: {
             /* RGB:
@@ -2753,9 +2929,9 @@ var LibraryGL = {
         return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
       }
 
-      CTexEnv.prototype.genCombinerLines = function(isColor, outputVar,
-                                                    passInputVar, texUnitID,
-                                                    combiner, srcArr, opArr)
+      CTexEnv.prototype.genCombinerLines = function CTexEnv_getCombinerLines(isColor, outputVar,
+                                                                             passInputVar, texUnitID,
+                                                                             combiner, srcArr, opArr)
       {
         var argsNeeded = null;
         switch (combiner) {
@@ -2871,9 +3047,9 @@ var LibraryGL = {
           } else if (gl) {
             maxTexUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
           }
-
+#if ASSERTIONS
           assert(maxTexUnits > 0);
-
+#endif
           s_texUnits = [];
           for (var i = 0; i < maxTexUnits; i++) {
             s_texUnits.push(new CTexUnit());
@@ -2932,9 +3108,10 @@ var LibraryGL = {
         },
 
         getTexUnitType: function(texUnitID) {
+#if ASSERTIONS
           assert(texUnitID >= 0 &&
                  texUnitID < s_texUnits.length);
-
+#endif
           return s_texUnits[texUnitID].getTexType();
         },
 
@@ -3237,9 +3414,13 @@ var LibraryGL = {
         if (!GL.immediate.enabledClientAttributes[texAttribName])
           continue;
 
+#if ASSERTIONS
         if (!useCurrProgram) {
-          assert(GL.immediate.TexEnvJIT.getTexUnitType(i) != 0, "GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
+          if (GL.immediate.TexEnvJIT.getTexUnitType(i) == 0) {
+             Runtime.warnOnce("GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
+          }
         }
+#endif
 
         textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
         textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
@@ -3456,7 +3637,9 @@ var LibraryGL = {
           if (!GL.currArrayBuffer) {
             var start = GL.immediate.firstVertex*GL.immediate.stride;
             var end = GL.immediate.lastVertex*GL.immediate.stride;
+#if ASSERTIONS
             assert(end <= GL.MAX_TEMP_BUFFER_SIZE, 'too much vertex data');
+#endif
             arrayBuffer = GL.tempVertexBuffers[GL.tempBufferIndexLookup[end]];
             // TODO: consider using the last buffer we bound, if it was larger. downside is larger buffer, but we might avoid rebinding and preparing
           } else {
@@ -3604,7 +3787,7 @@ var LibraryGL = {
       // Replace some functions with immediate-mode aware versions. If there are no client
       // attributes enabled, and we use webgl-friendly modes (no GL_QUADS), then no need
       // for emulation
-      _glDrawArrays = function(mode, first, count) {
+      _glDrawArrays = function _glDrawArrays(mode, first, count) {
         if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6) {
           Module.ctx.drawArrays(mode, first, count);
           return;
@@ -3620,15 +3803,15 @@ var LibraryGL = {
         GL.immediate.mode = -1;
       };
 
-      _glDrawElements = function(mode, count, type, indices, start, end) { // start, end are given if we come from glDrawRangeElements
+      _glDrawElements = function _glDrawElements(mode, count, type, indices, start, end) { // start, end are given if we come from glDrawRangeElements
         if (GL.immediate.totalEnabledClientAttributes == 0 && mode <= 6 && GL.currElementArrayBuffer) {
           Module.ctx.drawElements(mode, count, type, indices);
           return;
         }
+#if ASSERTIONS
         if (!GL.currElementArrayBuffer) {
           assert(type == Module.ctx.UNSIGNED_SHORT); // We can only emulate buffers of this kind, for now
         }
-#if ASSERTIONS
         console.log("DrawElements doesn't actually prepareClientAttributes properly.");
 #endif
         GL.immediate.prepareClientAttributes(count, false);
@@ -3660,43 +3843,43 @@ var LibraryGL = {
       }
 
       var glActiveTexture = _glActiveTexture;
-      _glActiveTexture = function(texture) {
+      _glActiveTexture = function _glActiveTexture(texture) {
         GL.immediate.TexEnvJIT.hook_activeTexture(texture);
         glActiveTexture(texture);
       };
 
       var glEnable = _glEnable;
-      _glEnable = function(cap) {
+      _glEnable = function _glEnable(cap) {
         GL.immediate.TexEnvJIT.hook_enable(cap);
         glEnable(cap);
       };
       var glDisable = _glDisable;
-      _glDisable = function(cap) {
+      _glDisable = function _glDisable(cap) {
         GL.immediate.TexEnvJIT.hook_disable(cap);
         glDisable(cap);
       };
 
       var glTexEnvf = (typeof(_glTexEnvf) != 'undefined') ? _glTexEnvf : function(){};
-      _glTexEnvf = function(target, pname, param) {
+      _glTexEnvf = function _glTexEnvf(target, pname, param) {
         GL.immediate.TexEnvJIT.hook_texEnvf(target, pname, param);
         // Don't call old func, since we are the implementor.
         //glTexEnvf(target, pname, param);
       };
       var glTexEnvi = (typeof(_glTexEnvi) != 'undefined') ? _glTexEnvi : function(){};
-      _glTexEnvi = function(target, pname, param) {
+      _glTexEnvi = function _glTexEnvi(target, pname, param) {
         GL.immediate.TexEnvJIT.hook_texEnvi(target, pname, param);
         // Don't call old func, since we are the implementor.
         //glTexEnvi(target, pname, param);
       };
       var glTexEnvfv = (typeof(_glTexEnvfv) != 'undefined') ? _glTexEnvfv : function(){};
-      _glTexEnvfv = function(target, pname, param) {
+      _glTexEnvfv = function _glTexEnvfv(target, pname, param) {
         GL.immediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
         // Don't call old func, since we are the implementor.
         //glTexEnvfv(target, pname, param);
       };
 
       var glGetIntegerv = _glGetIntegerv;
-      _glGetIntegerv = function(pname, params) {
+      _glGetIntegerv = function _glGetIntegerv(pname, params) {
         switch (pname) {
           case 0x8B8D: { // GL_CURRENT_PROGRAM
             // Just query directly so we're working with WebGL objects.
@@ -3836,13 +4019,17 @@ var LibraryGL = {
           if (!attribute) break;
           attribute.offset = attribute.pointer - start;
           if (attribute.offset > bytes) { // ensure we start where we should
+#if ASSERTIONS
             assert((attribute.offset - bytes)%4 == 0); // XXX assuming 4-alignment
+#endif
             bytes += attribute.offset - bytes;
           }
           bytes += attribute.size * GL.byteSizeByType[attribute.type - GL.byteSizeByTypeRoot];
           if (bytes % 4 != 0) bytes += 4 - (bytes % 4); // XXX assuming 4-alignment
         }
+#if ASSERTIONS
         assert(beginEnd || bytes <= stride); // if not begin-end, explicit stride should make sense with total byte size
+#endif
         if (bytes < stride) { // ensure the size is that of the stride
           bytes = stride;
         }
@@ -3869,18 +4056,21 @@ var LibraryGL = {
 
       // Generate index data in a format suitable for GLES 2.0/WebGL
       var numVertexes = 4 * this.vertexCounter / GL.immediate.stride;
+#if ASSERTIONS
       assert(numVertexes % 1 == 0, "`numVertexes` must be an integer.");
-
+#endif
       var emulatedElementArrayBuffer = false;
       var numIndexes = 0;
       if (numProvidedIndexes) {
         numIndexes = numProvidedIndexes;
         if (!GL.currArrayBuffer && GL.immediate.firstVertex > GL.immediate.lastVertex) {
           // Figure out the first and last vertex from the index data
+#if ASSERTIONS
           assert(!GL.currElementArrayBuffer); // If we are going to upload array buffer data, we need to find which range to
                                               // upload based on the indices. If they are in a buffer on the GPU, that is very
                                               // inconvenient! So if you do not have an array buffer, you should also not have
                                               // an element array buffer. But best is to use both buffers!
+#endif
           for (var i = 0; i < numProvidedIndexes; i++) {
             var currIndex = {{{ makeGetValue('ptr', 'i*2', 'i16', null, 1) }}};
             GL.immediate.firstVertex = Math.min(GL.immediate.firstVertex, currIndex);
@@ -3889,7 +4079,9 @@ var LibraryGL = {
         }
         if (!GL.currElementArrayBuffer) {
           // If no element array buffer is bound, then indices is a literal pointer to clientside data
+#if ASSERTIONS
           assert(numProvidedIndexes << 1 <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (a)');
+#endif
           var indexBuffer = GL.tempIndexBuffers[GL.tempBufferIndexLookup[numProvidedIndexes << 1]];
           Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, indexBuffer);
           Module.ctx.bufferSubData(Module.ctx.ELEMENT_ARRAY_BUFFER, 0, {{{ makeHEAPView('U16', 'ptr', 'ptr + (numProvidedIndexes << 1)') }}});
@@ -3901,11 +4093,15 @@ var LibraryGL = {
         // GL.immediate.firstVertex is the first vertex we want. Quad indexes are in the pattern
         // 0 1 2, 0 2 3, 4 5 6, 4 6 7, so we need to look at index firstVertex * 1.5 to see it.
         // Then since indexes are 2 bytes each, that means 3
+#if ASSERTIONS
         assert(GL.immediate.firstVertex % 4 == 0);
+#endif
         ptr = GL.immediate.firstVertex*3;
         var numQuads = numVertexes / 4;
         numIndexes = numQuads * 6; // 0 1 2, 0 2 3 pattern
+#if ASSERTIONS
         assert(ptr + (numIndexes << 1) <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (b)');
+#endif
         Module.ctx.bindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
         emulatedElementArrayBuffer = true;
       }
@@ -4201,63 +4397,6 @@ var LibraryGL = {
     GL.immediate.clientActiveTexture = texture - 0x84C0; // GL_TEXTURE0
   },
 
-  // Vertex array object (VAO) support. TODO: when the WebGL extension is popular, use that and remove this code and GL.vaos
-  // glGenVertexArrays__deps: ['$GLEmulation'],
-  // glGenVertexArrays__sig: 'vii',
-  // glGenVertexArrays: function(n, vaos) {
-  //   for (var i = 0; i < n; i++) {
-  //     var id = GL.getNewId(GLEmulation.vaos);
-  //     GLEmulation.vaos[id] = {
-  //       id: id,
-  //       arrayBuffer: 0,
-  //       elementArrayBuffer: 0,
-  //       enabledVertexAttribArrays: {},
-  //       vertexAttribPointers: {},
-  //       enabledClientStates: {},
-  //     };
-  //     {{{ makeSetValue('vaos', 'i*4', 'id', 'i32') }}};
-  //   }
-  // },
-  // glDeleteVertexArrays__sig: 'vii',
-  // glDeleteVertexArrays: function(n, vaos) {
-  //   for (var i = 0; i < n; i++) {
-  //     var id = {{{ makeGetValue('vaos', 'i*4', 'i32') }}};
-  //     GLEmulation.vaos[id] = null;
-  //     if (GLEmulation.currentVao && GLEmulation.currentVao.id == id) GLEmulation.currentVao = null;
-  //   }
-  // },
-  // glBindVertexArray__sig: 'vi',
-  // glBindVertexArray: function(vao) {
-  //   // undo vao-related things, wipe the slate clean, both for vao of 0 or an actual vao
-  //   GLEmulation.currentVao = null; // make sure the commands we run here are not recorded
-  //   if (GL.immediate.lastRenderer) GL.immediate.lastRenderer.cleanup();
-  //   _glBindBuffer(Module.ctx.ARRAY_BUFFER, 0); // XXX if one was there before we were bound?
-  //   _glBindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, 0);
-  //   for (var vaa in GLEmulation.enabledVertexAttribArrays) {
-  //     Module.ctx.disableVertexAttribArray(vaa);
-  //   }
-  //   GLEmulation.enabledVertexAttribArrays = {};
-  //   GL.immediate.enabledClientAttributes = [0, 0];
-  //   GL.immediate.totalEnabledClientAttributes = 0;
-  //   GL.immediate.modifiedClientAttributes = true;
-  //   if (vao) {
-  //     // replay vao
-  //     var info = GLEmulation.vaos[vao];
-  //     _glBindBuffer(Module.ctx.ARRAY_BUFFER, info.arrayBuffer); // XXX overwrite current binding?
-  //     _glBindBuffer(Module.ctx.ELEMENT_ARRAY_BUFFER, info.elementArrayBuffer);
-  //     for (var vaa in info.enabledVertexAttribArrays) {
-  //       _glEnableVertexAttribArray(vaa);
-  //     }
-  //     for (var vaa in info.vertexAttribPointers) {
-  //       _glVertexAttribPointer.apply(null, info.vertexAttribPointers[vaa]);
-  //     }
-  //     for (var attrib in info.enabledClientStates) {
-  //       _glEnableClientState(attrib|0);
-  //     }
-  //     GLEmulation.currentVao = info; // set currentVao last, so the commands we ran here were not recorded
-  //   }
-  // },
-
   // OpenGL Immediate Mode matrix routines.
   // Note that in the future we might make these available only in certain modes.
   glMatrixMode__deps: ['$GL', '$GLImmediateSetup', '$GLEmulation'], // emulation is not strictly needed, this is a workaround
@@ -4407,9 +4546,6 @@ var LibraryGL = {
   glCheckFramebufferStatusOES : 'glCheckFramebufferStatus',
   glDeleteFramebuffersOES : 'glDeleteFramebuffers',
   glDeleteRenderbuffersOES : 'glDeleteRenderbuffers',
-  // glGenVertexArraysOES: 'glGenVertexArrays',
-  // glDeleteVertexArraysOES: 'glDeleteVertexArrays',
-  // glBindVertexArrayOES: 'glBindVertexArray',
   glFramebufferTexture2DOES: 'glFramebufferTexture2D',
 
 #else // LEGACY_GL_EMULATION
@@ -4423,12 +4559,6 @@ var LibraryGL = {
 #endif
   }],
   glVertexPointer: function(){ throw 'Legacy GL function (glVertexPointer) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
-//   glGenVertexArrays__deps: [function() {
-// #if INCLUDE_FULL_LIBRARY == 0
-//     warn('Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
-// #endif
-//   }],
-//   glGenVertexArrays: function(){ throw 'Legacy GL function (glGenVertexArrays) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.'; },
   glMatrixMode__deps: [function() {
 #if INCLUDE_FULL_LIBRARY == 0
     warn('Legacy GL function (glMatrixMode) called. You need to compile with -s LEGACY_GL_EMULATION=1 to enable legacy GL emulation.');
@@ -4611,6 +4741,30 @@ var LibraryGL = {
 #endif
   },
 
+  glShaderBinary__sig: 'v',
+  glShaderBinary: function() {
+    GL.recordError(0x0500/*GL_INVALID_ENUM*/);
+#if GL_ASSERTIONS
+    Module.printErr("GL_INVALID_ENUM in glShaderBinary: WebGL does not support binary shader formats! Calls to glShaderBinary always fail.");
+#endif    
+  },
+
+  glReleaseShaderCompiler__sig: 'v',
+  glReleaseShaderCompiler: function() {
+    // NOP (as allowed by GLES 2.0 spec)
+  },
+
+  glGetError__sig: 'i',
+  glGetError: function() {
+    // First return any GL error generated by the emscripten library_gl.js interop layer.
+    if (GL.lastError) {
+      var error = GL.lastError;
+      GL.lastError = 0/*GL_NO_ERROR*/;
+      return error;
+    } else { // If there were none, return the GL error from the browser GL context.
+      return Module.ctx.getError();
+    }
+  },
   // signatures of simple pass-through functions, see later
 
   glActiveTexture__sig: 'vi',
@@ -4644,14 +4798,13 @@ var LibraryGL = {
   glFlush__sig: 'v',
   glClearColor__sig: 'viiii',
   glIsEnabled__sig: 'ii',
-  glGetError__sig: 'i',
   glFrontFace__sig: 'vi',
   glSampleCoverage__sig: 'vi',
 };
 
 
 // Simple pass-through functions. Starred ones have return values. [X] ones have X in the C name but not in the JS name
-[[0, 'getError* finish flush'],
+[[0, 'finish flush'],
  [1, 'clearDepth clearDepth[f] depthFunc enable disable frontFace cullFace clear lineWidth clearStencil depthMask stencilMask checkFramebufferStatus* generateMipmap activeTexture blendEquation sampleCoverage isEnabled*'],
  [2, 'blendFunc blendEquationSeparate depthRange depthRange[f] stencilMaskSeparate hint polygonOffset vertexAttrib1f'],
  [3, 'texParameteri texParameterf vertexAttrib2f stencilFunc stencilOp'],
@@ -4726,7 +4879,7 @@ LibraryGL.emscripten_GetProcAddress__deps = [function() {
   tableImpl += '}\nreturn 0;';
   LibraryManager.library.emscripten_procAddressTable = new Function('name', tableImpl);
 }, 'emscripten_procAddressTable'];
-LibraryGL.emscripten_GetProcAddress = function(name) {
+LibraryGL.emscripten_GetProcAddress = function _LibraryGL_emscripten_GetProcAddress(name) {
   name = name.replace('EXT', '').replace('ARB', '');
   switch(name) { // misc renamings
     case 'glCreateProgramObject': name = 'glCreateProgram'; break;

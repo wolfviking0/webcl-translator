@@ -471,8 +471,8 @@ function intertyper(lines, sidePass, baseLineNums) {
           item.tokens[1] = item.tokens[1].tokens[0];
         }
         var subTokens = item.tokens[1].tokens;
-        if (subTokens) {
-          subTokens.push({text:','});
+        if (subTokens && subTokens.length > 0) {
+          subTokens.push({text:','}); // XXX we should avoid altering tokens like that
           while (subTokens[0]) {
             var stop = 1;
             while ([','].indexOf(subTokens[stop].text) == -1) stop ++;
@@ -672,15 +672,20 @@ function intertyper(lines, sidePass, baseLineNums) {
       assert((item.tokens[5].text.match(/=/g) || []).length <= 1, 'we only support at most 1 exported variable from inline js: ' + item.ident);
       var i = 0;
       var params = [], args = [];
-      splitTokenList(tokensLeft[3].tokens).map(function(element) {
-        var ident = toNiceIdent(element[1].text);
-        var type = element[0].text;
-        params.push('$' + (i++));
-        args.push(ident);
+      if (tokensLeft[3].tokens) {
+        splitTokenList(tokensLeft[3].tokens).map(function(element) {
+          var ident = toNiceIdent(element[1].text);
+          var type = element[0].text;
+          params.push('$' + (i++));
+          args.push(ident);
+        });
+      }
+      item.ident = expandLLVMString(item.ident).replace(/(#[^\n]*)/g, function(m) {
+        return '/* ' + m.substr(1) + ' */'; // fix asm comments to js comments
       });
       if (item.assignTo) item.ident = 'return ' + item.ident;
       item.ident = '(function(' + params + ') { ' + item.ident + ' })(' + args + ');';
-      return { forward: null, ret: item, item: item };
+      return { ret: item, item: item };
     } 
     if (item.ident.substr(-2) == '()') {
       // See comment in isStructType()
@@ -703,13 +708,12 @@ function intertyper(lines, sidePass, baseLineNums) {
     if (item.indent == 2) {
       // standalone call - not in assign
       item.standalone = true;
-      return { forward: null, ret: item, item: item };
+      return { ret: item, item: item };
     }
-    return { forward: item, ret: null, item: item };
+    return { ret: null, item: item };
   }
   function callHandler(item) {
     var result = makeCall.call(this, item, 'call');
-    if (result.forward) this.forwardItem(result.forward, 'Reintegrator');
     return result.ret;
   }
   function invokeHandler(item) {
@@ -719,10 +723,9 @@ function intertyper(lines, sidePass, baseLineNums) {
       finalResults.push({
         intertype: 'branch',
         label: result.item.toLabel,
-        lineNum: (result.forward ? item.parentLineNum : item.lineNum) + 0.5
+        lineNum: item.lineNum + 0.5
       });
     }
-    if (result.forward) this.forwardItem(result.forward, 'Reintegrator');
     return result.ret;
   }
   function atomicHandler(item) {
@@ -839,7 +842,7 @@ function intertyper(lines, sidePass, baseLineNums) {
       item.variant = item.tokens[1].text;
       item.tokens.splice(1, 1);
     }
-    if (item.tokens[1].text == 'exact') item.tokens.splice(1, 1); // TODO: Implement trap values
+    while (item.tokens[1].text in LLVM.MATHOP_IGNORABLES) item.tokens.splice(1, 1);
     var segments = splitTokenList(item.tokens.slice(1));
     item.params = [];
     for (var i = 1; i <= 4; i++) {

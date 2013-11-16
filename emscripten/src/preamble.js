@@ -646,6 +646,10 @@ function demangle(func) {
     if (func[0] !== '_') return func;
     if (func[1] !== '_') return func; // C function
     if (func[2] !== 'Z') return func;
+    switch (func[3]) {
+      case 'n': return 'operator new()';
+      case 'd': return 'operator delete()';
+    }
     var i = 3;
     // params, etc.
     var basicTypes = {
@@ -678,7 +682,7 @@ function demangle(func) {
     var subs = [];
     function parseNested() {
       i++;
-      if (func[i] === 'K') i++;
+      if (func[i] === 'K') i++; // ignore const
       var parts = [];
       while (func[i] !== 'E') {
         if (func[i] === 'S') { // substitution
@@ -687,6 +691,11 @@ function demangle(func) {
           var num = func.substring(i, next) || 0;
           parts.push(subs[num] || '?');
           i = next+1;
+          continue;
+        }
+        if (func[i] === 'C') { // constructor
+          parts.push(parts[parts.length-1]);
+          i += 2;
           continue;
         }
         var size = parseInt(func.substr(i));
@@ -700,6 +709,7 @@ function demangle(func) {
       i++; // skip E
       return parts;
     }
+    var first = true;
     function parse(rawList, limit, allowVoid) { // main parser
       limit = limit || Infinity;
       var ret = '', list = [];
@@ -707,21 +717,22 @@ function demangle(func) {
         return '(' + list.join(', ') + ')';
       }
       var name;
-      if (func[i] !== 'N') {
+      if (func[i] === 'N') {
+        // namespaced N-E
+        name = parseNested().join('::');
+        limit--;
+        if (limit === 0) return rawList ? [name] : name;
+      } else {
         // not namespaced
-        if (func[i] === 'K') i++;
+        if (func[i] === 'K' || (first && func[i] === 'L')) i++; // ignore const and first 'L'
         var size = parseInt(func.substr(i));
         if (size) {
           var pre = size.toString().length;
           name = func.substr(i + pre, size);
           i += pre + size;
         }
-      } else {
-        // namespaced N-E
-        name = parseNested().join('::');
-        limit--;
-        if (limit === 0) return rawList ? [name] : name;
       }
+      first = false;
       if (func[i] === 'I') {
         i++;
         var iList = parse(true);
@@ -1060,7 +1071,7 @@ Module['writeAsciiToMemory'] = writeAsciiToMemory;
 {{{ reSign }}}
 
 #if PRECISE_I32_MUL
-if (!Math['imul']) Math['imul'] = function(a, b) {
+if (!Math['imul']) Math['imul'] = function imul(a, b) {
   var ah  = a >>> 16;
   var al = a & 0xffff;
   var bh  = b >>> 16;
@@ -1068,17 +1079,22 @@ if (!Math['imul']) Math['imul'] = function(a, b) {
   return (al*bl + ((ah*bl + al*bh) << 16))|0;
 };
 #else
-Math['imul'] = function(a, b) {
+Math['imul'] = function imul(a, b) {
   return (a*b)|0; // fast but imprecise
 };
 #endif
 Math.imul = Math['imul'];
 
-#if TO_FLOAT32
-if (!Math['toFloat32']) Math['toFloat32'] = function(x) {
-  return x;
-};
-Math.toFloat32 = Math['toFloat32'];
+#if PRECISE_F32
+#if PRECISE_F32 == 1
+if (!Math['fround']) {
+  var froundBuffer = new Float32Array(1);
+  Math['fround'] = function(x) { froundBuffer[0] = x; return froundBuffer[0] };
+}
+#else // 2
+if (!Math['fround']) Math['fround'] = function(x) { return x };
+#endif
+Math.fround = Math['fround'];
 #endif
 
 var Math_abs = Math.abs;
@@ -1096,7 +1112,7 @@ var Math_ceil = Math.ceil;
 var Math_floor = Math.floor;
 var Math_pow = Math.pow;
 var Math_imul = Math.imul;
-var Math_toFloat32 = Math.toFloat32;
+var Math_fround = Math.fround;
 var Math_min = Math.min;
 
 // A counter of dependencies for calling run(). If we need to
@@ -1107,19 +1123,21 @@ var Math_min = Math.min;
 // it happens right before run - run will be postponed until
 // the dependencies are met.
 var runDependencies = 0;
-var runDependencyTracking = {};
 var runDependencyWatcher = null;
 var dependenciesFulfilled = null; // overridden to take different actions when all run dependencies are fulfilled
+#if ASSERTIONS
+var runDependencyTracking = {};
+#endif
 
 function addRunDependency(id) {
   runDependencies++;
   if (Module['monitorRunDependencies']) {
     Module['monitorRunDependencies'](runDependencies);
   }
+#if ASSERTIONS
   if (id) {
     assert(!runDependencyTracking[id]);
     runDependencyTracking[id] = 1;
-#if ASSERTIONS
     if (runDependencyWatcher === null && typeof setInterval !== 'undefined') {
       // Check for missing dependencies every few seconds
       runDependencyWatcher = setInterval(function() {
@@ -1136,10 +1154,10 @@ function addRunDependency(id) {
         }
       }, 10000);
     }
-#endif
   } else {
     Module.printErr('warning: run dependency added without ID');
   }
+#endif
 }
 Module['addRunDependency'] = addRunDependency;
 function removeRunDependency(id) {
@@ -1147,12 +1165,14 @@ function removeRunDependency(id) {
   if (Module['monitorRunDependencies']) {
     Module['monitorRunDependencies'](runDependencies);
   }
+#if ASSERTIONS
   if (id) {
     assert(runDependencyTracking[id]);
     delete runDependencyTracking[id];
   } else {
     Module.printErr('warning: run dependency removed without ID');
   }
+#endif
   if (runDependencies == 0) {
     if (runDependencyWatcher !== null) {
       clearInterval(runDependencyWatcher);

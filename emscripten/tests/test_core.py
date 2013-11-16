@@ -3,7 +3,7 @@
 import glob, hashlib, os, re, shutil, subprocess, sys
 import tools.shared
 from tools.shared import *
-from runner import RunnerCore, path_from_root, checked_sanity, test_modes
+from runner import RunnerCore, path_from_root, checked_sanity, test_modes, get_bullet_library
 
 class T(RunnerCore): # Short name, to make it more fun to use manually on the commandline
   def is_le32(self):
@@ -882,6 +882,32 @@ nada
     '''
     self.do_run(src, 'OK!\n');
 
+  def test_float32_precise(self):
+    Settings.PRECISE_F32 = 1
+
+    src = r'''
+      #include <stdio.h>
+
+      int main(int argc, char **argv) {
+        float x = 1.23456789123456789;
+        float y = 5.20456089123406709;
+        while (argc > 10 || argc % 19 == 15) {
+          // confuse optimizer
+          x /= y;
+          y = 2*y - 1;
+          argc--;
+        }
+        x = x - y;
+        y = 3*y - x/2;
+        x = x*y;
+        y += 0.000000000123123123123;
+        x -= y/7.654;
+        printf("\n%.20f, %.20f\n", x, y);
+        return 0;
+      }
+    '''
+    self.do_run(src, '\n-72.16590881347656250000, 17.59867858886718750000\n')
+
   def test_negative_zero(self):
     src = r'''
       #include <stdio.h>
@@ -1382,6 +1408,26 @@ Succeeded!
       '''
       self.do_run(src, '*1,10,10.5,1,1.2340,0.00*\n0.50, 3.30, 3.30, 3.30\nsmall: 0.0000010000\n')
 
+  def test_fast_math(self):
+    if self.emcc_args is None: return self.skip('requires emcc')
+    Building.COMPILER_TEST_OPTS += ['-ffast-math']
+
+    self.do_run(r'''
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv) {
+  char* endptr;
+  --argc, ++argv;
+  double total = 0.0;
+  for (; argc; argc--, argv++) {
+    total += strtod(*argv, &endptr);
+  }
+  printf("total: %g\n", total);
+  return 0;
+}
+''', 'total: 19', ['5', '6', '8'])
+
   def test_zerodiv(self):
     self.do_run(r'''
       #include <stdio.h>
@@ -1490,7 +1536,7 @@ f6: nan
         #include <stdio.h>
         #include <stdlib.h>
         #include <cmath>
-        int main()
+        int main(int argc, char **argv)
         {
           printf("*%.2f,%.2f,%d", M_PI, -M_PI, (1/0.0) > 1e300); // could end up as infinity, or just a very very big number
           printf(",%d", isfinite(NAN) != 0);
@@ -1512,11 +1558,15 @@ f6: nan
           sincosf(0.0, &fsine, &fcosine);
           printf(",%1.1f", fsine);
           printf(",%1.1f", fcosine);
+          fsine = sinf(1.1 + argc - 1);
+          fcosine = cosf(1.1 + argc - 1);
+          printf(",%1.1f", fsine);
+          printf(",%1.1f", fcosine);
           printf("*\\n");
           return 0;
         }
       '''
-      self.do_run(src, '*3.14,-3.14,1,0,0,0,1,0,1,1,0,2,3,0.0,1.0,0.0,1.0*')
+      self.do_run(src, '*3.14,-3.14,1,0,0,0,1,0,1,1,0,2,3,0.0,1.0,0.0,1.0,0.9,0.5*')
 
   def test_erf(self):
       src = '''
@@ -2174,6 +2224,49 @@ returned |umber one top notchfi FI FO FUM WHEN WHERE WHY HOW WHO|''', ['wowie', 
         }
       '''
       self.do_run(src, 'wcslen: 5')
+
+  def test_regex(self):
+      # This is from http://pic.dhe.ibm.com/infocenter/iseries/v7r1m0/index.jsp?topic=%2Frtref%2Fregexec.htm
+      if self.emcc_args is None: return self.skip('needs emcc for libcextra')
+      src = r'''
+        #include <regex.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main(void)
+        {
+           regex_t    preg;
+           const char *string = "a very simple simple simple string";
+           const char *pattern = "\\(sim[a-z]le\\) \\1";
+           int        rc;
+           size_t     nmatch = 2;
+           regmatch_t pmatch[2];
+
+           if (0 != (rc = regcomp(&preg, pattern, 0))) {
+              printf("regcomp() failed, returning nonzero (%d)\n", rc);
+              exit(EXIT_FAILURE);
+           }
+
+           if (0 != (rc = regexec(&preg, string, nmatch, pmatch, 0))) {
+              printf("Failed to match '%s' with '%s',returning %d.\n",
+                     string, pattern, rc);
+           }
+           else {
+              printf("With the whole expression, "
+                     "a matched substring \"%.*s\" is found at position %d to %d.\n",
+                     pmatch[0].rm_eo - pmatch[0].rm_so, &string[pmatch[0].rm_so],
+                     pmatch[0].rm_so, pmatch[0].rm_eo - 1);
+              printf("With the sub-expression, "
+                     "a matched substring \"%.*s\" is found at position %d to %d.\n",
+                     pmatch[1].rm_eo - pmatch[1].rm_so, &string[pmatch[1].rm_so],
+                     pmatch[1].rm_so, pmatch[1].rm_eo - 1);
+           }
+           regfree(&preg);
+           return 0;
+        }
+      '''
+      self.do_run(src, 'With the whole expression, a matched substring "simple simple" is found at position 7 to 19.\n'
+                       'With the sub-expression, a matched substring "simple" is found at position 7 to 12.')
 
   def test_longjmp(self):
       src = r'''
@@ -2878,7 +2971,7 @@ Exiting setjmp function, level: 0, prev_jmp: -1
     ''')
 
     self.emcc_args += ['--pre-js', 'pre.js']
-    self.do_run(src, '''reported\nexit(1) called\nExit Status: 1\npostRun\nok.\n''')
+    self.do_run(src, '''reported\nExit Status: 1\npostRun\nok.\n''')
 
   def test_class(self):
       src = '''
@@ -2948,6 +3041,23 @@ Exiting setjmp function, level: 0, prev_jmp: -1
         }
       '''
       self.do_run(src, '3.14159')
+
+  def test_iswdigit(self):
+      if self.emcc_args is None: return self.skip('no libcxx inclusion without emcc')
+
+      src = '''
+        #include <stdio.h>
+        #include <cctype>
+        #include <cwctype>
+
+        int main() {
+          using namespace std;
+          printf("%d ", isdigit('0'));
+          printf("%d ", iswdigit(L'0'));
+          return 0;
+        }
+      '''
+      self.do_run(src, '1 1')
 
   def test_polymorph(self):
       if self.emcc_args is None: return self.skip('requires emcc')
@@ -3797,7 +3907,6 @@ def process(filename):
       self.do_run(open(path_from_root('tests', 'emscripten_get_now.cpp')).read(), 'Timer resolution is good.')
 
   def test_inlinejs(self):
-      if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
       if not self.is_le32(): return self.skip('le32 needed for inline js')
       src = r'''
         #include <stdio.h>
@@ -3805,6 +3914,10 @@ def process(filename):
         double get() {
           double ret = 0;
           __asm __volatile__("Math.abs(-12/3.3)":"=r"(ret)); // write to a variable
+          asm("#comment1");
+          asm volatile("#comment2");
+          asm volatile("#comment3\n"
+                       "#comment4\n");
           return ret;
         }
 
@@ -3823,9 +3936,11 @@ def process(filename):
         '''
 
       self.do_run(src, 'Inline JS is very cool\n3.64\n') # TODO 1\n2\n3\n1\n2\n3\n')
+      if self.emcc_args == []: # opts will eliminate the comments
+        out = open('src.cpp.o.js').read()
+        for i in range(1, 5): assert ('comment%d' % i) in out
 
   def test_inlinejs2(self):
-      if Settings.ASM_JS: Settings.ASM_JS = 2 # skip validation, asm does not support random code
       if not self.is_le32(): return self.skip('le32 needed for inline js')
       src = r'''
         #include <stdio.h>
@@ -7268,6 +7383,18 @@ date: 18.07.2013w; day 18, month  7, year 2013, extra: 201, 3
     '''
     self.do_run(src, '4779 4779')
 
+  def test_sscanf_float(self):
+    src = r'''
+      #include "stdio.h"
+
+      int main(){
+        float f1, f2, f3, f4, f5, f6, f7, f8, f9;
+        sscanf("0.512 0.250x5.129_-9.98 1.12*+54.32E3 +54.32E3^87.5E-3 87.5E-3$", "%f %fx%f_%f %f*%f %f^%f %f$", &f1, &f2, &f3, &f4, &f5, &f6, &f7, &f8, &f9);
+        printf("\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n", f1, f2, f3, f4, f5, f6, f7, f8, f9);
+      }
+    '''
+    self.do_run(src, '\n0.512000, 0.250000, 5.129000, -9.980000, 1.120000, 54320.000000, 54320.000000, 0.087500, 0.087500\n')
+
   def test_langinfo(self):
     src = open(path_from_root('tests', 'langinfo', 'test.c'), 'r').read()
     expected = open(path_from_root('tests', 'langinfo', 'output.txt'), 'r').read()
@@ -7841,6 +7968,12 @@ def process(filename):
     self.clear()
     if not self.is_le32(): return self.skip('le32 needed for inline js')
     for fs in ['MEMFS', 'NODEFS']:
+      if WINDOWS and fs == 'NODEFS':
+        print >> sys.stderr, 'Skipping NODEFS part of this test for test_unistd_links on Windows, since it would require administrative privileges.'
+        # Also, other detected discrepancies if you do end up running this test on NODEFS:
+        # test expects /, but Windows gives \ as path slashes.
+        # Calling readlink() on a non-link gives error 22 EINVAL on Unix, but simply error 0 OK on Windows.
+        continue
       src = open(path_from_root('tests', 'unistd', 'links.c'), 'r').read()
       expected = open(path_from_root('tests', 'unistd', 'links.out'), 'r').read()
       Building.COMPILER_TEST_OPTS += ['-D' + fs]
@@ -8295,9 +8428,14 @@ extern "C" {
       if self.emcc_args is None: return self.skip('requires emcc')
       results = [ (1,'''GG*ctt**tgagc*'''), (20,'''GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTT*cttBtatcatatgctaKggNcataaaSatgtaaaDcDRtBggDtctttataattcBgtcg**tacgtgtagcctagtgtttgtgttgcgttatagtctatttgtggacacagtatggtcaaa**tgacgtcttttgatctgacggcgttaacaaagatactctg*'''),
 (50,'''GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA*TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACAT*cttBtatcatatgctaKggNcataaaSatgtaaaDcDRtBggDtctttataattcBgtcg**tactDtDagcctatttSVHtHttKtgtHMaSattgWaHKHttttagacatWatgtRgaaa**NtactMcSMtYtcMgRtacttctWBacgaa**agatactctgggcaacacacatacttctctcatgttgtttcttcggacctttcataacct**ttcctggcacatggttagctgcacatcacaggattgtaagggtctagtggttcagtgagc**ggaatatcattcgtcggtggtgttaatctatctcggtgtagcttataaatgcatccgtaa**gaatattatgtttatttgtcggtacgttcatggtagtggtgtcgccgatttagacgtaaa**ggcatgtatg*''') ]
-      for i, j in results:
-        src = open(path_from_root('tests', 'fasta.cpp'), 'r').read()
-        self.do_run(src, j, [str(i)], lambda x, err: x.replace('\n', '*'), no_build=i>1)
+      for precision in [0, 1, 2]:
+        Settings.PRECISE_F32 = precision
+        for t in ['float', 'double']:
+          print precision, t
+          src = open(path_from_root('tests', 'fasta.cpp'), 'r').read().replace('double', t)
+          for i, j in results:
+            self.do_run(src, j, [str(i)], lambda x, err: x.replace('\n', '*'), no_build=i>1)
+          shutil.copyfile('src.cpp.o.js', '%d_%s.js' % (precision, t))
 
   def test_whets(self):
     if not Settings.ASM_JS: return self.skip('mainly a test for asm validation here')
@@ -8559,30 +8697,13 @@ void*:16
 
   def test_mmap_file(self):
     if self.emcc_args is None: return self.skip('requires emcc')
-    self.emcc_args += ['--embed-file', 'data.dat']
+    for extra_args in [[], ['--no-heap-copy']]:
+      self.emcc_args += ['--embed-file', 'data.dat'] + extra_args
 
-    open(self.in_dir('data.dat'), 'w').write('data from the file ' + ('.' * 9000))
+      open(self.in_dir('data.dat'), 'w').write('data from the file ' + ('.' * 9000))
 
-    src = r'''
-      #include <stdio.h>
-      #include <sys/mman.h>
-
-      int main() {
-        printf("*\n");
-        FILE *f = fopen("data.dat", "r");
-        char *m;
-        m = (char*)mmap(NULL, 9000, PROT_READ, MAP_PRIVATE, fileno(f), 0);
-        for (int i = 0; i < 20; i++) putchar(m[i]);
-        munmap(m, 9000);
-        printf("\n");
-        m = (char*)mmap(NULL, 9000, PROT_READ, MAP_PRIVATE, fileno(f), 5);
-        for (int i = 0; i < 20; i++) putchar(m[i]);
-        munmap(m, 9000);
-        printf("\n*\n");
-        return 0;
-      }
-    '''
-    self.do_run(src, '*\ndata from the file .\nfrom the file ......\n*\n')
+      src = open(path_from_root('tests', 'mmap_file.c')).read()
+      self.do_run(src, '*\ndata from the file .\nfrom the file ......\n*\n')
 
   def test_cubescript(self):
     if self.emcc_args is None: return self.skip('requires emcc')
@@ -8624,6 +8745,128 @@ void*:16
       main = generated[generated.find('function runPostSets'):]
       main = main[:main.find('\n}')]
       assert main.count('\n') == 7, 'must not emit too many postSets: %d' % main.count('\n')
+
+  def test_simd(self):
+    if Settings.USE_TYPED_ARRAYS != 2: return self.skip('needs ta2')
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # does not validate
+    src = r'''
+#include <stdio.h>
+
+#include <emscripten/vector.h>
+
+static inline float32x4 __attribute__((always_inline))
+_mm_set_ps(const float __Z, const float __Y, const float __X, const float __W)
+{
+  return (float32x4){ __W, __X, __Y, __Z };
+}
+
+static __inline__ float32x4 __attribute__((__always_inline__))
+_mm_setzero_ps(void)
+{
+  return (float32x4){ 0.0, 0.0, 0.0, 0.0 };
+}
+
+int main(int argc, char **argv) {
+  float data[8];
+  for (int i = 0; i < 32; i++) data[i] = (1+i+argc)*(2+i+argc*argc); // confuse optimizer
+  {
+    float32x4 *a = (float32x4*)&data[0];
+    float32x4 *b = (float32x4*)&data[4];
+    float32x4 c, d;
+    c = *a;
+    d = *b;
+    printf("1floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    c = c+d;
+    printf("2floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    d = c*d;
+    printf("3floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    c = _mm_setzero_ps();
+    printf("zeros %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3]);
+  }
+  {
+    uint32x4 *a = (uint32x4*)&data[0];
+    uint32x4 *b = (uint32x4*)&data[4];
+    uint32x4 c, d, e, f;
+    c = *a;
+    d = *b;
+    printf("4uints! %d, %d, %d, %d   %d, %d, %d, %d\n", c[0], c[1], c[2], c[3], d[0], d[1], d[2], d[3]);
+    e = c+d;
+    f = c-d;
+    printf("5uints! %d, %d, %d, %d   %d, %d, %d, %d\n", e[0], e[1], e[2], e[3], f[0], f[1], f[2], f[3]);
+    e = c&d;
+    f = c|d;
+    e = ~c&d;
+    f = c^d;
+    printf("5uintops! %d, %d, %d, %d   %d, %d, %d, %d\n", e[0], e[1], e[2], e[3], f[0], f[1], f[2], f[3]);
+  }
+  {
+    float32x4 c, d, e, f;
+    c = _mm_set_ps(9.0, 4.0, 0, -9.0);
+    d = _mm_set_ps(10.0, 14.0, -12, -2.0);
+    printf("6floats! %d, %d, %d, %d   %d, %d, %d, %d\n", (int)c[0], (int)c[1], (int)c[2], (int)c[3], (int)d[0], (int)d[1], (int)d[2], (int)d[3]);
+    printf("7calcs: %d\n", emscripten_float32x4_signmask(c)); // TODO: just not just compilation but output as well
+  }
+
+  return 0;
+}
+    '''
+
+    self.do_run(src, '''1floats! 6, 12, 20, 30   42, 56, 72, 90
+2floats! 48, 68, 92, 120   42, 56, 72, 90
+3floats! 48, 68, 92, 120   2016, 3808, 6624, 10800
+zeros 0, 0, 0, 0
+4uints! 1086324736, 1094713344, 1101004800, 1106247680   1109917696, 1113587712, 1116733440, 1119092736
+5uints! -2098724864, -2086666240, -2077229056, -2069626880   -23592960, -18874368, -15728640, -12845056
+5uintops! 36175872, 35651584, 34603008, 33816576   48758784, 52428800, 53477376, 54788096
+6floats! -9, 0, 4, 9   -2, -12, 14, 10
+''')
+
+  def test_simd2(self):
+    if Settings.ASM_JS: Settings.ASM_JS = 2 # does not validate
+
+    self.do_run(r'''
+      #include <stdio.h>
+
+      typedef float __m128 __attribute__ ((__vector_size__ (16)));
+
+      static inline __m128 __attribute__((always_inline))
+      _mm_set_ps(const float __Z, const float __Y, const float __X, const float __W)
+      {
+        return (__m128){ __W, __X, __Y, __Z };
+      }
+
+      static inline void __attribute__((always_inline))
+      _mm_store_ps(float *__P, __m128 __A)
+      {
+        *(__m128 *)__P = __A;
+      }
+
+      static inline __m128 __attribute__((always_inline))
+      _mm_add_ps(__m128 __A, __m128 __B)
+      {
+        return __A + __B;
+      }
+
+      using namespace std;
+
+      int main(int argc, char ** argv) {
+          float __attribute__((__aligned__(16))) ar[4];
+          __m128 v1 = _mm_set_ps(9.0, 4.0, 0, -9.0);
+          __m128 v2 = _mm_set_ps(7.0, 3.0, 2.5, 1.0);
+          __m128 v3 = _mm_add_ps(v1, v2);
+          _mm_store_ps(ar, v3);
+          
+          for (int i = 0; i < 4; i++) {
+              printf("%f\n", ar[i]);
+          }
+          
+          return 0;
+      }
+      ''', '''-8.000000
+2.500000
+7.000000
+16.000000
+''')
 
   def test_gcc_unmangler(self):
     Settings.NAMED_GLOBALS = 1 # test coverage for this
@@ -8722,6 +8965,7 @@ def process(filename):
   def test_sqlite(self):
     # gcc -O3 -I/home/alon/Dev/emscripten/tests/sqlite -ldl src.c
     if self.emcc_args is None: return self.skip('Very slow without ta2, and we would also need to include dlmalloc manually without emcc')
+    if not self.is_le32(): return self.skip('fails on x86 due to a legalization issue on llvm 3.3')
     if Settings.QUANTUM_SIZE == 1: return self.skip('TODO FIXME')
     self.banned_js_engines = [NODE_JS] # OOM in older node
 
@@ -8777,35 +9021,23 @@ def process(filename):
       Settings.SAFE_HEAP_LINES = ['btVoronoiSimplexSolver.h:40', 'btVoronoiSimplexSolver.h:41',
                                   'btVoronoiSimplexSolver.h:42', 'btVoronoiSimplexSolver.h:43']
 
-    configure_commands = [['sh', './configure'], ['cmake', '.']]
-    configure_args = [['--disable-demos','--disable-dependency-tracking'], ['-DBUILD_DEMOS=OFF', '-DBUILD_EXTRAS=OFF']]
-    for c in range(0,2):
-      configure = configure_commands[c]
+    for use_cmake in [False, True]: # If false, use a configure script to configure Bullet build.
+      print 'cmake', use_cmake
       # Windows cannot run configure sh scripts.
-      if WINDOWS and configure[0] == 'sh':
+      if WINDOWS and not use_cmake:
         continue
-
-      # Depending on whether 'configure' or 'cmake' is used to build, Bullet places output files in different directory structures.
-      if configure[0] == 'sh':
-        generated_libs = [os.path.join('src', '.libs', 'libBulletDynamics.a'),
-                          os.path.join('src', '.libs', 'libBulletCollision.a'),
-                          os.path.join('src', '.libs', 'libLinearMath.a')]
-      else:
-        generated_libs = [os.path.join('src', 'BulletDynamics', 'libBulletDynamics.a'),
-                          os.path.join('src', 'BulletCollision', 'libBulletCollision.a'),
-                          os.path.join('src', 'LinearMath', 'libLinearMath.a')]
 
       def test():
         self.do_run(open(path_from_root('tests', 'bullet', 'Demos', 'HelloWorld', 'HelloWorld.cpp'), 'r').read(),
                      [open(path_from_root('tests', 'bullet', 'output.txt'), 'r').read(), # different roundings
                       open(path_from_root('tests', 'bullet', 'output2.txt'), 'r').read(),
                       open(path_from_root('tests', 'bullet', 'output3.txt'), 'r').read()],
-                     libraries=self.get_library('bullet', generated_libs, configure=configure, configure_args=configure_args[c], cache_name_extra=configure[0]),
+                     libraries=get_bullet_library(self, use_cmake),
                      includes=[path_from_root('tests', 'bullet', 'src')])
       test()
 
       assert 'asm2g' in test_modes
-      if self.run_name == 'asm2g' and configure[0] == 'sh':
+      if self.run_name == 'asm2g' and not use_cmake:
         # Test forced alignment
         print >> sys.stderr, 'testing FORCE_ALIGNED_MEMORY'
         old = open('src.cpp.o.js').read()
@@ -9037,6 +9269,9 @@ def process(filename):
           continue
         if '_noasm' in shortname and Settings.ASM_JS:
           print self.skip('case "%s" not relevant for asm.js' % shortname)
+          continue
+        if '_le32' in shortname and not self.is_le32():
+          print self.skip('case "%s" not relevant for non-le32 target' % shortname)
           continue
         self.emcc_args = emcc_args
         if os.path.exists(shortname + '.emcc'):
@@ -9322,7 +9557,7 @@ def process(filename):
       Settings.DEAD_FUNCTIONS = []
 
       # Run the same code with argc that uses the dead function, see abort
-      test(('missing function: unused'), args=['a', 'b'], no_build=True)
+      test(('dead function: unused'), args=['a', 'b'], no_build=True)
 
     # Normal stuff
     run_all('normal', r'''
@@ -10334,7 +10569,7 @@ def process(filename):
       Module.callMain();
     ''')
     self.emcc_args += ['-s', 'INVOKE_RUN=0', '--post-js', 'post.js']
-    self.do_run(src, 'hello, world!\nexit(118) called\ncleanup\nI see exit status: 118')
+    self.do_run(src, 'hello, world!\ncleanup\nI see exit status: 118')
 
   def test_gc(self):
     if self.emcc_args == None: return self.skip('needs ta2')
@@ -10564,6 +10799,7 @@ o2 = make_run("o2", compiler=CLANG, emcc_args=["-O2", "-s", "ASM_JS=0", "-s", "J
 # asm.js
 asm1 = make_run("asm1", compiler=CLANG, emcc_args=["-O1"])
 asm2 = make_run("asm2", compiler=CLANG, emcc_args=["-O2"])
+asm2f = make_run("asm2f", compiler=CLANG, emcc_args=["-O2", "-s", "PRECISE_F32=1"])
 asm2g = make_run("asm2g", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "ASSERTIONS=1", "--memory-init-file", "1", "-s", "CHECK_HEAP_ALIGN=1"])
 asm2x86 = make_run("asm2x86", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "CHECK_HEAP_ALIGN=1"], env={"EMCC_LLVM_TARGET": "i386-pc-linux-gnu"})
 

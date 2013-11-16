@@ -26,8 +26,11 @@ extern "C" {
  * This also works with asm.js, as it outlines the code (it
  * does a function call to reach it).
  *
- * Note: double-quotes (") are not supported, but you can use
- *       single-quotes (') in js anyhow.
+ * Notes: double-quotes (") are not supported, but you can use
+ *        single-quotes (') in js anyhow.
+ *
+ *        you can't access C variables with EM_ASM, use gcc
+ *        inline asm for that, asm("code" : .. etc.)
  */
 #define EM_ASM(...) emscripten_asm_const(#__VA_ARGS__)
 
@@ -203,7 +206,7 @@ void emscripten_get_canvas_size(int *width, int *height, int *isFullscreen);
  * absolute time, and is only meaningful in comparison to
  * other calls to this function. The unit is ms.
  */
-float emscripten_get_now();
+double emscripten_get_now();
 
 /*
  * Simple random number generation in [0, 1), maps to Math.random().

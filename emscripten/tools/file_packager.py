@@ -11,12 +11,7 @@ data downloads.
 
 Usage:
 
-  file_packager.py TARGET [--preload A [B..]] [--embed C [D..]] [--compress COMPRESSION_DATA] [--pre-run] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force]
-
-  --pre-run Will generate wrapper code that does preloading in Module.preRun. This is necessary if you add this
-            code before the main file has been loading, which includes necessary components like addRunDependency.
-            (This is how emcc --preload-file etc. work, i.e., it is the normal mode of operation. However, for
-            data loaded later, say using emscripten_async_load_script, you do not need --pre-run.)
+  file_packager.py TARGET [--preload A [B..]] [--embed C [D..]] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
 
   --crunch=X Will compress dxt files to crn with quality level X. The crunch commandline tool must be present
              and CRUNCH should be defined in ~/.emscripten that points to it. JS crunch decompressing code will
@@ -31,6 +26,10 @@ Usage:
   --no-force Don't create output if no valid input file is specified.
 
   --use-preload-cache Stores package in IndexedDB so that subsequent loads don't need to do XHR. Checks package version.
+
+  --no-heap-copy If specified, the preloaded filesystem is not copied inside the Emscripten HEAP, but kept in a separate typed array outside it.
+                 The default, if this is not specified, is to embed the VFS inside the HEAP, so that mmap()ing files in it is a no-op.
+                 Passing this flag optimizes for fread() usage, omitting it optimizes for mmap() usage.
 
 Notes:
 
@@ -48,7 +47,7 @@ from shared import Compression, execute, suffix, unsuffixed
 from subprocess import Popen, PIPE, STDOUT
 
 if len(sys.argv) == 1:
-  print '''Usage: file_packager.py TARGET [--preload A...] [--embed B...] [--compress COMPRESSION_DATA] [--pre-run] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache]
+  print '''Usage: file_packager.py TARGET [--preload A...] [--embed B...] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
 See the source for more details.'''
   sys.exit(0)
 
@@ -71,12 +70,16 @@ in_preload = False
 in_embed = False
 has_preloaded = False
 in_compress = 0
-pre_run = False
 crunch = 0
 plugins = []
 jsoutput = None
 force = True
+# If set to True, IndexedDB (IDBFS in library_idbfs.js) is used to locally cache VFS XHR so that subsequent 
+# page loads can read the data from the offline cache instead.
 use_preload_cache = False
+# If set to True, the blob received from XHR is moved to the Emscripten HEAP, optimizing for mmap() performance.
+# If set to False, the XHR blob is kept intact, and fread()s etc. are performed directly to that data. This optimizes for minimal memory usage and fread() performance.
+no_heap_copy = True
 
 for arg in sys.argv[1:]:
   if arg == '--preload':
@@ -93,15 +96,12 @@ for arg in sys.argv[1:]:
     in_compress = 1
     in_preload = False
     in_embed = False
-  elif arg == '--pre-run':
-    pre_run = True
-    in_preload = False
-    in_embed = False
-    in_compress = 0
   elif arg == '--no-force':
     force = False
   elif arg == '--use-preload-cache':
     use_preload_cache = True
+  elif arg == '--no-heap-copy':
+    no_heap_copy = False
   elif arg.startswith('--js-output'):
     jsoutput = arg.split('=')[1] if '=' in arg else None
   elif arg.startswith('--crunch'):
@@ -143,6 +143,13 @@ if (not force) and len(data_files) == 0:
   has_preloaded = False
 
 ret = '''
+var Module;
+if (typeof Module === 'undefined') Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module.expectedDataFileDownloads) {
+  Module.expectedDataFileDownloads = 0;
+  Module.finishedDataFileDownloads = 0;
+}
+Module.expectedDataFileDownloads++;
 (function() {
 '''
 
@@ -347,6 +354,25 @@ if has_preloaded:
       send: function() {},
       onload: function() {
         var byteArray = this.byteArray.subarray(this.start, this.end);
+%s
+          this.finish(byteArray);
+%s
+      },
+      finish: function(byteArray) {
+        var that = this;
+        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
+          Module['removeRunDependency']('fp ' + that.name);
+        }, function() {
+          if (that.audio) {
+            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
+          } else {
+            Module.printErr('Preloading file ' + that.name + ' failed');
+          }
+        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+        this.requests[this.name] = null;
+      },
+    };
+  ''' % ('' if not crunch else '''
         if (this.crunched) {
           var ddsHeader = byteArray.subarray(0, 128);
           var that = this;
@@ -357,24 +383,9 @@ if has_preloaded:
             that.finish(byteArray);
           });
         } else {
-          this.finish(byteArray);
+''', '' if not crunch else '''
         }
-      },
-      finish: function(byteArray) {
-        var that = this;
-        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
-          Module['removeRunDependency']('fp ' + that.name);
-        }, function() {
-          if (that.audio) {
-            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
-          } else {
-            Runtime.warn('Preloading file ' + that.name + ' failed');
-          }
-        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
-        this.requests[this.name] = null;
-      },
-    };
-  '''
+''')
 
 counter = 0
 for file_ in data_files:
@@ -414,11 +425,17 @@ for file_ in data_files:
 
 if has_preloaded:
   # Get the big archive and split it up
-  use_data = '''
+  if no_heap_copy:
+    use_data = '''
       // copy the entire loaded file into a spot in the heap. Files will refer to slices in that. They cannot be freed though.
       var ptr = Module['_malloc'](byteArray.length);
       Module['HEAPU8'].set(byteArray, ptr);
       DataRequest.prototype.byteArray = Module['HEAPU8'].subarray(ptr, ptr+byteArray.length);
+'''
+  else:
+    use_data = '''
+      // Reuse the bytearray from the XHR as the source for file reads.
+      DataRequest.prototype.byteArray = byteArray;
 '''
   for file_ in data_files:
     if file_['mode'] == 'preload':
@@ -434,18 +451,13 @@ if has_preloaded:
     ''' % use_data
 
   package_uuid = uuid.uuid4();
+  remote_package_name = os.path.basename(Compression.compressed_name(data_target) if Compression.on else data_target)
   code += r'''
-    if (!Module.expectedDataFileDownloads) {
-      Module.expectedDataFileDownloads = 0;
-      Module.finishedDataFileDownloads = 0;
-    }
-    Module.expectedDataFileDownloads++;
-
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '%s';
     var REMOTE_PACKAGE_NAME = '%s';
     var PACKAGE_UUID = '%s';
-  ''' % (data_target, os.path.basename(Compression.compressed_name(data_target) if Compression.on else data_target), package_uuid)
+  ''' % (data_target, remote_package_name, package_uuid)
 
   if use_preload_cache:
     code += r'''
@@ -538,7 +550,7 @@ if has_preloaded:
       };
     '''
 
-  code += r'''
+  ret += r'''
     function fetchRemotePackage(packageName, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
@@ -566,9 +578,9 @@ if has_preloaded:
             num++;
           }
           total = Math.ceil(total * Module.expectedDataFileDownloads/num);
-          Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
+          if (Module['setStatus']) Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
         } else if (!Module.dataFileDownloads) {
-          Module['setStatus']('Downloading data...');
+          if (Module['setStatus']) Module['setStatus']('Downloading data...');
         }
       };
       xhr.onload = function(event) {
@@ -578,6 +590,12 @@ if has_preloaded:
       xhr.send(null);
     };
 
+    function handleError(error) {
+      console.error('package error:', error);
+    };
+  '''
+
+  code += r'''
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -586,10 +604,6 @@ if has_preloaded:
       %s
     };
     Module['addRunDependency']('datafile_%s');
-
-    function handleError(error) {
-      console.error('package error:', error);
-    };
   ''' % (use_data, data_target) # use basename because from the browser's point of view, we need to find the datafile in the same dir as the html file
 
   code += r'''
@@ -632,21 +646,43 @@ if has_preloaded:
       if (Module['setStatus']) Module['setStatus']('Downloading...');
     '''
   else:
+    # Not using preload cache, so we might as well start the xhr ASAP, potentially before JS parsing of the main codebase if it's after us.
+    # Only tricky bit is the fetch is async, but also when runWithFS is called is async, so we handle both orderings.
+    ret += r'''
+      var fetched = null, fetchedCallback = null;
+      fetchRemotePackage('%s', function(data) {
+        if (fetchedCallback) {
+          fetchedCallback(data);
+          fetchedCallback = null;
+        } else {
+          fetched = data;
+        }
+      }, handleError);
+    ''' % os.path.basename(Compression.compressed_name(data_target) if Compression.on else data_target)
+
     code += r'''
       Module.preloadResults[PACKAGE_NAME] = {fromCache: false};
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, processPackageData, handleError);
+      if (fetched) {
+        processPackageData(fetched);
+        fetched = null;
+      } else {
+        fetchedCallback = processPackageData;
+      }
     '''
 
-if pre_run:
-  ret += '''
-  if (typeof Module == 'undefined') Module = {};
-  if (!Module['preRun']) Module['preRun'] = [];
-  Module["preRun"].push(function() {
+ret += '''
+  function runWithFS() {
 '''
 ret += code
-
-if pre_run:
-  ret += '  });\n'
+ret += '''
+  }
+  if (Module['calledRun']) {
+    runWithFS();
+  } else {
+    if (!Module['preRun']) Module['preRun'] = [];
+    Module["preRun"].push(runWithFS); // FS is not initialized yet, wait for it
+  }
+'''
 
 if crunch:
   ret += '''

@@ -18,8 +18,9 @@ var LLVM = {
   PHI_REACHERS: set('branch', 'switch', 'invoke', 'indirectbr'),
   EXTENDS: set('sext', 'zext'),
   COMPS: set('icmp', 'fcmp'),
-  CONVERSIONS: set('inttoptr', 'ptrtoint', 'uitofp', 'sitofp', 'fptosi', 'fptoui'),
+  CONVERSIONS: set('inttoptr', 'ptrtoint', 'uitofp', 'sitofp', 'fptosi', 'fptoui', 'fpext', 'fptrunc'),
   INTRINSICS_32: set('_llvm_memcpy_p0i8_p0i8_i64', '_llvm_memmove_p0i8_p0i8_i64', '_llvm_memset_p0i8_i64'), // intrinsics that need args converted to i32 in USE_TYPED_ARRAYS == 2
+  MATHOP_IGNORABLES: set('exact', 'nnan', 'ninf', 'nsz', 'arcp', 'fast'),
 };
 LLVM.GLOBAL_MODIFIERS = set(keys(LLVM.LINKAGES).concat(['constant', 'global', 'hidden']));
 
@@ -253,13 +254,32 @@ var Functions = {
 
   aliases: {}, // in shared modules (MAIN_MODULE or SHARED_MODULE), a list of aliases for functions that have them
 
+  getSignatureLetter: function(type) {
+    switch(type) {
+      case 'float': return 'f';
+      case 'double': return 'd';
+      case 'void': return 'v';
+      default: return 'i';
+    }
+  },
+
+  getSignatureType: function(letter) {
+    switch(letter) {
+      case 'v': return 'void';
+      case 'i': return 'i32';
+      case 'f': return 'float';
+      case 'd': return 'double';
+      default: throw 'what is this sig? ' + sig;
+    }
+  },
+
   getSignature: function(returnType, argTypes, hasVarArgs) {
-    var sig = returnType == 'void' ? 'v' : (isIntImplemented(returnType) ? 'i' : 'f');
+    var sig = Functions.getSignatureLetter(returnType);
     for (var i = 0; i < argTypes.length; i++) {
       var type = argTypes[i];
       if (!type) break; // varargs
       if (type in Runtime.FLOAT_TYPES) {
-        sig += 'f';
+        sig += Functions.getSignatureLetter(type);
       } else {
         var chunks = getNumIntChunks(type);
         for (var j = 0; j < chunks; j++) sig += 'i';
@@ -267,15 +287,6 @@ var Functions = {
     }
     if (hasVarArgs) sig += 'i';
     return sig;
-  },
-
-  getSignatureReturnType: function(sig) {
-    switch(sig[0]) {
-      case 'v': return 'void';
-      case 'i': return 'i32';
-      case 'f': return 'double';
-      default: throw 'what is this sig? ' + sig;
-    }
   },
 
   // Mark a function as needing indexing. Python will coordinate them all
@@ -331,7 +342,7 @@ var Functions = {
         // Resolve multi-level aliases all the way down
         while (1) {
           var varData = Variables.globals[table[i]];
-          if (!(varData && varData.resolvedAlias && varData.resolvedAlias.indexOf('FUNCTION_TABLE_OFFSET') < 0)) break;
+          if (!(varData && varData.resolvedAlias && !/(FUNCTION_TABLE_OFFSET|F_BASE_)/.test(varData.resolvedAlias))) break;
           table[i] = table[+varData.resolvedAlias || eval(varData.resolvedAlias)]; // might need to eval to turn (6) into 6
         }
         // Resolve library aliases
@@ -350,17 +361,15 @@ var Functions = {
             if (!wrapped[curr]) {
               var args = '', arg_coercions = '', call = short + '(', retPre = '', retPost = '';
               if (t[0] != 'v') {
-                if (t[0] == 'i') {
-                  retPre = 'return ';
-                  retPost = '|0';
-                } else {
-                  retPre = 'return +';
-                }
+                var temp = asmFFICoercion('X', Functions.getSignatureType(t[0])).split('X');
+                retPre = 'return ' + temp[0];
+                retPost = temp[1];
               }
               for (var j = 1; j < t.length; j++) {
                 args += (j > 1 ? ',' : '') + 'a' + j;
-                arg_coercions += 'a' + j + '=' + asmCoercion('a' + j, t[j] != 'i' ? 'float' : 'i32') + ';';
-                call += (j > 1 ? ',' : '') + asmCoercion('a' + j, t[j] != 'i' ? 'float' : 'i32');
+                var type = Functions.getSignatureType(t[j]);
+                arg_coercions += 'a' + j + '=' + asmCoercion('a' + j, type) + ';';
+                call += (j > 1 ? ',' : '') + asmCoercion('a' + j, type === 'float' ? 'double' : type); // ffi arguments must be doubles if they are floats
               }
               call += ')';
               if (short == '_setjmp') printErr('WARNING: setjmp used via a function pointer. If this is for libc setjmp (not something of your own with the same name), it will break things');
@@ -410,13 +419,7 @@ var LibraryManager = {
   load: function() {
     if (this.library) return;
 
-    var library_opencl = 'library_opencl.js';
-
-    if (OPENCL_OLD_VERSION) { 
-      library_opencl = 'library_old_opencl.js';
-    }
-
-    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_idbfs.js', 'library_memfs.js', 'library_nodefs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js',  'library_cuda.js', library_opencl].concat(additionalLibraries);
+    var libraries = ['library.js', 'library_path.js', 'library_fs.js', 'library_idbfs.js', 'library_memfs.js', 'library_nodefs.js', 'library_sockfs.js', 'library_tty.js', 'library_browser.js', 'library_sdl.js', 'library_gl.js', 'library_glut.js', 'library_xlib.js', 'library_egl.js', 'library_gc.js', 'library_jansson.js', 'library_openal.js', 'library_glfw.js'].concat(additionalLibraries);
     for (var i = 0; i < libraries.length; i++) {
       eval(processMacros(preprocess(read(libraries[i]))));
     }

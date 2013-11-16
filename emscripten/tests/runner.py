@@ -36,7 +36,7 @@ except:
 
 # Core test runner class, shared between normal tests and benchmarks
 checked_sanity = False
-test_modes = ['default', 'o1', 'o2', 'asm1', 'asm2', 'asm2g', 'asm2x86', 's_0_0', 's_0_1']
+test_modes = ['default', 'o1', 'o2', 'asm1', 'asm2', 'asm2f', 'asm2g', 'asm2x86', 's_0_0', 's_0_1']
 test_index = 0
 
 class RunnerCore(unittest.TestCase):
@@ -672,6 +672,24 @@ class BrowserCore(RunnerCore):
     self.run_browser(outfile, message, ['/report_result?' + e for e in expected])
 
 ###################################################################################################
+
+# Both test_core and test_other access the Bullet library, share the access here to avoid duplication.
+def get_bullet_library(runner_core, use_cmake):
+  if use_cmake:
+    configure_commands = ['cmake', '.']
+    configure_args = ['-DBUILD_DEMOS=OFF', '-DBUILD_EXTRAS=OFF']
+    # Depending on whether 'configure' or 'cmake' is used to build, Bullet places output files in different directory structures.
+    generated_libs = [os.path.join('src', 'BulletDynamics', 'libBulletDynamics.a'),
+                      os.path.join('src', 'BulletCollision', 'libBulletCollision.a'),
+                      os.path.join('src', 'LinearMath', 'libLinearMath.a')]
+  else:
+    configure_commands = ['sh', './configure']
+    configure_args = ['--disable-demos','--disable-dependency-tracking']
+    generated_libs = [os.path.join('src', '.libs', 'libBulletDynamics.a'),
+                      os.path.join('src', '.libs', 'libBulletCollision.a'),
+                      os.path.join('src', '.libs', 'libLinearMath.a')]
+
+  return runner_core.get_library('bullet', generated_libs, configure=configure_commands, configure_args=configure_args, cache_name_extra=configure_commands[0])
 
 if __name__ == '__main__':
   # Sanity checks

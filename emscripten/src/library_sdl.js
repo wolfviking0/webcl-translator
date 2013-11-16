@@ -75,6 +75,7 @@ var LibrarySDL = {
     textInput: false,
 
     startTime: null,
+    initFlags: 0, // The flags passed to SDL_Init
     buttonState: 0,
     modState: 0,
     DOMButtons: [0, 0, 0],
@@ -153,24 +154,30 @@ var LibrarySDL = {
       120: 27,
       121: 28,
       122: 29, // Z
-      44: 54, // comma
-      46: 55, // period
-      47: 56, // slash
-      49: 30, // 1
-      50: 31,
-      51: 32,
-      52: 33,
-      53: 34,
-      54: 35,
-      55: 36,
-      56: 37,
-      57: 38, // 9
-      48: 39, // 0
-      13: 40, // return
-      9: 43, // tab
-      27: 41, // escape
-      32: 44, // space
-      92: 49, // backslash
+       49: 30, // 1
+       50: 31,
+       51: 32,
+       52: 33,
+       53: 34,
+       54: 35,
+       55: 36,
+       56: 37,
+       57: 38, // 9
+       48: 39, // 0
+       13: 40, // return
+       27: 41, // escape
+        8: 42, // backspace
+        9: 43, // tab
+       32: 44, // space
+       61: 46, // equals
+       91: 47, // left bracket
+       93: 48, // right bracket
+       92: 49, // backslash
+       59: 51, // ;
+       96: 52, // apostrophe
+       44: 54, // comma
+       46: 55, // period
+       47: 56, // slash
       305: 224, // ctrl
       308: 226, // alt
     },
@@ -254,9 +261,13 @@ var LibrarySDL = {
       }
 
       var webGLContextAttributes = {
-        antialias: ((SDL.glAttributes[13 /*SDL_GL_MULTISAMPLEBUFFERS*/] != 0) && (SDL.glAttributes[14 /*SDL_GL_MULTISAMPLESAMPLES*/] > 1))
+        antialias: ((SDL.glAttributes[13 /*SDL_GL_MULTISAMPLEBUFFERS*/] != 0) && (SDL.glAttributes[14 /*SDL_GL_MULTISAMPLESAMPLES*/] > 1)),
+        depth: (SDL.glAttributes[6 /*SDL_GL_DEPTH_SIZE*/] > 0),
+        stencil: (SDL.glAttributes[7 /*SDL_GL_STENCIL_SIZE*/] > 0)
       };
+      
       var ctx = Browser.createContext(canvas, useWebGL, usePageCanvas, webGLContextAttributes);
+            
       SDL.surfaces[surf] = {
         width: width,
         height: height,
@@ -629,6 +640,21 @@ var LibrarySDL = {
           {{{ makeSetValue('ptr', C_STRUCTS.SDL_ResizeEvent.h, 'event.h', 'i32') }}};
           break;
         }
+        case 'joystick_button_up': case 'joystick_button_down': {
+          var state = event.type === 'joystick_button_up' ? 0 : 1;
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyButtonEvent.type, 'SDL.DOMEventToSDLEvent[event.type]', 'i32') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyButtonEvent.which, 'event.index', 'i8') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyButtonEvent.button, 'event.button', 'i8') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyButtonEvent.state, 'state', 'i8') }}};
+          break;
+        }
+        case 'joystick_axis_motion': {
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyAxisEvent.type, 'SDL.DOMEventToSDLEvent[event.type]', 'i32') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyAxisEvent.which, 'event.index', 'i8') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyAxisEvent.axis, 'event.axis', 'i8') }}};
+          {{{ makeSetValue('ptr', C_STRUCTS.SDL_JoyAxisEvent.value, 'SDL.joystickAxisValueConversion(event.value)', 'i32') }}};
+          break;
+        }
         default: throw 'Unhandled SDL event: ' + event.type;
       }
     },
@@ -685,7 +711,109 @@ var LibrarySDL = {
       for (var i = 0; i < num; i++) {
         console.log('   diagonal ' + i + ':' + [data[i*surfData.width*4 + i*4 + 0], data[i*surfData.width*4 + i*4 + 1], data[i*surfData.width*4 + i*4 + 2], data[i*surfData.width*4 + i*4 + 3]]);
       }
-    }
+    },
+
+    // Joystick helper methods and state
+
+    joystickEventState: 0,
+    lastJoystickState: {}, // Map from SDL_Joystick* to their last known state. Required to determine if a change has occurred.
+    // Maps Joystick names to pointers. Allows us to avoid reallocating memory for
+    // joystick names each time this function is called.
+    joystickNamePool: {},
+    recordJoystickState: function(joystick, state) {
+      // Standardize button state.
+      var buttons = new Array(state.buttons.length);
+      for (var i = 0; i < state.buttons.length; i++) {
+        buttons[i] = SDL.getJoystickButtonState(state.buttons[i]);
+      }
+
+      SDL.lastJoystickState[joystick] = {
+        buttons: buttons,
+        axes: state.axes.slice(0),
+        timestamp: state.timestamp,
+        index: state.index,
+        id: state.id
+      };
+    },
+    // Retrieves the button state of the given gamepad button.
+    // Abstracts away implementation differences.
+    // Returns 'true' if pressed, 'false' otherwise.
+    getJoystickButtonState: function(button) {
+      if (typeof button === 'object') {
+        // Current gamepad API editor's draft (Firefox Nightly)
+        // https://dvcs.w3.org/hg/gamepad/raw-file/default/gamepad.html#idl-def-GamepadButton
+        return button.pressed;
+      } else {
+        // Current gamepad API working draft (Firefox / Chrome Stable)
+        // http://www.w3.org/TR/2012/WD-gamepad-20120529/#gamepad-interface
+        return button > 0;
+      }
+    },
+    // Queries for and inserts controller events into the SDL queue.
+    queryJoysticks: function() {
+      for (var joystick in SDL.lastJoystickState) {
+        var state = SDL.getGamepad(joystick - 1);
+        var prevState = SDL.lastJoystickState[joystick];
+        // Check only if the timestamp has differed.
+        // NOTE: Timestamp is not available in Firefox.
+        if (typeof state.timestamp !== 'number' || state.timestamp !== prevState.timestamp) {
+          var i;
+          for (i = 0; i < state.buttons.length; i++) {
+            var buttonState = SDL.getJoystickButtonState(state.buttons[i]);
+            // NOTE: The previous state already has a boolean representation of
+            //       its button, so no need to standardize its button state here.
+            if (buttonState !== prevState.buttons[i]) {
+              // Insert button-press event.
+              SDL.events.push({
+                type: buttonState ? 'joystick_button_down' : 'joystick_button_up',
+                joystick: joystick,
+                index: joystick - 1,
+                button: i
+              });
+            }
+          }
+          for (i = 0; i < state.axes.length; i++) {
+            if (state.axes[i] !== prevState.axes[i]) {
+              // Insert axes-change event.
+              SDL.events.push({
+                type: 'joystick_axis_motion',
+                joystick: joystick,
+                index: joystick - 1,
+                axis: i,
+                value: state.axes[i]
+              });
+            }
+          }
+
+          SDL.recordJoystickState(joystick, state);
+        }
+      }
+    },
+    // Converts the double-based browser axis value [-1, 1] into SDL's 16-bit
+    // value [-32768, 32767]
+    joystickAxisValueConversion: function(value) {
+      // Ensures that 0 is 0, 1 is 32767, and -1 is 32768.
+      return Math.ceil(((value+1) * 32767.5) - 32768);
+    },
+
+    getGamepads: function() {
+      var fcn = navigator.getGamepads || navigator.webkitGamepads || navigator.mozGamepads || navigator.gamepads || navigator.webkitGetGamepads;
+      if (fcn !== undefined) {
+        // The function must be applied on the navigator object.
+        return fcn.apply(navigator);
+      } else {
+        return [];
+      }
+    },
+
+    // Helper function: Returns the gamepad if available, or null if not.
+    getGamepad: function(deviceIndex) {
+      var gamepads = SDL.getGamepads();
+      if (gamepads.length > deviceIndex && deviceIndex >= 0) {
+        return gamepads[deviceIndex];
+      }
+      return null;
+    },
   },
 
   SDL_Linked_Version: function() {
@@ -698,8 +826,10 @@ var LibrarySDL = {
     return SDL.version;
   },
 
-  SDL_Init: function(what) {
+  SDL_Init: function(initFlags) {
     SDL.startTime = Date.now();
+    SDL.initFlags = initFlags;
+
     // capture all key events. we just keep down and up, but also capture press to prevent default actions
     if (!Module['doNotCaptureKeyboard']) {
       document.addEventListener("keydown", SDL.receiveEvent);
@@ -708,6 +838,15 @@ var LibrarySDL = {
       window.addEventListener("blur", SDL.receiveEvent);
       document.addEventListener("visibilitychange", SDL.receiveEvent);
     }
+
+    if (initFlags & 0x200) {
+      // SDL_INIT_JOYSTICK
+      // Firefox will not give us Joystick data unless we register this NOP
+      // callback.
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=936104
+      addEventListener("gamepadconnected", function() {});
+    }
+
     window.addEventListener("unload", SDL.receiveEvent);
     SDL.keyboardState = _malloc(0x10000); // Our SDL needs 512, but 64K is safe for older SDLs
     _memset(SDL.keyboardState, 0, 0x10000);
@@ -720,6 +859,12 @@ var LibrarySDL = {
     SDL.DOMEventToSDLEvent['mousemove'] = 0x400 /* SDL_MOUSEMOTION */;
     SDL.DOMEventToSDLEvent['unload'] = 0x100 /* SDL_QUIT */;
     SDL.DOMEventToSDLEvent['resize'] = 0x7001 /* SDL_VIDEORESIZE/SDL_EVENT_COMPAT2 */;
+    // These are not technically DOM events; the HTML gamepad API is poll-based.
+    // However, we define them here, as the rest of the SDL code assumes that
+    // all SDL events originate as DOM events.
+    SDL.DOMEventToSDLEvent['joystick_axis_motion'] = 0x600 /* SDL_JOYAXISMOTION */;
+    SDL.DOMEventToSDLEvent['joystick_button_down'] = 0x603 /* SDL_JOYBUTTONDOWN */;
+    SDL.DOMEventToSDLEvent['joystick_button_up'] = 0x604 /* SDL_JOYBUTTONUP */;
     return 0; // success
   },
 
@@ -786,6 +931,14 @@ var LibrarySDL = {
     ['mousedown', 'mouseup', 'mousemove', 'DOMMouseScroll', 'mousewheel', 'mouseout'].forEach(function(event) {
       Module['canvas'].addEventListener(event, SDL.receiveEvent, true);
     });
+
+    // (0,0) means 'use fullscreen' in native; in Emscripten, use the current canvas size.
+    if (width == 0 && height == 0) {
+      var canvas = Module['canvas'];
+      width = canvas.width;
+      height = canvas.height;
+    }
+
     Browser.setCanvasSize(width, height, true);
     // Free the old surface first.
     if (SDL.screen) {
@@ -1171,6 +1324,11 @@ var LibrarySDL = {
   },
 
   SDL_PollEvent: function(ptr) {
+    if (SDL.initFlags & 0x200 && SDL.joystickEventState) {
+      // If SDL_INIT_JOYSTICK was supplied AND the joystick system is configured
+      // to automatically query for events, query for joystick events.
+      SDL.queryJoysticks();
+    }
     if (SDL.events.length === 0) return 0;
     if (ptr) {
       SDL.makeCEvent(SDL.events.shift(), ptr);
@@ -1219,11 +1377,11 @@ var LibrarySDL = {
       surfData.colors = new Uint8Array(256 * 3); //256 RGB colors
     } 
 
-    for (var i = firstColor; i < firstColor + nColors; i++) {
-      var index = i *3;
+    for (var i = 0; i < nColors; ++i) {
+      var index = (firstColor + i) * 3;
       surfData.colors[index] = {{{ makeGetValue('colors', 'i*4', 'i8', null, true) }}};
-      surfData.colors[index +1] = {{{ makeGetValue('colors', 'i*4 +1', 'i8', null, true) }}};
-      surfData.colors[index +2] = {{{ makeGetValue('colors', 'i*4 +2', 'i8', null, true) }}};
+      surfData.colors[index + 1] = {{{ makeGetValue('colors', 'i*4 + 1', 'i8', null, true) }}};
+      surfData.colors[index + 2] = {{{ makeGetValue('colors', 'i*4 + 2', 'i8', null, true) }}};
     }
 
     return 1;
@@ -1283,12 +1441,12 @@ var LibrarySDL = {
   IMG_Load_RW: function(rwopsID, freeSrc) {
     try {
       // stb_image integration support
-      var cleanup = function() {
+      function cleanup() {
         if (rwops && freeSrc) _SDL_FreeRW(rwopsID);
       };
       function addCleanup(func) {
         var old = cleanup;
-        cleanup = function() {
+        cleanup = function added_cleanup() {
           old();
           func();
         }
@@ -1451,7 +1609,7 @@ var LibrarySDL = {
       } else if (SDL.audio.channels != 1 && SDL.audio.channels != 2) { // Unsure what SDL audio spec supports. Web Audio spec supports up to 32 channels.
         console.log('Warning: Using untested number of audio channels ' + SDL.audio.channels);
       }
-      if (SDL.audio.samples < 1024 || SDL.audio.samples > 524288 /* arbitrary cap */) {
+      if (SDL.audio.samples < 128 || SDL.audio.samples > 524288 /* arbitrary cap */) {
         throw 'Unsupported audio callback buffer size ' + SDL.audio.samples + '!';
       } else if ((SDL.audio.samples & (SDL.audio.samples-1)) != 0) {
         throw 'Audio callback buffer size ' + SDL.audio.samples + ' must be a power-of-two!';
@@ -1462,8 +1620,12 @@ var LibrarySDL = {
       SDL.audio.bufferSize = totalSamples*SDL.audio.bytesPerSample;
       SDL.audio.buffer = _malloc(SDL.audio.bufferSize);
       
+      // To account for jittering in frametimes, always have multiple audio buffers queued up for the audio output device.
+      // This helps that we won't starve that easily if a frame takes long to complete.
+      SDL.audio.numSimultaneouslyQueuedBuffers = Module['SDL_numSimultaneouslyQueuedBuffers'] || 3;
+      
       // Create a callback function that will be routinely called to ask more audio data from the user application.
-      SDL.audio.caller = function() {
+      SDL.audio.caller = function SDL_audio_caller() {
         if (!SDL.audio) {
           return;
         }
@@ -1477,7 +1639,8 @@ var LibrarySDL = {
         SDL.audio.audioOutput['mozSetup'](SDL.audio.channels, SDL.audio.freq); // use string attributes on mozOutput for closure compiler
         SDL.audio.mozBuffer = new Float32Array(totalSamples);
         SDL.audio.nextPlayTime = 0;
-        SDL.audio.pushAudio = function(ptr, size) {
+        SDL.audio.pushAudio = function SDL_audio_pushAudio(ptr, size) {
+          --SDL.audio.numAudioTimersPending;
           var mozBuffer = SDL.audio.mozBuffer;
           // The input audio data for SDL audio is either 8-bit or 16-bit interleaved across channels, output for Mozilla Audio Data API
           // needs to be Float32 interleaved, so perform a sample conversion.
@@ -1496,14 +1659,22 @@ var LibrarySDL = {
           
           // Compute when the next audio callback should be called.
           var curtime = Date.now() / 1000.0 - SDL.audio.startTime;
+#if ASSERTIONS
           if (curtime > SDL.audio.nextPlayTime && SDL.audio.nextPlayTime != 0) {
             console.log('warning: Audio callback had starved sending audio by ' + (curtime - SDL.audio.nextPlayTime) + ' seconds.');
           }
+#endif
           var playtime = Math.max(curtime, SDL.audio.nextPlayTime);
           var buffer_duration = SDL.audio.samples / SDL.audio.freq;
           SDL.audio.nextPlayTime = playtime + buffer_duration;
-          // Schedule the next audio callback call.
+          // Schedule the next audio callback call to occur when the current one finishes.
           SDL.audio.timer = Browser.safeSetTimeout(SDL.audio.caller, 1000.0 * (playtime-curtime));
+          ++SDL.audio.numAudioTimersPending;
+          // And also schedule extra buffers _now_ if we have too few in queue.
+          if (SDL.audio.numAudioTimersPending < SDL.audio.numSimultaneouslyQueuedBuffers) {
+            ++SDL.audio.numAudioTimersPending;
+            Browser.safeSetTimeout(SDL.audio.caller, 1.0);
+          }
         }
       } else {
         // Initialize Web Audio API if we haven't done so yet. Note: Only initialize Web Audio context ever once on the web page,
@@ -1566,9 +1737,11 @@ var LibrarySDL = {
             // Schedule the generated sample buffer to be played out at the correct time right after the previously scheduled
             // sample buffer has finished.
             var curtime = SDL.audioContext['currentTime'];
-//            if (curtime > SDL.audio.nextPlayTime && SDL.audio.nextPlayTime != 0) {
-//              console.log('warning: Audio callback had starved sending audio by ' + (curtime - SDL.audio.nextPlayTime) + ' seconds.');
-//            }
+#if ASSERTIONS
+            if (curtime > SDL.audio.nextPlayTime && SDL.audio.nextPlayTime != 0) {
+              console.log('warning: Audio callback had starved sending audio by ' + (curtime - SDL.audio.nextPlayTime) + ' seconds.');
+            }
+#endif
             var playtime = Math.max(curtime, SDL.audio.nextPlayTime);
             SDL.audio.soundSource[SDL.audio.nextSoundSource]['start'](playtime);
             var buffer_duration = sizeSamplesPerChannel / SDL.audio.freq;
@@ -1583,8 +1756,8 @@ var LibrarySDL = {
               ++SDL.audio.numAudioTimersPending;
             }
 
-            // If we are risking starving, immediately queue an extra second buffer.
-            if (secsUntilNextCall <= buffer_duration && SDL.audio.numAudioTimersPending <= 1) {
+            // If we are risking starving, immediately queue extra buffers.
+            if (secsUntilNextCall <= buffer_duration && SDL.audio.numAudioTimersPending < SDL.audio.numSimultaneouslyQueuedBuffers) {
               ++SDL.audio.numAudioTimersPending;
               Browser.safeSetTimeout(SDL.audio.caller, 1.0);
             }
@@ -1844,7 +2017,7 @@ var LibrarySDL = {
     audio.frequency = info.audio.frequency;
     // TODO: handle N loops. Behavior matches Mix_PlayMusic
     audio.loop = loops != 0; 
-    audio['onended'] = function() { // TODO: cache these
+    audio['onended'] = function SDL_audio_onended() { // TODO: cache these
       channelInfo.audio = null;
       if (SDL.channelFinished) {
         Runtime.getFuncWrapper(SDL.channelFinished, 'vi')(channel);
@@ -1871,7 +2044,7 @@ var LibrarySDL = {
         source.loop = false;
         source.buffer = context.createBuffer(numChannels, 1, audio.frequency);
         var jsNode = context.createJavaScriptNode(2048, numChannels, numChannels);
-        jsNode.onaudioprocess = function(event) {
+        jsNode.onaudioprocess = function jsNode_onaudioprocess(event) {
           var buffers = new Array(numChannels);
           for (var i = 0; i < numChannels; ++i) {
             buffers[i] = event.outputBuffer.getChannelData(i);
@@ -2357,37 +2530,103 @@ var LibrarySDL = {
 
   // Joysticks
 
-  SDL_NumJoysticks: function() { return 0; },
+  SDL_NumJoysticks: function() {
+    var count = 0;
+    var gamepads = SDL.getGamepads();
+    // The length is not the number of gamepads; check which ones are defined.
+    for (var i = 0; i < gamepads.length; i++) {
+      if (gamepads[i] !== undefined) count++;
+    }
+    return count;
+  },
 
-  SDL_JoystickName: function(deviceIndex) { return 0; },
+  SDL_JoystickName: function(deviceIndex) {
+    var gamepad = SDL.getGamepad(deviceIndex);
+    if (gamepad) {
+      var name = gamepad.id;
+      if (SDL.joystickNamePool.hasOwnProperty(name)) {
+        return SDL.joystickNamePool[name];
+      }
+      return SDL.joystickNamePool[name] = allocate(intArrayFromString(name), 'i8', ALLOC_NORMAL);
+    }
+    return 0;
+  },
 
-  SDL_JoystickOpen: function(deviceIndex) { return 0; },
+  SDL_JoystickOpen: function(deviceIndex) {
+    var gamepad = SDL.getGamepad(deviceIndex);
+    if (gamepad) {
+      // Use this as a unique 'pointer' for this joystick.
+      var joystick = deviceIndex+1;
+      SDL.recordJoystickState(joystick, gamepad);
+      return joystick;
+    }
+    return 0;
+  },
 
-  SDL_JoystickOpened: function(deviceIndex) { return 0; },
+  SDL_JoystickOpened: function(deviceIndex) {
+    return SDL.lastJoystickState.hasOwnProperty(deviceIndex+1) ? 1 : 0;
+  },
 
-  SDL_JoystickIndex: function(joystick) { return 0; },
+  SDL_JoystickIndex: function(joystick) {
+    // joystick pointers are simply the deviceIndex+1.
+    return joystick - 1;
+  },
 
-  SDL_JoystickNumAxes: function(joystick) { return 0; },
+  SDL_JoystickNumAxes: function(joystick) {
+    var gamepad = SDL.getGamepad(joystick - 1);
+    if (gamepad) {
+      return gamepad.axes.length;
+    }
+    return 0;
+  },
 
   SDL_JoystickNumBalls: function(joystick) { return 0; },
 
   SDL_JoystickNumHats: function(joystick) { return 0; },
 
-  SDL_JoystickNumButtons: function(joystick) { return 0; },
+  SDL_JoystickNumButtons: function(joystick) {
+    var gamepad = SDL.getGamepad(joystick - 1);
+    if (gamepad) {
+      return gamepad.buttons.length;
+    }
+    return 0;
+  },
 
-  SDL_JoystickUpdate: function() {},
+  SDL_JoystickUpdate: function() {
+    SDL.queryJoysticks();
+  },
 
-  SDL_JoystickEventState: function(state) { return 0; },
+  SDL_JoystickEventState: function(state) {
+    if (state < 0) {
+      // SDL_QUERY: Return current state.
+      return SDL.joystickEventState;
+    }
+    return SDL.joystickEventState = state;
+  },
 
-  SDL_JoystickGetAxis: function(joystick, axis) { return 0; },
+  SDL_JoystickGetAxis: function(joystick, axis) {
+    var gamepad = SDL.getGamepad(joystick - 1);
+    if (gamepad && gamepad.axes.length > axis) {
+      return SDL.joystickAxisValueConversion(gamepad.axes[axis]);
+    }
+    return 0;
+  },
 
   SDL_JoystickGetHat: function(joystick, hat) { return 0; },
 
   SDL_JoystickGetBall: function(joystick, ball, dxptr, dyptr) { return -1; },
 
-  SDL_JoystickGetButton: function(joystick, button) { return 0; },
+  SDL_JoystickGetButton: function(joystick, button) {
+    var gamepad = SDL.getGamepad(joystick - 1);
+    if (gamepad && gamepad.buttons.length > button) {
+      return SDL.getJoystickButtonState(gamepad.buttons[button]) ? 1 : 0;
+    }
+    return 0;
+  },
 
-  SDL_JoystickClose: function(joystick) {},
+  SDL_JoystickClose: function(joystick) {
+    delete SDL.lastJoystickState[joystick];
+  },
 
   // Misc
 

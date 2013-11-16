@@ -847,10 +847,7 @@ LibraryManager.library = {
       ___setErrNo(ERRNO_CODES.ERANGE);
       return 0;
     } else {
-      for (var i = 0; i < cwd.length; i++) {
-        {{{ makeSetValue('buf', 'i', 'cwd.charCodeAt(i)', 'i8') }}}
-      }
-      {{{ makeSetValue('buf', 'i', '0', 'i8') }}}
+      writeAsciiToMemory(cwd, buf);
       return buf;
     }
   },
@@ -1193,7 +1190,6 @@ LibraryManager.library = {
   _exit: function(status) {
     // void _exit(int status);
     // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
-    Module.print('exit(' + status + ') called');
     Module['exit'](status);
   },
   fork__deps: ['__setErrNo', '$ERRNO_CODES'],
@@ -1293,10 +1289,7 @@ LibraryManager.library = {
     if (namesize < ret.length + 1) {
       return ___setErrNo(ERRNO_CODES.ERANGE);
     } else {
-      for (var i = 0; i < ret.length; i++) {
-        {{{ makeSetValue('name', 'i', 'ret.charCodeAt(i)', 'i8') }}}
-      }
-      {{{ makeSetValue('name', 'i', '0', 'i8') }}}
+      writeAsciiToMemory(ret, name);
       return 0;
     }
   },
@@ -1579,12 +1572,12 @@ LibraryManager.library = {
   // stdio.h
   // ==========================================================================
 
-  _isFloat: function(text) {
-    return !!(/^[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?$/.exec(text));
+  _getFloat: function(text) {
+    return /^[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?/.exec(text);
   },
 
   // TODO: Document.
-  _scanString__deps: ['_isFloat'],
+  _scanString__deps: ['_getFloat'],
   _scanString: function(format, get, unget, varargs) {
     if (!__scanString.whiteSpace) {
       __scanString.whiteSpace = {};
@@ -1602,12 +1595,12 @@ LibraryManager.library = {
     if (format.indexOf('%n') >= 0) {
       // need to track soFar
       var _get = get;
-      get = function() {
+      get = function get() {
         soFar++;
         return _get();
       }
       var _unget = unget;
-      unget = function() {
+      unget = function unget() {
         soFar--;
         return _unget();
       }
@@ -1743,15 +1736,13 @@ LibraryManager.library = {
         // Read characters according to the format. floats are trickier, they may be in an unfloat state in the middle, then be a valid float later
         if (type == 'f' || type == 'e' || type == 'g' ||
             type == 'F' || type == 'E' || type == 'G') {
-          var last = 0;
           next = get();
-          while (next > 0) {
+          while (next > 0 && (!(next in __scanString.whiteSpace)))  {
             buffer.push(String.fromCharCode(next));
-            if (__isFloat(buffer.join(''))) {
-              last = buffer.length;
-            }
             next = get();
           }
+          var m = __getFloat(buffer.join(''));
+          var last = m ? m[0].length : 0;
           for (var i = 0; i < buffer.length - last + 1; i++) {
             unget();
           }
@@ -2701,10 +2692,7 @@ LibraryManager.library = {
     var result = dir + '/' + name;
     if (!_tmpnam.buffer) _tmpnam.buffer = _malloc(256);
     if (!s) s = _tmpnam.buffer;
-    for (var i = 0; i < result.length; i++) {
-      {{{ makeSetValue('s', 'i', 'result.charCodeAt(i)', 'i8') }}};
-    }
-    {{{ makeSetValue('s', 'i', '0', 'i8') }}};
+    writeAsciiToMemory(result, s);
     return s;
   },
   tempnam__deps: ['tmpnam'],
@@ -2757,12 +2745,12 @@ LibraryManager.library = {
       return -1;
     }
     var buffer = [];
-    var get = function() {
+    function get() {
       var c = _fgetc(stream);
       buffer.push(c);
       return c;
     };
-    var unget = function() {
+    function unget() {
       _ungetc(buffer.pop(), stream);
     };
     return __scanString(format, get, unget, varargs);
@@ -2779,8 +2767,8 @@ LibraryManager.library = {
     // int sscanf(const char *restrict s, const char *restrict format, ... );
     // http://pubs.opengroup.org/onlinepubs/000095399/functions/scanf.html
     var index = 0;
-    var get = function() { return {{{ makeGetValue('s', 'index++', 'i8') }}}; };
-    var unget = function() { index--; };
+    function get() { return {{{ makeGetValue('s', 'index++', 'i8') }}}; };
+    function unget() { index--; };
     return __scanString(format, get, unget, varargs);
   },
   snprintf__deps: ['_formatString'],
@@ -3042,7 +3030,7 @@ LibraryManager.library = {
   },
 
   bsearch: function(key, base, num, size, compar) {
-    var cmp = function(x, y) {
+    function cmp(x, y) {
 #if ASM_JS
       return Module['dynCall_iii'](compar, x, y);
 #else
@@ -3345,10 +3333,7 @@ LibraryManager.library = {
     var ptrSize = {{{ Runtime.getNativeTypeSize('i8*') }}};
     for (var i = 0; i < strings.length; i++) {
       var line = strings[i];
-      for (var j = 0; j < line.length; j++) {
-        {{{ makeSetValue('poolPtr', 'j', 'line.charCodeAt(j)', 'i8') }}};
-      }
-      {{{ makeSetValue('poolPtr', 'j', '0', 'i8') }}};
+      writeAsciiToMemory(line, poolPtr);
       {{{ makeSetValue('envPtr', 'i * ptrSize', 'poolPtr', 'i8*') }}};
       poolPtr += line.length + 1;
     }
@@ -3978,10 +3963,7 @@ LibraryManager.library = {
         return ___setErrNo(ERRNO_CODES.ERANGE);
       } else {
         var msg = ERRNO_MESSAGES[errnum];
-        for (var i = 0; i < msg.length; i++) {
-          {{{ makeSetValue('strerrbuf', 'i', 'msg.charCodeAt(i)', 'i8') }}}
-        }
-        {{{ makeSetValue('strerrbuf', 'i', 0, 'i8') }}}
+        writeAsciiToMemory(msg, strerrbuf);
         return 0;
       }
     } else {
@@ -4164,6 +4146,11 @@ LibraryManager.library = {
     }
     return me.ret;
   },
+
+  // ==========================================================================
+  // GCC/LLVM specifics
+  // ==========================================================================
+  __builtin_prefetch: function(){},
 
   // ==========================================================================
   // LLVM specifics
@@ -5064,10 +5051,7 @@ LibraryManager.library = {
     var layout = {{{ JSON.stringify(C_STRUCTS.utsname) }}};
     function copyString(element, value) {
       var offset = layout[element];
-      for (var i = 0; i < value.length; i++) {
-        {{{ makeSetValue('name', 'offset + i', 'value.charCodeAt(i)', 'i8') }}}
-      }
-      {{{ makeSetValue('name', 'offset + i', '0', 'i8') }}}
+      writeAsciiToMemory(value, name + offset);
     }
     if (name === 0) {
       return -1;
@@ -5110,7 +5094,7 @@ LibraryManager.library = {
         table[from + i] = {};
         sigs.forEach(function(sig) { // TODO: new Function etc.
           var full = 'dynCall_' + sig;
-          table[from + i][sig] = function() {
+          table[from + i][sig] = function dynCall_sig() {
             arguments[0] -= from;
             return asm[full].apply(null, arguments);
           }
@@ -5134,7 +5118,7 @@ LibraryManager.library = {
 
       // patch js module dynCall_* to use functionTable
       sigs.forEach(function(sig) {
-        jsModule['dynCall_' + sig] = function() {
+        jsModule['dynCall_' + sig] = function dynCall_sig() {
           return table[arguments[0]][sig].apply(null, arguments);
         };
       });
@@ -5295,6 +5279,16 @@ LibraryManager.library = {
       DLFCN.errorMsg = null;
       return DLFCN.error;
     }
+  },
+
+  dladdr: function(addr, info) {
+    // report all function pointers as coming from this program itself XXX not really correct in any way
+    var fname = allocate(intArrayFromString("/bin/this.program"), 'i8', ALLOC_NORMAL); // XXX leak
+    {{{ makeSetValue('addr', 0, 'fname', 'i32') }}};
+    {{{ makeSetValue('addr', QUANTUM_SIZE, '0', 'i32') }}};
+    {{{ makeSetValue('addr', QUANTUM_SIZE*2, '0', 'i32') }}};
+    {{{ makeSetValue('addr', QUANTUM_SIZE*3, '0', 'i32') }}};
+    return 1;
   },
 
   // ==========================================================================
@@ -5598,7 +5592,7 @@ LibraryManager.library = {
     var WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    var leadingSomething = function(value, digits, character) {
+    function leadingSomething(value, digits, character) {
       var str = typeof value === 'number' ? value.toString() : (value || '');
       while (str.length < digits) {
         str = character[0]+str;
@@ -5606,12 +5600,12 @@ LibraryManager.library = {
       return str;
     };
 
-    var leadingNulls = function(value, digits) {
+    function leadingNulls(value, digits) {
       return leadingSomething(value, digits, '0');
     };
 
-    var compareByDay = function(date1, date2) {
-      var sgn = function(value) {
+    function compareByDay(date1, date2) {
+      function sgn(value) {
         return value < 0 ? -1 : (value > 0 ? 1 : 0);
       };
 
@@ -5624,7 +5618,7 @@ LibraryManager.library = {
       return compare;
     };
 
-    var getFirstWeekStartDate = function(janFourth) {
+    function getFirstWeekStartDate(janFourth) {
         switch (janFourth.getDay()) {
           case 0: // Sunday
             return new Date(janFourth.getFullYear()-1, 11, 29);
@@ -5643,7 +5637,7 @@ LibraryManager.library = {
         }
     };
 
-    var getWeekBasedYear = function(date) {
+    function getWeekBasedYear(date) {
         var thisDate = __addDays(new Date(date.tm_year+1900, 0, 1), date.tm_yday);
 
         var janFourthThisYear = new Date(thisDate.getFullYear(), 0, 4);
@@ -5930,8 +5924,8 @@ LibraryManager.library = {
     var matches = new RegExp('^'+pattern).exec(Pointer_stringify(buf))
     // Module['print'](Pointer_stringify(buf)+ ' is matched by '+((new RegExp('^'+pattern)).source)+' into: '+JSON.stringify(matches));
 
-    var initDate = function() {
-      var fixup = function(value, min, max) {
+    function initDate() {
+      function fixup(value, min, max) {
         return (typeof value !== 'number' || isNaN(value)) ? min : (value>=min ? (value<=max ? value: max): min);
       };
       return {
@@ -5948,7 +5942,7 @@ LibraryManager.library = {
       var date = initDate();
       var value;
 
-      var getMatch = function(symbol) {
+      function getMatch(symbol) {
         var pos = capture.indexOf(symbol);
         // check if symbol appears in regexp
         if (pos >= 0) {
@@ -6118,16 +6112,23 @@ LibraryManager.library = {
     // int nanosleep(const struct timespec  *rqtp, struct timespec *rmtp);
     var seconds = {{{ makeGetValue('rqtp', C_STRUCTS.timespec.tv_sec, 'i32') }}};
     var nanoseconds = {{{ makeGetValue('rqtp', C_STRUCTS.timespec.tv_nsec, 'i32') }}};
-    {{{ makeSetValue('rmtp', C_STRUCTS.timespec.tv_sec, '0', 'i32') }}}
-    {{{ makeSetValue('rmtp', C_STRUCTS.timespec.tv_nsec, '0', 'i32') }}}
+    if (rmtp !== 0) {
+      {{{ makeSetValue('rmtp', C_STRUCTS.timespec.tv_sec, '0', 'i32') }}}
+      {{{ makeSetValue('rmtp', C_STRUCTS.timespec.tv_nsec, '0', 'i32') }}}
+    }
     return _usleep((seconds * 1e6) + (nanoseconds / 1000));
   },
-  // TODO: Implement these for real.
+  clock_gettime__deps: ['emscripten_get_now'],
   clock_gettime: function(clk_id, tp) {
     // int clock_gettime(clockid_t clk_id, struct timespec *tp);
-    var now = Date.now();
+    var now;
+    if (clk_id ===  {{{ cDefine('CLOCK_REALTIME') }}}) {
+      now = Date.now();
+    } else {
+      now = _emscripten_get_now();
+    }
     {{{ makeSetValue('tp', C_STRUCTS.timespec.tv_sec, 'Math.floor(now/1000)', 'i32') }}}; // seconds
-    {{{ makeSetValue('tp', C_STRUCTS.timespec.tv_nsec, '(now % 1000) * 1000 * 1000', 'i32') }}}; // nanoseconds (really milliseconds)
+    {{{ makeSetValue('tp', C_STRUCTS.timespec.tv_nsec, 'Math.floor((now % 1000)*1000*1000)', 'i32') }}}; // nanoseconds
     return 0;
   },
   clock_settime: function(clk_id, tp) {
@@ -6559,10 +6560,7 @@ LibraryManager.library = {
 
     var me = _nl_langinfo;
     if (!me.ret) me.ret = _malloc(32);
-    for (var i = 0; i < result.length; i++) {
-      {{{ makeSetValue('me.ret', 'i', 'result.charCodeAt(i)', 'i8') }}}
-    }
-    {{{ makeSetValue('me.ret', 'i', '0', 'i8') }}}
+    writeAsciiToMemory(result, me.ret);
     return me.ret;
   },
 
@@ -6878,6 +6876,10 @@ LibraryManager.library = {
   pthread_mutex_trylock: function() {
     return 0;
   },
+  pthread_mutexattr_setpshared: function(attr, pshared) {
+    // XXX implement if/when getpshared is required
+    return 0;
+  },
   pthread_cond_init: function() {},
   pthread_cond_destroy: function() {},
   pthread_cond_broadcast: function() {
@@ -6971,6 +6973,10 @@ LibraryManager.library = {
     assert(_pthread_cleanup_push.level == __ATEXIT__.length, 'cannot pop if something else added meanwhile!');
     __ATEXIT__.pop();
     _pthread_cleanup_push.level = __ATEXIT__.length;
+  },
+
+  pthread_rwlock_init: function() {
+    return 0; // XXX
   },
 
   // ==========================================================================
@@ -7314,6 +7320,7 @@ LibraryManager.library = {
   // we're generating fake IP addresses with lookup_name that we can
   // resolve later on with lookup_addr.
   // We do the aliasing in 172.29.*.*, giving us 65536 possibilities.
+  $DNS__deps: ['_inet_pton4_raw', '_inet_pton6_raw'],
   $DNS: {
     address_map: {
       id: 1,
@@ -7321,7 +7328,6 @@ LibraryManager.library = {
       names: {}
     },
 
-    lookup_name__deps: ['_inet_pton4_raw', '_inet_pton6_raw'],
     lookup_name: function (name) {
       // If the name is already a valid ipv4 / ipv6 address, don't generate a fake one.
       var res = __inet_pton4_raw(name);
@@ -7412,6 +7418,9 @@ LibraryManager.library = {
 
   getaddrinfo__deps: ['$Sockets', '$DNS', '_inet_pton4_raw', '_inet_ntop4_raw', '_inet_pton6_raw', '_inet_ntop6_raw', '_write_sockaddr', 'htonl'],
   getaddrinfo: function(node, service, hint, out) {
+    // Note getaddrinfo currently only returns a single addrinfo with ai_next defaulting to NULL. When NULL
+    // hints are specified or ai_family set to AF_UNSPEC or ai_socktype or ai_protocol set to 0 then we
+    // really should provide a linked list of suitable addrinfo values.
     var addrs = [];
     var canon = null;
     var addr = 0;
@@ -7466,6 +7475,15 @@ LibraryManager.library = {
       type = proto === {{{ cDefine('IPPROTO_UDP') }}} ? {{{ cDefine('SOCK_DGRAM') }}} : {{{ cDefine('SOCK_STREAM') }}};
     }
 
+    // If type or proto are set to zero in hints we should really be returning multiple addrinfo values, but for
+    // now default to a TCP STREAM socket so we can at least return a sensible addrinfo given NULL hints.
+    if (proto === 0) {
+      proto = {{{ cDefine('IPPROTO_TCP') }}};
+    }
+    if (type === 0) {
+      type = {{{ cDefine('SOCK_STREAM') }}};
+    }
+
     if (!node && !service) {
       return {{{ cDefine('EAI_NONAME') }}};
     }
@@ -7473,14 +7491,14 @@ LibraryManager.library = {
         {{{ cDefine('AI_NUMERICSERV') }}}|{{{ cDefine('AI_V4MAPPED') }}}|{{{ cDefine('AI_ALL') }}}|{{{ cDefine('AI_ADDRCONFIG') }}})) {
       return {{{ cDefine('EAI_BADFLAGS') }}};
     }
-    if (({{{ makeGetValue('hint', C_STRUCTS.addrinfo.ai_flags, 'i32') }}} & {{{ cDefine('AI_CANONNAME') }}}) && !node) {
+    if (hint !== 0 && ({{{ makeGetValue('hint', C_STRUCTS.addrinfo.ai_flags, 'i32') }}} & {{{ cDefine('AI_CANONNAME') }}}) && !node) {
       return {{{ cDefine('EAI_BADFLAGS') }}};
     }
     if (flags & {{{ cDefine('AI_ADDRCONFIG') }}}) {
       // TODO
       return {{{ cDefine('EAI_NONAME') }}};
     }
-    if (type !== {{{ cDefine('SOCK_STREAM') }}} && type !== {{{ cDefine('SOCK_DGRAM') }}}) {
+    if (type !== 0 && type !== {{{ cDefine('SOCK_STREAM') }}} && type !== {{{ cDefine('SOCK_DGRAM') }}}) {
       return {{{ cDefine('EAI_SOCKTYPE') }}};
     }
     if (family !== {{{ cDefine('AF_UNSPEC') }}} && family !== {{{ cDefine('AF_INET') }}} && family !== {{{ cDefine('AF_INET6') }}}) {
@@ -7610,12 +7628,43 @@ LibraryManager.library = {
 
     return 0;
   },
+  // Can't use a literal for $GAI_ERRNO_MESSAGES as was done for $ERRNO_MESSAGES as the keys (e.g. EAI_BADFLAGS)
+  // are actually negative numbers and you can't have expressions as keys in JavaScript literals.
+  $GAI_ERRNO_MESSAGES: {},
 
+  gai_strerror__deps: ['$GAI_ERRNO_MESSAGES'],
   gai_strerror: function(val) {
-    if (!_gai_strerror.error) {
-      _gai_strerror.error = allocate(intArrayFromString("unknown error"), 'i8', ALLOC_NORMAL);
+    var buflen = 256;
+
+    // On first call to gai_strerror we initialise the buffer and populate the error messages.
+    if (!_gai_strerror.buffer) {
+        _gai_strerror.buffer = _malloc(buflen);
+
+        GAI_ERRNO_MESSAGES['0'] = 'Success';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_BADFLAGS') }}}] = 'Invalid value for \'ai_flags\' field';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_NONAME') }}}] = 'NAME or SERVICE is unknown';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_AGAIN') }}}] = 'Temporary failure in name resolution';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_FAIL') }}}] = 'Non-recoverable failure in name res';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_FAMILY') }}}] = '\'ai_family\' not supported';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_SOCKTYPE') }}}] = '\'ai_socktype\' not supported';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_SERVICE') }}}] = 'SERVICE not supported for \'ai_socktype\'';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_MEMORY') }}}] = 'Memory allocation failure';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_SYSTEM') }}}] = 'System error returned in \'errno\'';
+        GAI_ERRNO_MESSAGES['' + {{{ cDefine('EAI_OVERFLOW') }}}] = 'Argument buffer overflow';
     }
-    return _gai_strerror.error;
+
+    var msg = 'Unknown error';
+
+    if (val in GAI_ERRNO_MESSAGES) {
+      if (GAI_ERRNO_MESSAGES[val].length > buflen - 1) {
+        msg = 'Message too long'; // EMSGSIZE message. This should never occur given the GAI_ERRNO_MESSAGES above. 
+      } else {
+        msg = GAI_ERRNO_MESSAGES[val];
+      }
+    }
+
+    writeAsciiToMemory(msg, _gai_strerror.buffer);
+    return _gai_strerror.buffer;
   },
 
   // ==========================================================================
@@ -7683,7 +7732,7 @@ LibraryManager.library = {
       var session = Module['webrtc']['session'];
       var peer = new Peer(broker);
       var listenOptions = Module['webrtc']['hostOptions'] || {};
-      peer.onconnection = function(connection) {
+      peer.onconnection = function peer_onconnection(connection) {
         console.log('connected');
         var addr;
         /* If this peer is connecting to the host, assign 10.0.0.1 to the host so it can be
@@ -7697,7 +7746,7 @@ LibraryManager.library = {
         }
         connection['addr'] = addr;
         Sockets.connections[addr] = connection;
-        connection.ondisconnect = function() {
+        connection.ondisconnect = function connection_ondisconnect() {
           console.log('disconnect');
           // Don't return the host address (10.0.0.1) to the pool
           if (!(session && session === Sockets.connections[addr]['route'])) {
@@ -7709,12 +7758,12 @@ LibraryManager.library = {
             Module['webrtc']['ondisconnect'](peer);
           }
         };
-        connection.onerror = function(error) {
+        connection.onerror = function connection_onerror(error) {
           if (Module['webrtc']['onerror'] && 'function' === typeof Module['webrtc']['onerror']) {
             Module['webrtc']['onerror'](error);
           }
         };
-        connection.onmessage = function(label, message) {
+        connection.onmessage = function connection_onmessage(label, message) {
           if ('unreliable' === label) {
             handleMessage(addr, message.data);
           }
@@ -7724,13 +7773,13 @@ LibraryManager.library = {
           Module['webrtc']['onconnect'](peer);
         }
       };
-      peer.onpending = function(pending) {
+      peer.onpending = function peer_onpending(pending) {
         console.log('pending from: ', pending['route'], '; initiated by: ', (pending['incoming']) ? 'remote' : 'local');
       };
-      peer.onerror = function(error) {
+      peer.onerror = function peer_onerror(error) {
         console.error(error);
       };
-      peer.onroute = function(route) {
+      peer.onroute = function peer_onroute(route) {
         if (Module['webrtc']['onpeer'] && 'function' === typeof Module['webrtc']['onpeer']) {
           Module['webrtc']['onpeer'](peer, route);
         }
@@ -7746,7 +7795,7 @@ LibraryManager.library = {
           console.log("unable to deliver message: ", addr, header[1], message);
         }
       }
-      window.onbeforeunload = function() {
+      window.onbeforeunload = function window_onbeforeunload() {
         var ids = Object.keys(Sockets.connections);
         ids.forEach(function(id) {
           Sockets.connections[id].close();
@@ -7815,7 +7864,7 @@ LibraryManager.library = {
     }
     info.addr = Sockets.localAddr; // 10.0.0.254
     info.host = __inet_ntop4_raw(info.addr);
-    info.close = function() {
+    info.close = function info_close() {
       Sockets.portmap[info.port] = undefined;
     }
     Sockets.portmap[info.port] = info;
@@ -8547,7 +8596,13 @@ LibraryManager.library = {
       return -1;
     }
     var arg = {{{ makeGetValue('varargs', '0', 'i32') }}};
-    return FS.ioctl(stream, request, arg);
+
+    try {
+      return FS.ioctl(stream, request, arg);
+    } catch (e) {
+      FS.handleFSError(e);
+      return -1;
+    }
   },
 #endif
 
@@ -8580,7 +8635,7 @@ LibraryManager.library = {
   },
 
   emscripten_run_script_string: function(ptr) {
-    var s = eval(Pointer_stringify(ptr));
+    var s = eval(Pointer_stringify(ptr)) + '';
     var me = _emscripten_run_script_string;
     if (!me.bufferSize || me.bufferSize < s.length+1) {
       if (me.bufferSize) _free(me.buffer);
@@ -8620,6 +8675,32 @@ LibraryManager.library = {
     if (func) return func();
     func = Runtime.asmConstCache[code] = eval('(function(){ ' + Pointer_stringify(code) + ' })'); // new Function does not allow upvars in node
     return func();
+  },
+
+  emscripten_get_now: function() {
+    if (!_emscripten_get_now.actual) {
+      if (ENVIRONMENT_IS_NODE) {
+          _emscripten_get_now.actual = function _emscripten_get_now_actual() {
+            var t = process['hrtime']();
+            return t[0] * 1e3 + t[1] / 1e6;
+          }
+      } else if (typeof dateNow !== 'undefined') {
+        _emscripten_get_now.actual = dateNow;
+      } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
+        _emscripten_get_now.actual = function _emscripten_get_now_actual() { return window['performance']['now'](); };
+      } else {
+        _emscripten_get_now.actual = Date.now;
+      }
+    }
+    return _emscripten_get_now.actual();
+  },
+
+  //============================
+  // emscripten vector ops
+  //============================
+
+  emscripten_float32x4_signmask__inline: function(x) {
+    return x + '.signMask()';
   },
 
   //============================
@@ -8718,6 +8799,6 @@ function autoAddDeps(object, name) {
 
 // Add aborting stubs for various libc stuff needed by libc++
 ['pthread_cond_signal', 'pthread_equal', 'wcstol', 'wcstoll', 'wcstoul', 'wcstoull', 'wcstof', 'wcstod', 'wcstold', 'pthread_join', 'pthread_detach', 'catgets', 'catopen', 'catclose', 'fputwc', '__lockfile', '__unlockfile'].forEach(function(aborter) {
-  LibraryManager.library[aborter] = function() { throw 'TODO: ' + aborter };
+  LibraryManager.library[aborter] = function aborting_stub() { throw 'TODO: ' + aborter };
 });
 

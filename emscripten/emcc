@@ -397,7 +397,8 @@ Options that are modified or new in %s include:
   --shell-file <path>      The path name to a skeleton HTML file used
                            when generating HTML output. The shell file
                            used needs to have this token inside it:
-                           {{{ SCRIPT_CODE }}}
+                           {{{ SCRIPT }}}
+                           (see src/shell.html for an example)
                            Note that this argument is ignored if a
                            target other than HTML is specified using
                            the -o option.
@@ -501,7 +502,8 @@ The target file, if specified (-o <target>), defines what will
 be generated:
 
   <name>.js                JavaScript
-  <name>.html              HTML with embedded JavaScript
+  <name>.html              HTML + side JavaScript file (<name>.js)
+                             (JS on the side improves page load time)
   <name>.bc                LLVM bitcode (default)
   <name>.o                 LLVM bitcode (same as .bc)
 
@@ -542,7 +544,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
   exit(0)  
 
 elif len(sys.argv) == 2 and sys.argv[1] == '-v': # -v with no inputs
-  print 'emcc (Emscripten GCC-like replacement + linker emulating GNU ld ) 2.0'
+  print 'emcc (Emscripten GCC-like replacement + linker emulating GNU ld ) %s' % shared.EMSCRIPTEN_VERSION
   exit(subprocess.call([shared.CLANG, '-v']))
 
 def is_minus_s_for_emcc(newargs,i):
@@ -775,6 +777,7 @@ try:
   save_bc = False
   memory_init_file = False
   use_preload_cache = False
+  no_heap_copy = False
   proxy_to_worker = False
 
   if use_cxx:
@@ -894,6 +897,9 @@ try:
       newargs[i+1] = ''
     elif newargs[i].startswith('--use-preload-cache'):
       use_preload_cache = True
+      newargs[i] = ''
+    elif newargs[i].startswith('--no-heap-copy'):
+      no_heap_copy = True
       newargs[i] = ''
     elif newargs[i] == '--ignore-dynamic-linking':
       ignore_dynamic_linking = True
@@ -1127,10 +1133,11 @@ try:
 
     heap = 4096
     while heap < shared.Settings.TOTAL_MEMORY:
-      if heap <= 16*1024*1024:
-        heap *= 2
-      else:
-        heap += 16*1024*1024
+      heap *= 2
+      #if heap <= 16*1024*1024:
+      #  heap *= 2
+      #else:
+      #  heap += 16*1024*1024
     if heap != shared.Settings.TOTAL_MEMORY:
       logging.warning('increasing TOTAL_MEMORY to %d to be more reasonable for asm.js' % heap)
       shared.Settings.TOTAL_MEMORY = heap
@@ -1423,6 +1430,12 @@ try:
           'wctob.c',
           'wctomb.c',
          ]],
+         ['regex', [
+          'regcomp.c',
+          'regerror.c',
+          'regexec.c',
+          'tre-mem.c',
+         ]],
          ['stdio', [
           'fwprintf.c',
           'swprintf.c',
@@ -1625,18 +1638,26 @@ try:
     else:
       # At minimum remove dead functions etc., this potentially saves a lot in the size of the generated code (and the time to compile it)
       link_opts += shared.Building.get_safe_internalize() + ['-globaldce']
-    shared.Building.llvm_opt(in_temp(target_basename + '.bc'), link_opts)
-    if DEBUG: save_intermediate('linktime', 'bc')
+    if not save_bc:
+      # let llvm opt directly emit ll, to skip writing and reading all the bitcode
+      link_opts += ['-S']
+      shared.Building.llvm_opt(final, link_opts, final + '.link.ll')
+      final = final + '.link.ll'
+      if DEBUG: save_intermediate('linktime', 'll')
+    else:
+      shared.Building.llvm_opt(final, link_opts)
+      if DEBUG: save_intermediate('linktime', 'bc')
 
   if save_bc:
     shutil.copyfile(final, save_bc)
 
   # Prepare .ll for Emscripten
   if not LEAVE_INPUTS_RAW:
-    final = shared.Building.llvm_dis(final, final + '.ll')
+    if save_bc:
+      final = shared.Building.llvm_dis(final, final + '.ll')
   else:
     assert len(input_files) == 1
-  if DEBUG: save_intermediate('ll', 'll')
+  if DEBUG and save_bc: save_intermediate('ll', 'll')
 
   if AUTODEBUG:
     logging.debug('autodebug')
@@ -1665,6 +1686,8 @@ try:
       file_args += ['--compress', Compression.encoder, Compression.decoder, Compression.js_name]
     if use_preload_cache:
       file_args.append('--use-preload-cache')
+    if no_heap_copy:
+      file_args.append('--no-heap-copy')
     file_code = execute([shared.PYTHON, shared.FILE_PACKAGER, unsuffixed(target) + '.data'] + file_args, stdout=PIPE)[0]
     pre_js = file_code + pre_js
 
@@ -1818,22 +1841,21 @@ try:
   if final_suffix == 'html':
     logging.debug('generating HTML')
     shell = open(shell_path).read()
+    assert '{{{ SCRIPT }}}' in shell, 'HTML shell must contain  {{{ SCRIPT }}}  , see src/shell.html for an example'
     html = open(target, 'w')
+    js_target = unsuffixed(target) + '.js'
+    base_js_target = os.path.basename(js_target)
     if proxy_to_worker:
-      html.write(shell.replace('{{{ SCRIPT_CODE }}}', open(shared.path_from_root('src', 'proxyClient.js')).read().replace('{{{ filename }}}', target_basename)))
-      js_target = unsuffixed(target) + '.js'
-      shutil.copyfile(final, js_target)
+      html.write(shell.replace('{{{ SCRIPT }}}', '<script>' + open(shared.path_from_root('src', 'proxyClient.js')).read().replace('{{{ filename }}}', target_basename) + '</script>'))
+      shutil.move(final, js_target)
     elif not Compression.on:
       if debug_level >= 4:
-        match = re.match('.*?<script[^>]*>{{{ SCRIPT_CODE }}}</script>', shell,
-            re.DOTALL)
-        if match is None:
-          raise RuntimeError('''Could not find script insertion point - make sure you have   <script type='text/javascript'>{{{ SCRIPT_CODE }}}</script>   in your HTML file (with no newlines)''')
-        generate_source_map(target, match.group().count('\n'))
-      html.write(shell.replace('{{{ SCRIPT_CODE }}}', open(final).read()))
+        generate_source_map(target)
+      shutil.move(final, js_target)
+      script_tag = '''<script async type="text/javascript" src="%s"></script>''' % base_js_target
+      html.write(shell.replace('{{{ SCRIPT }}}', script_tag))
     else:
       # Compress the main code
-      js_target = unsuffixed(target) + '.js'
       shutil.move(final, js_target)
       Compression.compress(js_target)
 
@@ -1881,8 +1903,8 @@ try:
           });
         };
         compiledCodeXHR.send(null);
-''' % Compression.compressed_name(js_target)
-      html.write(shell.replace('{{{ SCRIPT_CODE }}}', decoding))
+''' % Compression.compressed_name(base_js_target)
+      html.write(shell.replace('{{{ SCRIPT }}}', '<script>' + decoding + '</script>'))
 
       # Add decompressor with web worker glue code
       decompressor = open('decompress.js', 'w')
