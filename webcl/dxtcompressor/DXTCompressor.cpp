@@ -80,7 +80,7 @@ void showtexture(int header_size)
 
     SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 ); // *new*
 
-    screen = SDL_SetVideoMode( 1556, 522, 16, SDL_OPENGL ); // *changed*
+    screen = SDL_SetVideoMode( 522, 522, 16, SDL_OPENGL ); // *changed*
     if ( !screen ) {
         printf("Unable to set video mode: %s\n", SDL_GetError());
         return;
@@ -91,6 +91,7 @@ void showtexture(int header_size)
     const char *exts = (const char *)glGetString(GL_EXTENSIONS);
     assert(hasext(exts, "GL_ARB_texture_compression"));
     assert(hasext(exts, "GL_EXT_texture_compression_s3tc"));
+    /*
     // Load the original DXT
     FILE *dds_ref = fopen("./data/lena_ref.dds", "rb");
   
@@ -103,7 +104,7 @@ void showtexture(int header_size)
     char *ddsrefdata = (char*)malloc(dds_ref_size);//DDS_SIZE);
     assert(fread(ddsrefdata, 1, dds_ref_size, dds_ref) == dds_ref_size);
     fclose(dds_ref);
-
+    */
     // Load the generate DXT
     FILE *dds_gen = fopen("./data/lena.dds", "rb");
   
@@ -120,10 +121,10 @@ void showtexture(int header_size)
     glClearColor(0,0,0,0);
  
     // Setup our screen
-    glViewport(0,0,1556, 522);
+    glViewport(0,0,522, 522);
     glMatrixMode(GL_PROJECTION);
     
-    GLfloat matrixData[] = { 2.0/1556,        0,  0,  0,
+    GLfloat matrixData[] = { 2.0/522,        0,  0,  0,
                                     0, -2.0/522,  0,  0,
                                     0,        0, -1,  0,
                                    -1,        1,  0,  1 };
@@ -134,8 +135,12 @@ void showtexture(int header_size)
     // Ensure correct display of polygons
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);    
-    
+    glDepthMask(GL_TRUE);  
+
+    GLuint textures[1];
+    glGenTextures( 1, textures );
+
+    /*
     GLuint textures[3];
     glGenTextures( 3, textures );
     
@@ -149,8 +154,8 @@ void showtexture(int header_size)
     glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, 512, 512, 0, dds_ref_size-header_size, ddsrefdata+header_size);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    
-    glBindTexture( GL_TEXTURE_2D, textures[2] );
+    */
+    glBindTexture( GL_TEXTURE_2D, textures[0] );
     glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, 512, 512, 0, dds_gen_size-header_size, ddsgendata+header_size);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -170,6 +175,7 @@ void showtexture(int header_size)
     glTexCoord2i( 1, 1 ); glVertex3f( 517, 517, 0 );
     glEnd();
     
+    /*
     // Select second texture
     glBindTexture(GL_TEXTURE_2D,textures[1]);
 
@@ -188,7 +194,7 @@ void showtexture(int header_size)
     glTexCoord2i( 1, 0 ); glVertex3f( 1551, 5, 0 );
     glTexCoord2i( 1, 1 ); glVertex3f( 1551, 517, 0 );
     glEnd();
-
+    */
     glFlush();
     
     SDL_GL_SwapBuffers();
@@ -497,7 +503,7 @@ int main(const int argc, const char** argv)
         check_data.refSize = referenceSize;
         check_data.genSize = generatedSize;
       
-        check_worker = emscripten_create_worker("check.js");
+        check_worker = emscripten_create_worker("dxtcompressor_worker.js");
    
         // Make sure the generated image matches the reference image (regression check)
         shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation by worker...\n");     
@@ -512,6 +518,8 @@ int main(const int argc, const char** argv)
     // Print DXT Image generated
     showtexture(sizeof(DDSHeader));
   #endif
+
+
 
   // Make sure the generated image matches the reference image (regression check)
   shrLog(LOGBOTH, 0, "\nComparing against Host/C++ computation...\n");     
