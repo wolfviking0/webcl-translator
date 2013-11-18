@@ -1700,6 +1700,38 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_buffer);
 
+    // \todo need to be remove when firefox will be support hot_ptr
+    /**** **** **** **** **** **** **** ****/
+    if (_host_ptr != null) {
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+        // Search command
+        var commandqueue = null;
+        for (var obj in CL.cl_objects) {
+          if (CL.cl_objects[obj] instanceof WebCLCommandQueue) {
+            commandqueue = CL.cl_objects[obj];
+            break;
+          }
+        }
+        
+        if (commandqueue != null) {
+          _clEnqueueWriteBuffer(obj,_id,true,0,size,host_ptr,0,0,0);
+        } else {
+          if (cl_errcode_ret != 0) {
+            {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+          }
+
+#if OPENCL_CHECK_SET_POINTER    
+          CL.cl_pn_type = 0;
+#endif
+#if OPENCL_GRAB_TRACE
+          CL.webclEndStackTrace([0,cl_errcode_ret],"Firefox doesn't support host_ptr (Not found command queue)","");
+#endif
+          return 0; 
+        }
+      }
+    }
+    /**** **** **** **** **** **** **** ****/
+
 #if OPENCL_CHECK_SET_POINTER    
     CL.cl_pn_type = 0;
 #endif    
