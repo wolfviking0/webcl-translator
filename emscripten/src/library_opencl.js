@@ -1603,6 +1603,7 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
   clCreateBuffer: function(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
