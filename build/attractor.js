@@ -101,7 +101,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = '1ef532fe-484a-4063-925b-dfba08984f9d';
+    var PACKAGE_UUID = '2d84ab00-f62a-43c2-931f-49adc0f60c91';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -7034,7 +7034,28 @@ function copyTempDouble(ptr) {
       }
       return webcl.SUCCESS;
     }
-  function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
+  function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
+      try { 
+            var _event = null;
+            var _event_wait_list = [];
+            var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
+            for (var i = 0; i < num_events_in_wait_list; i++) {
+              var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+              if (_event_wait in CL.cl_objects) {
+                _event_wait_list.push(_event_wait);
+              } else {
+                return webcl.INVALID_EVENT;    
+              }
+            } 
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
+            // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
+            // if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
+      } catch (e) {
+        var _error = CL.catchError(e);
+        return _error;
+      }
+      return webcl.SUCCESS;  
+    }function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
       // Assume the flags is i32 
       assert(flags_i64_2 == 0, 'Invalid flags i64');
       var _id = null;
@@ -7077,6 +7098,29 @@ function copyTempDouble(ptr) {
         HEAP32[((cl_errcode_ret)>>2)]=0;
       }
       _id = CL.udid(_buffer);
+      // \todo need to be remove when firefox will be support hot_ptr
+      /**** **** **** **** **** **** **** ****/
+      if (_host_ptr != null) {
+        if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+          // Search command
+          var commandqueue = null;
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLCommandQueue) {
+              commandqueue = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (commandqueue != null) {
+            _clEnqueueWriteBuffer(obj,_id,true,0,size,host_ptr,0,0,0);
+          } else {
+            if (cl_errcode_ret != 0) {
+              HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+            }
+            return 0; 
+          }
+        }
+      }
+      /**** **** **** **** **** **** **** ****/
       return _id;
     }
   function _clCreateFromGLBuffer(context,flags_i64_1,flags_i64_2,bufobj,cl_errcode_ret) {
