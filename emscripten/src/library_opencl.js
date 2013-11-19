@@ -621,9 +621,20 @@ var LibraryOpenCL = {
     var _debug = "clSetTypePointer : ("+num_pn_type+") [";
 #endif    
 
+    var _old_pn_type = -1;
+    var _num_pn_type = 0;
     for (var i = 0; i < num_pn_type ; i++) {
       var _pn_type = {{{ makeGetValue('pn_type', 'i*4', 'i32') }}}
-      CL.cl_pn_type.push(_pn_type);       
+
+      if (_pn_type != _old_pn_type) {
+        if (_num_pn_type > 0)
+          CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
+
+        _old_pn_type = _pn_type;
+        _num_pn_type = 1;
+      } else {
+        _num_pn_type ++;
+      }
 
 #if OPENCL_DEBUG    
       if (i > 0) {
@@ -634,6 +645,9 @@ var LibraryOpenCL = {
 #endif
 
     }
+
+    if (_num_pn_type > 0)
+      CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
   
 #if OPENCL_DEBUG    
     _debug += "]";
