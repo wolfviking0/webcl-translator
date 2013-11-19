@@ -39,14 +39,16 @@ var LibraryOpenCL = {
 
           console.error("Unfortunately your system does not support WebCL.\n");
           console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
+        } else {
+          // Add webcl constant for parser
+          webcl["SAMPLER"] = 0x1300;
+          webcl["IMAGE2D"] = 0x1301;
+
+          CL.cl_init = 1;
         }
-
-        // Add webcl constant for parser
-        webcl["SAMPLER"] = 0x1300;
-        webcl["IMAGE2D"] = 0x1301;
-
-        CL.cl_init = 1;
       }
+
+      return CL.cl_init;
     },
     
     udid: function (obj) {    
@@ -378,7 +380,8 @@ var LibraryOpenCL = {
 
     },
 
-    getCopyPointerToArray: function(ptr,size,type) {  
+    getCopyPointerToArray: function(ptr,size,type) { 
+
       var _host_ptr = null;
 
       if (type.length == 0) {
@@ -386,30 +389,72 @@ var LibraryOpenCL = {
         type.push(webcl.FLOAT);
       }
 
-      if (type.length > 1) console.error("getCopyPointerToArray: clSetTypePointer struct parameter type "+type+" not yet implemented !!!!"); 
+      console.info("->"+type);
+      console.info("->"+typeof(type));
+      console.info("->"+type.length);
 
-      switch(type[0]) {
-        case webcl.SIGNED_INT8:
-          _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
-          break;
-        case webcl.SIGNED_INT16:
-          _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
-          break;
-        case webcl.SIGNED_INT32:
-          _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT8:
-          _host_ptr = new Uint8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT16:
-          _host_ptr = new Uint16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
-          break;
-        case webcl.UNSIGNED_INT32:
-          _host_ptr = new Uint32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
-          break;         
-        default:
-          _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
-          break;
+      if (type.length == 1) {
+        switch(type[0][0]) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array( {{{ makeHEAPView('16','ptr','ptr+size') }}} );
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array( {{{ makeHEAPView('32','ptr','ptr+size') }}} );
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array( {{{ makeHEAPView('U8','ptr','ptr+size') }}} );
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array( {{{ makeHEAPView('U16','ptr','ptr+size') }}} );
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array( {{{ makeHEAPView('U32','ptr','ptr+size') }}} );
+            break;         
+          default:
+            _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
+            break;
+        }
+      } else {
+        _host_ptr = new DataView(new ArrayBuffer(size));
+
+        var _offset = 0;
+        for (var i = 0; i < type.length; i++) {
+          var _type = type[i][0];
+          var _num = type[i][1];
+          switch(_type) {
+            case webcl.SIGNED_INT8:
+              _host_ptr.setInt8(_offset,new Int8Array( {{{ makeHEAPView('8','ptr+_offset','ptr+_num+_offset') }}} ));
+              _offset += _num;
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr.setInt16(_offset,new Int16Array( {{{ makeHEAPView('16','ptr+_offset','ptr+_num*2+_offset') }}} ));
+              _offset += 2*_num;
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr.setInt32(_offset,new Int32Array( {{{ makeHEAPView('32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _offset += 4*_num;
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr.setUint8(_offset,new Uint8Array( {{{ makeHEAPView('U8','ptr+_offset','ptr+_num+_offset') }}} ));
+              _offset += _num;
+              break;
+            case webcl.UNSIGNED_INT16:
+              host_ptr.setUint16(_offset,new Uint16Array( {{{ makeHEAPView('U16','ptr+_offset','ptr+_num*2+_offset') }}} ));
+              _offset += 2*_num;
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr.setUint32(_offset,new Uint32Array( {{{ makeHEAPView('U32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _offset += 4*_num;
+              break;         
+            default:
+              _host_ptr.setFloat32(_offset,new Float32Array( {{{ makeHEAPView('F32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _offset += 4*_num;
+              break;
+          }
+        }
       }
 
       return _host_ptr;
@@ -418,14 +463,7 @@ var LibraryOpenCL = {
     getReferencePointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
-      if (type.length == 0) {
-        // Use default type if type is not defined
-        type.push(webcl.FLOAT);
-      }
-
-      if (type.length > 1) console.error("getReferencePointerToArray: clSetTypePointer struct parameter type "+type+" not yet implemented !!!!"); 
-
-      switch(type[0]) {
+      switch(type[0][0]) {
         case webcl.SIGNED_INT8:
           _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}};
           break;
@@ -448,7 +486,7 @@ var LibraryOpenCL = {
           _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
           break;
       }
-      
+
       return _host_ptr;
     },
 
@@ -497,7 +535,7 @@ var LibraryOpenCL = {
           (parameter[i] instanceof Int16Array)    ||
           (parameter[i] instanceof Int32Array)    ||
           (parameter[i] instanceof Float32Array)  ||          
-          (parameter[i] instanceof ArrayBuffer)   ||           
+          (parameter[i] instanceof ArrayBuffer)   ||            
           (parameter[i] instanceof Array)){ 
 
           CL.stack_trace += "[";  
@@ -525,7 +563,7 @@ var LibraryOpenCL = {
           (parameter[parameter.length - 1] instanceof Int16Array)    ||
           (parameter[parameter.length - 1] instanceof Int32Array)    ||
           (parameter[parameter.length - 1] instanceof Float32Array)  ||          
-          (parameter[parameter.length - 1] instanceof ArrayBuffer)   ||           
+          (parameter[parameter.length - 1] instanceof ArrayBuffer)   ||  
           (parameter[parameter.length - 1] instanceof Array)){ 
 
           CL.stack_trace += "[";  
@@ -664,7 +702,12 @@ var LibraryOpenCL = {
 #endif
 
     // Init webcl variable if necessary
-    CL.init();
+    if (CL.init() == 0) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
 
     if ( num_entries == 0 && platforms != 0) {
 #if OPENCL_GRAB_TRACE
@@ -783,7 +826,12 @@ var LibraryOpenCL = {
 #endif
     
     // Init webcl variable if necessary
-    CL.init();
+    if (CL.init() == 0) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
 
     if ( num_entries == 0 && devices != 0) {
 #if OPENCL_GRAB_TRACE
@@ -985,7 +1033,12 @@ var LibraryOpenCL = {
 #endif
 
     // Init webcl variable if necessary
-    CL.init();
+    if (CL.init() == 0) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
     
     var _id = null;
     var _context = null;
@@ -1127,7 +1180,12 @@ var LibraryOpenCL = {
 #endif
 
     // Init webcl variable if necessary
-    CL.init();
+    if (CL.init() == 0) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+#endif
+      return webcl.INVALID_VALUE;
+    }
 
     var _id = null;
     var _context = null;
@@ -3266,7 +3324,7 @@ var LibraryOpenCL = {
 
         } else {
 
-          var _array = CL.getReferencePointerToArray(arg_value,arg_size,_sig);
+          var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
