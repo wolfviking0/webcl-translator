@@ -14,6 +14,8 @@
 
 #version 100
 
+precision mediump float;
+
 uniform mat4 u_matViewProjection;
 uniform float u_pointSize;
 

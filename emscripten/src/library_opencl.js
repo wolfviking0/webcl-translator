@@ -500,7 +500,6 @@ var LibraryOpenCL = {
         }
       } else {
         _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
-
         /*
         console.info("------");
         _host_ptr = new DataView(new ArrayBuffer(size));
@@ -546,8 +545,7 @@ var LibraryOpenCL = {
               _offset += 4*_num;
               break;
           }
-        }
-        */
+        }*/
       }
 
       return _host_ptr;
