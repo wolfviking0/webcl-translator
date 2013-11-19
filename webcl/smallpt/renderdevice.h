@@ -64,9 +64,24 @@ public:
 	}
 
 	void UpdateCameraBuffer(Camera *camera) {
-		#ifdef __EMSCRIPTEN__
-			//clSetTypePointer(CL_FLOAT);
-		#endif
+
+		CL_SET_TYPE_POINTER(
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT
+		)
 		queue->enqueueWriteBuffer(
 				*cameraBuffer,
 				CL_FALSE,
@@ -76,9 +91,19 @@ public:
 	}
 
 	void UpdateSceneBuffer(Sphere *spheres) {
-		#ifdef __EMSCRIPTEN__
-			//clSetTypePointer(CL_FLOAT);
-		#endif
+		CL_SET_TYPE_POINTER(
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_UNSIGNED_INT32
+		)
 		queue->enqueueWriteBuffer(
 				*sphereBuffer,
 				CL_FALSE,
@@ -138,9 +163,8 @@ private:
 	}
 
 	void ReadPixelBuffer() {
-		#ifdef __EMSCRIPTEN__
-			clSetTypePointer(CL_UNSIGNED_INT32);
-		#endif
+		
+		CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 		queue->enqueueReadBuffer(
 				*pixelBuffer,
 				CL_FALSE,

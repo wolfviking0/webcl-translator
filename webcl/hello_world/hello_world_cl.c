@@ -90,14 +90,6 @@ int end(int e) {
     return e;
 }
 
-void clSetTypePointerFunc(unsigned int n_args, ...) {
-    //clSetTypePointer(type,1);   
-}
-
-#define CL_TYPE_POINTER(...) \
-    int size = sizeof((int[]){__VA_ARGS__})/sizeof(int);\
-    clSetTypePointerFunc(size,__VA_ARGS__);\
-
 ////////////////////////////////////////////////////////////////////////////////
 
 // Use a static data size for simplicity
@@ -249,7 +241,7 @@ int main(int argc, char** argv)
     // Write our data set into the input array in device memory 
     //       
 
-    CL_TYPE_POINTER(CL_FLOAT,CL_SIGNED_INT32)
+    CL_SET_TYPE_POINTER(CL_FLOAT)
 
     err = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * count, data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -299,12 +291,9 @@ int main(int argc, char** argv)
 
     // Read back the results from the device to verify the output
     //
-    #ifdef __EMSCRIPTEN__
-    {
-        cl_uint type[1] = {CL_FLOAT};
-        clSetTypePointer(type,1);                               
-    }
-    #endif
+
+    CL_SET_TYPE_POINTER(CL_FLOAT)
+
     err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * count, results, 0, NULL, NULL );  
     if (err != CL_SUCCESS)
     {

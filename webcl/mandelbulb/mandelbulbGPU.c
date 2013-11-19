@@ -127,9 +127,7 @@ static void AllocateBuffers() {
 
 		pixels = (float *)malloc(3 * sizeof(float) * pixelCount);
 
-		#ifdef __EMSCRIPTEN__
-			clSetTypePointer(CL_FLOAT);
-		#endif
+		CL_SET_TYPE_POINTER(CL_FLOAT);
 	    pixelBuffer = clCreateBuffer(
 	            context,
 	            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -144,9 +142,38 @@ static void AllocateBuffers() {
 	}	
 
 	sizeBytes = sizeof(RenderingConfig);
-	#ifdef __EMSCRIPTEN__
-		clSetTypePointer(CL_FLOAT);
-	#endif
+
+	CL_SET_TYPE_POINTER(
+			CL_UNSIGNED_INT32,
+			CL_UNSIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_UNSIGNED_INT32,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT
+	)
 	configBuffer = clCreateBuffer(
 			context,
 			CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -715,9 +742,8 @@ void UpdateRendering() {
 
 		/* Enqueue readBuffer */
 		cl_event event;
-		#ifdef __EMSCRIPTEN__
-			clSetTypePointer(CL_FLOAT);
-		#endif
+		
+		CL_SET_TYPE_POINTER(CL_FLOAT);
 		status = clEnqueueReadBuffer(
 				commandQueue,
 				pixelBuffer,
@@ -773,9 +799,38 @@ void ReInit(const int reallocBuffers) {
 
 		/* Enqueue writeBuffer */
 		cl_event event;
-		#ifdef __EMSCRIPTEN__
-			clSetTypePointer(CL_FLOAT);
-		#endif
+		
+		CL_SET_TYPE_POINTER(
+			CL_UNSIGNED_INT32,
+			CL_UNSIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_SIGNED_INT32,
+			CL_UNSIGNED_INT32,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT,
+			CL_FLOAT
+		)
 		cl_int status = clEnqueueWriteBuffer(
 				commandQueue,
 				configBuffer,

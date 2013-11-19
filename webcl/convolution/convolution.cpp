@@ -281,7 +281,7 @@ int main(int argc, char** argv)
 #endif
 
 	// Now allocate buffers
-	clSetTypePointer(CL_UNSIGNED_INT32);
+	CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	inputSignalBuffer = clCreateBuffer(
 		context,
 		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -289,7 +289,7 @@ int main(int argc, char** argv)
 		static_cast<void *>(inputSignal),
 		&errNum);
 	checkErr(errNum, "clCreateBuffer(inputSignal)");
-	clSetTypePointer(CL_UNSIGNED_INT32);
+	CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	maskBuffer = clCreateBuffer(
 		context,
 		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
 		static_cast<void *>(mask),
 		&errNum);
 	checkErr(errNum, "clCreateBuffer(mask)");
-	clSetTypePointer(CL_UNSIGNED_INT32);
+	CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	outputSignalBuffer = clCreateBuffer(
 		context,
 		CL_MEM_WRITE_ONLY,
@@ -338,7 +338,7 @@ int main(int argc, char** argv)
 		NULL, 
 		NULL);
 	checkErr(errNum, "clEnqueueNDRangeKernel");
-    clSetTypePointer(CL_UNSIGNED_INT32);
+    CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	errNum = clEnqueueReadBuffer(
 		queue, 
 		outputSignalBuffer, 

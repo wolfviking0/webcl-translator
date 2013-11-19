@@ -92,9 +92,24 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 	//renderThread = new boost::thread(boost::bind(RenderDevice::RenderThread, this));
 
 	// Create camera buffer
-	#ifdef __EMSCRIPTEN__
-		//clSetTypePointer(CL_FLOAT);
-	#endif
+
+	CL_SET_TYPE_POINTER(
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT
+	)
 	cameraBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
 			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
@@ -105,9 +120,19 @@ RenderDevice::RenderDevice(const cl::Device &device, const string &kernelFileNam
 				camera);
 	cerr << "[Device::" << deviceName << "] Camera buffer size: " << (sizeof(Camera) / 1024) << "Kb" << endl;
 
-	#ifdef __EMSCRIPTEN__
-		//clSetTypePointer(CL_FLOAT);
-	#endif
+	CL_SET_TYPE_POINTER(
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_UNSIGNED_INT32
+	)
 	sphereBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
 			CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
@@ -202,9 +227,13 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 	pixels = screenPixels;
 
 	colors = new Vec[workAmount];
-	#ifdef __EMSCRIPTEN__
-		//clSetTypePointer(CL_FLOAT);
-	#endif
+	
+
+	CL_SET_TYPE_POINTER(
+		CL_FLOAT,
+		CL_FLOAT,
+		CL_FLOAT
+	)
 	colorBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
 			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL
@@ -215,9 +244,7 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 			colors);
 	cerr << "[Device::" << deviceName << "] Color buffer size: " << (sizeof(Vec) * workAmount / 1024) << "Kb" << endl;
 
-	#ifdef __EMSCRIPTEN__
-		clSetTypePointer(CL_UNSIGNED_INT32);
-	#endif
+	CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	pixelBuffer = new cl::Buffer(*context,
 			CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
 			sizeof(unsigned int) * workAmount,
@@ -231,9 +258,7 @@ void RenderDevice::SetWorkLoad(const unsigned int offset, const unsigned int amo
 			seeds[i] = 2;
 	}
 
-	#ifdef __EMSCRIPTEN__
-		clSetTypePointer(CL_UNSIGNED_INT32);
-	#endif
+	CL_SET_TYPE_POINTER(CL_UNSIGNED_INT32);
 	seedBuffer = new cl::Buffer(*context,
 #if defined (__APPLE__)
 			CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, // CL_MEM_USE_HOST_PTR is very slow with Apple's OpenCL

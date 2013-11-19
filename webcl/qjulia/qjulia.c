@@ -594,10 +594,7 @@ Recompute(void)
 
     } else {
 
-        #ifdef __EMSCRIPTEN__
-            // Type of HostImageBuffer
-            clSetTypePointer(CL_UNSIGNED_INT8);
-        #endif
+        CL_SET_TYPE_POINTER(CL_UNSIGNED_INT8);
         err = clEnqueueReadBuffer( ComputeCommands, ComputeResult, CL_TRUE, 0, Width * Height * TextureTypeSize * 4, HostImageBuffer, 0, NULL, NULL );      
         if (err != CL_SUCCESS)
         {
@@ -652,9 +649,7 @@ CreateComputeResult(void)
         clReleaseMemObject(ComputeResult);
     ComputeResult = 0;
     
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(CL_UNSIGNED_INT8);
-    #endif
+    CL_SET_TYPE_POINTER(CL_UNSIGNED_INT8);
     ComputeResult = clCreateBuffer(ComputeContext, CL_MEM_WRITE_ONLY, TextureTypeSize * 4 * TextureWidth * TextureHeight, NULL, NULL);
     if (!ComputeResult)
     {

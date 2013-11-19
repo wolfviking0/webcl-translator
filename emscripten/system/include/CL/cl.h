@@ -582,6 +582,19 @@ extern CL_API_ENTRY cl_int
 clSetTypePointer(cl_channel_type* /* pn_type */,
                  cl_uint /*num_pn_type*/);
 
+#define CL_SET_TYPE_POINTER(...)\
+    { \
+        const unsigned int size = sizeof((cl_uint[]){__VA_ARGS__})/sizeof(cl_uint); \
+        cl_uint type[size]; \
+        cl_uint _arr_[] = {__VA_ARGS__}; \
+        for(unsigned int i = 0; i < size ; i++) type[i] = _arr_[i]; \
+        clSetTypePointer(type,size); \
+    }
+
+#else
+
+    #define CL_SET_TYPE_POINTER(...)
+
 #endif
 
 /* Platform API */

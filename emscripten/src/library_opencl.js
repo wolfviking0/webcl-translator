@@ -386,7 +386,7 @@ var LibraryOpenCL = {
         type.push(webcl.FLOAT);
       }
 
-      if (type.length > 1) console.error("Struct parameter type "+type+" not yet implemented !!!!"); 
+      if (type.length > 1) console.error("getCopyPointerToArray: clSetTypePointer struct parameter type "+type+" not yet implemented !!!!"); 
 
       switch(type[0]) {
         case webcl.SIGNED_INT8:
@@ -423,7 +423,7 @@ var LibraryOpenCL = {
         type.push(webcl.FLOAT);
       }
 
-      if (type.length > 1) console.error("Struct parameter type "+type+" not yet implemented !!!!"); 
+      if (type.length > 1) console.error("getReferencePointerToArray: clSetTypePointer struct parameter type "+type+" not yet implemented !!!!"); 
 
       switch(type[0]) {
         case webcl.SIGNED_INT8:
@@ -618,7 +618,7 @@ var LibraryOpenCL = {
     /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
     
 #if OPENCL_DEBUG    
-    var _debug = "clSetTypePointer : [";
+    var _debug = "clSetTypePointer : ("+num_pn_type+") [";
 #endif    
 
     for (var i = 0; i < num_pn_type ; i++) {

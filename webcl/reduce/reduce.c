@@ -544,9 +544,7 @@ int main(int argc, char **argv)
     //
     size_t buffer_size = typesize * count * channels;
 
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
-    #endif
+    CL_SET_TYPE_POINTER(integer ? CL_SIGNED_INT32 : CL_FLOAT);
     input_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!input_buffer)
     {
@@ -557,9 +555,7 @@ int main(int argc, char **argv)
     // Fill the input buffer with the host allocated random data
     //
     void *input_data = (integer) ? (void*)integer_data : (void*)float_data;
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
-    #endif    
+    CL_SET_TYPE_POINTER(integer ? CL_SIGNED_INT32 : CL_FLOAT);
     err = clEnqueueWriteBuffer(commands, input_buffer, CL_TRUE, 0, buffer_size, input_data, 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -569,9 +565,7 @@ int main(int argc, char **argv)
 
     // Create an intermediate data buffer for intra-level results
     //
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(CL_SIGNED_INT32);
-    #endif
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     partials_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!partials_buffer)
     {
@@ -581,9 +575,7 @@ int main(int argc, char **argv)
     
     // Create the output buffer on the device
     //
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(CL_SIGNED_INT32);
-    #endif    
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     output_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, NULL);
     if (!output_buffer)
     {
@@ -759,9 +751,7 @@ int main(int argc, char **argv)
     //
     void *computed_result = malloc(typesize * channels);
     memset(computed_result, 0, typesize * channels);
-    #ifdef __EMSCRIPTEN__
-        clSetTypePointer(integer ? CL_SIGNED_INT32 : CL_FLOAT);
-    #endif  
+    CL_SET_TYPE_POINTER(integer ? CL_SIGNED_INT32 : CL_FLOAT);
     err = clEnqueueReadBuffer(commands, pass_output, CL_TRUE, 0, typesize * channels, computed_result, 0, NULL, NULL);
     if (err)
     {

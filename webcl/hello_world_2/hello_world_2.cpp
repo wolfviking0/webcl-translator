@@ -206,13 +206,13 @@ cl_program CreateProgram(cl_context context, cl_device_id device, const char* fi
 bool CreateMemObjects(cl_context context, cl_mem memObjects[3],
                       int *a, int *b)
 {
-    clSetTypePointer(CL_SIGNED_INT32);
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     memObjects[0] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                    sizeof(int) * ARRAY_SIZE, a, NULL);
-    clSetTypePointer(CL_SIGNED_INT32);
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     memObjects[1] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                    sizeof(int) * ARRAY_SIZE, b, NULL);
-    clSetTypePointer(CL_SIGNED_INT32);
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     memObjects[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                    sizeof(int) * ARRAY_SIZE, NULL, NULL);
 
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
     }
 
     // Read the output buffer back to the Host
-    clSetTypePointer(CL_SIGNED_INT32);
+    CL_SET_TYPE_POINTER(CL_SIGNED_INT32);
     errNum = clEnqueueReadBuffer(commandQueue, memObjects[2], CL_TRUE,
                                  0, ARRAY_SIZE * sizeof(int), result,
                                  0, NULL, NULL);
