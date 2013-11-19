@@ -11,7 +11,7 @@ var LibraryOpenCL = {
     // Structs Kernels parser
     cl_structs_sig: {},
     // Pointer type (void*)
-    cl_pn_type: 0,
+    cl_pn_type: [],
     cl_objects: {},
     cl_objects_retains: {},
 
@@ -381,7 +381,14 @@ var LibraryOpenCL = {
     getCopyPointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
-      switch(type) {
+      if (type.length == 0) {
+        // Use default type if type is not defined
+        type.push(webcl.FLOAT);
+      }
+
+      if (type.length > 1) console.error("Struct parameter type "+type+" not yet implemented !!!!"); 
+
+      switch(type[0]) {
         case webcl.SIGNED_INT8:
           _host_ptr = new Int8Array( {{{ makeHEAPView('8','ptr','ptr+size') }}} );
           break;
@@ -411,7 +418,14 @@ var LibraryOpenCL = {
     getReferencePointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
-      switch(type) {
+      if (type.length == 0) {
+        // Use default type if type is not defined
+        type.push(webcl.FLOAT);
+      }
+
+      if (type.length > 1) console.error("Struct parameter type "+type+" not yet implemented !!!!"); 
+
+      switch(type[0]) {
         case webcl.SIGNED_INT8:
           _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}};
           break;
@@ -600,37 +614,35 @@ var LibraryOpenCL = {
   },
 
 
-  clSetTypePointer: function(pn_type) {
+  clSetTypePointer: function(pn_type, num_pn_type) {
     /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
+    
 #if OPENCL_DEBUG    
-    switch(pn_type) {
-      case webcl.SIGNED_INT8:
-        console.info("clSetTypePointer : SIGNED_INT8 - "+webcl.SIGNED_INT8);
-        break;
-      case webcl.SIGNED_INT16:
-        console.info("clSetTypePointer : SIGNED_INT16 - "+webcl.SIGNED_INT16);
-        break;
-      case webcl.SIGNED_INT32:
-        console.info("clSetTypePointer : SIGNED_INT32 - "+webcl.SIGNED_INT32);
-        break;
-      case webcl.UNSIGNED_INT8:
-        console.info("clSetTypePointer : UNSIGNED_INT8 - "+webcl.UNSIGNED_INT8);
-        break;
-      case webcl.UNSIGNED_INT16:
-        console.info("clSetTypePointer : UNSIGNED_INT16 - "+webcl.UNSIGNED_INT16);
-        break;
-      case webcl.UNSIGNED_INT32:
-        console.info("clSetTypePointer : UNSIGNED_INT32 - "+webcl.UNSIGNED_INT32);
-        break;
-      default:
-        console.info("clSetTypePointer : FLOAT - "+webcl.FLOAT);
-        break;
+    var _debug = "clSetTypePointer : [";
+#endif    
+
+    for (var i = 0; i < num_pn_type ; i++) {
+      var _pn_type = {{{ makeGetValue('pn_type', 'i*4', 'i32') }}}
+      CL.cl_pn_type.push(_pn_type);       
+
+#if OPENCL_DEBUG    
+      if (i > 0) {
+        _debug += ",";
+      }
+
+      _debug += CL.stringType(_pn_type);
+#endif
+
     }
-#endif   
-    CL.cl_pn_type = pn_type;
+  
+#if OPENCL_DEBUG    
+    _debug += "]";
+    console.info(_debug);
+#endif
+
     return webcl.SUCCESS;
   },
-
+  
   clGetPlatformIDs: function(num_entries,platforms,num_platforms) {
 
 #if OPENCL_GRAB_TRACE
@@ -1612,7 +1624,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clCreateBuffer",[context,flags_i64_1,size,host_ptr,cl_errcode_ret]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0 && host_ptr != 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
+    if (CL.cl_pn_type.length == 0 && host_ptr != 0) console.info("/!\\ clCreateBuffer : you don't call clSetTypePointer for host_ptr parameter");
 #endif
 
     var _id = null;
@@ -1626,7 +1638,7 @@ var LibraryOpenCL = {
       }
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
@@ -1649,7 +1661,7 @@ var LibraryOpenCL = {
       }
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
@@ -1687,7 +1699,7 @@ var LibraryOpenCL = {
       }
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif      
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
@@ -1722,7 +1734,7 @@ var LibraryOpenCL = {
           }
 
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([0,cl_errcode_ret],"Firefox doesn't support host_ptr (Not found command queue)","");
@@ -1734,7 +1746,7 @@ var LibraryOpenCL = {
     /**** **** **** **** **** **** **** ****/
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif    
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
@@ -3884,7 +3896,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueReadBuffer",[command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadBuffer : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadBuffer : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -3904,7 +3916,7 @@ var LibraryOpenCL = {
             } else {
 
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -3925,7 +3937,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT            
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif                
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -3934,7 +3946,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif                
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -3946,7 +3958,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif        
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -3956,7 +3968,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif        
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -3969,7 +3981,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueReadBufferRect",[command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadBufferRect : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadBufferRect : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -4000,7 +4012,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif                 
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -4021,7 +4033,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT             
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif           
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -4030,7 +4042,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif           
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -4042,7 +4054,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif   
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -4052,7 +4064,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif   
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4065,7 +4077,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueWriteBuffer",[command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteBuffer : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteBuffer : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -4084,7 +4096,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif               
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -4103,7 +4115,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif         
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -4112,7 +4124,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif         
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -4124,7 +4136,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -4134,7 +4146,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4148,7 +4160,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueWriteBufferRect",[command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteBufferRect : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteBufferRect : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -4178,7 +4190,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif               
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -4198,7 +4210,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif          
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
@@ -4207,7 +4219,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif          
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -4219,7 +4231,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif  
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -4229,7 +4241,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif  
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4307,7 +4319,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueReadImage",[command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueReadImage : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadImage : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -4336,7 +4348,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -4356,7 +4368,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif        
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
@@ -4365,7 +4377,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -4377,7 +4389,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -4387,7 +4399,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4400,7 +4412,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clEnqueueWriteImage",[command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
 #if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type == 0) console.info("/!\\ clEnqueueWriteImage : you don't call clSetTypePointer for ptr parameter");
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteImage : you don't call clSetTypePointer for ptr parameter");
 #endif
 
     try { 
@@ -4428,7 +4440,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = 0;
+              CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
@@ -4447,7 +4459,7 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = 0;
+          CL.cl_pn_type = [];
 #endif        
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
@@ -4456,7 +4468,7 @@ var LibraryOpenCL = {
         }
       } else {
 #if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = 0;
+        CL.cl_pn_type = [];
 #endif        
 #if OPENCL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
@@ -4468,7 +4480,7 @@ var LibraryOpenCL = {
       var _error = CL.catchError(e);
 
 #if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = 0;
+      CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
@@ -4478,7 +4490,7 @@ var LibraryOpenCL = {
     }
 
 #if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = 0;
+    CL.cl_pn_type = [];
 #endif
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");

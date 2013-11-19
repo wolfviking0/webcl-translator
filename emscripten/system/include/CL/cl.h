@@ -567,8 +567,6 @@ typedef struct _cl_buffer_region {
 /********************************************************************************************************/
 
 #ifdef __EMSCRIPTEN__
-extern CL_API_ENTRY cl_int 
-clSetTypePointer(cl_channel_type /* pn_type */);
 
 extern CL_API_ENTRY cl_int
 webclPrintStackTrace(const char * /* param_value */,
@@ -579,6 +577,11 @@ webclBeginProfile(const char * /* profiling_name */);
 
 extern CL_API_ENTRY cl_int
 webclEndProfile();
+
+extern CL_API_ENTRY cl_int 
+clSetTypePointer(cl_channel_type* /* pn_type */,
+                 cl_uint /*num_pn_type*/);
+
 #endif
 
 /* Platform API */
