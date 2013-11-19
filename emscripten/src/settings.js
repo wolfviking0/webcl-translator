@@ -219,7 +219,6 @@ var OPENCL_GRAB_TRACE = 0 // Grab all the wecl call
 var OPENCL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
 var OPENCL_PROFILE = 0 // Enable console.profile
 var OPENCL_FORCE_CPU = 0 // change clEnqueueNDRangeKernel for force CPU 
-var OPENCL_CHECK_SET_POINTER = 0 // Check if set pointer was call before function taking (void *) parameter
 var OPENCL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
 
 var GL_ASSERTIONS = 0; // Adds extra checks for error situations in the GL library. Can impact performance.

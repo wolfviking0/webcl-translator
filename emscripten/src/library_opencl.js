@@ -385,13 +385,9 @@ var LibraryOpenCL = {
       var _host_ptr = null;
 
       if (type.length == 0) {
-        // Use default type if type is not defined
-        type.push(webcl.FLOAT);
+        console.error("getCopyPointerToArray : error unknow type with length null "+type);
+        return _host_ptr;
       }
-
-      console.info("->"+type);
-      console.info("->"+typeof(type));
-      console.info("->"+type.length);
 
       if (type.length == 1) {
         switch(type[0][0]) {
@@ -418,6 +414,9 @@ var LibraryOpenCL = {
             break;
         }
       } else {
+        _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
+        /*
+        console.info("------");
         _host_ptr = new DataView(new ArrayBuffer(size));
 
         var _offset = 0;
@@ -426,35 +425,42 @@ var LibraryOpenCL = {
           var _num = type[i][1];
           switch(_type) {
             case webcl.SIGNED_INT8:
-              _host_ptr.setInt8(_offset,new Int8Array( {{{ makeHEAPView('8','ptr+_offset','ptr+_num+_offset') }}} ));
+              _host_ptr.setInt8(_offset,new Int8Array( {{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} ));
+              console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
               _offset += _num;
               break;
             case webcl.SIGNED_INT16:
-              _host_ptr.setInt16(_offset,new Int16Array( {{{ makeHEAPView('16','ptr+_offset','ptr+_num*2+_offset') }}} ));
+              _host_ptr.setInt16(_offset,new Int16Array( {{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} ));
+              console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
               _offset += 2*_num;
               break;
             case webcl.SIGNED_INT32:
-              _host_ptr.setInt32(_offset,new Int32Array( {{{ makeHEAPView('32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _host_ptr.setInt32(_offset,new Int32Array( {{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+              console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
               _offset += 4*_num;
               break;
             case webcl.UNSIGNED_INT8:
-              _host_ptr.setUint8(_offset,new Uint8Array( {{{ makeHEAPView('U8','ptr+_offset','ptr+_num+_offset') }}} ));
+              _host_ptr.setUint8(_offset,new Uint8Array( {{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} ));
+              console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
               _offset += _num;
               break;
             case webcl.UNSIGNED_INT16:
-              host_ptr.setUint16(_offset,new Uint16Array( {{{ makeHEAPView('U16','ptr+_offset','ptr+_num*2+_offset') }}} ));
+              host_ptr.setUint16(_offset,new Uint16Array( {{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} ));
+              console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
               _offset += 2*_num;
               break;
             case webcl.UNSIGNED_INT32:
-              _host_ptr.setUint32(_offset,new Uint32Array( {{{ makeHEAPView('U32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _host_ptr.setUint32(_offset,new Uint32Array( {{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+              console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
               _offset += 4*_num;
               break;         
             default:
-              _host_ptr.setFloat32(_offset,new Float32Array( {{{ makeHEAPView('F32','ptr+_offset','ptr+_num*4+_offset') }}} ));
+              _host_ptr.setFloat32(_offset,new Float32Array( {{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+              console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
               _offset += 4*_num;
               break;
           }
-        }
+        }*/
       }
 
       return _host_ptr;
@@ -463,28 +469,85 @@ var LibraryOpenCL = {
     getReferencePointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
-      switch(type[0][0]) {
-        case webcl.SIGNED_INT8:
-          _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}};
-          break;
-        case webcl.SIGNED_INT16:
-          _host_ptr = {{{ makeHEAPView('16','ptr','ptr+size') }}};
-          break;
-        case webcl.SIGNED_INT32:
-          _host_ptr = {{{ makeHEAPView('32','ptr','ptr+size') }}};
-          break;
-        case webcl.UNSIGNED_INT8:
-          _host_ptr = {{{ makeHEAPView('U8','ptr','ptr+size') }}};
-          break;
-        case webcl.UNSIGNED_INT16:
-          _host_ptr = {{{ makeHEAPView('U16','ptr','ptr+size') }}};
-          break;
-        case webcl.UNSIGNED_INT32:
-          _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}};
-          break;         
-        default:
-          _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
-          break;
+      if (type.length == 0) {
+        console.error("getCopyPointerToArray : error unknow type with length null "+type);
+        return _host_ptr;
+      }
+
+      if (type.length == 1) {
+        switch(type[0][0]) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = {{{ makeHEAPView('8','ptr','ptr+size') }}};
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = {{{ makeHEAPView('16','ptr','ptr+size') }}};
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = {{{ makeHEAPView('32','ptr','ptr+size') }}};
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = {{{ makeHEAPView('U8','ptr','ptr+size') }}};
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = {{{ makeHEAPView('U16','ptr','ptr+size') }}};
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = {{{ makeHEAPView('U32','ptr','ptr+size') }}};
+            break;         
+          default:
+            _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
+            break;
+        }
+      } else {
+        _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
+
+        /*
+        console.info("------");
+        _host_ptr = new DataView(new ArrayBuffer(size));
+
+        var _offset = 0;
+        for (var i = 0; i < type.length; i++) {
+          var _type = type[i][0];
+          var _num = type[i][1];
+          switch(_type) {
+            case webcl.SIGNED_INT8:
+              _host_ptr.setInt8(_offset,{{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} );
+              console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+              _offset += _num;
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr.setInt16(_offset,{{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} );
+              console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+              _offset += 2*_num;
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr.setInt32(_offset,{{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} );
+              console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+              _offset += 4*_num;
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr.setUint8(_offset,{{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} );
+              console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+              _offset += _num;
+              break;
+            case webcl.UNSIGNED_INT16:
+              host_ptr.setUint16(_offset,{{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} );
+              console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+              _offset += 2*_num;
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr.setUint32(_offset,{{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} );
+              console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+              _offset += 4*_num;
+              break;         
+            default:
+              _host_ptr.setFloat32(_offset,{{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} );
+              console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+              _offset += 4*_num;
+              break;
+          }
+        }
+        */
       }
 
       return _host_ptr;
@@ -655,6 +718,9 @@ var LibraryOpenCL = {
   clSetTypePointer: function(pn_type, num_pn_type) {
     /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
     
+    // Clean
+    CL.cl_pn_type = [];
+
 #if OPENCL_DEBUG    
     var _debug = "clSetTypePointer : ("+num_pn_type+") [";
 #endif    
@@ -1709,9 +1775,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
 #endif
@@ -1732,9 +1795,6 @@ var LibraryOpenCL = {
         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
       }
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
 #endif
@@ -1769,10 +1829,7 @@ var LibraryOpenCL = {
       if (cl_errcode_ret != 0) {
         {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
       }
-
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif      
+      
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
 #endif
@@ -4028,10 +4085,7 @@ var LibraryOpenCL = {
 #endif
     } catch (e) {
       var _error = CL.catchError(e);
-
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif        
+        
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -4124,10 +4178,7 @@ var LibraryOpenCL = {
 #endif
     } catch (e) {
       var _error = CL.catchError(e);
-
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif   
+   
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -4206,10 +4257,7 @@ var LibraryOpenCL = {
 #endif
     } catch (e) {
       var _error = CL.catchError(e);
-
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif 
+ 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -4301,10 +4349,7 @@ var LibraryOpenCL = {
 #endif
     } catch (e) {
       var _error = CL.catchError(e);
-
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif  
+  
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -4460,9 +4505,6 @@ var LibraryOpenCL = {
     } catch (e) {
       var _error = CL.catchError(e);
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
@@ -4551,9 +4593,6 @@ var LibraryOpenCL = {
     } catch (e) {
       var _error = CL.catchError(e);
 
-#if OPENCL_CHECK_SET_POINTER    
-      CL.cl_pn_type = [];
-#endif
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
