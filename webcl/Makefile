@@ -1,10 +1,11 @@
-EMCC:=../../emscripten
+EMSCRIPTEN_ROOT:=../../emscripten
+
+#EMSCRIPTEN_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/emscripten
+#LLVM_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/compilo/llvm/bin
 	
-EMSCRIPTEN = $(EMCC)
-CXX = $(EMSCRIPTEN)/emcc
-AR = $(EMSCRIPTEN)/emar
-EMCONFIGURE = $(EMSCRIPTEN)/emconfigure
-EMMAKE = $(EMSCRIPTEN)/emmake
+CXX = $(EMSCRIPTEN_ROOT)/emcc
+VALIDATOR = $(LLVM_ROOT)/webcl-validator
+
 
 CHDIR_SHELL := $(SHELL)
 define chdir
@@ -68,6 +69,7 @@ hello_world_cuda_sample:
 # Not yet working -> issue #315
 hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
+	#$(VALIDATOR) hello_world_2.cl >> hello_world_2.validated.cl
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(MODE) \
 	--preload-file hello_world_2.cl \
 	-o ../build/hello_world_2.js
