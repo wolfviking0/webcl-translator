@@ -330,7 +330,7 @@ for file_ in data_files:
         partial_dirs.append(partial)
 
 if in_preload_validator:
-  VALIDATOR = os.path.join(os.environ.get('LLVM_ROOT'),'webcl-validator')
+  VALIDATOR = os.path.join(shared.LLVM_ROOT,'webcl-validator')
   fullname = os.path.join(curr_abspath , file_['srcpath'])
   # Launch webcl-validator
   proc = Popen([VALIDATOR, unsuffixed(fullname)], stdout=PIPE)

@@ -1205,7 +1205,6 @@ class Building:
   def emscripten(filename, append_ext=True, extra_args=[]):
     # Allow usage of emscripten.py without warning
     os.environ['EMSCRIPTEN_SUPPRESS_USAGE_WARNING'] = '1'
-    os.environ['LLVM_ROOT'] = LLVM_ROOT
 
     # Run Emscripten
     Settings.RELOOPER = Cache.get_path('relooper.js')
