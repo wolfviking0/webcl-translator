@@ -75,8 +75,8 @@ hello_world_2_sample:
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(MODE) \
-	--preload-file convolution_kernel.cl \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
+	--preload-file-validator convolution_kernel.cl \
 	-o ../build/convolution.js
 
 # Need memory 1024 * 1024 * 20
