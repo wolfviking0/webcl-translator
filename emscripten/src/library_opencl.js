@@ -15,6 +15,12 @@ var LibraryOpenCL = {
     cl_objects: {},
     cl_objects_retains: {},
 
+#if OPENCL_VALIDATOR
+    cl_validator: {},
+    cl_validator_length : 0,
+    cl_validator_swap : 0,
+#endif    
+
 #if OPENCL_PROFILE
     cl_elapsed_time: 0,
     cl_objects_counter: 0,
@@ -41,8 +47,9 @@ var LibraryOpenCL = {
           console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
         } else {
           // Add webcl constant for parser
-          webcl["SAMPLER"] = 0x1300;
-          webcl["IMAGE2D"] = 0x1301;
+          webcl["SAMPLER"]          = 0x1300;
+          webcl["IMAGE2D"]          = 0x1301;
+          webcl["UNSIGNED_LONG"]    = 0x1302;
 
           CL.cl_init = 1;
         }
@@ -107,6 +114,8 @@ var LibraryOpenCL = {
           return 'UINT16';
         case webcl.UNSIGNED_INT32:
           return 'UINT32';
+        case webcl.UNSIGNED_LONG:
+          return 'ULONG';          
         case webcl.FLOAT:
           return 'FLOAT';
         case webcl.LOCAL:
@@ -135,7 +144,10 @@ var LibraryOpenCL = {
       } else if ( string.indexOf("short") >= 0 ) {
         _value = webcl.SIGNED_INT16;                     
       } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-        _value = webcl.UNSIGNED_INT32;            
+        _value = webcl.UNSIGNED_INT32;       
+      } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+        // \todo : long ???? 
+        _value = webcl.UNSIGNED_LONG;     
       } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
         _value = webcl.SIGNED_INT32;
       } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -336,6 +348,16 @@ var LibraryOpenCL = {
 
           } else {
             _param.push(_type);
+
+#if OPENCL_VALIDATOR
+              if (CL.cl_validator_swap == 0) {
+                CL.cl_validator[CL.cl_validator_length] = _param.length - 1;  
+                console.info(CL.cl_validator_length + " -- " + (_param.length - 1));
+                CL.cl_validator_length++;
+              }
+                
+             CL.cl_validator_swap = 1 - CL.cl_validator_swap;
+#endif    
           }
         }        
 
@@ -3372,10 +3394,36 @@ var LibraryOpenCL = {
 
         if (_value in CL.cl_objects) {
 
+#if OPENCL_VALIDATOR
+        
+          var _posarg = CL.cl_validator[arg_index];
+          console.info("Real position : "+_posarg);
+  
+          var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
+          console.info("Real size : "+_size);
+          var _sizearg = new Int32Array([_size]);
+       
+    
+
+#if OPENCL_GRAB_TRACE
+          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[_posarg,CL.cl_objects[_value]]);
+#endif        
+          CL.cl_objects[kernel].setArg(_posarg,CL.cl_objects[_value]);
+
+
+#if OPENCL_GRAB_TRACE
+          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+#endif        
+          CL.cl_objects[kernel].setArg(_posarg+1,_sizearg);
+
+#else
+
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
 #endif        
           CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
+
+#endif    
 
         } else {
 

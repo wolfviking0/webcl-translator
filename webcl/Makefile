@@ -68,8 +68,7 @@ hello_world_cuda_sample:
 # Not yet working -> issue #315
 hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
-	#$(VALIDATOR) hello_world_2.cl >> hello_world_2.validated.cl
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
 	--preload-file-validator hello_world_2.cl \
 	-o ../build/hello_world_2.js
 

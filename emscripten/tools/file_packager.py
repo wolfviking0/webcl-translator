@@ -332,8 +332,13 @@ for file_ in data_files:
 if in_preload_validator:
   VALIDATOR = os.path.join(os.environ.get('LLVM_ROOT'),'webcl-validator')
   fullname = os.path.join(curr_abspath , file_['srcpath'])
-  validated = open(fullname, 'a')
-  Popen([VALIDATOR, unsuffixed(fullname)], stdout=validated, stderr=validated, shell=True).communicate()
+  # Launch webcl-validator
+  proc = Popen([VALIDATOR, unsuffixed(fullname)], stdout=PIPE)
+  out, err = proc.communicate()
+  # Write the output inside file
+  validated = open(fullname, 'wb')
+  validated.write(out)
+  validated.close()
   
 if has_preloaded:
   # Bundle all datafiles into one archive. Avoids doing lots of simultaneous XHRs which has overhead.
