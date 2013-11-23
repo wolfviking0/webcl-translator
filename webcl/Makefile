@@ -12,11 +12,20 @@ define chdir
    $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
 endef
 
-DEBUG = -O0 -s OPENCL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_VALID_OBJECT=1
-
-NO_DEBUG = -03 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_GRAB_TRACE=0 -s OPENCL_PRINT_TRACE=0 -s OPENCL_CHECK_VALID_OBJECT=0
-
 DEB=0
+VAL=0
+
+ifeq ($(VAL),1)
+PRELOAD = --preload-file-validator
+$(info ************  Mode VALIDATOR : Enabled ************)
+else
+PRELOAD = --preload-file
+$(info ************  Mode VALIDATOR : Disabled ************)
+endif
+
+DEBUG = -O0 -s OPENCL_VALIDATOR=$(VAL) -s OPENCL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=1 -s OPENCL_GRAB_TRACE=1 -s OPENCL_CHECK_VALID_OBJECT=1
+
+NO_DEBUG = -03 -s OPENCL_VALIDATOR=$(VAL) -s WARN_ON_UNDEFINED_SYMBOLS=0 -s OPENCL_PROFILE=1 -s OPENCL_DEBUG=0 -s OPENCL_GRAB_TRACE=0 -s OPENCL_PRINT_TRACE=0 -s OPENCL_CHECK_VALID_OBJECT=0
 
 ifeq ($(DEB),1)
 MODE=$(DEBUG)
@@ -25,8 +34,10 @@ else
 MODE=$(NO_DEBUG)
 $(info ************  Mode DEBUG : Disabled ************)
 endif
+
 $(info )
 $(info )
+
 
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#
@@ -69,58 +80,58 @@ hello_world_cuda_sample:
 hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
-	--preload-file-validator hello_world_2.cl \
+	$(PRELOAD) hello_world_2.cl \
 	-o ../build/hello_world_2.js
 
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
-	--preload-file-validator convolution_kernel.cl \
+	$(PRELOAD) convolution_kernel.cl \
 	-o ../build/convolution.js
 
 # Need memory 1024 * 1024 * 20
 scan_sample:
 	$(call chdir,scan/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(MODE) \
-	--preload-file scan_kernel.cl \
+	$(PRELOAD) scan_kernel.cl \
 	-o ../build/scan.js
 
 reduce_sample:
 	$(call chdir,reduce/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c -s TOTAL_MEMORY=1024*1024*50 $(MODE) \
-	--preload-file reduce_float_kernel.cl --preload-file reduce_float2_kernel.cl --preload-file reduce_float4_kernel.cl --preload-file reduce_int_kernel.cl --preload-file reduce_int2_kernel.cl --preload-file reduce_int4_kernel.cl \
+	$(PRELOAD) reduce_float_kernel.cl $(PRELOAD) reduce_float2_kernel.cl $(PRELOAD) reduce_float4_kernel.cl $(PRELOAD) reduce_int_kernel.cl $(PRELOAD) reduce_int2_kernel.cl $(PRELOAD) reduce_int4_kernel.cl \
 	-o ../build/reduce.js
 
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file mandelbulb_kernel.cl \
+	$(PRELOAD) mandelbulb_kernel.cl \
 	-o ../build/mandelbulb.js
 
 qjulia_sample:
 	$(call chdir,qjulia/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file qjulia_kernel.cl \
+	$(PRELOAD) qjulia_kernel.cl \
 	-o ../build/qjulia.js
 
 #JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
 	$(call chdir,dxtcompressor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
+	--preload-file data/lena_ref.dds --preload-file data/lena.ppm $(PRELOAD) DXTCompressor_kernel.cl \
 	-o ../build/dxtcompressor.js
 	
 attractor_sample:
 	$(call chdir,attractor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
-	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
+	$(PRELOAD) kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/attractor.js
 
 smallpt_sample:
 	$(call chdir,smallpt/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s TOTAL_MEMORY=1024*1024*50 -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
+	$(PRELOAD) rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
 	-o ../build/smallpt.js	
 
 mandelbulb_sample_osx:
@@ -152,13 +163,13 @@ smallpt_sample_osx:
 #fft_sample:
 #	$(call chdir,fft/)
 #	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) fft_execute.cpp fft_kernelstring.cpp fft_setup.cpp main.cpp $(DEBUG) \
-#	--preload-file param.txt \
+#	$(PRELOAD) param.txt \
 #	-o ../build/fft.js
 	
 #video_sample:
 #	$(call chdir,decodevideo/)
 #	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) GLRenderFrame.cpp OVDecodeRender.cpp OVDecodeTest.cpp SDKUtil/SDKApplication.cpp SDKUtil/SDKBitMap.cpp SDKUtil/SDKCommandArgs.cpp SDKUtil/SDKCommon.cpp SDKUtil/SDKFile.cpp SDKUtil/SDKThread.cpp -I./SDKUtil/include -I./ -O0 -s OPENCL_DEBUG=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 \
-#	--preload-file OVDecodeRender_Kernels.cl --preload-file verifyH264.image --preload-file verifyMPEG.image --preload-file OVDecodeDataH264.zip --preload-file OVDecodeDataMPEG.zip \
+#	$(PRELOAD) OVDecodeRender_Kernels.cl $(PRELOAD) verifyH264.image $(PRELOAD) verifyMPEG.image $(PRELOAD) OVDecodeDataH264.zip $(PRELOAD) OVDecodeDataMPEG.zip \
 #	-o ../build/videodecode.js
 		
 

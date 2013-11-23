@@ -17,8 +17,7 @@ var LibraryOpenCL = {
 
 #if OPENCL_VALIDATOR
     cl_validator: {},
-    cl_validator_argsize: [],
-    cl_validator_length : 0,
+    cl_validator_argsize: {},
 #endif    
 
 #if OPENCL_PROFILE
@@ -308,11 +307,25 @@ var LibraryOpenCL = {
 
         // Search parameter part
         var _param = [];
+
+#if OPENCL_VALIDATOR        
+        var _param_validator = [];
+        var _param_argsize_validator = [];
+#endif        
         var _array = _second_part.split(","); 
         for (var j = 0; j < _array.length; j++) {
           var _type = CL.parseType(_array[j]);
           if (_array[j].indexOf("__local") >= 0 ) {
             _param.push(webcl.LOCAL);
+
+#if OPENCL_VALIDATOR
+            if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              _param_validator.push(_param.length - 1);
+            } else {
+              _param_argsize_validator.push(_param.length - 1);
+            }
+#endif    
+
           } else if (_type == -1) {
                        
             _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
@@ -351,10 +364,9 @@ var LibraryOpenCL = {
 
 #if OPENCL_VALIDATOR
             if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
-              CL.cl_validator[CL.cl_validator_length] = _param.length - 1;  
-              CL.cl_validator_length++;
+              _param_validator.push(_param.length - 1);
             } else {
-              CL.cl_validator_argsize.push(_param.length - 1);
+              _param_argsize_validator.push(_param.length - 1);
             }
 #endif    
           }
@@ -362,6 +374,10 @@ var LibraryOpenCL = {
 
         CL.cl_kernels_sig[_name] = _param;
 
+#if OPENCL_VALIDATOR        
+        CL.cl_validator[_name] = _param_validator;
+        CL.cl_validator_argsize[_name] = _param_argsize_validator;
+#endif
       }
 
 #if 0         
@@ -381,7 +397,30 @@ var LibraryOpenCL = {
         }
 
         console.info("Kernel " + name + "(" + _length + ")");  
-        console.info("\t" + _str);          
+        console.info("\t" + _str);  
+
+#if OPENCL_VALIDATOR
+        console.info("\tValidator Info : ");
+        console.info("\t\tARG PARAM KERNEL"); 
+        var _str = "( ";
+        var _length = CL.cl_validator[name].length;
+        for (var i = 0 ; i < _length ; i++) {
+            _str += CL.cl_validator[name][i];
+            if (i < _length - 1) _str += ", ";
+        }
+        _str += " )";
+        console.info("\t\t\t"+_str);
+        console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+        var _str = "( ";
+        var _length = CL.cl_validator_argsize[name].length;
+        for (var i = 0 ; i < _length ; i++) {
+            _str += CL.cl_validator_argsize[name][i];
+            if (i < _length - 1) _str += ", ";
+        }
+        _str += " )";
+        console.info("\t\t\t"+_str);
+#endif
+
       }
 
       for (var name in CL.cl_structs_sig) {
@@ -396,23 +435,6 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-
-#if OPENCL_VALIDATOR
-      console.info("Validator Info : ");
-      console.info("\tPOS BEFORE -> POS AFTER"); 
-      for (var pos in CL.cl_validator) {
-        console.info("\t    " + pos + "      ->      "+ CL.cl_validator[pos]); 
-      }
-      console.info("\tARG PARAM KERNEL (unsigned long _wcl...)"); 
-      var _str = "( ";
-      var _length = CL.cl_validator_argsize.length;
-      for (var i = 0 ; i < _length ; i++) {
-          _str += CL.cl_validator_argsize[i];
-          if (i < _length - 1) _str += ", ";
-      }
-      _str += " )";
-      console.info("\t\t"+_str);
-#endif
 
       return _mini_kernel_string;
 
@@ -3208,8 +3230,18 @@ var LibraryOpenCL = {
       Object.defineProperty(_kernel, "name", { value : _name,writable : false });
       Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
 
+#if OPENCL_VALIDATOR
+      Object.defineProperty(_kernel, "val_param", { value : CL.cl_validator[_name],writable : false });
+      Object.defineProperty(_kernel, "val_param_argsize", { value : CL.cl_validator_argsize[_name],writable : false });
+#endif
+
 #if OPENCL_DEBUG
       console.info("clCreateKernel : Kernel '"+_kernel.name+"', has "+_kernel.sig+" parameters !!!!");
+#if OPENCL_VALIDATOR
+      console.info("\tValidator info");
+      console.info("\t\t" + _kernel.val_param);
+      console.info("\t\t" + _kernel.val_param_argsize);        
+#endif
 #endif      
       
     } catch (e) {
@@ -3271,8 +3303,18 @@ var LibraryOpenCL = {
         Object.defineProperty(_kernels[i], "name", { value : _name,writable : false });
         Object.defineProperty(_kernels[i], "sig", { value : CL.cl_kernels_sig[_name],writable : false });
 
+#if OPENCL_VALIDATOR
+        Object.defineProperty(_kernels[i], "val_param", { value : CL.cl_validator[_name],writable : false });
+        Object.defineProperty(_kernels[i], "val_param_argsize", { value : CL.cl_validator_argsize[_name],writable : false });
+#endif
+
 #if OPENCL_DEBUG
         console.info("clCreateKernelsInProgram : Kernel '"+_kernels[i].name+"', has "+_kernels[i].sig+" parameters !!!!");
+#if OPENCL_VALIDATOR
+        console.info("\tValidator info");
+        console.info("\t\t" + _kernels[i].val_param);
+        console.info("\t\t" + _kernels[i].val_param_argsize);        
+#endif
 #endif  
 
       }
@@ -3394,7 +3436,7 @@ var LibraryOpenCL = {
     try {
 
 #if OPENCL_VALIDATOR
-      var _posarg = CL.cl_validator[arg_index];
+      var _posarg = CL.cl_objects[kernel].val_param[arg_index];
       var _sig = CL.cl_objects[kernel].sig[_posarg];
 #else
       var _sig = CL.cl_objects[kernel].sig[arg_index];
@@ -3433,7 +3475,7 @@ var LibraryOpenCL = {
 #endif        
           CL.cl_objects[kernel].setArg(_posarg,CL.cl_objects[_value]);
 
-          if (CL.cl_validator_argsize.indexOf(_posarg+1) >= 0) {
+          if (CL.cl_objects[kernel].val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
             CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
 #endif        
@@ -3465,7 +3507,7 @@ var LibraryOpenCL = {
 #endif        
           CL.cl_objects[kernel].setArg(_posarg,_array);
 
-          if (CL.cl_validator_argsize.indexOf(_posarg+1) >= 0) {
+          if (CL.cl_objects[kernel].val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
             CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
 #endif        
