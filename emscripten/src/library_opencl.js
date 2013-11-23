@@ -3434,22 +3434,45 @@ var LibraryOpenCL = {
     }
 
     try {
+      var _kernel = CL.cl_objects[kernel];
 
 #if OPENCL_VALIDATOR
-      var _posarg = CL.cl_objects[kernel].val_param[arg_index];
-      var _sig = CL.cl_objects[kernel].sig[_posarg];
+      var _posarg = _kernel.val_param[arg_index];
+      var _sig = _kernel.sig[_posarg];
 #else
-      var _sig = CL.cl_objects[kernel].sig[arg_index];
+      var _sig = _kernel.sig[arg_index];
 #endif
 
       if (_sig == webcl.LOCAL) {
 
         var _array = new Uint32Array([arg_size]);
 
+#if OPENCL_VALIDATOR 
+
+        console.info("Index : "+arg_index);
+        console.info("Real position : "+_posarg);
+        console.info("Real size : "+arg_size);
+        var _sizearg = new Int32Array([arg_size]);
+
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<__local>>",[arg_index,_array]);
+        CL.webclCallStackTrace(_kernel+".setArg<<__local>>",[_posarg,_array]);
+#endif        
+        _kernel.setArg(_posarg,_array);
+
+        if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
+#if OPENCL_GRAB_TRACE
+          CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+#endif        
+          _kernel.setArg(_posarg+1,_sizearg);
+        }
+
+#else
+
+#if OPENCL_GRAB_TRACE
+        CL.webclCallStackTrace(_kernel+".setArg<<__local>>",[arg_index,_array]);
 #endif     
-        CL.cl_objects[kernel].setArg(arg_index,_array);
+        _kernel.setArg(arg_index,_array);
+#endif
 
       } else {
 
@@ -3471,55 +3494,55 @@ var LibraryOpenCL = {
           var _sizearg = new Int32Array([_size]);
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[_posarg,CL.cl_objects[_value]]);
+          CL.webclCallStackTrace(_kernel+".setArg",[_posarg,CL.cl_objects[_value]]);
 #endif        
-          CL.cl_objects[kernel].setArg(_posarg,CL.cl_objects[_value]);
+          _kernel.setArg(_posarg,CL.cl_objects[_value]);
 
-          if (CL.cl_objects[kernel].val_param_argsize.indexOf(_posarg+1) >= 0) {
+          if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
-            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+            CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
 #endif        
-            CL.cl_objects[kernel].setArg(_posarg+1,_sizearg);
+            _kernel.setArg(_posarg+1,_sizearg);
         }
 
 #else
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,CL.cl_objects[_value]]);
+          CL.webclCallStackTrace(_kernel+".setArg",[arg_index,CL.cl_objects[_value]]);
 #endif        
-          CL.cl_objects[kernel].setArg(arg_index,CL.cl_objects[_value]);
+          _kernel.setArg(arg_index,CL.cl_objects[_value]);
 
 #endif    
 
         } else {
 
           var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
-          console.info(_sig+" - "+_array);
+         
 #if OPENCL_VALIDATOR
 
           console.info("Index : "+arg_index);
           console.info("Real position : "+_posarg);
           console.info("Real size : "+arg_size);
-          var _sizearg = arg_size;
+          var _sizearg = new Int32Array([arg_size]);
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[_posarg,_array]);
+          CL.webclCallStackTrace(_kernel+".setArg",[_posarg,_array]);
 #endif        
-          CL.cl_objects[kernel].setArg(_posarg,_array);
+          _kernel.setArg(_posarg,_array);
 
-          if (CL.cl_objects[kernel].val_param_argsize.indexOf(_posarg+1) >= 0) {
+          if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
-            CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+            CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
 #endif        
-            CL.cl_objects[kernel].setArg(_posarg+1,_sizearg);
+            _kernel.setArg(_posarg+1,_sizearg);
           }
 
 #else
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[kernel]+".setArg",[arg_index,_array]);
+          CL.webclCallStackTrace(_kernel+".setArg",[arg_index,_array]);
 #endif        
-          CL.cl_objects[kernel].setArg(arg_index,_array);
+          _kernel.setArg(arg_index,_array);
 #endif
         }
       }
