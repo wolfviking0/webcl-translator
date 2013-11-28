@@ -1265,9 +1265,15 @@ var LibraryOpenCL = {
       }
       
 #if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(_webcl+".createContext",[_prop]);
+      var _str = "";
+      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
+        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+", sharedContext: "+_sharedContext+"}";
+      } else {
+        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
+      }
+      CL.webclCallStackTrace(_webcl+".createContext",[_str]);
 #endif      
-      _context = _webcl.createContext(_prop)
+      _context = _webcl.createContext(_prop);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1391,10 +1397,17 @@ var LibraryOpenCL = {
         _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       }
       
-#if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(_webcl+".createContext",[_prop]);
-#endif      
-      _context = _webcl.createContext(_prop)
+#if OPENCL_GRAB_TRACE	
+      var _str = "";
+      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
+        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+", sharedContext: "+_sharedContext+"}";
+      } else {
+        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
+      }
+      CL.webclCallStackTrace(_webcl+".createContext",[_str]);
+#endif
+     
+      _context = _webcl.createContext(_prop);
 
     } catch (e) {
       var _error = CL.catchError(e);
