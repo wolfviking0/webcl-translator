@@ -2973,10 +2973,10 @@ var LibraryOpenCL = {
       var _option = (options == 0) ? "" : Pointer_stringify(options); 
 
       // \todo need to be remove when webkit work with -D
-      if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-        _option = _option.replace(/-D/g, "-D ");
-        _option = _option.replace(/-D\s{2,}/g, "-D ");
-      }
+      // if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
+      //   _option = _option.replace(/-D/g, "-D ");
+      //   _option = _option.replace(/-D\s{2,}/g, "-D ");
+      // }
 
       if (device_list != 0 && num_devices > 0 ) {
         for (var i = 0; i < num_devices ; i++) {
