@@ -4477,6 +4477,9 @@ var LibraryOpenCL = {
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
 
+          console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr ... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
+
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
@@ -4708,10 +4711,8 @@ var LibraryOpenCL = {
 
         if (image in CL.cl_objects) {
 #endif
-          var _event = null;
           var _event_wait_list = [];
-          
-          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
+          var _event = null;
 
           var _origin = [];
           var _region = [];
@@ -4719,7 +4720,10 @@ var LibraryOpenCL = {
           for (var i = 0; i < 2; i++) {
             _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
+          }          
+
+          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr ... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
