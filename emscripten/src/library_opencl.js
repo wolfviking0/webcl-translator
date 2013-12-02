@@ -1057,16 +1057,26 @@ var LibraryOpenCL = {
 
         if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP64"]);
-#endif              
-          _object = webcl.getExtension("KHR_FP64");
+          CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_fp64"]);
+#endif             
+          if (webcl.enableExtension("KHR_fp64") == false) {
+#if OPENCL_GRAB_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],"Extension KHR_fp64 not suported","");
+#endif
+            return webcl.INVALID_VALUE;
+          } 
         }
 
         if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_FP16"]);
-#endif    
-          _object = webcl.getExtension("KHR_FP16");
+          CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_fp16"]);
+#endif             
+          if (webcl.enableExtension("KHR_fp16") == false) {
+#if OPENCL_GRAB_TRACE
+            CL.webclEndStackTrace([webcl.INVALID_VALUE],"Extension KHR_fp16 not suported","");
+#endif
+            return webcl.INVALID_VALUE;
+          } 
         }
 
 #if OPENCL_GRAB_TRACE
@@ -1169,11 +1179,10 @@ var LibraryOpenCL = {
 
     try { 
 
-      var _webcl = webcl;
       var _platform = null;
       var _devices = [];
       var _deviceType = null;
-      var _sharedContext = null;
+      var _glclSharedContext = false;
 
       // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
       // WebCL can work using default device / platform, we check only if parameter are set.
@@ -1233,13 +1242,13 @@ var LibraryOpenCL = {
               _propertiesCounter ++;
 
               // Just one is enough 
-              if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                _sharedContext = Module.ctx;
+              if ( _glclSharedContext == false) {
 #if OPENCL_GRAB_TRACE
-                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_GL_SHARING"]);
 #endif              
-                _webcl = webcl.getExtension("KHR_GL_SHARING");
+                _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
               }
+
               break;
 
             default:
@@ -1257,23 +1266,16 @@ var LibraryOpenCL = {
         }
       }
 
-      var _prop = null;
-      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-      } else {
-        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-      }
+      var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       
 #if OPENCL_GRAB_TRACE
-      var _str = "";
-      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
-        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+", sharedContext: "+_sharedContext+"}";
-      } else {
-        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
-      }
-      CL.webclCallStackTrace(_webcl+".createContext",[_str]);
+      var _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
+      CL.webclCallStackTrace(webcl+".createContext",[_str]);
 #endif      
-      _context = _webcl.createContext(_prop);
+      if (_glclSharedContext)
+        _context = webcl.createContext(Module.ctx, _prop);
+      else
+        _context = webcl.createContext(_prop);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1322,11 +1324,10 @@ var LibraryOpenCL = {
 
     try { 
 
-      var _webcl = webcl;
       var _platform = null;
       var _devices = null;
       var _deviceType = device_type_i64_1;
-      var _sharedContext = null;
+      var _glclSharedContext = false;
 
       // Verify the property
       if (properties != 0) {
@@ -1362,15 +1363,12 @@ var LibraryOpenCL = {
             case (0x2008) /*CL_GL_CONTEXT_KHR*/:
             case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
               _propertiesCounter ++;
-              
-              // Just one is enough
-              if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                _sharedContext = Module.ctx;
 
+              if ( _glclSharedContext == false) {
 #if OPENCL_GRAB_TRACE
-                CL.webclCallStackTrace(""+webcl+".getExtension",["KHR_GL_SHARING"]);
+                CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_GL_SHARING"]);
 #endif              
-                _webcl = webcl.getExtension("KHR_GL_SHARING");
+                _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
               }
               break;
 
@@ -1389,26 +1387,17 @@ var LibraryOpenCL = {
         }
       }
 
-      var _prop;
-
-      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-      } else {
-        _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-      }
+      var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       
-#if OPENCL_GRAB_TRACE	
-      var _str = "";
-      if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
-        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+", sharedContext: "+_sharedContext+"}";
-      } else {
-        _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
-      }
-      CL.webclCallStackTrace(_webcl+".createContext",[_str]);
-#endif
+#if OPENCL_GRAB_TRACE
+      var _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
+      CL.webclCallStackTrace(webcl+".createContext",[_str]);
+#endif      
+      if (_glclSharedContext)
+        _context = webcl.createContext(Module.ctx, _prop);
+      else
+        _context = webcl.createContext(_prop);
      
-      _context = _webcl.createContext(_prop);
-
     } catch (e) {
       var _error = CL.catchError(e);
     
