@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/scan.data';
     var REMOTE_PACKAGE_NAME = 'scan.data';
-    var PACKAGE_UUID = 'cade7a63-934d-4302-939f-4c8f18ca4b6b';
+    var PACKAGE_UUID = 'a50ebe5c-8fb0-43c5-83fa-6332cfaf26da';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5614,10 +5614,14 @@ function copyTempDouble(ptr) {
       try { 
           var _object = CL.cl_objects[device];
           if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
-            _object = webcl.getExtension("KHR_FP64");
+            if (webcl.enableExtension("KHR_fp64") == false) {
+              return webcl.INVALID_VALUE;
+            } 
           }
           if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
-            _object = webcl.getExtension("KHR_FP16");
+            if (webcl.enableExtension("KHR_fp16") == false) {
+              return webcl.INVALID_VALUE;
+            } 
           }
           _info = _object.getInfo(param_name);
       } catch (e) {
@@ -5673,11 +5677,10 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _context = null;
       try { 
-        var _webcl = webcl;
         var _platform = null;
         var _devices = [];
         var _deviceType = null;
-        var _sharedContext = null;
+        var _glclSharedContext = false;
         // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
         // WebCL can work using default device / platform, we check only if parameter are set.
         for (var i = 0; i < num_devices; i++) {
@@ -5702,9 +5705,8 @@ function copyTempDouble(ptr) {
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
                 // Just one is enough 
-                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                  _sharedContext = Module.ctx;
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                if ( _glclSharedContext == false) {
+                  _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
                 }
                 break;
               default:
@@ -5716,13 +5718,11 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-        var _prop = null;
-        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
-            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        } else {
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        }
-        _context = _webcl.createContext(_prop);
+        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        if (_glclSharedContext)
+          _context = webcl.createContext(Module.ctx, _prop);
+        else
+          _context = webcl.createContext(_prop);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {

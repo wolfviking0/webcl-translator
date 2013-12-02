@@ -101,7 +101,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = '0594da3f-592f-4c54-8fe9-27bd5c3c66a9';
+    var PACKAGE_UUID = 'a1d060d6-46da-4faf-b328-4475d5b2dd13';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -7456,11 +7456,10 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _context = null;
       try { 
-        var _webcl = webcl;
         var _platform = null;
         var _devices = null;
         var _deviceType = device_type_i64_1;
-        var _sharedContext = null;
+        var _glclSharedContext = false;
         // Verify the property
         if (properties != 0) {
           var _propertiesCounter = 0;
@@ -7478,10 +7477,8 @@ function copyTempDouble(ptr) {
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
-                // Just one is enough
-                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                  _sharedContext = Module.ctx;
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                if ( _glclSharedContext == false) {
+                  _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
                 }
                 break;
               default:
@@ -7493,13 +7490,11 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-        var _prop;
-        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
-            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        } else {
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        }
-        _context = _webcl.createContext(_prop);
+        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        if (_glclSharedContext)
+          _context = webcl.createContext(Module.ctx, _prop);
+        else
+          _context = webcl.createContext(_prop);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {

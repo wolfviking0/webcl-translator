@@ -5204,11 +5204,10 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _context = null;
       try { 
-        var _webcl = webcl;
         var _platform = null;
         var _devices = [];
         var _deviceType = null;
-        var _sharedContext = null;
+        var _glclSharedContext = false;
         // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
         // WebCL can work using default device / platform, we check only if parameter are set.
         for (var i = 0; i < num_devices; i++) {
@@ -5233,9 +5232,8 @@ function copyTempDouble(ptr) {
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
                 // Just one is enough 
-                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                  _sharedContext = Module.ctx;
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                if ( _glclSharedContext == false) {
+                  _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
                 }
                 break;
               default:
@@ -5247,13 +5245,11 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-        var _prop = null;
-        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {   
-            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        } else {
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        }
-        _context = _webcl.createContext(_prop);
+        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        if (_glclSharedContext)
+          _context = webcl.createContext(Module.ctx, _prop);
+        else
+          _context = webcl.createContext(_prop);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {

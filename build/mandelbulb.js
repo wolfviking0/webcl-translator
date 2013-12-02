@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '318165b5-ffff-4307-b1c1-dfb9afef355c';
+    var PACKAGE_UUID = 'a46a4830-ed68-4e94-a6e6-4817a7415f74';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5826,11 +5826,10 @@ function copyTempDouble(ptr) {
       var _id = null;
       var _context = null;
       try { 
-        var _webcl = webcl;
         var _platform = null;
         var _devices = null;
         var _deviceType = device_type_i64_1;
-        var _sharedContext = null;
+        var _glclSharedContext = false;
         // Verify the property
         if (properties != 0) {
           var _propertiesCounter = 0;
@@ -5848,10 +5847,8 @@ function copyTempDouble(ptr) {
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
-                // Just one is enough
-                if ( (typeof(WebCLGL) !== "undefined") && (!(_webcl instanceof WebCLGL)) ){
-                  _sharedContext = Module.ctx;
-                  _webcl = webcl.getExtension("KHR_GL_SHARING");
+                if ( _glclSharedContext == false) {
+                  _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
                 }
                 break;
               default:
@@ -5863,13 +5860,11 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-        var _prop;
-        if ( (typeof(WebCLGL) !== "undefined") && (_webcl instanceof WebCLGL) ) {
-            _prop = {platform: _platform, devices: _devices, deviceType: _deviceType, sharedContext: _sharedContext};
-        } else {
-          _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        }
-        _context = _webcl.createContext(_prop);
+        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
+        if (_glclSharedContext)
+          _context = webcl.createContext(Module.ctx, _prop);
+        else
+          _context = webcl.createContext(_prop);
       } catch (e) {
         var _error = CL.catchError(e);
         if (cl_errcode_ret != 0) {
@@ -5930,10 +5925,14 @@ function copyTempDouble(ptr) {
       try { 
           var _object = CL.cl_objects[device];
           if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
-            _object = webcl.getExtension("KHR_FP64");
+            if (webcl.enableExtension("KHR_fp64") == false) {
+              return webcl.INVALID_VALUE;
+            } 
           }
           if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
-            _object = webcl.getExtension("KHR_FP16");
+            if (webcl.enableExtension("KHR_fp16") == false) {
+              return webcl.INVALID_VALUE;
+            } 
           }
           _info = _object.getInfo(param_name);
       } catch (e) {
