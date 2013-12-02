@@ -2819,8 +2819,22 @@ var LibraryOpenCL = {
 #endif   
 
     try {
-  
-      var _string = Pointer_stringify({{{ makeGetValue('strings', '0', 'i32') }}}); 
+      
+      var _string = "";
+
+      for (var i = 0; i < count; i++) {
+        if (length) {
+          var _len = {{{ makeGetValue('lengths', 'i*4', 'i32') }}};
+          if (_len < 0) {
+            _string += Pointer_stringify({{{ makeGetValue('strings', 'i*4', 'i32') }}});   
+          } else {
+            _string += Pointer_stringify({{{ makeGetValue('strings', 'i*4', 'i32') }}}, _len);   
+          }
+        } else {
+          _string += Pointer_stringify({{{ makeGetValue('strings', 'i*4', 'i32') }}}); 
+        }
+      }
+
       CL.parseKernel(_string);
 
 #if OPENCL_GRAB_TRACE
