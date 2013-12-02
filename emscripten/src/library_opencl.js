@@ -4302,7 +4302,7 @@ var LibraryOpenCL = {
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
 
-          console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr ... need to be more tested");
+          console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -4477,7 +4477,7 @@ var LibraryOpenCL = {
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
 
-          console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr ... need to be more tested");
+          console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -4632,7 +4632,7 @@ var LibraryOpenCL = {
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }          
 
-          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr ... need to be more tested");
+          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -4722,7 +4722,7 @@ var LibraryOpenCL = {
             _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }          
 
-          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr ... need to be more tested");
+          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
