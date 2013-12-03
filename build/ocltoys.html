@@ -79,29 +79,20 @@
             }
             
             loadModule(PARAM);
+
+            var samples = [
+              "toys_jugCLer.js",
+              "toys_juliagpu.js",
+              "toys_mandelgpu.js",
+              "toys_smallptgpu.js",
+            ];
+
+            if (SAMPLE >= samples.length) {
+              SAMPLE = 0;
+            }
             
-			      switch(SAMPLE) {
-        		case '0':
-          			includeJS("toys_jugCLer.js");     
-          			break;//------------
-
-        		case '1':  
-          			includeJS("toys_juliagpu.js");
- 					      break;//------------
-        
-        		case '2':  
-          			includeJS("toys_mandelgpu.js");
-          			break;//------------
-        
-        		case '3':   
-          			includeJS("toys_smallptgpu.js");
-		          	break; //------------            
-
-       			default:
-          			includeJS("toys_jugCLer.js"); 
-          			break;
-      		}
-        
+            includeJS(samples[SAMPLE]);
+       
         	</script>
         </section>
 

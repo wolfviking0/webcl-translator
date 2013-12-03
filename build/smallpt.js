@@ -105,7 +105,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/smallpt.data';
     var REMOTE_PACKAGE_NAME = 'smallpt.data';
-    var PACKAGE_UUID = '9dea8a83-b91b-4c48-b070-c22531ff2193';
+    var PACKAGE_UUID = '365066cc-4b7b-43d2-a7f5-0a00dfbfcb01';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5524,7 +5524,7 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_init:0,cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+      }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
@@ -5545,6 +5545,13 @@ function copyTempDouble(ptr) {
             webcl["SAMPLER"]          = 0x1300;
             webcl["IMAGE2D"]          = 0x1301;
             webcl["UNSIGNED_LONG"]    = 0x1302;
+            for (var i = 0; i < CL.cl_extensions.length; i ++) {
+              if (webcl.enableExtension(CL.cl_extensions[i])) {
+                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
+              } else {
+                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
+              }
+            }
             CL.cl_init = 1;
           }
         }
@@ -5794,6 +5801,87 @@ function copyTempDouble(ptr) {
           console.info("\t\t" + _str);              
         }
         return _mini_kernel_string;
+      },getImageSizeType:function (image) {
+        var _sizeType = 0;
+        switch (_info.channelType) {
+          case webcl.SNORM_INT8:
+          case webcl.SIGNED_INT8:
+          case webcl.UNORM_INT8:        
+          case webcl.UNSIGNED_INT8:
+            _sizeType = 1;
+            break;
+          case webcl.SNORM_INT16:
+          case webcl.SIGNED_INT16:
+          case webcl.UNORM_INT16:        
+          case webcl.UNSIGNED_INT16:
+          case webcl.HALF_FLOAT:
+            _sizeType = 2;      
+            break;
+          case webcl.SIGNED_INT32:
+          case webcl.UNSIGNED_INT32:      
+          case webcl.FLOAT:
+            _sizeType = 4;
+            break;
+          default:
+            console.error("getImageSizeType : This channel type is not yet implemented => "+_info.channelType);
+        }
+        return _sizeType;
+      },getImageFormatType:function (image) {
+        var _type = 0;
+        switch (_info.channelType) {
+          case webcl.SNORM_INT8:
+          case webcl.SIGNED_INT8:
+            _type = webcl.SIGNED_INT8;
+            break;
+          case webcl.UNORM_INT8:        
+          case webcl.UNSIGNED_INT8:
+            _type = webcl.UNSIGNED_INT8;
+            break;
+          case webcl.SNORM_INT16:
+          case webcl.SIGNED_INT16:
+            _type = webcl.SIGNED_INT16;
+            break;
+          case webcl.UNORM_INT16:        
+          case webcl.UNSIGNED_INT16:
+            _type = webcl.UNSIGNED_INT16;
+            break;
+          case webcl.SIGNED_INT32:
+            _type = SIGNED_INT32;
+          case webcl.UNSIGNED_INT32:
+            _type = UNSIGNED_INT32;
+            break;        
+          case webcl.FLOAT:
+            _type = webcl.FLOAT;
+            break;
+          default:
+            console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
+        }
+        return _type;
+      },getImageSizeOrder:function (image) {
+        var _sizeOrder = 0;
+        switch (_info.channelOrder) {
+          case webcl.R:
+          case webcl.A:
+          case webcl.INTENSITY:
+          case webcl.LUMINANCE:
+            _sizeOrder = 1;
+            break;
+          case webcl.RG:
+          case webcl.RA:
+            _sizeOrder = 2;
+            break;
+          case webcl.RGB:
+            _sizeOrder = 3;
+            break; 
+          case webcl.RGBA:
+          case webcl.BGRA:
+          case webcl.ARGB:      
+            _sizeOrder = 4;
+            break;        
+          default:
+            console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
+        }
+        return _sizeOrder;
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
@@ -5967,16 +6055,6 @@ function copyTempDouble(ptr) {
       var  _info = null;
       try { 
           var _object = CL.cl_objects[device];
-          if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
-            if (webcl.enableExtension("KHR_fp64") == false) {
-              return webcl.INVALID_VALUE;
-            } 
-          }
-          if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
-            if (webcl.enableExtension("KHR_fp16") == false) {
-              return webcl.INVALID_VALUE;
-            } 
-          }
           _info = _object.getInfo(param_name);
       } catch (e) {
         var _error = CL.catchError(e);
@@ -6436,7 +6514,7 @@ function copyTempDouble(ptr) {
         return webcl.SUCCESS;
       }
       try {
-          //CL.cl_objects[context].release();
+          CL.cl_objects[context].release();
           delete CL.cl_objects[context];
           CL.cl_objects_counter--;
           //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
@@ -6452,7 +6530,7 @@ function copyTempDouble(ptr) {
         return webcl.SUCCESS;
       }
       try {
-        //CL.cl_objects[memobj].release();
+        CL.cl_objects[memobj].release();
         delete CL.cl_objects[memobj];
         CL.cl_objects_counter--;
         //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
@@ -6468,7 +6546,7 @@ function copyTempDouble(ptr) {
         return webcl.SUCCESS;
       }
       try {
-        //CL.cl_objects[kernel].release();
+        CL.cl_objects[kernel].release();
         delete CL.cl_objects[kernel];
         CL.cl_objects_counter--;
         //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
@@ -6484,7 +6562,7 @@ function copyTempDouble(ptr) {
         return webcl.SUCCESS;
       }
       try {
-          //CL.cl_objects[command_queue].release();
+          CL.cl_objects[command_queue].release();
           delete CL.cl_objects[command_queue];
           CL.cl_objects_counter--;
           //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
@@ -6638,7 +6716,19 @@ function copyTempDouble(ptr) {
       var _program = null;
       // Context must be created
       try {
-        var _string = Pointer_stringify(HEAP32[((strings)>>2)]); 
+        var _string = "";
+        for (var i = 0; i < count; i++) {
+          if (length) {
+            var _len = HEAP32[(((lengths)+(i*4))>>2)];
+            if (_len < 0) {
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);   
+            } else {
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)], _len);   
+            }
+          } else {
+            _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]); 
+          }
+        }
         CL.parseKernel(_string);
         _program = CL.cl_objects[context].createProgram(_string);
       } catch (e) {
@@ -6711,10 +6801,7 @@ function copyTempDouble(ptr) {
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
                 _propertiesCounter ++;
-                // Just one is enough 
-                if ( _glclSharedContext == false) {
-                  _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
-                }
+                _glclSharedContext = true;
                 break;
               default:
                 if (cl_errcode_ret != 0) {
