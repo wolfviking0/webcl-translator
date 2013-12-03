@@ -79,59 +79,26 @@
             }
             
             loadModule(PARAM);
+
+            var samples = [
+              "hello_world.js",
+              "hello_world_2.js",
+              "convolution.js",
+              "imagecopy.js",
+              "scan.js",
+              "reduce.js",
+              "mandelbulb.js",
+              "qjulia.js",
+              "smallpt.js",
+              "attractor.js",
+              "dxtcompressor.js"
+            ];
+
+            if (SAMPLE >= samples.length) {
+              SAMPLE = 0;
+            }
             
-			      switch(SAMPLE) {
-        		case '0':
-          			includeJS("hello_world.js");     
-          			break;//------------
-
-        		case '1':  
-          			includeJS("hello_world_2.js");
- 					      break;//------------
-        
-        		case '2':  
-          			includeJS("convolution.js");
-          			break;//------------
-        
-        		case '3':   
-          			includeJS("scan.js");
-		          	break; //------------
- 
-       			case '4':
-          			includeJS("reduce.js");
-          			break; //------------
-
-	            case '5':
-    	            includeJS("mandelbulb.js");
-        	        break; //------------
-
-        		case '6':
-          			includeJS("qjulia.js");
-          			break; //------------    
-              
-            	case '7':
-        	        includeJS("smallpt.js");
-    	            break; //------------
-	
-		        case '8':
-					includeJS("attractor.js");
-        	        break; //------------                 
-
-		        case '9':
-		        	includeJS("dxtcompressor.js");
-          			break; //------------
-
-          /*
-		          	includeJS("fft.js");
-        		  	break; //------------
-          			includeJS("videodecode.js");
-          			break; //------------
-            */
-
-       			default:
-          			includeJS("hello_world.js"); 
-          			break;
-      		}
+            includeJS(samples[SAMPLE]);
         
         	</script>
         </section>
@@ -145,3 +112,4 @@
 </html>
 
 
+            "

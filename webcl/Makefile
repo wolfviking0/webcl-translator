@@ -50,6 +50,7 @@ all: \
 	hello_world_sample 			\
 	hello_world_cuda_sample		\
 	hello_world_2_sample		\
+	imagecopy_sample			\
 	convolution_sample 			\
 	reduce_sample 				\
 	scan_sample 				\
@@ -89,6 +90,12 @@ convolution_sample:
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
 	$(PRELOAD) convolution_kernel.cl \
 	-o ../build/convolution.js
+
+imagecopy_sample:
+	$(call chdir,imagecopy/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) image_copy.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
+	$(PRELOAD) image_copy.cl \
+	-o ../build/imagecopy.js
 
 # Need memory 1024 * 1024 * 20
 scan_sample:

@@ -4,6 +4,8 @@ var LibraryOpenCL = {
   $CL: {
     // Init
     cl_init: 0,
+    // Extensions
+    cl_extensions: ["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],
     // Private array of chars to use
     cl_digits: [1,2,3,4,5,6,7,8,9,0],
     // Kernel parser
@@ -50,6 +52,17 @@ var LibraryOpenCL = {
           webcl["IMAGE2D"]          = 0x1301;
           webcl["UNSIGNED_LONG"]    = 0x1302;
 
+          for (var i = 0; i < CL.cl_extensions.length; i ++) {
+
+#if OPENCL_GRAB_TRACE
+              CL.webclCallStackTrace(""+webcl+".enableExtension",[CL.cl_extensions[i]]);
+#endif  
+            if (webcl.enableExtension(CL.cl_extensions[i])) {
+              console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
+            } else {
+              console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
+            }
+          }
           CL.cl_init = 1;
         }
       }
@@ -1055,30 +1068,6 @@ var LibraryOpenCL = {
 
         var _object = CL.cl_objects[device];
 
-        if (param_name == 4107 /*DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/) {
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_fp64"]);
-#endif             
-          if (webcl.enableExtension("KHR_fp64") == false) {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],"Extension KHR_fp64 not suported","");
-#endif
-            return webcl.INVALID_VALUE;
-          } 
-        }
-
-        if (param_name == 4148 /*DEVICE_PREFERRED_VECTOR_WIDTH_HALF*/) {
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_fp16"]);
-#endif             
-          if (webcl.enableExtension("KHR_fp16") == false) {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],"Extension KHR_fp16 not suported","");
-#endif
-            return webcl.INVALID_VALUE;
-          } 
-        }
-
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
 #endif        
@@ -1240,15 +1229,8 @@ var LibraryOpenCL = {
             case (0x2008) /*CL_GL_CONTEXT_KHR*/:
             case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
               _propertiesCounter ++;
-
-              // Just one is enough 
-              if ( _glclSharedContext == false) {
-#if OPENCL_GRAB_TRACE
-                CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_GL_SHARING"]);
-#endif              
-                _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
-              }
-
+              _glclSharedContext = true;
+              
               break;
 
             default:
@@ -1363,13 +1345,7 @@ var LibraryOpenCL = {
             case (0x2008) /*CL_GL_CONTEXT_KHR*/:
             case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
               _propertiesCounter ++;
-
-              if ( _glclSharedContext == false) {
-#if OPENCL_GRAB_TRACE
-                CL.webclCallStackTrace(""+webcl+".enableExtension",["KHR_GL_SHARING"]);
-#endif              
-                _glclSharedContext = webcl.enableExtension("KHR_GL_SHARING");
-              }
+              _glclSharedContext = true;
               break;
 
             default:
@@ -1473,7 +1449,7 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
 #endif        
-        //CL.cl_objects[context].release();
+        CL.cl_objects[context].release();
         delete CL.cl_objects[context];
 #if OPENCL_PROFILE             
         CL.cl_objects_counter--;
@@ -1708,7 +1684,7 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
 #endif        
-        //CL.cl_objects[command_queue].release();
+        CL.cl_objects[command_queue].release();
         delete CL.cl_objects[command_queue];
 #if OPENCL_PROFILE             
         CL.cl_objects_counter--;
@@ -2295,7 +2271,7 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
 #endif        
-      //CL.cl_objects[memobj].release();
+      CL.cl_objects[memobj].release();
       delete CL.cl_objects[memobj];
 #if OPENCL_PROFILE             
       CL.cl_objects_counter--;
@@ -3403,7 +3379,7 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
 #endif        
-      //CL.cl_objects[kernel].release();
+      CL.cl_objects[kernel].release();
       delete CL.cl_objects[kernel];
 #if OPENCL_PROFILE             
       CL.cl_objects_counter--;
@@ -4741,11 +4717,11 @@ var LibraryOpenCL = {
           } 
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
 #endif        
-          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
           
-          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
