@@ -22,8 +22,25 @@ void err_check( int err, string err_code ) {
 }
  
  
-int main()
+int main(int argc, char** argv)
 {
+    int use_gpu = 1;
+    int i = 0;
+    for(; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+    
+
     cl_platform_id platform_id = NULL;
     cl_uint ret_num_platform;
  
@@ -57,7 +74,7 @@ int main()
     err_check(err,"clGetPlatformIDs");
  
     // step 2 : Get Device ID
-    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &ret_num_device );
+    err = clGetDeviceIDs(platform_id, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, &ret_num_device );
     err_check(err,"clGetDeviceIDs");
  
     // step 3 : Create Context
@@ -90,7 +107,7 @@ int main()
     //  Create Image data formate
     cl_image_format img_fmt;
  
-    img_fmt.image_channel_order = CL_RGBA;
+    img_fmt.image_channel_order = CL_RGB;
     img_fmt.image_channel_data_type = CL_FLOAT;
  
     // Step 6 : Create Image Memory Object
@@ -110,10 +127,6 @@ int main()
  
     size_t origin[] = {0,0,0}; // Defines the offset in pixels in the image from where to write.
     size_t region[] = {width, height, 1}; // Size of object to be transferred
-
-    printf("input size : %d\n",(IMG_SIZE * 3));
-    printf("origin size : {%d,%d,%d}\n",0, 0, 0);
-    printf("region size : {%d,%d,%d}\n",width, height, 1);
 
     err = clEnqueueWriteImage(command_queue, image1, CL_TRUE, origin, region,0,0, input, 0, NULL,&event[0] );
     err_check(err,"clEnqueueWriteImage");
@@ -145,9 +158,6 @@ int main()
     err = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, GWSize, NULL, 1, event,&event[1]);
  
     // Step 11 : Read output Data, from Device to Host
-    printf("output size : %d\n",(IMG_SIZE * 3));
-    printf("origin size : {%d,%d,%d}\n",0, 0, 0);
-    printf("region size : {%d,%d,%d}\n",width, height, 1);
     err = clEnqueueReadImage(command_queue, image2, CL_TRUE, origin, region, 0, 0, output, 2, event, &event[2] );
  
     // Print Output
@@ -172,7 +182,7 @@ int main()
  
     // Step 12 : Release Objects
  
-        clReleaseMemObject(image3);
+    clReleaseMemObject(image3);
     clReleaseMemObject(image1);
     clReleaseMemObject(image2);
     clReleaseKernel(kernel);

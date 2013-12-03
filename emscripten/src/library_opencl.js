@@ -459,6 +459,8 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
 #endif   
+      
+      var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
 
       switch (_info.channelType) {
         case webcl.SNORM_INT8:
@@ -493,6 +495,8 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
 #endif   
+
+      var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
 
       switch (_info.channelType) {
         case webcl.SNORM_INT8:
@@ -532,6 +536,8 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
 #endif   
+
+      var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
 
       switch (_info.channelOrder) {
         case webcl.R:
@@ -2190,9 +2196,69 @@ var LibraryOpenCL = {
       return 0; 
     }
 
-    var _type = CL.getImageFormatType(image);
-    var _sizeType = CL.getImageSizeType(image);
-    var _sizeOrder = CL.getImageSizeOrder(image);  
+    var _type = webcl.FLOAT;
+    var _sizeType = 4;
+    var _sizeOrder = 1;    
+
+    switch (_channel_type) {
+      case webcl.SNORM_INT8:
+      case webcl.SIGNED_INT8:
+        _sizeType = 1;
+        _type = webcl.SIGNED_INT8;
+        break;
+      case webcl.UNORM_INT8:        
+      case webcl.UNSIGNED_INT8:
+        _sizeType = 1;
+        _type = webcl.UNSIGNED_INT8;
+        break;
+      case webcl.SNORM_INT16:
+      case webcl.SIGNED_INT16:
+        _sizeType = 2;
+        _type = webcl.SIGNED_INT16;
+        break;
+      case webcl.UNORM_INT16:        
+      case webcl.UNSIGNED_INT16:
+      case webcl.HALF_FLOAT:
+        _sizeType = 2;      
+        _type = webcl.UNSIGNED_INT16;
+        break;
+      case webcl.SIGNED_INT32:
+        _sizeType = 4;
+        _type = SIGNED_INT32;
+      case webcl.UNSIGNED_INT32:
+        _sizeType = 4;
+        _type = UNSIGNED_INT32;
+        break;        
+      case webcl.FLOAT:
+        _sizeType = 4;
+        _type = webcl.FLOAT;
+        break;
+      default:
+        console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
+    }
+
+    switch (_channel_order) {
+      case webcl.R:
+      case webcl.A:
+      case webcl.INTENSITY:
+      case webcl.LUMINANCE:
+        _sizeOrder = 1;
+        break;
+      case webcl.RG:
+      case webcl.RA:
+        _sizeOrder = 2;
+        break;
+      case webcl.RGB:
+        _sizeOrder = 3;
+        break; 
+      case webcl.RGBA:
+      case webcl.BGRA:
+      case webcl.ARGB:      
+        _sizeOrder = 4;
+        break;        
+      default:
+        console.error("clCreateImage2D : This channel order is not yet implemented => "+_channel_order);
+    }
 
     var _size = image_width * image_height * _sizeOrder;
 
@@ -4222,7 +4288,7 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4315,7 +4381,7 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif                 
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4396,7 +4462,7 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif               
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4490,7 +4556,7 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif               
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4564,7 +4630,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4639,6 +4705,7 @@ var LibraryOpenCL = {
           console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
+          /* \todo need to be fix with eveent
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
@@ -4648,11 +4715,12 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
           } 
+          */
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
@@ -4723,7 +4791,7 @@ var LibraryOpenCL = {
           var _region = new Int32Array(2);
 
           var _size = CL.getImageSizeType(image);
-          var _channel = CL.getImageChannelType(image);
+          var _channel = CL.getImageFormatType(image);
 
           for (var i = 0; i < 2; i++) {
             _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
@@ -4743,7 +4811,7 @@ var LibraryOpenCL = {
               CL.cl_pn_type = [];
 #endif              
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4810,33 +4878,36 @@ var LibraryOpenCL = {
           var _event = null;
           var _event_wait_list = [];
 
-          var _src_origin = [];
-          var _dest_origin = [];
-          var _region = [];
+          var _src_origin = new Int32Array(2);
+          var _dest_origin = new Int32Array(2);
+          var _region = new Int32Array(2);
 
           for (var i = 0; i < 2; i++) {
-            _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
-            _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+            _src_origin[i] = ({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+            _dest_origin[i] = ({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
 
+
+          /* \todo need to be fix with event
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
           } 
+          */
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list);    
+          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
           // CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
           // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
@@ -4898,7 +4969,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -4970,7 +5041,7 @@ var LibraryOpenCL = {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
@@ -5071,6 +5142,7 @@ var LibraryOpenCL = {
             var _global_work_size = new Int32Array(work_dim);
             var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
           }
+
           for (var i = 0; i < work_dim; i++) {
             if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
               _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
@@ -5091,17 +5163,19 @@ var LibraryOpenCL = {
             }
           }
 
+          /* \todo need to fix this with event
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
               _event_wait_list.push(_event_wait);
             } else {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
               return webcl.INVALID_EVENT;    
             }
           }
+          */
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
@@ -5258,12 +5332,12 @@ var LibraryOpenCL = {
             _events.push(_event);
           } else {
 #if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
             return webcl.INVALID_EVENT;    
           }
         } 
-
+     
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWaitForEvents",[_events]);
 #endif    
@@ -5779,7 +5853,7 @@ var LibraryOpenCL = {
             _event_wait_list.push(_event_wait);
           } else {
 #if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
             return webcl.INVALID_EVENT;    
           }
@@ -5841,7 +5915,7 @@ var LibraryOpenCL = {
             _event_wait_list.push(_event_wait);
           } else {
 #if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_EVENT],"",e.message);
+            CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
 #endif    
             return webcl.INVALID_EVENT;    
           }
