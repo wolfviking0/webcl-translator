@@ -102,7 +102,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/reduce.data';
     var REMOTE_PACKAGE_NAME = 'reduce.data';
-    var PACKAGE_UUID = '49c108d8-eb0c-4d45-bfb7-b2d3bc286fdd';
+    var PACKAGE_UUID = '2c1d1e29-7f25-43f9-a70d-035413c7d8f6';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5131,6 +5131,7 @@ function copyTempDouble(ptr) {
         return _mini_kernel_string;
       },getImageSizeType:function (image) {
         var _sizeType = 0;
+        var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
         switch (_info.channelType) {
           case webcl.SNORM_INT8:
           case webcl.SIGNED_INT8:
@@ -5156,6 +5157,7 @@ function copyTempDouble(ptr) {
         return _sizeType;
       },getImageFormatType:function (image) {
         var _type = 0;
+        var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
         switch (_info.channelType) {
           case webcl.SNORM_INT8:
           case webcl.SIGNED_INT8:
@@ -5187,6 +5189,7 @@ function copyTempDouble(ptr) {
         return _type;
       },getImageSizeOrder:function (image) {
         var _sizeOrder = 0;
+        var _info = CL.cl_objects[image].getInfo(webcl.IMAGE_FORMAT);
         switch (_info.channelOrder) {
           case webcl.R:
           case webcl.A:
@@ -5924,6 +5927,7 @@ function copyTempDouble(ptr) {
                   _local_work_size[i] = HEAP32[(((local_work_size)+(i*4))>>2)];
               }
             }
+            /* \todo need to fix this with event
             for (var i = 0; i < num_events_in_wait_list; i++) {
               var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
               if (_event_wait in CL.cl_objects) {
@@ -5932,6 +5936,7 @@ function copyTempDouble(ptr) {
                 return webcl.INVALID_EVENT;    
               }
             }
+            */
               // \todo need to be remove when webkit will be respect the WD
               if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
                 CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
