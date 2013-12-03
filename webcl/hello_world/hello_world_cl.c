@@ -102,8 +102,20 @@ int end(int e) {
 
 // Simple compute kernel which computes the square of an input array 
 //
-const char *KernelSource = "\n" \
-"__kernel void square(                                                       \n" \
+const char *source1 = "\n" \
+"__kernel void square1(                                                       \n" \
+"   __global float* input,                                              \n" \
+"   __global float* output,                                             \n" \
+"   const unsigned int count)                                           \n" \
+"{                                                                      \n" \
+"   int i = get_global_id(0);                                           \n" \
+"   if(i < count)                                                       \n" \
+"       output[i] = input[i] * input[i];                                \n" \
+"}                                                                      \n" \
+"\n";
+
+const char *source2 = "\n" \
+"__kernel void square2(                                                       \n" \
 "   __global float* input,                                              \n" \
 "   __global float* output,                                             \n" \
 "   const unsigned int count)                                           \n" \
@@ -193,9 +205,20 @@ int main(int argc, char** argv)
         return end(EXIT_FAILURE);
     }
 
-    // Create the compute program from the source buffer
+    // Create the compute program from the two source buffer
     //
-    program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
+    const char* strings[2];
+
+    strings[0] = source1;
+    strings[1] = source2;
+
+    size_t lenghts[2];
+
+    lenghts[0] = strlen(source1);
+    lenghts[1] = strlen(source2);
+
+    // create the program
+    program = clCreateProgramWithSource(context, 2, (const char **) & strings, (const size_t *) &lenghts, &err);
     if (!program)
     {
         printf("Error: Failed to create compute program!\n");
@@ -219,7 +242,7 @@ int main(int argc, char** argv)
 
     // Create the compute kernel in the program we wish to run
     //
-    kernel = clCreateKernel(program, "square", &err);
+    kernel = clCreateKernel(program, "square2", &err);
     if (!kernel || err != CL_SUCCESS)
     {
         printf("Error: Failed to create compute kernel!\n");

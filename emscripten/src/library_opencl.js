@@ -2890,7 +2890,7 @@ var LibraryOpenCL = {
       var _string = "";
 
       for (var i = 0; i < count; i++) {
-        if (length) {
+        if (lengths) {
           var _len = {{{ makeGetValue('lengths', 'i*4', 'i32') }}};
           if (_len < 0) {
             _string += Pointer_stringify({{{ makeGetValue('strings', 'i*4', 'i32') }}});   
