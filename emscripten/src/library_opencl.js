@@ -453,6 +453,112 @@ var LibraryOpenCL = {
 
     },
 
+    getImageSizeType: function (image) {
+      var _sizeType = 0;
+
+#if OPENCL_GRAB_TRACE
+      CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
+#endif   
+
+      switch (_info.channelType) {
+        case webcl.SNORM_INT8:
+        case webcl.SIGNED_INT8:
+        case webcl.UNORM_INT8:        
+        case webcl.UNSIGNED_INT8:
+          _sizeType = 1;
+          break;
+        case webcl.SNORM_INT16:
+        case webcl.SIGNED_INT16:
+        case webcl.UNORM_INT16:        
+        case webcl.UNSIGNED_INT16:
+        case webcl.HALF_FLOAT:
+          _sizeType = 2;      
+          break;
+        case webcl.SIGNED_INT32:
+        case webcl.UNSIGNED_INT32:      
+        case webcl.FLOAT:
+          _sizeType = 4;
+          break;
+        default:
+          console.error("getImageSizeType : This channel type is not yet implemented => "+_info.channelType);
+      }
+
+      return _sizeType;
+    },
+
+
+    getImageFormatType: function (image) {
+      var _type = 0;
+
+#if OPENCL_GRAB_TRACE
+      CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
+#endif   
+
+      switch (_info.channelType) {
+        case webcl.SNORM_INT8:
+        case webcl.SIGNED_INT8:
+          _type = webcl.SIGNED_INT8;
+          break;
+        case webcl.UNORM_INT8:        
+        case webcl.UNSIGNED_INT8:
+          _type = webcl.UNSIGNED_INT8;
+          break;
+        case webcl.SNORM_INT16:
+        case webcl.SIGNED_INT16:
+          _type = webcl.SIGNED_INT16;
+          break;
+        case webcl.UNORM_INT16:        
+        case webcl.UNSIGNED_INT16:
+          _type = webcl.UNSIGNED_INT16;
+          break;
+        case webcl.SIGNED_INT32:
+          _type = SIGNED_INT32;
+        case webcl.UNSIGNED_INT32:
+          _type = UNSIGNED_INT32;
+          break;        
+        case webcl.FLOAT:
+          _type = webcl.FLOAT;
+          break;
+        default:
+          console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
+      }
+
+      return _type;
+    },
+
+    getImageSizeOrder: function (image) {
+      var _sizeOrder = 0;
+
+#if OPENCL_GRAB_TRACE
+      CL.webclCallStackTrace(""+CL.cl_objects[image]+".getInfo",[webcl.IMAGE_FORMAT]);
+#endif   
+
+      switch (_info.channelOrder) {
+        case webcl.R:
+        case webcl.A:
+        case webcl.INTENSITY:
+        case webcl.LUMINANCE:
+          _sizeOrder = 1;
+          break;
+        case webcl.RG:
+        case webcl.RA:
+          _sizeOrder = 2;
+          break;
+        case webcl.RGB:
+          _sizeOrder = 3;
+          break; 
+        case webcl.RGBA:
+        case webcl.BGRA:
+        case webcl.ARGB:      
+          _sizeOrder = 4;
+          break;        
+        default:
+          console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
+      }
+
+      return _sizeOrder;
+    },
+
     getCopyPointerToArray: function(ptr,size,type) { 
 
       var _host_ptr = null;
@@ -2084,69 +2190,9 @@ var LibraryOpenCL = {
       return 0; 
     }
 
-    var _type = webcl.FLOAT;
-    var _sizeType = 4;
-    var _sizeOrder = 1;    
-
-    switch (_channel_type) {
-      case webcl.SNORM_INT8:
-      case webcl.SIGNED_INT8:
-        _sizeType = 1;
-        _type = webcl.SIGNED_INT8;
-        break;
-      case webcl.UNORM_INT8:        
-      case webcl.UNSIGNED_INT8:
-        _sizeType = 1;
-        _type = webcl.UNSIGNED_INT8;
-        break;
-      case webcl.SNORM_INT16:
-      case webcl.SIGNED_INT16:
-        _sizeType = 2;
-        _type = webcl.SIGNED_INT16;
-        break;
-      case webcl.UNORM_INT16:        
-      case webcl.UNSIGNED_INT16:
-      case webcl.HALF_FLOAT:
-        _sizeType = 2;      
-        _type = webcl.UNSIGNED_INT16;
-        break;
-      case webcl.SIGNED_INT32:
-        _sizeType = 4;
-        _type = SIGNED_INT32;
-      case webcl.UNSIGNED_INT32:
-        _sizeType = 4;
-        _type = UNSIGNED_INT32;
-        break;        
-      case webcl.FLOAT:
-        _sizeType = 4;
-        _type = webcl.FLOAT;
-        break;
-      default:
-        console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
-    }
-
-    switch (_channel_order) {
-      case webcl.R:
-      case webcl.A:
-      case webcl.INTENSITY:
-      case webcl.LUMINANCE:
-        _sizeOrder = 1;
-        break;
-      case webcl.RG:
-      case webcl.RA:
-        _sizeOrder = 2;
-        break;
-      case webcl.RGB:
-        _sizeOrder = 3;
-        break; 
-      case webcl.RGBA:
-      case webcl.BGRA:
-      case webcl.ARGB:      
-        _sizeOrder = 4;
-        break;        
-      default:
-        console.error("clCreateImage2D : This channel order is not yet implemented => "+_channel_order);
-    }
+    var _type = CL.getImageFormatType(image);
+    var _sizeType = CL.getImageSizeType(image);
+    var _sizeOrder = CL.getImageSizeOrder(image);  
 
     var _size = image_width * image_height * _sizeOrder;
 
@@ -2494,29 +2540,8 @@ var LibraryOpenCL = {
       return _error;
     }
 
-    var _sizeType = 1;
-    switch (_info.channelType) {
-      case webcl.SNORM_INT8:
-      case webcl.SIGNED_INT8:
-      case webcl.UNORM_INT8:        
-      case webcl.UNSIGNED_INT8:
-        _sizeType = 1;
-        break;
-      case webcl.SNORM_INT16:
-      case webcl.UNORM_INT16:        
-      case webcl.UNSIGNED_INT16:
-      case webcl.HALF_FLOAT:
-        _sizeType = 2;
-        break;
-      case webcl.SIGNED_INT32:
-      case webcl.UNSIGNED_INT32:  
-      case webcl.FLOAT:
-        _sizeType = 4;
-        break;
-      default:
-        console.error("clCreateImage2D : This channel type is not yet implemented => "+_channel_type);
-    }
-
+    var _sizeType = CL.getImageSizeType(image);
+    
     switch (param_name) {
       case (webcl.IMAGE_FORMAT) :
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info.channelOrder', 'i32') }}};
@@ -4600,16 +4625,19 @@ var LibraryOpenCL = {
           var _event_wait_list = [];
           var _event = null;
 
-          var _origin = [];
-          var _region = [];
+          var _origin = new Int32Array(2);
+          var _region = new Int32Array(2);
+          var _size = CL.getImageSizeType(image);
+          var _channel = CL.getImageFormatType(image);
 
           for (var i = 0; i < 2; i++) {
-            _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+            _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+            _size *= _region[i];     
           }          
 
-          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
+          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -4687,19 +4715,24 @@ var LibraryOpenCL = {
 
         if (image in CL.cl_objects) {
 #endif
+
           var _event_wait_list = [];
           var _event = null;
 
-          var _origin = [];
-          var _region = [];
+          var _origin = new Int32Array(2);
+          var _region = new Int32Array(2);
+
+          var _size = CL.getImageSizeType(image);
+          var _channel = CL.getImageChannelType(image);
 
           for (var i = 0; i < 2; i++) {
-            _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+            _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+            _size *= _region[i];     
           }          
 
-          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
+          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+          var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
@@ -4721,7 +4754,7 @@ var LibraryOpenCL = {
 #endif        
           CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
           
-          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
+          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {

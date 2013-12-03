@@ -110,6 +110,11 @@ int main()
  
     size_t origin[] = {0,0,0}; // Defines the offset in pixels in the image from where to write.
     size_t region[] = {width, height, 1}; // Size of object to be transferred
+
+    printf("input size : %d\n",(IMG_SIZE * 3));
+    printf("origin size : {%d,%d,%d}\n",0, 0, 0);
+    printf("region size : {%d,%d,%d}\n",width, height, 1);
+
     err = clEnqueueWriteImage(command_queue, image1, CL_TRUE, origin, region,0,0, input, 0, NULL,&event[0] );
     err_check(err,"clEnqueueWriteImage");
     //cout<<kernel_src_std;
@@ -140,6 +145,9 @@ int main()
     err = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, GWSize, NULL, 1, event,&event[1]);
  
     // Step 11 : Read output Data, from Device to Host
+    printf("output size : %d\n",(IMG_SIZE * 3));
+    printf("origin size : {%d,%d,%d}\n",0, 0, 0);
+    printf("region size : {%d,%d,%d}\n",width, height, 1);
     err = clEnqueueReadImage(command_queue, image2, CL_TRUE, origin, region, 0, 0, output, 2, event, &event[2] );
  
     // Print Output
