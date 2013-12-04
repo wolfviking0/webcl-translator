@@ -51,7 +51,7 @@ all: \
 	hello_world_cuda_sample		\
 	hello_world_2_sample		\
 	imagecopy_sample			\
-	eventprofiling_sample		\	
+	eventprofiling_sample		\
 	convolution_sample 			\
 	reduce_sample 				\
 	scan_sample 				\

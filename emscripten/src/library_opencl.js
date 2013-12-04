@@ -5163,7 +5163,6 @@ var LibraryOpenCL = {
             }
           }
 
-          /* \todo need to fix this with event
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
@@ -5175,43 +5174,18 @@ var LibraryOpenCL = {
               return webcl.INVALID_EVENT;    
             }
           }
-          */
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
-  
-#if OPENCL_FORCE_CPU  
-          try {
-#endif            
-            // \todo need to be remove when webkit will be respect the WD
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
-            } else {
-              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
-            }
+      
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
 
-            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
-            // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-#if OPENCL_FORCE_CPU  
-          } catch (e) {
-#if OPENCL_GRAB_TRACE
-            CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel<<FORCE CPU>>",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event]);
-#endif      
-            // \todo need to be remove when webkit will be respect the WD
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list);  
-            } else {
-              CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],_global_work_offset,_global_work_size,null,_event_wait_list);  
-            }
-
-            // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,null,_event_wait_list,_event); 
-            // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-          }
-#endif  
+          // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
+          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
+        } else {
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
 #endif
