@@ -51,23 +51,20 @@ function loadModule(argv) {
   Module = {
     preRun: preRunFunc,
 	  postRun: [],
-  	print: (
-      function() {
-        var element = document.getElementById('output');
-        element.value = ''; // clear browser cache
-        return function(text) {
-          element.value += text + "\n";
-          element.scrollTop = 99999; // focus on bottom
-        };
-      })(),
-    printErr:
-      function(text) {
-        if (0) { // XXX disabled for safety typeof dump == 'function') {
-          dump(text + '\n'); // fast, straight to the real console
-        } else {
-          console.log(text);
-        }
-      },
+    print: (function() {
+      var element = document.getElementById('output');
+      element.value = '';
+      return function(text) {
+      	text = Array.prototype.slice.call(arguments).join(' ');
+      	element.value += text + '\n';
+      	element.scrollTop = 1000000;
+      	//console.log(text);
+      };
+    })(),
+    printErr: function(text) {
+      text = Array.prototype.slice.call(arguments).join(' ');
+      console.error(text);
+		},      
     canvas:
       document.getElementById('glCanvas'),
     setStatus:
