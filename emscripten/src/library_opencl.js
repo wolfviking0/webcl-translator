@@ -3072,16 +3072,17 @@ var LibraryOpenCL = {
         }
       }
 
+      var _callback = null
       // Need to call this code inside the callback event WebCLCallback.
-      // if (pfn_notify != 0) {
-      //  FUNCTION_TABLE[pfn_notify](program, user_data);
-      // }
+      if (pfn_notify != 0) {
+        //_callback = FUNCTION_TABLE[pfn_notify](program, user_data);
+      }
 
 #if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option]);
+      CL.webclCallStackTrace(CL.cl_objects[program]+".build",[_devices,_option,_callback]);
 #endif        
       
-      CL.cl_objects[program].build(_devices,_option,null,null);
+      CL.cl_objects[program].build(_devices,_option,_callback);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4821,9 +4822,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
 #endif        
           CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
-          
-          //CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
           //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    

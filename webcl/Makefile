@@ -51,6 +51,7 @@ all: \
 	hello_world_cuda_sample		\
 	hello_world_2_sample		\
 	imagecopy_sample			\
+	eventprofiling_sample		\	
 	convolution_sample 			\
 	reduce_sample 				\
 	scan_sample 				\
@@ -93,9 +94,15 @@ convolution_sample:
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) image_copy.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) image_copy.cpp $(MODE) \
 	$(PRELOAD) image_copy.cl \
 	-o ../build/imagecopy.js
+
+eventprofiling_sample:
+	$(call chdir,eventprofiling/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) event_profiling.cpp $(MODE) -s TOTAL_MEMORY=1024*1024*50 \
+	$(PRELOAD) event_profiling.cl \
+	-o ../build/eventprofiling.js
 
 # Need memory 1024 * 1024 * 20
 scan_sample:

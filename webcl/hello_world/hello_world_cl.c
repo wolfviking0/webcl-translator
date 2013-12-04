@@ -128,6 +128,10 @@ const char *source2 = "\n" \
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void pfn_notify_program(cl_program program, void *user_data) {
+    printf("%d) %d : pfn_notify call\n",(size_t)user_data,(size_t)program); 
+}
+
 int main(int argc, char** argv)
 {
     int err;                            // error code returned from api calls
@@ -227,7 +231,7 @@ int main(int argc, char** argv)
 
     // Build the program executable
     //
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    err = clBuildProgram(program, 0, NULL, NULL, pfn_notify_program, 12345);
     if (err != CL_SUCCESS)
     {
         size_t len;
