@@ -4277,12 +4277,12 @@ var LibraryOpenCL = {
 #endif
           var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
           var _event_wait_list = [];
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 
 #if OPENCL_CHECK_SET_POINTER    
@@ -4295,10 +4295,13 @@ var LibraryOpenCL = {
             }
           } 
 
- 
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
-          //CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
-          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          if (event != 0) {
+            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          } else {
+            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+          }
+
 #if OPENCL_GRAB_TRACE
           // It's the only callStackTrace call after the call for have info about the read host ptr
           CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
@@ -4359,7 +4362,7 @@ var LibraryOpenCL = {
 #endif
 
           var _event_wait_list = [];
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _buffer_origin = [];
           var _host_origin = [];
           var _region = [];
@@ -4376,7 +4379,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
               CL.cl_pn_type = [];
@@ -4392,10 +4395,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
 #endif     
    
-          //CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
-          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);
-
-          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_VALID_OBJECT             
       } else {
@@ -4450,14 +4451,14 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
           var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
               CL.cl_pn_type = [];
@@ -4473,9 +4474,13 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
-          // CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          if (event != 0) {
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          } else {
+            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);                
+          }
+
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
@@ -4530,7 +4535,7 @@ var LibraryOpenCL = {
 
         if (buffer in CL.cl_objects) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
           
           var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
@@ -4551,7 +4556,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
               CL.cl_pn_type = [];
@@ -4567,10 +4572,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
 #endif    
 
-          CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);   
-         
-          //CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
+          CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_CHECK_SET_POINTER    
@@ -4622,13 +4625,13 @@ var LibraryOpenCL = {
 
         if ((src_buffer in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
 #endif
-          var _event = null; 
+          var _event = (event != 0) ? new WebCLEvent() : null; 
           var _event_wait_list = [];
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -4641,9 +4644,9 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list);    
-          // CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);  
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);    
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_GRAB_TRACE
@@ -4690,7 +4693,7 @@ var LibraryOpenCL = {
         if (image in CL.cl_objects) {
 #endif
           var _event_wait_list = [];
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
 
           var _origin = new Int32Array(2);
           var _region = new Int32Array(2);
@@ -4706,11 +4709,10 @@ var LibraryOpenCL = {
           console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
           var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
-          /* \todo need to be fix with eveent
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
               CL.cl_pn_type = [];
@@ -4721,15 +4723,13 @@ var LibraryOpenCL = {
               return webcl.INVALID_EVENT;    
             }
           } 
-          */
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
 #endif        
-          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
+          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
           
-          //CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event);
-          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
@@ -4786,7 +4786,7 @@ var LibraryOpenCL = {
 #endif
 
           var _event_wait_list = [];
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
 
           var _origin = new Int32Array(2);
           var _region = new Int32Array(2);
@@ -4806,7 +4806,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_CHECK_SET_POINTER    
               CL.cl_pn_type = [];
@@ -4821,8 +4821,8 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
 #endif        
-          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
-          //if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
@@ -4875,7 +4875,7 @@ var LibraryOpenCL = {
 
         if ((src_image in CL.cl_objects) && (dst_image in CL.cl_objects)) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
 
           var _src_origin = new Int32Array(2);
@@ -4888,12 +4888,10 @@ var LibraryOpenCL = {
             _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});            
           }
 
-
-          /* \todo need to be fix with event
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -4901,17 +4899,16 @@ var LibraryOpenCL = {
               return webcl.INVALID_EVENT;    
             }
           } 
-          */
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
-          // CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+          
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
+          } else {
 #if OPENCL_GRAB_TRACE
           CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
 #endif
@@ -4952,7 +4949,7 @@ var LibraryOpenCL = {
 
         if ((src_image in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
 
           var _src_origin = [];
@@ -4966,7 +4963,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -4979,9 +4976,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list);    
-          // CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_GRAB_TRACE
@@ -5024,7 +5020,7 @@ var LibraryOpenCL = {
 
         if ((src_buffer in CL.cl_objects) && (dst_image in CL.cl_objects)) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
 
           var _dest_origin = new Int32Array(2); 
@@ -5038,7 +5034,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -5051,9 +5047,8 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
 #endif    
   
-          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
-          // CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);   
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_GRAB_TRACE
@@ -5121,7 +5116,7 @@ var LibraryOpenCL = {
 
         if (kernel in CL.cl_objects) {
 #endif
-          var _event = null;
+          var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
 
           var _global_work_offset
@@ -5166,7 +5161,7 @@ var LibraryOpenCL = {
           for (var i = 0; i < num_events_in_wait_list; i++) {
             var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
             if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(_event_wait);
+              _event_wait_list.push(CL.cl_objects[_event_wait]);
             } else {
 #if OPENCL_GRAB_TRACE
               CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -5178,11 +5173,13 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
 #endif    
-      
-          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
-
-          // CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event); 
-          // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+                
+          if (event != 0) {
+            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[],_event);  
+            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+          } else {
+            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);  
+          }
 
 #if OPENCL_CHECK_VALID_OBJECT   
         } else {
@@ -5244,33 +5241,15 @@ var LibraryOpenCL = {
 
     try { 
 
-// #if OPENCL_GRAB_TRACE
-//       CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".getInfo",[webcl.QUEUE_CONTEXT]);
-// #endif        
-//       var _context = CL.cl_objects[command_queue].getInfo(webcl.QUEUE_CONTEXT);      
+      var _event = (event != 0) ? new WebCLEvent() : null;
 
-//       console.info("Context : "+_context);
-
-// #if OPENCL_GRAB_TRACE
-//       CL.webclCallStackTrace(""+_context+".createUserEvent",[]);
-// #endif    
-
-      var _event = null; //_context.createUserEvent();
-
-//       if (!(_event instanceof WebCLEvent)) {
-// #if OPENCL_GRAB_TRACE
-//         CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are not created","");
-// #endif
-//         return webcl.INVALID_EVENT;
-//       }
-
-// #if OPENCL_GRAB_TRACE
-//       CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
-// #endif    
+#if OPENCL_GRAB_TRACE
+      CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
+#endif    
 
       CL.cl_objects[command_queue].enqueueMarker(_event);    
 
-      // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5817,14 +5796,14 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 #endif
-        var _event = null;
+        var _event = (event != 0) ? new WebCLEvent() : null;
         var _event_wait_list = [];
         var _mem_objects = [];
 
         for (var i = 0; i < num_events_in_wait_list; i++) {
           var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
           if (_event_wait in CL.cl_objects) {
-            _event_wait_list.push(_event_wait);
+            _event_wait_list.push(CL.cl_objects[_event_wait]);
           } else {
 #if OPENCL_GRAB_TRACE
             CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -5842,9 +5821,13 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueAcquireGLObjects",[_mem_objects,_event_wait_list,_event]);
 #endif    
 
-        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
-        // CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
-        // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+        if (event != 0) {
+          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
+          {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+        } else {
+          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
+        }
+
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_GRAB_TRACE
@@ -5879,14 +5862,14 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_VALID_OBJECT   
       if (command_queue in CL.cl_objects) {
 #endif
-        var _event = null;
+        var _event = (event != 0) ? new WebCLEvent() : null;
         var _event_wait_list = [];
         var _mem_objects = [];
 
         for (var i = 0; i < num_events_in_wait_list; i++) {
           var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
           if (_event_wait in CL.cl_objects) {
-            _event_wait_list.push(_event_wait);
+            _event_wait_list.push(CL.cl_objects[_event_wait]);
           } else {
 #if OPENCL_GRAB_TRACE
             CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
@@ -5904,9 +5887,9 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReleaseGLObjects",[_mem_objects,_event_wait_list,_event]);
 #endif    
 
-        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);    
-        // CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
-        // if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);      
+        if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_CHECK_VALID_OBJECT   
       } else {
 #if OPENCL_GRAB_TRACE
