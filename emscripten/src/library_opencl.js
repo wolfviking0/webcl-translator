@@ -4268,7 +4268,7 @@ var LibraryOpenCL = {
 
     try {
 
-      CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+      CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
 
 #if OPENCL_GRAB_TRACE
       // It's the only callStackTrace call after the call for have info about the read host ptr
@@ -4362,7 +4362,7 @@ var LibraryOpenCL = {
    
     try {
 
-      CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+      CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,[]);//_event_wait_list,_event);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4439,7 +4439,7 @@ var LibraryOpenCL = {
 
     try {
           
-      CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4531,7 +4531,7 @@ var LibraryOpenCL = {
 
     try {
 
-      CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
+      CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,[]);//_event_wait_list,_event);   
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4610,7 +4610,7 @@ var LibraryOpenCL = {
 
     try {
   
-      CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,[]);//_event_wait_list,_event);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4689,7 +4689,7 @@ var LibraryOpenCL = {
 
     try {      
 
-      CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+      CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,[]);//_event_wait_list, _event);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4769,7 +4769,7 @@ var LibraryOpenCL = {
           
     try {
 
-      CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+      CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,[]);//_event_wait_list,_event);
  
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4850,7 +4850,7 @@ var LibraryOpenCL = {
 
     try {
 
-      CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,[]);//_event_wait_list,_event);    
           
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4931,7 +4931,7 @@ var LibraryOpenCL = {
   
     try {
 
-      CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,[]);//_event_wait_list,_event);    
           
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5012,7 +5012,7 @@ var LibraryOpenCL = {
   
     try {
 
-      CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,[]);//_event_wait_list,_event);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5120,7 +5120,7 @@ var LibraryOpenCL = {
            
     try { 
       
-      CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+      CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5709,7 +5709,7 @@ var LibraryOpenCL = {
 
     try { 
 
-      CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
+      CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,[]);//_event_wait_list,_event);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5783,7 +5783,7 @@ var LibraryOpenCL = {
 
     try { 
 
-        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);      
+        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,[]);//_event_wait_list,_event);      
 
     } catch (e) {
 
