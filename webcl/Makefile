@@ -48,15 +48,10 @@ $(info )
 
 all: \
 	hello_world_sample 			\
-	hello_world_cuda_sample		\
-	hello_world_2_sample		\
 	imagecopy_sample			\
 	eventprofiling_sample		\
 	convolution_sample 			\
-	reduce_sample 				\
-	scan_sample 				\
 	mandelbulb_sample 			\
-	qjulia_sample 				\
 	smallpt_sample              \
 	attractor_sample			\
 	dxt_sample					\
@@ -66,24 +61,15 @@ all: \
 
 all_osx: \
 	mandelbulb_sample_osx \
-	qjulia_sample_osx \
 	smallpt_sample_osx \
 	attractor_sample_osx \
 
-hello_world_sample:
-	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cl.c $(MODE) -o ../build/hello_world.js
-
-hello_world_cuda_sample:
-	$(call chdir,hello_world_cuda/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_cuda.c $(MODE) -o ../build/hello_world_cuda.js
-
 # Not yet working -> issue #315
-hello_world_2_sample: 
-	$(call chdir,hello_world_2/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(MODE) \
-	$(PRELOAD) hello_world_2.cl \
-	-o ../build/hello_world_2.js
+hello_world_sample: 
+	$(call chdir,hello_world/)
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world.cpp $(MODE) \
+	$(PRELOAD) hello_world.cl \
+	-o ../build/hello_world.js
 
 # Not yet working -> issue #315
 convolution_sample:
@@ -104,30 +90,11 @@ eventprofiling_sample:
 	$(PRELOAD) event_profiling.cl \
 	-o ../build/eventprofiling.js
 
-# Need memory 1024 * 1024 * 20
-scan_sample:
-	$(call chdir,scan/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) scan.c -s TOTAL_MEMORY=1024*1024*20 $(MODE) \
-	$(PRELOAD) scan_kernel.cl \
-	-o ../build/scan.js
-
-reduce_sample:
-	$(call chdir,reduce/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) reduce.c -s TOTAL_MEMORY=1024*1024*50 $(MODE) \
-	$(PRELOAD) reduce_float_kernel.cl $(PRELOAD) reduce_float2_kernel.cl $(PRELOAD) reduce_float4_kernel.cl $(PRELOAD) reduce_int_kernel.cl $(PRELOAD) reduce_int2_kernel.cl $(PRELOAD) reduce_int4_kernel.cl \
-	-o ../build/reduce.js
-
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(MODE) \
 	$(PRELOAD) mandelbulb_kernel.cl \
 	-o ../build/mandelbulb.js
-
-qjulia_sample:
-	$(call chdir,qjulia/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) qjulia.c -s LEGACY_GL_EMULATION=1 $(MODE) \
-	$(PRELOAD) qjulia_kernel.cl \
-	-o ../build/qjulia.js
 
 #JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
@@ -152,11 +119,6 @@ mandelbulb_sample_osx:
 	$(call chdir,mandelbulb/)
 	clang++ -02 mandelbulbGPU.c displayfunc.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o mandelbulb.out
-
-qjulia_sample_osx:
-	$(call chdir,qjulia/)
-	clang++ -02 qjulia.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-	-o qjulia.out
 
 attractor_sample_osx:
 	$(call chdir,attractor/)

@@ -267,7 +267,7 @@ int main(int argc, char** argv)
     int i;
 
     #ifdef __EMSCRIPTEN__
-        webclBeginProfile("Profile hello_world_2 webcl");
+        webclBeginProfile("Profile hello_world webcl");
     #endif
 
     // Parse command line options
@@ -305,7 +305,7 @@ int main(int argc, char** argv)
     }
 
     // Create OpenCL program from HelloWorld.cl kernel source
-    program = CreateProgram(context, device, "hello_world_2.cl");
+    program = CreateProgram(context, device, "hello_world.cl");
 
     if (program == NULL)
     {
