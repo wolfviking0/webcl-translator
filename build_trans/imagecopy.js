@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = '357db08f-e994-4076-9991-d8520e0f3d7b';
+    var PACKAGE_UUID = 'ffb5432a-194f-45b2-ba5f-12e8d16cfcc5';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5933,7 +5933,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6073,7 +6073,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6100,7 +6100,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {      
-        CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+        CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,[]);//_event_wait_list, _event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6124,7 +6124,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

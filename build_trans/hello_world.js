@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/hello_world.data';
     var REMOTE_PACKAGE_NAME = 'hello_world.data';
-    var PACKAGE_UUID = '5d87e5a7-aba5-4396-9d6e-7c0fbac20882';
+    var PACKAGE_UUID = 'ffc99252-4312-49e6-8186-d6b59135e219';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5743,7 +5743,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5999,7 +5999,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6016,7 +6016,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

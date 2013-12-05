@@ -100,7 +100,7 @@ Module['FS_createPath']('/', 'data', true, true);
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'bbda7402-86c1-41e0-badf-f5c89d5bb0c6';
+    var PACKAGE_UUID = 'c046aac9-36f3-48da-af15-556040f863b1';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -11507,7 +11507,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11723,7 +11723,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11740,7 +11740,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

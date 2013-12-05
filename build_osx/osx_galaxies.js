@@ -106,7 +106,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = '4346fae2-471b-4bd5-833d-7bb43161487a';
+    var PACKAGE_UUID = '1870597a-431b-45a9-a966-26dd12de0661';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -11250,7 +11250,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11368,7 +11368,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11405,7 +11405,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

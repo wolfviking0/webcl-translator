@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = '8c6f65e6-1719-487b-866f-2126f4e97cb9';
+    var PACKAGE_UUID = '3cb248d7-e6f5-4ebe-9640-248ca91ac47d';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -10142,7 +10142,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10163,7 +10163,7 @@ function copyTempDouble(ptr) {
         _mem_objects.push(CL.cl_objects[_id]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10212,7 +10212,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10233,7 +10233,7 @@ function copyTempDouble(ptr) {
         _mem_objects.push(CL.cl_objects[_id]);
       }
       try { 
-          CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);      
+          CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,[]);//_event_wait_list,_event);      
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10298,7 +10298,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10501,7 +10501,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

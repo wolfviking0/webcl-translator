@@ -97,7 +97,7 @@ function assert(check, msg) {
     var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
     var PACKAGE_NAME = '../build/mandelbulb.data';
     var REMOTE_PACKAGE_NAME = 'mandelbulb.data';
-    var PACKAGE_UUID = '601cd748-f3a8-49ab-9123-c0d5d22ded91';
+    var PACKAGE_UUID = 'e04519e5-fc5d-43c1-ae19-047538d872a2';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5379,7 +5379,7 @@ function copyTempDouble(ptr) {
         _mem_objects.push(CL.cl_objects[_id]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5428,7 +5428,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5449,7 +5449,7 @@ function copyTempDouble(ptr) {
         _mem_objects.push(CL.cl_objects[_id]);
       }
       try { 
-          CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);      
+          CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,[]);//_event_wait_list,_event);      
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5514,7 +5514,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5562,7 +5562,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6515,7 +6515,7 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
