@@ -81,14 +81,14 @@ hello_world_cuda_sample:
 # Not yet working -> issue #315
 hello_world_2_sample: 
 	$(call chdir,hello_world_2/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world_2.cpp $(MODE) \
 	$(PRELOAD) hello_world_2.cl \
 	-o ../build/hello_world_2.js
 
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp -s OPENCL_VALIDATOR=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(MODE) \
 	$(PRELOAD) convolution_kernel.cl \
 	-o ../build/convolution.js
 

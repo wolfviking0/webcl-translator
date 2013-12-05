@@ -3651,73 +3651,64 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetKernelInfo",[kernel,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
+#if OPENCL_CHECK_VALID_OBJECT
+    if (!(kernel in CL.cl_objects)) {
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
+#endif
+      return webcl.INVALID_KERNEL;
+    }
+#endif 
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getInfo",[param_name]);
+#endif   
 
     try { 
-#if OPENCL_CHECK_VALID_OBJECT
-      if (kernel in CL.cl_objects) {
-#endif
-#if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getInfo",[param_name]);
-#endif        
 
-        var _info = CL.cl_objects[kernel].getInfo(param_name);
+      var _info = CL.cl_objects[kernel].getInfo(param_name);
 
-        if(typeof(_info) == "number") {
+      if(typeof(_info) == "number") {
 
-          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+
+      } else if(typeof(_info) == "string") {
+
+        if (param_value != 0) writeStringToMemory(_info, param_value);
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+    
+      } else if(typeof(_info) == "object") {
+
+        if ( (_info instanceof WebCLContext) || (_info instanceof WebCLProgram) ){
+   
+          var _id = CL.udid(_info);
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
           if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
-        } else if(typeof(_info) == "string") {
-          if (param_value != 0) {
-            writeStringToMemory(_info, param_value);
-          }
-        
-          if (param_value_size_ret != 0) {
-            {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
-          }
-        } else if(typeof(_info) == "object") {
-
-          if ( (_info instanceof WebCLContext) || (_info instanceof WebCLProgram) ){
-     
-            var _id = CL.udid(_info);
-            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
-
-          } else if (_info == null) {
-
-            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-
-          } else {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-#endif
-            return webcl.INVALID_VALUE;
-          }
         } else {
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
-#endif
-          return webcl.INVALID_VALUE;
+
+          console.error("clGetKernelInfo: unknow type of info '"+_info+"'")
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
         }
-#if OPENCL_CHECK_VALID_OBJECT       
       } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"kernel are NULL","");
-#endif
-        return webcl.INVALID_KERNEL;
+
+        console.error("clGetKernelInfo: unknow type of info '"+_info+"'")
+
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
       }
-#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
-      if (param_value != 0) {
-        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-      }
-
-      if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-      }
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
@@ -3735,62 +3726,60 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetKernelWorkGroupInfo",[kernel,device,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
+#if OPENCL_CHECK_VALID_OBJECT
+    if (!(kernel in CL.cl_objects)) {
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
-    try { 
-#if OPENCL_CHECK_VALID_OBJECT  
-      if (kernel in CL.cl_objects) {
-      
-        if (device in CL.cl_objects) {
-#endif
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[kernel]+".getWorkGroupInfo",[device,param_name]);
-#endif        
-
-          var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
-
-          if(typeof(_info) == "number") {
-
-            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
-
-          } else if (_info instanceof Int32Array) {
-           
-            for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-              if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
-            }
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length * 4', 'i32') }}};
-          
-          } else {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_VALUE],typeof(_info)+" not yet implemented","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
 #endif
-            return webcl.INVALID_VALUE;
-          }
-#if OPENCL_CHECK_VALID_OBJECT            
-        } else {
+      return webcl.INVALID_KERNEL;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT
+    if (!(device in CL.cl_objects)) {
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_DEVICE],"device are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_DEVICE],"WebCLDevice '"+device+"' are not inside the map","");
 #endif
-          return webcl.INVALID_DEVICE;
+      return webcl.INVALID_DEVICE;
+    }
+#endif 
+
+    try {
+
+      var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
+
+      if(typeof(_info) == "number") {
+
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+
+      } else if (_info instanceof Int32Array) {
+       
+        for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+          if (param_value != 0) {{{ makeSetValue('param_value', 'i*4', '_info[i]', 'i32') }}};
         }
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length * 4', 'i32') }}};
+      
       } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"kernel are NULL","");
-#endif
-        return webcl.INVALID_KERNEL;
+
+        console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
+        
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
       }
-#endif
+
     } catch (e) {
       var _error = CL.catchError(e);
 
-      if (param_value != 0) {
-        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-      }
-
-      if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-      }
-
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+      
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
 #endif
@@ -3808,28 +3797,28 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clWaitForEvents",[num_events,event_list]);
 #endif
 
-    try {
+    var _events = [];
 
-      var _events = [];
-
-      for (var i = 0; i < num_events; i++) {
-        var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
+    for (var i = 0; i < num_events; i++) {
+      var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
 #if OPENCL_CHECK_VALID_OBJECT  
-        if (!(_event in CL.cl_objects)) {
+      if (!(_event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_EVENT],_event+" is not a valid OpenCL event","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event+"' are not inside the map","");
 #endif    
-          return webcl.INVALID_EVENT; 
-        }
-#endif
-        _events.push(_event) 
+        return webcl.INVALID_EVENT; 
       }
+#endif
+      
+      _events.push(_event) 
+    }
+
+    try {
 
 #if OPENCL_GRAB_TRACE
       CL.webclCallStackTrace(""+webcl+".waitForEvents",[_events]);
 #endif      
       webcl.waitForEvents(_events);
-
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -3850,65 +3839,56 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetEventInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
+#if OPENCL_CHECK_VALID_OBJECT
+    if (!(event in CL.cl_objects)) {
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
+#endif
+      return webcl.INVALID_EVENT;
+    }
+#endif 
 
     try { 
-#if OPENCL_CHECK_VALID_OBJECT  
-      if (event in CL.cl_objects) {
-#endif
-#if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[event]+".getInfo",[param_name]);
-#endif        
 
-        var _info = CL.cl_objects[event].getInfo(param_name);
+      var _info = CL.cl_objects[event].getInfo(param_name);
 
-        if(typeof(_info) == "number") {
+      if(typeof(_info) == "number") {
 
-          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+
+      } else if(typeof(_info) == "object") {
+
+        if ( (_info instanceof WebCLContext) || (_info instanceof WebCLCommandQueue) ){
+   
+          var _id = CL.udid(_info);
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
           if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
-        } else if(typeof(_info) == "object") {
-
-          if ( (_info instanceof WebCLContext) || (_info instanceof WebCLCommandQueue) ){
-     
-            var _id = CL.udid(_info);
-            if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
-
-          } else if (_info == null) {
-
-            if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-            if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-
-          } else {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
-#endif
-            return webcl.INVALID_EVENT;
-          }
         } else {
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
-#endif
-          return webcl.INVALID_EVENT;
+
+          console.error("clGetEventInfo: unknow type of info '"+_info+"'")
+
+          if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
         }
-#if OPENCL_CHECK_VALID_OBJECT         
       } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif
-        return webcl.INVALID_EVENT;
+
+        console.error("clGetEventInfo: unknow type of info '"+_info+"'")
+
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
       }
-#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
-      if (param_value != 0) {
-        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-      }
-
-      if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-      }
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
@@ -3926,37 +3906,31 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clCreateUserEvent",[context,cl_errcode_ret]);
 #endif
-
-    var _id = null;
-    var _event = null;
-
-    // Context must be created
 #if OPENCL_CHECK_VALID_OBJECT      
     if (!(context in CL.cl_objects)) {
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
-      }
-
+      if (cl_errcode_ret != 0) {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
 #if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([0,cl_errcode_ret],"context '"+context+"' is not a valid context","");
+      CL.webclEndStackTrace([0,cl_errcode_ret],"WebCLContext '"+context+"' are not inside the map","");
 #endif
       return 0; 
     }
 #endif
-    try {
+
+    var _id = null;
+    var _event = null;
     
 #if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace( CL.cl_objects[context]+".createUserEvent",[]);
-#endif      
+    CL.webclCallStackTrace( CL.cl_objects[context]+".createUserEvent",[]);
+#endif 
 
+    try {
+     
       _event = CL.cl_objects[context].createUserEvent();
       
     } catch (e) {
       var _error = CL.catchError(e);
     
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
-      }
+      if (cl_errcode_ret != 0) {{{ makeSetValue('cl_errcode_ret', '0', '_error', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([0,cl_errcode_ret],"",e.message);
@@ -3964,9 +3938,7 @@ var LibraryOpenCL = {
       return 0; // NULL Pointer
     }
 
-    if (cl_errcode_ret != 0) {
-      {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
-    }
+    if (cl_errcode_ret != 0) {{{ makeSetValue('cl_errcode_ret', '0', '0', 'i32') }}};
 
     _id = CL.udid(_event);
 
@@ -3982,11 +3954,10 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainEvent",[event]);
 #endif
-
 #if OPENCL_CHECK_VALID_OBJECT
     if (!(event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
 #endif
       return webcl.INVALID_EVENT;
     }
@@ -4004,11 +3975,10 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseEvent",[event]);
 #endif
-
 #if OPENCL_CHECK_VALID_OBJECT
     if (!(event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
 #endif
       return webcl.INVALID_EVENT;
     }
@@ -4022,26 +3992,29 @@ var LibraryOpenCL = {
       return webcl.SUCCESS;
     }
 
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(CL.cl_objects[event]+".release",[]);
+#endif    
+
     try {
 
-#if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(CL.cl_objects[event]+".release",[]);
-#endif        
       CL.cl_objects[event].release();
-      delete CL.cl_objects[event];
-#if OPENCL_PROFILE             
-      CL.cl_objects_counter--;
-      //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + event);
-#endif   
-  } catch (e) {
-    var _error = CL.catchError(e);
+        
+    } catch (e) {
+      var _error = CL.catchError(e);
 
 #if OPENCL_GRAB_TRACE
-    CL.webclEndStackTrace([_error],"",e.message);
+      CL.webclEndStackTrace([_error],"",e.message);
 #endif
 
-    return _error;
+      return _error;
     }
+
+    delete CL.cl_objects[event];
+
+#if OPENCL_PROFILE             
+    CL.cl_objects_counter--;
+#endif   
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4054,24 +4027,24 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetUserEventStatus",[event,execution_status]);
 #endif
-
-    try {
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (event in CL.cl_objects) {
-#endif
+    if (!(event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(CL.cl_objects[event]+".setUserEventStatus",[execution_status]);
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
+#endif 
+
+      return webcl.INVALID_EVENT;
+    }
+#endif
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(CL.cl_objects[event]+".setUserEventStatus",[execution_status]);
 #endif        
 
+    try {
+
         CL.cl_objects[event].setUserEventStatus(execution_status);
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
-#endif
-        return webcl.INVALID_EVENT;
-      }
-#endif
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4093,25 +4066,25 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetEventCallback",[event,command_exec_callback_type,pfn_notify,user_data]);
 #endif
-
-    try {
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (event in CL.cl_objects) {
-#endif
+    if (!(event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,pfn_notify,user_data]);
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
+#endif 
+
+      return webcl.INVALID_EVENT;
+    }
+#endif
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,pfn_notify,user_data]);
 #endif        
 
-        console.error("/!\\ todo clSetEventCallback not yet finish to implement");
-        CL.cl_objects[event].setCallback(command_exec_callback_type);
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_EVENT],CL.cl_objects[event]+" is not a valid OpenCL event","");
-#endif
-        return webcl.INVALID_EVENT;
-      }
-#endif
+    console.error("/!\\ todo clSetEventCallback not yet finish to implement");
+    try {
+
+      CL.cl_objects[event].setCallback(command_exec_callback_type);
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4133,46 +4106,35 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetEventProfilingInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (event in CL.cl_objects) {
-#endif
+    if (!(event in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[event]+".getProfilingInfo",[param_name]);
+      CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+event+"' are not inside the map","");
+#endif 
+
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
+
+      return webcl.INVALID_EVENT;
+    }
+#endif 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[event]+".getProfilingInfo",[param_name]);
 #endif        
 
-        var _info = CL.cl_objects[event].getProfilingInfo(param_name);
+    try { 
 
-        if(typeof(_info) == "number") {
+      var _info = CL.cl_objects[event].getProfilingInfo(param_name);
 
-          if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
-          if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
-        } else {
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_EVENT],typeof(_info)+" not yet implemented","");
-#endif
-          return webcl.INVALID_EVENT;
-        }
-#if OPENCL_CHECK_VALID_OBJECT          
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif
-        return webcl.INVALID_EVENT;
-      }
-#endif
     } catch (e) {
       var _error = CL.catchError(e);
 
-      if (param_value != 0) {
-        {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
-      }
-
-      if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
-      }
+      if (param_value != 0) {{{ makeSetValue('param_value', '0', '0', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '0', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error,param_value,param_value_size_ret],"",e.message);
@@ -4190,24 +4152,23 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clFlush",[command_queue]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-#endif
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".flush",[]);
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".flush",[]);
 #endif        
 
-        CL.cl_objects[command_queue].flush();
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
-#endif
-        return webcl.INVALID_COMMAND_QUEUE;
-      }
-#endif
+    try {
+        
+      CL.cl_objects[command_queue].flush();
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4227,24 +4188,23 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clFinish",[command_queue]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-#endif
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".finish",[]);
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".finish",[]);
 #endif        
 
-        CL.cl_objects[command_queue].finish();
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
-#endif
-        return webcl.INVALID_COMMAND_QUEUE;
-      }
-#endif
+    try {
+
+      CL.cl_objects[command_queue].finish();
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4268,74 +4228,67 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_SET_POINTER    
     if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadBuffer : you don't call clSetTypePointer for ptr parameter");
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (buffer in CL.cl_objects) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(buffer in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
-          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
-          var _event_wait_list = [];
-          var _event = (event != 0) ? new WebCLEvent() : null;
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
 
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif              
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-          if (event != 0) {
-            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
-            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-          } else {
-            CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
-          }
-
-#if OPENCL_GRAB_TRACE
-          // It's the only callStackTrace call after the call for have info about the read host ptr
-          CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
-#endif       
-
-#if OPENCL_CHECK_VALID_OBJECT            
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif                
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
-#endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+    var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
+  
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_CHECK_SET_POINTER    
         CL.cl_pn_type = [];
-#endif                
+#endif 
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+    try {
+
+      CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+
+#if OPENCL_GRAB_TRACE
+      // It's the only callStackTrace call after the call for have info about the read host ptr
+      CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif       
+
     } catch (e) {
       var _error = CL.catchError(e);
         
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_SET_POINTER    
     CL.cl_pn_type = [];
@@ -4353,80 +4306,78 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_SET_POINTER    
     if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadBufferRect : you don't call clSetTypePointer for ptr parameter");
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (buffer in CL.cl_objects) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(buffer in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
 
-          var _event_wait_list = [];
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _buffer_origin = [];
-          var _host_origin = [];
-          var _region = [];
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+    
+    var _buffer_origin = [];
+    var _host_origin = [];
+    var _region = [];
 
-          for (var i = 0; i < 3; i++) {
-            _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
-            _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
+    for (var i = 0; i < 3; i++) {
+      _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
+      _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+    }
 
-          console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
+    console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
+    var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif                 
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
-#endif     
-   
-          CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
-#if OPENCL_CHECK_VALID_OBJECT             
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif           
-#if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
-#endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_CHECK_SET_POINTER    
         CL.cl_pn_type = [];
-#endif           
+#endif 
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
+#endif     
+   
+    try {
+
+      CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
+
     } catch (e) {
       var _error = CL.catchError(e);
-   
+
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif   
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_SET_POINTER    
     CL.cl_pn_type = [];
@@ -4444,72 +4395,66 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_SET_POINTER    
     if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteBuffer : you don't call clSetTypePointer for ptr parameter");
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (buffer in CL.cl_objects) {
-#endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif               
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
-#endif    
-  
-          if (event != 0) {
-            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
-            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-          } else {
-            CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);                
-          }
-
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif         
+    if (!(buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+    var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_CHECK_SET_POINTER    
         CL.cl_pn_type = [];
-#endif         
+#endif 
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif    
+
+    try {
+          
+      CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+
     } catch (e) {
       var _error = CL.catchError(e);
  
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_CHECK_SET_POINTER    
     CL.cl_pn_type = [];
@@ -4528,81 +4473,80 @@ var LibraryOpenCL = {
 #if OPENCL_CHECK_SET_POINTER    
     if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteBufferRect : you don't call clSetTypePointer for ptr parameter");
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (buffer in CL.cl_objects) {
-#endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-          
-          var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
-
-          var _buffer_origin = [];
-          var _host_origin = [];
-          var _region = [];
-
-          for (var i = 0; i < 3; i++) {
-            _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
-            _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
-
-          console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif               
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
-#endif    
-
-          CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif          
+    if (!(buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+    
+    var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
+
+    var _buffer_origin = [];
+    var _host_origin = [];
+    var _region = [];
+
+    for (var i = 0; i < 3; i++) {
+      _buffer_origin.push({{{ makeGetValue('buffer_origin', 'i*4', 'i32') }}});
+      _host_origin.push({{{ makeGetValue('host_origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+    }
+
+    console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
+    var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_CHECK_SET_POINTER    
         CL.cl_pn_type = [];
-#endif          
+#endif 
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
+#endif    
+
+    try {
+
+      CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
+
     } catch (e) {
       var _error = CL.catchError(e);
-  
+
+#if OPENCL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
 #endif
 
       return _error;
     }
+          
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
 
 #if OPENCL_CHECK_SET_POINTER    
     CL.cl_pn_type = [];
@@ -4618,49 +4562,56 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyBuffer",[command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if ((src_buffer in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
-#endif
-          var _event = (event != 0) ? new WebCLEvent() : null; 
-          var _event_wait_list = [];
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
-#endif    
-  
-          CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);    
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
+    if (!(src_buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(dst_buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null; 
+    var _event_wait_list = [];
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+#endif
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+      CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
+#endif  
+
+    try {
+  
+      CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);    
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4670,6 +4621,8 @@ var LibraryOpenCL = {
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4682,75 +4635,62 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueReadImage",[command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
-#if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueReadImage : you don't call clSetTypePointer for ptr parameter");
-#endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (image in CL.cl_objects) {
-#endif
-          var _event_wait_list = [];
-          var _event = (event != 0) ? new WebCLEvent() : null;
-
-          var _origin = new Int32Array(2);
-          var _region = new Int32Array(2);
-          var _size = CL.getImageSizeType(image);
-          var _channel = CL.getImageFormatType(image);
-
-          for (var i = 0; i < 2; i++) {
-            _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
-            _size *= _region[i];     
-          }          
-
-          console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif              
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
-#endif        
-          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
-          
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif        
+    if (!(image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+image+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = [];
-#endif
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event_wait_list = [];
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+
+    var _origin = new Int32Array(2);
+    var _region = new Int32Array(2);
+    var _size = CL.getImageSizeType(image);
+    var _channel = CL.getImageFormatType(image);
+
+    for (var i = 0; i < 2; i++) {
+      _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+      _size *= _region[i];     
+    }          
+
+    console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+    var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+        
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif  
+
+    try {      
+
+      CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4761,9 +4701,8 @@ var LibraryOpenCL = {
       return _error;
     }
 
-#if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = [];
-#endif
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -4774,89 +4713,75 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteImage",[command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
 #endif
-#if OPENCL_CHECK_SET_POINTER    
-    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueWriteImage : you don't call clSetTypePointer for ptr parameter");
-#endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (image in CL.cl_objects) {
-#endif
-
-          var _event_wait_list = [];
-          var _event = (event != 0) ? new WebCLEvent() : null;
-
-          var _origin = new Int32Array(2);
-          var _region = new Int32Array(2);
-
-          var _size = CL.getImageSizeType(image);
-          var _channel = CL.getImageFormatType(image);
-
-          for (var i = 0; i < 2; i++) {
-            _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
-            _size *= _region[i];     
-          }          
-
-          console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
-          var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_CHECK_SET_POINTER    
-              CL.cl_pn_type = [];
-#endif              
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
-#endif        
-          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-          CL.cl_pn_type = [];
-#endif        
+    if (!(image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"image are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+image+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
-#if OPENCL_CHECK_SET_POINTER    
-        CL.cl_pn_type = [];
-#endif        
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event_wait_list = [];
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+
+    var _origin = new Int32Array(2);
+    var _region = new Int32Array(2);
+
+    var _size = CL.getImageSizeType(image);
+    var _channel = CL.getImageFormatType(image);
+
+    for (var i = 0; i < 2; i++) {
+      _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+      _size *= _region[i];     
+    }          
+
+    console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+    var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif        
+          
+    try {
+
+      CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+ 
     } catch (e) {
       var _error = CL.catchError(e);
 
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([_error],"",e.message);
-#endif
-
+#endif   
       return _error;
     }
 
-#if OPENCL_CHECK_SET_POINTER    
-    CL.cl_pn_type = [];
-#endif
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -4868,59 +4793,65 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyImage",[command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if ((src_image in CL.cl_objects) && (dst_image in CL.cl_objects)) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-
-          var _src_origin = new Int32Array(2);
-          var _dest_origin = new Int32Array(2);
-          var _region = new Int32Array(2);
-
-          for (var i = 0; i < 2; i++) {
-            _src_origin[i] = ({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
-            _dest_origin[i] = ({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
-            _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
-#endif    
-  
-          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
-          
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-          } else {
+    if (!(src_image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_image+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(dst_image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_image+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+
+    var _src_origin = new Int32Array(2);
+    var _dest_origin = new Int32Array(2);
+    var _region = new Int32Array(2);
+
+    for (var i = 0; i < 2; i++) {
+      _src_origin[i] = ({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+      _dest_origin[i] = ({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+    }
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+#endif
+        return webcl.INVALID_EVENT;
       }
 #endif
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
+#endif 
+
+    try {
+
+      CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+          
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4930,6 +4861,8 @@ var LibraryOpenCL = {
 
       return _error;
     }
+          
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4942,56 +4875,64 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyImageToBuffer",[command_queue,src_image,dst_buffer,src_origin,region,dst_offset,num_events_in_wait_list,event_wait_list,event]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if ((src_image in CL.cl_objects) && (dst_buffer in CL.cl_objects)) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-
-          var _src_origin = [];
-          var _region = [];
-
-          for (var i = 0; i < 2; i++) {
-            _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
-            _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
-          }
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
-#endif    
-  
-          CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
+    if (!(src_image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_image+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(dst_buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+
+    var _src_origin = [];
+    var _region = [];
+
+    for (var i = 0; i < 2; i++) {
+      _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+    }
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+#endif
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
+#endif    
+  
+    try {
+
+      CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
+          
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -5001,6 +4942,8 @@ var LibraryOpenCL = {
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -5013,56 +4956,64 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyBufferToImage",[command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if ((src_buffer in CL.cl_objects) && (dst_image in CL.cl_objects)) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-
-          var _dest_origin = new Int32Array(2); 
-          var _region = new Int32Array(2); 
-
-          for (var i = 0; i < 2; i++) {
-            _dest_origin[i] = {{{ makeGetValue('dst_origin', 'i*4', 'i32') }}};
-            _region[i] = {{{ makeGetValue('region', 'i*4', 'i32') }}};            
-          }
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          } 
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
-#endif    
-  
-          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
-          if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-      } else {
+    if (!(src_buffer in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"buffer / image are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+#if OPENCL_CHECK_VALID_OBJECT   
+    if (!(dst_image in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_image+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+
+    var _dest_origin = new Int32Array(2); 
+    var _region = new Int32Array(2); 
+
+    for (var i = 0; i < 2; i++) {
+      _dest_origin[i] = {{{ makeGetValue('dst_origin', 'i*4', 'i32') }}};
+      _region[i] = {{{ makeGetValue('region', 'i*4', 'i32') }}};            
+    }
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+#endif
+        return webcl.INVALID_EVENT;
       }
 #endif
+
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    } 
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
+#endif    
+  
+    try {
+
+      CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -5073,6 +5024,8 @@ var LibraryOpenCL = {
       return _error;
     }
 
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -5081,8 +5034,10 @@ var LibraryOpenCL = {
   },
 
   clEnqueueMapBuffer: function(command_queue,buffer,blocking_map,map_flags_i64_1,map_flags_i64_2,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
+#if ASSERTIONS       
     // Assume the map_flags is i32 
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
+#endif
 
     console.error("clEnqueueMapBuffer: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
@@ -5090,9 +5045,11 @@ var LibraryOpenCL = {
   },
 
   clEnqueueMapImage: function(command_queue,image,blocking_map,map_flags_i64_1,map_flags_i64_2,origin,region,image_row_pitch,image_slice_pitch,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
+#if ASSERTIONS    
     // Assume the map_flags is i32 
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
-    
+#endif
+
     console.error("clEnqueueMapImage: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
     return webcl.INVALID_VALUE; 
@@ -5109,67 +5066,62 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueNDRangeKernel",[command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event]);
 #endif
-
-    try { 
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-
-        if (kernel in CL.cl_objects) {
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-          var _event = (event != 0) ? new WebCLEvent() : null;
-          var _event_wait_list = [];
-
-          var _global_work_offset = [];
-          var _global_work_size = [];
-          var _local_work_size = [];
-
-          for (var i = 0; i < work_dim; i++) {
-            _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
-
-            if (global_work_offset != 0)
-              _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
-          
-            if (local_work_size != 0)
-              _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
-          }
-
-          for (var i = 0; i < num_events_in_wait_list; i++) {
-            var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
-            if (_event_wait in CL.cl_objects) {
-              _event_wait_list.push(CL.cl_objects[_event_wait]);
-            } else {
-#if OPENCL_GRAB_TRACE
-              CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-              return webcl.INVALID_EVENT;    
-            }
-          }
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
-#endif    
-                
-          if (event != 0) {
-            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[],_event);  
-            {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-          } else {
-            CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);  
-          }
-
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
 #if OPENCL_CHECK_VALID_OBJECT   
-        } else {
+    if (!(kernel in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-          CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"kernel are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
 #endif
-          return webcl.INVALID_MEM_OBJECT;
-        }
-      } else {
+      return webcl.INVALID_KERNEL;
+    }
+#endif 
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+    var _event_wait_list = [];
+
+    var _global_work_offset = [];
+    var _global_work_size = [];
+    var _local_work_size = [];
+
+    for (var i = 0; i < work_dim; i++) {
+      _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
+
+      if (global_work_offset != 0)
+        _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
+    
+      if (local_work_size != 0)
+        _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
+    }
+
+    for (var i = 0; i < num_events_in_wait_list; i++) {
+      var _event_wait = {{{ makeGetValue('event_wait_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT   
+      if (!(_event_wait in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+        return webcl.INVALID_EVENT;
       }
-#endif
+#endif 
+       
+      _event_wait_list.push(CL.cl_objects[_event_wait]);
+    }
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
+#endif    
+           
+    try { 
+      
+      CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -5179,6 +5131,8 @@ var LibraryOpenCL = {
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -5204,27 +5158,24 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueMarker",[command_queue,event]);
 #endif
-
 #if OPENCL_CHECK_VALID_OBJECT   
-      if (!(command_queue in CL.cl_objects)) {
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
-      }
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
 #endif     
+
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
+#endif    
 
     try { 
 
-      var _event = (event != 0) ? new WebCLEvent() : null;
-
-#if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
-#endif    
-
       CL.cl_objects[command_queue].enqueueMarker(_event);    
-
-      if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5235,6 +5186,8 @@ var LibraryOpenCL = {
 
       return _error;
     }
+
+    if (event != 0) {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
 
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -5247,38 +5200,40 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWaitForEvents",[command_queue,num_events,event_list]);
 #endif
-
-    try { 
-#if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
+#if OPENCL_CHECK_VALID_OBJECT       
+    if (!(command_queue in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+      CL.webclEndStackTrace([0,cl_errcode_ret],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif
-        var _events;
-
-        for (var i = 0; i < num_events; i++) {
-          var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
-          if (_event in CL.cl_objects) {
-            _events.push(_event);
-          } else {
-#if OPENCL_GRAB_TRACE
-            CL.webclEndStackTrace([webcl.INVALID_EVENT],"event are NULL","");
-#endif    
-            return webcl.INVALID_EVENT;    
-          }
-        } 
-     
-#if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWaitForEvents",[_events]);
-#endif    
-    
-        CL.cl_objects[command_queue].enqueueWaitForEvents(_events);   
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
+      return webcl.INVALID_COMMAND_QUEUE; 
+    }
 #endif
-        return webcl.INVALID_COMMAND_QUEUE;
+
+    var _events = [];
+
+    for (var i = 0; i < num_events; i++) {
+      var _event = {{{ makeGetValue('event_list', 'i*4', 'i32') }}};
+#if OPENCL_CHECK_VALID_OBJECT       
+      if (!(_event in CL.cl_objects)) {
+#if OPENCL_GRAB_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"WebCLEvent '"+_event+"' are not inside the map","");
+#endif
+        return webcl.INVALID_EVENT; 
       }
 #endif
+      
+      _events.push(_event);
+
+    } 
+     
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWaitForEvents",[_events]);
+#endif  
+
+    try { 
+      
+      CL.cl_objects[command_queue].enqueueWaitForEvents(_events);   
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -5300,24 +5255,23 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueBarrier",[command_queue]);
 #endif
-
-    try { 
-#if OPENCL_CHECK_VALID_OBJECT   
-      if (command_queue in CL.cl_objects) {
-#endif
+#if OPENCL_CHECK_VALID_OBJECT       
+    if (!(command_queue in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueBarrier",[]);
+      CL.webclEndStackTrace([0,cl_errcode_ret],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif
+      return webcl.INVALID_COMMAND_QUEUE; 
+    }
+#endif
+
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueBarrier",[]);
 #endif    
     
-        CL.cl_objects[command_queue].enqueueBarrier();   
-#if OPENCL_CHECK_VALID_OBJECT   
-      } else {
-#if OPENCL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"command_queue are NULL","");
-#endif
-        return webcl.INVALID_COMMAND_QUEUE;
-      }
-#endif
+    try {
+      
+      CL.cl_objects[command_queue].enqueueBarrier(); 
+
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -5715,7 +5669,7 @@ var LibraryOpenCL = {
     }
 #endif
       
-    var _event = (event != 0) ? new WebCLEvent() : null;
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
     var _event_wait_list = [];
     var _mem_objects = [];
 
@@ -5789,7 +5743,7 @@ var LibraryOpenCL = {
     }
 #endif
       
-    var _event = (event != 0) ? new WebCLEvent() : null;
+    var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
     var _event_wait_list = [];
     var _mem_objects = [];
 
