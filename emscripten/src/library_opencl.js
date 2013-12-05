@@ -5119,43 +5119,18 @@ var LibraryOpenCL = {
           var _event = (event != 0) ? new WebCLEvent() : null;
           var _event_wait_list = [];
 
-          var _global_work_offset
-          var _global_work_size; 
-          var _local_work_size;
-
-          // \todo need to be remove when webkit will be respect the WD
-          if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-            // WD --> 
-            // Workink Draft take CLuint[3]
-            _global_work_offset = [];
-            _global_work_size = [];
-            _local_work_size = [];
-          } else {
-            // WebKit -->
-            // Webkit take UInt32Array     
-            var _global_work_offset = global_work_offset == 0 ? null : new Int32Array(work_dim);
-            var _global_work_size = new Int32Array(work_dim);
-            var _local_work_size = local_work_size == 0 ? null : new Int32Array(work_dim);
-          }
+          var _global_work_offset = [];
+          var _global_work_size = [];
+          var _local_work_size = [];
 
           for (var i = 0; i < work_dim; i++) {
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-              _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
+            _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
 
-              if (global_work_offset != 0)
-                _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
-            
-              if (local_work_size != 0)
-                _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
-            } else {
-              _global_work_size[i] = {{{ makeGetValue('global_work_size', 'i*4', 'i32') }}};
-
-              if (_global_work_offset)
-                _global_work_offset[i] = {{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}};
-              
-              if (_local_work_size)
-                _local_work_size[i] = {{{ makeGetValue('local_work_size', 'i*4', 'i32') }}};
-            }
+            if (global_work_offset != 0)
+              _global_work_offset.push({{{ makeGetValue('global_work_offset', 'i*4', 'i32') }}});
+          
+            if (local_work_size != 0)
+              _local_work_size.push({{{ makeGetValue('local_work_size', 'i*4', 'i32') }}});
           }
 
           for (var i = 0; i < num_events_in_wait_list; i++) {
