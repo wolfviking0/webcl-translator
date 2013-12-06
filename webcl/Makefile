@@ -17,9 +17,11 @@ VAL=0
 
 ifeq ($(VAL),1)
 PRELOAD = --preload-file-validator
+PREFIX = "val_"
 $(info ************  Mode VALIDATOR : Enabled ************)
 else
 PRELOAD = --preload-file
+PREFIX = ""
 $(info ************  Mode VALIDATOR : Disabled ************)
 endif
 
@@ -69,51 +71,51 @@ hello_world_sample:
 	$(call chdir,hello_world/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) hello_world.cpp $(MODE) \
 	$(PRELOAD) hello_world.cl \
-	-o ../build/hello_world.js
+	-o ../build/$(PREFIX)hello_world.js
 
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) convolution.cpp $(MODE) \
 	$(PRELOAD) convolution_kernel.cl \
-	-o ../build/convolution.js
+	-o ../build/$(PREFIX)convolution.js
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) image_copy.cpp $(MODE) \
 	$(PRELOAD) image_copy.cl \
-	-o ../build/imagecopy.js
+	-o ../build/$(PREFIX)imagecopy.js
 
 eventprofiling_sample:
 	$(call chdir,eventprofiling/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) event_profiling.cpp $(MODE) -s TOTAL_MEMORY=1024*1024*50 \
 	$(PRELOAD) event_profiling.cl \
-	-o ../build/eventprofiling.js
+	-o ../build/$(PREFIX)eventprofiling.js
 
 mandelbulb_sample:
 	$(call chdir,mandelbulb/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(MODE) \
 	$(PRELOAD) mandelbulb_kernel.cl \
-	-o ../build/mandelbulb.js
+	-o ../build/$(PREFIX)mandelbulb.js
 
-#JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(FOLDER)/dxtcompressor_worker.js
+#JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(PREFIX)$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
 	$(call chdir,dxtcompressor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file data/lena_ref.dds --preload-file data/lena.ppm $(PRELOAD) DXTCompressor_kernel.cl \
-	-o ../build/dxtcompressor.js
+	-o ../build/$(PREFIX)dxtcompressor.js
 	
 attractor_sample:
 	$(call chdir,attractor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
 	$(PRELOAD) kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
-	-o ../build/attractor.js
+	-o ../build/$(PREFIX)attractor.js
 
 smallpt_sample:
 	$(call chdir,smallpt/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s TOTAL_MEMORY=1024*1024*50 -s LEGACY_GL_EMULATION=1 $(MODE) \
 	$(PRELOAD) rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
-	-o ../build/smallpt.js	
+	-o ../build/$(PREFIX)smallpt.js	
 
 mandelbulb_sample_osx:
 	$(call chdir,mandelbulb/)
@@ -129,25 +131,6 @@ smallpt_sample_osx:
 	$(call chdir,smallpt/)
 	clang++ -02 renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o smallpt.out	
-
-
-#smalllux_sample_osx:
-#	$(call chdir,smalllux/)
-#	clang++ -02 displayfunc.cpp intersectiondevice.cpp mesh.cpp path.cpp qbvhaccel.cpp renderthread.cpp scene.cpp smallluxGPU.cpp plymesh/rply.cpp core/bbox.cpp core/matrix4x4.cpp core/transform.cpp -I./core -I./plymesh -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-#	-o smalllux.out	
-
-#fft_sample:
-#	$(call chdir,fft/)
-#	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) fft_execute.cpp fft_kernelstring.cpp fft_setup.cpp main.cpp $(DEBUG) \
-#	$(PRELOAD) param.txt \
-#	-o ../build/fft.js
-	
-#video_sample:
-#	$(call chdir,decodevideo/)
-#	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) GLRenderFrame.cpp OVDecodeRender.cpp OVDecodeTest.cpp SDKUtil/SDKApplication.cpp SDKUtil/SDKBitMap.cpp SDKUtil/SDKCommandArgs.cpp SDKUtil/SDKCommon.cpp SDKUtil/SDKFile.cpp SDKUtil/SDKThread.cpp -I./SDKUtil/include -I./ -O0 -s OPENCL_DEBUG=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s OPENCL_OLD_VERSION=1 \
-#	$(PRELOAD) OVDecodeRender_Kernels.cl $(PRELOAD) verifyH264.image $(PRELOAD) verifyMPEG.image $(PRELOAD) OVDecodeDataH264.zip $(PRELOAD) OVDecodeDataMPEG.zip \
-#	-o ../build/videodecode.js
-		
 
 clean:
 	$(call chdir,build/)

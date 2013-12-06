@@ -29,8 +29,11 @@ var LibraryOpenCL = {
 
     init: function() {
       if (CL.cl_init == 0) {
+#if OPENCL_VALIDATOR
+        console.log('%c WebCL-Translator + Validator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
+#else        
         console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
-        
+#endif        
         var nodejs = (typeof window === 'undefined');
         if(nodejs) {
           webcl = require('../webcl');
@@ -3426,11 +3429,10 @@ var LibraryOpenCL = {
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainKernel",[kernel]);
 #endif
-
 #if OPENCL_CHECK_VALID_OBJECT
     if (!(kernel in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
 #endif
       return webcl.INVALID_KERNEL;
     }
@@ -3445,14 +3447,13 @@ var LibraryOpenCL = {
   },
 
   clReleaseKernel: function(kernel) {
-
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseKernel",[kernel]);
 #endif
 #if OPENCL_CHECK_VALID_OBJECT
     if (!(kernel in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" is not a valid OpenCL kernel","");
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
 #endif
       return webcl.INVALID_KERNEL;
     }
@@ -3466,18 +3467,14 @@ var LibraryOpenCL = {
       return webcl.SUCCESS;
     }
 
+#if OPENCL_GRAB_TRACE
+    CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
+#endif    
+
     try {
 
-#if OPENCL_GRAB_TRACE
-      CL.webclCallStackTrace(CL.cl_objects[kernel]+".release",[]);
-#endif        
       CL.cl_objects[kernel].release();
-      delete CL.cl_objects[kernel];
-#if OPENCL_PROFILE             
-      CL.cl_objects_counter--;
-      //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
-#endif   
-
+        
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -3488,19 +3485,23 @@ var LibraryOpenCL = {
       return _error;
     }
 
+    delete CL.cl_objects[kernel];
+
+#if OPENCL_PROFILE             
+    CL.cl_objects_counter--;
+#endif   
+
 #if OPENCL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
 
     return webcl.SUCCESS;
-  },
+  },  
 
   clSetKernelArg: function(kernel,arg_index,arg_size,arg_value) {
-
 #if OPENCL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetKernelArg",[kernel,arg_index,arg_size,arg_value]);
 #endif
-
 #if OPENCL_CHECK_VALID_OBJECT
     if (!(kernel in CL.cl_objects)) {
 #if OPENCL_GRAB_TRACE
@@ -3509,7 +3510,6 @@ var LibraryOpenCL = {
       return webcl.INVALID_KERNEL;
     }
 #endif
-  
     if (CL.cl_objects[kernel].sig.length < arg_index) {
 #if OPENCL_GRAB_TRACE
       CL.webclEndStackTrace([webcl.INVALID_KERNEL],CL.cl_objects[kernel]+" doesn't contains sig array","");
@@ -3517,31 +3517,30 @@ var LibraryOpenCL = {
       return webcl.INVALID_KERNEL;          
     }
 
-    try {
-      var _kernel = CL.cl_objects[kernel];
+    var _kernel = CL.cl_objects[kernel];
 
 #if OPENCL_VALIDATOR
-      var _posarg = _kernel.val_param[arg_index];
-      var _sig = _kernel.sig[_posarg];
+    var _posarg = _kernel.val_param[arg_index];
 #else
-      var _sig = _kernel.sig[arg_index];
+    var _posarg = arg_index;
 #endif
 
+    var _sig = _kernel.sig[_posarg];
+    
+    try {
+
+      // LOCAL ARG
       if (_sig == webcl.LOCAL) {
 
         var _array = new Uint32Array([arg_size]);
 
-#if OPENCL_VALIDATOR 
-
-        console.info("Index : "+arg_index);
-        console.info("Real position : "+_posarg);
-        console.info("Real size : "+arg_size);
-        var _sizearg = new Int32Array([arg_size]);
-
 #if OPENCL_GRAB_TRACE
         CL.webclCallStackTrace(_kernel+".setArg<<__local>>",[_posarg,_array]);
-#endif        
+#endif     
         _kernel.setArg(_posarg,_array);
+
+#if OPENCL_VALIDATOR 
+        var _sizearg = new Int32Array([arg_size]);
 
         if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
@@ -3549,70 +3548,27 @@ var LibraryOpenCL = {
 #endif        
           _kernel.setArg(_posarg+1,_sizearg);
         }
-
-#else
-
-#if OPENCL_GRAB_TRACE
-        CL.webclCallStackTrace(_kernel+".setArg<<__local>>",[arg_index,_array]);
-#endif     
-        _kernel.setArg(arg_index,_array);
 #endif
 
       } else {
 
         var _value = {{{ makeGetValue('arg_value', '0', 'i32') }}};
 
+        // WEBCL OBJECT ARG
         if (_value in CL.cl_objects) {
-
-#if OPENCL_VALIDATOR 
-  
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
-#endif     
-          var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-
-          console.info("Index : "+arg_index);
-          console.info("Real position : "+_posarg);
-          console.info("Real size : "+_size);
-
-          var _sizearg = new Int32Array([_size]);
 
 #if OPENCL_GRAB_TRACE
           CL.webclCallStackTrace(_kernel+".setArg",[_posarg,CL.cl_objects[_value]]);
 #endif        
           _kernel.setArg(_posarg,CL.cl_objects[_value]);
 
-          if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
-#if OPENCL_GRAB_TRACE
-            CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
-#endif        
-            _kernel.setArg(_posarg+1,_sizearg);
-        }
-
-#else
+#if OPENCL_VALIDATOR 
 
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(_kernel+".setArg",[arg_index,CL.cl_objects[_value]]);
-#endif        
-          _kernel.setArg(arg_index,CL.cl_objects[_value]);
-
-#endif    
-
-        } else {
-
-          var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
-         
-#if OPENCL_VALIDATOR
-
-          console.info("Index : "+arg_index);
-          console.info("Real position : "+_posarg);
-          console.info("Real size : "+arg_size);
-          var _sizearg = new Int32Array([arg_size]);
-
-#if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(_kernel+".setArg",[_posarg,_array]);
-#endif        
-          _kernel.setArg(_posarg,_array);
+          CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
+#endif     
+          var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
+          var _sizearg = new Int32Array([_size]);
 
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if OPENCL_GRAB_TRACE
@@ -3620,13 +3576,26 @@ var LibraryOpenCL = {
 #endif        
             _kernel.setArg(_posarg+1,_sizearg);
           }
+#endif    
 
-#else
+        } else {
 
+          var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
+         
 #if OPENCL_GRAB_TRACE
-          CL.webclCallStackTrace(_kernel+".setArg",[arg_index,_array]);
+          CL.webclCallStackTrace(_kernel+".setArg",[_posarg,_array]);
 #endif        
-          _kernel.setArg(arg_index,_array);
+          _kernel.setArg(_posarg,_array);
+
+#if OPENCL_VALIDATOR
+          var _sizearg = new Int32Array([arg_size]);
+
+          if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
+#if OPENCL_GRAB_TRACE
+            CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+#endif        
+            _kernel.setArg(_posarg+1,_sizearg);
+          }
 #endif
         }
       }
