@@ -52,6 +52,12 @@ int end(int e) {
 //
 const int ARRAY_SIZE = 1000;
 
+
+ 
+ void pfn_notify_program(cl_program program, void *user_data) {
+     printf("%d) %d : pfn_notify call\n",(size_t)program,(size_t)user_data); 
+ }
+
 ///
 //  Create an OpenCL context on the first available platform using
 //  either a GPU or CPU depending on what is available.
@@ -181,7 +187,7 @@ cl_program CreateProgram(cl_context context, cl_device_id device, const char* fi
         return NULL;
     }
 
-    errNum = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    errNum = clBuildProgram(program, 0, NULL, NULL, pfn_notify_program, (void*)12345);
     if (errNum != CL_SUCCESS)
     {
         // Determine the reason for the error

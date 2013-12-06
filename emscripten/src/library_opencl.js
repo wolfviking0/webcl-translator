@@ -3076,9 +3076,8 @@ var LibraryOpenCL = {
       }
 
       var _callback = null
-      // Need to call this code inside the callback event WebCLCallback.
       if (pfn_notify != 0) {
-        //_callback = FUNCTION_TABLE[pfn_notify](program, user_data);
+        _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
       }
 
 #if OPENCL_GRAB_TRACE
