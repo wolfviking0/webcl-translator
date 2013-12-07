@@ -1,4 +1,4 @@
-Original Source From : https://github.com/andrey-tuganov/attractor
+[Original Source](https://github.com/andrey-tuganov/attractor)
 
 OpenCL/GL Lorenz attractor demo application
 

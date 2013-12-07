@@ -1,4 +1,4 @@
-Original Source from : http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html
+[Original Source](http://davibu.interfree.it/opencl/smallptgpu/smallptGPU.html)
 
 SmallptCPU vs. SmallptGPU
 =========================

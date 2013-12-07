@@ -1,3 +1,3 @@
-Original Source from : https://code.google.com/p/opencl-book-samples/
+[Original Source](https://code.google.com/p/opencl-book-samples/)
 
-Code License : New BSD License
+Code License : [New BSD License](http://opensource.org/licenses/BSD-3-Clause)

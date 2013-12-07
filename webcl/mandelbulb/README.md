@@ -1,4 +1,4 @@
-Original Source from : http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html
+[Original Source](http://davibu.interfree.it/opencl/mandelbulbgpu/mandelbulbGPU.html)
 
 MadelbulbGPU
 ============
