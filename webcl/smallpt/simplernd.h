@@ -21,30 +21,33 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _GEOM_H
-#define	_GEOM_H
+#ifndef _SIMPLERND_H
+#define	_SIMPLERND_H
 
-#include "vec.h"
+/*
+ * A Simple Random number generator
+ * from http://en.wikipedia.org/wiki/Random_number_generator
+ */
 
-#define EPSILON 0.01f
-#define FLOAT_PI 3.14159265358979323846f
+#ifndef SMALLPT_GPU
 
-typedef struct {
-	Vec o, d;
-} Ray;
+static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
+	*seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
+	*seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
 
-#define rinit(r, a, b) { vassign((r).o, a); vassign((r).d, b); }
-#define rassign(a, b) { vassign((a).o, (b).o); vassign((a).d, (b).d); }
+	unsigned int ires = ((*seed0) << 16) + (*seed1);
 
-enum Refl {
-	DIFF, SPEC, REFR
-}; /* material types, used in radiance() */
+	/* Convert to float */
+	union {
+		float f;
+		unsigned int ui;
+	} res;
+	res.ui = (ires & 0x007fffff) | 0x40000000;
 
-typedef struct {
-	float rad; /* radius */
-	Vec p, e, c; /* position, emission, color */
-	enum Refl refl; /* reflection type (DIFFuse, SPECular, REFRactive) */
-} Sphere;
+	return (res.f - 2.f) / 2.f;
+}
 
-#endif	/* _GEOM_H */
+#endif
+
+#endif	/* _SIMPLERND_H */
 

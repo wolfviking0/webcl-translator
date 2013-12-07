@@ -74,7 +74,7 @@ __kernel void RadianceGPU(
 	GenerateCameraRay(camera, &seed0, &seed1, width, height, x, y, &ray);
 
 	Vec r;
-	RadiancePathTracing(sphere, sphereCount, &ray, &seed0, &seed1, &r);
+	RadianceDirectLighting(sphere, sphereCount, &ray, &seed0, &seed1, &r);
 
 	const int i = (height - y - 1) * width + x;
 	if (currentSample == 0) {
