@@ -1,58 +1,60 @@
 #!/bin/sh
 
-echo "\n"
-echo "*********************************"
-echo "*    BUILD TRANSLATOR SAMPLE    *"
-echo "*********************************"
-echo "\n"
+cd ../../
 
-make clean
+root_repositories="$(pwd)/"
 
-make 
-
-make VAL=1
+page_repositories="$(pwd)/webcl-website/"
 
 echo "\n"
-echo "**************************"
-echo "*    BUILD OSX SAMPLE    *"
-echo "**************************"
+echo "The current root repositories is '$root_repositories'."
 echo "\n"
 
-cd ../../webcl-osx-sample
+list_repositories=("webcl-translator/webcl" "webcl-osx-sample" "webcl-ocltoys" "webcl-davibu")
+page_subfolder=("build_trans" "build_osx" "build_toys" "build_davibu")
 
-make clean
+for param in "$*"
+do
+    echo "Parameter : $param"
+    echo "\n"
+done
 
-make 
+makefile=""
 
-make VAL=1
+for param_makefile in "$@"
+do
+    echo $param_makefile | grep "copy"  1>/dev/null
+    if [ ! `echo $?` -eq 0 ]
+    then
+        makefile=$makefile" "$param_makefile
+    fi
 
-echo "\n"
-echo "******************************"
-echo "*    BUILD OCLTOYS SAMPLE    *"
-echo "******************************"
-echo "\n"
+done
 
-cd ../webcl-ocltoys
+for ((i = 0; i < 4; i++))
+do
+    element=${list_repositories[i]}
+    folder=${page_subfolder[i]}
 
-make clean
+    cd $root_repositories$element
+    echo $(pwd)
 
-make 
+    echo $param | grep "onlycopy"  1>/dev/null
+    if [ ! `echo $?` -eq 0 ]
+    then
+        # clean
+        make clean $makefile
 
-make VAL=1
+        # build
+        make $makefile
+    fi
+    echo $param | grep "copy"  1>/dev/null
+    if [ `echo $?` -eq 0 ]
+    then
+        cp -rf $(pwd)/build/ $page_repositories$folder
+    fi
+done
 
-echo "\n"
-echo "*****************************"
-echo "*    BUILD DAVIBU SAMPLE    *"
-echo "*****************************"
-echo "\n"
-
-cd ../webcl-davibu
-
-make clean
-
-make 
-
-make VAL=1
 
 
 
