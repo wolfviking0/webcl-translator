@@ -16,8 +16,16 @@ Need [webkit-webcl](https://github.com/SRA-SiliconValley/webkit-webcl) from Sams
 
 Links to **demos**, **tutorial**, **patch**, etc: [Wiki](https://github.com/wolfviking0/webcl-translator/wiki)
 
+Samples repositories :
+----------------------
+
+[OSX Samples](https://github.com/wolfviking0/webcl-osx-sample)
+
+[OCLToys](https://github.com/wolfviking0/webcl-ocltoys)
+
+[David Bucciarelli](https://github.com/wolfviking0/webcl-davibu)
+
 License :
 ---------
 
 webcl-translator is MIT licensed, see LICENSE.
-
