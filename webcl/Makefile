@@ -53,8 +53,6 @@ all: \
 	imagecopy_sample			\
 	eventprofiling_sample		\
 	convolution_sample 			\
-	mandelbulb_sample 			\
-	smallpt_sample              \
 	attractor_sample			\
 	dxt_sample					\
 	
@@ -92,12 +90,6 @@ eventprofiling_sample:
 	$(PRELOAD) event_profiling.cl \
 	-o ../build/$(PREFIX)eventprofiling.js
 
-mandelbulb_sample:
-	$(call chdir,mandelbulb/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) mandelbulbGPU.c displayfunc.c -s LEGACY_GL_EMULATION=1 $(MODE) \
-	$(PRELOAD) mandelbulb_kernel.cl \
-	-o ../build/$(PREFIX)mandelbulb.js
-
 #JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(PREFIX)$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
 	$(call chdir,dxtcompressor/)
@@ -110,27 +102,11 @@ attractor_sample:
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
 	$(PRELOAD) kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
-
-smallpt_sample:
-	$(call chdir,smallpt/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=1 $(CXX) renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -s TOTAL_MEMORY=1024*1024*50 -s LEGACY_GL_EMULATION=1 $(MODE) \
-	$(PRELOAD) rendering_kernel.cl --preload-file scene_build_complex.pl --preload-file scenes/caustic.scn --preload-file scenes/caustic3.scn --preload-file scenes/complex.scn --preload-file scenes/cornell_large.scn --preload-file scenes/cornell.scn --preload-file scenes/simple.scn \
-	-o ../build/$(PREFIX)smallpt.js	
-
-mandelbulb_sample_osx:
-	$(call chdir,mandelbulb/)
-	clang++ -02 mandelbulbGPU.c displayfunc.c -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-	-o mandelbulb.out
-
+	
 attractor_sample_osx:
 	$(call chdir,attractor/)
 	clang++ -02 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
 	-o attractor.out
-
-smallpt_sample_osx:
-	$(call chdir,smallpt/)
-	clang++ -02 renderconfig.cpp renderdevice.cpp smallptGPU.cpp displayfunc.cpp -I ./ -I $(EMCC)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-	-o smallpt.out	
 
 clean:
 	$(call chdir,build/)
