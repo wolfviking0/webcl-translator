@@ -296,13 +296,45 @@ var LibraryOpenCL = {
       _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
 
       // Search pattern : __kernel ... ( ... )
-      var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+      // var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+      // if (_matches == null) {
+      //   console.error("/!\\ Not found kernel !!!");
+      //   return;
+      // }
 
-      if (_matches == null) {
-        console.error("/!\\ Not found kernel !!!");
-        return;
+      // Search kernel (Pattern doesn't work with extra __attribute__)
+      var _matches = [];
+      var _found = 1;
+      var _stringKern = _mini_kernel_string;
+      var _security = 10;
+
+      // Search all the kernel
+      while (_found && _security) {
+        // Just in case no more than 10 loop
+        _security --;
+
+        var _kern = _stringKern.indexOf("__kernel");
+        if (_kern == -1) {
+          _found = 0;
+          continue;
+        }
+
+        _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+        
+        var _brace = _stringKern.indexOf("{");
+        var _stringKern2 = _stringKern.substr(0,_brace);
+        var _braceOpen = _stringKern2.lastIndexOf("(");
+        var _braceClose = _stringKern2.lastIndexOf(")");
+        var _stringKern3 = _stringKern2.substr(0,_braceOpen);
+        var _space = _stringKern3.lastIndexOf(" ");
+
+        _stringKern2 = _stringKern2.substr(_space,_braceClose);
+
+        // Add the kernel result like name_kernel(..., ... ,...)
+        _matches.push(_stringKern2);
       }
 
+      // For each kernel ....
       for (var i = 0; i < _matches.length; i ++) {
         // Search the open Brace
         var _brace = _matches[i].lastIndexOf("(");
