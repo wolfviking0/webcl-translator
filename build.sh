@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd ../../
+cd ../
 
 root_repositories="$(pwd)/"
 
@@ -31,12 +31,30 @@ do
 
 done
 
+# First clean 
+for ((i = 0; i < 4; i++))
+do
+    element=${list_repositories[i]}
+    
+    cd "$root_repositories$element"
+    
+    echo $param | grep "onlycopy"  1>/dev/null
+    if [ ! `echo $?` -eq 0 ]
+    then
+        # clean
+        make clean $makefile
+    fi
+    
+    cd "$root_repositories"
+done
+
+# Build or/and Copy
 for ((i = 0; i < 4; i++))
 do
     element=${list_repositories[i]}
     folder=${page_subfolder[i]}
 
-    cd $root_repositories$element
+    cd "$root_repositories$element"
     echo $(pwd)
 
     echo $param | grep "onlycopy"  1>/dev/null
@@ -53,6 +71,8 @@ do
     then
         cp -rf $(pwd)/build/ $page_repositories$folder
     fi
+    
+    cd "$root_repositories"
 done
 
 
