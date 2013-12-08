@@ -38,6 +38,8 @@ do
     
     cd "$root_repositories$element"
     
+    echo $(pwd)
+
     echo $param | grep "onlycopy"  1>/dev/null
     if [ ! `echo $?` -eq 0 ]
     then
@@ -46,6 +48,8 @@ do
     fi
     
     cd "$root_repositories"
+
+    echo "\n"
 done
 
 # Build or/and Copy
@@ -73,6 +77,8 @@ do
     fi
     
     cd "$root_repositories"
+
+    echo "\n"
 done
 
 
