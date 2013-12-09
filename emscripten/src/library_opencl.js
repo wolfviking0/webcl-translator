@@ -605,8 +605,9 @@ var LibraryOpenCL = {
       var _host_ptr = null;
 
       if (type.length == 0) {
+#if OPENCL_DEBUG
         console.error("getCopyPointerToArray : error unknow type with length null "+type);
-        //return _host_ptr;
+#endif
       }
 
       if (type.length == 1) {
@@ -690,8 +691,9 @@ var LibraryOpenCL = {
       var _host_ptr = null;
 
       if (type.length == 0) {
+#if OPENCL_DEBUG        
         console.error("getCopyPointerToArray : error unknow type with length null "+type);
-        //return _host_ptr;
+#endif
       }
 
       if (type.length == 1) {
