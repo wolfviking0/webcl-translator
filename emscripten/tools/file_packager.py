@@ -1,3 +1,11 @@
+#
+#  file_packager.py
+#  Original from https://github.com/kripken/emscripten/blob/master/tools/file_packager.py
+#
+#  Modified by Anthony Liot
+#
+
+
 '''
 A tool that generates FS API calls to generate a filesystem, and packages the files
 to work with that.

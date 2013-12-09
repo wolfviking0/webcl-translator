@@ -1,3 +1,9 @@
+//
+//  modules.js
+//  Original from https://github.com/kripken/emscripten/blob/master/src/modules.js
+//
+//  Modified by Anthony Liot
+//
 //"use strict";
 
 // Various namespace-like modules

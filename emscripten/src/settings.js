@@ -1,3 +1,9 @@
+//
+//  settings.js
+//  Original from https://github.com/kripken/emscripten/blob/master/src/settings.js
+//
+//  Modified by Anthony Liot
+//
 
 //
 // Various compiling-to-JS parameters. These are simply variables present when the

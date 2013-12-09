@@ -1,3 +1,11 @@
+#
+#  Makefile
+#  Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
+#
+#  Created by Anthony Liot.
+#  Copyright (c) 2013 Anthony Liot. All rights reserved.
+#
+
 EMSCRIPTEN_ROOT:=../../emscripten
 
 #EMSCRIPTEN_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/emscripten

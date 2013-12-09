@@ -1,3 +1,9 @@
+//
+//  modules.js
+//  Original from https://github.com/kripken/emscripten/blob/master/src/library_gl.js
+//
+//  Modified by Anthony Liot
+//
 /*
  * GL support. See https://github.com/kripken/emscripten/wiki/OpenGL-support
  * for current status.
