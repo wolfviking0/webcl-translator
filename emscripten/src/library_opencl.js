@@ -3812,7 +3812,7 @@ var LibraryOpenCL = {
       }
 #endif
       
-      _events.push(_event) 
+      _events.push(CL.cl_objects[_event]) 
     }
 
     try {
@@ -5224,7 +5224,7 @@ var LibraryOpenCL = {
       }
 #endif
       
-      _events.push(_event);
+      _events.push(CL.cl_objects[_event])
 
     } 
      
