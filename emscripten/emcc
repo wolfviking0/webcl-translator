@@ -50,11 +50,12 @@ emcc can be influenced by a few environment variables:
 import os, sys, shutil, tempfile, subprocess, shlex, time, re, logging
 from subprocess import PIPE, STDOUT
 from tools import shared, jsrun
-from tools.shared import Compression, execute, suffix, unsuffixed, unsuffixed_basename
+from tools.shared import Compression, execute, suffix, unsuffixed, unsuffixed_basename, WINDOWS
 from tools.response_file import read_response_file
 
-CXX_SUFFIXES = ('.cpp', '.cxx', '.cc')
-SOURCE_SUFFIXES = ('.c', '.cpp', '.cxx', '.cc', '.m', '.mm')
+C_SUFFIXES = ('.c', '.C')
+CXX_SUFFIXES = ('.cpp', '.cxx', '.cc', '.CPP', '.CXX', '.CC')
+SOURCE_SUFFIXES = C_SUFFIXES + CXX_SUFFIXES + ('.m', '.mm')
 BITCODE_SUFFIXES = ('.bc', '.o', '.obj')
 DYNAMICLIB_SUFFIXES = ('.dylib', '.so', '.dll')
 STATICLIB_SUFFIXES = ('.a',)
@@ -339,9 +340,6 @@ Options that are modified or new in %s include:
 
                            For more docs on the options --preload-file
                            accepts, see  https://github.com/kripken/emscripten/wiki/Filesystem-Guide
-
-  --preload-file-validator <name> As --preload-file but call the webcl-validator first in the file 
-                                  <name> must be an .cl file with __kernel
 
   --compression <codec>    Compress both the compiled code and embedded/
                            preloaded files. <codec> should be a triple,
@@ -770,7 +768,6 @@ try:
   post_js = ''
   split_js_file = None
   preload_files = []
-  preload_files_validator = []
   embed_files = []
   compression = None
   ignore_dynamic_linking = False
@@ -882,22 +879,26 @@ try:
       embed_files.append(newargs[i+1])
       newargs[i] = ''
       newargs[i+1] = ''
-    elif newargs[i].startswith('--preload-file-validator'):
-      check_bad_eq(newargs[i])
-      preload_files_validator.append(newargs[i+1])
-      newargs[i] = ''
-      newargs[i+1] = ''         
     elif newargs[i].startswith('--preload-file'):
       check_bad_eq(newargs[i])
       preload_files.append(newargs[i+1])
       newargs[i] = ''
-      newargs[i+1] = ''   
+      newargs[i+1] = ''
     elif newargs[i].startswith('--compression'):
       check_bad_eq(newargs[i])
       parts = newargs[i+1].split(',')
       assert len(parts) == 3, '--compression requires specifying    native_encoder,js_decoder,js_name  - see emcc --help. got: %s' % newargs[i+1]
-      Compression.encoder = parts[0]
-      Compression.decoder = parts[1]
+      def locate(tool):
+        if WINDOWS:
+          if os.path.exists(tool+'.exe'):
+            return tool+'.exe'
+          if os.path.exists(tool+'.bat'):
+            return tool+'.bat'
+          if os.path.exists(tool+'.cmd'):
+            return tool+'.cmd'
+        return tool
+      Compression.encoder = locate(parts[0])
+      Compression.decoder = locate(parts[1])
       Compression.js_name = parts[2]
       assert os.path.exists(Compression.encoder), 'native encoder %s does not exist' % Compression.encoder
       assert os.path.exists(Compression.decoder), 'js decoder %s does not exist' % Compression.decoder
@@ -1274,7 +1275,16 @@ try:
         shutil.move(in_temp(unsuffixed(uniquename(input_file)) + '.o'), unsuffixed_basename(input_file) + '.' + final_suffix)
     else:
       if len(input_files) == 1:
-        shutil.move(in_temp(unsuffixed(uniquename(input_files[0])) + '.o'), specified_target)
+        temp_output_base = in_temp(unsuffixed(uniquename(input_files[0])))
+        shutil.move(temp_output_base + '.o', specified_target)
+        if os.path.exists(temp_output_base + '.d'):
+          # There was a .d file generated, from -MD or -MMD and friends, save a copy of it to where the output resides,
+          # adjusting the target name away from the temporary file name to the specified target.
+          # It will be deleted with the rest of the temporary directory.
+          deps = open(temp_output_base + '.d').read()
+          deps = deps.replace(temp_output_base + '.o', specified_target)
+          with open(os.path.join(os.path.dirname(specified_target), os.path.basename(unsuffixed(input_files[0]) + '.d')), "w") as out_dep:
+            out_dep.write(deps)
       else:
         assert len(original_input_files) == 1 or not has_dash_c, 'fatal error: cannot specify -o with -c with multiple files' + str(sys.argv) + ':' + str(original_input_files)
         # We have a specified target (-o <target>), which is not JavaScript or HTML, and
@@ -1682,15 +1692,12 @@ try:
   if DEBUG: save_intermediate('original')
 
   # Embed and preload files
-  if len(preload_files) + len(embed_files) + len(preload_files_validator) > 0:
+  if len(preload_files) + len(embed_files) > 0:
     logging.debug('setting up files')
     file_args = ['--pre-run']
     if len(preload_files) > 0:
       file_args.append('--preload')
       file_args += preload_files
-    if len(preload_files_validator) > 0:
-      file_args.append('--preload-validator')
-      file_args += preload_files_validator     
     if len(embed_files) > 0:
       file_args.append('--embed')
       file_args += embed_files

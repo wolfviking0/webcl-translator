@@ -11,7 +11,7 @@ data downloads.
 
 Usage:
 
-  file_packager.py TARGET [--preload A [B..]] [--embed C [D..]] [--preload-validator E [F..]] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
+  file_packager.py TARGET [--preload A [B..]] [--embed C [D..]] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
 
   --crunch=X Will compress dxt files to crn with quality level X. The crunch commandline tool must be present
              and CRUNCH should be defined in ~/.emscripten that points to it. JS crunch decompressing code will
@@ -47,7 +47,7 @@ from shared import Compression, execute, suffix, unsuffixed
 from subprocess import Popen, PIPE, STDOUT
 
 if len(sys.argv) == 1:
-  print '''Usage: file_packager.py TARGET [--preload A...] [--embed B...] [--preload-validator A...] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
+  print '''Usage: file_packager.py TARGET [--preload A...] [--embed B...] [--compress COMPRESSION_DATA] [--crunch[=X]] [--js-output=OUTPUT.js] [--no-force] [--use-preload-cache] [--no-heap-copy]
 See the source for more details.'''
   sys.exit(0)
 
@@ -55,6 +55,7 @@ DEBUG = os.environ.get('EMCC_DEBUG')
 
 data_target = sys.argv[1]
 
+OPENCL_SUFFIXES = ('.cl')
 IMAGE_SUFFIXES = ('.jpg', '.png', '.bmp')
 AUDIO_SUFFIXES = ('.ogg', '.wav', '.mp3')
 AUDIO_MIMETYPES = { 'ogg': 'audio/ogg', 'wav': 'audio/wav', 'mp3': 'audio/mpeg' }
@@ -66,8 +67,8 @@ DDS_HEADER_SIZE = 128
 AV_WORKAROUND = 0 # Set to 1 to randomize file order and add some padding, to work around silly av false positives
 
 data_files = []
-in_preload_validator = False
 in_preload = False
+in_validator = False
 in_embed = False
 has_preloaded = False
 in_compress = 0
@@ -88,12 +89,6 @@ for arg in sys.argv[1:]:
     in_embed = False
     has_preloaded = True
     in_compress = 0
-  if arg == '--preload-validator':
-    in_preload_validator = True
-    in_preload = True
-    in_embed = False
-    has_preloaded = True
-    in_compress = 0    
   elif arg == '--embed':
     in_embed = True
     in_preload = False
@@ -132,10 +127,12 @@ for arg in sys.argv[1:]:
     else:
       srcpath = dstpath = arg # Use source path as destination path.
     if os.path.isfile(srcpath) or os.path.isdir(srcpath):
-      suffix = ''
-      if in_preload_validator:
-        suffix = '.validated'
-      data_files.append({ 'srcpath': srcpath+suffix, 'dstpath': dstpath, 'mode': mode })
+      if shared.Settings.OPENCL_VALIDATOR and srcpath.endswith(OPENCL_SUFFIXES):
+        in_validator = True
+        data_files.append({ 'srcpath': srcpath+'.validated', 'dstpath': dstpath, 'mode': mode })
+        print >> sys.stderr, 'Generating file "' + srcpath + '" width validator in path "' + srcpath+'.validated' + '".'
+      else:
+        data_files.append({ 'srcpath': srcpath, 'dstpath': dstpath, 'mode': mode })
     else:
       print >> sys.stderr, 'Warning: ' + arg + ' does not exist, ignoring.'
   elif in_compress:
@@ -329,17 +326,17 @@ for file_ in data_files:
         code += '''Module['FS_createPath']('/%s', '%s', true, true);\n''' % ('/'.join(parts[:i]), parts[i])
         partial_dirs.append(partial)
 
-if in_preload_validator:
-  VALIDATOR = os.path.join(shared.LLVM_ROOT,'webcl-validator')
-  fullname = os.path.join(curr_abspath , file_['srcpath'])
-  # Launch webcl-validator
-  proc = Popen([VALIDATOR, unsuffixed(fullname)], stdout=PIPE)
-  out, err = proc.communicate()
-  # Write the output inside file
-  validated = open(fullname, 'wb')
-  validated.write(out)
-  validated.close()
-  
+if in_validator:
+    VALIDATOR = os.path.join(shared.LLVM_ROOT,'webcl-validator')
+    fullname = os.path.join(curr_abspath , file_['srcpath'])
+    # Launch webcl-validator
+    proc = Popen([VALIDATOR, unsuffixed(fullname)], stdout=PIPE)
+    out, err = proc.communicate()
+    # Write the output inside file
+    validated = open(fullname, 'wb')
+    validated.write(out)
+    validated.close()
+
 if has_preloaded:
   # Bundle all datafiles into one archive. Avoids doing lots of simultaneous XHRs which has overhead.
   data = open(data_target, 'wb')
@@ -474,7 +471,13 @@ if has_preloaded:
   package_uuid = uuid.uuid4();
   remote_package_name = os.path.basename(Compression.compressed_name(data_target) if Compression.on else data_target)
   code += r'''
-    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    var PACKAGE_PATH;
+    if (typeof window === 'object') {
+      PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    } else {
+      // worker
+      PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
+    }
     var PACKAGE_NAME = '%s';
     var REMOTE_PACKAGE_NAME = '%s';
     var PACKAGE_UUID = '%s';

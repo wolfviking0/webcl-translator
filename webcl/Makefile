@@ -16,12 +16,10 @@ DEB=0
 VAL=0
 
 ifeq ($(VAL),1)
-PRELOAD = --preload-file-validator
-PREFIX = "val_"
+PREFIX = val_
 $(info ************  Mode VALIDATOR : Enabled ************)
 else
-PRELOAD = --preload-file
-PREFIX = ""
+PREFIX = 
 $(info ************  Mode VALIDATOR : Disabled ************)
 endif
 
@@ -68,39 +66,39 @@ all_osx: \
 hello_world_sample: 
 	$(call chdir,hello_world/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) hello_world.cpp $(MODE) \
-	$(PRELOAD) hello_world.cl \
+	--preload-file hello_world.cl \
 	-o ../build/$(PREFIX)hello_world.js
 
 # Not yet working -> issue #315
 convolution_sample:
 	$(call chdir,convolution/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) convolution.cpp $(MODE) \
-	$(PRELOAD) convolution_kernel.cl \
+	--preload-file convolution_kernel.cl \
 	-o ../build/$(PREFIX)convolution.js
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) image_copy.cpp $(MODE) \
-	$(PRELOAD) image_copy.cl \
+	--preload-file image_copy.cl \
 	-o ../build/$(PREFIX)imagecopy.js
 
 eventprofiling_sample:
 	$(call chdir,eventprofiling/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) event_profiling.cpp $(MODE) -s TOTAL_MEMORY=1024*1024*50 \
-	$(PRELOAD) event_profiling.cl \
+	--preload-file event_profiling.cl \
 	-o ../build/$(PREFIX)eventprofiling.js
 
 #JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(PREFIX)$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
 	$(call chdir,dxtcompressor/)
-	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file data/lena_ref.dds --preload-file data/lena.ppm $(PRELOAD) DXTCompressor_kernel.cl \
+	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc  -s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 $(MODE) \
+	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
 	-o ../build/$(PREFIX)dxtcompressor.js
 	
 attractor_sample:
 	$(call chdir,attractor/)
 	JAVA_HEAP_SIZE=8096m EMCC_DEBUG=$(DEB) $(CXX) Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
-	$(PRELOAD) kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
+	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
 	
 attractor_sample_osx:

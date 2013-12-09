@@ -185,8 +185,11 @@ var Runtime = {
   // type can be a native type or a struct (or null, for structs we only look at size here)
   getAlignSize: function(type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
+#if TARGET_LE32 == 1
+    if (vararg) return 8;
+#endif
 #if TARGET_LE32
-    if (type == 'i64' || type == 'double' || vararg) return 8;
+    if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
 #endif
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
@@ -379,6 +382,18 @@ var Runtime = {
     var table = FUNCTION_TABLE;
     table[index] = null;
 #endif
+  },
+
+  getAsmConst: function(code, numArgs) {
+    // code is a constant string on the heap, so we can cache these
+    if (!Runtime.asmConstCache) Runtime.asmConstCache = {};
+    var func = Runtime.asmConstCache[code];
+    if (func) return func;
+    var args = [];
+    for (var i = 0; i < numArgs; i++) {
+      args.push(String.fromCharCode(36) + i); // $0, $1 etc
+    }
+    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + Pointer_stringify(code) + ' })'); // new Function does not allow upvars in node
   },
 
   warnOnce: function(text) {
