@@ -13,7 +13,7 @@ using namespace std;
 #include <CL/opencl.h>
 #endif
  
-#define DIM 100
+#define DIM 200
 #define MAX_SOURCE_SIZE (0x100000)
  
 int main(int argc, char *argv[])
@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
     fclose( fp );
  
     /* Initialize input data */
-	fstream f;
-	f.open("inp",ios::in);
+	//fstream f;
+	//f.open("inp",ios::in);
  
 	/* Getting input from a text file */
 	int *MAT_A;
@@ -65,11 +65,12 @@ int main(int argc, char *argv[])
 	MAT_A = (int *)malloc(DIM*DIM*sizeof(int));
 	MAT_B = (int *)malloc(DIM*DIM*sizeof(int));
  
-	int c;
-	f >> c;
-	int count_rows=0;
-	int count_mat=0;
-	int count_col=0;
+	//int c;
+	//f >> c;
+	//int count_rows=0;
+	//int count_mat=0;
+	//int count_col=0;
+	
 	/*
 	while(!f.eof()){
 		if(count_mat == 0){
