@@ -48,22 +48,30 @@
             var tag = title.replace(" ","_");
             // Title
             document.write("<h3><a name=\""+tag+"\" class=\"anchor\" href=\"#"+tag+"\"><span class=\"octicon octicon-link\"></span></a>"+title+"</h3>");
-            document.write("<table><tr><th>Title</th><th>Compatibility</th><th>CPU</th><th>GPU</th></tr>");
+            document.write("<table border=\"1\" width=\"100%\"><tr><th></th><th></th><th colspan=2 width=\"20%\">NATIVE</th><th colspan=2  width=\"20%\">VALIDATOR</th></tr><tr><th>Title</th><th>Compatibility</th><th>CPU</th><th>GPU</th><th>CPU</th><th>GPU</th></tr>");
 
             for (var i = 0; i < configuration_pages[title].length; i++) {
               var object = configuration_pages[title][i];
 
               var _linkCPU ="none"
+              var _linkCPUVAL ="none"
               if (object["cpu"].length > 0) {
                 _linkCPU ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["cpu"]+"'); return false;\">here</a>"
+                if (object["val"].length > 0) {
+                  _linkCPUVAL="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["cpu"]+object["val"]+"'); return false;\">here</a>"
+                }
               }
 
               var _linkGPU ="none"
+              var _linkGPUVAL ="none"
               if (object["gpu"].length > 0) {
                 _linkGPU ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["gpu"]+"'); return false;\">here</a>"
+                if (object["val"].length > 0) {
+                  _linkGPUVAL ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["gpu"]+object["val"]+"'); return false;\">here</a>"
+                }
               }
 
-              document.write("<tr><td>"+object["title"]+"</td><td align=\"center\">"+object["compatibility"]+"</td><td align=\"center\">"+_linkCPU+"</td><td align=\"center\">"+_linkGPU+"</td></tr>");
+              document.write("<tr><td>"+object["title"]+"</td><td align=\"center\">"+object["compatibility"]+"</td><td align=\"center\">"+_linkCPU+"</td><td align=\"center\">"+_linkGPU+"</td><td align=\"center\">"+_linkCPUVAL+"</td><td align=\"center\">"+_linkGPUVAL+"</td></tr>");
             }
 
             document.write("</table><hr/>");
