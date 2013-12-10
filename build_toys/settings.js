@@ -1,4 +1,11 @@
-// MODE
+//
+//  settings.js
+//  Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
+//
+//  Created by Anthony Liot.
+//  Copyright (c) 2013 Anthony Liot. All rights reserved.
+//
+
 var SAMPLE = 0;
 var MEMORY = 0;
 var USE_GL = 0;

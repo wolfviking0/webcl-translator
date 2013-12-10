@@ -1,3 +1,10 @@
+//
+//  memoryprofiler.js
+//  Original from https://dl.dropboxusercontent.com/u/40949268/emcc/memoryprofiler/memoryprofiler.js
+//
+//  Created by Jukka Jylänki.
+//
+
 // memoryprofiler.js: Enables HEAP memory usage profiling in Emscripten applications.
 
 // CONFIGURATION: If true, walks all allocated pointers at graphing time to print a detailed memory fragmentation map. If false, used

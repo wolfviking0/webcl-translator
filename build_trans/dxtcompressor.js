@@ -97,10 +97,16 @@ Module['FS_createPath']('/', 'data', true, true);
       new DataRequest(0, 131200, 0, 0).open('GET', '/data/lena_ref.dds');
     new DataRequest(131200, 917647, 0, 0).open('GET', '/data/lena.ppm');
     new DataRequest(917647, 930879, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
-    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    var PACKAGE_PATH;
+    if (typeof window === 'object') {
+      PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    } else {
+      // worker
+      PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
+    }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'c046aac9-36f3-48da-af15-556040f863b1';
+    var PACKAGE_UUID = '4b85ab21-abcb-49cf-b5d4-42b0a4c63f13';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -214,6 +220,7 @@ else if (ENVIRONMENT_IS_SHELL) {
     Module['arguments'] = arguments;
   }
   this['Module'] = Module;
+  eval("if (typeof gc === 'function' && gc.toString().indexOf('[native code]') > 0) var gc = undefined"); // wipe out the SpiderMonkey shell 'gc' function, which can confuse closure (uses it as a minified name, and it is then initted to a non-falsey value unexpectedly)
 }
 else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function read(url) {
@@ -383,7 +390,8 @@ var Runtime = {
   STACK_ALIGN: 8,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
-    if (type == 'i64' || type == 'double' || vararg) return 8;
+    if (vararg) return 8;
+    if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
   },
@@ -510,6 +518,17 @@ var Runtime = {
     var table = FUNCTION_TABLE;
     table[index] = null;
   },
+  getAsmConst: function (code, numArgs) {
+    // code is a constant string on the heap, so we can cache these
+    if (!Runtime.asmConstCache) Runtime.asmConstCache = {};
+    var func = Runtime.asmConstCache[code];
+    if (func) return func;
+    var args = [];
+    for (var i = 0; i < numArgs; i++) {
+      args.push(String.fromCharCode(36) + i); // $0, $1 etc
+    }
+    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + Pointer_stringify(code) + ' })'); // new Function does not allow upvars in node
+  },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
     if (!Runtime.warnOnce.shown[text]) {
@@ -600,7 +619,7 @@ var EXITSTATUS = 0;
 var undef = 0;
 // tempInt is used for 32-bit signed values or smaller. tempBigInt is used
 // for 32-bit unsigned values or more than 32 bits. TODO: audit all uses of tempInt
-var tempValue, tempInt, tempBigInt, tempInt2, tempBigInt2, tempPair, tempBigIntI, tempBigIntR, tempBigIntS, tempBigIntP, tempBigIntD;
+var tempValue, tempInt, tempBigInt, tempInt2, tempBigInt2, tempPair, tempBigIntI, tempBigIntR, tempBigIntS, tempBigIntP, tempBigIntD, tempDouble, tempFloat;
 var tempI64, tempI64b;
 var tempRet0, tempRet1, tempRet2, tempRet3, tempRet4, tempRet5, tempRet6, tempRet7, tempRet8, tempRet9;
 function assert(condition, text) {
@@ -861,16 +880,16 @@ function UTF16ToString(ptr) {
   }
 }
 Module['UTF16ToString'] = UTF16ToString;
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
 // null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
     var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
-    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit
+    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit;
   }
   // Null-terminate the pointer to the HEAP.
-  HEAP16[(((outPtr)+(str.length*2))>>1)]=0
+  HEAP16[(((outPtr)+(str.length*2))>>1)]=0;
 }
 Module['stringToUTF16'] = stringToUTF16;
 // Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
@@ -893,7 +912,7 @@ function UTF32ToString(ptr) {
   }
 }
 Module['UTF32ToString'] = UTF32ToString;
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
 // null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
 // but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
 function stringToUTF32(str, outPtr) {
@@ -905,11 +924,11 @@ function stringToUTF32(str, outPtr) {
       var trailSurrogate = str.charCodeAt(++iCodeUnit);
       codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
     }
-    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit
+    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit;
     ++iChar;
   }
   // Null-terminate the pointer to the HEAP.
-  HEAP32[(((outPtr)+(iChar*4))>>2)]=0
+  HEAP32[(((outPtr)+(iChar*4))>>2)]=0;
 }
 Module['stringToUTF32'] = stringToUTF32;
 function demangle(func) {
@@ -1208,7 +1227,7 @@ function writeStringToMemory(string, buffer, dontAddNull) {
   var i = 0;
   while (i < array.length) {
     var chr = array[i];
-    HEAP8[(((buffer)+(i))|0)]=chr
+    HEAP8[(((buffer)+(i))|0)]=chr;
     i = i + 1;
   }
 }
@@ -1222,9 +1241,9 @@ Module['writeArrayToMemory'] = writeArrayToMemory;
 function writeAsciiToMemory(str, buffer, dontAddNull) {
   for (var i = 0; i < str.length; i++) {
     assert(str.charCodeAt(i) === str.charCodeAt(i)&0xff);
-    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i)
+    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i);
   }
-  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0;
 }
 Module['writeAsciiToMemory'] = writeAsciiToMemory;
 function unSign(value, bits, ignore, sig) {
@@ -1351,6 +1370,7 @@ var _stderr=_stderr=allocate([0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 /* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } },{ func: function() { __GLOBAL__I_a() } });
 var ___fsmu8;
 var ___dso_handle;
+var ___dso_handle=___dso_handle=allocate([0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 var __ZTVN10__cxxabiv120__si_class_type_infoE;
 __ZTVN10__cxxabiv120__si_class_type_infoE=allocate([0,0,0,0,208,60,0,0,50,3,0,0,40,3,0,0,178,0,0,0,176,1,0,0,226,0,0,0,114,0,0,0,16,1,0,0,52,1,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 var __ZTVN10__cxxabiv117__class_type_infoE;
@@ -1587,6 +1607,86 @@ function copyTempDouble(ptr) {
         var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
         return (height <= 0) ? 0 :
                  ((height - 1) * alignedRowSize + plainRowSize);
+      },get:function (name_, p, type) {
+        var ret = undefined;
+        switch(name_) { // Handle a few trivial GLES values
+          case 0x8DFA: // GL_SHADER_COMPILER
+            ret = 1;
+            break;
+          case 0x8DF8: // GL_SHADER_BINARY_FORMATS
+            if (type === 'Integer') {
+              // fall through, see gles2_conformance.cpp
+            } else {
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+            }
+          case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+            ret = 0;
+            break;
+          case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+            // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+            // so implement it ourselves to allow C++ GLES2 code get the length.
+            var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+            ret = formats.length;
+            break;
+          case 0x8B9A: // GL_IMPLEMENTATION_COLOR_READ_TYPE
+            ret = 0x1401; // GL_UNSIGNED_BYTE
+            break;
+          case 0x8B9B: // GL_IMPLEMENTATION_COLOR_READ_FORMAT
+            ret = 0x1908; // GL_RGBA
+            break;
+        }
+        if (ret === undefined) {
+          var result = Module.ctx.getParameter(name_);
+          switch (typeof(result)) {
+            case "number":
+              ret = result;
+              break;
+            case "boolean":
+              ret = result ? 1 : 0;
+              break;
+            case "string":
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+            case "object":
+              if (result === null) {
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return;
+              } else if (result instanceof Float32Array ||
+                         result instanceof Uint32Array ||
+                         result instanceof Int32Array ||
+                         result instanceof Array) {
+                for (var i = 0; i < result.length; ++i) {
+                  switch (type) {
+                    case 'Integer': HEAP32[(((p)+(i*4))>>2)]=result[i];   break;
+                    case 'Float':   HEAPF32[(((p)+(i*4))>>2)]=result[i]; break;
+                    case 'Boolean': HEAP8[(((p)+(i))|0)]=result[i] ? 1 : 0;    break;
+                    default: throw 'internal glGet error, bad type: ' + type;
+                  }
+                }
+                return;
+              } else if (result instanceof WebGLBuffer ||
+                         result instanceof WebGLProgram ||
+                         result instanceof WebGLFramebuffer ||
+                         result instanceof WebGLRenderbuffer ||
+                         result instanceof WebGLTexture) {
+                ret = result.name | 0;
+              } else {
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return;
+              }
+              break;
+            default:
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+          }
+        }
+        switch (type) {
+          case 'Integer': HEAP32[((p)>>2)]=ret;    break;
+          case 'Float':   HEAPF32[((p)>>2)]=ret;  break;
+          case 'Boolean': HEAP8[(p)]=ret ? 1 : 0; break;
+          default: throw 'internal glGet error, bad type: ' + type;
+        }
       },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
         var sizePerPixel;
         switch (type) {
@@ -1662,6 +1762,16 @@ function copyTempDouble(ptr) {
           pixels: pixels,
           internalFormat: internalFormat
         }
+      },enabledClientAttribIndices:[],enableVertexAttribArray:function enableVertexAttribArray(index) {
+        if (!GL.enabledClientAttribIndices[index]) {
+          GL.enabledClientAttribIndices[index] = true;
+          Module.ctx.enableVertexAttribArray(index);
+        }
+      },disableVertexAttribArray:function disableVertexAttribArray(index) {
+        if (GL.enabledClientAttribIndices[index]) {
+          GL.enabledClientAttribIndices[index] = false;
+          Module.ctx.disableVertexAttribArray(index);
+        }
       },initExtensions:function () {
         if (GL.initExtensions.done) return;
         GL.initExtensions.done = true;
@@ -1680,7 +1790,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         // Tested on WebKit and FF25
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');     
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -1943,11 +2053,37 @@ function copyTempDouble(ptr) {
         // Remove all the multispace
         _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
         // Search pattern : __kernel ... ( ... )
-        var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
-        if (_matches == null) {
-          console.error("/!\\ Not found kernel !!!");
-          return;
+        // var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+        // if (_matches == null) {
+        //   console.error("/!\\ Not found kernel !!!");
+        //   return;
+        // }
+        // Search kernel (Pattern doesn't work with extra __attribute__)
+        var _matches = [];
+        var _found = 1;
+        var _stringKern = _mini_kernel_string;
+        var _security = 10;
+        // Search all the kernel
+        while (_found && _security) {
+          // Just in case no more than 10 loop
+          _security --;
+          var _kern = _stringKern.indexOf("__kernel");
+          if (_kern == -1) {
+            _found = 0;
+            continue;
+          }
+          _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+          var _brace = _stringKern.indexOf("{");
+          var _stringKern2 = _stringKern.substr(0,_brace);
+          var _braceOpen = _stringKern2.lastIndexOf("(");
+          var _braceClose = _stringKern2.lastIndexOf(")");
+          var _stringKern3 = _stringKern2.substr(0,_braceOpen);
+          var _space = _stringKern3.lastIndexOf(" ");
+          _stringKern2 = _stringKern2.substr(_space,_braceClose);
+          // Add the kernel result like name_kernel(..., ... ,...)
+          _matches.push(_stringKern2);
         }
+        // For each kernel ....
         for (var i = 0; i < _matches.length; i ++) {
           // Search the open Brace
           var _brace = _matches[i].lastIndexOf("(");
@@ -2107,8 +2243,6 @@ function copyTempDouble(ptr) {
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
-          console.error("getCopyPointerToArray : error unknow type with length null "+type);
-          //return _host_ptr;
         }
         if (type.length == 1) {
           switch(type[0][0]) {
@@ -2186,8 +2320,6 @@ function copyTempDouble(ptr) {
       },getReferencePointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         if (type.length == 0) {
-          console.error("getCopyPointerToArray : error unknow type with length null "+type);
-          //return _host_ptr;
         }
         if (type.length == 1) {
           switch(type[0][0]) {
@@ -4773,7 +4905,7 @@ function copyTempDouble(ptr) {
       }
       return ret|0;
     }var _llvm_memcpy_p0i8_p0i8_i32=_memcpy;
-  var SOCKFS={mount:function (mount) {
+  var _mkport=undefined;var SOCKFS={mount:function (mount) {
         return FS.createNode(null, '/', 16384 | 0777, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
@@ -5266,6 +5398,10 @@ function copyTempDouble(ptr) {
       }
       var bytesRead = 0;
       var streamObj = FS.getStream(stream);
+      if (!streamObj) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return 0;
+      }
       while (streamObj.ungotten.length && bytesToRead > 0) {
         HEAP8[((ptr++)|0)]=streamObj.ungotten.pop()
         bytesToRead--;
@@ -5591,8 +5727,10 @@ function copyTempDouble(ptr) {
     }
   function _memmove(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
+      var ret = 0;
       if (((src|0) < (dest|0)) & ((dest|0) < ((src + num)|0))) {
         // Unlikely case: Copy backwards in a safe manner
+        ret = dest;
         src = (src + num)|0;
         dest = (dest + num)|0;
         while ((num|0) > 0) {
@@ -5601,9 +5739,11 @@ function copyTempDouble(ptr) {
           num = (num - 1)|0;
           HEAP8[(dest)]=HEAP8[(src)];
         }
+        dest = ret;
       } else {
         _memcpy(dest, src, num) | 0;
       }
+      return dest | 0;
     }var _llvm_memmove_p0i8_p0i8_i32=_memmove;
   var _llvm_memcpy_p0i8_p0i8_i64=_memcpy;
   function _memcmp(p1, p2, num) {
@@ -5669,6 +5809,7 @@ function copyTempDouble(ptr) {
         HEAP8[(ptr)]=value;
         ptr = (ptr+1)|0;
       }
+      return (ptr-num)|0;
     }var _llvm_memset_p0i8_i32=_memset;
   function _gettimeofday(ptr) {
       var now = Date.now();
@@ -6626,13 +6767,24 @@ function copyTempDouble(ptr) {
                 contextAttributes[attribute] = webGLContextAttributes[attribute];
               }
             }
-            ctx = canvas.getContext('experimental-webgl', contextAttributes);
+            var errorInfo = '?';
+            function onContextCreationError(event) {
+              errorInfo = event.statusMessage || errorInfo;
+            }
+            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
+            try {
+              ['experimental-webgl', 'webgl'].some(function(webglId) {
+                return ctx = canvas.getContext(webglId, contextAttributes);
+              });
+            } finally {
+              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
+            }
           } else {
             ctx = canvas.getContext('2d');
           }
           if (!ctx) throw ':(';
         } catch (e) {
-          Module.print('Could not create canvas - ' + e);
+          Module.print('Could not create canvas: ' + [errorInfo, e]);
           return null;
         }
         if (useWebGL) {
@@ -7307,7 +7459,7 @@ function copyTempDouble(ptr) {
         for (var i = 0; i < num; i++) {
           console.log('   diagonal ' + i + ':' + [data[i*surfData.width*4 + i*4 + 0], data[i*surfData.width*4 + i*4 + 1], data[i*surfData.width*4 + i*4 + 2], data[i*surfData.width*4 + i*4 + 3]]);
         }
-      },joystickEventState:0,lastJoystickState:{},joystickNamePool:{},recordJoystickState:function (joystick, state) {
+      },joystickEventState:1,lastJoystickState:{},joystickNamePool:{},recordJoystickState:function (joystick, state) {
         // Standardize button state.
         var buttons = new Array(state.buttons.length);
         for (var i = 0; i < state.buttons.length; i++) {
@@ -7501,116 +7653,10 @@ function copyTempDouble(ptr) {
   function _glDisable(x0) { Module.ctx.disable(x0) }
   function _glIsEnabled(x0) { return Module.ctx.isEnabled(x0) }
   function _glGetBooleanv(name_, p) {
-      switch(name_) {
-        case 0x8DFA: // GL_SHADER_COMPILER
-          HEAP8[(p)]=1;
-          return;
-        case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
-          HEAP8[(p)]=0;
-          return;
-        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-          // so implement it ourselves to allow C++ GLES2 code get the length.
-          var hasCompressedFormats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/).length > 0 ? 1 : 0;
-          HEAP8[(p)]=hasCompressedFormats;
-          return;
-      }
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAP8[(p)]=result != 0;
-          break;
-        case "boolean":
-          HEAP8[(p)]=result != 0;
-          break;
-        case "string":
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-        case "object":
-          if (result === null) {
-            HEAP8[(p)]=0;
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAP8[(((p)+(i))|0)]=result[i] != 0;
-            }
-          } else if (result instanceof WebGLBuffer ||
-                     result instanceof WebGLProgram ||
-                     result instanceof WebGLFramebuffer ||
-                     result instanceof WebGLRenderbuffer ||
-                     result instanceof WebGLTexture) {
-            HEAP8[(p)]=1; // non-zero ID is always 1!
-          } else {
-            GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-            return;
-          }
-          break;
-        default:
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-      }
+      return GL.get(name_, p, 'Boolean');
     }
   function _glGetIntegerv(name_, p) {
-      switch(name_) { // Handle a few trivial GLES values
-        case 0x8DFA: // GL_SHADER_COMPILER
-          HEAP32[((p)>>2)]=1;
-          return;
-        case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
-          HEAP32[((p)>>2)]=0;
-          return;
-        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-          // so implement it ourselves to allow C++ GLES2 code get the length.
-          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
-          HEAP32[((p)>>2)]=formats.length;
-          return;
-      }
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAP32[((p)>>2)]=result;
-          break;
-        case "boolean":
-          HEAP8[(p)]=result ? 1 : 0;
-          break;
-        case "string":
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-        case "object":
-          if (result === null) {
-            HEAP32[((p)>>2)]=0;
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAP32[(((p)+(i*4))>>2)]=result[i];
-            }
-          } else if (result instanceof WebGLBuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLProgram) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLFramebuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLRenderbuffer) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLTexture) {
-            HEAP32[((p)>>2)]=result.name | 0;
-          } else {
-            GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-            return;
-          }
-          break;
-        default:
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-      }
+      return GL.get(name_, p, 'Integer');
     }
   function _glCreateShader(shaderType) {
       var id = GL.getNewId(GL.shaders);
@@ -7661,63 +7707,7 @@ function copyTempDouble(ptr) {
       Module.ctx.bindBuffer(target, bufferObj);
     }
   function _glGetFloatv(name_, p) {
-      switch(name_) {
-        case 0x8DFA: // GL_SHADER_COMPILER
-          HEAPF32[((p)>>2)]=1;
-          return;
-        case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-        case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
-          HEAPF32[((p)>>2)]=0;
-          return;
-        case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-          // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-          // so implement it ourselves to allow C++ GLES2 code get the length.
-          var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
-          HEAPF32[((p)>>2)]=formats.length;
-          return;
-      }
-      var result = Module.ctx.getParameter(name_);
-      switch (typeof(result)) {
-        case "number":
-          HEAPF32[((p)>>2)]=result;
-          break;
-        case "boolean":
-          HEAPF32[((p)>>2)]=result ? 1.0 : 0.0;
-          break;
-        case "string":
-            HEAPF32[((p)>>2)]=0;
-        case "object":
-          if (result === null) {
-            GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-            return;
-          } else if (result instanceof Float32Array ||
-                     result instanceof Uint32Array ||
-                     result instanceof Int32Array ||
-                     result instanceof Array) {
-            for (var i = 0; i < result.length; ++i) {
-              HEAPF32[(((p)+(i*4))>>2)]=result[i];
-            }
-          } else if (result instanceof WebGLBuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLProgram) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLFramebuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLRenderbuffer) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else if (result instanceof WebGLTexture) {
-            HEAPF32[((p)>>2)]=result.name | 0;
-          } else {
-            GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-            return;
-          }
-          break;
-        default:
-          GL.recordError(0x0500/*GL_INVALID_ENUM*/);
-          return;
-      }
+      return GL.get(name_, p, 'Float');
     }
   function _glHint(x0, x1) { Module.ctx.hint(x0, x1) }
   function _glEnableVertexAttribArray(index) {
@@ -7741,6 +7731,7 @@ function copyTempDouble(ptr) {
         GLEmulation.fogColor = new Float32Array(4);
         // Add some emulation workarounds
         Module.printErr('WARNING: using emscripten GL emulation. This is a collection of limited workarounds, do not expect it to work.');
+        Module.printErr('WARNING: using emscripten GL emulation unsafe opts. If weirdness happens, try -s GL_UNSAFE_OPTS=0');
         // XXX some of the capabilities we don't support may lead to incorrect rendering, if we do not emulate them in shaders
         var validCapabilities = {
           0x0B44: 1, // GL_CULL_FACE
@@ -8034,7 +8025,10 @@ function copyTempDouble(ptr) {
         };
         var glUseProgram = _glUseProgram;
         _glUseProgram = function _glUseProgram(program) {
-          GL.currProgram = program;
+          if (GL.currProgram != program) {
+            GL.currentRenderer = null; // This changes the FFP emulation shader program, need to recompute that.
+            GL.currProgram = program;
+          }
           glUseProgram(program);
         }
         var glDeleteProgram = _glDeleteProgram;
@@ -8421,28 +8415,80 @@ function copyTempDouble(ptr) {
             GL_SRC_ALPHA,
             GL_SRC_ALPHA
           ];
-          this.traverseState = function CTexEnv_traverseState(keyView) {
-            keyView.next(this.mode);
-            keyView.next(this.colorCombiner);
-            keyView.next(this.alphaCombiner);
-            keyView.next(this.colorCombiner);
-            keyView.next(this.alphaScale);
-            keyView.next(this.envColor[0]);
-            keyView.next(this.envColor[1]);
-            keyView.next(this.envColor[2]);
-            keyView.next(this.envColor[3]);
-            keyView.next(this.colorSrc[0]);
-            keyView.next(this.colorSrc[1]);
-            keyView.next(this.colorSrc[2]);
-            keyView.next(this.alphaSrc[0]);
-            keyView.next(this.alphaSrc[1]);
-            keyView.next(this.alphaSrc[2]);
-            keyView.next(this.colorOp[0]);
-            keyView.next(this.colorOp[1]);
-            keyView.next(this.colorOp[2]);
-            keyView.next(this.alphaOp[0]);
-            keyView.next(this.alphaOp[1]);
-            keyView.next(this.alphaOp[2]);
+          // Map GLenums to small values to efficiently pack the enums to bits for tighter access.
+          this.traverseKey = {
+            // mode
+            0x1E01 /* GL_REPLACE */: 0,
+            0x2100 /* GL_MODULATE */: 1,
+            0x0104 /* GL_ADD */: 2,
+            0x0BE2 /* GL_BLEND */: 3,
+            0x2101 /* GL_DECAL */: 4,
+            0x8570 /* GL_COMBINE */: 5,
+            // additional color and alpha combiners
+            0x84E7 /* GL_SUBTRACT */: 3,
+            0x8575 /* GL_INTERPOLATE */: 4,
+            // color and alpha src
+            0x1702 /* GL_TEXTURE */: 0,
+            0x8576 /* GL_CONSTANT */: 1,
+            0x8577 /* GL_PRIMARY_COLOR */: 2,
+            0x8578 /* GL_PREVIOUS */: 3,
+            // color and alpha op
+            0x0300 /* GL_SRC_COLOR */: 0,
+            0x0301 /* GL_ONE_MINUS_SRC_COLOR */: 1,
+            0x0302 /* GL_SRC_ALPHA */: 2,
+            0x0300 /* GL_ONE_MINUS_SRC_ALPHA */: 3
+          };
+          // The tuple (key0,key1,key2) uniquely identifies the state of the variables in CTexEnv.
+          // -1 on key0 denotes 'the whole cached key is dirty'
+          this.key0 = -1;
+          this.key1 = 0;
+          this.key2 = 0;
+          this.computeKey0 = function() {
+            var k = this.traverseKey;
+            var key = k[this.mode] * 1638400; // 6 distinct values.
+            key += k[this.colorCombiner] * 327680; // 5 distinct values.
+            key += k[this.alphaCombiner] * 65536; // 5 distinct values.
+            // The above three fields have 6*5*5=150 distinct values -> 8 bits.
+            key += (this.colorScale-1) * 16384; // 10 bits used.
+            key += (this.alphaScale-1) * 4096; // 12 bits used.
+            key += k[this.colorSrc[0]] * 1024; // 14
+            key += k[this.colorSrc[1]] * 256; // 16
+            key += k[this.colorSrc[2]] * 64; // 18
+            key += k[this.alphaSrc[0]] * 16; // 20
+            key += k[this.alphaSrc[1]] * 4; // 22
+            key += k[this.alphaSrc[2]]; // 24 bits used total.
+            return key;
+          }
+          this.computeKey1 = function() {
+            var k = this.traverseKey;
+            key = k[this.colorOp[0]] * 4096;
+            key += k[this.colorOp[1]] * 1024;             
+            key += k[this.colorOp[2]] * 256;
+            key += k[this.alphaOp[0]] * 16;
+            key += k[this.alphaOp[1]] * 4;
+            key += k[this.alphaOp[2]];
+            return key;            
+          }
+          // TODO: remove this. The color should not be part of the key!
+          this.computeKey2 = function() {
+            return this.envColor[0] * 16777216 + this.envColor[1] * 65536 + this.envColor[2] * 256 + 1 + this.envColor[3];
+          }
+          this.recomputeKey = function() {
+            this.key0 = this.computeKey0();
+            this.key1 = this.computeKey1();
+            this.key2 = this.computeKey2();
+          }
+          this.invalidateKey = function() {
+            this.key0 = -1; // The key of this texture unit must be recomputed when rendering the next time.
+            GL.immediate.currentRenderer = null; // The currently used renderer must be re-evaluated at next render.
+          }
+          this.traverseState = function(keyView) {
+            if (this.key0 == -1) {
+              this.recomputeKey();
+            }
+            keyView.next(this.key0);
+            keyView.next(this.key1);
+            keyView.next(this.key2);
           };
         }
         function CTexUnit() {
@@ -8764,16 +8810,28 @@ function copyTempDouble(ptr) {
             var cur = getCurTexUnit();
             switch (cap) {
               case GL_TEXTURE_1D:
-                cur.enabled_tex1D = true;
+                if (!cur.enabled_tex1D) {
+                  GL.immediate.currentRenderer = null; // Renderer state changed, and must be recreated or looked up again.
+                  cur.enabled_tex1D = true;
+                }
                 break;
               case GL_TEXTURE_2D:
-                cur.enabled_tex2D = true;
+                if (!cur.enabled_tex2D) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_tex2D = true;
+                }
                 break;
               case GL_TEXTURE_3D:
-                cur.enabled_tex3D = true;
+                if (!cur.enabled_tex3D) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_tex3D = true;
+                }
                 break;
               case GL_TEXTURE_CUBE_MAP:
-                cur.enabled_texCube = true;
+                if (!cur.enabled_texCube) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_texCube = true;
+                }
                 break;
             }
           },
@@ -8781,16 +8839,28 @@ function copyTempDouble(ptr) {
             var cur = getCurTexUnit();
             switch (cap) {
               case GL_TEXTURE_1D:
-                cur.enabled_tex1D = false;
+                if (cur.enabled_tex1D) {
+                  GL.immediate.currentRenderer = null; // Renderer state changed, and must be recreated or looked up again.
+                  cur.enabled_tex1D = false;
+                }
                 break;
               case GL_TEXTURE_2D:
-                cur.enabled_tex2D = false;
+                if (cur.enabled_tex2D) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_tex2D = false;
+                }
                 break;
               case GL_TEXTURE_3D:
-                cur.enabled_tex3D = false;
+                if (cur.enabled_tex3D) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_tex3D = false;
+                }
                 break;
               case GL_TEXTURE_CUBE_MAP:
-                cur.enabled_texCube = false;
+                if (cur.enabled_texCube) {
+                  GL.immediate.currentRenderer = null;
+                  cur.enabled_texCube = false;
+                }
                 break;
             }
           },
@@ -8800,10 +8870,16 @@ function copyTempDouble(ptr) {
             var env = getCurTexUnit().env;
             switch (pname) {
               case GL_RGB_SCALE:
-                env.colorScale = param;
+                if (env.colorScale != param) {
+                  env.invalidateKey(); // We changed FFP emulation renderer state.
+                  env.colorScale = param;
+                }
                 break;
               case GL_ALPHA_SCALE:
-                env.alphaScale = param;
+                if (env.alphaScale != param) {
+                  env.invalidateKey();
+                  env.alphaScale = param;
+                }
                 break;
               default:
                 Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvf`.');
@@ -8815,55 +8891,106 @@ function copyTempDouble(ptr) {
             var env = getCurTexUnit().env;
             switch (pname) {
               case GL_TEXTURE_ENV_MODE:
-                env.mode = param;
+                if (env.mode != param) {
+                  env.invalidateKey(); // We changed FFP emulation renderer state.
+                  env.mode = param;
+                }
                 break;
               case GL_COMBINE_RGB:
-                env.colorCombiner = param;
+                if (env.colorCombiner != param) {
+                  env.invalidateKey();
+                  env.colorCombiner = param;
+                }
                 break;
               case GL_COMBINE_ALPHA:
-                env.alphaCombiner = param;
+                if (env.alphaCombiner != param) {
+                  env.invalidateKey();
+                  env.alphaCombiner = param;
+                }
                 break;
               case GL_SRC0_RGB:
-                env.colorSrc[0] = param;
+                if (env.colorSrc[0] != param) {
+                  env.invalidateKey();
+                  env.colorSrc[0] = param;
+                }
                 break;
               case GL_SRC1_RGB:
-                env.colorSrc[1] = param;
+                if (env.colorSrc[1] != param) {
+                  env.invalidateKey();
+                  env.colorSrc[1] = param;
+                }
                 break;
               case GL_SRC2_RGB:
-                env.colorSrc[2] = param;
+                if (env.colorSrc[2] != param) {
+                  env.invalidateKey();
+                  env.colorSrc[2] = param;
+                }
                 break;
               case GL_SRC0_ALPHA:
-                env.alphaSrc[0] = param;
+                if (env.alphaSrc[0] != param) {
+                  env.invalidateKey();
+                  env.alphaSrc[0] = param;
+                }
                 break;
               case GL_SRC1_ALPHA:
-                env.alphaSrc[1] = param;
+                if (env.alphaSrc[1] != param) {
+                  env.invalidateKey();
+                  env.alphaSrc[1] = param;
+                }
                 break;
               case GL_SRC2_ALPHA:
-                env.alphaSrc[2] = param;
+                if (env.alphaSrc[2] != param) {
+                  env.invalidateKey();
+                  env.alphaSrc[2] = param;
+                }
                 break;
               case GL_OPERAND0_RGB:
-                env.colorOp[0] = param;
+                if (env.colorOp[0] != param) {
+                  env.invalidateKey();
+                  env.colorOp[0] = param;
+                }
                 break;
               case GL_OPERAND1_RGB:
-                env.colorOp[1] = param;
+                if (env.colorOp[1] != param) {
+                  env.invalidateKey();
+                  env.colorOp[1] = param;
+                }
                 break;
               case GL_OPERAND2_RGB:
-                env.colorOp[2] = param;
+                if (env.colorOp[2] != param) {
+                  env.invalidateKey();
+                  env.colorOp[2] = param;
+                }
                 break;
               case GL_OPERAND0_ALPHA:
-                env.alphaOp[0] = param;
+                if (env.alphaOp[0] != param) {
+                  env.invalidateKey();
+                  env.alphaOp[0] = param;
+                }
                 break;
               case GL_OPERAND1_ALPHA:
-                env.alphaOp[1] = param;
+                if (env.alphaOp[1] != param) {
+                  env.invalidateKey();
+                  env.alphaOp[1] = param;
+                }
                 break;
               case GL_OPERAND2_ALPHA:
-                env.alphaOp[2] = param;
+                if (env.alphaOp[2] != param) {
+                  env.invalidateKey();
+                  env.alphaOp[2] = param;
+                }
                 break;
               case GL_RGB_SCALE:
-                env.colorScale = param;
+                if (env.colorScale != param) {
+                  env.invalidateKey();
+                  env.colorScale = param;
+                }
                 break;
               case GL_ALPHA_SCALE:
-                env.alphaScale = param;
+                if (env.alphaScale != param) {
+                  env.invalidateKey();
+                  env.alphaScale = param;
+                }
                 break;
               default:
                 Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvi`.');
@@ -8876,7 +9003,10 @@ function copyTempDouble(ptr) {
               case GL_TEXTURE_ENV_COLOR: {
                 for (var i = 0; i < 4; i++) {
                   var param = HEAPF32[(((params)+(i*4))>>2)];
-                  env.envColor[i] = param;
+                  if (env.envColor[i] != param) {
+                    env.invalidateKey(); // We changed FFP emulation renderer state.
+                    env.envColor[i] = param;
+                  }
                 }
                 break
               }
@@ -8885,7 +9015,7 @@ function copyTempDouble(ptr) {
             }
           },
         };
-      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,TEXTURE1:4,TEXTURE2:5,TEXTURE3:6,TEXTURE4:7,TEXTURE5:8,TEXTURE6:9,NUM_ATTRIBUTES:10,MAX_TEXTURES:7,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function (name, size, type, stride, pointer) {
+      },vertexData:null,vertexDataU8:null,tempData:null,indexData:null,vertexCounter:0,mode:-1,rendererCache:null,rendererComponents:[],rendererComponentPointer:0,lastRenderer:null,lastArrayBuffer:null,lastProgram:null,lastStride:-1,matrix:{},matrixStack:{},currentMatrix:"m",tempMatrix:null,matricesModified:false,useTextureMatrix:false,VERTEX:0,NORMAL:1,COLOR:2,TEXTURE0:3,NUM_ATTRIBUTES:-1,MAX_TEXTURES:-1,totalEnabledClientAttributes:0,enabledClientAttributes:[0,0],clientAttributes:[],liveClientAttributes:[],currentRenderer:null,modifiedClientAttributes:false,clientActiveTexture:0,clientColor:null,usedTexUnitList:[],fixedFunctionProgram:null,setClientAttribute:function setClientAttribute(name, size, type, stride, pointer) {
         var attrib = this.clientAttributes[name];
         if (!attrib) {
           for (var i = 0; i <= name; i++) { // keep flat
@@ -8909,7 +9039,7 @@ function copyTempDouble(ptr) {
           attrib.offset = 0;
         }
         this.modifiedClientAttributes = true;
-      },addRendererComponent:function (name, size, type) {
+      },addRendererComponent:function addRendererComponent(name, size, type) {
         if (!this.rendererComponents[name]) {
           this.rendererComponents[name] = 1;
           if (this.enabledClientAttributes[name]) {
@@ -8921,11 +9051,16 @@ function copyTempDouble(ptr) {
         } else {
           this.rendererComponents[name]++;
         }
-      },disableBeginEndClientAttributes:function () {
+      },disableBeginEndClientAttributes:function disableBeginEndClientAttributes() {
         for (var i = 0; i < this.NUM_ATTRIBUTES; i++) {
           if (this.rendererComponents[i]) this.enabledClientAttributes[i] = false;
         }
-      },getRenderer:function () {
+      },getRenderer:function getRenderer() {
+        // If no FFP state has changed that would have forced to re-evaluate which FFP emulation shader to use,
+        // we have the currently used renderer in cache, and can immediately return that.
+        if (this.currentRenderer) {
+          return this.currentRenderer;
+        }
         // return a renderer object given the liveClientAttributes
         // we maintain a cache of renderers, optimized to not generate garbage
         var attributes = GL.immediate.liveClientAttributes;
@@ -8933,10 +9068,11 @@ function copyTempDouble(ptr) {
         var temp;
         var keyView = cacheMap.getStaticKeyView().reset();
         // By attrib state:
+        var enabledAttributesKey = 0;
         for (var i = 0; i < attributes.length; i++) {
-          var attribute = attributes[i];
-          keyView.next(attribute.name).next(attribute.size).next(attribute.type);
+          enabledAttributesKey |= 1 << attributes[i].name;
         }
+        keyView.next(enabledAttributesKey);
         // By fog state:
         var fogParam = 0;
         if (GLEmulation.fogEnabled) {
@@ -8959,13 +9095,18 @@ function copyTempDouble(ptr) {
           GL.immediate.TexEnvJIT.traverseState(keyView);
         }
         // If we don't already have it, create it.
-        if (!keyView.get()) {
-          keyView.set(this.createRenderer());
+        var renderer = keyView.get();
+        if (!renderer) {
+          renderer = this.createRenderer();
+          this.currentRenderer = renderer;
+          keyView.set(renderer);
+          return renderer;
         }
-        return keyView.get();
-      },createRenderer:function (renderer) {
+        this.currentRenderer = renderer; // Cache the currently used renderer, so later lookups without state changes can get this fast.
+        return renderer;
+      },createRenderer:function createRenderer(renderer) {
         var useCurrProgram = !!GL.currProgram;
-        var hasTextures = false, textureSizes = [], textureTypes = [];
+        var hasTextures = false;
         for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
           var texAttribName = GL.immediate.TEXTURE0 + i;
           if (!GL.immediate.enabledClientAttributes[texAttribName])
@@ -8975,24 +9116,10 @@ function copyTempDouble(ptr) {
                Runtime.warnOnce("GL_TEXTURE" + i + " coords are supplied, but that texture unit is disabled in the fixed-function pipeline.");
             }
           }
-          textureSizes[i] = GL.immediate.clientAttributes[texAttribName].size;
-          textureTypes[i] = GL.immediate.clientAttributes[texAttribName].type;
           hasTextures = true;
         }
-        var positionSize = GL.immediate.clientAttributes[GL.immediate.VERTEX].size;
-        var positionType = GL.immediate.clientAttributes[GL.immediate.VERTEX].type;
-        var colorSize = 0, colorType;
-        if (GL.immediate.enabledClientAttributes[GL.immediate.COLOR]) {
-          colorSize = GL.immediate.clientAttributes[GL.immediate.COLOR].size;
-          colorType = GL.immediate.clientAttributes[GL.immediate.COLOR].type;
-        }
-        var normalSize = 0, normalType;
-        if (GL.immediate.enabledClientAttributes[GL.immediate.NORMAL]) {
-          normalSize = GL.immediate.clientAttributes[GL.immediate.NORMAL].size;
-          normalType = GL.immediate.clientAttributes[GL.immediate.NORMAL].type;
-        }
         var ret = {
-          init: function() {
+          init: function init() {
             // For fixed-function shader generation.
             var uTexUnitPrefix = 'u_texUnit';
             var aTexCoordPrefix = 'a_texCoord';
@@ -9113,9 +9240,22 @@ function copyTempDouble(ptr) {
               this.program = Module.ctx.createProgram();
               Module.ctx.attachShader(this.program, this.vertexShader);
               Module.ctx.attachShader(this.program, this.fragmentShader);
-              Module.ctx.bindAttribLocation(this.program, 0, 'a_position');
+              // As optimization, bind all attributes to prespecified locations, so that the FFP emulation
+              // code can submit attributes to any generated FFP shader without having to examine each shader in turn.
+              // These prespecified locations are only assumed if GL_FFP_ONLY is specified, since user could also create their
+              // own shaders that didn't have attributes in the same locations.
+              Module.ctx.bindAttribLocation(this.program, GL.immediate.VERTEX, 'a_position');
+              Module.ctx.bindAttribLocation(this.program, GL.immediate.COLOR, 'a_color');
+              Module.ctx.bindAttribLocation(this.program, GL.immediate.NORMAL, 'a_normal');
+              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
+                Module.ctx.bindAttribLocation(this.program, GL.immediate.TEXTURE0 + i, 'a_texCoord'+i);
+                Module.ctx.bindAttribLocation(this.program, GL.immediate.TEXTURE0 + i, aTexCoordPrefix+i);
+              }
               Module.ctx.linkProgram(this.program);
             }
+            // Stores a map that remembers which matrix uniforms are up-to-date in this FFP renderer, so they don't need to be resubmitted
+            // each time we render with this program.
+            this.textureMatrixVersion = {};
             this.positionLocation = Module.ctx.getAttribLocation(this.program, 'a_position');
             this.texCoordLocations = [];
             for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
@@ -9151,7 +9291,9 @@ function copyTempDouble(ptr) {
             this.modelViewLocation = Module.ctx.getUniformLocation(this.program, 'u_modelView');
             this.projectionLocation = Module.ctx.getUniformLocation(this.program, 'u_projection');
             this.hasTextures = hasTextures;
-            this.hasNormal = normalSize > 0 && this.normalLocation >= 0;
+            this.hasNormal = GL.immediate.enabledClientAttributes[GL.immediate.NORMAL] &&
+                             GL.immediate.clientAttributes[GL.immediate.NORMAL].size > 0 &&
+                             this.normalLocation >= 0;
             this.hasColor = (this.colorLocation === 0) || this.colorLocation > 0;
             this.floatType = Module.ctx.FLOAT; // minor optimization
             this.fogColorLocation = Module.ctx.getUniformLocation(this.program, 'u_fogColor');
@@ -9161,7 +9303,7 @@ function copyTempDouble(ptr) {
             this.hasFog = !!(this.fogColorLocation || this.fogEndLocation ||
                              this.fogScaleLocation || this.fogDensityLocation);
           },
-          prepare: function() {
+          prepare: function prepare() {
             // Calculate the array buffer
             var arrayBuffer;
             if (!GL.currArrayBuffer) {
@@ -9201,47 +9343,55 @@ function copyTempDouble(ptr) {
               Module.ctx.useProgram(this.program);
               GL.immediate.fixedFunctionProgram = this.program;
             }
-            if (this.modelViewLocation) Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
-            if (this.projectionLocation) Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
+            if (this.modelViewLocation && this.modelViewMatrixVersion != GL.immediate.matrixVersion['m']) {
+              this.modelViewMatrixVersion = GL.immediate.matrixVersion['m'];
+              Module.ctx.uniformMatrix4fv(this.modelViewLocation, false, GL.immediate.matrix['m']);
+            }
+            if (this.projectionLocation && this.projectionMatrixVersion != GL.immediate.matrixVersion['p']) {
+              this.projectionMatrixVersion = GL.immediate.matrixVersion['p'];
+              Module.ctx.uniformMatrix4fv(this.projectionLocation, false, GL.immediate.matrix['p']);
+            }
             var clientAttributes = GL.immediate.clientAttributes;
-            Module.ctx.vertexAttribPointer(this.positionLocation, positionSize, positionType, false,
-                                           GL.immediate.stride, clientAttributes[GL.immediate.VERTEX].offset);
-            Module.ctx.enableVertexAttribArray(this.positionLocation);
+            var posAttr = clientAttributes[GL.immediate.VERTEX];
+            if (!GL.currArrayBuffer) {
+              Module.ctx.vertexAttribPointer(GL.immediate.VERTEX, posAttr.size, posAttr.type, false, GL.immediate.stride, posAttr.offset);
+              GL.enableVertexAttribArray(GL.immediate.VERTEX);
+              if (this.hasNormal) {
+                var normalAttr = clientAttributes[GL.immediate.NORMAL];
+                Module.ctx.vertexAttribPointer(GL.immediate.NORMAL, normalAttr.size, normalAttr.type, true, GL.immediate.stride, normalAttr.offset);
+                GL.enableVertexAttribArray(GL.immediate.NORMAL);
+              }
+            }
             if (this.hasTextures) {
-              //for (var i = 0; i < this.usedTexUnitList.length; i++) {
-              //  var texUnitID = this.usedTexUnitList[i];
               for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-                var texUnitID = i;
-                var attribLoc = this.texCoordLocations[texUnitID];
-                if (attribLoc === undefined || attribLoc < 0) continue;
-                if (texUnitID < textureSizes.length && textureSizes[texUnitID]) {
-                  Module.ctx.vertexAttribPointer(attribLoc, textureSizes[texUnitID], textureTypes[texUnitID], false,
-                                                 GL.immediate.stride, GL.immediate.clientAttributes[GL.immediate.TEXTURE0 + texUnitID].offset);
-                  Module.ctx.enableVertexAttribArray(attribLoc);
-                } else {
-                  // These two might be dangerous, but let's try them.
-                  Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
-                  Module.ctx.disableVertexAttribArray(attribLoc);
+                if (!GL.currArrayBuffer) {
+                  var attribLoc = GL.immediate.TEXTURE0+i;
+                  var texAttr = clientAttributes[attribLoc];
+                  if (texAttr.size) {
+                    Module.ctx.vertexAttribPointer(attribLoc, texAttr.size, texAttr.type, false, GL.immediate.stride, texAttr.offset);
+                    GL.enableVertexAttribArray(attribLoc);
+                  } else {
+                    // These two might be dangerous, but let's try them.
+                    Module.ctx.vertexAttrib4f(attribLoc, 0, 0, 0, 1);
+                    GL.disableVertexAttribArray(attribLoc);
+                  }
                 }
-              }
-              for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
-                if (this.textureMatrixLocations[i]) { // XXX might we need this even without the condition we are currently in?
-                  Module.ctx.uniformMatrix4fv(this.textureMatrixLocations[i], false, GL.immediate.matrix['t' + i]);
+                var t = 't'+i;
+                if (this.textureMatrixLocations[i] && this.textureMatrixVersion[t] != GL.immediate.matrixVersion[t]) { // XXX might we need this even without the condition we are currently in?
+                  this.textureMatrixVersion[t] = GL.immediate.matrixVersion[t];
+                  Module.ctx.uniformMatrix4fv(this.textureMatrixLocations[i], false, GL.immediate.matrix[t]);
                 }
               }
             }
-            if (colorSize) {
-              Module.ctx.vertexAttribPointer(this.colorLocation, colorSize, colorType, true,
-                                             GL.immediate.stride, clientAttributes[GL.immediate.COLOR].offset);
-              Module.ctx.enableVertexAttribArray(this.colorLocation);
+            if (GL.immediate.enabledClientAttributes[GL.immediate.COLOR]) {
+              var colorAttr = clientAttributes[GL.immediate.COLOR];
+              if (!GL.currArrayBuffer) {
+                Module.ctx.vertexAttribPointer(GL.immediate.COLOR, colorAttr.size, colorAttr.type, true, GL.immediate.stride, colorAttr.offset);
+                GL.enableVertexAttribArray(GL.immediate.COLOR);
+              }
             } else if (this.hasColor) {
-              Module.ctx.disableVertexAttribArray(this.colorLocation);
-              Module.ctx.vertexAttrib4fv(this.colorLocation, GL.immediate.clientColor);
-            }
-            if (this.hasNormal) {
-              Module.ctx.vertexAttribPointer(this.normalLocation, normalSize, normalType, true,
-                                             GL.immediate.stride, clientAttributes[GL.immediate.NORMAL].offset);
-              Module.ctx.enableVertexAttribArray(this.normalLocation);
+              GL.disableVertexAttribArray(GL.immediate.COLOR);
+              Module.ctx.vertexAttrib4fv(GL.immediate.COLOR, GL.immediate.clientColor);
             }
             if (this.hasFog) {
               if (this.fogColorLocation) Module.ctx.uniform4fv(this.fogColorLocation, GLEmulation.fogColor);
@@ -9250,31 +9400,7 @@ function copyTempDouble(ptr) {
               if (this.fogDensityLocation) Module.ctx.uniform1f(this.fogDensityLocation, GLEmulation.fogDensity);
             }
           },
-          cleanup: function() {
-            Module.ctx.disableVertexAttribArray(this.positionLocation);
-            if (this.hasTextures) {
-              for (var i = 0; i < textureSizes.length; i++) {
-                if (textureSizes[i] && this.texCoordLocations[i] >= 0) {
-                  Module.ctx.disableVertexAttribArray(this.texCoordLocations[i]);
-                }
-              }
-            }
-            if (this.hasColor) {
-              Module.ctx.disableVertexAttribArray(this.colorLocation);
-            }
-            if (this.hasNormal) {
-              Module.ctx.disableVertexAttribArray(this.normalLocation);
-            }
-            if (!GL.currProgram) {
-              Module.ctx.useProgram(null);
-            }
-            if (!GL.currArrayBuffer) {
-              Module.ctx.bindBuffer(Module.ctx.ARRAY_BUFFER, null);
-            }
-            GL.immediate.lastRenderer = null;
-            GL.immediate.lastArrayBuffer = null;
-            GL.immediate.lastProgram = null;
-            GL.immediate.matricesModified = true;
+          cleanup: function cleanup() {
           }
         };
         ret.init();
@@ -9383,11 +9509,15 @@ function copyTempDouble(ptr) {
         GL.immediate.initted = true;
         if (!Module.useWebGL) return; // a 2D canvas may be currently used TODO: make sure we are actually called in that case
         this.TexEnvJIT.init(Module.ctx);
-        GL.immediate.MAX_TEXTURES = Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
-        GL.immediate.NUM_ATTRIBUTES = GL.immediate.TEXTURE0 + GL.immediate.MAX_TEXTURES;
+        // User can override the maximum number of texture units that we emulate. Using fewer texture units increases runtime performance
+        // slightly, so it is advantageous to choose as small value as needed.
+        GL.immediate.MAX_TEXTURES = Module['GL_MAX_TEXTURE_IMAGE_UNITS'] || Module.ctx.getParameter(Module.ctx.MAX_TEXTURE_IMAGE_UNITS);
+        GL.immediate.NUM_ATTRIBUTES = 3 /*pos+normal+color attributes*/ + GL.immediate.MAX_TEXTURES;
         GL.immediate.clientAttributes = [];
+        GLEmulation.enabledClientAttribIndices = [];
         for (var i = 0; i < GL.immediate.NUM_ATTRIBUTES; i++) {
           GL.immediate.clientAttributes.push({});
+          GLEmulation.enabledClientAttribIndices.push(false);
         }
         this.matrixStack['m'] = [];
         this.matrixStack['p'] = [];
@@ -9395,12 +9525,18 @@ function copyTempDouble(ptr) {
           this.matrixStack['t' + i] = [];
         }
         // Initialize matrix library
+        // When user sets a matrix, increment a 'version number' on the new data, and when rendering, submit
+        // the matrices to the shader program only if they have an old version of the data.
+        GL.immediate.matrixVersion = {};
         GL.immediate.matrix['m'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrixVersion['m'] = 0;
         GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['m']);
         GL.immediate.matrix['p'] = GL.immediate.matrix.lib.mat4.create();
+        GL.immediate.matrixVersion['p'] = 0;
         GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix['p']);
         for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
           GL.immediate.matrix['t' + i] = GL.immediate.matrix.lib.mat4.create();
+          GL.immediate.matrixVersion['t' + i] = 0;
         }
         // Renderer cache
         this.rendererCache = this.MapTreeLib.create();
@@ -9410,7 +9546,7 @@ function copyTempDouble(ptr) {
         this.vertexDataU8 = new Uint8Array(this.tempData.buffer);
         GL.generateTempBuffers(true);
         this.clientColor = new Float32Array([1, 1, 1, 1]);
-      },prepareClientAttributes:function (count, beginEnd) {
+      },prepareClientAttributes:function prepareClientAttributes(count, beginEnd) {
         // If no client attributes were modified since we were last called, do nothing. Note that this
         // does not work for glBegin/End, where we generate renderer components dynamically and then
         // disable them ourselves, but it does help with glDrawElements/Arrays.
@@ -9493,7 +9629,7 @@ function copyTempDouble(ptr) {
           }
           GL.immediate.vertexCounter = bytes / 4; // XXX assuming float
         }
-      },flush:function (numProvidedIndexes, startIndex, ptr) {
+      },flush:function flush(numProvidedIndexes, startIndex, ptr) {
         assert(numProvidedIndexes >= 0 || !numProvidedIndexes);
         startIndex = startIndex || 0;
         ptr = ptr || 0;
@@ -11296,10 +11432,12 @@ function copyTempDouble(ptr) {
     }
   function _glLoadMatrixf(matrix) {
       GL.immediate.matricesModified = true;
+      GL.immediate.matrixVersion[GL.immediate.currentMatrix] = (GL.immediate.matrixVersion[GL.immediate.currentMatrix] + 1)|0;
       GL.immediate.matrix.lib.mat4.set(HEAPF32.subarray((matrix)>>2,(matrix+64)>>2), GL.immediate.matrix[GL.immediate.currentMatrix]);
     }
   function _glLoadIdentity() {
       GL.immediate.matricesModified = true;
+      GL.immediate.matrixVersion[GL.immediate.currentMatrix] = (GL.immediate.matrixVersion[GL.immediate.currentMatrix] + 1)|0;
       GL.immediate.matrix.lib.mat4.identity(GL.immediate.matrix[GL.immediate.currentMatrix]);
     }
   function _glDepthMask(x0) { Module.ctx.depthMask(x0) }
@@ -11499,7 +11637,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
       for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -11507,7 +11645,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,[]);//_event_wait_list,_event);    
+        if (event != 0) CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        else CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11638,9 +11777,8 @@ function copyTempDouble(ptr) {
           }
         }
         var _callback = null
-        // Need to call this code inside the callback event WebCLCallback.
         if (pfn_notify != 0) {
-          //_callback = FUNCTION_TABLE[pfn_notify](program, user_data);
+          _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
       } catch (e) {
@@ -11675,19 +11813,22 @@ function copyTempDouble(ptr) {
       if (CL.cl_objects[kernel].sig.length < arg_index) {
         return webcl.INVALID_KERNEL;          
       }
+      var _kernel = CL.cl_objects[kernel];
+      var _posarg = arg_index;
+      var _sig = _kernel.sig[_posarg];
       try {
-        var _kernel = CL.cl_objects[kernel];
-        var _sig = _kernel.sig[arg_index];
+        // LOCAL ARG
         if (_sig == webcl.LOCAL) {
           var _array = new Uint32Array([arg_size]);
-          _kernel.setArg(arg_index,_array);
+          _kernel.setArg(_posarg,_array);
         } else {
           var _value = HEAP32[((arg_value)>>2)];
+          // WEBCL OBJECT ARG
           if (_value in CL.cl_objects) {
-            _kernel.setArg(arg_index,CL.cl_objects[_value]);
+            _kernel.setArg(_posarg,CL.cl_objects[_value]);
           } else {
             var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
-            _kernel.setArg(arg_index,_array);
+            _kernel.setArg(_posarg,_array);
           }
         }
       } catch (e) {
@@ -11706,7 +11847,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _global_work_offset = [];
       var _global_work_size = [];
@@ -11723,7 +11864,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
+        if (event != 0) CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11732,7 +11874,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;    
     }
   function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
       for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -11740,7 +11882,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,[]);//_event_wait_list,_event);
+        if (event != 0) CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+        else CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -11755,13 +11898,12 @@ function copyTempDouble(ptr) {
       }
       try {
         CL.cl_objects[kernel].release();
-        delete CL.cl_objects[kernel];
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
+      delete CL.cl_objects[kernel];
+      CL.cl_objects_counter--;
       return webcl.SUCCESS;
     }
   function _clReleaseProgram(program) {
@@ -12506,7 +12648,7 @@ function copyTempDouble(ptr) {
         }
       }
       if (!finalBase) finalBase = 10;
-      start = str;
+      var start = str;
       // Get digits.
       var chr;
       while ((chr = HEAP8[(str)]) != 0) {
@@ -42264,7 +42406,7 @@ function __Z11showtexturei($header_size){
  _glViewport(0,0,522,522);
  _glMatrixMode(5889);
  var $55=$matrixData;
- _memset($55, 0, 64);
+ _memset($55, 0, 64)|0;
  var $56=$55;
  var $57=(($56)|0);
  HEAPF32[(($57)>>2)]=0.0038314175326377153;
@@ -43018,7 +43160,7 @@ function _main($argc,$argv){
  HEAP32[(($442)>>2)]=0;
  var $443=(($header+32)|0);
  var $444=$443;
- _memset($444, 0, 44);
+ _memset($444, 0, 44)|0;
  var $445=(($header+76)|0);
  var $446=(($445)|0);
  HEAP32[(($446)>>2)]=32;
@@ -46067,7 +46209,7 @@ function __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__init
  var $__p_0=$13;label=6;break;
  case 6: 
  var $__p_0;
- _memset($__p_0, $__c, $__n);
+ _memset($__p_0, $__c, $__n)|0;
  var $19=(($__p_0+$__n)|0);
  HEAP8[($19)]=0;
  return;
@@ -46471,7 +46613,7 @@ function __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6append
  case 12: 
  var $38;
  var $39=(($38+$23)|0);
- _memset($39, $__c, $__n);
+ _memset($39, $__c, $__n)|0;
  var $40=((($23)+($__n))|0);
  var $41=HEAP8[($4)];
  var $42=$41&1;
@@ -48120,7 +48262,7 @@ function __ZNSt3__18ios_base4initEPv($this,$sb){
  var $9=(($this+28)|0);
  var $10=($9|0)==0;
  var $11=$8;
- _memset($11, 0, 40);
+ _memset($11, 0, 40)|0;
  if($10){label=3;break;}else{label=2;break;}
  case 2: 
  var $13=$9;
@@ -83436,7 +83578,7 @@ function __ZNKSt3__120__time_get_c_storageIcE7__weeksEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(17608, 0, 168);
+ _memset(17608, 0, 168)|0;
  var $12=_atexit(850,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -83500,7 +83642,7 @@ function __ZNKSt3__120__time_get_c_storageIwE7__weeksEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(16864, 0, 168);
+ _memset(16864, 0, 168)|0;
  var $12=_atexit(430,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -83564,7 +83706,7 @@ function __ZNKSt3__120__time_get_c_storageIcE8__monthsEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(17320, 0, 288);
+ _memset(17320, 0, 288)|0;
  var $12=_atexit(552,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -83648,7 +83790,7 @@ function __ZNKSt3__120__time_get_c_storageIwE8__monthsEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(16576, 0, 288);
+ _memset(16576, 0, 288)|0;
  var $12=_atexit(366,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -83732,7 +83874,7 @@ function __ZNKSt3__120__time_get_c_storageIcE7__am_pmEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(17776, 0, 288);
+ _memset(17776, 0, 288)|0;
  var $12=_atexit(360,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -83772,7 +83914,7 @@ function __ZNKSt3__120__time_get_c_storageIwE7__am_pmEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(17032, 0, 288);
+ _memset(17032, 0, 288)|0;
  var $12=_atexit(804,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -86119,7 +86261,7 @@ function __ZNK10__cxxabiv117__class_type_info9can_catchEPKNS_16__shim_type_infoE
  if($10){var $_0=0;label=6;break;}else{label=4;break;}
  case 4: 
  var $12=$info;
- _memset($12, 0, 56);
+ _memset($12, 0, 56)|0;
  var $13=(($info)|0);
  HEAP32[(($13)>>2)]=$9;
  var $14=(($info+8)|0);
@@ -86409,7 +86551,7 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset){
  var $21=(($dst_type)|0);
  var $22=($20|0)==($21|0);
  var $23=$14;
- _memset($23, 0, 39);
+ _memset($23, 0, 39)|0;
  if($22){label=2;break;}else{label=3;break;}
  case 2: 
  var $25=(($info+48)|0);

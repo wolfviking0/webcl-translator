@@ -94,10 +94,16 @@ function assert(check, msg) {
       },
     };
       new DataRequest(0, 433, 0, 0).open('GET', '/image_copy.cl');
-    var PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    var PACKAGE_PATH;
+    if (typeof window === 'object') {
+      PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    } else {
+      // worker
+      PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
+    }
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = 'ffb5432a-194f-45b2-ba5f-12e8d16cfcc5';
+    var PACKAGE_UUID = 'bc43039d-4d10-4a8a-a302-63bcc0379422';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -209,6 +215,7 @@ else if (ENVIRONMENT_IS_SHELL) {
     Module['arguments'] = arguments;
   }
   this['Module'] = Module;
+  eval("if (typeof gc === 'function' && gc.toString().indexOf('[native code]') > 0) var gc = undefined"); // wipe out the SpiderMonkey shell 'gc' function, which can confuse closure (uses it as a minified name, and it is then initted to a non-falsey value unexpectedly)
 }
 else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function read(url) {
@@ -378,7 +385,8 @@ var Runtime = {
   STACK_ALIGN: 8,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
-    if (type == 'i64' || type == 'double' || vararg) return 8;
+    if (vararg) return 8;
+    if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
   },
@@ -505,6 +513,17 @@ var Runtime = {
     var table = FUNCTION_TABLE;
     table[index] = null;
   },
+  getAsmConst: function (code, numArgs) {
+    // code is a constant string on the heap, so we can cache these
+    if (!Runtime.asmConstCache) Runtime.asmConstCache = {};
+    var func = Runtime.asmConstCache[code];
+    if (func) return func;
+    var args = [];
+    for (var i = 0; i < numArgs; i++) {
+      args.push(String.fromCharCode(36) + i); // $0, $1 etc
+    }
+    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + Pointer_stringify(code) + ' })'); // new Function does not allow upvars in node
+  },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
     if (!Runtime.warnOnce.shown[text]) {
@@ -595,7 +614,7 @@ var EXITSTATUS = 0;
 var undef = 0;
 // tempInt is used for 32-bit signed values or smaller. tempBigInt is used
 // for 32-bit unsigned values or more than 32 bits. TODO: audit all uses of tempInt
-var tempValue, tempInt, tempBigInt, tempInt2, tempBigInt2, tempPair, tempBigIntI, tempBigIntR, tempBigIntS, tempBigIntP, tempBigIntD;
+var tempValue, tempInt, tempBigInt, tempInt2, tempBigInt2, tempPair, tempBigIntI, tempBigIntR, tempBigIntS, tempBigIntP, tempBigIntD, tempDouble, tempFloat;
 var tempI64, tempI64b;
 var tempRet0, tempRet1, tempRet2, tempRet3, tempRet4, tempRet5, tempRet6, tempRet7, tempRet8, tempRet9;
 function assert(condition, text) {
@@ -856,16 +875,16 @@ function UTF16ToString(ptr) {
   }
 }
 Module['UTF16ToString'] = UTF16ToString;
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
 // null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
     var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
-    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit
+    HEAP16[(((outPtr)+(i*2))>>1)]=codeUnit;
   }
   // Null-terminate the pointer to the HEAP.
-  HEAP16[(((outPtr)+(str.length*2))>>1)]=0
+  HEAP16[(((outPtr)+(str.length*2))>>1)]=0;
 }
 Module['stringToUTF16'] = stringToUTF16;
 // Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
@@ -888,7 +907,7 @@ function UTF32ToString(ptr) {
   }
 }
 Module['UTF32ToString'] = UTF32ToString;
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr', 
+// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
 // null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
 // but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
 function stringToUTF32(str, outPtr) {
@@ -900,11 +919,11 @@ function stringToUTF32(str, outPtr) {
       var trailSurrogate = str.charCodeAt(++iCodeUnit);
       codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
     }
-    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit
+    HEAP32[(((outPtr)+(iChar*4))>>2)]=codeUnit;
     ++iChar;
   }
   // Null-terminate the pointer to the HEAP.
-  HEAP32[(((outPtr)+(iChar*4))>>2)]=0
+  HEAP32[(((outPtr)+(iChar*4))>>2)]=0;
 }
 Module['stringToUTF32'] = stringToUTF32;
 function demangle(func) {
@@ -1203,7 +1222,7 @@ function writeStringToMemory(string, buffer, dontAddNull) {
   var i = 0;
   while (i < array.length) {
     var chr = array[i];
-    HEAP8[(((buffer)+(i))|0)]=chr
+    HEAP8[(((buffer)+(i))|0)]=chr;
     i = i + 1;
   }
 }
@@ -1217,9 +1236,9 @@ Module['writeArrayToMemory'] = writeArrayToMemory;
 function writeAsciiToMemory(str, buffer, dontAddNull) {
   for (var i = 0; i < str.length; i++) {
     assert(str.charCodeAt(i) === str.charCodeAt(i)&0xff);
-    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i)
+    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i);
   }
-  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0;
 }
 Module['writeAsciiToMemory'] = writeAsciiToMemory;
 function unSign(value, bits, ignore, sig) {
@@ -1346,6 +1365,7 @@ var _stderr=_stderr=allocate([0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 /* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } },{ func: function() { __GLOBAL__I_a() } });
 var ___fsmu8;
 var ___dso_handle;
+var ___dso_handle=___dso_handle=allocate([0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 var __ZTVN10__cxxabiv120__si_class_type_infoE;
 __ZTVN10__cxxabiv120__si_class_type_infoE=allocate([0,0,0,0,96,39,0,0,204,2,0,0,72,1,0,0,160,0,0,0,122,1,0,0,200,0,0,0,106,0,0,0,236,0,0,0,14,1,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_STATIC);
 var __ZTVN10__cxxabiv117__class_type_infoE;
@@ -3690,7 +3710,7 @@ function copyTempDouble(ptr) {
         };
         openRequest.onerror = onerror;
       }};
-  var SOCKFS={mount:function (mount) {
+  var _mkport=undefined;var SOCKFS={mount:function (mount) {
         return FS.createNode(null, '/', 16384 | 0777, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
@@ -4717,6 +4737,86 @@ function copyTempDouble(ptr) {
         var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
         return (height <= 0) ? 0 :
                  ((height - 1) * alignedRowSize + plainRowSize);
+      },get:function (name_, p, type) {
+        var ret = undefined;
+        switch(name_) { // Handle a few trivial GLES values
+          case 0x8DFA: // GL_SHADER_COMPILER
+            ret = 1;
+            break;
+          case 0x8DF8: // GL_SHADER_BINARY_FORMATS
+            if (type === 'Integer') {
+              // fall through, see gles2_conformance.cpp
+            } else {
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+            }
+          case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+            ret = 0;
+            break;
+          case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+            // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+            // so implement it ourselves to allow C++ GLES2 code get the length.
+            var formats = Module.ctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+            ret = formats.length;
+            break;
+          case 0x8B9A: // GL_IMPLEMENTATION_COLOR_READ_TYPE
+            ret = 0x1401; // GL_UNSIGNED_BYTE
+            break;
+          case 0x8B9B: // GL_IMPLEMENTATION_COLOR_READ_FORMAT
+            ret = 0x1908; // GL_RGBA
+            break;
+        }
+        if (ret === undefined) {
+          var result = Module.ctx.getParameter(name_);
+          switch (typeof(result)) {
+            case "number":
+              ret = result;
+              break;
+            case "boolean":
+              ret = result ? 1 : 0;
+              break;
+            case "string":
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+            case "object":
+              if (result === null) {
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return;
+              } else if (result instanceof Float32Array ||
+                         result instanceof Uint32Array ||
+                         result instanceof Int32Array ||
+                         result instanceof Array) {
+                for (var i = 0; i < result.length; ++i) {
+                  switch (type) {
+                    case 'Integer': HEAP32[(((p)+(i*4))>>2)]=result[i];   break;
+                    case 'Float':   HEAPF32[(((p)+(i*4))>>2)]=result[i]; break;
+                    case 'Boolean': HEAP8[(((p)+(i))|0)]=result[i] ? 1 : 0;    break;
+                    default: throw 'internal glGet error, bad type: ' + type;
+                  }
+                }
+                return;
+              } else if (result instanceof WebGLBuffer ||
+                         result instanceof WebGLProgram ||
+                         result instanceof WebGLFramebuffer ||
+                         result instanceof WebGLRenderbuffer ||
+                         result instanceof WebGLTexture) {
+                ret = result.name | 0;
+              } else {
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return;
+              }
+              break;
+            default:
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+          }
+        }
+        switch (type) {
+          case 'Integer': HEAP32[((p)>>2)]=ret;    break;
+          case 'Float':   HEAPF32[((p)>>2)]=ret;  break;
+          case 'Boolean': HEAP8[(p)]=ret ? 1 : 0; break;
+          default: throw 'internal glGet error, bad type: ' + type;
+        }
       },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
         var sizePerPixel;
         switch (type) {
@@ -4810,7 +4910,7 @@ function copyTempDouble(ptr) {
                             Module.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         // Tested on WebKit and FF25
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');     
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -5073,11 +5173,37 @@ function copyTempDouble(ptr) {
         // Remove all the multispace
         _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
         // Search pattern : __kernel ... ( ... )
-        var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
-        if (_matches == null) {
-          console.error("/!\\ Not found kernel !!!");
-          return;
+        // var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+        // if (_matches == null) {
+        //   console.error("/!\\ Not found kernel !!!");
+        //   return;
+        // }
+        // Search kernel (Pattern doesn't work with extra __attribute__)
+        var _matches = [];
+        var _found = 1;
+        var _stringKern = _mini_kernel_string;
+        var _security = 10;
+        // Search all the kernel
+        while (_found && _security) {
+          // Just in case no more than 10 loop
+          _security --;
+          var _kern = _stringKern.indexOf("__kernel");
+          if (_kern == -1) {
+            _found = 0;
+            continue;
+          }
+          _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+          var _brace = _stringKern.indexOf("{");
+          var _stringKern2 = _stringKern.substr(0,_brace);
+          var _braceOpen = _stringKern2.lastIndexOf("(");
+          var _braceClose = _stringKern2.lastIndexOf(")");
+          var _stringKern3 = _stringKern2.substr(0,_braceOpen);
+          var _space = _stringKern3.lastIndexOf(" ");
+          _stringKern2 = _stringKern2.substr(_space,_braceClose);
+          // Add the kernel result like name_kernel(..., ... ,...)
+          _matches.push(_stringKern2);
         }
+        // For each kernel ....
         for (var i = 0; i < _matches.length; i ++) {
           // Search the open Brace
           var _brace = _matches[i].lastIndexOf("(");
@@ -5237,8 +5363,6 @@ function copyTempDouble(ptr) {
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
-          console.error("getCopyPointerToArray : error unknow type with length null "+type);
-          //return _host_ptr;
         }
         if (type.length == 1) {
           switch(type[0][0]) {
@@ -5316,8 +5440,6 @@ function copyTempDouble(ptr) {
       },getReferencePointerToArray:function (ptr,size,type) {  
         var _host_ptr = null;
         if (type.length == 0) {
-          console.error("getCopyPointerToArray : error unknow type with length null "+type);
-          //return _host_ptr;
         }
         if (type.length == 1) {
           switch(type[0][0]) {
@@ -5711,6 +5833,10 @@ function copyTempDouble(ptr) {
       }
       var bytesRead = 0;
       var streamObj = FS.getStream(stream);
+      if (!streamObj) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return 0;
+      }
       while (streamObj.ungotten.length && bytesToRead > 0) {
         HEAP8[((ptr++)|0)]=streamObj.ungotten.pop()
         bytesToRead--;
@@ -5913,10 +6039,11 @@ function copyTempDouble(ptr) {
         HEAP8[(ptr)]=value;
         ptr = (ptr+1)|0;
       }
+      return (ptr-num)|0;
     }var _llvm_memset_p0i8_i32=_memset;
   function _clEnqueueWriteImage(command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _origin = new Int32Array(2);
       var _region = new Int32Array(2);
       var _size = CL.getImageSizeType(image);
@@ -5933,7 +6060,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,[]);//_event_wait_list,_event);
+        if (event != 0) CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+        else CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -5997,9 +6125,8 @@ function copyTempDouble(ptr) {
           }
         }
         var _callback = null
-        // Need to call this code inside the callback event WebCLCallback.
         if (pfn_notify != 0) {
-          //_callback = FUNCTION_TABLE[pfn_notify](program, user_data);
+          _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
       } catch (e) {
@@ -6034,19 +6161,22 @@ function copyTempDouble(ptr) {
       if (CL.cl_objects[kernel].sig.length < arg_index) {
         return webcl.INVALID_KERNEL;          
       }
+      var _kernel = CL.cl_objects[kernel];
+      var _posarg = arg_index;
+      var _sig = _kernel.sig[_posarg];
       try {
-        var _kernel = CL.cl_objects[kernel];
-        var _sig = _kernel.sig[arg_index];
+        // LOCAL ARG
         if (_sig == webcl.LOCAL) {
           var _array = new Uint32Array([arg_size]);
-          _kernel.setArg(arg_index,_array);
+          _kernel.setArg(_posarg,_array);
         } else {
           var _value = HEAP32[((arg_value)>>2)];
+          // WEBCL OBJECT ARG
           if (_value in CL.cl_objects) {
-            _kernel.setArg(arg_index,CL.cl_objects[_value]);
+            _kernel.setArg(_posarg,CL.cl_objects[_value]);
           } else {
             var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
-            _kernel.setArg(arg_index,_array);
+            _kernel.setArg(_posarg,_array);
           }
         }
       } catch (e) {
@@ -6056,7 +6186,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _global_work_offset = [];
       var _global_work_size = [];
@@ -6073,7 +6203,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,[]);//_event_wait_list,_event);  
+        if (event != 0) CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6083,7 +6214,7 @@ function copyTempDouble(ptr) {
     }
   function _clEnqueueReadImage(command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _origin = new Int32Array(2);
       var _region = new Int32Array(2);
       var _size = CL.getImageSizeType(image);
@@ -6100,7 +6231,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {      
-        CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,[]);//_event_wait_list, _event);
+        if (event != 0) CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+        else CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6109,7 +6241,7 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS; 
     }
   function _clEnqueueCopyImage(command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
-      var _event = new WebCLEvent(); //(event != 0) ? new WebCLEvent() : null;
+      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _src_origin = new Int32Array(2);
       var _dest_origin = new Int32Array(2);
@@ -6124,7 +6256,8 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,[]);//_event_wait_list,_event);    
+        if (event != 0) CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+        else CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6155,13 +6288,12 @@ function copyTempDouble(ptr) {
       }
       try {
         CL.cl_objects[kernel].release();
-        delete CL.cl_objects[kernel];
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + kernel);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
+      delete CL.cl_objects[kernel];
+      CL.cl_objects_counter--;
       return webcl.SUCCESS;
     }
   function _clReleaseProgram(program) {
@@ -6484,8 +6616,10 @@ function copyTempDouble(ptr) {
     }
   function _memmove(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
+      var ret = 0;
       if (((src|0) < (dest|0)) & ((dest|0) < ((src + num)|0))) {
         // Unlikely case: Copy backwards in a safe manner
+        ret = dest;
         src = (src + num)|0;
         dest = (dest + num)|0;
         while ((num|0) > 0) {
@@ -6494,9 +6628,11 @@ function copyTempDouble(ptr) {
           num = (num - 1)|0;
           HEAP8[(dest)]=HEAP8[(src)];
         }
+        dest = ret;
       } else {
         _memcpy(dest, src, num) | 0;
       }
+      return dest | 0;
     }var _llvm_memmove_p0i8_p0i8_i32=_memmove;
   function ___cxa_rethrow() {
       ___cxa_end_catch.rethrown = true;
@@ -7359,7 +7495,7 @@ function copyTempDouble(ptr) {
         }
       }
       if (!finalBase) finalBase = 10;
-      start = str;
+      var start = str;
       // Get digits.
       var chr;
       while ((chr = HEAP8[(str)]) != 0) {
@@ -7633,13 +7769,24 @@ function copyTempDouble(ptr) {
                 contextAttributes[attribute] = webGLContextAttributes[attribute];
               }
             }
-            ctx = canvas.getContext('experimental-webgl', contextAttributes);
+            var errorInfo = '?';
+            function onContextCreationError(event) {
+              errorInfo = event.statusMessage || errorInfo;
+            }
+            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
+            try {
+              ['experimental-webgl', 'webgl'].some(function(webglId) {
+                return ctx = canvas.getContext(webglId, contextAttributes);
+              });
+            } finally {
+              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
+            }
           } else {
             ctx = canvas.getContext('2d');
           }
           if (!ctx) throw ':(';
         } catch (e) {
-          Module.print('Could not create canvas - ' + e);
+          Module.print('Could not create canvas: ' + [errorInfo, e]);
           return null;
         }
         if (useWebGL) {
@@ -12622,7 +12769,7 @@ function __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__init
  var $__p_0=$13;label=6;break;
  case 6: 
  var $__p_0;
- _memset($__p_0, $__c, $__n);
+ _memset($__p_0, $__c, $__n)|0;
  var $19=(($__p_0+$__n)|0);
  HEAP8[($19)]=0;
  return;
@@ -12836,7 +12983,7 @@ function __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6append
  case 12: 
  var $38;
  var $39=(($38+$23)|0);
- _memset($39, $__c, $__n);
+ _memset($39, $__c, $__n)|0;
  var $40=((($23)+($__n))|0);
  var $41=HEAP8[($4)];
  var $42=$41&1;
@@ -14021,7 +14168,7 @@ function __ZNSt3__18ios_base4initEPv($this,$sb){
  var $9=(($this+28)|0);
  var $10=($9|0)==0;
  var $11=$8;
- _memset($11, 0, 40);
+ _memset($11, 0, 40)|0;
  if($10){label=3;break;}else{label=2;break;}
  case 2: 
  var $13=$9;
@@ -49054,7 +49201,7 @@ function __ZNKSt3__120__time_get_c_storageIcE7__weeksEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(11712, 0, 168);
+ _memset(11712, 0, 168)|0;
  var $12=_atexit(746,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -49118,7 +49265,7 @@ function __ZNKSt3__120__time_get_c_storageIwE7__weeksEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(10968, 0, 168);
+ _memset(10968, 0, 168)|0;
  var $12=_atexit(376,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -49182,7 +49329,7 @@ function __ZNKSt3__120__time_get_c_storageIcE8__monthsEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(11424, 0, 288);
+ _memset(11424, 0, 288)|0;
  var $12=_atexit(418,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -49266,7 +49413,7 @@ function __ZNKSt3__120__time_get_c_storageIwE8__monthsEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(10680, 0, 288);
+ _memset(10680, 0, 288)|0;
  var $12=_atexit(320,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -49350,7 +49497,7 @@ function __ZNKSt3__120__time_get_c_storageIcE7__am_pmEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(11880, 0, 288);
+ _memset(11880, 0, 288)|0;
  var $12=_atexit(316,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -49390,7 +49537,7 @@ function __ZNKSt3__120__time_get_c_storageIwE7__am_pmEv($this){
  var $11=($10|0)==0;
  if($11){label=6;break;}else{label=5;break;}
  case 5: 
- _memset(11136, 0, 288);
+ _memset(11136, 0, 288)|0;
  var $12=_atexit(704,0,___dso_handle);
  label=6;break;
  case 6: 
@@ -51722,7 +51869,7 @@ function __ZNK10__cxxabiv117__class_type_info9can_catchEPKNS_16__shim_type_infoE
  if($10){var $_0=0;label=6;break;}else{label=4;break;}
  case 4: 
  var $12=$info;
- _memset($12, 0, 56);
+ _memset($12, 0, 56)|0;
  var $13=(($info)|0);
  HEAP32[(($13)>>2)]=$9;
  var $14=(($info+8)|0);
@@ -52012,7 +52159,7 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset){
  var $21=(($dst_type)|0);
  var $22=($20|0)==($21|0);
  var $23=$14;
- _memset($23, 0, 39);
+ _memset($23, 0, 39)|0;
  if($22){label=2;break;}else{label=3;break;}
  case 2: 
  var $25=(($info+48)|0);
