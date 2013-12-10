@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = 'bc43039d-4d10-4a8a-a302-63bcc0379422';
+    var PACKAGE_UUID = '4f7ecdda-4494-4f78-870f-74b25ba73516';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -6043,7 +6043,6 @@ function copyTempDouble(ptr) {
     }var _llvm_memset_p0i8_i32=_memset;
   function _clEnqueueWriteImage(command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _origin = new Int32Array(2);
       var _region = new Int32Array(2);
       var _size = CL.getImageSizeType(image);
@@ -6060,13 +6059,16 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        if (event != 0) CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;  
     }
   function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
@@ -6186,7 +6188,6 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _global_work_offset = [];
       var _global_work_size = [];
@@ -6203,18 +6204,20 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        if (event != 0) CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;    
     }
   function _clEnqueueReadImage(command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _origin = new Int32Array(2);
       var _region = new Int32Array(2);
       var _size = CL.getImageSizeType(image);
@@ -6231,17 +6234,19 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {      
-        if (event != 0) CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS; 
     }
   function _clEnqueueCopyImage(command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _src_origin = new Int32Array(2);
       var _dest_origin = new Int32Array(2);
@@ -6256,13 +6261,16 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        if (event != 0) CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;
     }
   function _clReleaseMemObject(memobj) {

@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = 'd562c98e-2197-481f-aada-fadc47038a29';
+    var PACKAGE_UUID = '7deb0946-0d6a-4a59-a8d6-81b62710a1bf';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5884,7 +5884,6 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
       for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -5892,13 +5891,16 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        if (event != 0) CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;  
     }function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
       // Assume the flags is i32 
@@ -5997,7 +5999,6 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _global_work_offset = [];
       var _global_work_size = [];
@@ -6014,17 +6015,19 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
       try { 
-        if (event != 0) CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
         else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;    
     }
   function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-      var _event = (event != 0) ? new WebCLEvent() : null;
       var _event_wait_list = [];
       var _host_ptr = CL.getReferencePointerToArray(ptr,cb,CL.cl_pn_type);
       for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -6032,13 +6035,18 @@ function copyTempDouble(ptr) {
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       } 
       try {
-        if (event != 0) CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
-        else CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
+        else {
+          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+        }
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
       }
-      if (event != 0) HEAP32[((event)>>2)]=CL.udid(_event);
       return webcl.SUCCESS;    
     }
   function _webclEndProfile() {
