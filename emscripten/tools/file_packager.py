@@ -75,6 +75,7 @@ DDS_HEADER_SIZE = 128
 AV_WORKAROUND = 0 # Set to 1 to randomize file order and add some padding, to work around silly av false positives
 
 data_files = []
+
 in_preload = False
 in_validator = False
 in_embed = False
@@ -126,6 +127,8 @@ for arg in sys.argv[1:]:
     in_preload = False
     in_embed = False
     in_compress = 0
+  elif arg.startswith('--enable-validator'):
+    in_validator = True;
   elif in_preload or in_embed:
     mode = 'preload'
     if in_embed:
@@ -135,8 +138,7 @@ for arg in sys.argv[1:]:
     else:
       srcpath = dstpath = arg # Use source path as destination path.
     if os.path.isfile(srcpath) or os.path.isdir(srcpath):
-      if shared.Settings.OPENCL_VALIDATOR and srcpath.endswith(OPENCL_SUFFIXES):
-        in_validator = True
+      if in_validator and srcpath.endswith(OPENCL_SUFFIXES):
         data_files.append({ 'srcpath': srcpath+'.validated', 'dstpath': dstpath, 'mode': mode })
         print >> sys.stderr, 'Generating file "' + srcpath + '" width validator in path "' + srcpath+'.validated' + '".'
       else:
