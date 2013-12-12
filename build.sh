@@ -71,9 +71,6 @@ do
     echo $param | grep "onlycopy"  1>/dev/null
     if [ ! `echo $?` -eq 0 ]
     then
-        # clean
-        make clean $makefile
-
         # build
         make $makefile
     fi

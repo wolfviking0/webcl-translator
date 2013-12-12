@@ -336,6 +336,7 @@ for file_ in data_files:
         code += '''Module['FS_createPath']('/%s', '%s', true, true);\n''' % ('/'.join(parts[:i]), parts[i])
         partial_dirs.append(partial)
 
+# Call webcl-validator
 if in_validator:
     VALIDATOR = os.path.join(shared.LLVM_ROOT,'webcl-validator')
     for file_ in data_files:
