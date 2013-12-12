@@ -1,0 +1,983 @@
+// WebCL Validator: validation stage.
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "PreScanKernel" :
+                {
+                    "output_data" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_data_size"
+                        },
+                    "_wcl_output_data_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "input_data" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_data_size"
+                        },
+                    "_wcl_input_data_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "shared_data" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_data_size"
+                        },
+                    "_wcl_shared_data_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "group_index" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_uint"
+                        },
+                    "base_index" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_uint"
+                        },
+                    "n" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_uint"
+                        }
+                },
+            "PreScanNonPowerOfTwoKernel" :
+                {
+                    "output_data" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_data_size"
+                        },
+                    "_wcl_output_data_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "input_data" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_data_size"
+                        },
+                    "_wcl_input_data_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "shared_data" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_data_size"
+                        },
+                    "_wcl_shared_data_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "group_index" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_uint"
+                        },
+                    "base_index" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_uint"
+                        },
+                    "n" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_uint"
+                        }
+                },
+            "PreScanStoreSumKernel" :
+                {
+                    "output_data" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_data_size"
+                        },
+                    "_wcl_output_data_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "input_data" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_data_size"
+                        },
+                    "_wcl_input_data_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "partial_sums" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_partial_sums_size"
+                        },
+                    "_wcl_partial_sums_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "shared_data" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_data_size"
+                        },
+                    "_wcl_shared_data_size" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_ulong"
+                        },
+                    "group_index" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_uint"
+                        },
+                    "base_index" :
+                        {
+                            "index" : 9,
+                            "host-type" : "cl_uint"
+                        },
+                    "n" :
+                        {
+                            "index" : 10,
+                            "host-type" : "cl_uint"
+                        }
+                },
+            "PreScanStoreSumNonPowerOfTwoKernel" :
+                {
+                    "output_data" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_data_size"
+                        },
+                    "_wcl_output_data_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "input_data" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_data_size"
+                        },
+                    "_wcl_input_data_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "partial_sums" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_partial_sums_size"
+                        },
+                    "_wcl_partial_sums_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "shared_data" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_data_size"
+                        },
+                    "_wcl_shared_data_size" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_ulong"
+                        },
+                    "group_index" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_uint"
+                        },
+                    "base_index" :
+                        {
+                            "index" : 9,
+                            "host-type" : "cl_uint"
+                        },
+                    "n" :
+                        {
+                            "index" : 10,
+                            "host-type" : "cl_uint"
+                        }
+                },
+            "UniformAddKernel" :
+                {
+                    "output_data" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_data_size"
+                        },
+                    "_wcl_output_data_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "input_data" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_data_size"
+                        },
+                    "_wcl_input_data_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "shared_data" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_data_size"
+                        },
+                    "_wcl_shared_data_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "group_offset" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_uint"
+                        },
+                    "base_index" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_uint"
+                        },
+                    "n" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_uint"
+                        }
+                }
+        }
+}
+*/
+
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global float *PreScanNonPowerOfTwoKernel__output_data_min;
+    __global float *PreScanNonPowerOfTwoKernel__output_data_max;
+    const __global float *PreScanNonPowerOfTwoKernel__input_data_min;
+    const __global float *PreScanNonPowerOfTwoKernel__input_data_max;
+    __global float *UniformAddKernel__output_data_min;
+    __global float *UniformAddKernel__output_data_max;
+    __global float *UniformAddKernel__input_data_min;
+    __global float *UniformAddKernel__input_data_max;
+    __global float *PreScanKernel__output_data_min;
+    __global float *PreScanKernel__output_data_max;
+    const __global float *PreScanKernel__input_data_min;
+    const __global float *PreScanKernel__input_data_max;
+    __global float *PreScanStoreSumKernel__output_data_min;
+    __global float *PreScanStoreSumKernel__output_data_max;
+    const __global float *PreScanStoreSumKernel__input_data_min;
+    const __global float *PreScanStoreSumKernel__input_data_max;
+    __global float *PreScanStoreSumKernel__partial_sums_min;
+    __global float *PreScanStoreSumKernel__partial_sums_max;
+    __global float *PreScanStoreSumNonPowerOfTwoKernel__output_data_min;
+    __global float *PreScanStoreSumNonPowerOfTwoKernel__output_data_max;
+    const __global float *PreScanStoreSumNonPowerOfTwoKernel__input_data_min;
+    const __global float *PreScanStoreSumNonPowerOfTwoKernel__input_data_max;
+    __global float *PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min;
+    __global float *PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local float *PreScanNonPowerOfTwoKernel__shared_data_min;
+    __local float *PreScanNonPowerOfTwoKernel__shared_data_max;
+    __local float *UniformAddKernel__shared_data_min;
+    __local float *UniformAddKernel__shared_data_max;
+    __local float *PreScanKernel__shared_data_min;
+    __local float *PreScanKernel__shared_data_max;
+    __local float *PreScanStoreSumKernel__shared_data_min;
+    __local float *PreScanStoreSumKernel__shared_data_max;
+    __local float *PreScanStoreSumNonPowerOfTwoKernel__shared_data_min;
+    __local float *PreScanStoreSumNonPowerOfTwoKernel__shared_data_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_global_12(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
+            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
+                || ( ((addr) >= ((type)min3)) && ((addr + size - 1) <= _WCL_LAST(type, max3)) ) \
+                    || ( ((addr) >= ((type)min4)) && ((addr + size - 1) <= _WCL_LAST(type, max4)) ) \
+                        || ( ((addr) >= ((type)min5)) && ((addr + size - 1) <= _WCL_LAST(type, max5)) ) \
+                            || ( ((addr) >= ((type)min6)) && ((addr + size - 1) <= _WCL_LAST(type, max6)) ) \
+                                || ( ((addr) >= ((type)min7)) && ((addr + size - 1) <= _WCL_LAST(type, max7)) ) \
+                                    || ( ((addr) >= ((type)min8)) && ((addr + size - 1) <= _WCL_LAST(type, max8)) ) \
+                                        || ( ((addr) >= ((type)min9)) && ((addr + size - 1) <= _WCL_LAST(type, max9)) ) \
+                                            || ( ((addr) >= ((type)min10)) && ((addr + size - 1) <= _WCL_LAST(type, max10)) ) \
+                                                || ( ((addr) >= ((type)min11)) && ((addr + size - 1) <= _WCL_LAST(type, max11)) ) \
+                                                     )
+#define _WCL_ADDR_CLAMP_global_12(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, asnull) \
+    ( _WCL_ADDR_CHECK_global_12(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11) ? (addr) : (type)(asnull))
+
+#define _WCL_ADDR_CHECK_local_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
+            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
+                || ( ((addr) >= ((type)min3)) && ((addr + size - 1) <= _WCL_LAST(type, max3)) ) \
+                    || ( ((addr) >= ((type)min4)) && ((addr + size - 1) <= _WCL_LAST(type, max4)) ) \
+                         )
+#define _WCL_ADDR_CLAMP_local_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, asnull) \
+    ( _WCL_ADDR_CHECK_local_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+// File:       scan_kernel.cl
+//
+// Abstract:   This example shows how to perform an efficient parallel prefix sum (aka Scan)
+//             using OpenCL.  Scan is a common data parallel primitive which can be used for 
+//             variety of different operations -- this example uses local memory for storing
+//             partial sums and avoids memory bank conflicts on architectures which serialize
+//             memory operations that are serviced on the same memory bank by offsetting the
+//             loads and stores based on the size of the local group and the number of
+//             memory banks (see appropriate macro definition).  As a result, this example
+//             requires that the local group size > 1.
+//
+// Version:    <1.0>
+//
+// Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple Inc. ("Apple")
+//             in consideration of your agreement to the following terms, and your use,
+//             installation, modification or redistribution of this Apple software
+//             constitutes acceptance of these terms.  If you do not agree with these
+//             terms, please do not use, install, modify or redistribute this Apple
+//             software.
+//
+//             In consideration of your agreement to abide by the following terms, and
+//             subject to these terms, Apple grants you a personal, non - exclusive
+//             license, under Apple's copyrights in this original Apple software ( the
+//             "Apple Software" ), to use, reproduce, modify and redistribute the Apple
+//             Software, with or without modifications, in source and / or binary forms;
+//             provided that if you redistribute the Apple Software in its entirety and
+//             without modifications, you must retain this notice and the following text
+//             and disclaimers in all such redistributions of the Apple Software. Neither
+//             the name, trademarks, service marks or logos of Apple Inc. may be used to
+//             endorse or promote products derived from the Apple Software without specific
+//             prior written permission from Apple.  Except as expressly stated in this
+//             notice, no other rights or licenses, express or implied, are granted by
+//             Apple herein, including but not limited to any patent rights that may be
+//             infringed by your derivative works or by other works in which the Apple
+//             Software may be incorporated.
+//
+//             The Apple Software is provided by Apple on an "AS IS" basis.  APPLE MAKES NO
+//             WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
+//             WARRANTIES OF NON - INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A
+//             PARTICULAR PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION
+//             ALONE OR IN COMBINATION WITH YOUR PRODUCTS.
+//
+//             IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL OR
+//             CONSEQUENTIAL DAMAGES ( INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//             SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//             INTERRUPTION ) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION, MODIFICATION
+//             AND / OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER
+//             UNDER THEORY OF CONTRACT, TORT ( INCLUDING NEGLIGENCE ), STRICT LIABILITY OR
+//             OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Copyright ( C ) 2008 Apple Inc. All Rights Reserved.
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+uint4
+GetAddressMapping(_WclProgramAllocations *_wcl_allocs, int index)
+{
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    uint2 global_index;
+    global_index.x = index + local_id;
+    global_index.y = global_index.x + group_size;
+
+    uint2 local_index;
+    local_index.x = local_id;
+    local_index.y = local_id + group_size;
+
+    return (uint4)(global_index.x, global_index.y, local_index.x, local_index.y);
+}
+
+void
+LoadLocalFromGlobal(_WclProgramAllocations *_wcl_allocs, 
+    __local float *shared_data,
+    __global const float *input_data,
+    const uint4 address_pair,
+    const uint n)
+{
+    const uint global_index_a = address_pair.x;
+    const uint global_index_b = address_pair.y;
+
+    const uint local_index_a = address_pair.z;
+    const uint local_index_b = address_pair.w;
+
+    const uint bank_offset_a = ((local_index_a) >> (4));
+    const uint bank_offset_b = ((local_index_b) >> (4));
+
+    (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_a + bank_offset_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (*(_WCL_ADDR_CLAMP_global_12(const __global float *, (input_data)+(global_index_a), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn)));
+    (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_b + bank_offset_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (*(_WCL_ADDR_CLAMP_global_12(const __global float *, (input_data)+(global_index_b), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn)));
+}
+
+void
+LoadLocalFromGlobalNonPowerOfTwo(_WclProgramAllocations *_wcl_allocs, 
+    __local float *shared_data,
+    __global const float *input_data,
+    const uint4 address_pair,
+    const uint n)
+{
+    const uint global_index_a = address_pair.x;
+    const uint global_index_b = address_pair.y;
+
+    const uint local_index_a = address_pair.z;
+    const uint local_index_b = address_pair.w;
+
+    const uint bank_offset_a = ((local_index_a) >> (4));
+    const uint bank_offset_b = ((local_index_b) >> (4));
+
+    (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_a + bank_offset_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (*(_WCL_ADDR_CLAMP_global_12(const __global float *, (input_data)+(global_index_a), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn)));
+    (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_b + bank_offset_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (local_index_b < n) ? (*(_WCL_ADDR_CLAMP_global_12(const __global float *, (input_data)+(global_index_b), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) : 0;
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+}
+
+void
+StoreLocalToGlobal(_WclProgramAllocations *_wcl_allocs, 
+    __global float* output_data,
+    __local const float* shared_data,
+    const uint4 address_pair,
+    const uint n)
+{
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    const uint global_index_a = address_pair.x;
+    const uint global_index_b = address_pair.y;
+
+    const uint local_index_a = address_pair.z;
+    const uint local_index_b = address_pair.w;
+
+    const uint bank_offset_a = ((local_index_a) >> (4));
+    const uint bank_offset_b = ((local_index_b) >> (4));
+
+    (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(global_index_a), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_local_5(const __local float *, (shared_data)+(local_index_a + bank_offset_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+    (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(global_index_b), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_local_5(const __local float *, (shared_data)+(local_index_b + bank_offset_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+}
+
+void
+StoreLocalToGlobalNonPowerOfTwo(_WclProgramAllocations *_wcl_allocs, 
+    __global float* output_data,
+    __local const float* shared_data,
+    const uint4 address_pair,
+    const uint n)
+{
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    const uint global_index_a = address_pair.x;
+    const uint global_index_b = address_pair.y;
+
+    const uint local_index_a = address_pair.z;
+    const uint local_index_b = address_pair.w;
+
+    const uint bank_offset_a = ((local_index_a) >> (4));
+    const uint bank_offset_b = ((local_index_b) >> (4));
+
+    (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(global_index_a), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_local_5(const __local float *, (shared_data)+(local_index_a + bank_offset_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+    if(local_index_b < n)
+        (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(global_index_b), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_local_5(const __local float *, (shared_data)+(local_index_b + bank_offset_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void
+ClearLastElement(_WclProgramAllocations *_wcl_allocs, 
+    __local float* shared_data,
+    int group_index)
+{
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    if (local_id == 0)
+    {
+        int index = (group_size << 1) - 1;
+        index += ((index) >> (4));
+        (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(index), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = 0;
+    }
+}
+
+void
+ClearLastElementStoreSum(_WclProgramAllocations *_wcl_allocs, 
+    __local float* shared_data,
+    __global float *partial_sums,
+    int group_index)
+{
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+    const uint local_id = get_local_id(0);
+
+    if (local_id == 0)
+    {
+        int index = (group_size << 1) - 1;
+        index += ((index) >> (4));
+        (*(_WCL_ADDR_CLAMP_global_12(__global float *, (partial_sums)+(group_index), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(index), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+        (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(index), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = 0;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+uint
+BuildPartialSum(_WclProgramAllocations *_wcl_allocs, 
+    __local float *shared_data)
+{
+    const uint local_id = get_local_id(0);
+    const uint group_size = get_local_size(0);
+    const uint two = 2;
+    uint stride = 1;
+
+    for (uint j = group_size; j > 0; j >>= 1)
+    {
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        if (local_id < j)
+        {
+            int i = mul24(mul24(two, stride), local_id);
+
+            uint local_index_a = i + stride - 1;
+            uint local_index_b = local_index_a + stride;
+
+            local_index_a += ((local_index_a) >> (4));
+            local_index_b += ((local_index_b) >> (4));
+
+            (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) += (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+        }
+
+        stride *= two;
+    }
+
+    return stride;
+}
+
+void
+ScanRootToLeaves(_WclProgramAllocations *_wcl_allocs, 
+    __local float *shared_data,
+    uint stride)
+{
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+    const uint two = 2;
+
+    for (uint j = 1; j <= group_size; j *= two)
+    {
+        stride >>= 1;
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        if (local_id < j)
+        {
+            int i = mul24(mul24(two, stride), local_id);
+
+            uint local_index_a = i + stride - 1;
+            uint local_index_b = local_index_a + stride;
+
+            local_index_a += ((local_index_a) >> (4));
+            local_index_b += ((local_index_b) >> (4));
+
+            float t = (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+            (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_a), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+            (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(local_index_b), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) += t;
+        }
+    }
+}
+
+void
+PreScanGroup(_WclProgramAllocations *_wcl_allocs, 
+    __local float *shared_data,
+    int group_index)
+{
+    const uint group_id = get_global_id(0) / get_local_size(0);
+
+    int stride = BuildPartialSum(_wcl_allocs, shared_data);
+    ClearLastElement(_wcl_allocs, shared_data, (group_index == 0) ? group_id : group_index);
+    ScanRootToLeaves(_wcl_allocs, shared_data, stride);
+}
+
+void
+PreScanGroupStoreSum(_WclProgramAllocations *_wcl_allocs, 
+    __global float *partial_sums,
+    __local float *shared_data,
+    int group_index)
+{
+    const uint group_id = get_global_id(0) / get_local_size(0);
+
+    int stride = BuildPartialSum(_wcl_allocs, shared_data);
+    ClearLastElementStoreSum(_wcl_allocs, shared_data, partial_sums, (group_index == 0) ? group_id : group_index);
+    ScanRootToLeaves(_wcl_allocs, shared_data, stride);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+__kernel void
+PreScanKernel(
+    __global float *output_data, unsigned long _wcl_output_data_size,
+    __global const float *input_data, unsigned long _wcl_input_data_size,
+    __local float* shared_data, unsigned long _wcl_shared_data_size,
+    const uint group_index,
+    const uint base_index,
+    const uint n)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    uint local_index = (base_index == 0) ? mul24(group_id, (group_size << 1)) : base_index;
+    uint4 address_pair = GetAddressMapping(_wcl_allocs, local_index);
+
+    LoadLocalFromGlobal(_wcl_allocs, shared_data, input_data, address_pair, n);
+    PreScanGroup(_wcl_allocs, shared_data, group_index);
+    StoreLocalToGlobal(_wcl_allocs, output_data, shared_data, address_pair, n);
+}
+
+__kernel void
+PreScanStoreSumKernel(
+    __global float *output_data, unsigned long _wcl_output_data_size,
+    __global const float *input_data, unsigned long _wcl_input_data_size,
+    __global float *partial_sums, unsigned long _wcl_partial_sums_size,
+    __local float* shared_data, unsigned long _wcl_shared_data_size,
+    const uint group_index,
+    const uint base_index,
+    const uint n)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],&partial_sums[0], &partial_sums[_wcl_partial_sums_size],0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    uint local_index = (base_index == 0) ? mul24(group_id, (group_size << 1)) : base_index;
+    uint4 address_pair = GetAddressMapping(_wcl_allocs, local_index);
+
+    LoadLocalFromGlobal(_wcl_allocs, shared_data, input_data, address_pair, n);
+    PreScanGroupStoreSum(_wcl_allocs, partial_sums, shared_data, group_index);
+    StoreLocalToGlobal(_wcl_allocs, output_data, shared_data, address_pair, n);
+}
+
+__kernel void
+PreScanStoreSumNonPowerOfTwoKernel(
+    __global float *output_data, unsigned long _wcl_output_data_size,
+    __global const float *input_data, unsigned long _wcl_input_data_size,
+    __global float *partial_sums, unsigned long _wcl_partial_sums_size,
+    __local float* shared_data, unsigned long _wcl_shared_data_size,
+    const uint group_index,
+    const uint base_index,
+    const uint n)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],&partial_sums[0], &partial_sums[_wcl_partial_sums_size] },
+        0,
+        { 0, 0,0, 0,0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    uint local_index = (base_index == 0) ? mul24(group_id, (group_size << 1)) : base_index;
+    uint4 address_pair = GetAddressMapping(_wcl_allocs, local_index);
+
+    LoadLocalFromGlobalNonPowerOfTwo(_wcl_allocs, shared_data, input_data, address_pair, n);
+    PreScanGroupStoreSum(_wcl_allocs, partial_sums, shared_data, group_index);
+    StoreLocalToGlobalNonPowerOfTwo(_wcl_allocs, output_data, shared_data, address_pair, n);
+}
+
+__kernel void
+PreScanNonPowerOfTwoKernel(
+    __global float *output_data, unsigned long _wcl_output_data_size,
+    __global const float *input_data, unsigned long _wcl_input_data_size,
+    __local float* shared_data, unsigned long _wcl_shared_data_size,
+    const uint group_index,
+    const uint base_index,
+    const uint n)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0,0, 0,0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    uint local_index = (base_index == 0) ? mul24(group_id, (group_size << 1)) : base_index;
+    uint4 address_pair = GetAddressMapping(_wcl_allocs, local_index);
+
+    LoadLocalFromGlobalNonPowerOfTwo(_wcl_allocs, shared_data, input_data, address_pair, n);
+    PreScanGroup(_wcl_allocs, shared_data, group_index);
+    StoreLocalToGlobalNonPowerOfTwo(_wcl_allocs, output_data, shared_data, address_pair, n);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+__kernel void UniformAddKernel(
+    __global float *output_data, unsigned long _wcl_output_data_size,
+    __global float *input_data, unsigned long _wcl_input_data_size,
+    __local float *shared_data, unsigned long _wcl_shared_data_size,
+    const uint group_offset,
+    const uint base_index,
+    const uint n)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0,0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint local_id = get_local_id(0);
+    const uint group_id = get_global_id(0) / get_local_size(0);
+    const uint group_size = get_local_size(0);
+
+    if (local_id == 0)
+        (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(0), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln))) = (*(_WCL_ADDR_CLAMP_global_12(__global float *, (input_data)+(group_id + group_offset), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn)));
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    uint address = mul24(group_id, (group_size << 1)) + base_index + local_id;
+
+    (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(address), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) += (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(0), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+ if( (local_id + group_size) < n)
+  (*(_WCL_ADDR_CLAMP_global_12(__global float *, (output_data)+(address + group_size), 1, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, _wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _wcl_allocs->gn))) += (*(_WCL_ADDR_CLAMP_local_5(__local float *, (shared_data)+(0), 1, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ll.UniformAddKernel__shared_data_min, _wcl_allocs->ll.UniformAddKernel__shared_data_max, _wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumKernel__shared_data_max, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_min, _wcl_allocs->ll.PreScanStoreSumNonPowerOfTwoKernel__shared_data_max, _wcl_allocs->ln)));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

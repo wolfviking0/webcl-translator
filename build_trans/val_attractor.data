@@ -1,0 +1,319 @@
+// WebCL Validator: validation stage.
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "kernelStep" :
+                {
+                    "posArray" :
+                        {
+                            "index" : 0,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float4",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_posArray_size"
+                        },
+                    "_wcl_posArray_size" :
+                        {
+                            "index" : 1,
+                            "host-type" : "cl_ulong"
+                        },
+                    "colorArray" :
+                        {
+                            "index" : 2,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float4",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_colorArray_size"
+                        },
+                    "_wcl_colorArray_size" :
+                        {
+                            "index" : 3,
+                            "host-type" : "cl_ulong"
+                        },
+                    "lifetimeArray" :
+                        {
+                            "index" : 4,
+                            "host-type" : "cl_mem",
+                            "host-element-type" : "cl_float",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_lifetimeArray_size"
+                        },
+                    "_wcl_lifetimeArray_size" :
+                        {
+                            "index" : 5,
+                            "host-type" : "cl_ulong"
+                        },
+                    "baseColor" :
+                        {
+                            "index" : 6,
+                            "host-type" : "cl_float4"
+                        },
+                    "par" :
+                        {
+                            "index" : 7,
+                            "host-type" : "cl_float4"
+                        },
+                    "time" :
+                        {
+                            "index" : 8,
+                            "host-type" : "cl_float"
+                        },
+                    "deltaTime" :
+                        {
+                            "index" : 9,
+                            "host-type" : "cl_float"
+                        }
+                }
+        }
+}
+*/
+
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global float4 *kernelStep__posArray_min;
+    __global float4 *kernelStep__posArray_max;
+    __global float4 *kernelStep__colorArray_min;
+    __global float4 *kernelStep__colorArray_max;
+    __global float *kernelStep__lifetimeArray_min;
+    __global float *kernelStep__lifetimeArray_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
+            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
+                 )
+#define _WCL_ADDR_CLAMP_global_3(type, addr, size, min0, max0, min1, max1, min2, max2, asnull) \
+    ( _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+// Copyright (c) 2013 Andrey Tuganov
+//
+// The zlib/libpng license
+//
+// This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+//
+// 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+//
+// 3. This notice may not be removed or altered from any source distribution.
+
+__kernel void kernelStep( __global float4 *posArray, unsigned long _wcl_posArray_size,
+     __global float4 *colorArray, unsigned long _wcl_colorArray_size,
+     __global float *lifetimeArray, unsigned long _wcl_lifetimeArray_size,
+     float4 baseColor,
+     float4 par,
+     float time,
+     float deltaTime )
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &posArray[0], &posArray[_wcl_posArray_size],&colorArray[0], &colorArray[_wcl_colorArray_size],&lifetimeArray[0], &lifetimeArray[_wcl_lifetimeArray_size] },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global uint*)0)));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+ int gid = get_global_id(0);
+
+ float4 pos = (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (posArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn)));
+
+ (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) -= deltaTime;
+ if ( (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) < 0.f )
+ {
+  (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = 32.f;
+  float fgid = as_float(gid);
+  pos = (float4) ( 5.f*sin(fgid*36245.434+pos.x), 5.f*sin(fgid*56509.678+pos.y), 64.f+sin(fgid*12655.678+pos.z), 1.f );
+ }
+
+ float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0.f);
+
+ (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (posArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = pos + vel*(deltaTime*par.w);
+ (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (colorArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = baseColor + 0.1f*fast_normalize(vel);
+}
+// Copyright (c) 2013 Andrey Tuganov
+//
+// The zlib/libpng license
+//
+// This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+//
+// 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+//
+// 3. This notice may not be removed or altered from any source distribution.                                
+
+#version 100
+
+precision mediump float;
+
+uniform int u_task;
+
+uniform float u_width;
+uniform float u_height;
+
+varying vec4 v_color;
+varying vec2 v_texCoord;
+
+uniform sampler2D Texture0;
+
+vec4 gammaCorrection()
+{
+    float gamma = 0.1;
+    vec4 c = texture2D(Texture0, gl_PointCoord);
+    float l = (c.r+c.g+c.b)/3.0;
+    c.xyz *= pow(l,gamma)/l; 
+    return c;
+}
+
+vec4 blurX()
+{    
+    float step = 1./u_height;
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
+    
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
+
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
+      
+    return c;      
+}
+
+vec4 blurY()
+{   
+    float step = 1./u_width;
+    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
+
+    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
+    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
+
+    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
+    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
+      
+    return c;    
+}
+
+vec4 render()
+{    
+    vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, gl_PointCoord);
+    return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
+}
+
+void main()
+{    
+    if ( u_task == 0 )
+        gl_FragColor = render(); 
+}
+// Copyright (c) 2013 Andrey Tuganov
+//
+// The zlib/libpng license
+//
+// This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+//
+// 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+//
+// 3. This notice may not be removed or altered from any source distribution.
+
+#version 100
+
+precision mediump float;
+
+uniform mat4 u_matViewProjection;
+uniform float u_pointSize;
+
+attribute vec4 a_position;
+attribute vec4 a_color;
+attribute vec2 a_texCoord0;
+
+varying vec4 v_color;
+varying vec2 v_texCoord;
+
+void main() {
+	float pointSize = 500.0 * u_pointSize;
+	vec4 vert = vec4(a_position);
+	vert.w = 1.0;
+	vec4 pos_eye = vec4(u_matViewProjection * vert);
+	
+	gl_PointSize = max(2.0, pointSize / (1.0-pos_eye.z));
+	gl_Position = pos_eye;           
+	
+	v_color = a_color;
+	v_texCoord = a_texCoord0;
+}
