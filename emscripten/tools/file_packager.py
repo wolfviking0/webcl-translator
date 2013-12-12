@@ -140,7 +140,7 @@ for arg in sys.argv[1:]:
     if os.path.isfile(srcpath) or os.path.isdir(srcpath):
       if in_validator and srcpath.endswith(OPENCL_SUFFIXES):
         data_files.append({ 'srcpath': srcpath+'.validated', 'dstpath': dstpath, 'mode': mode })
-        print >> sys.stderr, 'Generating file "' + srcpath + '" width validator in path "' + srcpath+'.validated' + '".'
+        print >> sys.stderr, 'Generating file "' + srcpath + '" with validator in path "' + srcpath+'.validated' + '".'
       else:
         data_files.append({ 'srcpath': srcpath, 'dstpath': dstpath, 'mode': mode })
     else:
