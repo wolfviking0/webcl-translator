@@ -30,7 +30,22 @@ int main(int argc, char *argv[])
     cl_uint ret_num_devices;
     cl_uint ret_num_platforms;
     cl_int ret;
- 
+     
+    int use_gpu = 1;
+    int i = 0;
+    for(; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
     size_t global_item_size[2];
 	int t = ceil((DIM+0.0)/128);
 	if(t <= 128){
@@ -104,7 +119,7 @@ int main(int argc, char *argv[])
 	if(ret!=CL_SUCCESS){
 		cout << "clGetPlatformIDs fail" << endl;
 	}
-    ret = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
+    ret = clGetDeviceIDs( platform_id, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, &ret_num_devices);
     if(ret!=CL_SUCCESS){
 		cout << "clGetDeviceIDs fail" << endl;
 	}
