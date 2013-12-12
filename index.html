@@ -57,19 +57,19 @@
               var _linkCPUVAL ="none"
               if (object["cpu"].length > 0) {
                 _linkCPU ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["cpu"]+"'); return false;\">here</a>"
-                if (object["val"].length > 0) {
-                  _linkCPUVAL="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["cpu"]+object["val"]+"'); return false;\">here</a>"
-                }
+              }
+              if (object["valcpu"].length > 0) {
+                _linkCPUVAL="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["cpu"]+object["valcpu"]+"'); return false;\">here</a>"
               }
 
               var _linkGPU ="none"
               var _linkGPUVAL ="none"
               if (object["gpu"].length > 0) {
                 _linkGPU ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["gpu"]+"'); return false;\">here</a>"
-                if (object["val"].length > 0) {
-                  _linkGPUVAL ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["gpu"]+object["val"]+"'); return false;\">here</a>"
-                }
               }
+              if (object["valgpu"].length > 0) {
+                _linkGPUVAL ="<a href=\"#\" onClick=\"MyWindow=onclickurl('"+object["pages"]+"',"+object["id"]+", '"+object["gl"]+"','title="+object["title"]+object["gpu"]+object["valgpu"]+"'); return false;\">here</a>"
+              }              
 
               document.write("<tr><td>"+object["title"]+"</td><td align=\"center\">"+object["compatibility"]+"</td><td align=\"center\">"+_linkCPU+"</td><td align=\"center\">"+_linkGPU+"</td><td align=\"center\">"+_linkCPUVAL+"</td><td align=\"center\">"+_linkGPUVAL+"</td></tr>");
             }

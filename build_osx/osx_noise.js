@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = '2b28e5e8-26db-40e3-9bd2-eb442d4d5b9f';
+    var PACKAGE_UUID = '145dee76-e9d3-4223-985f-59042fec9a1b';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
