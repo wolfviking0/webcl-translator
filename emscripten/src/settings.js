@@ -221,12 +221,14 @@ var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
-var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
-var OPENCL_VALIDATOR = []; // Use validator on the kernel --preload-file-validator
-var OPENCL_GRAB_TRACE = 0 // Grab all the wecl call
-var OPENCL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
-var OPENCL_PROFILE = 0 // Enable console.profile
-var OPENCL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
+var CL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
+
+var CL_VALIDATOR = 0; // Use validator on the kernel --preload-file-validator
+var CL_VAL_PARAM = []; // Add parameter to the validator
+var CL_GRAB_TRACE = 0 // Grab all the wecl call
+var CL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
+var CL_PROFILE = 0 // Enable console.profile
+var CL_CHECK_VALID_OBJECT = 0 // Check if object is inside the hashmap
 
 var GL_ASSERTIONS = 0; // Adds extra checks for error situations in the GL library. Can impact performance.
 var GL_DEBUG = 0; // Print out all calls into WebGL. As with LIBRARY_DEBUG, you can set a runtime
