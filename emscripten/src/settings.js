@@ -222,7 +222,7 @@ var SOCKET_WEBRTC = 0; // Select socket backend, either webrtc or websockets.
 var OPENAL_DEBUG = 0; // Print out debugging information from our OpenAL implementation.
 
 var OPENCL_DEBUG = 0; // Print out debugging information from our OpenCL implementation.
-var OPENCL_VALIDATOR = 0; // Use validator on the kernel --preload-file-validator
+var OPENCL_VALIDATOR = []; // Use validator on the kernel --preload-file-validator
 var OPENCL_GRAB_TRACE = 0 // Grab all the wecl call
 var OPENCL_PRINT_TRACE = 0 // Print all the wecl call auto after each webcl call
 var OPENCL_PROFILE = 0 // Enable console.profile

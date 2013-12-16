@@ -1701,8 +1701,8 @@ try:
   if len(preload_files) + len(embed_files) > 0:
     logging.debug('setting up files')
     file_args = ['--pre-run']
-    if shared.Settings.OPENCL_VALIDATOR:
-      file_args.append('--enable-validator')
+    if len(shared.Settings.OPENCL_VALIDATOR) > 0:
+      file_args.append('='.join(('--enable-validator', ','.join( str(x) for x in shared.Settings.OPENCL_VALIDATOR).join('[]'))))
     if len(preload_files) > 0:
       file_args.append('--preload')
       file_args += preload_files

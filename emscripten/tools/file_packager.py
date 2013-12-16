@@ -78,6 +78,7 @@ data_files = []
 
 in_preload = False
 in_validator = False
+validator_params = []
 in_embed = False
 has_preloaded = False
 in_compress = 0
@@ -129,6 +130,7 @@ for arg in sys.argv[1:]:
     in_compress = 0
   elif arg.startswith('--enable-validator'):
     in_validator = True;
+    validator_params = ((arg.split('=')[1])[1:-1]).split(',')
   elif in_preload or in_embed:
     mode = 'preload'
     if in_embed:
@@ -343,7 +345,7 @@ if in_validator:
       if file_['srcpath'].endswith('.validated'):
         fullname = os.path.join(curr_abspath , file_['srcpath'])
         # Launch webcl-validator
-        proc = Popen([VALIDATOR, unsuffixed(fullname)], stdout=PIPE)
+        proc = Popen([VALIDATOR, unsuffixed(fullname)] + validator_params, stdout=PIPE)
         out, err = proc.communicate()
         # Write the output inside file
         validated = open(fullname, 'wb')
