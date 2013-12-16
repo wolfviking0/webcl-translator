@@ -155,8 +155,12 @@ var LibraryOpenCL = {
 
     parseType: function(string) {
       var _value = -1;
-
-      if (string.indexOf("float") >= 0 ) {
+    
+      // First ulong for the webcl validator
+      if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+        // \todo : long ???? 
+        _value = webcl.UNSIGNED_LONG;  
+      } else if (string.indexOf("float") >= 0 ) {
         _value = webcl.FLOAT;
       } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
         _value = webcl.UNSIGNED_INT8;
@@ -167,10 +171,7 @@ var LibraryOpenCL = {
       } else if ( string.indexOf("short") >= 0 ) {
         _value = webcl.SIGNED_INT16;                     
       } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-        _value = webcl.UNSIGNED_INT32;       
-      } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-        // \todo : long ???? 
-        _value = webcl.UNSIGNED_LONG;     
+        _value = webcl.UNSIGNED_INT32;          
       } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
         _value = webcl.SIGNED_INT32;
       } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -371,11 +372,12 @@ var LibraryOpenCL = {
         var _array = _second_part.split(","); 
         for (var j = 0; j < _array.length; j++) {
           var _type = CL.parseType(_array[j]);
+
           if (_array[j].indexOf("__local") >= 0 ) {
             _param.push(webcl.LOCAL);
 
 #if CL_VALIDATOR
-            if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+            if (_array[j].indexOf("ulong _wcl") == -1 ) {
               _param_validator.push(_param.length - 1);
             } else {
               _param_argsize_validator.push(_param.length - 1);
