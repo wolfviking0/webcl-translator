@@ -345,7 +345,8 @@ if in_validator:
       if file_['srcpath'].endswith('.validated'):
         fullname = os.path.join(curr_abspath , file_['srcpath'])
         # Launch webcl-validator
-        proc = Popen([VALIDATOR, unsuffixed(fullname)] + validator_params, stdout=PIPE)
+        args = [VALIDATOR, unsuffixed(fullname)] + validator_params
+        proc = Popen(args, stdout=PIPE)
         out, err = proc.communicate()
         # Write the output inside file
         validated = open(fullname, 'wb')
