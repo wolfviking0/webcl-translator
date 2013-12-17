@@ -468,7 +468,7 @@ var LibraryOpenCL = {
         }
         _str += " )";
         console.info("\t\t\t"+_str);
-        console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+        console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
         var _str = "( ";
         var _length = CL.cl_validator_argsize[name].length;
         for (var i = 0 ; i < _length ; i++) {
@@ -3113,10 +3113,7 @@ var LibraryOpenCL = {
 #if CL_GRAB_TRACE
         CL.webclCallStackTrace(CL.cl_objects[program]+".getInfo",[webcl.PROGRAM_DEVICES]);
 #endif          
-        var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-        for (var i = 0; i < _info.length ; i++) {
-          _devices.push(_info[i]);
-        }
+        _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
       }
 
       var _callback = null
