@@ -45,10 +45,6 @@ var LibraryOpenCL = {
         var nodejs = (typeof window === 'undefined');
         if(nodejs) {
           webcl = require('../webcl');
-        } else {
-          if (typeof(webcl) === "undefined") {
-            webcl = window.WebCL;
-          }
         }
 
         if (webcl == undefined) {
@@ -58,6 +54,7 @@ var LibraryOpenCL = {
           console.error("Unfortunately your system does not support WebCL.\n");
           console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
         } else {
+
           // Add webcl constant for parser
           webcl["SAMPLER"]          = 0x1300;
           webcl["IMAGE2D"]          = 0x1301;
@@ -795,14 +792,12 @@ var LibraryOpenCL = {
       console.error(e);
       var _error = -1;
 
-      if (typeof(WebCLException) !== "undefined") {
-        if (e instanceof WebCLException) {
-          var _str=e.message;
-          var _n=_str.lastIndexOf(" ");
-          _error = _str.substr(_n+1,_str.length-_n-1);
-        }
+      if (e instanceof WebCLException) {
+        var _str=e.message;
+        var _n=_str.lastIndexOf(" ");
+        _error = _str.substr(_n+1,_str.length-_n-1);
       }
-
+      
       return _error;
     },
 
@@ -4287,17 +4282,18 @@ var LibraryOpenCL = {
       if (event != 0) {
         var _event = new WebCLEvent();
         CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event);
-        {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-      }
-      else {
-        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
-      }
-
 #if CL_GRAB_TRACE
-      // It's the only callStackTrace call after the call for have info about the read host ptr
-      CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
-#endif       
-
+        // It's the only callStackTrace call after the call for have info about the read host ptr
+        CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif           
+        {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list);
+#if CL_GRAB_TRACE
+        // It's the only callStackTrace call after the call for have info about the read host ptr
+        CL.webclCallStackTrace("(*)"+CL.cl_objects[command_queue]+".enqueueReadBuffer",[CL.cl_objects[buffer],blocking_read,offset,cb,_host_ptr,_event_wait_list]);
+#endif    
+      } 
     } catch (e) {
       var _error = CL.catchError(e);
         
@@ -4384,10 +4380,17 @@ var LibraryOpenCL = {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);
+#endif          
         CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadBufferRect",[CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list]);
+#endif          
+        CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);
       }
-      else CL.cl_objects[command_queue].enqueueReadBufferRect(CL.cl_objects[buffer],blocking_read,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4455,18 +4458,21 @@ var LibraryOpenCL = {
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
-#endif    
-
     try {
           
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event]);
+#endif          
         CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list,_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBuffer",[CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list]);
+#endif     
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
       }
-      else CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],blocking_write,offset,cb,_host_ptr,_event_wait_list);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4549,18 +4555,21 @@ var LibraryOpenCL = {
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
-#endif    
-
     try {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event]);   
+#endif            
         CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list,_event);   
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteBufferRect",[CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list]);   
+#endif           
+        CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);  
       }
-      else CL.cl_objects[command_queue].enqueueWriteBufferRect(CL.cl_objects[buffer],blocking_write,_buffer_origin,_host_origin,_region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,_host_ptr,_event_wait_list);  
        
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4630,18 +4639,21 @@ var LibraryOpenCL = {
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
 
-#if CL_GRAB_TRACE
-      CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
-#endif  
-
     try {
   
       if (event != 0) {
         var _event = new WebCLEvent(); 
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event]);
+#endif          
         CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list,_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBuffer",[CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list]);
+#endif               
+        CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list);    
       }
-      else CL.cl_objects[command_queue].enqueueCopyBuffer(CL.cl_objects[src_buffer],CL.cl_objects[dst_buffer],src_offset,dst_offset,cb,_event_wait_list);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4711,18 +4723,21 @@ var LibraryOpenCL = {
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
-#endif  
-
     try {      
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif          
         CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list]);
+#endif  
+        CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
       }
-      else CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4793,18 +4808,21 @@ var LibraryOpenCL = {
 
     } 
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
-#endif        
-          
     try {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event]);
+#endif               
         CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueWriteImage",[CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list]);
+#endif             
+        CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
       }
-      else CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4876,18 +4894,21 @@ var LibraryOpenCL = {
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
-#endif 
-
     try {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event]);
+#endif 
         CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImage",[CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list]);
+#endif       
+        CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
       }
-      else CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4958,19 +4979,22 @@ var LibraryOpenCL = {
 
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
-
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
-#endif    
-  
+ 
     try {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event]);
+#endif    
         CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list,_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyImageToBuffer",[CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list]);
+#endif          
+        CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list);    
       }
-      else CL.cl_objects[command_queue].enqueueCopyImageToBuffer(CL.cl_objects[src_image],CL.cl_objects[dst_buffer],_src_origin,_region,dst_offset,_event_wait_list);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5041,19 +5065,22 @@ var LibraryOpenCL = {
 
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     } 
-
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
-#endif    
   
     try {
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event]);
+#endif    
         CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueCopyBufferToImage",[CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list]);
+#endif          
+        CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
       }
-      else CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5151,19 +5178,22 @@ var LibraryOpenCL = {
        
       _event_wait_list.push(CL.cl_objects[_event_wait]);
     }
-
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
-#endif    
            
     try { 
       
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event]);
+#endif    
         CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueNDRangeKernel",[CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list]);
+#endif          
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       }
-      else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5208,18 +5238,21 @@ var LibraryOpenCL = {
     }
 #endif     
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
-#endif    
-
     try { 
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[_event]);
+#endif            
         CL.cl_objects[command_queue].enqueueMarker(_event);    
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueMarker",[]);
+#endif          
+        CL.cl_objects[command_queue].enqueueMarker();    
       }
-      else CL.cl_objects[command_queue].enqueueMarker();    
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5744,18 +5777,21 @@ var LibraryOpenCL = {
       _mem_objects.push(CL.cl_objects[_id]);
     }
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueAcquireGLObjects",[_mem_objects,_event_wait_list,_event]);
-#endif    
-
     try { 
 
       if (event != 0) {
         var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueAcquireGLObjects",[_mem_objects,_event_wait_list,_event]);
+#endif    
         CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event); 
         {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
-      } 
-      else CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
+      } else {
+#if CL_GRAB_TRACE
+        CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueAcquireGLObjects",[_mem_objects,_event_wait_list]);
+#endif          
+        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
+      }
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -5820,18 +5856,21 @@ var LibraryOpenCL = {
       _mem_objects.push(CL.cl_objects[_id]);
     }
 
-#if CL_GRAB_TRACE
-    CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReleaseGLObjects",[_mem_objects,_event_wait_list,_event]);
-#endif    
-
     try { 
 
         if (event != 0) {
           var _event = new WebCLEvent();
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReleaseGLObjects",[_mem_objects,_event_wait_list,_event]);
+#endif            
           CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
           {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};  
+        } else {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReleaseGLObjects",[_mem_objects,_event_wait_list]);
+#endif  
+          CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);      
         }
-        else CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);      
 
     } catch (e) {
 
