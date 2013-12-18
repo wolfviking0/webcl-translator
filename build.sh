@@ -7,6 +7,8 @@
 #  Copyright (c) 2013 Anthony Liot. All rights reserved.
 #
 
+START=`date +%s`
+
 cd ../
 
 root_repositories="$(pwd)/"
@@ -98,6 +100,11 @@ do
     echo "\n"
 done
 
+END=`date +%s`
+
+ELAPSED=`echo "scale=8; ($END - $START) / 1000000000" | bc`
+
+echo "Build complete in $ELAPSED seconds"
 
 
 
