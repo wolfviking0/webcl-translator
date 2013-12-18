@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'eventprofiling.data';
-    var PACKAGE_UUID = 'a62bb260-7933-4b6e-948a-0fa0f65d7842';
+    var PACKAGE_UUID = 'fead9c16-2981-4865-a3b5-bb0e50c07ef7';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5204,7 +5204,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -5215,10 +5219,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -6016,10 +6017,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

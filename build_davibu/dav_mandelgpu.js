@@ -93,8 +93,8 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 3513, 0, 0).open('GET', '/rendering_kernel_float4.cl');
-    new DataRequest(3513, 5805, 0, 0).open('GET', '/rendering_kernel.cl');
+      new DataRequest(0, 3507, 0, 0).open('GET', '/rendering_kernel_float4.cl');
+    new DataRequest(3507, 5799, 0, 0).open('GET', '/rendering_kernel.cl');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = 'dav_mandelgpu.data';
-    var PACKAGE_UUID = '50602da5-d6cd-4945-9d89-f064cb9bb470';
+    var PACKAGE_UUID = 'd65e1ee5-6213-4ccb-a46f-07d5e5bfb556';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -1835,7 +1835,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -1846,10 +1850,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -6292,10 +6293,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

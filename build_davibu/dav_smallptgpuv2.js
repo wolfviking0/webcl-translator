@@ -94,14 +94,14 @@ Module['FS_createPath']('/', 'scenes', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 12993, 0, 0).open('GET', '/rendering_kernel.cl');
-    new DataRequest(12993, 14546, 0, 0).open('GET', '/scene_build_complex.pl');
-    new DataRequest(14546, 14736, 0, 0).open('GET', '/scenes/caustic.scn');
-    new DataRequest(14736, 15029, 0, 0).open('GET', '/scenes/caustic3.scn');
-    new DataRequest(15029, 54549, 0, 0).open('GET', '/scenes/complex.scn');
-    new DataRequest(54549, 55128, 0, 0).open('GET', '/scenes/cornell_large.scn');
-    new DataRequest(55128, 55705, 0, 0).open('GET', '/scenes/cornell.scn');
-    new DataRequest(55705, 55997, 0, 0).open('GET', '/scenes/simple.scn');
+      new DataRequest(0, 12946, 0, 0).open('GET', '/rendering_kernel.cl');
+    new DataRequest(12946, 14499, 0, 0).open('GET', '/scene_build_complex.pl');
+    new DataRequest(14499, 14689, 0, 0).open('GET', '/scenes/caustic.scn');
+    new DataRequest(14689, 14982, 0, 0).open('GET', '/scenes/caustic3.scn');
+    new DataRequest(14982, 54502, 0, 0).open('GET', '/scenes/complex.scn');
+    new DataRequest(54502, 55081, 0, 0).open('GET', '/scenes/cornell_large.scn');
+    new DataRequest(55081, 55658, 0, 0).open('GET', '/scenes/cornell.scn');
+    new DataRequest(55658, 55950, 0, 0).open('GET', '/scenes/simple.scn');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -111,7 +111,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = 'dav_smallptgpuv2.data';
-    var PACKAGE_UUID = 'e9c05942-5f8b-4dfb-bd1a-573bdb3cb312';
+    var PACKAGE_UUID = 'e906c849-2c99-4647-9f83-84a18664afee';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5832,7 +5832,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -5843,10 +5847,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -11653,10 +11654,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

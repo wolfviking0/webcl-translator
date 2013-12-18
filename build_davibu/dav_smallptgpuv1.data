@@ -42,7 +42,7 @@ typedef struct {
 # 28 "geomfunc.h" 2
 # 1 "simplernd.h" 1
 # 34 "simplernd.h"
-static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
+ float GetRandom(unsigned int *seed0, unsigned int *seed1) {
  *seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
  *seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
 
@@ -61,7 +61,7 @@ static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 
 
 
-static float SphereIntersect(
+ float SphereIntersect(
 
 __constant
 
@@ -90,7 +90,7 @@ __constant
  }
 }
 
-static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
+ void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  const float zz = 1.f - 2.f * u1;
  const float r = sqrt(max(0.f, 1.f - zz * zz));
  const float phi = 2.f * 3.14159265358979323846f * u2;
@@ -100,7 +100,7 @@ static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  { (*v).x = xx; (*v).y = yy; (*v).z = zz; };
 }
 
-static int Intersect(
+ int Intersect(
 
 __constant
 
@@ -123,7 +123,7 @@ __constant
  return (*t < inf);
 }
 
-static int IntersectP(
+ int IntersectP(
 
 __constant
 
@@ -141,7 +141,7 @@ __constant
  return 0;
 }
 
-static void SampleLights(
+ void SampleLights(
 
 __constant
 
@@ -196,7 +196,7 @@ __constant
  }
 }
 
-static void RadiancePathTracing(
+ void RadiancePathTracing(
 
 __constant
 
@@ -369,7 +369,7 @@ __constant
  }
 }
 
-static void RadianceDirectLighting(
+ void RadianceDirectLighting(
 
 __constant
 
@@ -515,7 +515,7 @@ __constant
 }
 # 28 "<stdin>" 2
 
-static void GenerateCameraRay(__constant Camera *camera,
+ void GenerateCameraRay(__constant Camera *camera,
   unsigned int *seed0, unsigned int *seed1,
   const int width, const int height, const int x, const int y, Ray *ray) {
  const float invWidth = 1.f / width;
@@ -628,7 +628,7 @@ typedef struct {
 # 28 "geomfunc.h" 2
 # 1 "simplernd.h" 1
 # 34 "simplernd.h"
-static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
+ float GetRandom(unsigned int *seed0, unsigned int *seed1) {
  *seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
  *seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
 
@@ -647,7 +647,7 @@ static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 
 
 
-static float SphereIntersect(
+ float SphereIntersect(
 
 __constant
 
@@ -676,7 +676,7 @@ __constant
  }
 }
 
-static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
+ void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  const float zz = 1.f - 2.f * u1;
  const float r = sqrt(max(0.f, 1.f - zz * zz));
  const float phi = 2.f * 3.14159265358979323846f * u2;
@@ -686,7 +686,7 @@ static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  { (*v).x = xx; (*v).y = yy; (*v).z = zz; };
 }
 
-static int Intersect(
+ int Intersect(
 
 __constant
 
@@ -709,7 +709,7 @@ __constant
  return (*t < inf);
 }
 
-static int IntersectP(
+ int IntersectP(
 
 __constant
 
@@ -727,7 +727,7 @@ __constant
  return 0;
 }
 
-static void SampleLights(
+ void SampleLights(
 
 __constant
 
@@ -782,7 +782,7 @@ __constant
  }
 }
 
-static void RadiancePathTracing(
+ void RadiancePathTracing(
 
 __constant
 
@@ -955,7 +955,7 @@ __constant
  }
 }
 
-static void RadianceDirectLighting(
+ void RadianceDirectLighting(
 
 __constant
 
@@ -1101,7 +1101,7 @@ __constant
 }
 # 28 "<stdin>" 2
 
-static void GenerateCameraRay(__constant Camera *camera,
+ void GenerateCameraRay(__constant Camera *camera,
   unsigned int *seed0, unsigned int *seed1,
   const int width, const int height, const int x, const int y, Ray *ray) {
  const float invWidth = 1.f / width;

@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_histogram.data';
-    var PACKAGE_UUID = 'b7e447f1-e262-456d-9f21-24b426ff70fc';
+    var PACKAGE_UUID = '2f4f5ab6-e933-49a0-acac-8020d5caa27c';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -4991,7 +4991,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -5002,10 +5006,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -5160,7 +5161,7 @@ function copyTempDouble(ptr) {
             var _type = CL.parseType(_array[j]);
             if (_array[j].indexOf("__local") >= 0 ) {
               _param.push(webcl.LOCAL);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -5188,9 +5189,14 @@ function copyTempDouble(ptr) {
               } else {
                 _param.push(webcl.FLOAT);
               }
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
+                _param_validator.push(_param.length - 1);
+              } else {
+                _param_argsize_validator.push(_param.length - 1);
+              }
             } else {
               _param.push(_type);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -5221,7 +5227,7 @@ function copyTempDouble(ptr) {
           }
           _str += " )";
           console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
           var _str = "( ";
           var _length = CL.cl_validator_argsize[name].length;
           for (var i = 0 ; i < _length ; i++) {
@@ -5542,10 +5548,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {
@@ -6013,7 +6016,7 @@ function copyTempDouble(ptr) {
   //       if (cl_errcode_ret != 0) {
   //         HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_HOST_PTR;
   //       }
-  // #if OPENCL_GRAB_TRACE
+  // #if CL_GRAB_TRACE
   //       CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
   // #endif
   //       return 0;

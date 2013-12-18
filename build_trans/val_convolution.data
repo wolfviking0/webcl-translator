@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,57 +9,55 @@
                     "input" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_uint",
+                            "type" : "uint *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "mask" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_uint",
+                            "type" : "uint *",
                             "address-space" : "constant",
                             "size-parameter" : "_wcl_mask_size"
                         },
                     "_wcl_mask_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "output" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_uint",
+                            "type" : "uint *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "inputWidth" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_int"
+                            "type" : "int"
                         },
                     "maskWidth" :
                         {
                             "index" : 7,
-                            "host-type" : "cl_int"
+                            "type" : "int"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -168,9 +165,9 @@ typedef uint _WclInitType;
 //    This is a simple kernel performing convolution.
 
 __kernel void convolve(
- const __global uint * const input, unsigned long _wcl_input_size,
-    __constant uint * const mask, unsigned long _wcl_mask_size,
-    __global uint * const output, unsigned long _wcl_output_size,
+ const __global uint * const input, ulong _wcl_input_size,
+    __constant uint * const mask, ulong _wcl_mask_size,
+    __global uint * const output, ulong _wcl_output_size,
     const int inputWidth,
     const int maskWidth)
 {

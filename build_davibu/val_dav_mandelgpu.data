@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,51 +9,51 @@
                     "pixels" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_pixels_size"
                         },
                     "_wcl_pixels_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "width" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_int"
+                            "type" : "int"
                         },
                     "height" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_int"
+                            "type" : "int"
                         },
                     "scale" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "offsetX" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "offsetY" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "maxIterations" :
                         {
                             "index" : 7,
-                            "host-type" : "cl_int"
+                            "type" : "int"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -167,7 +166,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 __kernel void mandelGPU(
-  __global int *pixels, unsigned long _wcl_pixels_size,
+  __global int *pixels, ulong _wcl_pixels_size,
   const int width,
   const int height,
   const float scale,

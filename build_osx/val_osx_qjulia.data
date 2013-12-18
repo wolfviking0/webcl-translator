@@ -1,0 +1,432 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "QJuliaKernel" :
+                {
+                    "result" :
+                        {
+                            "index" : 0,
+                            "type" : "uchar4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_result_size"
+                        },
+                    "_wcl_result_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "mu" :
+                        {
+                            "index" : 2,
+                            "type" : "float4"
+                        },
+                    "diffuse" :
+                        {
+                            "index" : 3,
+                            "type" : "float4"
+                        },
+                    "epsilon" :
+                        {
+                            "index" : 4,
+                            "type" : "float"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global uchar4 *QJuliaKernel__result_min;
+    __global uchar4 *QJuliaKernel__result_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+         )
+#define _WCL_ADDR_CLAMP_global_1(type, addr, size, min0, max0, asnull) \
+    ( _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+// File:       qjulia.c
+//
+// Abstract:   This example shows how to use OpenCL to raytrace a 4d Quaternion Julia-Set 
+//             Fractal and intermix the results of a compute kernel with OpenGL for rendering.
+//
+// Version:    <1.0>
+//
+// Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple Inc. ("Apple")
+//             in consideration of your agreement to the following terms, and your use,
+//             installation, modification or redistribution of this Apple software
+//             constitutes acceptance of these terms.  If you do not agree with these
+//             terms, please do not use, install, modify or redistribute this Apple
+//             software.
+//
+//             In consideration of your agreement to abide by the following terms, and
+//             subject to these terms, Apple grants you a personal, non - exclusive
+//             license, under Apple's copyrights in this original Apple software ( the
+//             "Apple Software" ), to use, reproduce, modify and redistribute the Apple
+//             Software, with or without modifications, in source and / or binary forms;
+//             provided that if you redistribute the Apple Software in its entirety and
+//             without modifications, you must retain this notice and the following text
+//             and disclaimers in all such redistributions of the Apple Software. Neither
+//             the name, trademarks, service marks or logos of Apple Inc. may be used to
+//             endorse or promote products derived from the Apple Software without specific
+//             prior written permission from Apple.  Except as expressly stated in this
+//             notice, no other rights or licenses, express or implied, are granted by
+//             Apple herein, including but not limited to any patent rights that may be
+//             infringed by your derivative works or by other works in which the Apple
+//             Software may be incorporated.
+//
+//             The Apple Software is provided by Apple on an "AS IS" basis.  APPLE MAKES NO
+//             WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
+//             WARRANTIES OF NON - INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A
+//             PARTICULAR PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION
+//             ALONE OR IN COMBINATION WITH YOUR PRODUCTS.
+//
+//             IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL OR
+//             CONSEQUENTIAL DAMAGES ( INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//             SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//             INTERRUPTION ) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION, MODIFICATION
+//             AND / OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER
+//             UNDER THEORY OF CONTRACT, TORT ( INCLUDING NEGLIGENCE ), STRICT LIABILITY OR
+//             OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Copyright ( C ) 2008 Apple Inc. All Rights Reserved.
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+float4 qmult(_WclProgramAllocations *_wcl_allocs,  float4 q1, float4 q2 )
+{
+    float4 r;
+    float3 t;
+
+    float3 q1yzw = (float3)(q1.y, q1.z, q1.w);
+    float3 q2yzw = (float3)(q2.y, q2.z, q2.w);
+    float3 c = cross( q1yzw, q2yzw );
+
+    t = q2yzw * q1.x + q1yzw * q2.x + c;
+    r.x = q1.x * q2.x - dot( q1yzw, q2yzw );
+    r.yzw = t.xyz;
+
+    return r;
+}
+
+float4 qsqr(_WclProgramAllocations *_wcl_allocs,  float4 q )
+{
+    float4 r;
+    float3 t;
+
+    float3 qyzw = (float3)(q.y, q.z, q.w);
+
+    t = 2.0f * q.x * qyzw;
+    r.x = q.x * q.x - dot( qyzw, qyzw );
+    r.yzw = t.xyz;
+
+    return r;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float3
+EstimateNormalQJulia(_WclProgramAllocations *_wcl_allocs, 
+    float3 p,
+    float4 c,
+    int iterations )
+{
+    float4 qp = (float4)( p.x, p.y, p.z, 0.0f );
+    float4 gx1 = qp - (float4)( (1e-5f), 0.0f, 0.0f, 0.0f );
+    float4 gx2 = qp + (float4)( (1e-5f), 0.0f, 0.0f, 0.0f );
+    float4 gy1 = qp - (float4)( 0.0f, (1e-5f), 0.0f, 0.0f );
+    float4 gy2 = qp + (float4)( 0.0f, (1e-5f), 0.0f, 0.0f );
+    float4 gz1 = qp - (float4)( 0.0f, 0.0f, (1e-5f), 0.0f );
+    float4 gz2 = qp + (float4)( 0.0f, 0.0f, (1e-5f), 0.0f );
+
+    for ( int i = 0; i < iterations; i++ )
+    {
+        gx1 = qsqr(_wcl_allocs,  gx1 ) + c;
+        gx2 = qsqr(_wcl_allocs,  gx2 ) + c;
+        gy1 = qsqr(_wcl_allocs,  gy1 ) + c;
+        gy2 = qsqr(_wcl_allocs,  gy2 ) + c;
+        gz1 = qsqr(_wcl_allocs,  gz1 ) + c;
+        gz2 = qsqr(_wcl_allocs,  gz2 ) + c;
+    }
+
+    float nx = fast_length(gx2) - fast_length(gx1);
+    float ny = fast_length(gy2) - fast_length(gy1);
+    float nz = fast_length(gz2) - fast_length(gz1);
+
+    float3 normal = fast_normalize((float3)( nx, ny, nz ));
+
+    return normal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4
+IntersectQJulia(_WclProgramAllocations *_wcl_allocs, 
+    float3 rO,
+    float3 rD,
+    float4 c,
+    float epsilon,
+    float escape)
+{
+    float rd = 0.0f;
+    float dist = epsilon;
+    while ( dist >= epsilon && rd < escape)
+    {
+        float4 z = (float4)( rO.x, rO.y, rO.z, 0.0f );
+        float4 zp = (float4)( 1.0f, 0.0f, 0.0f, 0.0f );
+        float zd = 0.0f;
+        uint count = 0;
+        while(zd < escape && count < (10))
+        {
+            zp = 2.0f * qmult(_wcl_allocs, z, zp);
+            z = qsqr(_wcl_allocs, z) + c;
+            zd = dot(z, z);
+            count++;
+        }
+
+        float normZ = fast_length( z );
+        dist = 0.5f * normZ * half_log( normZ ) / fast_length( zp );
+        rO += rD * dist;
+        rd = dot(rO, rO);
+    }
+
+    return (float4)(rO.x, rO.y, rO.z, dist);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float3
+Phong(_WclProgramAllocations *_wcl_allocs, 
+    float3 light,
+    float3 eye,
+    float3 pt,
+    float3 normal,
+    float3 base)
+{
+    const float SpecularExponent = 10.0f;
+    const float Specularity = 0.45f;
+
+    float3 light_dir = fast_normalize( light - pt );
+    float3 eye_dir = fast_normalize( eye - pt );
+    float NdotL = dot( normal, light_dir );
+    float3 reflect_dir = light_dir - 2.0f * NdotL * normal;
+
+    base += fabs(normal) * 0.5f;
+    float3 diffuse = base * fmax(NdotL, 0.0f);
+    float3 specular = Specularity * half_powr( fmax( dot(eye_dir, reflect_dir), 0.0f), SpecularExponent );
+    return diffuse + specular;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float
+IntersectSphere(_WclProgramAllocations *_wcl_allocs, 
+    float3 rO,
+    float3 rD,
+    float radius )
+{
+    float fB = 2.0f * dot( rO, rD );
+    float fB2 = fB * fB;
+    float fC = dot( rO, rO ) - radius;
+    float fT = (fB2 - 4.0f * fC);
+    if (fT <= 0.0f)
+        return 0.0f;
+    float fD = half_sqrt( fT );
+    float fT0 = ( -fB + fD ) * 0.5f;
+    float fT1 = ( -fB - fD ) * 0.5f;
+    fT = fmin(fT0, fT1);
+    return fT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4
+RaytraceQJulia(_WclProgramAllocations *_wcl_allocs, 
+    float3 rO,
+    float3 rD,
+    float4 mu,
+    float epsilon,
+    float3 eye,
+    float3 light,
+    float3 diffuse,
+    float radius,
+    bool shadows,
+    int iterations )
+{
+    const float4 background = (float4)( 0.15f, 0.15f, 0.15f, 0.0f );
+    float4 color = background;
+
+    rD = fast_normalize( rD );
+    float t = IntersectSphere(_wcl_allocs,  rO, rD, radius );
+    if ( t <= 0.0f )
+        return color;
+
+    rO += rD * t;
+    float4 hit = IntersectQJulia(_wcl_allocs,  rO, rD, mu, epsilon, ((2.0f) * 1.5f) );
+    float dist = hit.w;
+    if (dist >= epsilon)
+        return color;
+
+    rO.xyz = hit.xyz;
+    float3 normal = EstimateNormalQJulia(_wcl_allocs,  rO, mu, iterations );
+
+    float3 rgb = Phong(_wcl_allocs,  light, rD, rO, normal, diffuse );
+    color.xyz = rgb.xyz;
+    color.w = 1.0f;
+
+    if ((0))
+    {
+        float3 light_dir = fast_normalize( light - rO );
+        rO += normal * epsilon * 2.0f;
+        hit = IntersectQJulia(_wcl_allocs,  rO, light_dir, mu, epsilon, ((2.0f) * 1.5f) );
+        dist = hit.w;
+        color.xyz *= (dist < epsilon) ? (0.4f) : (1.0f);
+    }
+
+    return color;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+float4
+QJulia(_WclProgramAllocations *_wcl_allocs, 
+    float4 coord,
+    float4 mu,
+    float4 diffuse,
+    float epsilon,
+    float iterations,
+    int shadows,
+    uint width,
+    uint height)
+{
+    float zoom = ((((2.0f))*((2.0f))));
+    float radius = ((((2.0f))*((2.0f))));
+
+    float2 size = (float2)((float)width, (float)height);
+    float scale = max(size.x, size.y);
+    float2 h = (float2)(0.5f, 0.5f); // half
+    float2 position = (coord.xy - h * size) / scale;
+    float2 frame = (position) * zoom;
+
+    float3 light = (float3)(1.5f, 0.5f, 4.0f);
+    float3 eye = (float3)(0.0f, 0.0f, 4.0f);
+    float3 ray = (float3)(frame.x, frame.y, 0.0f);
+    float3 base = (float3)(diffuse.x, diffuse.y, diffuse.z);
+
+    float3 rO = eye;
+    float3 rD = (ray - rO);
+
+    float4 color = RaytraceQJulia(_wcl_allocs,  rO, rD, mu, epsilon, eye, light, base, radius, shadows, iterations);
+
+    return color;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+__kernel void
+QJuliaKernel(
+    __global uchar4 *result, ulong _wcl_result_size,
+    const float4 mu,
+    const float4 diffuse,
+    const float epsilon)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &result[0], &result[_wcl_result_size] },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.QJuliaKernel__result_min, _wcl_allocs->gl.QJuliaKernel__result_max, (__global uint*)0);
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    int tx = get_global_id(0);
+    int ty = get_global_id(1);
+    int sx = get_global_size(0);
+    int sy = get_global_size(1);
+    int index = ty * (512) + tx;
+    bool valid = (tx < (512)) && (ty < (512));
+
+    float4 coord = (float4)((float)tx, (float)ty, 0.0f, 0.0f);
+
+    if(valid)
+    {
+        float4 color = QJulia(_wcl_allocs, coord, mu, diffuse, epsilon, (10), (0), (512), (512));
+        uchar4 output = convert_uchar4_sat_rte(color * 255.0f);
+        (*(_WCL_ADDR_CLAMP_global_1(__global uchar4 *, (result)+(index), 1, _wcl_allocs->gl.QJuliaKernel__result_min, _wcl_allocs->gl.QJuliaKernel__result_max, _wcl_allocs->gn))) = output;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

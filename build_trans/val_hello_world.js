@@ -93,7 +93,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 7782, 0, 0).open('GET', '/hello_world.cl');
+      new DataRequest(0, 7536, 0, 0).open('GET', '/hello_world.cl');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_hello_world.data';
     var REMOTE_PACKAGE_NAME = 'val_hello_world.data';
-    var PACKAGE_UUID = 'ab71b8c0-0d18-4b50-a855-3a990472fad5';
+    var PACKAGE_UUID = '18173aee-efca-47a5-8d95-8ecf51685da1';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5055,7 +5055,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -5066,10 +5070,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -5224,7 +5225,7 @@ function copyTempDouble(ptr) {
             var _type = CL.parseType(_array[j]);
             if (_array[j].indexOf("__local") >= 0 ) {
               _param.push(webcl.LOCAL);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -5252,9 +5253,14 @@ function copyTempDouble(ptr) {
               } else {
                 _param.push(webcl.FLOAT);
               }
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
+                _param_validator.push(_param.length - 1);
+              } else {
+                _param_argsize_validator.push(_param.length - 1);
+              }
             } else {
               _param.push(_type);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -5285,7 +5291,7 @@ function copyTempDouble(ptr) {
           }
           _str += " )";
           console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
           var _str = "( ";
           var _length = CL.cl_validator_argsize[name].length;
           for (var i = 0 ; i < _length ; i++) {
@@ -5779,10 +5785,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

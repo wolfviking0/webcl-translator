@@ -96,13 +96,13 @@ function assert(check, msg) {
       new DataRequest(0, 354, 0, 0).open('GET', '/nbody.fsh');
     new DataRequest(354, 706, 0, 0).open('GET', '/nbody.vsh');
     new DataRequest(706, 3257, 0, 0).open('GET', '/star.png');
-    new DataRequest(3257, 24833, 0, 0).open('GET', '/nbody_gpu.cl');
-    new DataRequest(24833, 269828, 0, 0).open('GET', '/nbody_cpu.cl');
-    new DataRequest(269828, 1411567, 0, 0).open('GET', '/bodies_16k.dat');
-    new DataRequest(1411567, 3261890, 0, 0).open('GET', '/bodies_24k.dat');
-    new DataRequest(3261890, 5571382, 0, 0).open('GET', '/bodies_32k.dat');
-    new DataRequest(5571382, 10236820, 0, 0).open('GET', '/bodies_64k.dat');
-    new DataRequest(10236820, 15970019, 0, 0).open('GET', '/bodies_80k.dat');
+    new DataRequest(3257, 24375, 0, 0).open('GET', '/nbody_gpu.cl');
+    new DataRequest(24375, 266978, 0, 0).open('GET', '/nbody_cpu.cl');
+    new DataRequest(266978, 1408717, 0, 0).open('GET', '/bodies_16k.dat');
+    new DataRequest(1408717, 3259040, 0, 0).open('GET', '/bodies_24k.dat');
+    new DataRequest(3259040, 5568532, 0, 0).open('GET', '/bodies_32k.dat');
+    new DataRequest(5568532, 10233970, 0, 0).open('GET', '/bodies_64k.dat');
+    new DataRequest(10233970, 15967169, 0, 0).open('GET', '/bodies_80k.dat');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_galaxies.data';
-    var PACKAGE_UUID = 'd46f70ea-9410-4a4b-80f4-de28e4eeafe9';
+    var PACKAGE_UUID = '4b5156fd-ef00-4b04-bc8a-cf400509211d';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -10420,7 +10420,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -10431,10 +10435,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -10589,7 +10590,7 @@ function copyTempDouble(ptr) {
             var _type = CL.parseType(_array[j]);
             if (_array[j].indexOf("__local") >= 0 ) {
               _param.push(webcl.LOCAL);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -10617,9 +10618,14 @@ function copyTempDouble(ptr) {
               } else {
                 _param.push(webcl.FLOAT);
               }
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
+                _param_validator.push(_param.length - 1);
+              } else {
+                _param_argsize_validator.push(_param.length - 1);
+              }
             } else {
               _param.push(_type);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -10650,7 +10656,7 @@ function copyTempDouble(ptr) {
           }
           _str += " )";
           console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
           var _str = "( ";
           var _length = CL.cl_validator_argsize[name].length;
           for (var i = 0 ; i < _length ; i++) {
@@ -11315,10 +11321,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

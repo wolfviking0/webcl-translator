@@ -87,7 +87,7 @@ typedef struct {
 //------------------------------------------------------------------------------
 // simplernd.h
 
-static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
+ float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 	*seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
 	*seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
 
@@ -105,7 +105,7 @@ static float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 
 //------------------------------------------------------------------------------
 
-static float SphereIntersect(
+ float SphereIntersect(
 	OCL_CONSTANT_BUFFER const Sphere *s,
 	const Ray *r) { /* returns distance, 0 if nohit */
 	Vec op; /* Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0 */
@@ -131,7 +131,7 @@ static float SphereIntersect(
 	}
 }
 
-static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
+ void UniformSampleSphere(const float u1, const float u2, Vec *v) {
 	const float zz = 1.f - 2.f * u1;
 	const float r = sqrt(max(0.f, 1.f - zz * zz));
 	const float phi = 2.f * FLOAT_PI * u2;
@@ -141,7 +141,7 @@ static void UniformSampleSphere(const float u1, const float u2, Vec *v) {
 	vinit(*v, xx, yy, zz);
 }
 
-static int Intersect(
+ int Intersect(
 	OCL_CONSTANT_BUFFER const Sphere *spheres,
 	const unsigned int sphereCount,
 	const Ray *r,
@@ -161,7 +161,7 @@ static int Intersect(
 	return (*t < inf);
 }
 
-static int IntersectP(
+ int IntersectP(
 	OCL_CONSTANT_BUFFER const Sphere *spheres,
 	const unsigned int sphereCount,
 	const Ray *r,
@@ -176,7 +176,7 @@ static int IntersectP(
 	return 0;
 }
 
-static void SampleLights(
+ void SampleLights(
 	OCL_CONSTANT_BUFFER const Sphere *spheres,
 	const unsigned int sphereCount,
 	unsigned int *seed0, unsigned int *seed1,
@@ -225,7 +225,7 @@ static void SampleLights(
 	}
 }
 
-static void Radiance(
+ void Radiance(
 	OCL_CONSTANT_BUFFER const Sphere *spheres,
 	const unsigned int sphereCount,
 	const Ray *startRay,
@@ -393,7 +393,7 @@ static void Radiance(
 	}
 }
 
-static void GenerateCameraRay(OCL_CONSTANT_BUFFER const Camera *camera,
+ void GenerateCameraRay(OCL_CONSTANT_BUFFER const Camera *camera,
 		unsigned int *seed0, unsigned int *seed1,
 		const int width, const int height, const int x, const int y, Ray *ray) {
 	const float invWidth = 1.f / width;
@@ -462,6 +462,7 @@ __kernel void RadianceGPU(
 	seedsInput[2 * gid] = seed0;
 	seedsInput[2 * gid + 1] = seed1;
 }
+
 #!/usr/bin/perl
 
 $maxDepth = 4.0;

@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,67 +9,65 @@
                     "posArray" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float4",
+                            "type" : "float4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_posArray_size"
                         },
                     "_wcl_posArray_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "colorArray" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float4",
+                            "type" : "float4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_colorArray_size"
                         },
                     "_wcl_colorArray_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "lifetimeArray" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_lifetimeArray_size"
                         },
                     "_wcl_lifetimeArray_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "baseColor" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_float4"
+                            "type" : "float4"
                         },
                     "par" :
                         {
                             "index" : 7,
-                            "host-type" : "cl_float4"
+                            "type" : "float4"
                         },
                     "time" :
                         {
                             "index" : 8,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "deltaTime" :
                         {
                             "index" : 9,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -166,9 +163,9 @@ typedef uint _WclInitType;
 //
 // 3. This notice may not be removed or altered from any source distribution.
 
-__kernel void kernelStep( __global float4 *posArray, unsigned long _wcl_posArray_size,
-     __global float4 *colorArray, unsigned long _wcl_colorArray_size,
-     __global float *lifetimeArray, unsigned long _wcl_lifetimeArray_size,
+__kernel void kernelStep( __global float4 *posArray, ulong _wcl_posArray_size,
+     __global float4 *colorArray, ulong _wcl_colorArray_size,
+     __global float *lifetimeArray, ulong _wcl_lifetimeArray_size,
      float4 baseColor,
      float4 par,
      float time,

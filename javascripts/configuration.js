@@ -23,7 +23,7 @@ var configuration_pages = {
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
       "valcpu"        : "&validator=on",
-      "valgpu"        : "",   
+      "valgpu"        : "&validator=on",   
     },  
     { 
       "title"         : "Image Copy",
@@ -34,7 +34,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",
       "valcpu"        : "",
-      "valgpu"        : "",  
+      "valgpu"        : "&validator=on",  
     },    
     { 
       "title"         : "Event Profiling",

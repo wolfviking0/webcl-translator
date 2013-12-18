@@ -19,7 +19,7 @@
  *   OCLToys website: http://code.google.com/p/ocltoys                     *
  ***************************************************************************/
 
-static int colormap(const int maxIterations, int i) {
+ int colormap(const int maxIterations, int i) {
 	if (i == maxIterations)
 		return 0;
 	else {

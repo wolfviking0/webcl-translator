@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,47 +9,45 @@
                     "a" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_a_size"
                         },
                     "_wcl_a_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "b" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_b_size"
                         },
                     "_wcl_b_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "result" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_result_size"
                         },
                     "_wcl_result_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -133,9 +130,9 @@ typedef uint _WclInitType;
 // WebCL Validator: matching stage 2.
 // WebCL Validator: matching stage 1.
 
-__kernel void hello_kernel(__global const int *a, unsigned long _wcl_a_size,
-      __global const int *b, unsigned long _wcl_b_size,
-      __global int *result, unsigned long _wcl_result_size)
+__kernel void hello_kernel(__global const int *a, ulong _wcl_a_size,
+      __global const int *b, ulong _wcl_b_size,
+      __global int *result, ulong _wcl_result_size)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 

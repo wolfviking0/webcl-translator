@@ -94,15 +94,15 @@ Module['FS_createPath']('/', 'scenes', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 23254, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
-    new DataRequest(23254, 46511, 0, 0).open('GET', '/preprocessed_rendering_kernel_dl.cl');
-    new DataRequest(46511, 48064, 0, 0).open('GET', '/scene_build_complex.pl');
-    new DataRequest(48064, 48254, 0, 0).open('GET', '/scenes/caustic.scn');
-    new DataRequest(48254, 48547, 0, 0).open('GET', '/scenes/caustic3.scn');
-    new DataRequest(48547, 88067, 0, 0).open('GET', '/scenes/complex.scn');
-    new DataRequest(88067, 88646, 0, 0).open('GET', '/scenes/cornell_large.scn');
-    new DataRequest(88646, 89223, 0, 0).open('GET', '/scenes/cornell.scn');
-    new DataRequest(89223, 89515, 0, 0).open('GET', '/scenes/simple.scn');
+      new DataRequest(0, 23200, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+    new DataRequest(23200, 46403, 0, 0).open('GET', '/preprocessed_rendering_kernel_dl.cl');
+    new DataRequest(46403, 47956, 0, 0).open('GET', '/scene_build_complex.pl');
+    new DataRequest(47956, 48146, 0, 0).open('GET', '/scenes/caustic.scn');
+    new DataRequest(48146, 48439, 0, 0).open('GET', '/scenes/caustic3.scn');
+    new DataRequest(48439, 87959, 0, 0).open('GET', '/scenes/complex.scn');
+    new DataRequest(87959, 88538, 0, 0).open('GET', '/scenes/cornell_large.scn');
+    new DataRequest(88538, 89115, 0, 0).open('GET', '/scenes/cornell.scn');
+    new DataRequest(89115, 89407, 0, 0).open('GET', '/scenes/simple.scn');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -112,7 +112,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = 'dav_smallptgpuv1.data';
-    var PACKAGE_UUID = 'c0537daf-9c80-4659-a2a0-0017cbaef90d';
+    var PACKAGE_UUID = '408f1ea7-f973-4aba-accd-383414e65333';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -1850,7 +1850,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -1861,10 +1865,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -6285,10 +6286,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

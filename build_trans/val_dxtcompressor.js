@@ -96,7 +96,7 @@ Module['FS_createPath']('/', 'data', true, true);
     };
       new DataRequest(0, 131200, 0, 0).open('GET', '/data/lena_ref.dds');
     new DataRequest(131200, 917647, 0, 0).open('GET', '/data/lena.ppm');
-    new DataRequest(917647, 1003786, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
+    new DataRequest(917647, 1003048, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -106,7 +106,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'val_dxtcompressor.data';
-    var PACKAGE_UUID = 'd4ddceb7-52f1-4f68-813c-677c1d59a40a';
+    var PACKAGE_UUID = '0397f583-f3ab-4ca7-be9c-0c49ca5f5dda';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -1937,7 +1937,11 @@ function copyTempDouble(ptr) {
         }
       },parseType:function (string) {
         var _value = -1;
-        if (string.indexOf("float") >= 0 ) {
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = webcl.UNSIGNED_LONG;  
+        } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT8;
@@ -1948,10 +1952,7 @@ function copyTempDouble(ptr) {
         } else if ( string.indexOf("short") >= 0 ) {
           _value = webcl.SIGNED_INT16;                     
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;       
-        } else if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;     
+          _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
@@ -2106,7 +2107,7 @@ function copyTempDouble(ptr) {
             var _type = CL.parseType(_array[j]);
             if (_array[j].indexOf("__local") >= 0 ) {
               _param.push(webcl.LOCAL);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -2134,9 +2135,14 @@ function copyTempDouble(ptr) {
               } else {
                 _param.push(webcl.FLOAT);
               }
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
+                _param_validator.push(_param.length - 1);
+              } else {
+                _param_argsize_validator.push(_param.length - 1);
+              }
             } else {
               _param.push(_type);
-              if (_array[j].indexOf("unsigned long _wcl") == -1 ) {
+              if (_array[j].indexOf("ulong _wcl") == -1 ) {
                 _param_validator.push(_param.length - 1);
               } else {
                 _param_argsize_validator.push(_param.length - 1);
@@ -2167,7 +2173,7 @@ function copyTempDouble(ptr) {
           }
           _str += " )";
           console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (unsigned long _wcl...)"); 
+          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
           var _str = "( ";
           var _length = CL.cl_validator_argsize[name].length;
           for (var i = 0 ; i < _length ; i++) {
@@ -11806,10 +11812,7 @@ function copyTempDouble(ptr) {
         }
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          var _info = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);  
-          for (var i = 0; i < _info.length ; i++) {
-            _devices.push(_info[i]);
-          }
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
         }
         var _callback = null
         if (pfn_notify != 0) {

@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,52 +9,50 @@
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -212,9 +209,9 @@ typedef uint _WclInitType;
 
 __kernel void
 reduce(
-    __global float *output, unsigned long _wcl_output_size,
-    __global const float *input, unsigned long _wcl_input_size,
-    __local float *shared, unsigned long _wcl_shared_size,
+    __global float *output, ulong _wcl_output_size,
+    __global const float *input, ulong _wcl_input_size,
+    __local float *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
@@ -314,7 +311,6 @@ reduce(
         (*(_WCL_ADDR_CLAMP_global_2(__global float *, (((__global float*)(output)))+((size_t)(group_id)), 1, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max, _wcl_allocs->gn))) = (v);
     }
 }
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -326,52 +322,50 @@ reduce(
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float2",
+                            "type" : "float2 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float2",
+                            "type" : "float2 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float2",
+                            "type" : "float2 *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -469,7 +463,7 @@ typedef uint _WclInitType;
     ( _WCL_ADDR_CHECK_local_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
 
 
-float2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global float * arg1)
+float2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
     const __global float * ptr = arg1 + 2 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -477,7 +471,7 @@ float2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __gl
     else
         return (float) 0;
 }
-float2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global float * arg1)
+float2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
     const __global float * ptr = arg1 + 2 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -485,7 +479,7 @@ float2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __gl
     else
         return (float) 0;
 }
-void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, float2 arg0, ulong arg1, __global float * arg2)
+void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, float2 arg0, size_t arg1, __global float * arg2)
 {
     __global float * ptr = arg2 + 2 * (size_t) arg1;
     if (_WCL_ADDR_CHECK_global_2(__global float *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -557,9 +551,9 @@ void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, float2 arg0, ulong arg1
 
 __kernel void
 reduce(
-    __global float2 *output, unsigned long _wcl_output_size,
-    __global const float2 *input, unsigned long _wcl_input_size,
-    __local float2 *shared, unsigned long _wcl_shared_size,
+    __global float2 *output, ulong _wcl_output_size,
+    __global const float2 *input, ulong _wcl_input_size,
+    __local float2 *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
@@ -659,7 +653,6 @@ reduce(
         _wcl_vstore2_2(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
     }
 }
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -671,52 +664,50 @@ reduce(
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float4",
+                            "type" : "float4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float4",
+                            "type" : "float4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float4",
+                            "type" : "float4 *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -814,7 +805,7 @@ typedef uint _WclInitType;
     ( _WCL_ADDR_CHECK_local_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
 
 
-float4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global float * arg1)
+float4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
     const __global float * ptr = arg1 + 4 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -822,7 +813,7 @@ float4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __gl
     else
         return (float) 0;
 }
-float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global float * arg1)
+float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
     const __global float * ptr = arg1 + 4 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -830,7 +821,7 @@ float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __gl
     else
         return (float) 0;
 }
-void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, float4 arg0, ulong arg1, __global float * arg2)
+void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, float4 arg0, size_t arg1, __global float * arg2)
 {
     __global float * ptr = arg2 + 4 * (size_t) arg1;
     if (_WCL_ADDR_CHECK_global_2(__global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -907,9 +898,9 @@ void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, float4 arg0, ulong arg1
 
 __kernel void
 reduce(
-    __global float4 *output, unsigned long _wcl_output_size,
-    __global const float4 *input, unsigned long _wcl_input_size,
-    __local float4 *shared, unsigned long _wcl_shared_size,
+    __global float4 *output, ulong _wcl_output_size,
+    __global const float4 *input, ulong _wcl_input_size,
+    __local float4 *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
@@ -1009,7 +1000,6 @@ reduce(
         _wcl_vstore4_2(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
     }
 }
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -1021,52 +1011,50 @@ reduce(
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int",
+                            "type" : "int *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -1223,9 +1211,9 @@ typedef uint _WclInitType;
 
 __kernel void
 reduce(
-    __global int *output, unsigned long _wcl_output_size,
-    __global const int *input, unsigned long _wcl_input_size,
-    __local int *shared, unsigned long _wcl_shared_size,
+    __global int *output, ulong _wcl_output_size,
+    __global const int *input, ulong _wcl_input_size,
+    __local int *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
@@ -1325,7 +1313,6 @@ reduce(
         (*(_WCL_ADDR_CLAMP_global_2(__global int *, (((__global int*)(output)))+((size_t)(group_id)), 1, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max, _wcl_allocs->gn))) = (v);
     }
 }
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -1337,52 +1324,50 @@ reduce(
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int2",
+                            "type" : "int2 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int2",
+                            "type" : "int2 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int2",
+                            "type" : "int2 *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -1480,7 +1465,7 @@ typedef uint _WclInitType;
     ( _WCL_ADDR_CHECK_local_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
 
 
-int2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global int * arg1)
+int2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global int * arg1)
 {
     const __global int * ptr = arg1 + 2 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global int *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1488,7 +1473,7 @@ int2 _wcl_vload2_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __glob
     else
         return (int) 0;
 }
-int2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global int * arg1)
+int2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global int * arg1)
 {
     const __global int * ptr = arg1 + 2 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global int *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1496,7 +1481,7 @@ int2 _wcl_vload2_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __glob
     else
         return (int) 0;
 }
-void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, int2 arg0, ulong arg1, __global int * arg2)
+void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, int2 arg0, size_t arg1, __global int * arg2)
 {
     __global int * ptr = arg2 + 2 * (size_t) arg1;
     if (_WCL_ADDR_CHECK_global_2(__global int *, ptr, 2, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1568,9 +1553,9 @@ void _wcl_vstore2_2(_WclProgramAllocations* _wcl_allocs, int2 arg0, ulong arg1, 
 
 __kernel void
 reduce(
-    __global int2 *output, unsigned long _wcl_output_size,
-    __global const int2 *input, unsigned long _wcl_input_size,
-    __local int2 *shared, unsigned long _wcl_shared_size,
+    __global int2 *output, ulong _wcl_output_size,
+    __global const int2 *input, ulong _wcl_input_size,
+    __local int2 *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
@@ -1670,7 +1655,6 @@ reduce(
         _wcl_vstore2_2(_wcl_allocs, (v), (size_t)(group_id), (__global int*)(output));
     }
 }
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -1682,52 +1666,50 @@ reduce(
                     "output" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int4",
+                            "type" : "int4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_output_size"
                         },
                     "_wcl_output_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "input" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int4",
+                            "type" : "int4 *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_input_size"
                         },
                     "_wcl_input_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "shared" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_int4",
+                            "type" : "int4 *",
                             "address-space" : "local",
                             "size-parameter" : "_wcl_shared_size"
                         },
                     "_wcl_shared_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "n" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_uint"
+                            "type" : "uint"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -1825,7 +1807,7 @@ typedef uint _WclInitType;
     ( _WCL_ADDR_CHECK_local_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
 
 
-int4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global int * arg1)
+int4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global int * arg1)
 {
     const __global int * ptr = arg1 + 4 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global int *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1833,7 +1815,7 @@ int4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __glob
     else
         return (int) 0;
 }
-int4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __global int * arg1)
+int4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global int * arg1)
 {
     const __global int * ptr = arg1 + 4 * (size_t) arg0;
     if (_WCL_ADDR_CHECK_global_2(const __global int *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1841,7 +1823,7 @@ int4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, ulong arg0, const __glob
     else
         return (int) 0;
 }
-void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, int4 arg0, ulong arg1, __global int * arg2)
+void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, int4 arg0, size_t arg1, __global int * arg2)
 {
     __global int * ptr = arg2 + 4 * (size_t) arg1;
     if (_WCL_ADDR_CHECK_global_2(__global int *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
@@ -1918,9 +1900,9 @@ void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, int4 arg0, ulong arg1, 
 
 __kernel void
 reduce(
-    __global int4 *output, unsigned long _wcl_output_size,
-    __global const int4 *input, unsigned long _wcl_input_size,
-    __local int4 *shared, unsigned long _wcl_shared_size,
+    __global int4 *output, ulong _wcl_output_size,
+    __global const int4 *input, ulong _wcl_input_size,
+    __local int4 *shared, ulong _wcl_shared_size,
     const unsigned int n)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];

@@ -1,4 +1,3 @@
-// WebCL Validator: validation stage.
 
 /* WebCL Validator JSON header
 {
@@ -10,87 +9,82 @@
                     "x" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_x_size"
                         },
                     "_wcl_x_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "y" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_y_size"
                         },
                     "_wcl_y_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "vx" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_vx_size"
                         },
                     "_wcl_vx_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "vy" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_vy_size"
                         },
                     "_wcl_vy_size" :
                         {
                             "index" : 7,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "v" :
                         {
                             "index" : 8,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_v_size"
                         },
                     "_wcl_v_size" :
                         {
                             "index" : 9,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "t0" :
                         {
                             "index" : 10,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "delta" :
                         {
                             "index" : 11,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "v0" :
                         {
                             "index" : 12,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "angle" :
                         {
                             "index" : 13,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         }
                 },
             "Trajectory2" :
@@ -98,93 +92,89 @@
                     "x" :
                         {
                             "index" : 0,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_x_size"
                         },
                     "_wcl_x_size" :
                         {
                             "index" : 1,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "y" :
                         {
                             "index" : 2,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_y_size"
                         },
                     "_wcl_y_size" :
                         {
                             "index" : 3,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "vx" :
                         {
                             "index" : 4,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_vx_size"
                         },
                     "_wcl_vx_size" :
                         {
                             "index" : 5,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "vy" :
                         {
                             "index" : 6,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_vy_size"
                         },
                     "_wcl_vy_size" :
                         {
                             "index" : 7,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "v" :
                         {
                             "index" : 8,
-                            "host-type" : "cl_mem",
-                            "host-element-type" : "cl_float",
+                            "type" : "float *",
                             "address-space" : "global",
                             "size-parameter" : "_wcl_v_size"
                         },
                     "_wcl_v_size" :
                         {
                             "index" : 9,
-                            "host-type" : "cl_ulong"
+                            "type" : "ulong"
                         },
                     "t0" :
                         {
                             "index" : 10,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "delta" :
                         {
                             "index" : 11,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "v0" :
                         {
                             "index" : 12,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         },
                     "height" :
                         {
                             "index" : 13,
-                            "host-type" : "cl_float"
+                            "type" : "float"
                         }
                 }
         }
 }
 */
 
+// WebCL Validator: validation stage.
 #define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
@@ -194,16 +184,6 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
-    __global float *Trajectory2__x_min;
-    __global float *Trajectory2__x_max;
-    __global float *Trajectory2__y_min;
-    __global float *Trajectory2__y_max;
-    __global float *Trajectory2__vx_min;
-    __global float *Trajectory2__vx_max;
-    __global float *Trajectory2__vy_min;
-    __global float *Trajectory2__vy_max;
-    __global float *Trajectory2__v_min;
-    __global float *Trajectory2__v_max;
     __global float *Trajectory1__x_min;
     __global float *Trajectory1__x_max;
     __global float *Trajectory1__y_min;
@@ -214,6 +194,16 @@ typedef struct {
     __global float *Trajectory1__vy_max;
     __global float *Trajectory1__v_min;
     __global float *Trajectory1__v_max;
+    __global float *Trajectory2__x_min;
+    __global float *Trajectory2__x_max;
+    __global float *Trajectory2__y_min;
+    __global float *Trajectory2__y_max;
+    __global float *Trajectory2__vx_min;
+    __global float *Trajectory2__vx_max;
+    __global float *Trajectory2__vy_min;
+    __global float *Trajectory2__vy_max;
+    __global float *Trajectory2__v_min;
+    __global float *Trajectory2__v_max;
 } _WclGlobalLimits;
 
 typedef struct {
@@ -350,11 +340,11 @@ typedef uint _WclInitType;
 //---------------------------------------------------------------------------
 
 __kernel void Trajectory1(
- __global float *x, unsigned long _wcl_x_size,
-    __global float *y, unsigned long _wcl_y_size,
-    __global float *vx, unsigned long _wcl_vx_size,
-    __global float *vy, unsigned long _wcl_vy_size,
-    __global float *v, unsigned long _wcl_v_size,
+ __global float *x, ulong _wcl_x_size,
+    __global float *y, ulong _wcl_y_size,
+    __global float *vx, ulong _wcl_vx_size,
+    __global float *vy, ulong _wcl_vy_size,
+    __global float *v, ulong _wcl_v_size,
  const float t0,
  const float delta,
  const float v0,
@@ -363,11 +353,11 @@ __kernel void Trajectory1(
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 
     _WclProgramAllocations _wcl_allocations_allocation = {
-        { 0, 0,0, 0,0, 0,0, 0,0, 0,&x[0], &x[_wcl_x_size],&y[0], &y[_wcl_y_size],&vx[0], &vx[_wcl_vx_size],&vy[0], &vy[_wcl_vy_size],&v[0], &v[_wcl_v_size] },
+        { &x[0], &x[_wcl_x_size],&y[0], &y[_wcl_y_size],&vx[0], &vx[_wcl_vx_size],&vy[0], &vy[_wcl_vy_size],&v[0], &v[_wcl_v_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
         0
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
-    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, (__global uint*)0))))))))));
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, (__global uint*)0))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
  int gid = get_global_id(0);
@@ -380,11 +370,11 @@ __kernel void Trajectory1(
  float v5 = v4 - v1;
  float v6 = v0 * v0 - v1 * v5;
 
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (x)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = v2 * t1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (y)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = 0.5f * v5 * t1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vx)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = v2;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vy)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = v3 - v1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (v)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = sqrt(v6);
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (x)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = v2 * t1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (y)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = 0.5f * v5 * t1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vx)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = v2;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vy)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = v3 - v1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (v)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = sqrt(v6);
 } // Trajectory1
 
 //---------------------------------------------------------------------------
@@ -398,11 +388,11 @@ __kernel void Trajectory1(
 //---------------------------------------------------------------------------
 
 __kernel void Trajectory2(
-    __global float *x, unsigned long _wcl_x_size,
-    __global float *y, unsigned long _wcl_y_size,
- __global float *vx, unsigned long _wcl_vx_size,
-    __global float *vy, unsigned long _wcl_vy_size,
-    __global float *v, unsigned long _wcl_v_size,
+    __global float *x, ulong _wcl_x_size,
+    __global float *y, ulong _wcl_y_size,
+ __global float *vx, ulong _wcl_vx_size,
+    __global float *vy, ulong _wcl_vy_size,
+    __global float *v, ulong _wcl_v_size,
  const float t0,
  const float delta,
  const float v0,
@@ -411,11 +401,11 @@ __kernel void Trajectory2(
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 
     _WclProgramAllocations _wcl_allocations_allocation = {
-        { &x[0], &x[_wcl_x_size],&y[0], &y[_wcl_y_size],&vx[0], &vx[_wcl_vx_size],&vy[0], &vy[_wcl_vy_size],&v[0], &v[_wcl_v_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&x[0], &x[_wcl_x_size],&y[0], &y[_wcl_y_size],&vx[0], &vx[_wcl_vx_size],&vy[0], &vy[_wcl_vy_size],&v[0], &v[_wcl_v_size] },
         0
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
-    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, (__global uint*)0))))))))));
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, (__global uint*)0))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
  int gid = get_global_id(0);
@@ -424,11 +414,11 @@ __kernel void Trajectory2(
  float v1 = (9.81f) * t1;
  float v2 = v0 * v0 + v1 * v1;
 
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (x)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = v0 * t1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (y)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = height - 0.5 * v1 * t1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vx)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = v0;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vy)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = -v1;
- (*(_WCL_ADDR_CLAMP_global_10(__global float *, (v)+(gid), 1, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gn))) = sqrt(v2);
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (x)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = v0 * t1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (y)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = height - 0.5 * v1 * t1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vx)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = v0;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (vy)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = -v1;
+ (*(_WCL_ADDR_CLAMP_global_10(__global float *, (v)+(gid), 1, _wcl_allocs->gl.Trajectory1__x_min, _wcl_allocs->gl.Trajectory1__x_max, _wcl_allocs->gl.Trajectory1__y_min, _wcl_allocs->gl.Trajectory1__y_max, _wcl_allocs->gl.Trajectory1__vx_min, _wcl_allocs->gl.Trajectory1__vx_max, _wcl_allocs->gl.Trajectory1__vy_min, _wcl_allocs->gl.Trajectory1__vy_max, _wcl_allocs->gl.Trajectory1__v_min, _wcl_allocs->gl.Trajectory1__v_max, _wcl_allocs->gl.Trajectory2__x_min, _wcl_allocs->gl.Trajectory2__x_max, _wcl_allocs->gl.Trajectory2__y_min, _wcl_allocs->gl.Trajectory2__y_max, _wcl_allocs->gl.Trajectory2__vx_min, _wcl_allocs->gl.Trajectory2__vx_max, _wcl_allocs->gl.Trajectory2__vy_min, _wcl_allocs->gl.Trajectory2__vy_max, _wcl_allocs->gl.Trajectory2__v_min, _wcl_allocs->gl.Trajectory2__v_max, _wcl_allocs->gn))) = sqrt(v2);
 } // Trajectory2
 
 //---------------------------------------------------------------------------
