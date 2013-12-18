@@ -22,7 +22,7 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "",
+      "valcpu"        : "&validator=on",
       "valgpu"        : "",   
     },  
     { 

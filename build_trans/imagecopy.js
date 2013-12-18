@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = '47caaa9d-41a0-4eef-aa64-7472b56b84ba';
+    var PACKAGE_UUID = 'c8c34420-bd7c-4184-9606-2f496b170a9f';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -4979,10 +4979,6 @@ function copyTempDouble(ptr) {
           var nodejs = (typeof window === 'undefined');
           if(nodejs) {
             webcl = require('../webcl');
-          } else {
-            if (typeof(webcl) === "undefined") {
-              webcl = window.WebCL;
-            }
           }
           if (webcl == undefined) {
             alert("Unfortunately your system does not support WebCL. " +
@@ -5391,51 +5387,50 @@ function copyTempDouble(ptr) {
           }
         } else {
           _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
-          /*
-          console.info("------");
-          _host_ptr = new DataView(new ArrayBuffer(size));
-          var _offset = 0;
-          for (var i = 0; i < type.length; i++) {
-            var _type = type[i][0];
-            var _num = type[i][1];
-            switch(_type) {
-              case webcl.SIGNED_INT8:
-                _host_ptr.setInt8(_offset,new Int8Array( HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
-                console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-                _offset += _num;
-                break;
-              case webcl.SIGNED_INT16:
-                _host_ptr.setInt16(_offset,new Int16Array( HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
-                console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-                _offset += 2*_num;
-                break;
-              case webcl.SIGNED_INT32:
-                _host_ptr.setInt32(_offset,new Int32Array( HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-                console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;
-              case webcl.UNSIGNED_INT8:
-                _host_ptr.setUint8(_offset,new Uint8Array( HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
-                console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-                _offset += _num;
-                break;
-              case webcl.UNSIGNED_INT16:
-                host_ptr.setUint16(_offset,new Uint16Array( HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
-                console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-                _offset += 2*_num;
-                break;
-              case webcl.UNSIGNED_INT32:
-                _host_ptr.setUint32(_offset,new Uint32Array( HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-                console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;         
-              default:
-                _host_ptr.setFloat32(_offset,new Float32Array( HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-                console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;
-            }
-          }*/
+          // console.info("------");
+          // _host_ptr = new DataView(new ArrayBuffer(size));
+          // var _offset = 0;
+          // for (var i = 0; i < type.length; i++) {
+          //   var _type = type[i][0];
+          //   var _num = type[i][1];
+          //   switch(_type) {
+          //     case webcl.SIGNED_INT8:
+          //       _host_ptr.setInt8(_offset,new Int8Array( HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
+          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.SIGNED_INT16:
+          //       _host_ptr.setInt16(_offset,new Int16Array( HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
+          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.SIGNED_INT32:
+          //       _host_ptr.setInt32(_offset,new Int32Array( HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT8:
+          //       _host_ptr.setUint8(_offset,new Uint8Array( HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
+          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.UNSIGNED_INT16:
+          //       host_ptr.setUint16(_offset,new Uint16Array( HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
+          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT32:
+          //       _host_ptr.setUint32(_offset,new Uint32Array( HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;         
+          //     default:
+          //       _host_ptr.setFloat32(_offset,new Float32Array( HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //   }
+          // }
         }
         return _host_ptr;
       },getReferencePointerToArray:function (ptr,size,type) {  
@@ -5468,62 +5463,59 @@ function copyTempDouble(ptr) {
           }
         } else {
           _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
-          /*
-          console.info("------");
-          _host_ptr = new DataView(new ArrayBuffer(size));
-          var _offset = 0;
-          for (var i = 0; i < type.length; i++) {
-            var _type = type[i][0];
-            var _num = type[i][1];
-            switch(_type) {
-              case webcl.SIGNED_INT8:
-                _host_ptr.setInt8(_offset,HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) );
-                console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-                _offset += _num;
-                break;
-              case webcl.SIGNED_INT16:
-                _host_ptr.setInt16(_offset,HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
-                console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-                _offset += 2*_num;
-                break;
-              case webcl.SIGNED_INT32:
-                _host_ptr.setInt32(_offset,HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-                console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;
-              case webcl.UNSIGNED_INT8:
-                _host_ptr.setUint8(_offset,HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) );
-                console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-                _offset += _num;
-                break;
-              case webcl.UNSIGNED_INT16:
-                host_ptr.setUint16(_offset,HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
-                console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-                _offset += 2*_num;
-                break;
-              case webcl.UNSIGNED_INT32:
-                _host_ptr.setUint32(_offset,HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-                console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;         
-              default:
-                _host_ptr.setFloat32(_offset,HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-                console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-                _offset += 4*_num;
-                break;
-            }
-          }*/
+          // console.info("------");
+          // _host_ptr = new DataView(new ArrayBuffer(size));
+          // var _offset = 0;
+          // for (var i = 0; i < type.length; i++) {
+          //   var _type = type[i][0];
+          //   var _num = type[i][1];
+          //   switch(_type) {
+          //     case webcl.SIGNED_INT8:
+          //       _host_ptr.setInt8(_offset,HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) );
+          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.SIGNED_INT16:
+          //       _host_ptr.setInt16(_offset,HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
+          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.SIGNED_INT32:
+          //       _host_ptr.setInt32(_offset,HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT8:
+          //       _host_ptr.setUint8(_offset,HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) );
+          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.UNSIGNED_INT16:
+          //       host_ptr.setUint16(_offset,HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
+          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT32:
+          //       _host_ptr.setUint32(_offset,HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;         
+          //     default:
+          //       _host_ptr.setFloat32(_offset,HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //   }
+          // }
         }
         return _host_ptr;
       },catchError:function (e) {
         console.error(e);
         var _error = -1;
-        if (typeof(WebCLException) !== "undefined") {
-          if (e instanceof WebCLException) {
-            var _str=e.message;
-            var _n=_str.lastIndexOf(" ");
-            _error = _str.substr(_n+1,_str.length-_n-1);
-          }
+        if (e instanceof WebCLException) {
+          var _str=e.message;
+          var _n=_str.lastIndexOf(" ");
+          _error = _str.substr(_n+1,_str.length-_n-1);
         }
         return _error;
       }};function _clGetPlatformIDs(num_entries,platforms,num_platforms) {
@@ -6064,8 +6056,9 @@ function copyTempDouble(ptr) {
           var _event = new WebCLEvent();
           CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list,_event);
           HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
         }
-        else CL.cl_objects[command_queue].enqueueWriteImage(CL.cl_objects[image],blocking_write,_origin,_region,input_row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6126,6 +6119,10 @@ function copyTempDouble(ptr) {
         }
         var _callback = null
         if (pfn_notify != 0) {
+          /**
+           * Description
+           * @return 
+           */
           _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
@@ -6206,8 +6203,9 @@ function copyTempDouble(ptr) {
           var _event = new WebCLEvent();
           CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
           HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
         }
-        else CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6236,8 +6234,9 @@ function copyTempDouble(ptr) {
           var _event = new WebCLEvent();
           CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
           HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
         }
-        else CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list);
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -6263,8 +6262,9 @@ function copyTempDouble(ptr) {
           var _event = new WebCLEvent();
           CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list,_event);    
           HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
         }
-        else CL.cl_objects[command_queue].enqueueCopyImage(CL.cl_objects[src_image],CL.cl_objects[dst_image],_src_origin,_dest_origin,_region,_event_wait_list);    
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
