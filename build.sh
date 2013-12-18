@@ -28,36 +28,43 @@ done
 
 makefile=""
 
+# Remove parameter useless for makefile
 for param_makefile in "$@"
 do
-    echo $param_makefile | grep "copy"  1>/dev/null
+    echo $param_makefile | grep "clean\|copy"  1>/dev/null
     if [ ! `echo $?` -eq 0 ]
     then
-        makefile=$makefile" "$param_makefile
+      makefile=$makefile" "$param_makefile
     fi
 
 done
 
-# First clean 
-for ((i = 0; i < 4; i++))
-do
-    element=${list_repositories[i]}
-    
-    cd "$root_repositories$element"
-    
-    echo $(pwd)
+echo $makefile
 
-    echo $param | grep "onlycopy"  1>/dev/null
-    if [ ! `echo $?` -eq 0 ]
-    then
-        # clean
-        make clean $makefile
-    fi
-    
-    cd "$root_repositories"
-
-    echo "\n"
-done
+# First clean only if asked
+echo $param | grep "clean"  1>/dev/null
+if [ `echo $?` -eq 0 ]
+then
+  for ((i = 0; i < 4; i++))
+  do
+      element=${list_repositories[i]}
+      
+      cd "$root_repositories$element"
+  
+      echo $param | grep "onlycopy"  1>/dev/null
+      if [ ! `echo $?` -eq 0 ]
+      then
+          echo "Clean : $(pwd)"
+            
+          # clean
+          make clean $makefile
+      fi
+      
+      cd "$root_repositories"
+  
+      echo "\n"
+  done
+fi
 
 # Build or/and Copy
 for ((i = 0; i < 4; i++))
@@ -66,17 +73,23 @@ do
     folder=${page_subfolder[i]}
 
     cd "$root_repositories$element"
-    echo $(pwd)
 
-    echo $param | grep "onlycopy"  1>/dev/null
+    # If not onlycopy or onlyclean
+    echo $param | grep "onlycopy\|onlyclean"  1>/dev/null
     if [ ! `echo $?` -eq 0 ]
     then
+        echo "Build : $(pwd)"
+        
         # build
         make $makefile
     fi
+    
+    # If copy or onlycopy
     echo $param | grep "copy"  1>/dev/null
     if [ `echo $?` -eq 0 ]
     then
+        echo "Copy : $(pwd)/build/"
+            
         cp -rf $(pwd)/build/ $page_repositories$folder
     fi
     

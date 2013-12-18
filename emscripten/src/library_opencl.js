@@ -417,6 +417,14 @@ var LibraryOpenCL = {
               _param.push(webcl.FLOAT);
             }
 
+#if CL_VALIDATOR
+            if (_array[j].indexOf("ulong _wcl") == -1 ) {
+              _param_validator.push(_param.length - 1);
+            } else {
+              _param_argsize_validator.push(_param.length - 1);
+            }
+#endif    
+
           } else {
             _param.push(_type);
 
