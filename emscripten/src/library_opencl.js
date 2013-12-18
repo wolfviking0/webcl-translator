@@ -1,11 +1,12 @@
-//
-//  library_opencl.js
-//  Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
-//
-//  Created by Anthony Liot.
-//  Copyright (c) 2013 Anthony Liot. All rights reserved.
-//
-
+/**
+* library_opencl.js
+* Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
+*
+* Created by Anthony Liot.
+* Copyright (c) 2013 Anthony Liot. All rights reserved.
+*
+* @class LibraryOpenCL
+*/
 var LibraryOpenCL = {  
 
   $CL__deps: ['$GL'],
@@ -35,6 +36,11 @@ var LibraryOpenCL = {
     cl_objects_counter: 0,
 #endif
 
+    /**
+     * Description
+     * @method init
+     * @return MemberExpression
+     */
     init: function() {
       if (CL.cl_init == 0) {
 #if CL_VALIDATOR
@@ -78,6 +84,12 @@ var LibraryOpenCL = {
       return CL.cl_init;
     },
     
+    /**
+     * Description
+     * @method udid
+     * @param {} obj
+     * @return _id
+     */
     udid: function (obj) {    
       var _id;
 
@@ -120,6 +132,12 @@ var LibraryOpenCL = {
       return _id;      
     },
 
+    /**
+     * Description
+     * @method stringType
+     * @param {} pn_type
+     * @return 
+     */
     stringType: function(pn_type) {
       switch(pn_type) {
         case webcl.SIGNED_INT8:
@@ -150,6 +168,12 @@ var LibraryOpenCL = {
       }
     },
 
+    /**
+     * Description
+     * @method parseType
+     * @param {} string
+     * @return _value
+     */
     parseType: function(string) {
       var _value = -1;
     
@@ -180,6 +204,13 @@ var LibraryOpenCL = {
       return _value;
     },
 
+    /**
+     * Description
+     * @method parseStruct
+     * @param {} kernel_string
+     * @param {} struct_name
+     * @return 
+     */
     parseStruct: function(kernel_string,struct_name) {
 
       // Experimental parse of Struct
@@ -263,6 +294,12 @@ var LibraryOpenCL = {
       }
     },
 
+    /**
+     * Description
+     * @method parseKernel
+     * @param {} kernel_string
+     * @return _mini_kernel_string
+     */
     parseKernel: function(kernel_string) {
 
 #if 0
@@ -503,6 +540,12 @@ var LibraryOpenCL = {
 
     },
 
+    /**
+     * Description
+     * @method getImageSizeType
+     * @param {} image
+     * @return _sizeType
+     */
     getImageSizeType: function (image) {
       var _sizeType = 0;
 
@@ -539,6 +582,12 @@ var LibraryOpenCL = {
     },
 
 
+    /**
+     * Description
+     * @method getImageFormatType
+     * @param {} image
+     * @return _type
+     */
     getImageFormatType: function (image) {
       var _type = 0;
 
@@ -580,6 +629,12 @@ var LibraryOpenCL = {
       return _type;
     },
 
+    /**
+     * Description
+     * @method getImageSizeOrder
+     * @param {} image
+     * @return _sizeOrder
+     */
     getImageSizeOrder: function (image) {
       var _sizeOrder = 0;
 
@@ -615,6 +670,14 @@ var LibraryOpenCL = {
       return _sizeOrder;
     },
 
+    /**
+     * Description
+     * @method getCopyPointerToArray
+     * @param {} ptr
+     * @param {} size
+     * @param {} type
+     * @return _host_ptr
+     */
     getCopyPointerToArray: function(ptr,size,type) { 
 
       var _host_ptr = null;
@@ -651,57 +714,65 @@ var LibraryOpenCL = {
         }
       } else {
         _host_ptr = new Float32Array( {{{ makeHEAPView('F32','ptr','ptr+size') }}} );
-        /*
-        console.info("------");
-        _host_ptr = new DataView(new ArrayBuffer(size));
+        
+        // console.info("------");
+        // _host_ptr = new DataView(new ArrayBuffer(size));
 
-        var _offset = 0;
-        for (var i = 0; i < type.length; i++) {
-          var _type = type[i][0];
-          var _num = type[i][1];
-          switch(_type) {
-            case webcl.SIGNED_INT8:
-              _host_ptr.setInt8(_offset,new Int8Array( {{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} ));
-              console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-              _offset += _num;
-              break;
-            case webcl.SIGNED_INT16:
-              _host_ptr.setInt16(_offset,new Int16Array( {{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} ));
-              console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-              _offset += 2*_num;
-              break;
-            case webcl.SIGNED_INT32:
-              _host_ptr.setInt32(_offset,new Int32Array( {{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} ));
-              console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;
-            case webcl.UNSIGNED_INT8:
-              _host_ptr.setUint8(_offset,new Uint8Array( {{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} ));
-              console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-              _offset += _num;
-              break;
-            case webcl.UNSIGNED_INT16:
-              host_ptr.setUint16(_offset,new Uint16Array( {{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} ));
-              console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-              _offset += 2*_num;
-              break;
-            case webcl.UNSIGNED_INT32:
-              _host_ptr.setUint32(_offset,new Uint32Array( {{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} ));
-              console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;         
-            default:
-              _host_ptr.setFloat32(_offset,new Float32Array( {{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} ));
-              console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;
-          }
-        }*/
+        // var _offset = 0;
+        // for (var i = 0; i < type.length; i++) {
+        //   var _type = type[i][0];
+        //   var _num = type[i][1];
+        //   switch(_type) {
+        //     case webcl.SIGNED_INT8:
+        //       _host_ptr.setInt8(_offset,new Int8Array( {{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} ));
+        //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+        //       _offset += _num;
+        //       break;
+        //     case webcl.SIGNED_INT16:
+        //       _host_ptr.setInt16(_offset,new Int16Array( {{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} ));
+        //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+        //       _offset += 2*_num;
+        //       break;
+        //     case webcl.SIGNED_INT32:
+        //       _host_ptr.setInt32(_offset,new Int32Array( {{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+        //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;
+        //     case webcl.UNSIGNED_INT8:
+        //       _host_ptr.setUint8(_offset,new Uint8Array( {{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} ));
+        //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+        //       _offset += _num;
+        //       break;
+        //     case webcl.UNSIGNED_INT16:
+        //       host_ptr.setUint16(_offset,new Uint16Array( {{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} ));
+        //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+        //       _offset += 2*_num;
+        //       break;
+        //     case webcl.UNSIGNED_INT32:
+        //       _host_ptr.setUint32(_offset,new Uint32Array( {{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+        //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;         
+        //     default:
+        //       _host_ptr.setFloat32(_offset,new Float32Array( {{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} ));
+        //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;
+        //   }
+        // }
       }
 
       return _host_ptr;
     },
 
+    /**
+     * Description
+     * @method getReferencePointerToArray
+     * @param {} ptr
+     * @param {} size
+     * @param {} type
+     * @return _host_ptr
+     */
     getReferencePointerToArray: function(ptr,size,type) {  
       var _host_ptr = null;
 
@@ -737,57 +808,63 @@ var LibraryOpenCL = {
         }
       } else {
         _host_ptr = {{{ makeHEAPView('F32','ptr','ptr+size') }}};
-        /*
-        console.info("------");
-        _host_ptr = new DataView(new ArrayBuffer(size));
+        
+        // console.info("------");
+        // _host_ptr = new DataView(new ArrayBuffer(size));
 
-        var _offset = 0;
-        for (var i = 0; i < type.length; i++) {
-          var _type = type[i][0];
-          var _num = type[i][1];
-          switch(_type) {
-            case webcl.SIGNED_INT8:
-              _host_ptr.setInt8(_offset,{{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} );
-              console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-              _offset += _num;
-              break;
-            case webcl.SIGNED_INT16:
-              _host_ptr.setInt16(_offset,{{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} );
-              console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-              _offset += 2*_num;
-              break;
-            case webcl.SIGNED_INT32:
-              _host_ptr.setInt32(_offset,{{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} );
-              console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;
-            case webcl.UNSIGNED_INT8:
-              _host_ptr.setUint8(_offset,{{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} );
-              console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-              _offset += _num;
-              break;
-            case webcl.UNSIGNED_INT16:
-              host_ptr.setUint16(_offset,{{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} );
-              console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-              _offset += 2*_num;
-              break;
-            case webcl.UNSIGNED_INT32:
-              _host_ptr.setUint32(_offset,{{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} );
-              console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;         
-            default:
-              _host_ptr.setFloat32(_offset,{{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} );
-              console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-              _offset += 4*_num;
-              break;
-          }
-        }*/
+        // var _offset = 0;
+        // for (var i = 0; i < type.length; i++) {
+        //   var _type = type[i][0];
+        //   var _num = type[i][1];
+        //   switch(_type) {
+        //     case webcl.SIGNED_INT8:
+        //       _host_ptr.setInt8(_offset,{{{ makeHEAPView('8','ptr+_offset','ptr+_offset+_num') }}} );
+        //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+        //       _offset += _num;
+        //       break;
+        //     case webcl.SIGNED_INT16:
+        //       _host_ptr.setInt16(_offset,{{{ makeHEAPView('16','ptr+_offset','ptr+_offset+_num*2') }}} );
+        //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+        //       _offset += 2*_num;
+        //       break;
+        //     case webcl.SIGNED_INT32:
+        //       _host_ptr.setInt32(_offset,{{{ makeHEAPView('32','ptr+_offset','ptr+_offset+_num*4') }}} );
+        //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;
+        //     case webcl.UNSIGNED_INT8:
+        //       _host_ptr.setUint8(_offset,{{{ makeHEAPView('U8','ptr+_offset','ptr+_offset+_num') }}} );
+        //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+        //       _offset += _num;
+        //       break;
+        //     case webcl.UNSIGNED_INT16:
+        //       host_ptr.setUint16(_offset,{{{ makeHEAPView('U16','ptr+_offset','ptr+_offset+_num*2') }}} );
+        //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+        //       _offset += 2*_num;
+        //       break;
+        //     case webcl.UNSIGNED_INT32:
+        //       _host_ptr.setUint32(_offset,{{{ makeHEAPView('U32','ptr+_offset','ptr+_offset+_num*4') }}} );
+        //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;         
+        //     default:
+        //       _host_ptr.setFloat32(_offset,{{{ makeHEAPView('F32','ptr+_offset','ptr+_offset+_num*4') }}} );
+        //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+        //       _offset += 4*_num;
+        //       break;
+        //   }
+        // }
       }
 
       return _host_ptr;
     },
 
+    /**
+     * Description
+     * @method catchError
+     * @param {} e
+     * @return _error
+     */
     catchError: function(e) {
       console.error(e);
       var _error = -1;
@@ -804,6 +881,13 @@ var LibraryOpenCL = {
 #if CL_GRAB_TRACE     
     stack_trace: "// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",
 
+    /**
+     * Description
+     * @method webclBeginStackTrace
+     * @param {} name
+     * @param {} parameter
+     * @return 
+     */
     webclBeginStackTrace: function(name,parameter) {
       CL.stack_trace += "\n" + name + "("
 
@@ -812,6 +896,13 @@ var LibraryOpenCL = {
       CL.stack_trace += ")\n";
     },
         
+    /**
+     * Description
+     * @method webclCallStackTrace
+     * @param {} name
+     * @param {} parameter
+     * @return 
+     */
     webclCallStackTrace: function(name,parameter) {
       CL.stack_trace += "\t->" + name + "("
 
@@ -820,6 +911,12 @@ var LibraryOpenCL = {
       CL.stack_trace += ")\n";
     },
 
+    /**
+     * Description
+     * @method webclCallParameterStackTrace
+     * @param {} parameter
+     * @return 
+     */
     webclCallParameterStackTrace: function(parameter) {
       
       for (var i = 0; i < parameter.length - 1 ; i++) {
@@ -879,6 +976,14 @@ var LibraryOpenCL = {
       }
     },
 
+    /**
+     * Description
+     * @method webclEndStackTrace
+     * @param {} result
+     * @param {} message
+     * @param {} exception
+     * @return 
+     */
     webclEndStackTrace: function(result,message,exception) {
       CL.stack_trace += "\t\t=>Result (" + result[0];
       if (result.length >= 2) {
@@ -905,6 +1010,12 @@ var LibraryOpenCL = {
 #endif
   },
 
+  /**
+   * Description
+   * @method webclBeginProfile
+   * @param {} name
+   * @return Literal
+   */
   webclBeginProfile: function(name) {
 #if CL_PROFILE
     // start profiling
@@ -915,6 +1026,11 @@ var LibraryOpenCL = {
     return 0;
   },
 
+  /**
+   * Description
+   * @method webclEndProfile
+   * @return Literal
+   */
   webclEndProfile: function() {
 #if CL_PROFILE
     CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
@@ -932,6 +1048,13 @@ var LibraryOpenCL = {
     return 0;
   },
 
+  /**
+   * Description
+   * @method webclPrintStackTrace
+   * @param {} param_value
+   * @param {} param_value_size
+   * @return MemberExpression
+   */
   webclPrintStackTrace: function(param_value,param_value_size) {
 #if CL_GRAB_TRACE
     var _size = {{{ makeGetValue('param_value_size', '0', 'i32') }}} ;
@@ -948,6 +1071,13 @@ var LibraryOpenCL = {
   },
 
 
+  /**
+   * Description
+   * @method clSetTypePointer
+   * @param {} pn_type
+   * @param {} num_pn_type
+   * @return MemberExpression
+   */
   clSetTypePointer: function(pn_type, num_pn_type) {
     /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
     
@@ -994,6 +1124,14 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
   
+  /**
+   * Description
+   * @method clGetPlatformIDs
+   * @param {} num_entries
+   * @param {} platforms
+   * @param {} num_platforms
+   * @return MemberExpression
+   */
   clGetPlatformIDs: function(num_entries,platforms,num_platforms) {
 
 #if CL_GRAB_TRACE
@@ -1057,6 +1195,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetPlatformInfo
+   * @param {} platform
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetPlatformInfo: function(platform,param_name,param_value_size,param_value,param_value_size_ret) {
     
 #if CL_GRAB_TRACE
@@ -1116,6 +1264,17 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clGetDeviceIDs
+   * @param {} platform
+   * @param {} device_type_i64_1
+   * @param {} device_type_i64_2
+   * @param {} num_entries
+   * @param {} devices
+   * @param {} num_devices
+   * @return MemberExpression
+   */
   clGetDeviceIDs: function(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
     // Assume the device_type is i32 
     assert(device_type_i64_2 == 0, 'Invalid device_type i64');
@@ -1210,6 +1369,16 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clGetDeviceInfo
+   * @param {} device
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetDeviceInfo: function(device,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetDeviceInfo",[device,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -1312,6 +1481,17 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clCreateContext
+   * @param {} properties
+   * @param {} num_devices
+   * @param {} devices
+   * @param {} pfn_notify
+   * @param {} user_data
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateContext: function(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clCreateContext",[properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret]);
@@ -1447,6 +1627,17 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateContextFromType
+   * @param {} properties
+   * @param {} device_type_i64_1
+   * @param {} device_type_i64_2
+   * @param {} pfn_notify
+   * @param {} user_data
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateContextFromType: function(properties,device_type_i64_1,device_type_i64_2,pfn_notify,user_data,cl_errcode_ret) {
     // Assume the device_type is i32 
     assert(device_type_i64_2 == 0, 'Invalid device_type i64');
@@ -1562,6 +1753,12 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clRetainContext
+   * @param {} context
+   * @return MemberExpression
+   */
   clRetainContext: function(context) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainContext",[context]);
@@ -1584,6 +1781,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseContext
+   * @param {} context
+   * @return MemberExpression
+   */
   clReleaseContext: function(context) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseContext",[context]);
@@ -1634,6 +1837,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetContextInfo
+   * @param {} context
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetContextInfo: function(context,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetContextInfo",[context,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -1725,6 +1938,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clCreateCommandQueue
+   * @param {} context
+   * @param {} device
+   * @param {} properties_1
+   * @param {} properties_2
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateCommandQueue: function(context,device,properties_1,properties_2,cl_errcode_ret) {
     // Assume the properties is i32 
     assert(properties_2 == 0, 'Invalid properties i64');
@@ -1798,6 +2021,12 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clRetainCommandQueue
+   * @param {} command_queue
+   * @return MemberExpression
+   */
   clRetainCommandQueue: function(command_queue) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainCommandQueue",[command_queue]);
@@ -1820,6 +2049,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseCommandQueue
+   * @param {} command_queue
+   * @return MemberExpression
+   */
   clReleaseCommandQueue: function(command_queue) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseCommandQueue",[command_queue]);
@@ -1869,6 +2104,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetCommandQueueInfo
+   * @param {} command_queue
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetCommandQueueInfo: function(command_queue,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetCommandQueueInfo",[command_queue,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -1952,6 +2197,17 @@ var LibraryOpenCL = {
   },
 
   clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
+  /**
+   * Description
+   * @method clCreateBuffer
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} size
+   * @param {} host_ptr
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateBuffer: function(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -2082,6 +2338,17 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateSubBuffer
+   * @param {} buffer
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} buffer_create_type
+   * @param {} buffer_create_info
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateSubBuffer: function(buffer,flags_i64_1,flags_i64_2,buffer_create_type,buffer_create_info,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -2182,6 +2449,20 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateImage2D
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} image_format
+   * @param {} image_width
+   * @param {} image_height
+   * @param {} image_row_pitch
+   * @param {} host_ptr
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateImage2D: function(context,flags_i64_1,flags_i64_2,image_format,image_width,image_height,image_row_pitch,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -2371,6 +2652,22 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateImage3D
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} image_format
+   * @param {} image_width
+   * @param {} image_height
+   * @param {} image_depth
+   * @param {} image_row_pitch
+   * @param {} image_slice_pitch
+   * @param {} host_ptr
+   * @param {} cl_errcode_ret
+   * @return Literal
+   */
   clCreateImage3D: function(context,flags_i64_1,flags_i64_2,image_format,image_width,image_height,image_depth,image_row_pitch,image_slice_pitch,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -2384,6 +2681,12 @@ var LibraryOpenCL = {
     return 0;
   },
 
+  /**
+   * Description
+   * @method clRetainMemObject
+   * @param {} memobj
+   * @return MemberExpression
+   */
   clRetainMemObject: function(memobj) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainMemObject",[memobj]);
@@ -2407,6 +2710,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseMemObject
+   * @param {} memobj
+   * @return MemberExpression
+   */
   clReleaseMemObject: function(memobj) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseMemObject",[memobj]);
@@ -2456,6 +2765,18 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetSupportedImageFormats
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} image_type
+   * @param {} num_entries
+   * @param {} image_formats
+   * @param {} num_image_formats
+   * @return MemberExpression
+   */
   clGetSupportedImageFormats: function(context,flags_i64_1,flags_i64_2,image_type,num_entries,image_formats,num_image_formats) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -2543,6 +2864,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetMemObjectInfo
+   * @param {} memobj
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetMemObjectInfo: function(memobj,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetMemObjectInfo",[memobj,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -2615,6 +2946,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetImageInfo
+   * @param {} image
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetImageInfo: function(image,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetImageInfo",[image,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -2694,12 +3035,30 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clSetMemObjectDestructorCallback
+   * @param {} memobj
+   * @param {} pfn_notify
+   * @param {} user_data
+   * @return MemberExpression
+   */
   clSetMemObjectDestructorCallback: function(memobj,pfn_notify,user_data) {
     console.error("clSetMemObjectDestructorCallback: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
     return webcl.INVALID_VALUE;
   },
 
+  /**
+   * Description
+   * @method clCreateSampler
+   * @param {} context
+   * @param {} normalized_coords
+   * @param {} addressing_mode
+   * @param {} filter_mode
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateSampler: function(context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clCreateSampler",[context,normalized_coords,addressing_mode,filter_mode,cl_errcode_ret]);
@@ -2755,6 +3114,12 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clRetainSampler
+   * @param {} sampler
+   * @return MemberExpression
+   */
   clRetainSampler: function(sampler) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainSampler",[sampler]);
@@ -2777,6 +3142,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseSampler
+   * @param {} sampler
+   * @return MemberExpression
+   */
   clReleaseSampler: function(sampler) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseSampler",[sampler]);
@@ -2828,6 +3199,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetSamplerInfo
+   * @param {} sampler
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetSamplerInfo: function(sampler,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetSamplerInfo",[sampler,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -2912,6 +3293,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clCreateProgramWithSource
+   * @param {} context
+   * @param {} count
+   * @param {} strings
+   * @param {} lengths
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateProgramWithSource: function(context,count,strings,lengths,cl_errcode_ret) {
     
 #if CL_GRAB_TRACE
@@ -2986,6 +3377,18 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateProgramWithBinary
+   * @param {} context
+   * @param {} num_devices
+   * @param {} device_list
+   * @param {} lengths
+   * @param {} binaries
+   * @param {} cl_binary_status
+   * @param {} cl_errcode_ret
+   * @return Literal
+   */
   clCreateProgramWithBinary: function(context,num_devices,device_list,lengths,binaries,cl_binary_status,cl_errcode_ret) {
     console.error("clCreateProgramWithBinary: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
     
@@ -2997,6 +3400,12 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clRetainProgram
+   * @param {} program
+   * @return MemberExpression
+   */
   clRetainProgram: function(program) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainProgram",[program]);
@@ -3019,6 +3428,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseProgram
+   * @param {} program
+   * @return MemberExpression
+   */
   clReleaseProgram: function(program) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseProgram",[program]);
@@ -3071,6 +3486,17 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clBuildProgram
+   * @param {} program
+   * @param {} num_devices
+   * @param {} device_list
+   * @param {} options
+   * @param {} pfn_notify
+   * @param {} user_data
+   * @return MemberExpression
+   */
   clBuildProgram: function(program,num_devices,device_list,options,pfn_notify,user_data) {
 
 #if CL_GRAB_TRACE
@@ -3121,6 +3547,10 @@ var LibraryOpenCL = {
 
       var _callback = null
       if (pfn_notify != 0) {
+        /**
+         * Description
+         * @return 
+         */
         _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
       }
 
@@ -3148,12 +3578,27 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clUnloadCompiler
+   * @return MemberExpression
+   */
   clUnloadCompiler: function() {
     console.error("clUnloadCompiler: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
     
     return webcl.INVALID_VALUE;;
   },
 
+  /**
+   * Description
+   * @method clGetProgramInfo
+   * @param {} program
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetProgramInfo: function(program,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetProgramInfo",[program,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -3248,6 +3693,17 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetProgramBuildInfo
+   * @param {} program
+   * @param {} device
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetProgramBuildInfo: function(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetProgramBuildInfo",[program,device,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -3326,6 +3782,14 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clCreateKernel
+   * @param {} program
+   * @param {} kernel_name
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateKernel: function(program,kernel_name,cl_errcode_ret) {
     
 #if CL_GRAB_TRACE
@@ -3400,6 +3864,15 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateKernelsInProgram
+   * @param {} program
+   * @param {} num_kernels
+   * @param {} kernels
+   * @param {} num_kernels_ret
+   * @return MemberExpression
+   */
   clCreateKernelsInProgram: function(program,num_kernels,kernels,num_kernels_ret) {
     
 #if CL_GRAB_TRACE
@@ -3468,6 +3941,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clRetainKernel
+   * @param {} kernel
+   * @return MemberExpression
+   */
   clRetainKernel: function(kernel) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainKernel",[kernel]);
@@ -3489,6 +3968,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseKernel
+   * @param {} kernel
+   * @return MemberExpression
+   */
   clReleaseKernel: function(kernel) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseKernel",[kernel]);
@@ -3541,6 +4026,15 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },  
 
+  /**
+   * Description
+   * @method clSetKernelArg
+   * @param {} kernel
+   * @param {} arg_index
+   * @param {} arg_size
+   * @param {} arg_value
+   * @return MemberExpression
+   */
   clSetKernelArg: function(kernel,arg_index,arg_size,arg_value) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetKernelArg",[kernel,arg_index,arg_size,arg_value]);
@@ -3659,6 +4153,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetKernelInfo
+   * @param {} kernel
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetKernelInfo: function(kernel,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetKernelInfo",[kernel,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -3734,6 +4238,17 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetKernelWorkGroupInfo
+   * @param {} kernel
+   * @param {} device
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetKernelWorkGroupInfo: function(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetKernelWorkGroupInfo",[kernel,device,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -3804,6 +4319,13 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clWaitForEvents
+   * @param {} num_events
+   * @param {} event_list
+   * @return MemberExpression
+   */
   clWaitForEvents: function(num_events,event_list) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clWaitForEvents",[num_events,event_list]);
@@ -3847,6 +4369,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetEventInfo
+   * @param {} event
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetEventInfo: function(event,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetEventInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -3914,6 +4446,13 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clCreateUserEvent
+   * @param {} context
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateUserEvent: function(context,cl_errcode_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clCreateUserEvent",[context,cl_errcode_ret]);
@@ -3962,6 +4501,12 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clRetainEvent
+   * @param {} event
+   * @return MemberExpression
+   */
   clRetainEvent: function(event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clRetainEvent",[event]);
@@ -3983,6 +4528,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clReleaseEvent
+   * @param {} event
+   * @return MemberExpression
+   */
   clReleaseEvent: function(event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clReleaseEvent",[event]);
@@ -4035,6 +4586,13 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clSetUserEventStatus
+   * @param {} event
+   * @param {} execution_status
+   * @return MemberExpression
+   */
   clSetUserEventStatus: function(event,execution_status) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetUserEventStatus",[event,execution_status]);
@@ -4074,6 +4632,15 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clSetEventCallback
+   * @param {} event
+   * @param {} command_exec_callback_type
+   * @param {} pfn_notify
+   * @param {} user_data
+   * @return MemberExpression
+   */
   clSetEventCallback: function(event,command_exec_callback_type,pfn_notify,user_data) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clSetEventCallback",[event,command_exec_callback_type,pfn_notify,user_data]);
@@ -4114,6 +4681,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetEventProfilingInfo
+   * @param {} event
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetEventProfilingInfo: function(event,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetEventProfilingInfo",[event,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -4160,6 +4737,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clFlush
+   * @param {} command_queue
+   * @return MemberExpression
+   */
   clFlush: function(command_queue) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clFlush",[command_queue]);
@@ -4196,6 +4779,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clFinish
+   * @param {} command_queue
+   * @return MemberExpression
+   */
   clFinish: function(command_queue) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clFinish",[command_queue]);
@@ -4233,6 +4822,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueReadBuffer
+   * @param {} command_queue
+   * @param {} buffer
+   * @param {} blocking_read
+   * @param {} offset
+   * @param {} cb
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueReadBuffer: function(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueReadBuffer",[command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4316,6 +4919,25 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;    
   },
 
+  /**
+   * Description
+   * @method clEnqueueReadBufferRect
+   * @param {} command_queue
+   * @param {} buffer
+   * @param {} blocking_read
+   * @param {} buffer_origin
+   * @param {} host_origin
+   * @param {} region
+   * @param {} buffer_row_pitch
+   * @param {} buffer_slice_pitch
+   * @param {} host_row_pitch
+   * @param {} host_slice_pitch
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueReadBufferRect: function(command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueReadBufferRect",[command_queue,buffer,blocking_read,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4414,6 +5036,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;    
   },
 
+  /**
+   * Description
+   * @method clEnqueueWriteBuffer
+   * @param {} command_queue
+   * @param {} buffer
+   * @param {} blocking_write
+   * @param {} offset
+   * @param {} cb
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueWriteBuffer: function(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteBuffer",[command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4497,6 +5133,25 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;  
   },
 
+  /**
+   * Description
+   * @method clEnqueueWriteBufferRect
+   * @param {} command_queue
+   * @param {} buffer
+   * @param {} blocking_write
+   * @param {} buffer_origin
+   * @param {} host_origin
+   * @param {} region
+   * @param {} buffer_row_pitch
+   * @param {} buffer_slice_pitch
+   * @param {} host_row_pitch
+   * @param {} host_slice_pitch
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueWriteBufferRect: function(command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteBufferRect",[command_queue,buffer,blocking_write,buffer_origin,host_origin,region,buffer_row_pitch,buffer_slice_pitch,host_row_pitch,host_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4594,6 +5249,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;  
   },
 
+  /**
+   * Description
+   * @method clEnqueueCopyBuffer
+   * @param {} command_queue
+   * @param {} src_buffer
+   * @param {} dst_buffer
+   * @param {} src_offset
+   * @param {} dst_offset
+   * @param {} cb
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueCopyBuffer: function(command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyBuffer",[command_queue,src_buffer,dst_buffer,src_offset,dst_offset,cb,num_events_in_wait_list,event_wait_list,event]);
@@ -4672,6 +5341,22 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;  
   },
 
+  /**
+   * Description
+   * @method clEnqueueReadImage
+   * @param {} command_queue
+   * @param {} image
+   * @param {} blocking_read
+   * @param {} origin
+   * @param {} region
+   * @param {} row_pitch
+   * @param {} slice_pitch
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueReadImage: function(command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueReadImage",[command_queue,image,blocking_read,origin,region,row_pitch,slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4755,6 +5440,22 @@ var LibraryOpenCL = {
     return webcl.SUCCESS; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueWriteImage
+   * @param {} command_queue
+   * @param {} image
+   * @param {} blocking_write
+   * @param {} origin
+   * @param {} region
+   * @param {} input_row_pitch
+   * @param {} input_slice_pitch
+   * @param {} ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueWriteImage: function(command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWriteImage",[command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -4840,6 +5541,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;  
   },
 
+  /**
+   * Description
+   * @method clEnqueueCopyImage
+   * @param {} command_queue
+   * @param {} src_image
+   * @param {} dst_image
+   * @param {} src_origin
+   * @param {} dst_origin
+   * @param {} region
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueCopyImage: function(command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyImage",[command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
@@ -4927,6 +5642,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueCopyImageToBuffer
+   * @param {} command_queue
+   * @param {} src_image
+   * @param {} dst_buffer
+   * @param {} src_origin
+   * @param {} region
+   * @param {} dst_offset
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueCopyImageToBuffer: function(command_queue,src_image,dst_buffer,src_origin,region,dst_offset,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyImageToBuffer",[command_queue,src_image,dst_buffer,src_origin,region,dst_offset,num_events_in_wait_list,event_wait_list,event]);
@@ -5013,6 +5742,20 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueCopyBufferToImage
+   * @param {} command_queue
+   * @param {} src_buffer
+   * @param {} dst_image
+   * @param {} src_offset
+   * @param {} dst_origin
+   * @param {} region
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueCopyBufferToImage: function(command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueCopyBufferToImage",[command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event]);
@@ -5099,6 +5842,22 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueMapBuffer
+   * @param {} command_queue
+   * @param {} buffer
+   * @param {} blocking_map
+   * @param {} map_flags_i64_1
+   * @param {} map_flags_i64_2
+   * @param {} offset
+   * @param {} cb
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @param {} cl_errcode_ret
+   * @return MemberExpression
+   */
   clEnqueueMapBuffer: function(command_queue,buffer,blocking_map,map_flags_i64_1,map_flags_i64_2,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
 #if ASSERTIONS       
     // Assume the map_flags is i32 
@@ -5110,6 +5869,24 @@ var LibraryOpenCL = {
     return webcl.INVALID_VALUE; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueMapImage
+   * @param {} command_queue
+   * @param {} image
+   * @param {} blocking_map
+   * @param {} map_flags_i64_1
+   * @param {} map_flags_i64_2
+   * @param {} origin
+   * @param {} region
+   * @param {} image_row_pitch
+   * @param {} image_slice_pitch
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @param {} cl_errcode_ret
+   * @return MemberExpression
+   */
   clEnqueueMapImage: function(command_queue,image,blocking_map,map_flags_i64_1,map_flags_i64_2,origin,region,image_row_pitch,image_slice_pitch,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
 #if ASSERTIONS    
     // Assume the map_flags is i32 
@@ -5121,6 +5898,17 @@ var LibraryOpenCL = {
     return webcl.INVALID_VALUE; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueUnmapMemObject
+   * @param {} command_queue
+   * @param {} memobj
+   * @param {} mapped_ptr
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueUnmapMemObject: function(command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event) {
     
     console.error("clEnqueueUnmapMemObject: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
@@ -5128,6 +5916,20 @@ var LibraryOpenCL = {
     return webcl.INVALID_VALUE; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueNDRangeKernel
+   * @param {} command_queue
+   * @param {} kernel
+   * @param {} work_dim
+   * @param {} global_work_offset
+   * @param {} global_work_size
+   * @param {} local_work_size
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueNDRangeKernel: function(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueNDRangeKernel",[command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event]);
@@ -5213,18 +6015,50 @@ var LibraryOpenCL = {
 
   },
 
+  /**
+   * Description
+   * @method clEnqueueTask
+   * @param {} command_queue
+   * @param {} kernel
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueTask: function(command_queue,kernel,num_events_in_wait_list,event_wait_list,event) {
     console.error("clEnqueueTask: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
     return webcl.INVALID_VALUE; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueNativeKernel
+   * @param {} command_queue
+   * @param {} user_func
+   * @param {} args
+   * @param {} cb_args
+   * @param {} num_mem_objects
+   * @param {} mem_list
+   * @param {} args_mem_loc
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueNativeKernel: function(command_queue,user_func,args,cb_args,num_mem_objects,mem_list,args_mem_loc,num_events_in_wait_list,event_wait_list,event) {
     console.error("clEnqueueNativeKernel: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
     return webcl.INVALID_VALUE; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueMarker
+   * @param {} command_queue
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueMarker: function(command_queue,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueMarker",[command_queue,event]);
@@ -5271,6 +6105,14 @@ var LibraryOpenCL = {
     return webcl.SUCCESS; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueWaitForEvents
+   * @param {} command_queue
+   * @param {} num_events
+   * @param {} event_list
+   * @return MemberExpression
+   */
   clEnqueueWaitForEvents: function(command_queue,num_events,event_list) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueWaitForEvents",[command_queue,num_events,event_list]);
@@ -5326,6 +6168,12 @@ var LibraryOpenCL = {
     return webcl.SUCCESS; 
   },
 
+  /**
+   * Description
+   * @method clEnqueueBarrier
+   * @param {} command_queue
+   * @return MemberExpression
+   */
   clEnqueueBarrier: function(command_queue) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueBarrier",[command_queue]);
@@ -5364,11 +6212,27 @@ var LibraryOpenCL = {
     return webcl.SUCCESS; 
   },
 
+  /**
+   * Description
+   * @method clGetExtensionFunctionAddress
+   * @param {} func_name
+   * @return MemberExpression
+   */
   clGetExtensionFunctionAddress: function(func_name) {
     console.error("clGetExtensionFunctionAddress: Not yet implemented\n");
     return webcl.INVALID_VALUE;
   },
 
+  /**
+   * Description
+   * @method clCreateFromGLBuffer
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} bufobj
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateFromGLBuffer: function(context,flags_i64_1,flags_i64_2,bufobj,cl_errcode_ret) {
 #if ASSERTIONS    
     // Assume the flags is i32 
@@ -5434,6 +6298,18 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateFromGLTexture
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} target
+   * @param {} miplevel
+   * @param {} texture
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateFromGLTexture: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
 #if ASSERTIONS    
     // Assume the flags is i32 
@@ -5499,6 +6375,18 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateFromGLTexture2D
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} target
+   * @param {} miplevel
+   * @param {} texture
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateFromGLTexture2D: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
 #if ASSERTIONS    
     // Assume the flags is i32 
@@ -5565,6 +6453,18 @@ var LibraryOpenCL = {
     return _id;
   },
 
+  /**
+   * Description
+   * @method clCreateFromGLTexture3D
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} target
+   * @param {} miplevel
+   * @param {} texture
+   * @param {} cl_errcode_ret
+   * @return Literal
+   */
   clCreateFromGLTexture3D: function(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
 #if ASSERTIONS
     // Assume the flags is i32 
@@ -5581,6 +6481,16 @@ var LibraryOpenCL = {
     return 0;
   },
 
+  /**
+   * Description
+   * @method clCreateFromGLRenderbuffer
+   * @param {} context
+   * @param {} flags_i64_1
+   * @param {} flags_i64_2
+   * @param {} renderbuffer
+   * @param {} cl_errcode_ret
+   * @return _id
+   */
   clCreateFromGLRenderbuffer: function(context,flags_i64_1,flags_i64_2,renderbuffer,cl_errcode_ret) {
 #if ASSERTIONS    
     // Assume the flags is i32 
@@ -5645,6 +6555,14 @@ var LibraryOpenCL = {
     return _id;  
   },
 
+  /**
+   * Description
+   * @method clGetGLObjectInfo
+   * @param {} memobj
+   * @param {} gl_object_type
+   * @param {} gl_object_name
+   * @return MemberExpression
+   */
   clGetGLObjectInfo: function(memobj,gl_object_type,gl_object_name) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetGLObjectInfo",[memobj,gl_object_type,gl_object_name]);
@@ -5689,6 +6607,16 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clGetGLTextureInfo
+   * @param {} memobj
+   * @param {} param_name
+   * @param {} param_value_size
+   * @param {} param_value
+   * @param {} param_value_size_ret
+   * @return MemberExpression
+   */
   clGetGLTextureInfo: function(memobj,param_name,param_value_size,param_value,param_value_size_ret) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clGetGLTextureInfo",[memobj,param_name,param_value_size,param_value,param_value_size_ret]);
@@ -5731,6 +6659,17 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueAcquireGLObjects
+   * @param {} command_queue
+   * @param {} num_objects
+   * @param {} mem_objects
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueAcquireGLObjects: function(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueAcquireGLObjects",[command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event]);
@@ -5810,6 +6749,17 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
+  /**
+   * Description
+   * @method clEnqueueReleaseGLObjects
+   * @param {} command_queue
+   * @param {} num_objects
+   * @param {} mem_objects
+   * @param {} num_events_in_wait_list
+   * @param {} event_wait_list
+   * @param {} event
+   * @return MemberExpression
+   */
   clEnqueueReleaseGLObjects: function(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueReleaseGLObjects",[command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event]);
