@@ -7,7 +7,7 @@
 #  Copyright (c) 2013 Anthony Liot. All rights reserved.
 #
 
-START=`date +%s`
+START=$(date +%s)
 
 cd ../
 
@@ -100,11 +100,11 @@ do
     echo "\n"
 done
 
-END=`date +%s`
+END=$(date +%s)
 
-ELAPSED=`echo "scale=8; ($END - $START) / 1000000000" | bc`
+ELAPSED=$(($END - $START))
 
-echo "Build complete in $ELAPSED seconds"
+echo "Build complete in $(($ELAPSED / 60)):$(($ELAPSED % 60)) minutes"
 
 
 
