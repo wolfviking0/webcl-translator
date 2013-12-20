@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_mandelbulbgpu.data';
-    var PACKAGE_UUID = '1a4aa825-f944-4090-8591-b81e965edec7';
+    var PACKAGE_UUID = 'f84cf0ad-1c5d-4da2-b8a5-40e75006ea03';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

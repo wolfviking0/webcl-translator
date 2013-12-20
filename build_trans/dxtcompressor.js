@@ -96,7 +96,7 @@ Module['FS_createPath']('/', 'data', true, true);
     };
       new DataRequest(0, 131200, 0, 0).open('GET', '/data/lena_ref.dds');
     new DataRequest(131200, 917647, 0, 0).open('GET', '/data/lena.ppm');
-    new DataRequest(917647, 1003048, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
+    new DataRequest(917647, 930879, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -106,7 +106,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'a9e9b9bd-9493-4d6c-ac9a-7f876d484b77';
+    var PACKAGE_UUID = '1220a20e-3866-4f7f-984d-c21a67f2196a';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
