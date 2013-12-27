@@ -13,7 +13,7 @@
     <![endif]-->
     <title>webcl-translator by Anthony Liot</title>
     <script src="javascripts/configuration.js" type="text/javascript"></script>
-
+    <script src="javascripts/configuration-debug.js" type="text/javascript"></script>
     <script type="text/javascript">
       function onclickurl(page, sample, gl, parameter) {
         // http://wolfviking0.github.io/webcl-translator
@@ -43,15 +43,35 @@
 
           <script language=javascript>
 
-          // configuration_pages inside configuration.js
-          for (title in configuration_pages) {
+          var configuration = configuration_pages;
+
+          // parse parameter of html page
+          if (typeof pageParams === 'undefined') {
+            var pageParams = window.location.search || '';
+          }
+
+          if (pageParams[0] == '?') pageParams = pageParams.substr(1);
+          var urlParts = pageParams.split('&');
+          var USE_DEBUG = 0;
+          // set new value with the parameter of url
+          for (var i = 0; i < urlParts.length; i++) {
+            var eltParts = urlParts[i].split('=');
+            if (eltParts[0].toLowerCase() == "debug") {
+              USE_DEBUG = eltParts[1] == "off" ? 0 : 1;
+            } 
+          }
+
+          if (USE_DEBUG) configuration = configuration_pages_debug;
+
+          // configuration inside configuration.js
+          for (title in configuration) {
             var tag = title.replace(" ","_");
             // Title
             document.write("<h3><a name=\""+tag+"\" class=\"anchor\" href=\"#"+tag+"\"><span class=\"octicon octicon-link\"></span></a>"+title+"</h3>");
             document.write("<table border=\"1\" width=\"100%\"><tr><th></th><th></th><th colspan=2 width=\"20%\">NATIVE</th><th colspan=2  width=\"20%\">VALIDATOR</th></tr><tr><th>Title</th><th>Compatibility</th><th>CPU</th><th>GPU</th><th>CPU</th><th>GPU</th></tr>");
 
-            for (var i = 0; i < configuration_pages[title].length; i++) {
-              var object = configuration_pages[title][i];
+            for (var i = 0; i < configuration[title].length; i++) {
+              var object = configuration[title][i];
 
               var _linkCPU ="none"
               var _linkCPUVAL ="none"

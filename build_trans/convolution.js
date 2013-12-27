@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/convolution.data';
     var REMOTE_PACKAGE_NAME = 'convolution.data';
-    var PACKAGE_UUID = 'cc42b3a0-c7ff-4894-a453-8aa7d1ae678d';
+    var PACKAGE_UUID = '278fd433-9d0a-4dd4-88d7-108603f5244d';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
