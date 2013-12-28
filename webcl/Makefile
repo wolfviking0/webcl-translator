@@ -57,12 +57,17 @@ $(info )
 #----------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------#		
 
+all: all_1 all_2 all_3
 
-all: \
+all_1: \
 	hello_world_sample 			\
 	imagecopy_sample			\
+
+all_2: \
 	eventprofiling_sample		\
 	convolution_sample 			\
+
+all_3: \
 	attractor_sample			\
 	dxt_sample					\
 	

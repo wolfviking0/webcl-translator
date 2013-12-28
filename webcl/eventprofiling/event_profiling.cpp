@@ -13,7 +13,7 @@ using namespace std;
 #include <CL/opencl.h>
 #endif
  
-#define DIM 200
+#define DIM 300
 #define MAX_SOURCE_SIZE (0x100000)
  
 int main(int argc, char *argv[])
@@ -250,19 +250,19 @@ int main(int argc, char *argv[])
 			time3 += (end-start);
 		}
 	}
-	cout << (time1-time2-time3+0.0)/1000000000 << endl;
-	cout << (time2+0.0)/1000000000 << endl;
-	cout << (time3+0.0)/1000000000 << endl;
+	cout << "Loop 1 : " << (time1-time2-time3+0.0)/1000000000 << endl;
+	cout << "Loop 2 : " <<(time2+0.0)/1000000000 << endl;
+	cout << "Loop 3 : " <<(time3+0.0)/1000000000 << endl;
  
     /* Transfer result to host */
- 
+ 	/*
 	for(int i=0;i<DIM;i++){
 		for(int j=0;j<DIM-1;j++){
 			cout << output[DIM*i+j] << " ";
 		}
 		cout << output[DIM*i+(DIM-1)] << endl;
 	}
- 
+ 	*/
  
     /* Finalization */
     ret = clFlush(command_queue);
