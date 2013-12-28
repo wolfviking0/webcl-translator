@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = 'dav_juliagpu.data';
-    var PACKAGE_UUID = '69625c2d-ab30-47db-b766-fa144305731f';
+    var PACKAGE_UUID = '31f28501-a46f-409f-97b8-199d7bf15d0a';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

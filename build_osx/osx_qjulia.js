@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = 'osx_qjulia.data';
-    var PACKAGE_UUID = '08bf3f7e-4da1-4fa3-98cb-c03a07210246';
+    var PACKAGE_UUID = '7f99dd23-5e01-4445-8780-1370018c05df';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

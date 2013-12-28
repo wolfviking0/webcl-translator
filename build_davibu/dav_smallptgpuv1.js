@@ -112,7 +112,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = 'dav_smallptgpuv1.data';
-    var PACKAGE_UUID = '2ed1931b-1809-426c-ba8d-83a4442b4f5d';
+    var PACKAGE_UUID = '52f5ceff-1e2e-4bff-b6a7-f7e59b7680cd';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

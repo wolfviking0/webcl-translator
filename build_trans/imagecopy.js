@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = 'ccaf56ed-000b-413c-b90c-2be1d113d94c';
+    var PACKAGE_UUID = '6210ce8a-0329-428f-8f01-71d0ddccdf31';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
