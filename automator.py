@@ -53,7 +53,7 @@ def clear_prof_data():
     global PROF_DATA
     PROF_DATA = {}
 
-list_repositories=["webcl-translator/webcl","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples"]
+list_repositories=["webcl-translator/webcl","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples","boost"]
 
 page_subfolder=["build_trans","build_osx","build_toys","build_davibu","build_book"]
 
@@ -140,7 +140,7 @@ def worker_build(repo,param,id):
 def build(cores,param):
   print "Function 'build' ..."
   jobs = []
-  for i in list_repositories:
+  for i in list_repositories[:-1]:
     for j in range(1,4):
       p = multiprocessing.Process(target=worker_build, args=(i,param,j,))
       jobs.append(p)
@@ -165,7 +165,7 @@ def worker_copy(folder,repo):
 def copy(cores):
   print "Function 'copy' ..."
   jobs = []
-  for (folder,repo) in zip(page_subfolder, list_repositories):
+  for (folder,repo) in zip(page_subfolder, list_repositories[:-1]):
     p = multiprocessing.Process(target=worker_copy, args=(folder,repo))
     jobs.append(p)
     p.start()
