@@ -24,6 +24,7 @@ var LibraryOpenCL = {
     // Pointer type (void*)
     cl_pn_type: [],
     cl_objects: {},
+    cl_objects_map: {},
     cl_objects_retains: {},
 
 #if CL_VALIDATOR
@@ -65,6 +66,8 @@ var LibraryOpenCL = {
           webcl["SAMPLER"]          = 0x1300;
           webcl["IMAGE2D"]          = 0x1301;
           webcl["UNSIGNED_LONG"]    = 0x1302;
+          webcl["MAP_READ"]         = 0x1; 
+          webcl["MAP_WRITE"]        = 0x2;
 
           for (var i = 0; i < CL.cl_extensions.length; i ++) {
 
@@ -2196,7 +2199,6 @@ var LibraryOpenCL = {
     return webcl.SUCCESS;
   },
 
-  clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
   /**
    * Description
    * @method clCreateBuffer
@@ -2208,6 +2210,7 @@ var LibraryOpenCL = {
    * @param {} cl_errcode_ret
    * @return _id
    */
+  clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
   clCreateBuffer: function(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
     // Assume the flags is i32 
     assert(flags_i64_2 == 0, 'Invalid flags i64');
@@ -4854,7 +4857,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -4871,7 +4874,7 @@ var LibraryOpenCL = {
         CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -4956,7 +4959,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -4985,7 +4988,7 @@ var LibraryOpenCL = {
         CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5068,7 +5071,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5085,7 +5088,7 @@ var LibraryOpenCL = {
         CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5170,7 +5173,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5201,7 +5204,7 @@ var LibraryOpenCL = {
         CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5278,7 +5281,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5286,7 +5289,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5299,7 +5302,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5372,7 +5375,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5399,7 +5402,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5471,7 +5474,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5499,7 +5502,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5570,7 +5573,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+src_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5578,7 +5581,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5601,7 +5604,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5671,7 +5674,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+src_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5679,7 +5682,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5700,7 +5703,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5771,7 +5774,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5779,7 +5782,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLBuffer '"+dst_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -5800,7 +5803,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
@@ -5858,15 +5861,71 @@ var LibraryOpenCL = {
    * @param {} cl_errcode_ret
    * @return MemberExpression
    */
+  clCreateBuffer__deps: ['clEnqueueReadBuffer'],
   clEnqueueMapBuffer: function(command_queue,buffer,blocking_map,map_flags_i64_1,map_flags_i64_2,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
 #if ASSERTIONS       
     // Assume the map_flags is i32 
     assert(map_flags_i64_2 == 0, 'Invalid map flags i64');
 #endif
+#if CL_GRAB_TRACE
+    CL.webclBeginStackTrace("clEnqueueMapBuffer",[command_queue,buffer,blocking_map,map_flags_i64_1,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret]);
+#endif
+#if CL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueMapBuffer : you don't call clSetTypePointer");
+#endif
+#if CL_CHECK_VALID_OBJECT   
+    if (!(command_queue in CL.cl_objects)) {
+#if CL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif        
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_COMMAND_QUEUE', 'i32') }}};
+      }
+      return 0;
+    }
+#endif 
+#if CL_CHECK_VALID_OBJECT   
+    if (!(buffer in CL.cl_objects)) {
+#if CL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif  
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
+#endif
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.CL_INVALID_MEM_OBJECT', 'i32') }}};
+      }
+      return 0;
+    }
+#endif 
 
-    console.error("clEnqueueMapBuffer: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+    var mapped_ptr = _malloc(cb);
 
-    return webcl.INVALID_VALUE; 
+    // { SIZE , BLOCKING_MAP , OFFSET }
+    CL.cl_objects_map[mapped_ptr] = {"size":cb,"blocking":blocking_map,"offset":offset,"mode":map_flags_i64_1};
+
+    if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_READ) {
+
+      // Call write buffer ....
+      _clEnqueueReadBuffer(command_queue,buffer,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
+    
+    }
+
+#if CL_CHECK_SET_POINTER    
+    CL.cl_pn_type = [];
+#endif 
+#if CL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
+
+    if (cl_errcode_ret != 0) {
+      {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.SUCCESS', 'i32') }}};
+    }
+
+    return mapped_ptr;
   },
 
   /**
@@ -5909,11 +5968,55 @@ var LibraryOpenCL = {
    * @param {} event
    * @return MemberExpression
    */
+  clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
   clEnqueueUnmapMemObject: function(command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event) {
-    
-    console.error("clEnqueueUnmapMemObject: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+#if CL_GRAB_TRACE
+    CL.webclBeginStackTrace("clEnqueueUnmapMemObject",[command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event]);
+#endif
+#if CL_CHECK_SET_POINTER    
+    if (CL.cl_pn_type.length == 0) console.info("/!\\ clEnqueueUnmapMemObject : you don't call clSetTypePointer");
+#endif
+#if CL_CHECK_VALID_OBJECT   
+    if (!(command_queue in CL.cl_objects)) {
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+#if CL_CHECK_VALID_OBJECT   
+    if (!(memobj in CL.cl_objects)) {
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+memobj+"' are not inside the map","");
+#endif
+      return webcl.CL_INVALID_MEM_OBJECT;
+    }
+#endif 
+#if CL_CHECK_VALID_OBJECT   
+    if (!(mapped_ptr in CL.cl_objects_map)) {
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"MappedPtr '"+mapped_ptr+"' are not inside the map objects","");
+#endif
+      return webcl.CL_INVALID_MEM_OBJECT;
+    }
+#endif 
 
-    return webcl.INVALID_VALUE; 
+    if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_WRITE) {
+
+      // Call write buffer ....
+      _clEnqueueWriteBuffer(command_queue,memobj,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
+    
+    }
+
+    // Remove the object from the map
+    delete CL.cl_objects[mapped_ptr];
+
+    // Free malloc
+    _free(mapped_ptr);
+
+    return webcl.SUCCESS; 
+
+
   },
 
   /**
@@ -5972,7 +6075,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
       if (!(_event_wait in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-        CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLEvent '"+_event_wait+"' are not inside the map","");
+        CL.webclEndStackTrace([webcl.INVALID_EVENT],"WebCLEvent '"+_event_wait+"' are not inside the map","");
 #endif
         return webcl.INVALID_EVENT;
       }
