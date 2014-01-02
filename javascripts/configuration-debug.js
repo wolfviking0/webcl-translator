@@ -2,29 +2,7 @@ var configuration_pages_debug = {
   // ********** //
   // DEMO TRANS //
   // ********** //
-  "Demos Translator" : [
-    { 
-      "title"         : "Hello World",
-      "compatibility" : "[Webkit/Firefox]",
-      "pages"         : "build_trans/translator",
-      "id"            : 0,
-      "gl"            : "off",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",
-    },
-    { 
-      "title"         : "Convolution",
-      "compatibility" : "[Webkit/Firefox]",
-      "pages"         : "build_trans/translator",
-      "id"            : 1,
-      "gl"            : "off",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
-    },  
+  "Demos Translator" : [ 
     { 
       "title"         : "Image Copy",
       "compatibility" : "[Webkit]",
@@ -81,6 +59,143 @@ var configuration_pages_debug = {
       "valgpu"        : "&validator=on",
     },    
   ],
+  // ************************ //
+  // DEMO OPENCL BOOK SAMPLES //
+  // ************************ //
+  "Demos OpenCL Book Samples" : [
+    { 
+      "title"         : "Hello World",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 0,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",                
+    },
+    { 
+      "title"         : "Convolution",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 1,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",                
+    },
+    { 
+      "title"         : "Info",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 2,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },
+    { 
+      "title"         : "Buffer & Sub-buffer",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 3,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",                
+    },
+    /*{ 
+      "title"         : "Image Filter",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 4,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },*/
+    { 
+      "title"         : "OpenGL Interop",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 5,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",              
+    },
+    /*{ 
+      "title"         : "SinWave",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 6,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",            
+    },*/
+    { 
+      "title"         : "Vector Add",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 7,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },
+    /*{ 
+      "title"         : "Histogram",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 8,
+      "gl"            : "off",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",            
+    },*/
+    /*{ 
+      "title"         : "Dijsktra",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 9,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },*/
+    /*{ 
+      "title"         : "Flow",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 10,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },*/
+    /*{ 
+      "title"         : "SPMV",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_book/build_book",
+      "id"            : 11,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
+    },*/        
+  ],    
   // ******** //
   // DEMO OSX //
   // ******** //
