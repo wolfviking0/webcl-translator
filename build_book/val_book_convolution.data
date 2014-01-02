@@ -1,0 +1,201 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "convolve" :
+                {
+                    "input" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_size"
+                        },
+                    "_wcl_input_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "mask" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_mask_size"
+                        },
+                    "_wcl_mask_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "output" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_size"
+                        },
+                    "_wcl_output_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "inputWidth" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "maskWidth" :
+                        {
+                            "index" : 7,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (32/CHAR_BIT)
+typedef struct {
+    const __global uint *const convolve__input_min;
+    const __global uint *const convolve__input_max;
+    __global uint *const convolve__output_min;
+    __global uint *const convolve__output_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __constant uint *const convolve__mask_min;
+    __constant uint *const convolve__mask_max;
+} _WclConstantLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclConstantLimits cl;
+    __constant uint *cn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
+             )
+#define _WCL_ADDR_CLAMP_global_2(type, addr, size, min0, max0, min1, max1, asnull) \
+    ( _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) ? (addr) : (type)(asnull))
+
+#define _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+         )
+#define _WCL_ADDR_CLAMP_constant_1(type, addr, size, min0, max0, asnull) \
+    ( _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+// Book:      OpenCL(R) Programming Guide
+// Authors:   Aaftab Munshi, Benedict Gaster, Timothy Mattson, James Fung, Dan Ginsburg
+// ISBN-10:   0-321-74964-2
+// ISBN-13:   978-0-321-74964-2
+// Publisher: Addison-Wesley Professional
+// URLs:      http://safari.informit.com/9780132488006/
+//            http://www.openclprogrammingguide.com
+//
+
+// Convolution.cl
+//
+//    This is a simple kernel performing convolution.
+
+__kernel void convolve(
+ const __global uint * const input, ulong _wcl_input_size,
+    __constant uint * const mask, ulong _wcl_mask_size,
+    __global uint * const output, ulong _wcl_output_size,
+    const int inputWidth,
+    const int maskWidth)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &input[0], &input[_wcl_input_size],&output[0], &output[_wcl_output_size] },
+        0,
+        { &mask[0], &mask[_wcl_mask_size] },
+        _wcl_constant_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolve__input_min, _wcl_allocs->gl.convolve__input_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolve__output_min, _wcl_allocs->gl.convolve__output_max, (__global uint*)0));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    const int x = get_global_id(0);
+    const int y = get_global_id(1);
+
+    uint sum = 0;
+    for (int r = 0; r < maskWidth; r++)
+    {
+        const int idxIntmp = (y + r) * inputWidth + x;
+
+        for (int c = 0; c < maskWidth; c++)
+        {
+   sum += (*(_WCL_ADDR_CLAMP_constant_1(__constant uint *, (mask)+((r * maskWidth) + c), 1, _wcl_allocs->cl.convolve__mask_min, _wcl_allocs->cl.convolve__mask_max, _wcl_allocs->cn))) * (*(_WCL_ADDR_CLAMP_global_2(const __global uint *, (input)+(idxIntmp + c), 1, _wcl_allocs->gl.convolve__input_min, _wcl_allocs->gl.convolve__input_max, _wcl_allocs->gl.convolve__output_min, _wcl_allocs->gl.convolve__output_max, _wcl_allocs->gn)));
+        }
+    }
+
+ (*(_WCL_ADDR_CLAMP_global_2(__global uint *, (output)+(y * get_global_size(0) + x), 1, _wcl_allocs->gl.convolve__input_min, _wcl_allocs->gl.convolve__input_max, _wcl_allocs->gl.convolve__output_min, _wcl_allocs->gl.convolve__output_max, _wcl_allocs->gn))) = sum;
+}

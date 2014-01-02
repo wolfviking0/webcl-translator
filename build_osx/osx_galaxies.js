@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = '9de9a6cd-06a3-442c-b8e5-0a7413054517';
+    var PACKAGE_UUID = '56619bee-30fc-4b75-93c8-6befd9365102';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -10336,7 +10336,7 @@ function copyTempDouble(ptr) {
       }
       Module.ctx.texImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
     }
-  var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+  var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
@@ -10353,6 +10353,8 @@ function copyTempDouble(ptr) {
             webcl["SAMPLER"]          = 0x1300;
             webcl["IMAGE2D"]          = 0x1301;
             webcl["UNSIGNED_LONG"]    = 0x1302;
+            webcl["MAP_READ"]         = 0x1; 
+            webcl["MAP_WRITE"]        = 0x2;
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
               if (webcl.enableExtension(CL.cl_extensions[i])) {
                 console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");

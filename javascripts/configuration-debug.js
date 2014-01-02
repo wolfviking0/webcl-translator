@@ -66,7 +66,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "Hello World",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 0,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -77,7 +77,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "Convolution",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -88,7 +88,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "Info",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 2,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -99,7 +99,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "Buffer & Sub-buffer",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 3,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -110,7 +110,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "Image Filter",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 4,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -121,7 +121,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "OpenGL Interop",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 5,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -132,7 +132,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "SinWave",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 6,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -143,7 +143,7 @@ var configuration_pages_debug = {
     { 
       "title"         : "Vector Add",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 7,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -154,7 +154,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "Histogram",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 8,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -165,7 +165,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "Dijsktra",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 9,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -176,7 +176,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "Flow",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 10,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -187,7 +187,7 @@ var configuration_pages_debug = {
     /*{ 
       "title"         : "SPMV",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/build_book",
+      "pages"         : "build_book/book",
       "id"            : 11,
       "gl"            : "on",
       "cpu"           : "&cpu",

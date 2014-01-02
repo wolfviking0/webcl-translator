@@ -1,0 +1,163 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "gaussian_filter" :
+                {
+                    "srcImg" :
+                        {
+                            "index" : 0,
+                            "type" : "image2d_t",
+                            "access" : "read_only"
+                        },
+                    "dstImg" :
+                        {
+                            "index" : 1,
+                            "type" : "image2d_t",
+                            "access" : "write_only"
+                        },
+                    "sampler" :
+                        {
+                            "index" : 2,
+                            "type" : "sampler_t"
+                        },
+                    "width" :
+                        {
+                            "index" : 3,
+                            "type" : "int"
+                        },
+                    "height" :
+                        {
+                            "index" : 4,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    float _wcl_kernelWeights[9];
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_private_1(type, addr, size, min0, max0) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+         )
+#define _WCL_ADDR_CLAMP_private_1(type, addr, size, min0, max0, asnull) \
+    ( _WCL_ADDR_CHECK_private_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+
+// Gaussian filter of image
+
+__kernel void gaussian_filter(__read_only image2d_t srcImg, ulong _wcl_srcImg_size,
+                              __write_only image2d_t dstImg, ulong _wcl_dstImg_size,
+                              sampler_t sampler,
+                              int width, int height)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // Gaussian Kernel is:
+    // 1  2  1
+    // 2  4  2
+    // 1  2  1
+    float kernelWeights[9] = { 1.0f, 2.0f, 1.0f,
+                               2.0f, 4.0f, 2.0f,
+                               1.0f, 2.0f, 1.0f };;_WCL_MEMCPY(_wcl_allocs->pa._wcl_kernelWeights,kernelWeights);
+
+    int2 startImageCoord = (int2) (get_global_id(0) - 1, get_global_id(1) - 1);
+    int2 endImageCoord = (int2) (get_global_id(0) + 1, get_global_id(1) + 1);
+    int2 outImageCoord = (int2) (get_global_id(0), get_global_id(1));
+
+    if (outImageCoord.x < width && outImageCoord.y < height)
+    {
+        int weight = 0;
+        float4 outColor = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+        for( int y = startImageCoord.y; y <= endImageCoord.y; y++)
+        {
+            for( int x = startImageCoord.x; x <= endImageCoord.x; x++)
+            {
+                outColor += (read_imagef(srcImg, sampler, (int2)(x, y)) * ((*(_WCL_ADDR_CLAMP_private_1(float *, (_wcl_allocs->pa._wcl_kernelWeights)+(weight), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) / 16.0f));
+                weight += 1;
+            }
+        }
+
+        // Write the output value to image
+        write_imagef(dstImg, outImageCoord, outColor);
+    }
+}

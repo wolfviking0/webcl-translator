@@ -1,0 +1,476 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "OCL_SSSP_KERNEL1" :
+                {
+                    "vertexArray" :
+                        {
+                            "index" : 0,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_vertexArray_size"
+                        },
+                    "_wcl_vertexArray_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "edgeArray" :
+                        {
+                            "index" : 2,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_edgeArray_size"
+                        },
+                    "_wcl_edgeArray_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "weightArray" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_weightArray_size"
+                        },
+                    "_wcl_weightArray_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "maskArray" :
+                        {
+                            "index" : 6,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_maskArray_size"
+                        },
+                    "_wcl_maskArray_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "costArray" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_costArray_size"
+                        },
+                    "_wcl_costArray_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "updatingCostArray" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_updatingCostArray_size"
+                        },
+                    "_wcl_updatingCostArray_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "vertexCount" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        },
+                    "edgeCount" :
+                        {
+                            "index" : 13,
+                            "type" : "int"
+                        }
+                },
+            "OCL_SSSP_KERNEL2" :
+                {
+                    "vertexArray" :
+                        {
+                            "index" : 0,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_vertexArray_size"
+                        },
+                    "_wcl_vertexArray_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "edgeArray" :
+                        {
+                            "index" : 2,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_edgeArray_size"
+                        },
+                    "_wcl_edgeArray_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "weightArray" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_weightArray_size"
+                        },
+                    "_wcl_weightArray_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "maskArray" :
+                        {
+                            "index" : 6,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_maskArray_size"
+                        },
+                    "_wcl_maskArray_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "costArray" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_costArray_size"
+                        },
+                    "_wcl_costArray_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "updatingCostArray" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_updatingCostArray_size"
+                        },
+                    "_wcl_updatingCostArray_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "vertexCount" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        }
+                },
+            "initializeBuffers" :
+                {
+                    "maskArray" :
+                        {
+                            "index" : 0,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_maskArray_size"
+                        },
+                    "_wcl_maskArray_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "costArray" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_costArray_size"
+                        },
+                    "_wcl_costArray_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "updatingCostArray" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_updatingCostArray_size"
+                        },
+                    "_wcl_updatingCostArray_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "sourceVertex" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "vertexCount" :
+                        {
+                            "index" : 7,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global int *OCL_SSSP_KERNEL1__vertexArray_min;
+    __global int *OCL_SSSP_KERNEL1__vertexArray_max;
+    __global int *OCL_SSSP_KERNEL1__edgeArray_min;
+    __global int *OCL_SSSP_KERNEL1__edgeArray_max;
+    __global float *OCL_SSSP_KERNEL1__weightArray_min;
+    __global float *OCL_SSSP_KERNEL1__weightArray_max;
+    __global int *OCL_SSSP_KERNEL1__maskArray_min;
+    __global int *OCL_SSSP_KERNEL1__maskArray_max;
+    __global float *OCL_SSSP_KERNEL1__costArray_min;
+    __global float *OCL_SSSP_KERNEL1__costArray_max;
+    __global float *OCL_SSSP_KERNEL1__updatingCostArray_min;
+    __global float *OCL_SSSP_KERNEL1__updatingCostArray_max;
+    __global int *OCL_SSSP_KERNEL2__vertexArray_min;
+    __global int *OCL_SSSP_KERNEL2__vertexArray_max;
+    __global int *OCL_SSSP_KERNEL2__edgeArray_min;
+    __global int *OCL_SSSP_KERNEL2__edgeArray_max;
+    __global float *OCL_SSSP_KERNEL2__weightArray_min;
+    __global float *OCL_SSSP_KERNEL2__weightArray_max;
+    __global int *OCL_SSSP_KERNEL2__maskArray_min;
+    __global int *OCL_SSSP_KERNEL2__maskArray_max;
+    __global float *OCL_SSSP_KERNEL2__costArray_min;
+    __global float *OCL_SSSP_KERNEL2__costArray_max;
+    __global float *OCL_SSSP_KERNEL2__updatingCostArray_min;
+    __global float *OCL_SSSP_KERNEL2__updatingCostArray_max;
+    __global int *initializeBuffers__maskArray_min;
+    __global int *initializeBuffers__maskArray_max;
+    __global float *initializeBuffers__costArray_min;
+    __global float *initializeBuffers__costArray_max;
+    __global float *initializeBuffers__updatingCostArray_min;
+    __global float *initializeBuffers__updatingCostArray_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+#define _WCL_ADDR_CHECK_global_15(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14) \
+    ( 0\
+    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
+        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
+            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
+                || ( ((addr) >= ((type)min3)) && ((addr + size - 1) <= _WCL_LAST(type, max3)) ) \
+                    || ( ((addr) >= ((type)min4)) && ((addr + size - 1) <= _WCL_LAST(type, max4)) ) \
+                        || ( ((addr) >= ((type)min5)) && ((addr + size - 1) <= _WCL_LAST(type, max5)) ) \
+                            || ( ((addr) >= ((type)min6)) && ((addr + size - 1) <= _WCL_LAST(type, max6)) ) \
+                                || ( ((addr) >= ((type)min7)) && ((addr + size - 1) <= _WCL_LAST(type, max7)) ) \
+                                    || ( ((addr) >= ((type)min8)) && ((addr + size - 1) <= _WCL_LAST(type, max8)) ) \
+                                        || ( ((addr) >= ((type)min9)) && ((addr + size - 1) <= _WCL_LAST(type, max9)) ) \
+                                            || ( ((addr) >= ((type)min10)) && ((addr + size - 1) <= _WCL_LAST(type, max10)) ) \
+                                                || ( ((addr) >= ((type)min11)) && ((addr + size - 1) <= _WCL_LAST(type, max11)) ) \
+                                                    || ( ((addr) >= ((type)min12)) && ((addr + size - 1) <= _WCL_LAST(type, max12)) ) \
+                                                        || ( ((addr) >= ((type)min13)) && ((addr + size - 1) <= _WCL_LAST(type, max13)) ) \
+                                                            || ( ((addr) >= ((type)min14)) && ((addr + size - 1) <= _WCL_LAST(type, max14)) ) \
+                                                                 )
+#define _WCL_ADDR_CLAMP_global_15(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, asnull) \
+    ( _WCL_ADDR_CHECK_global_15(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14) ? (addr) : (type)(asnull))
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+//
+//  Description:
+//      Implementation of Dijkstra's Single-Source Shortest Path (SSSP) algorithm on the GPU.
+//      The basis of this implementation is the paper:
+//
+//          \"Accelerating large graph algorithms on the GPU using CUDA\" by
+//          Parwan Harish and P.J. Narayanan
+//
+//
+//  Author:
+//      Dan Ginsburg
+//      <daniel.ginsburg@childrens.harvard.edu>
+//
+//  Children's Hospital Boston
+//
+
+
+///
+/// This is part 1 of the Kernel from Algorithm 4 in the paper
+///
+__kernel void OCL_SSSP_KERNEL1(__global int *vertexArray, ulong _wcl_vertexArray_size, __global int *edgeArray, ulong _wcl_edgeArray_size, __global float *weightArray, ulong _wcl_weightArray_size,
+                               __global int *maskArray, ulong _wcl_maskArray_size, __global float *costArray, ulong _wcl_costArray_size, __global float *updatingCostArray, ulong _wcl_updatingCostArray_size,
+                               int vertexCount, int edgeCount )
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &vertexArray[0], &vertexArray[_wcl_vertexArray_size],&edgeArray[0], &edgeArray[_wcl_edgeArray_size],&weightArray[0], &weightArray[_wcl_weightArray_size],&maskArray[0], &maskArray[_wcl_maskArray_size],&costArray[0], &costArray[_wcl_costArray_size],&updatingCostArray[0], &updatingCostArray[_wcl_updatingCostArray_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, (__global uint*)0)))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // access thread id
+    int tid = get_global_id(0);
+
+    if ( (*(_WCL_ADDR_CLAMP_global_15(__global int *, (maskArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) != 0 )
+    {
+        (*(_WCL_ADDR_CLAMP_global_15(__global int *, (maskArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 0;
+
+        int edgeStart = (*(_WCL_ADDR_CLAMP_global_15(__global int *, (vertexArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)));
+        int edgeEnd;
+        if (tid + 1 < (vertexCount))
+        {
+            edgeEnd = (*(_WCL_ADDR_CLAMP_global_15(__global int *, (vertexArray)+(tid + 1), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)));
+        }
+        else
+        {
+            edgeEnd = edgeCount;
+        }
+
+        for(int edge = edgeStart; edge < edgeEnd; edge++)
+        {
+            int nid = (*(_WCL_ADDR_CLAMP_global_15(__global int *, (edgeArray)+(edge), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)));
+
+            // One note here: whereas the paper specified weightArray[nid], I
+            //  found that the correct thing to do was weightArray[edge].  I think
+            //  this was a typo in the paper.  Either that, or I misunderstood
+            //  the data structure.
+            if ((*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(nid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) > ((*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) + (*(_WCL_ADDR_CLAMP_global_15(__global float *, (weightArray)+(edge), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)))))
+            {
+                (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(nid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = ((*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) + (*(_WCL_ADDR_CLAMP_global_15(__global float *, (weightArray)+(edge), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))));
+            }
+        }
+    }
+}
+
+///
+/// This is part 2 of the Kernel from Algorithm 5 in the paper.  
+///
+__kernel void OCL_SSSP_KERNEL2(__global int *vertexArray, ulong _wcl_vertexArray_size, __global int *edgeArray, ulong _wcl_edgeArray_size, __global float *weightArray, ulong _wcl_weightArray_size,
+                                __global int *maskArray, ulong _wcl_maskArray_size, __global float *costArray, ulong _wcl_costArray_size, __global float *updatingCostArray, ulong _wcl_updatingCostArray_size,
+                                int vertexCount)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&vertexArray[0], &vertexArray[_wcl_vertexArray_size],&edgeArray[0], &edgeArray[_wcl_edgeArray_size],&weightArray[0], &weightArray[_wcl_weightArray_size],&maskArray[0], &maskArray[_wcl_maskArray_size],&costArray[0], &costArray[_wcl_costArray_size],&updatingCostArray[0], &updatingCostArray[_wcl_updatingCostArray_size],0, 0,0, 0,0, 0 },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, (__global uint*)0)))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // access thread id
+    int tid = get_global_id(0);
+
+
+    if ((*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) > (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))))
+    {
+        (*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)));
+        (*(_WCL_ADDR_CLAMP_global_15(__global int *, (maskArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 1;
+    }
+
+    (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn)));
+}
+
+
+///
+/// Kernel to initialize buffers
+///
+__kernel void initializeBuffers( __global int *maskArray, ulong _wcl_maskArray_size, __global float *costArray, ulong _wcl_costArray_size, __global float *updatingCostArray, ulong _wcl_updatingCostArray_size,
+                                 int sourceVertex, int vertexCount )
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&maskArray[0], &maskArray[_wcl_maskArray_size],&costArray[0], &costArray[_wcl_costArray_size],&updatingCostArray[0], &updatingCostArray[_wcl_updatingCostArray_size] },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, (__global uint*)0)))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // access thread id
+    int tid = get_global_id(0);
+
+
+    if (sourceVertex == tid)
+    {
+        (*(_WCL_ADDR_CLAMP_global_15(__global int *, (maskArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 1;
+        (*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 0.0;
+        (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 0.0;
+    }
+    else
+    {
+        (*(_WCL_ADDR_CLAMP_global_15(__global int *, (maskArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = 0;
+        (*(_WCL_ADDR_CLAMP_global_15(__global float *, (costArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = FLT_MAX;
+        (*(_WCL_ADDR_CLAMP_global_15(__global float *, (updatingCostArray)+(tid), 1, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL1__updatingCostArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__vertexArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__edgeArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__weightArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__maskArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__costArray_max, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_min, _wcl_allocs->gl.OCL_SSSP_KERNEL2__updatingCostArray_max, _wcl_allocs->gl.initializeBuffers__maskArray_min, _wcl_allocs->gl.initializeBuffers__maskArray_max, _wcl_allocs->gl.initializeBuffers__costArray_min, _wcl_allocs->gl.initializeBuffers__costArray_max, _wcl_allocs->gl.initializeBuffers__updatingCostArray_min, _wcl_allocs->gl.initializeBuffers__updatingCostArray_max, _wcl_allocs->gn))) = FLT_MAX;
+    }
+
+}

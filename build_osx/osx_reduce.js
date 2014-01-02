@@ -108,7 +108,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = 'osx_reduce.data';
-    var PACKAGE_UUID = '61a50b08-41bc-4ff3-bee4-ec3cb46bde10';
+    var PACKAGE_UUID = 'a7dcefe4-f950-42e0-9873-fc836aba9156';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -1795,7 +1795,7 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+      }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
@@ -1812,6 +1812,8 @@ function copyTempDouble(ptr) {
             webcl["SAMPLER"]          = 0x1300;
             webcl["IMAGE2D"]          = 0x1301;
             webcl["UNSIGNED_LONG"]    = 0x1302;
+            webcl["MAP_READ"]         = 0x1; 
+            webcl["MAP_WRITE"]        = 0x2;
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
               if (webcl.enableExtension(CL.cl_extensions[i])) {
                 console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
