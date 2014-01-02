@@ -882,6 +882,7 @@ var LibraryOpenCL = {
     },
 
 #if CL_GRAB_TRACE     
+    stack_trace_offset: -1,
     stack_trace: "// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",
 
     /**
@@ -892,7 +893,13 @@ var LibraryOpenCL = {
      * @return 
      */
     webclBeginStackTrace: function(name,parameter) {
-      CL.stack_trace += "\n" + name + "("
+      if (CL.stack_trace_offset == -1) {
+        CL.stack_trace_offset = "";
+      } else {
+        CL.stack_trace_offset += "\t";
+      }
+
+      CL.stack_trace += "\n" + CL.stack_trace_offset + name + "("
 
       CL.webclCallParameterStackTrace(parameter);
 
@@ -907,7 +914,7 @@ var LibraryOpenCL = {
      * @return 
      */
     webclCallStackTrace: function(name,parameter) {
-      CL.stack_trace += "\t->" + name + "("
+      CL.stack_trace += CL.stack_trace_offset + "\t->" + name + "("
 
       CL.webclCallParameterStackTrace(parameter);
 
@@ -988,7 +995,7 @@ var LibraryOpenCL = {
      * @return 
      */
     webclEndStackTrace: function(result,message,exception) {
-      CL.stack_trace += "\t\t=>Result (" + result[0];
+      CL.stack_trace += CL.stack_trace_offset + "\t\t=>Result (" + result[0];
       if (result.length >= 2) {
         CL.stack_trace += " : ";
       }
@@ -1009,6 +1016,11 @@ var LibraryOpenCL = {
       CL.stack_trace = "";
 #endif   
 
+      if (CL.stack_trace_offset == "") {
+        CL.stack_trace_offset = -1;
+      } else {
+        CL.stack_trace_offset = CL.stack_trace_offset.substr(0,CL.stack_trace_offset.length-1);
+      }
     },
 #endif
   },
@@ -5861,7 +5873,7 @@ var LibraryOpenCL = {
    * @param {} cl_errcode_ret
    * @return MemberExpression
    */
-  clCreateBuffer__deps: ['clEnqueueReadBuffer'],
+  clEnqueueMapBuffer__deps: ['clEnqueueReadBuffer'],
   clEnqueueMapBuffer: function(command_queue,buffer,blocking_map,map_flags_i64_1,map_flags_i64_2,offset,cb,num_events_in_wait_list,event_wait_list,event,cl_errcode_ret) {
 #if ASSERTIONS       
     // Assume the map_flags is i32 
@@ -5909,7 +5921,7 @@ var LibraryOpenCL = {
 
     if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_READ) {
 
-      // Call write buffer ....
+      // Call write buffer .... may be add try ... catch
       _clEnqueueReadBuffer(command_queue,buffer,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
     
     }
@@ -5968,7 +5980,7 @@ var LibraryOpenCL = {
    * @param {} event
    * @return MemberExpression
    */
-  clCreateBuffer__deps: ['clEnqueueWriteBuffer'],
+  clEnqueueUnmapMemObject__deps: ['clEnqueueWriteBuffer'],
   clEnqueueUnmapMemObject: function(command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event) {
 #if CL_GRAB_TRACE
     CL.webclBeginStackTrace("clEnqueueUnmapMemObject",[command_queue,memobj,mapped_ptr,num_events_in_wait_list,event_wait_list,event]);
@@ -5978,6 +5990,9 @@ var LibraryOpenCL = {
 #endif
 #if CL_CHECK_VALID_OBJECT   
     if (!(command_queue in CL.cl_objects)) {
+#if CL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif        
 #if CL_GRAB_TRACE
       CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
 #endif 
@@ -5986,6 +6001,9 @@ var LibraryOpenCL = {
 #endif 
 #if CL_CHECK_VALID_OBJECT   
     if (!(memobj in CL.cl_objects)) {
+#if CL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif        
 #if CL_GRAB_TRACE
       CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+memobj+"' are not inside the map","");
 #endif
@@ -5994,6 +6012,9 @@ var LibraryOpenCL = {
 #endif 
 #if CL_CHECK_VALID_OBJECT   
     if (!(mapped_ptr in CL.cl_objects_map)) {
+#if CL_CHECK_SET_POINTER    
+      CL.cl_pn_type = [];
+#endif       
 #if CL_GRAB_TRACE
       CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"MappedPtr '"+mapped_ptr+"' are not inside the map objects","");
 #endif
@@ -6003,7 +6024,7 @@ var LibraryOpenCL = {
 
     if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_WRITE) {
 
-      // Call write buffer ....
+      // Call write buffer .... may be add try ... catch
       _clEnqueueWriteBuffer(command_queue,memobj,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
     
     }
@@ -6013,6 +6034,13 @@ var LibraryOpenCL = {
 
     // Free malloc
     _free(mapped_ptr);
+
+#if CL_CHECK_SET_POINTER    
+    CL.cl_pn_type = [];
+#endif 
+#if CL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif
 
     return webcl.SUCCESS; 
 
