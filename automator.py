@@ -53,9 +53,9 @@ def clear_prof_data():
     global PROF_DATA
     PROF_DATA = {}
 
-list_repositories=["webcl-translator/webcl","webcl-osx-sample","webcl-ocltoys","webcl-davibu"]
+list_repositories=["webcl-translator/webcl","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples"]
 
-page_subfolder=["build_trans","build_osx","build_toys","build_davibu"]
+page_subfolder=["build_trans","build_osx","build_toys","build_davibu","build_book"]
 
 # Go Up folder
 os.chdir("../");

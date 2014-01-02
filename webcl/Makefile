@@ -60,12 +60,10 @@ $(info )
 all: all_1 all_2 all_3
 
 all_1: \
-	hello_world_sample 			\
 	imagecopy_sample			\
 
 all_2: \
 	eventprofiling_sample		\
-	convolution_sample 			\
 
 all_3: \
 	attractor_sample			\
@@ -78,20 +76,6 @@ all_osx: \
 	mandelbulb_sample_osx \
 	smallpt_sample_osx \
 	attractor_sample_osx \
-
-# Not yet working -> issue #315
-hello_world_sample: 
-	$(call chdir,hello_world/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) hello_world.cpp $(MODE) \
-	--preload-file hello_world.cl \
-	-o ../build/$(PREFIX)hello_world.js
-
-# Not yet working -> issue #315
-convolution_sample:
-	$(call chdir,convolution/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) convolution.cpp $(MODE) \
-	--preload-file convolution_kernel.cl \
-	-o ../build/$(PREFIX)convolution.js
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
