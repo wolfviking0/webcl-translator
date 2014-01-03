@@ -87,7 +87,7 @@ def worker_update(repo):
 def update(cores):
   print "Function 'update' ..."
   jobs = []
-  for i in list_repositories[1:]:
+  for i in list_repositories[1:-2]:
     p = multiprocessing.Process(target=worker_update, args=(i,))
     jobs.append(p)
     p.start()
