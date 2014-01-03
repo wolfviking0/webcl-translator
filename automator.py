@@ -111,7 +111,7 @@ def worker_clean(repo,param):
 def clean(cores,param):
   print "Function 'clean' ..."
   jobs = []
-  for i in list_repositories:
+  for i in list_repositories[:-2]:
     p = multiprocessing.Process(target=worker_clean, args=(i,param,))
     jobs.append(p)
     p.start()
