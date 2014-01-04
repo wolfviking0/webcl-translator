@@ -5395,14 +5395,14 @@ var LibraryOpenCL = {
 
     var _event_wait_list = [];
 
-    var _origin = new Int32Array(2);
-    var _region = new Int32Array(2);
+    var _origin = [];
+    var _region = [];
     var _size = CL.getImageSizeType(image);
     var _channel = CL.getImageFormatType(image);
 
     for (var i = 0; i < 2; i++) {
-      _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+      _origin.push( {{{ makeGetValue('origin', 'i*4', 'i32') }}});
+      _region.push( {{{ makeGetValue('region', 'i*4', 'i32') }}});  
       _size *= _region[i];     
     }          
 
@@ -5431,7 +5431,7 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list,_event]);
 #endif          
         CL.cl_objects[command_queue].enqueueReadImage(CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list, _event);
-        {{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
+        //{{{ makeSetValue('event', '0', 'CL.udid(_event)', 'i32') }}};
       } else {
 #if CL_GRAB_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".enqueueReadImage",[CL.cl_objects[image],blocking_read,_origin,_region,row_pitch,_host_ptr,_event_wait_list]);
