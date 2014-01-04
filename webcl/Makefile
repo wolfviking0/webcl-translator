@@ -64,6 +64,7 @@ all_1: \
 
 all_2: \
 	eventprofiling_sample		\
+	particles_sample			\
 
 all_3: \
 	attractor_sample			\
@@ -101,6 +102,17 @@ attractor_sample:
 	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMCC)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
+
+particles_sample:
+	$(call chdir,particles/)
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) \
+		cll.cpp \
+		main.cpp \
+		part2.cpp \
+		util.cpp \
+	$(MODE) -s TOTAL_MEMORY=1024*1024*200 -s GL_UNSAFE_OPTS=0 -s GL_MAX_TEMP_BUFFER_SIZE=1024*1024*50 -s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 \
+	--preload-file part2.cl \
+	-o ../build/$(PREFIX)particles.js	
 	
 attractor_sample_osx:
 	$(call chdir,attractor/)
