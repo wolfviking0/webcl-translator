@@ -57,6 +57,17 @@ var configuration_pages = {
       "gpu"           : " ",
       "valcpu"        : "",
       "valgpu"        : "",
+    }, 
+    { 
+      "title"         : "Particles",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_trans/translator",
+      "id"            : 4,
+      "gl"            : "on",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",   
     },    
   ],
   // ************************ //

@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'eventprofiling.data';
-    var PACKAGE_UUID = '622f2a55-b914-4ef8-9f4a-9186a7622b0e';
+    var PACKAGE_UUID = '5d924e3d-d857-46cb-ad54-06df2ec064ba';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

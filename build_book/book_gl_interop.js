@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = 'book_gl_interop.data';
-    var PACKAGE_UUID = 'f829dae9-5c4d-4848-9d7f-23ae5a8d40ab';
+    var PACKAGE_UUID = '26e9e1ee-b721-4b9b-afb5-b9e920d53cab';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_histogram.data';
     var REMOTE_PACKAGE_NAME = 'val_book_histogram.data';
-    var PACKAGE_UUID = '4d5f77ef-5fcc-44b5-b39b-654bf3987611';
+    var PACKAGE_UUID = '62cfb84e-78fb-4f59-a960-1c09dd72e3af';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_transpose.data';
     var REMOTE_PACKAGE_NAME = 'osx_transpose.data';
-    var PACKAGE_UUID = 'ea03c139-9fbe-47ef-ab2b-35a88a6c8021';
+    var PACKAGE_UUID = 'b30317b3-03d7-47cc-a176-17499dfb0731';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
