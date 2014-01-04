@@ -119,6 +119,15 @@ If manually bisecting:
   Even better, add a breakpoint, e.g. on the printf, then reload, then step through and see the print (best to run with EM_SAVE_DIR=1 for the reload).
 '''
 
+  def test_emscripten_log(self):
+    if os.environ.get('EMCC_FAST_COMPILER') == '1': return self.skip('fastcomp uses asm, where call stacks are sometimes less clear')
+
+    src = os.path.join(self.get_dir(), 'src.cpp')
+    open(src, 'w').write(self.with_report_result(open(path_from_root('tests', 'emscripten_log', 'emscripten_log.cpp')).read()))
+
+    Popen([PYTHON, EMCC, src, '--pre-js', path_from_root('src', 'emscripten-source-map.min.js'), '-g', '-o', 'page.html']).communicate()
+    self.run_browser('page.html', None, '/report_result?1')
+  
   def build_native_lzma(self):
     lzma_native = path_from_root('third_party', 'lzma.js', 'lzma-native')
     if os.path.isfile(lzma_native) and os.access(lzma_native, os.X_OK): return
@@ -402,6 +411,7 @@ If manually bisecting:
     self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
 
     # Test subdirectory handling with asset packaging.
+    try_delete(self.in_dir('assets'))
     os.makedirs(os.path.join(self.get_dir(), 'assets/sub/asset1/').replace('\\', '/'))
     os.makedirs(os.path.join(self.get_dir(), 'assets/sub/asset1/.git').replace('\\', '/')) # Test adding directory that shouldn't exist.
     os.makedirs(os.path.join(self.get_dir(), 'assets/sub/asset2/').replace('\\', '/'))
@@ -452,7 +462,7 @@ If manually bisecting:
       (srcpath, dstpath1, dstpath2, nonexistingpath) = test
       make_main_two_files(dstpath1, dstpath2, nonexistingpath)
       print srcpath
-      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', srcpath, '-o', 'page.html']).communicate()
+      Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--preload-file', srcpath, '--exclude-file', '*/.*', '-o', 'page.html']).communicate()
       self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
       
     # Should still work with -o subdir/..
@@ -672,10 +682,7 @@ If manually bisecting:
     self.btest('sdl_stb_image_data.c', reference='screenshot.jpg', args=['-s', 'STB_IMAGE=1', '--preload-file', 'screenshot.not'])
 
   def test_sdl_canvas(self):
-    open(os.path.join(self.get_dir(), 'sdl_canvas.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_canvas.c')).read()))
-
-    Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'sdl_canvas.c'), '-o', 'page.html', '-s', 'LEGACY_GL_EMULATION=1']).communicate()
-    self.run_browser('page.html', '', '/report_result?1')
+    self.btest('sdl_canvas.c', expected='1', args=['-s', 'LEGACY_GL_EMULATION=1'])
 
   def test_sdl_canvas_proxy(self):
     def post():
@@ -1103,6 +1110,8 @@ keydown(100);keyup(100); // trigger the end
     self.run_browser('page.html', '', '/report_result?1')
 
   def test_sdl_audio_beeps(self):
+    if os.environ.get('EMCC_FAST_COMPILER') == '1': return self.skip('todo c++ exceptions in fastcomp')
+
     open(os.path.join(self.get_dir(), 'sdl_audio_beep.cpp'), 'w').write(self.with_report_result(open(path_from_root('tests', 'sdl_audio_beep.cpp')).read()))
 
     # use closure to check for a possible bug with closure minifying away newer Audio() attributes
@@ -1186,10 +1195,7 @@ keydown(100);keyup(100); // trigger the end
     self.btest('openal_buffers.c', '0', args=['--preload-file', 'the_entertainer.wav'],)
 
   def test_glfw(self):
-    open(os.path.join(self.get_dir(), 'glfw.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'glfw.c')).read()))
-
-    Popen([PYTHON, EMCC, '-O2', os.path.join(self.get_dir(), 'glfw.c'), '-o', 'page.html', '-s', 'LEGACY_GL_EMULATION=1']).communicate()
-    self.run_browser('page.html', '', '/report_result?1')
+    self.btest('glfw.c', '1', args=['-s', 'LEGACY_GL_EMULATION=1'])
 
   def test_egl(self):
     open(os.path.join(self.get_dir(), 'test_egl.c'), 'w').write(self.with_report_result(open(path_from_root('tests', 'test_egl.c')).read()))
@@ -1428,6 +1434,8 @@ keydown(100);keyup(100); // trigger the end
     self.btest('sdl_resize.c', '1')
 
   def test_gc(self):
+    if os.environ.get('EMCC_FAST_COMPILER') == '1': return self.skip('flaky in fastcomp and also non-fastcomp -O1, timing issues')
+
     self.btest('browser_gc.cpp', '1')
 
   def test_glshaderinfo(self):
@@ -1595,7 +1603,7 @@ keydown(100);keyup(100); // trigger the end
     shutil.copyfile(path_from_root('tests', 'ship.dds'), 'ship.dds')
     shutil.copyfile(path_from_root('tests', 'bloom.dds'), 'bloom.dds')
     shutil.copyfile(path_from_root('tests', 'water.dds'), 'water.dds')
-    Popen([PYTHON, FILE_PACKAGER, 'test.data', '--pre-run', '--crunch', '--preload', 'ship.dds', 'bloom.dds', 'water.dds'], stdout=open('pre.js', 'w')).communicate()
+    Popen([PYTHON, FILE_PACKAGER, 'test.data', '--crunch', '--preload', 'ship.dds', 'bloom.dds', 'water.dds'], stdout=open('pre.js', 'w')).communicate()
     assert os.stat('test.data').st_size < 0.5*(os.stat('ship.dds').st_size+os.stat('bloom.dds').st_size+os.stat('water.dds').st_size), 'Compressed should be smaller than dds'
     shutil.move('ship.dds', 'ship.donotfindme.dds') # make sure we load from the compressed
     shutil.move('bloom.dds', 'bloom.donotfindme.dds') # make sure we load from the compressed
@@ -1606,19 +1614,20 @@ keydown(100);keyup(100); // trigger the end
     shutil.copyfile(path_from_root('tests', 'ship.dds'), 'ship.dds')
     shutil.copyfile(path_from_root('tests', 'bloom.dds'), 'bloom.dds')
     shutil.copyfile(path_from_root('tests', 'water.dds'), 'water.dds')
-    Popen([PYTHON, FILE_PACKAGER, 'asset_a.data', '--pre-run', '--crunch', '--preload', 'ship.dds', 'bloom.dds'], stdout=open('asset_a.js', 'w')).communicate()
-    Popen([PYTHON, FILE_PACKAGER, 'asset_b.data', '--pre-run', '--crunch', '--preload', 'water.dds'], stdout=open('asset_b.js', 'w')).communicate()
+    Popen([PYTHON, FILE_PACKAGER, 'asset_a.data', '--crunch', '--preload', 'ship.dds', 'bloom.dds'], stdout=open('asset_a.js', 'w')).communicate()
+    Popen([PYTHON, FILE_PACKAGER, 'asset_b.data', '--crunch', '--preload', 'water.dds'], stdout=open('asset_b.js', 'w')).communicate()
     shutil.move('ship.dds', 'ship.donotfindme.dds') # make sure we load from the compressed
     shutil.move('bloom.dds', 'bloom.donotfindme.dds') # make sure we load from the compressed
     shutil.move('water.dds', 'water.donotfindme.dds') # make sure we load from the compressed
     self.btest('s3tc_crunch.c', reference='s3tc_crunch.png', reference_slack=11, args=['--pre-js', 'asset_a.js', '--pre-js', 'asset_b.js', '-s', 'LEGACY_GL_EMULATION=1'])
 
   def test_aniso(self):
-    if SPIDERMONKEY_ENGINE in JS_ENGINES:
+    if SPIDERMONKEY_ENGINE in JS_ENGINES and os.environ.get('EMCC_FAST_COMPILER') != '1':
       # asm.js-ification check
       Popen([PYTHON, EMCC, path_from_root('tests', 'aniso.c'), '-O2', '-g2', '-s', 'LEGACY_GL_EMULATION=1']).communicate()
       Settings.ASM_JS = 1
       self.run_generated_code(SPIDERMONKEY_ENGINE, 'a.out.js')
+      print 'passed asm test'
 
     shutil.copyfile(path_from_root('tests', 'water.dds'), 'water.dds')
     self.btest('aniso.c', reference='aniso.png', reference_slack=2, args=['--preload-file', 'water.dds', '-s', 'LEGACY_GL_EMULATION=1'])
@@ -1673,6 +1682,8 @@ keydown(100);keyup(100); // trigger the end
     self.btest('http.cpp', expected='0', args=['-I' + path_from_root('tests')])
 
   def test_module(self):
+    if os.environ.get('EMCC_FAST_COMPILER') == '1': return self.skip('todo in fastcomp')
+
     Popen([PYTHON, EMCC, path_from_root('tests', 'browser_module.cpp'), '-o', 'module.js', '-O2', '-s', 'SIDE_MODULE=1', '-s', 'DLOPEN_SUPPORT=1', '-s', 'EXPORTED_FUNCTIONS=["_one", "_two"]']).communicate()
     self.btest('browser_main.cpp', args=['-O2', '-s', 'MAIN_MODULE=1', '-s', 'DLOPEN_SUPPORT=1'], expected='8')
 
@@ -1680,3 +1691,32 @@ keydown(100);keyup(100); // trigger the end
     open(self.in_dir('data.dat'), 'w').write('data from the file ' + ('.' * 9000))
     for extra_args in [[], ['--no-heap-copy']]:
       self.btest(path_from_root('tests', 'mmap_file.c'), expected='1', args=['--preload-file', 'data.dat'] + extra_args)
+
+  def test_emrun_info(self):
+    result = subprocess.check_output([PYTHON, path_from_root('emrun'), '--system_info', '--browser_info'])
+    assert 'CPU' in result
+    assert 'Browser' in result
+    assert 'Traceback' not in result
+
+    result = subprocess.check_output([PYTHON, path_from_root('emrun'), '--list_browsers'])
+    assert 'Traceback' not in result
+
+  def test_emrun(self):
+    Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world_exit.c'), '--emrun', '-o', 'hello_world.html']).communicate()
+    outdir = os.getcwd()
+    # We cannot run emrun from the temp directory the suite will clean up afterwards, since the browser that is launched will have that directory as startup directory,
+    # and the browser will not close as part of the test, pinning down the cwd on Windows and it wouldn't be possible to delete it. Therefore switch away from that directory
+    # before launching.
+    os.chdir(path_from_root())
+    args = [PYTHON, path_from_root('emrun'), '--timeout', '30', '--verbose', os.path.join(outdir, 'hello_world.html'), '1', '2', '3', '--log_stdout', os.path.join(outdir, 'stdout.txt'), '--log_stderr', os.path.join(outdir, 'stderr.txt')]
+    if emscripten_browser is not None:
+      args += ['--browser', emscripten_browser]
+    process = subprocess.Popen(args)
+    process.communicate()
+    stdout = open(os.path.join(outdir, 'stdout.txt'), 'r').read()
+    stderr = open(os.path.join(outdir, 'stderr.txt'), 'r').read()
+    assert process.returncode == 100
+    assert 'argc: 4' in stdout
+    assert 'argv[3]: 3' in stdout
+    assert 'hello, world!' in stdout
+    assert 'hello, error stream!' in stderr

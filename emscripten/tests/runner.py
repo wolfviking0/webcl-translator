@@ -328,7 +328,10 @@ process(sys.argv[1])
       os.makedirs(ret)
     return ret
 
-  def get_library(self, name, generated_libs, configure=['sh', './configure'], configure_args=[], make=['make'], make_args=['-j', '2'], cache=True, env_init={}, cache_name_extra='', native=False):
+  def get_library(self, name, generated_libs, configure=['sh', './configure'], configure_args=[], make=['make'], make_args='help', cache=True, env_init={}, cache_name_extra='', native=False):
+    if make_args == 'help':
+      make_args = ['-j', str(multiprocessing.cpu_count())]
+
     build_dir = self.get_build_dir()
     output_dir = self.get_dir()
 
@@ -417,6 +420,12 @@ process(sys.argv[1])
       }
     '''
     return (main, supp)
+
+  def do_run_from_file(self, src, expected_output, args=[], output_nicerizer=None, output_processor=None, no_build=False, main_file=None, additional_files=[], js_engines=None, post_build=None, basename='src.cpp', libraries=[], includes=[], force_c=False, build_ll_hook=None, extra_emscripten_args=[]):
+    self.do_run(open(src).read(), open(expected_output).read(),
+                args, output_nicerizer, output_processor, no_build, main_file,
+                additional_files, js_engines, post_build, basename, libraries,
+                includes, force_c, build_ll_hook, extra_emscripten_args)
 
   ## Does a complete test - builds, runs, checks output, etc.
   def do_run(self, src, expected_output, args=[], output_nicerizer=None, output_processor=None, no_build=False, main_file=None, additional_files=[], js_engines=None, post_build=None, basename='src.cpp', libraries=[], includes=[], force_c=False, build_ll_hook=None, extra_emscripten_args=[]):
@@ -640,6 +649,7 @@ class BrowserCore(RunnerCore):
 
   def btest(self, filename, expected=None, reference=None, force_c=False, reference_slack=0, manual_reference=False, post_build=None,
       args=[], outfile='test.html', message='.'): # TODO: use in all other tests
+    if os.environ.get('EMCC_FAST_COMPILER') == '1' and 'LEGACY_GL_EMULATION=1' in args: return self.skip('no legacy gl emulation in fastcomp')
     # if we are provided the source and not a path, use that
     filename_is_src = '\n' in filename
     src = filename if filename_is_src else ''
