@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = '56619bee-30fc-4b75-93c8-6befd9365102';
+    var PACKAGE_UUID = '44e23941-e2fa-4905-a621-53b4806eb1f2';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -460,7 +460,7 @@ var Runtime = {
       prev = curr;
       return curr;
     });
-    if (type.name_[0] === '[') {
+    if (type.name_ && type.name_[0] === '[') {
       // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
       // allocating a potentially huge array for [999999 x i8] etc.
       type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
@@ -946,6 +946,10 @@ function stringToUTF32(str, outPtr) {
 Module['stringToUTF32'] = stringToUTF32;
 function demangle(func) {
   try {
+    // Special-case the entry point, since its name differs from other name mangling.
+    if (func == 'Object._main' || func == '_main') {
+      return 'main()';
+    }
     if (typeof func === 'number') func = Pointer_stringify(func);
     if (func[0] !== '_') return func;
     if (func[1] !== '_') return func; // C function
@@ -1667,18 +1671,24 @@ function copyTempDouble(ptr) {
         return (height <= 0) ? 0 :
                  ((height - 1) * alignedRowSize + plainRowSize);
       },get:function (name_, p, type) {
+        // Guard against user passing a null pointer.
+        // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
+        // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
+        // better to report an error instead of doing anything random.
+        if (!p) {
+          GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+          return;
+        }
         var ret = undefined;
         switch(name_) { // Handle a few trivial GLES values
           case 0x8DFA: // GL_SHADER_COMPILER
             ret = 1;
             break;
           case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-            if (type === 'Integer') {
-              // fall through, see gles2_conformance.cpp
-            } else {
+            if (type !== 'Integer') {
               GL.recordError(0x0500); // GL_INVALID_ENUM
-              return;
             }
+            return; // Do not write anything to the out pointer, since no binary formats are supported.
           case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
             ret = 0;
             break;
@@ -1709,8 +1719,24 @@ function copyTempDouble(ptr) {
               return;
             case "object":
               if (result === null) {
-                GL.recordError(0x0500); // GL_INVALID_ENUM
-                return;
+                // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
+                // can mean an invalid name_, which we need to report as an error
+                switch(name_) {
+                  case 0x8894: // ARRAY_BUFFER_BINDING
+                  case 0x8B8D: // CURRENT_PROGRAM
+                  case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
+                  case 0x8CA6: // FRAMEBUFFER_BINDING
+                  case 0x8CA7: // RENDERBUFFER_BINDING
+                  case 0x8069: // TEXTURE_BINDING_2D
+                  case 0x8514: { // TEXTURE_BINDING_CUBE_MAP
+                    ret = 0;
+                    break;
+                  }
+                  default: {
+                    GL.recordError(0x0500); // GL_INVALID_ENUM
+                    return;
+                  }
+                }
               } else if (result instanceof Float32Array ||
                          result instanceof Uint32Array ||
                          result instanceof Int32Array ||
@@ -1850,6 +1876,8 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         // Tested on WebKit and FF25
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');     
+        // Extension available from Firefox 26 and Google Chrome 30
+        GL.instancedArraysExt = Module.ctx.getExtension('ANGLE_instanced_arrays');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -3772,7 +3800,7 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
-          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
         }
         return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
       },ioctl:function (stream, cmd, arg) {
@@ -5810,19 +5838,27 @@ function copyTempDouble(ptr) {
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
           var x, y;
+          // Neither .scrollX or .pageXOffset are defined in a spec, but
+          // we prefer .scrollX because it is currently in a spec draft.
+          // (see: http://www.w3.org/TR/2013/WD-cssom-view-20131217/)
+          var scrollX = ((typeof window.scrollX !== 'undefined') ? window.scrollX : window.pageXOffset);
+          var scrollY = ((typeof window.scrollY !== 'undefined') ? window.scrollY : window.pageYOffset);
+          // If this assert lands, it's likely because the browser doesn't support scrollX or pageXOffset
+          // and we have no viable fallback.
+          assert((typeof scrollX !== 'undefined') && (typeof scrollY !== 'undefined'), 'Unable to retrieve scroll position, mouse positions likely broken.');
           if (event.type == 'touchstart' ||
               event.type == 'touchend' ||
               event.type == 'touchmove') {
             var t = event.touches.item(0);
             if (t) {
-              x = t.pageX - (window.scrollX + rect.left);
-              y = t.pageY - (window.scrollY + rect.top);
+              x = t.pageX - (scrollX + rect.left);
+              y = t.pageY - (scrollY + rect.top);
             } else {
               return;
             }
           } else {
-            x = event.pageX - (window.scrollX + rect.left);
-            y = event.pageY - (window.scrollY + rect.top);
+            x = event.pageX - (scrollX + rect.left);
+            y = event.pageY - (scrollY + rect.top);
           }
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
@@ -6172,6 +6208,12 @@ function copyTempDouble(ptr) {
           };
           return id;
         };
+        function ensurePrecision(source) {
+          if (!/precision +(low|medium|high)p +float *;/.test(source)) {
+            source = 'precision mediump float;\n' + source;
+          }
+          return source;
+        }
         var glShaderSource = _glShaderSource;
         _glShaderSource = function _glShaderSource(shader, count, string, length) {
           var source = GL.getSource(shader, count, string, length);
@@ -6240,6 +6282,7 @@ function copyTempDouble(ptr) {
               source = 'varying float v_fogFragCoord;   \n' +
                        source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
             }
+            source = ensurePrecision(source);
           } else { // Fragment shader
             for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
               var old = source;
@@ -6271,7 +6314,7 @@ function copyTempDouble(ptr) {
               source = 'varying float v_fogFragCoord;   \n' +
                        source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
             }
-            source = 'precision mediump float;\n' + source;
+            source = ensurePrecision(source);
           }
           Module.ctx.shaderSource(GL.shaders[shader], source);
         };
@@ -10350,11 +10393,11 @@ function copyTempDouble(ptr) {
             console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           } else {
             // Add webcl constant for parser
-            webcl["SAMPLER"]          = 0x1300;
-            webcl["IMAGE2D"]          = 0x1301;
-            webcl["UNSIGNED_LONG"]    = 0x1302;
-            webcl["MAP_READ"]         = 0x1; 
-            webcl["MAP_WRITE"]        = 0x2;
+            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
               if (webcl.enableExtension(CL.cl_extensions[i])) {
                 console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
@@ -10402,15 +10445,15 @@ function copyTempDouble(ptr) {
             return 'UINT16';
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
-          case webcl.UNSIGNED_LONG:
+          case 0x1302 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';          
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
             return '__local';   
-          case webcl.SAMPLER:
+          case 0x1300 /*webcl.SAMPLER*/:
             return 'sampler_t';   
-          case webcl.IMAGE2D:
+          case 0x1301 /*webcl.IMAGE2D*/:
             return 'image2d_t';          
           default:
             if (typeof(pn_type) == "string") return 'struct';
@@ -10421,7 +10464,7 @@ function copyTempDouble(ptr) {
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;  
+          _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
         } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -10437,9 +10480,9 @@ function copyTempDouble(ptr) {
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
-          _value = webcl.IMAGE2D;
+          _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {
-          _value = webcl.SAMPLER;
+          _value = 0x1300 /*webcl.SAMPLER*/;
         }
         return _value;
       },parseStruct:function (kernel_string,struct_name) {
@@ -12578,11 +12621,12 @@ STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
-assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
+assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 var FUNCTION_TABLE = [0,0,__ZN10SimulationD2Ev,0,__ZNSt3__18messagesIwED0Ev,0,__ZN19StuffPerSecondMeterD2Ev,0,__ZNSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNKSt3__18numpunctIcE12do_falsenameEv,0,__ZNKSt3__120__time_get_c_storageIwE3__rEv,0,__ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjNS_4lessIS6_EENS4_INS_4pairIKS6_jEEEEED1Ev,0,__ZNKSt3__110moneypunctIwLb0EE16do_thousands_sepEv,0,__ZNSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_yearES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt12length_errorD0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_timeES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__17codecvtIwc11__mbstate_tED2Ev,0,__ZN6ButtonD2Ev,0,__ZNSt3__16locale2id6__initEv,0,__ZNSt3__110__stdinbufIcED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE14do_get_weekdayES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__110__stdinbufIcE9pbackfailEi,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9underflowEv,0,__ZNSt3__110__stdinbufIwED0Ev,0,__ZNSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt11logic_errorD0Ev,0,__ZNSt3__17codecvtIDsc11__mbstate_tED0Ev,0,__ZNSt13runtime_errorD2Ev,0,__ZNKSt3__17collateIcE7do_hashEPKcS3_,0,__ZNKSt3__17codecvtIcc11__mbstate_tE16do_always_noconvEv,0,__ZNKSt3__120__time_get_c_storageIwE8__monthsEv,0,__ZNSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_bRNS_8ios_baseEwRKNS_12basic_stringIwS3_NS_9allocatorIwEEEE,0,__ZNKSt3__15ctypeIcE10do_toupperEPcPKc,0,__ZNKSt3__110moneypunctIwLb1EE16do_positive_signEv,0,__ZNKSt3__15ctypeIwE10do_tolowerEPwPKw,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5uflowEv,0,__ZNSt3__17collateIcED1Ev,0,__ZNSt3__18ios_base7failureD2Ev,0,__ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev,0,__ZNK10__cxxabiv121__vmi_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNSt9bad_allocD2Ev,0,__Z15DisplayCallbackv,0,__ZNKSt3__110moneypunctIcLb1EE11do_groupingEv,0,__ZNSt11logic_errorD2Ev,0,__ZNSt3__16locale5facetD0Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_,0,__ZNKSt3__120__time_get_c_storageIwE3__cEv,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwy,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwx,0,__ZNSt3__15ctypeIcED0Ev,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwm,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwl,0,__ZNSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt8bad_castC2Ev,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwe,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwd,0,__ZNKSt3__110moneypunctIcLb1EE16do_decimal_pointEv,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwb,0,__ZNK10__cxxabiv120__si_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNKSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_bRNS_8ios_baseEcRKNS_12basic_stringIcS3_NS_9allocatorIcEEEE,0,__ZN13CPUSimulation21getSourceVelocityDataEPf,0,__ZNSt3__113basic_ostreamIwNS_11char_traitsIwEEED1Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE5do_inERS1_PKcS5_RS5_PDsS7_RS7_,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE13do_date_orderEv,0,__ZNSt3__18messagesIcED1Ev,0,__ZN7CounterD2Ev,0,__ZNKSt3__120__time_get_c_storageIwE7__weeksEv,0,__ZNKSt3__18numpunctIwE11do_groupingEv,0,__ZNSt3__16locale5facet16__on_zero_sharedEv,0,__Z12IdleCallbackv,0,__ZNKSt3__15ctypeIwE8do_widenEc,0,__ZNKSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwPK2tmcc,0,__ZNSt3__110__stdinbufIcE5uflowEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9pbackfailEj,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_timeES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__119__iostream_categoryD0Ev,0,__ZTv0_n12_NSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE5uflowEv,0,__ZNKSt3__110moneypunctIwLb0EE13do_neg_formatEv,0,__ZNKSt3__15ctypeIcE8do_widenEc,0,__ZNSt3__110moneypunctIwLb0EED0Ev,0,__ZNSt3__16locale5__impD2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9underflowEv,0,__ZNKSt3__15ctypeIcE10do_toupperEc,0,__ZN13CPUSimulation21getSourcePositionDataEPf,0,__ZN11SmoothMeterD2Ev,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwPKv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE11do_encodingEv,0,__ZNSt3__18numpunctIcED2Ev,0,__ZNKSt3__18numpunctIcE11do_groupingEv,0,__ZNK10__cxxabiv116__shim_type_info5noop1Ev,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev,0,__ZN13CPUSimulation22getPartialPositionDataEPf,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE16do_get_monthnameES4_S4_RNS_8ios_baseERjP2tm,0,__ZNKSt3__120__time_get_c_storageIwE3__xEv,0,__ZNKSt3__110moneypunctIcLb1EE13do_neg_formatEv,0,__ZNSt3__110__stdinbufIwE9pbackfailEj,0,__ZNKSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcPK2tmcc,0,__ZNSt3__18numpunctIcED0Ev,0,__ZNSt3__111__stdoutbufIcE8overflowEi,0,__ZNSt3__119__iostream_categoryD1Ev,0,__ZNKSt3__120__time_get_c_storageIwE7__am_pmEv,0,__ZNSt3__111__stdoutbufIwE5imbueERKNS_6localeE,0,__ZN19StuffPerSecondMeterC2Ejb,0,__ZNKSt3__18messagesIcE8do_closeEi,0,__ZNKSt3__15ctypeIwE5do_isEPKwS3_Pt,0,__ZNSt13runtime_errorD2Ev,0,__ZNKSt3__15ctypeIwE10do_toupperEw,0,__ZNKSt3__15ctypeIwE9do_narrowEPKwS3_cPc,0,__ZNKSt3__110moneypunctIwLb0EE14do_curr_symbolEv,0,__ZNKSt3__110moneypunctIcLb0EE16do_negative_signEv,0,__ZNSt3__17collateIwED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE16do_get_monthnameES4_S4_RNS_8ios_baseERjP2tm,0,__ZNK10__cxxabiv117__class_type_info9can_catchEPKNS_16__shim_type_infoERPv,0,__ZNKSt8bad_cast4whatEv,0,__ZNSt3__110moneypunctIcLb0EED1Ev,0,__ZNK10Simulation13getDeviceNameEv,0,__ZNKSt3__18messagesIcE6do_getEiiiRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE,0,__ZNSt3__18numpunctIwED2Ev,0,__ZNKSt3__110moneypunctIwLb1EE13do_pos_formatEv,0,__ZNSt3__15ctypeIwED0Ev,0,__ZNKSt13runtime_error4whatEv,0,_free,0,__ZN10SimulationD2Ev,0,__ZN10__cxxabiv117__class_type_infoD0Ev,0,__ZNSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNSt3__117__widen_from_utf8ILj32EED0Ev,0,__ZN13CPUSimulationC2Ej11NBodyParamsbb,0,__ZN13GPUSimulation21getSourcePositionDataEPf,0,__ZN13GPUSimulation10initializeEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjP2tmcc,0,__ZNSt3__113basic_istreamIwNS_11char_traitsIwEEED1Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNKSt3__18numpunctIcE16do_decimal_pointEv,0,__ZN10SimulationD2Ev,0,__ZNKSt3__110moneypunctIwLb0EE16do_negative_signEv,0,__ZNK10__cxxabiv120__si_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZNKSt3__120__time_get_c_storageIcE3__xEv,0,__ZNSt3__17collateIwED0Ev,0,__ZNKSt3__110moneypunctIcLb0EE16do_positive_signEv,0,__ZNSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE6do_outERS1_PKDsS5_RS5_PcS7_RS7_,0,__ZN13GPUSimulation9terminateEv,0,__ZNSt11logic_errorD2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZNSt3__117__call_once_proxyINS_5tupleIJNS_12_GLOBAL__N_111__fake_bindEEEEEEvPv,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcy,0,__ZNSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4syncEv,0,__ZNKSt3__18numpunctIwE16do_decimal_pointEv,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE4syncEv,0,__ZNK10__cxxabiv117__class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZN13CPUSimulation10initializeEv,0,__ZNKSt3__17codecvtIcc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__110moneypunctIcLb0EE11do_groupingEv,0,__ZNK10__cxxabiv120__si_class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZNKSt3__110moneypunctIwLb1EE14do_frac_digitsEv,0,__ZNSt3__17codecvtIDic11__mbstate_tED0Ev,0,__ZNKSt3__110moneypunctIwLb1EE16do_negative_signEv,0,__ZNK10__cxxabiv121__vmi_class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZNKSt3__120__time_get_c_storageIcE3__XEv,0,__ZNSt3__16localeC2ERKS0_,0,__ZNKSt3__15ctypeIwE9do_narrowEwc,0,__ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__111__stdoutbufIwE4syncEv,0,__ZN13GPUSimulation21setSourceVelocityDataEPf,0,__ZN13CPUSimulation4stepEv,0,__ZNSt3__110moneypunctIwLb0EED1Ev,0,__Z16KeyboardCallbackhii,0,__ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev,0,__ZTv0_n12_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17collateIwE7do_hashEPKwS3_,0,__ZNSt3__111__stdoutbufIcE5imbueERKNS_6localeE,0,__ZNKSt3__110moneypunctIcLb1EE16do_thousands_sepEv,0,__ZNSt3__18ios_baseD0Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE16do_always_noconvEv,0,__ZNSt3__110moneypunctIcLb1EED0Ev,0,__ZNSt9bad_allocD0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED0Ev,0,__ZN10SimulationD0Ev,0,__ZN13GPUSimulation12getColorDataEv,0,__ZNKSt3__114error_category10equivalentEiRKNS_15error_conditionE,0,__ZNSt3__19basic_iosIcNS_11char_traitsIcEEED0Ev,0,___cxx_global_array_dtor53,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsputnEPKci,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi,0,___cxx_global_array_dtor56,0,__ZNKSt3__15ctypeIwE10do_scan_isEtPKwS3_,0,__ZTv0_n12_NSt3__113basic_istreamIwNS_11char_traitsIwEEED0Ev,0,__ZNKSt3__15ctypeIcE9do_narrowEPKcS3_cPc,0,__ZN13GPUSimulation5resetEv,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZNSt3__16locale5__impD0Ev,0,__ZTv0_n12_NSt3__113basic_ostreamIwNS_11char_traitsIwEEED0Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEED1Ev,0,__ZNSt3__110__stdinbufIwE5imbueERKNS_6localeE,0,__ZNKSt3__17collateIwE10do_compareEPKwS3_S3_S3_,0,__ZNSt3__110__stdinbufIcE5imbueERKNS_6localeE,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsgetnEPci,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRPv,0,__ZNKSt3__15ctypeIcE10do_tolowerEc,0,__ZNKSt3__110moneypunctIwLb1EE13do_neg_formatEv,0,__ZNKSt3__15ctypeIcE8do_widenEPKcS3_Pc,0,__ZNSt3__17codecvtIcc11__mbstate_tED0Ev,0,__ZNKSt3__110moneypunctIwLb1EE16do_decimal_pointEv,0,__ZNKSt3__120__time_get_c_storageIcE7__weeksEv,0,__ZN11SmoothMeterD2Ev,0,__ZNSt8bad_castD2Ev,0,__ZNKSt3__18numpunctIwE11do_truenameEv,0,__ZTv0_n12_NSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev,0,__ZN7CounterD0Ev,0,__ZNSt3__110__stdinbufIwE9underflowEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNSt3__18ios_base7failureD0Ev,0,__ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__18ios_base4InitD2Ev,0,__ZNKSt3__15ctypeIwE5do_isEtw,0,__ZNSt3__110moneypunctIwLb1EED0Ev,0,__ZTv0_n12_NSt3__113basic_ostreamIwNS_11char_traitsIwEEED1Ev,0,__ZNSt3__16localeD2Ev,0,__ZN13GPUSimulationC2Ej11NBodyParamsji,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE14do_get_weekdayES4_S4_RNS_8ios_baseERjP2tm,0,__ZNKSt3__17codecvtIDic11__mbstate_tE16do_always_noconvEv,0,___cxx_global_array_dtor105,0,__ZNK10__cxxabiv116__shim_type_info5noop2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6setbufEPwi,0,__ZNKSt3__18messagesIwE7do_openERKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEERKNS_6localeE,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE,0,__ZNKSt9bad_alloc4whatEv,0,__ZNSt3__111__stdoutbufIcED1Ev,0,__ZN10SimulationD2Ev,0,__ZNKSt3__110moneypunctIcLb1EE14do_curr_symbolEv,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE6setbufEPci,0,__ZNSt13runtime_errorC2EPKc,0,__ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev,0,__ZNK10__cxxabiv117__class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZNKSt3__119__iostream_category4nameEv,0,__ZNKSt3__110moneypunctIcLb0EE14do_frac_digitsEv,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNKSt3__110moneypunctIwLb1EE11do_groupingEv,0,__ZNSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt8bad_castD0Ev,0,__ZNKSt3__15ctypeIcE9do_narrowEcc,0,__ZNSt3__116__narrow_to_utf8ILj32EED0Ev,0,__ZNSt3__112__do_nothingEPv,0,__ZNSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,___cxx_global_array_dtor81,0,__ZNSt3__110moneypunctIcLb0EED0Ev,0,__ZNSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17codecvtIDic11__mbstate_tE5do_inERS1_PKcS5_RS5_PDiS7_RS7_,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcPKv,0,__ZNKSt3__18numpunctIwE12do_falsenameEv,0,__ZNSt3__17collateIcED0Ev,0,__ZNKSt3__110moneypunctIwLb0EE13do_pos_formatEv,0,__ZNKSt3__110moneypunctIcLb1EE16do_negative_signEv,0,__ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__16locale5facetD2Ev,0,__ZTv0_n12_NSt3__113basic_istreamIwNS_11char_traitsIwEEED1Ev,0,__ZNSt3__112system_errorD0Ev,0,__ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_bRNS_8ios_baseERjRe,0,__ZNSt3__111__stdoutbufIwED0Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNSt3__110__stdinbufIwE5uflowEv,0,__ZNKSt3__18numpunctIcE11do_truenameEv,0,__ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_,0,__ZNKSt3__110moneypunctIcLb1EE13do_pos_formatEv,0,__ZNKSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_bRNS_8ios_baseEwe,0,__ZN13CPUSimulation9terminateEv,0,__ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_bRNS_8ios_baseERjRe,0,_fclose,0,__ZNSt3__17codecvtIwc11__mbstate_tED0Ev,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjS8_,0,__ZNKSt3__18numpunctIcE16do_thousands_sepEv,0,__ZN13CPUSimulation12getColorDataEv,0,__ZNSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9showmanycEv,0,__ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_dateES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE8overflowEj,0,___cxa_pure_virtual,0,__ZNSt3__18numpunctIwED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE,0,__ZNKSt3__15ctypeIwE10do_tolowerEw,0,__ZN19StuffPerSecondMeterD2Ev,0,__ZN13CPUSimulation21setSourceVelocityDataEPf,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE4syncEv,0,__ZNSt3__111__stdoutbufIcE4syncEv,0,__ZNSt3__112basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEED1Ev,0,__ZNKSt3__17collateIcE10do_compareEPKcS3_S3_S3_,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNSt3__110__stdinbufIwED1Ev,0,__ZNKSt3__17collateIwE12do_transformEPKwS3_,0,__ZNKSt3__17codecvtIDic11__mbstate_tE6do_outERS1_PKDiS5_RS5_PcS7_RS7_,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcx,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEce,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcd,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9underflowEv,0,__ZNKSt3__17codecvtIcc11__mbstate_tE13do_max_lengthEv,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcb,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcm,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcl,0,__ZNSt8bad_castD2Ev,0,__ZN10__cxxabiv121__vmi_class_type_infoD0Ev,0,__ZN13CPUSimulation21setSourcePositionDataEPf,0,__ZNKSt3__17codecvtIcc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZN13GPUSimulation22getPartialPositionDataEPf,0,__ZNKSt3__110moneypunctIcLb1EE14do_frac_digitsEv,0,__ZNKSt3__17codecvtIcc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNKSt3__120__time_get_c_storageIcE3__rEv,0,__ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_bRNS_8ios_baseERjRNS_12basic_stringIcS3_NS_9allocatorIcEEEE,0,__ZNKSt3__15ctypeIwE10do_toupperEPwPKw,0,__ZTv0_n12_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__110__stdinbufIcE9underflowEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNKSt3__114error_category23default_error_conditionEi,0,__ZNK10__cxxabiv117__class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__18messagesIwE8do_closeEi,0,__ZN13GPUSimulation21setSourcePositionDataEPf,0,__ZNSt3__112system_errorD2Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE16do_always_noconvEv,0,__ZNKSt3__110moneypunctIwLb0EE11do_groupingEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9showmanycEv,0,__ZNKSt3__110moneypunctIcLb0EE16do_decimal_pointEv,0,__ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev,0,__ZN19StuffPerSecondMeterD0Ev,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRy,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRx,0,__ZNKSt3__120__time_get_c_storageIcE8__monthsEv,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRt,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRPv,0,__ZN6ButtonC2Effff,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRm,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRl,0,__ZNSt3__111__stdoutbufIwE6xsputnEPKwi,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRb,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRe,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRd,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRf,0,__ZNKSt3__110moneypunctIcLb0EE16do_thousands_sepEv,0,__ZNKSt3__114error_category10equivalentERKNS_10error_codeEi,0,__ZNKSt3__110moneypunctIcLb0EE13do_neg_formatEv,0,__ZNSt3__111__stdoutbufIcED0Ev,0,__ZNSt3__19basic_iosIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt11logic_error4whatEv,0,__ZNKSt3__119__iostream_category7messageEi,0,__ZNKSt3__110moneypunctIcLb0EE13do_pos_formatEv,0,__ZNSt3__113basic_ostreamIwNS_11char_traitsIwEEED0Ev,0,__ZN13GPUSimulationD0Ev,0,__ZNKSt3__110moneypunctIwLb0EE16do_decimal_pointEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__Z14ResizeCallbackii,0,__ZNKSt3__17collateIcE12do_transformEPKcS3_,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6xsgetnEPwi,0,__ZNKSt3__17codecvtIwc11__mbstate_tE13do_max_lengthEv,0,__ZNKSt3__110moneypunctIwLb0EE14do_frac_digitsEv,0,__ZNSt3__18messagesIcED0Ev,0,__ZNKSt3__15ctypeIcE10do_tolowerEPcPKc,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjP2tmcc,0,__ZNKSt3__120__time_get_c_storageIcE7__am_pmEv,0,__ZN6ButtonD2Ev,0,__ZNKSt3__110moneypunctIcLb0EE14do_curr_symbolEv,0,__ZNKSt3__15ctypeIwE8do_widenEPKcS3_Pw,0,__ZNKSt3__110moneypunctIwLb1EE16do_thousands_sepEv,0,__ZNK10__cxxabiv121__vmi_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZNKSt3__17codecvtIwc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNSt3__18ios_baseD2Ev,0,__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev,0,__ZN10SimulationD2Ev,0,__ZNSt3__110__stdinbufIcED0Ev,0,__ZNSt3__16localeC2Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE13do_date_orderEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_yearES4_S4_RNS_8ios_baseERjP2tm,0,__ZNKSt3__18numpunctIwE16do_thousands_sepEv,0,__ZNSt3__110moneypunctIwLb1EED1Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE5imbueERKNS_6localeE,0,__ZNKSt3__18messagesIcE7do_openERKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEERKNS_6localeE,0,__ZN10SimulationD2Ev,0,__ZNSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__110moneypunctIcLb1EED1Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE8overflowEi,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZNKSt3__120__time_get_c_storageIcE3__cEv,0,__ZN11SmoothMeterC2EjjjPKc,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6setbufEPci,0,__ZN13GPUSimulation21getSourceVelocityDataEPf,0,__ZNKSt3__110moneypunctIwLb0EE16do_positive_signEv,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE8overflowEi,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjS8_,0,__ZNKSt3__120__time_get_c_storageIwE3__XEv,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_dateES4_S4_RNS_8ios_baseERjP2tm,0,__ZN6ButtonD0Ev,0,__ZNKSt3__17codecvtIcc11__mbstate_tE6do_outERS1_PKcS5_RS5_PcS7_RS7_,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9pbackfailEi,0,__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev,0,__ZN13CPUSimulation5resetEv,0,__ZNSt3__111__stdoutbufIwE8overflowEj,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRy,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRx,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRt,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRm,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRl,0,__ZNKSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_bRNS_8ios_baseEce,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRe,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRd,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRf,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE13do_max_lengthEv,0,__ZNSt3__111__stdoutbufIcE6xsputnEPKci,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRb,0,___cxx_global_array_dtor,0,__ZN13CPUSimulationD0Ev,0,__ZN7CounterC2EPKc,0,__ZNSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZN10__cxxabiv120__si_class_type_infoD0Ev,0,__ZNSt3__18messagesIwED1Ev,0,__ZNSt3__111__stdoutbufIwED1Ev,0,__ZN7CounterD2Ev,0,__ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_bRNS_8ios_baseERjRNS_12basic_stringIwS3_NS_9allocatorIwEEEE,0,__ZN10__cxxabiv116__shim_type_infoD2Ev,0,__ZNKSt3__15ctypeIwE11do_scan_notEtPKwS3_,0,__ZNKSt3__110moneypunctIwLb1EE14do_curr_symbolEv,0,__ZNSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNKSt3__18messagesIwE6do_getEiiiRKNS_12basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEE,0,__ZN11SmoothMeterD0Ev,0,__ZNKSt3__17codecvtIcc11__mbstate_tE5do_inERS1_PKcS5_RS5_PcS7_RS7_,0,__ZNSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNKSt3__110moneypunctIcLb1EE16do_positive_signEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE13do_max_lengthEv,0,__ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6xsputnEPKwi,0,__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev,0,__ZNSt3__15ctypeIcED2Ev,0,__ZNSt13runtime_errorD0Ev,0,__ZNSt3__113basic_istreamIwNS_11char_traitsIwEEED0Ev,0,__ZN13GPUSimulation4stepEv,0,___cxx_global_array_dtor120,0];
 // EMSCRIPTEN_START_FUNCS
 function __ZN7CounterC2EPKc($this,$rightText){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12606,10 +12650,11 @@ function __ZN7CounterC2EPKc($this,$rightText){
  var $12=_strdup($11);
  var $13=(($3+24)|0);
  HEAP32[(($13)>>2)]=$12;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7CounterD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -12622,7 +12667,7 @@ function __ZN7CounterD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -12645,13 +12690,15 @@ function __ZN7CounterD0Ev($this){
 }
 function __ZN7CounterD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter10setCounterEi($this,$number){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12660,10 +12707,11 @@ function __ZN7Counter10setCounterEi($this,$number){
  var $4=$2;
  var $5=(($3+20)|0);
  HEAP32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter4setXEf($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12672,10 +12720,11 @@ function __ZN7Counter4setXEf($this,$x){
  var $4=$2;
  var $5=(($3+4)|0);
  HEAPF32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter4setYEf($this,$y){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12684,10 +12733,11 @@ function __ZN7Counter4setYEf($this,$y){
  var $4=$2;
  var $5=(($3+8)|0);
  HEAPF32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter4setWEf($this,$w){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12696,10 +12746,11 @@ function __ZN7Counter4setWEf($this,$w){
  var $4=$2;
  var $5=(($3+12)|0);
  HEAPF32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter4setHEf($this,$h){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -12708,7 +12759,7 @@ function __ZN7Counter4setHEf($this,$h){
  var $4=$2;
  var $5=(($3+16)|0);
  HEAPF32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN7Counter4drawEv($this){
  var label=0;
@@ -13043,6 +13094,7 @@ function __Z18LoadFileIntoStringPKcPPcPj($filename,$text,$len){
 }
 function __Z22CreateTextureWithLabelRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEfbjj($text,$size,$italic,$width,$height){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13062,7 +13114,7 @@ function __Z22CreateTextureWithLabelRKNSt3__112basic_stringIcNS_11char_traitsIcE
  var $12=$4;
  var $13=$5;
  var $14=__Z29CreateTextureWithLabelUseFontRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEfPKcjji($7,$8,$11,$12,$13,0);
- return $14;
+ STACKTOP=sp;return $14;
 }
 function __Z29CreateTextureWithLabelUseFontRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEfPKcjji($text,$size,$font,$width,$height,$alignment){
  var label=0;
@@ -13119,6 +13171,7 @@ function __Z11LoadTextureRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9alloca
 }
 function __Z17CreateGaussianMapi($N){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13254,12 +13307,13 @@ function __Z17CreateGaussianMapi($N){
  label=13;break;
  case 13: 
  var $85=$B;
- return $85;
+ STACKTOP=sp;return $85;
   default: assert(0, "bad label: " + label);
  }
 }
 function __Z12HermiteBasisfffff($pA,$pB,$vA,$vB,$u){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13323,10 +13377,11 @@ function __Z12HermiteBasisfffff($pA,$pB,$vA,$vB,$u){
  var $44=$4;
  var $45=($43)*($44);
  var $46=($42)+($45);
- return $46;
+ STACKTOP=sp;return $46;
 }
 function __Z17CreateButtonLabelRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEj($text,$font_size){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$text;
@@ -13335,10 +13390,11 @@ function __Z17CreateButtonLabelRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9
  var $4=$2;
  var $5=($4>>>0);
  var $6=__Z22CreateTextureWithLabelRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEfbjj($3,$5,0,700,48);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __Z10DrawButtonPK6Buttonjjb($button,$texture,$background,$selected){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13348,10 +13404,11 @@ function __Z10DrawButtonPK6Buttonjjb($button,$texture,$background,$selected){
  $3=$background;
  var $5=($selected&1);
  $4=$5;
- return;
+ STACKTOP=sp;return;
 }
 function __Z9DrawMeterffR11SmoothMeter($x,$y,$meter){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13366,10 +13423,11 @@ function __Z9DrawMeterffR11SmoothMeter($x,$y,$meter){
  var $6=$3;
  __ZN11SmoothMeter4drawEv($6);
  _glPopMatrix();
- return;
+ STACKTOP=sp;return;
 }
 function __Z8DrawQuadffff($x,$y,$w,$h){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13404,10 +13462,11 @@ function __Z8DrawQuadffff($x,$y,$w,$h){
  var $20=($18)+($19);
  _glVertex3f($17,$20);
  _glEnd();
- return;
+ STACKTOP=sp;return;
 }
 function __Z16DrawQuadInvertedffff($x,$y,$w,$h){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13442,10 +13501,11 @@ function __Z16DrawQuadInvertedffff($x,$y,$w,$h){
  var $20=($18)+($19);
  _glVertex3f($17,$20);
  _glEnd();
- return;
+ STACKTOP=sp;return;
 }
 function __ZN19StuffPerSecondMeterC2Ejb($this,$frameBufferSize,$rampUp){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13478,10 +13538,11 @@ function __ZN19StuffPerSecondMeterC2Ejb($this,$frameBufferSize,$rampUp){
  HEAP8[($18)]=$21;
  var $22=(($5+20)|0);
  HEAP32[(($22)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN19StuffPerSecondMeterD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13494,7 +13555,7 @@ function __ZN19StuffPerSecondMeterD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -13517,6 +13578,7 @@ function __ZN19StuffPerSecondMeterD0Ev($this){
 }
 function __ZN19StuffPerSecondMeterD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13534,12 +13596,13 @@ function __ZN19StuffPerSecondMeterD2Ev($this){
  __ZdaPv($8);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN19StuffPerSecondMeter5resetEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13570,12 +13633,13 @@ function __ZN19StuffPerSecondMeter5resetEv($this){
  case 5: 
  var $17=(($2+20)|0);
  HEAP32[(($17)>>2)]=0;
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN19StuffPerSecondMeter11recordFrameEdd($this,$stuff,$dt){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13604,7 +13668,7 @@ function __ZN19StuffPerSecondMeter11recordFrameEdd($this,$stuff,$dt){
  var $21=(((($18>>>0))%(($20>>>0)))&-1);
  var $22=(($4+12)|0);
  HEAP32[(($22)>>2)]=$21;
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK19StuffPerSecondMeter14stuffPerSecondEv($this){
  var label=0;
@@ -13742,14 +13806,16 @@ function ___cxx_global_var_init(){
 }
 function __ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjNS_4lessIS6_EENS4_INS_4pairIKS6_jEEEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjNS_4lessIS6_EENS4_INS_4pairIKS6_jEEEEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN11SmoothMeterC2EjjjPKc($this,$w,$h,$max,$legendText){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -13785,10 +13851,11 @@ function __ZN11SmoothMeterC2EjjjPKc($this,$w,$h,$max,$legendText){
  var $19=(($6+44)|0);
  var $20=$5;
  HEAP32[(($19)>>2)]=$20;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN11SmoothMeterD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13801,7 +13868,7 @@ function __ZN11SmoothMeterD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -13824,13 +13891,15 @@ function __ZN11SmoothMeterD0Ev($this){
 }
 function __ZN11SmoothMeterD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN11SmoothMeter14setTargetValueEd($this,$target){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -13839,10 +13908,11 @@ function __ZN11SmoothMeter14setTargetValueEd($this,$target){
  var $4=$2;
  var $5=(($3+16)|0);
  HEAPF64[(($5)>>3)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN11SmoothMeter6updateEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13903,7 +13973,7 @@ function __ZN11SmoothMeter6updateEv($this){
  case 8: 
  label=9;break;
  case 9: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -14121,6 +14191,7 @@ function __ZN11SmoothMeter4drawEv($this){
 }
 function __ZL13angleForValuefi($val,$max){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -14159,7 +14230,7 @@ function __ZL13angleForValuefi($val,$max){
  var $25=($22)/($24);
  var $26=((0.5235987755982988))-($25);
  var $27=$26;
- return $27;
+ STACKTOP=sp;return $27;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -14252,6 +14323,7 @@ function __Z17value_texture_forIiEjRKT_($t){
 }
 function __ZN6ButtonC2Effff($this,$x,$y,$w,$h){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -14277,10 +14349,11 @@ function __ZN6ButtonC2Effff($this,$x,$y,$w,$h){
  var $14=(($6+16)|0);
  var $15=$5;
  HEAPF32[(($14)>>2)]=$15;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN6ButtonD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -14293,7 +14366,7 @@ function __ZN6ButtonD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -14316,10 +14389,11 @@ function __ZN6ButtonD0Ev($this){
 }
 function __ZN6ButtonD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZL9stringifyj($agg_result,$i){
  var label=0;
@@ -15321,11 +15395,12 @@ function __ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEE
 }
 function __ZL13value_textureRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE($text){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$text;
  var $2=$1;
  var $3=__Z22CreateTextureWithLabelRKNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEfbjj($2,52,1,128,64);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjNS_4lessIS6_EENS4_INS_4pairIKS6_jEEEEE16__find_equal_keyERPNS_16__tree_node_baseIPvEERSA_($this,$__parent,$__k){
  var label=0;
@@ -18650,6 +18725,7 @@ function __ZNSt3__119__tree_right_rotateIPNS_16__tree_node_baseIPvEEEEvT_($__x){
 }
 function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEEC1ERKSC_($this,$__comp){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -18657,7 +18733,7 @@ function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traits
  var $3=$1;
  var $4=$2;
  __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEEC2ERKSC_($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEEC2ERKSC_($this,$__comp){
  var label=0;
@@ -18771,23 +18847,26 @@ function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traits
 }
 function __ZNSt3__13mapINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjNS_4lessIS6_EENS4_INS_4pairIKS6_jEEEEED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEED1Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -18820,7 +18899,7 @@ function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traits
  var $23=HEAP32[(($22)>>2)];
  var $24=$23;
  __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEE7destroyEPNS_11__tree_nodeIS8_PvEE($8,$24);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjEENS_19__map_value_compareIS7_S8_NS_4lessIS7_EELb1EEENS5_IS8_EEE7destroyEPNS_11__tree_nodeIS8_PvEE($this,$__nd){
  var label=0;
@@ -18956,37 +19035,41 @@ function __ZNSt3__16__treeINS_12__value_typeINS_12basic_stringIcNS_11char_traits
 }
 function __ZNSt3__112__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__112__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__112__value_typeINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  __ZNSt3__14pairIKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED1Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__14pairIKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__14pairIKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__14pairIKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEjED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __GLOBAL__I_a(){
  var label=0;
@@ -19100,11 +19183,12 @@ function ___cxx_global_var_init6(){
 }
 function __Z16SetParticleCounti($n){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$n;
  var $2=$1;
  HEAP32[((12248)>>2)]=$2;
- return;
+ STACKTOP=sp;return;
 }
 function __Z17RepositionCounterv(){
  var label=0;
@@ -19125,6 +19209,7 @@ function __Z17RepositionCounterv(){
 }
 function __Z11MakeButtonsv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19186,7 +19271,7 @@ function __Z11MakeButtonsv(){
  (function() { try { __THREW__ = 0; return __ZN6ButtonC2Effff($36,$41,32,700,48) } catch(e) { if (typeof e != "number") throw e; if (ABORT) throw e; __THREW__ = 1; return null } })();if (!__THREW__) { label=11;break; } else { label=13;break; }
  case 11: 
  HEAP32[((49664)>>2)]=$36;
- return;
+ STACKTOP=sp;return;
  case 12: 
  var $44$0 = ___cxa_find_matching_catch(-1, -1); var $44$1 = tempRet0;
  var $45=$44$0;
@@ -19223,6 +19308,7 @@ function __Z12IdleCallbackv(){
 }
 function __Z14ResizeCallbackii($x,$y){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$x;
@@ -19233,10 +19319,11 @@ function __Z14ResizeCallbackii($x,$y){
  HEAP32[((82808)>>2)]=$4;
  __Z11MakeButtonsv();
  __Z17RepositionCounterv();
- return;
+ STACKTOP=sp;return;
 }
 function __Z18PauseAllSimulatorsv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19261,12 +19348,13 @@ function __Z18PauseAllSimulatorsv(){
  $i=$12;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __Z17StopAllSimulatorsv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19291,7 +19379,7 @@ function __Z17StopAllSimulatorsv(){
  $i=$12;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -19387,6 +19475,7 @@ function __Z9ResetDemov(){
 }
 function __ZN10Simulation21setUpdateExternalDataEb($this,$v){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19398,7 +19487,7 @@ function __ZN10Simulation21setUpdateExternalDataEb($this,$v){
  var $7=(($4+5)|0);
  var $8=($6&1);
  HEAP8[($7)]=$8;
- return;
+ STACKTOP=sp;return;
 }
 function __Z23SetSimulatorDescriptionjPKcP10Simulation($index,$name,$simulator){
  var label=0;
@@ -19608,6 +19697,7 @@ function __Z19SwapGraphicsDevicesv(){
 }
 function __Z15DisplayCallbackv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19664,7 +19754,7 @@ function __Z15DisplayCallbackv(){
  __Z18DrawHeadsUpDisplayv();
  label=10;break;
  case 10: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -19704,6 +19794,7 @@ function __Z21SwapSimulationDevicesv(){
 }
 function __Z9DrawStarsv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -20017,12 +20108,13 @@ function __Z9DrawStarsv(){
  _glColor3f(1,1,1);
  _glUseProgram(0);
  _glBindTexture(3553,0);
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __Z12InitDefaultsifbbbbb($_initDemo,$_starScale,$_ShowHud,$_showUpdates,$_showFramerate,$_showGigaflops,$_ShowDock){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -20081,10 +20173,11 @@ function __Z12InitDefaultsifbbbbb($_initDemo,$_starScale,$_ShowHud,$_showUpdates
  var $40=($39?(1.5707963267948966):0);
  var $41=$40;
  HEAPF32[((12184)>>2)]=$41;
- return;
+ STACKTOP=sp;return;
 }
 function __Z18DrawHeadsUpDisplayv(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -20305,12 +20398,13 @@ function __Z18DrawHeadsUpDisplayv(){
  _glDisable(3553);
  _glDisable(3042);
  _glPopMatrix();
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZL12SubtractTimeff($uiEndTime,$uiStartTime){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$uiEndTime;
@@ -20319,7 +20413,7 @@ function __ZL12SubtractTimeff($uiEndTime,$uiStartTime){
  var $4=$2;
  var $5=($3)-($4);
  var $6=((0.0010000000474974513))*($5);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __Z13FindRenderersv(){
  var label=0;
@@ -20451,6 +20545,7 @@ function __Z12InitGraphicsv(){
 }
 function __Z16KeyboardCallbackhii($key,$x,$y){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -20584,12 +20679,13 @@ function __Z16KeyboardCallbackhii($key,$x,$y){
  __Z19SwapGraphicsDevicesv();
  label=21;break;
  case 21: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZL10SelectDemoi($index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$index;
  HEAP8[(16576)]=0;
@@ -20600,7 +20696,7 @@ function __ZL10SelectDemoi($index){
  assert(40 % 1 === 0);(_memcpy(82824, $4, 40)|0);
  __Z9ResetDemov();
  __ZL9ResetViewv();
- return;
+ STACKTOP=sp;return;
 }
 function __Z21GetComputeDeviceCounti($type){
  var label=0;
@@ -21019,6 +21115,7 @@ function __Z20DestroyAllSimulatorsv(){
 }
 function __Z14InitSimulationi($simulator){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -21044,18 +21141,19 @@ function __Z14InitSimulationi($simulator){
  HEAPF32[((12208)>>2)]=$9;
  __Z9ResetDemov();
  __ZL9ResetViewv();
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __Z12InitGalaxiesi($initMode){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$initMode;
  __Z12InitGraphicsv();
  var $2=$1;
  __Z14InitSimulationi($2);
- return;
+ STACKTOP=sp;return;
 }
 function __GLOBAL__I_a42(){
  var label=0;
@@ -22942,6 +23040,7 @@ function __Z25RandomizeBodiesPackedData11NBodyConfigPfS0_S0_ffi($config,$pos,$ve
 }
 function __ZN6float3ixEj($this,$c){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -22950,10 +23049,11 @@ function __ZN6float3ixEj($this,$c){
  var $4=$2;
  var $5=(($3)|0);
  var $6=(($5+($4<<2))|0);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZL16SetupGalaxyColoriPfi($body,$color,$bID){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -22999,7 +23099,7 @@ function __ZL16SetupGalaxyColoriPfi($body,$color,$bID){
  assert(16 % 1 === 0);HEAP32[(($22)>>2)]=HEAP32[(($25)>>2)];HEAP32[((($22)+(4))>>2)]=HEAP32[((($25)+(4))>>2)];HEAP32[((($22)+(8))>>2)]=HEAP32[((($25)+(8))>>2)];HEAP32[((($22)+(12))>>2)]=HEAP32[((($25)+(12))>>2)];
  label=7;break;
  case 7: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -24812,14 +24912,16 @@ function __Z24RandomizeBodiesSplitData11NBodyConfigPfS0_S0_S0_S0_S0_S0_S0_ffi($c
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$__mode){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -24930,20 +25032,22 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
  label=26;break;
  case 26: 
  var $57=$__rt;
- return $57;
+ STACKTOP=sp;return $57;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -24958,7 +25062,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($this){
  var $7=(($6+108)|0);
  var $8=$7;
  __ZNSt3__19basic_iosIcNS_11char_traitsIcEEED2Ev($8);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $10$0 = ___cxa_find_matching_catch(-1, -1); var $10$1 = tempRet0;
  var $11=$10$0;
@@ -24988,6 +25092,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($this){
 }
 function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25000,7 +25105,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -25023,6 +25128,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($this){
 }
 function __ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -25035,10 +25141,11 @@ function __ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($this){
  var $9=(($3+$8)|0);
  var $10=$9;
  __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED1Ev($10);
- return;
+ STACKTOP=sp;return;
 }
 function __ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -25051,10 +25158,11 @@ function __ZTv0_n12_NSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($this){
  var $9=(($3+$8)|0);
  var $10=$9;
  __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED0Ev($10);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25086,7 +25194,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
  var $21=$5;
  var $22=(($6+4)|0);
  __ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED2Ev($21,$22);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $24$0 = ___cxa_find_matching_catch(-1, -1); var $24$1 = tempRet0;
  var $25=$24$0;
@@ -25115,6 +25223,7 @@ function __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25182,7 +25291,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($this){
  case 15: 
  var $42=$4;
  __ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED2Ev($42);
- return;
+ STACKTOP=sp;return;
  case 16: 
  label=17;break;
  case 17: 
@@ -25498,6 +25607,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5closeEv($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25510,7 +25620,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -25533,6 +25643,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE($this,$__loc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25708,7 +25819,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE($t
  case 13: 
  label=14;break;
  case 14: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -27347,6 +27458,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9underflowEv($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi($this,$__c){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -27482,7 +27594,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi($this,$__c
  label=13;break;
  case 13: 
  var $94=$18;
- return $94;
+ STACKTOP=sp;return $94;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -27915,6 +28027,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE8overflowEi($this,$__c)
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE12__write_modeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28032,12 +28145,13 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE12__write_modeEv($this)
  HEAP32[(($78)>>2)]=16;
  label=9;break;
  case 9: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE11__read_modeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28147,7 +28261,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE11__read_modeEv($this){
  label=7;break;
  case 7: 
  var $76=$12;
- return $76;
+ STACKTOP=sp;return $76;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -28510,6 +28624,7 @@ function __ZN10SimulationC2Ej11NBodyParams($this,$nbodies,$params){
 }
 function __ZN10SimulationD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28522,7 +28637,7 @@ function __ZN10SimulationD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -28545,6 +28660,7 @@ function __ZN10SimulationD0Ev($this){
 }
 function __ZN10SimulationD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28564,7 +28680,7 @@ function __ZN10SimulationD2Ev($this){
  case 4: 
  var $11=(($4+1100)|0);
  __ZN19StuffPerSecondMeterD2Ev($11);
- return;
+ STACKTOP=sp;return;
  case 5: 
  var $13$0 = ___cxa_find_matching_catch(-1, -1); var $13$1 = tempRet0;
  var $14=$13$0;
@@ -28604,6 +28720,7 @@ function __ZN10SimulationD2Ev($this){
 }
 function __ZN10Simulation8takeDataEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28626,22 +28743,24 @@ function __ZN10Simulation8takeDataEv($this){
  if($11){label=2;break;}else{label=4;break;}
  case 4: 
  var $13=$oldData;
- return $13;
+ STACKTOP=sp;return $13;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN10Simulation13isInitializedEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+4)|0);
  var $4=HEAP8[($3)];
  var $5=(($4)&1);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __Z9AtomicCASPVPvS_S_($ptr,$old_value,$new_value){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28668,12 +28787,13 @@ function __Z9AtomicCASPVPvS_S_($ptr,$old_value,$new_value){
  label=4;break;
  case 4: 
  var $14=$1;
- return $14;
+ STACKTOP=sp;return $14;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN10Simulation5startEb($this,$paused){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28696,12 +28816,13 @@ function __ZN10Simulation5startEb($this,$paused){
  __ZN10Simulation7unpauseEv($4);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN10Simulation5pauseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28719,12 +28840,13 @@ function __ZN10Simulation5pauseEv($this){
  HEAP8[($8)]=1;
  label=4;break;
  case 4: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN10Simulation7unpauseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28742,12 +28864,13 @@ function __ZN10Simulation7unpauseEv($this){
  HEAP8[($8)]=0;
  label=4;break;
  case 4: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN10Simulation4stopEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -28757,7 +28880,7 @@ function __ZN10Simulation4stopEv($this){
  __ZN10Simulation7unpauseEv($2);
  var $4=(($2+4)|0);
  HEAP8[($4)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN10Simulation5resetE11NBodyParams($this,$params){
  var label=0;
@@ -28794,24 +28917,27 @@ function __ZN10Simulation5resetE11NBodyParams($this,$params){
 }
 function __ZNK10Simulation12getGigaFlopsEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+1128)|0);
  var $4=HEAPF64[(($3)>>3)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK10Simulation19getUpdatesPerSecondEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+1160)|0);
  var $4=HEAPF64[(($3)>>3)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN10Simulation8giveDataEPv($this,$data){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28850,12 +28976,13 @@ function __ZN10Simulation8giveDataEPv($this,$data){
  case 4: 
  var $24=$oldData;
  _free($24);
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZL12SubtractTimeff93($uiEndTime,$uiStartTime){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$uiEndTime;
@@ -28864,16 +28991,17 @@ function __ZL12SubtractTimeff93($uiEndTime,$uiStartTime){
  var $4=$2;
  var $5=($3)-($4);
  var $6=((0.0010000000474974513))*($5);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZNK10Simulation7getYearEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+1168)|0);
  var $4=HEAPF64[(($3)>>3)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN13GPUSimulationC2Ej11NBodyParamsji($this,$nbodies,$params,$n_devices,$dev_index){
  var label=0;
@@ -28913,6 +29041,7 @@ function __ZN13GPUSimulationC2Ej11NBodyParamsji($this,$nbodies,$params,$n_device
 }
 function __ZN13GPUSimulationD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28925,7 +29054,7 @@ function __ZN13GPUSimulationD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -30599,6 +30728,7 @@ function __ZL19MemCopyDeviceToHostP17_cl_command_queueP6float4P7_cl_memii($compu
 }
 function __ZN13GPUSimulation9terminateEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30699,22 +30829,24 @@ function __ZN13GPUSimulation9terminateEv($this){
  var $76=HEAP32[(($75)>>2)];
  var $77=$76;
  HEAP8[($77)]=0; HEAP8[((($77)+(1))|0)]=0; HEAP8[((($77)+(2))|0)]=0; HEAP8[((($77)+(3))|0)]=0;
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13GPUSimulation12getColorDataEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+1196)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=$4;
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN13GPUSimulation22getPartialPositionDataEPf($this,$pDest){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30782,12 +30914,13 @@ function __ZN13GPUSimulation22getPartialPositionDataEPf($this,$pDest){
  $i=$45;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13GPUSimulation21getSourcePositionDataEPf($this,$pDest){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30832,12 +30965,13 @@ function __ZN13GPUSimulation21getSourcePositionDataEPf($this,$pDest){
  $i=$30;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13GPUSimulation21setSourcePositionDataEPf($this,$pSrc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30882,7 +31016,7 @@ function __ZN13GPUSimulation21setSourcePositionDataEPf($this,$pSrc){
  $i=$30;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -30941,6 +31075,7 @@ function __ZL19MemCopyHostToDeviceP17_cl_command_queueP6float4P7_cl_memi($comput
 }
 function __ZN13GPUSimulation21getSourceVelocityDataEPf($this,$pDest){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30985,12 +31120,13 @@ function __ZN13GPUSimulation21getSourceVelocityDataEPf($this,$pDest){
  $i=$30;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13GPUSimulation21setSourceVelocityDataEPf($this,$pSrc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -31035,7 +31171,7 @@ function __ZN13GPUSimulation21setSourceVelocityDataEPf($this,$pSrc){
  $i=$30;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -31077,6 +31213,7 @@ function __ZN13CPUSimulationC2Ej11NBodyParamsbb($this,$nbodies,$params,$vectoriz
 }
 function __ZN13CPUSimulationD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -31089,7 +31226,7 @@ function __ZN13CPUSimulationD0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -32799,6 +32936,7 @@ function __ZN13CPUSimulation11resetDeviceEv($this){
 }
 function __ZN13CPUSimulation13executeScalarEjj($this,$startDestIndex,$destCount){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -33160,7 +33298,7 @@ function __ZN13CPUSimulation13executeScalarEjj($this,$startDestIndex,$destCount)
  $l=$277;
  label=2;break;
  case 9: 
- return 0;
+ STACKTOP=sp;return 0;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -33519,6 +33657,7 @@ function __ZN13CPUSimulation13executeKernelEv($this){
 }
 function __ZN13CPUSimulation9terminateEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -33767,22 +33906,24 @@ function __ZN13CPUSimulation9terminateEv($this){
  var $190=_clReleaseContext($189);
  label=29;break;
  case 29: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13CPUSimulation12getColorDataEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+1196)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=$4;
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN13CPUSimulation22getPartialPositionDataEPf($this,$p){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $data_offset_in_floats;
@@ -33820,10 +33961,11 @@ function __ZN13CPUSimulation22getPartialPositionDataEPf($this,$p){
  var $27=$26;
  var $28=$data_size_bytes;
  assert($28 % 1 === 0);(_memcpy($21, $27, $28)|0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN13CPUSimulation21getSourcePositionDataEPf($this,$p){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -33839,10 +33981,11 @@ function __ZN13CPUSimulation21getSourcePositionDataEPf($this,$p){
  var $11=HEAP32[(($10)>>2)];
  var $12=($11<<4);
  assert($12 % 1 === 0);(_memcpy($5, $8, $12)|0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN13CPUSimulation21setSourcePositionDataEPf($this,$pSrc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -33935,12 +34078,13 @@ function __ZN13CPUSimulation21setSourcePositionDataEPf($this,$pSrc){
  $i=$73;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13CPUSimulation21getSourceVelocityDataEPf($this,$pDest){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -34009,12 +34153,13 @@ function __ZN13CPUSimulation21getSourceVelocityDataEPf($this,$pDest){
  $i=$52;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN13CPUSimulation21setSourceVelocityDataEPf($this,$pSrc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -34083,21 +34228,23 @@ function __ZN13CPUSimulation21setSourceVelocityDataEPf($this,$pSrc){
  $i=$52;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK10Simulation13getDeviceNameEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+64)|0);
  var $4=(($3)|0);
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __Z5dot3fR6float3S0_($a,$b){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$a;
@@ -34125,10 +34272,11 @@ function __Z5dot3fR6float3S0_($a,$b){
  var $23=HEAPF32[(($22)>>2)];
  var $24=($20)*($23);
  var $25=($17)+($24);
- return $25;
+ STACKTOP=sp;return $25;
 }
 function __Z11normalize3fR6float3($a){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $norm;
  var $inv_norm;
@@ -34160,7 +34308,7 @@ function __Z11normalize3fR6float3($a){
  var $22=($21)*($18);
  HEAPF32[(($20)>>2)]=$22;
  var $23=$norm;
- return $23;
+ STACKTOP=sp;return $23;
 }
 function __Z7cross3fR6float3S0_($agg_result,$a,$b){
  var label=0;

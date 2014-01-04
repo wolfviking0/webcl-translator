@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_scan.data';
     var REMOTE_PACKAGE_NAME = 'osx_scan.data';
-    var PACKAGE_UUID = '2f29eab9-1ddd-456c-a5ef-2cd1e46012e4';
+    var PACKAGE_UUID = '6c2c8f67-ab1a-497b-99da-f2fe589d7824';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -442,7 +442,7 @@ var Runtime = {
       prev = curr;
       return curr;
     });
-    if (type.name_[0] === '[') {
+    if (type.name_ && type.name_[0] === '[') {
       // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
       // allocating a potentially huge array for [999999 x i8] etc.
       type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
@@ -928,6 +928,10 @@ function stringToUTF32(str, outPtr) {
 Module['stringToUTF32'] = stringToUTF32;
 function demangle(func) {
   try {
+    // Special-case the entry point, since its name differs from other name mangling.
+    if (func == 'Object._main' || func == '_main') {
+      return 'main()';
+    }
     if (typeof func === 'number') func = Pointer_stringify(func);
     if (func[0] !== '_') return func;
     if (func[1] !== '_') return func; // C function
@@ -1549,18 +1553,24 @@ function copyTempDouble(ptr) {
         return (height <= 0) ? 0 :
                  ((height - 1) * alignedRowSize + plainRowSize);
       },get:function (name_, p, type) {
+        // Guard against user passing a null pointer.
+        // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
+        // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
+        // better to report an error instead of doing anything random.
+        if (!p) {
+          GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+          return;
+        }
         var ret = undefined;
         switch(name_) { // Handle a few trivial GLES values
           case 0x8DFA: // GL_SHADER_COMPILER
             ret = 1;
             break;
           case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-            if (type === 'Integer') {
-              // fall through, see gles2_conformance.cpp
-            } else {
+            if (type !== 'Integer') {
               GL.recordError(0x0500); // GL_INVALID_ENUM
-              return;
             }
+            return; // Do not write anything to the out pointer, since no binary formats are supported.
           case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
             ret = 0;
             break;
@@ -1591,8 +1601,24 @@ function copyTempDouble(ptr) {
               return;
             case "object":
               if (result === null) {
-                GL.recordError(0x0500); // GL_INVALID_ENUM
-                return;
+                // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
+                // can mean an invalid name_, which we need to report as an error
+                switch(name_) {
+                  case 0x8894: // ARRAY_BUFFER_BINDING
+                  case 0x8B8D: // CURRENT_PROGRAM
+                  case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
+                  case 0x8CA6: // FRAMEBUFFER_BINDING
+                  case 0x8CA7: // RENDERBUFFER_BINDING
+                  case 0x8069: // TEXTURE_BINDING_2D
+                  case 0x8514: { // TEXTURE_BINDING_CUBE_MAP
+                    ret = 0;
+                    break;
+                  }
+                  default: {
+                    GL.recordError(0x0500); // GL_INVALID_ENUM
+                    return;
+                  }
+                }
               } else if (result instanceof Float32Array ||
                          result instanceof Uint32Array ||
                          result instanceof Int32Array ||
@@ -1722,6 +1748,8 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         // Tested on WebKit and FF25
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');     
+        // Extension available from Firefox 26 and Google Chrome 30
+        GL.instancedArraysExt = Module.ctx.getExtension('ANGLE_instanced_arrays');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -1798,11 +1826,11 @@ function copyTempDouble(ptr) {
             console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           } else {
             // Add webcl constant for parser
-            webcl["SAMPLER"]          = 0x1300;
-            webcl["IMAGE2D"]          = 0x1301;
-            webcl["UNSIGNED_LONG"]    = 0x1302;
-            webcl["MAP_READ"]         = 0x1; 
-            webcl["MAP_WRITE"]        = 0x2;
+            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
               if (webcl.enableExtension(CL.cl_extensions[i])) {
                 console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
@@ -1850,15 +1878,15 @@ function copyTempDouble(ptr) {
             return 'UINT16';
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
-          case webcl.UNSIGNED_LONG:
+          case 0x1302 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';          
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
             return '__local';   
-          case webcl.SAMPLER:
+          case 0x1300 /*webcl.SAMPLER*/:
             return 'sampler_t';   
-          case webcl.IMAGE2D:
+          case 0x1301 /*webcl.IMAGE2D*/:
             return 'image2d_t';          
           default:
             if (typeof(pn_type) == "string") return 'struct';
@@ -1869,7 +1897,7 @@ function copyTempDouble(ptr) {
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;  
+          _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
         } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -1885,9 +1913,9 @@ function copyTempDouble(ptr) {
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
-          _value = webcl.IMAGE2D;
+          _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {
-          _value = webcl.SAMPLER;
+          _value = 0x1300 /*webcl.SAMPLER*/;
         }
         return _value;
       },parseStruct:function (kernel_string,struct_name) {
@@ -4158,7 +4186,7 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
-          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
         }
         return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
       },ioctl:function (stream, cmd, arg) {
@@ -6797,19 +6825,27 @@ function copyTempDouble(ptr) {
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
           var x, y;
+          // Neither .scrollX or .pageXOffset are defined in a spec, but
+          // we prefer .scrollX because it is currently in a spec draft.
+          // (see: http://www.w3.org/TR/2013/WD-cssom-view-20131217/)
+          var scrollX = ((typeof window.scrollX !== 'undefined') ? window.scrollX : window.pageXOffset);
+          var scrollY = ((typeof window.scrollY !== 'undefined') ? window.scrollY : window.pageYOffset);
+          // If this assert lands, it's likely because the browser doesn't support scrollX or pageXOffset
+          // and we have no viable fallback.
+          assert((typeof scrollX !== 'undefined') && (typeof scrollY !== 'undefined'), 'Unable to retrieve scroll position, mouse positions likely broken.');
           if (event.type == 'touchstart' ||
               event.type == 'touchend' ||
               event.type == 'touchmove') {
             var t = event.touches.item(0);
             if (t) {
-              x = t.pageX - (window.scrollX + rect.left);
-              y = t.pageY - (window.scrollY + rect.top);
+              x = t.pageX - (scrollX + rect.left);
+              y = t.pageY - (scrollY + rect.top);
             } else {
               return;
             }
           } else {
-            x = event.pageX - (window.scrollX + rect.left);
-            y = event.pageY - (window.scrollY + rect.top);
+            x = event.pageX - (scrollX + rect.left);
+            y = event.pageY - (scrollY + rect.top);
           }
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
@@ -6900,11 +6936,12 @@ STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
-assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
+assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 var FUNCTION_TABLE = [0, 0];
 // EMSCRIPTEN_START_FUNCS
 function _IsPowerOfTwo($n){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$n;
  var $2=$1;
@@ -6912,7 +6949,7 @@ function _IsPowerOfTwo($n){
  var $4=((($3)-(1))|0);
  var $5=$2&$4;
  var $6=($5|0)==0;
- return $6;
+ STACKTOP=sp;return $6;
 }
 function _floorPow2($n){
  var label=0;
@@ -6931,6 +6968,7 @@ function _floorPow2($n){
 }
 function _CreatePartialSumBuffers($count){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -7039,12 +7077,13 @@ function _CreatePartialSumBuffers($count){
  var $68=($67>>>0)>1;
  if($68){label=7;break;}else{label=11;break;}
  case 11: 
- return 0;
+ STACKTOP=sp;return 0;
   default: assert(0, "bad label: " + label);
  }
 }
 function _ReleasePartialSums(){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -7075,7 +7114,7 @@ function _ReleasePartialSums(){
  HEAP32[((1992)>>2)]=0;
  HEAP32[((2008)>>2)]=0;
  HEAP32[((2000)>>2)]=0;
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -8217,6 +8256,7 @@ function _PreScanBufferRecursive($output_data,$input_data,$max_group_size,$max_w
 }
 function _PreScanBuffer($output_data,$input_data,$max_group_size,$max_work_item_count,$element_count){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -8233,7 +8273,7 @@ function _PreScanBuffer($output_data,$input_data,$max_group_size,$max_work_item_
  var $9=$4;
  var $10=$5;
  var $11=_PreScanBufferRecursive($6,$7,$8,$9,$10,0);
- return;
+ STACKTOP=sp;return;
 }
 function _ScanReference($reference,$input,$count){
  var label=0;
@@ -8977,6 +9017,7 @@ function _LoadProgramSourceFromFile($filename){
 }
 function _SubtractTimeInSec($endtime,$starttime){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$endtime;
@@ -8985,7 +9026,7 @@ function _SubtractTimeInSec($endtime,$starttime){
  var $4=$2;
  var $5=($3)-($4);
  var $6=((0.0010000000474974513))*($5);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function _GetCurrentTime(){
  var label=0;

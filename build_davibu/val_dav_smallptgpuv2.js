@@ -111,7 +111,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/val_dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_smallptgpuv2.data';
-    var PACKAGE_UUID = '93376ee0-bb1c-4ec7-9ee8-4219686b70f7';
+    var PACKAGE_UUID = '671af3cc-6b30-4b55-83d9-70eddeaa43c5';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -457,7 +457,7 @@ var Runtime = {
       prev = curr;
       return curr;
     });
-    if (type.name_[0] === '[') {
+    if (type.name_ && type.name_[0] === '[') {
       // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
       // allocating a potentially huge array for [999999 x i8] etc.
       type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
@@ -943,6 +943,10 @@ function stringToUTF32(str, outPtr) {
 Module['stringToUTF32'] = stringToUTF32;
 function demangle(func) {
   try {
+    // Special-case the entry point, since its name differs from other name mangling.
+    if (func == 'Object._main' || func == '_main') {
+      return 'main()';
+    }
     if (typeof func === 'number') func = Pointer_stringify(func);
     if (func[0] !== '_') return func;
     if (func[1] !== '_') return func; // C function
@@ -3476,7 +3480,7 @@ function copyTempDouble(ptr) {
           throw new FS.ErrnoError(ERRNO_CODES.EACCES);
         }
         if (!stream.stream_ops.mmap) {
-          throw new FS.errnoError(ERRNO_CODES.ENODEV);
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
         }
         return stream.stream_ops.mmap(stream, buffer, offset, length, position, prot, flags);
       },ioctl:function (stream, cmd, arg) {
@@ -5503,18 +5507,24 @@ function copyTempDouble(ptr) {
         return (height <= 0) ? 0 :
                  ((height - 1) * alignedRowSize + plainRowSize);
       },get:function (name_, p, type) {
+        // Guard against user passing a null pointer.
+        // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
+        // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
+        // better to report an error instead of doing anything random.
+        if (!p) {
+          GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+          return;
+        }
         var ret = undefined;
         switch(name_) { // Handle a few trivial GLES values
           case 0x8DFA: // GL_SHADER_COMPILER
             ret = 1;
             break;
           case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-            if (type === 'Integer') {
-              // fall through, see gles2_conformance.cpp
-            } else {
+            if (type !== 'Integer') {
               GL.recordError(0x0500); // GL_INVALID_ENUM
-              return;
             }
+            return; // Do not write anything to the out pointer, since no binary formats are supported.
           case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
             ret = 0;
             break;
@@ -5545,8 +5555,24 @@ function copyTempDouble(ptr) {
               return;
             case "object":
               if (result === null) {
-                GL.recordError(0x0500); // GL_INVALID_ENUM
-                return;
+                // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
+                // can mean an invalid name_, which we need to report as an error
+                switch(name_) {
+                  case 0x8894: // ARRAY_BUFFER_BINDING
+                  case 0x8B8D: // CURRENT_PROGRAM
+                  case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
+                  case 0x8CA6: // FRAMEBUFFER_BINDING
+                  case 0x8CA7: // RENDERBUFFER_BINDING
+                  case 0x8069: // TEXTURE_BINDING_2D
+                  case 0x8514: { // TEXTURE_BINDING_CUBE_MAP
+                    ret = 0;
+                    break;
+                  }
+                  default: {
+                    GL.recordError(0x0500); // GL_INVALID_ENUM
+                    return;
+                  }
+                }
               } else if (result instanceof Float32Array ||
                          result instanceof Uint32Array ||
                          result instanceof Int32Array ||
@@ -5686,6 +5712,8 @@ function copyTempDouble(ptr) {
         GL.floatExt = Module.ctx.getExtension('OES_texture_float');
         // Tested on WebKit and FF25
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');     
+        // Extension available from Firefox 26 and Google Chrome 30
+        GL.instancedArraysExt = Module.ctx.getExtension('ANGLE_instanced_arrays');
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -5762,11 +5790,11 @@ function copyTempDouble(ptr) {
             console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           } else {
             // Add webcl constant for parser
-            webcl["SAMPLER"]          = 0x1300;
-            webcl["IMAGE2D"]          = 0x1301;
-            webcl["UNSIGNED_LONG"]    = 0x1302;
-            webcl["MAP_READ"]         = 0x1; 
-            webcl["MAP_WRITE"]        = 0x2;
+            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
               if (webcl.enableExtension(CL.cl_extensions[i])) {
                 console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
@@ -5814,15 +5842,15 @@ function copyTempDouble(ptr) {
             return 'UINT16';
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
-          case webcl.UNSIGNED_LONG:
+          case 0x1302 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';          
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
             return '__local';   
-          case webcl.SAMPLER:
+          case 0x1300 /*webcl.SAMPLER*/:
             return 'sampler_t';   
-          case webcl.IMAGE2D:
+          case 0x1301 /*webcl.IMAGE2D*/:
             return 'image2d_t';          
           default:
             if (typeof(pn_type) == "string") return 'struct';
@@ -5833,7 +5861,7 @@ function copyTempDouble(ptr) {
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
-          _value = webcl.UNSIGNED_LONG;  
+          _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
         } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -5849,9 +5877,9 @@ function copyTempDouble(ptr) {
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
-          _value = webcl.IMAGE2D;
+          _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {
-          _value = webcl.SAMPLER;
+          _value = 0x1300 /*webcl.SAMPLER*/;
         }
         return _value;
       },parseStruct:function (kernel_string,struct_name) {
@@ -6874,19 +6902,27 @@ function copyTempDouble(ptr) {
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
           var x, y;
+          // Neither .scrollX or .pageXOffset are defined in a spec, but
+          // we prefer .scrollX because it is currently in a spec draft.
+          // (see: http://www.w3.org/TR/2013/WD-cssom-view-20131217/)
+          var scrollX = ((typeof window.scrollX !== 'undefined') ? window.scrollX : window.pageXOffset);
+          var scrollY = ((typeof window.scrollY !== 'undefined') ? window.scrollY : window.pageYOffset);
+          // If this assert lands, it's likely because the browser doesn't support scrollX or pageXOffset
+          // and we have no viable fallback.
+          assert((typeof scrollX !== 'undefined') && (typeof scrollY !== 'undefined'), 'Unable to retrieve scroll position, mouse positions likely broken.');
           if (event.type == 'touchstart' ||
               event.type == 'touchend' ||
               event.type == 'touchmove') {
             var t = event.touches.item(0);
             if (t) {
-              x = t.pageX - (window.scrollX + rect.left);
-              y = t.pageY - (window.scrollY + rect.top);
+              x = t.pageX - (scrollX + rect.left);
+              y = t.pageY - (scrollY + rect.top);
             } else {
               return;
             }
           } else {
-            x = event.pageX - (window.scrollX + rect.left);
-            y = event.pageY - (window.scrollY + rect.top);
+            x = event.pageX - (scrollX + rect.left);
+            y = event.pageY - (scrollY + rect.top);
           }
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
@@ -7237,6 +7273,12 @@ function copyTempDouble(ptr) {
           };
           return id;
         };
+        function ensurePrecision(source) {
+          if (!/precision +(low|medium|high)p +float *;/.test(source)) {
+            source = 'precision mediump float;\n' + source;
+          }
+          return source;
+        }
         var glShaderSource = _glShaderSource;
         _glShaderSource = function _glShaderSource(shader, count, string, length) {
           var source = GL.getSource(shader, count, string, length);
@@ -7305,6 +7347,7 @@ function copyTempDouble(ptr) {
               source = 'varying float v_fogFragCoord;   \n' +
                        source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
             }
+            source = ensurePrecision(source);
           } else { // Fragment shader
             for (var i = 0; i < GL.immediate.MAX_TEXTURES; i++) {
               var old = source;
@@ -7336,7 +7379,7 @@ function copyTempDouble(ptr) {
               source = 'varying float v_fogFragCoord;   \n' +
                        source.replace(/gl_FogFragCoord/g, 'v_fogFragCoord');
             }
-            source = 'precision mediump float;\n' + source;
+            source = ensurePrecision(source);
           }
           Module.ctx.shaderSource(GL.shaders[shader], source);
         };
@@ -12557,7 +12600,7 @@ STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 staticSealed = true; // seal the static portion of memory
 STACK_MAX = STACK_BASE + 5242880;
 DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
-assert(DYNAMIC_BASE < TOTAL_MEMORY); // Stack must fit in TOTAL_MEMORY; allocations from here on may enlarge TOTAL_MEMORY
+assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 var FUNCTION_TABLE = [0,0,__ZNSt3__18messagesIwED0Ev,0,__ZNSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNKSt3__18numpunctIcE12do_falsenameEv,0,__ZNSt3__14endlIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_,0,__ZNKSt3__120__time_get_c_storageIwE3__rEv,0,__ZNKSt3__110moneypunctIwLb0EE16do_thousands_sepEv,0,__ZNSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_yearES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt12length_errorD0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_timeES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__17codecvtIwc11__mbstate_tED2Ev,0,__ZNSt3__16locale2id6__initEv,0,__ZNSt3__110__stdinbufIcED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE14do_get_weekdayES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__110__stdinbufIcE9pbackfailEi,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9underflowEv,0,__ZNSt3__110__stdinbufIwED0Ev,0,__ZNSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt11logic_errorD0Ev,0,__ZNSt3__17codecvtIDsc11__mbstate_tED0Ev,0,__ZNSt13runtime_errorD2Ev,0,__ZNKSt3__17collateIcE7do_hashEPKcS3_,0,__ZNKSt3__17codecvtIcc11__mbstate_tE16do_always_noconvEv,0,__ZNKSt3__120__time_get_c_storageIwE8__monthsEv,0,__ZNSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_bRNS_8ios_baseEwRKNS_12basic_stringIwS3_NS_9allocatorIwEEEE,0,__ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__15ctypeIcE10do_toupperEPcPKc,0,__ZNKSt3__110moneypunctIwLb1EE16do_positive_signEv,0,__ZNKSt3__15ctypeIwE10do_tolowerEPwPKw,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5uflowEv,0,__Z11reshapeFuncii,0,__ZNSt3__17collateIcED1Ev,0,__ZNSt3__18ios_base7failureD2Ev,0,__ZNK10__cxxabiv121__vmi_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNSt9bad_allocD2Ev,0,__ZNKSt3__110moneypunctIcLb1EE11do_groupingEv,0,__ZNSt11logic_errorD2Ev,0,__ZNSt3__16locale5facetD0Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_,0,__ZNKSt3__120__time_get_c_storageIwE3__cEv,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwy,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwx,0,__ZNSt3__15ctypeIcED0Ev,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwm,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwl,0,__ZNSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt8bad_castC2Ev,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwe,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwd,0,__ZNKSt3__110moneypunctIcLb1EE16do_decimal_pointEv,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwb,0,__ZNK10__cxxabiv120__si_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNKSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_bRNS_8ios_baseEcRKNS_12basic_stringIcS3_NS_9allocatorIcEEEE,0,__ZNSt3__113basic_ostreamIwNS_11char_traitsIwEEED1Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE5do_inERS1_PKcS5_RS5_PDsS7_RS7_,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE13do_date_orderEv,0,__ZNSt3__18messagesIcED1Ev,0,__ZNKSt3__120__time_get_c_storageIwE7__weeksEv,0,__ZNKSt3__18numpunctIwE11do_groupingEv,0,__ZNSt3__16locale5facet16__on_zero_sharedEv,0,__ZNKSt3__15ctypeIwE8do_widenEc,0,__ZNKSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwPK2tmcc,0,__ZNKSt9exception4whatEv,0,__ZNSt3__110__stdinbufIcE5uflowEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9pbackfailEj,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_timeES4_S4_RNS_8ios_baseERjP2tm,0,__ZTv0_n12_NSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE5uflowEv,0,__ZNKSt3__110moneypunctIwLb0EE13do_neg_formatEv,0,__ZNKSt3__15ctypeIcE8do_widenEc,0,__ZNSt3__110moneypunctIwLb0EED0Ev,0,__ZNSt3__16locale5__impD2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9underflowEv,0,__ZNKSt3__15ctypeIcE10do_toupperEc,0,__ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_RNS_8ios_baseEwPKv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE11do_encodingEv,0,__ZNSt3__18numpunctIcED2Ev,0,__ZNKSt3__18numpunctIcE11do_groupingEv,0,__ZNK10__cxxabiv116__shim_type_info5noop1Ev,0,__ZNSt9exceptionD1Ev,0,__ZNSt3__110moneypunctIwLb1EED1Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE16do_get_monthnameES4_S4_RNS_8ios_baseERjP2tm,0,__ZNKSt3__120__time_get_c_storageIwE3__xEv,0,__ZNKSt3__110moneypunctIcLb1EE13do_neg_formatEv,0,__Z8idleFuncv,0,__ZNSt3__110__stdinbufIwE9pbackfailEj,0,__ZNKSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcPK2tmcc,0,__ZNSt3__18numpunctIcED0Ev,0,__ZNSt3__111__stdoutbufIcE8overflowEi,0,__ZNSt3__119__iostream_categoryD1Ev,0,__ZNKSt3__120__time_get_c_storageIwE7__am_pmEv,0,__ZNSt3__111__stdoutbufIwE5imbueERKNS_6localeE,0,__ZNKSt3__18messagesIcE8do_closeEi,0,__ZNKSt3__15ctypeIwE5do_isEPKwS3_Pt,0,__ZNSt13runtime_errorD2Ev,0,__ZNKSt3__15ctypeIwE10do_toupperEw,0,__ZNKSt3__15ctypeIwE9do_narrowEPKwS3_cPc,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE5imbueERKNS_6localeE,0,__ZNKSt3__110moneypunctIcLb0EE16do_negative_signEv,0,__ZNSt3__17collateIwED1Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE16do_get_monthnameES4_S4_RNS_8ios_baseERjP2tm,0,__ZNK10__cxxabiv117__class_type_info9can_catchEPKNS_16__shim_type_infoERPv,0,__ZNKSt8bad_cast4whatEv,0,__ZNSt3__110moneypunctIcLb0EED1Ev,0,__ZNKSt3__18messagesIcE6do_getEiiiRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE,0,__ZNSt3__18numpunctIwED2Ev,0,__ZNKSt3__110moneypunctIwLb1EE13do_pos_formatEv,0,__ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__15ctypeIwED0Ev,0,__ZN12RenderConfigC2ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEjjbbj,0,__ZNKSt13runtime_error4whatEv,0,__ZN12RenderDeviceC2ERKN2cl6DeviceERKNSt3__112basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEEjP6CameraP6Spherej,0,__ZN10__cxxabiv117__class_type_infoD0Ev,0,__ZNSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNSt3__117__widen_from_utf8ILj32EED0Ev,0,__ZNKSt3__18numpunctIwE16do_thousands_sepEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjP2tmcc,0,__ZNSt3__113basic_istreamIwNS_11char_traitsIwEEED1Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNSt3__110__stdinbufIwED1Ev,0,__ZNKSt3__18numpunctIcE16do_decimal_pointEv,0,_clGetProgramBuildInfo,0,__ZNKSt3__110moneypunctIwLb0EE16do_negative_signEv,0,__ZNK10__cxxabiv120__si_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZNKSt3__120__time_get_c_storageIcE3__xEv,0,__ZNSt3__17collateIwED0Ev,0,__ZNKSt3__110moneypunctIcLb0EE16do_positive_signEv,0,__ZNSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE6do_outERS1_PKDsS5_RS5_PcS7_RS7_,0,__ZNSt11logic_errorD2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZNSt3__117__call_once_proxyINS_5tupleIJNS_12_GLOBAL__N_111__fake_bindEEEEEEvPv,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcy,0,__ZNSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4syncEv,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__18numpunctIwE16do_decimal_pointEv,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE4syncEv,0,__ZNK10__cxxabiv117__class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZNKSt3__17codecvtIcc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__110moneypunctIcLb0EE11do_groupingEv,0,__ZNK10__cxxabiv120__si_class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZNKSt3__110moneypunctIwLb1EE14do_frac_digitsEv,0,__ZNSt3__17codecvtIDic11__mbstate_tED0Ev,0,__ZNKSt3__110moneypunctIwLb1EE16do_negative_signEv,0,__ZNK10__cxxabiv121__vmi_class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZTv0_n12_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__120__time_get_c_storageIcE3__XEv,0,__ZNSt3__16localeC2ERKS0_,0,__ZNKSt3__15ctypeIwE9do_narrowEwc,0,__ZNK2cl5Error4whatEv,0,__ZNSt3__111__stdoutbufIwE4syncEv,0,__ZNSt3__110moneypunctIwLb0EED1Ev,0,__ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev,0,_clGetKernelWorkGroupInfo,0,__ZTv0_n12_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17collateIwE7do_hashEPKwS3_,0,__ZNKSt3__110moneypunctIwLb1EE11do_groupingEv,0,__ZNSt3__111__stdoutbufIcE5imbueERKNS_6localeE,0,__ZNKSt3__110moneypunctIcLb1EE16do_thousands_sepEv,0,__ZNSt3__18ios_baseD0Ev,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE16do_always_noconvEv,0,__ZNSt3__110moneypunctIcLb1EED0Ev,0,__ZNSt9bad_allocD0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED0Ev,0,_clGetDeviceInfo,0,__ZNKSt3__114error_category10equivalentEiRKNS_15error_conditionE,0,__ZNSt3__19basic_iosIcNS_11char_traitsIcEEED0Ev,0,___cxx_global_array_dtor53,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsputnEPKci,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi,0,___cxx_global_array_dtor56,0,__ZNKSt3__15ctypeIwE10do_scan_isEtPKwS3_,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZTv0_n12_NSt3__113basic_ostreamIwNS_11char_traitsIwEEED0Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEED1Ev,0,__ZN2cl5ErrorD1Ev,0,__ZNSt3__110__stdinbufIwE5imbueERKNS_6localeE,0,__ZNKSt3__17collateIwE10do_compareEPKwS3_S3_S3_,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsgetnEPci,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRPv,0,__ZNKSt3__15ctypeIcE10do_tolowerEc,0,__ZNKSt3__110moneypunctIwLb1EE13do_neg_formatEv,0,__ZNKSt3__114error_category23default_error_conditionEi,0,_clGetEventProfilingInfo,0,__ZNKSt3__15ctypeIcE8do_widenEPKcS3_Pc,0,__ZNSt3__17codecvtIcc11__mbstate_tED0Ev,0,__ZNKSt3__110moneypunctIwLb1EE16do_decimal_pointEv,0,__ZNKSt3__120__time_get_c_storageIcE7__weeksEv,0,__ZNSt8bad_castD2Ev,0,__ZNKSt3__18numpunctIwE11do_truenameEv,0,__ZTv0_n12_NSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__110__stdinbufIwE9underflowEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNSt3__18ios_base7failureD0Ev,0,__ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZTv0_n12_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__18ios_base4InitD2Ev,0,__ZN12RenderConfigD2Ev,0,__ZNKSt3__15ctypeIwE5do_isEtw,0,__ZNSt3__110moneypunctIwLb1EED0Ev,0,__ZTv0_n12_NSt3__113basic_ostreamIwNS_11char_traitsIwEEED1Ev,0,__ZNSt3__16localeD2Ev,0,__ZN2cl5ErrorD0Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE14do_get_weekdayES4_S4_RNS_8ios_baseERjP2tm,0,__ZNKSt3__17codecvtIDic11__mbstate_tE16do_always_noconvEv,0,___cxx_global_array_dtor105,0,__ZNK10__cxxabiv116__shim_type_info5noop2Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6setbufEPwi,0,__ZNKSt3__18messagesIwE7do_openERKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEERKNS_6localeE,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE,0,__ZNKSt9bad_alloc4whatEv,0,__ZNSt3__111__stdoutbufIcED1Ev,0,__ZNKSt3__110moneypunctIcLb1EE14do_curr_symbolEv,0,__ZNSt13runtime_errorC2EPKc,0,__ZNSt3__16locale5__impD0Ev,0,__ZNK10__cxxabiv117__class_type_info27has_unambiguous_public_baseEPNS_19__dynamic_cast_infoEPvi,0,__ZNKSt3__119__iostream_category4nameEv,0,__ZNKSt3__110moneypunctIcLb0EE14do_frac_digitsEv,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNKSt3__15ctypeIcE9do_narrowEPKcS3_cPc,0,__ZNSt3__18time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNSt8bad_castD0Ev,0,__ZNKSt3__15ctypeIcE9do_narrowEcc,0,__ZNSt3__116__narrow_to_utf8ILj32EED0Ev,0,__ZNSt3__112__do_nothingEPv,0,__ZNSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__110moneypunctIcLb0EED0Ev,0,__ZNSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__17codecvtIDic11__mbstate_tE5do_inERS1_PKcS5_RS5_PDiS7_RS7_,0,__ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__18numpunctIwE12do_falsenameEv,0,__ZNSt3__17collateIcED0Ev,0,__ZNKSt3__110moneypunctIwLb0EE13do_pos_formatEv,0,__ZNKSt3__110moneypunctIcLb1EE16do_negative_signEv,0,__ZNSt3__111__stdoutbufIcED0Ev,0,__ZNSt3__16locale5facetD2Ev,0,__ZTv0_n12_NSt3__113basic_istreamIwNS_11char_traitsIwEEED1Ev,0,__ZNSt3__112system_errorD0Ev,0,__ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_bRNS_8ios_baseERjRe,0,__ZNSt3__111__stdoutbufIwED0Ev,0,__Z11displayFuncv,0,__ZNKSt3__17codecvtIwc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNSt3__110__stdinbufIwE5uflowEv,0,__ZNKSt3__18numpunctIcE11do_truenameEv,0,__ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_,0,__ZNKSt3__110moneypunctIcLb1EE13do_pos_formatEv,0,__ZNKSt3__19money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_putES4_bRNS_8ios_baseEwe,0,__ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_bRNS_8ios_baseERjRe,0,_fclose,0,__ZNSt3__17codecvtIwc11__mbstate_tED0Ev,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjS8_,0,__ZNKSt3__18numpunctIcE16do_thousands_sepEv,0,__ZNSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9showmanycEv,0,__ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_dateES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE8overflowEj,0,__ZNSt3__18numpunctIwED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE,0,__ZNKSt3__15ctypeIwE10do_tolowerEw,0,___cxx_global_array_dtor81,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE4syncEv,0,__ZNSt3__111__stdoutbufIcE4syncEv,0,__ZNSt3__112basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEED1Ev,0,__ZNKSt3__17collateIcE10do_compareEPKcS3_S3_S3_,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE6setbufEPci,0,__ZNKSt3__17collateIwE12do_transformEPKwS3_,0,__ZNKSt3__17codecvtIDic11__mbstate_tE6do_outERS1_PKDiS5_RS5_PcS7_RS7_,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcx,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEce,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcd,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9underflowEv,0,__ZNKSt3__17codecvtIcc11__mbstate_tE13do_max_lengthEv,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcb,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcm,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcl,0,__ZNSt8bad_castD2Ev,0,__ZN12RenderDeviceD2Ev,0,__ZN10__cxxabiv121__vmi_class_type_infoD0Ev,0,__ZNKSt3__17codecvtIcc11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNKSt3__110moneypunctIcLb1EE14do_frac_digitsEv,0,__ZNKSt3__17codecvtIcc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNKSt3__120__time_get_c_storageIcE3__rEv,0,__ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_bRNS_8ios_baseERjRNS_12basic_stringIcS3_NS_9allocatorIcEEEE,0,__ZNKSt3__15ctypeIwE10do_toupperEPwPKw,0,__ZTv0_n12_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__110__stdinbufIcE9underflowEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE7seekposENS_4fposI11__mbstate_tEEj,0,__ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_RNS_8ios_baseEcPKv,0,__ZNK10__cxxabiv117__class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__18messagesIwE8do_closeEi,0,__ZNSt3__110__stdinbufIcE5imbueERKNS_6localeE,0,__ZNSt3__112system_errorD2Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE16do_always_noconvEv,0,__ZNKSt3__110moneypunctIwLb0EE11do_groupingEv,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE9showmanycEv,0,__ZNKSt3__110moneypunctIcLb0EE16do_decimal_pointEv,0,__ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRy,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRx,0,__ZNKSt3__120__time_get_c_storageIcE8__monthsEv,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRt,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRPv,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRm,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRl,0,__ZNSt3__111__stdoutbufIwE6xsputnEPKwi,0,_free,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRb,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRe,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRd,0,__ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_RNS_8ios_baseERjRf,0,__ZNKSt3__110moneypunctIcLb0EE16do_thousands_sepEv,0,__ZNKSt3__114error_category10equivalentERKNS_10error_codeEi,0,__ZNKSt3__110moneypunctIcLb0EE13do_neg_formatEv,0,__ZNSt3__19basic_iosIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt11logic_error4whatEv,0,__ZNKSt3__119__iostream_category7messageEi,0,__ZNKSt3__110moneypunctIcLb0EE13do_pos_formatEv,0,__ZNSt3__113basic_ostreamIwNS_11char_traitsIwEEED0Ev,0,__ZNKSt3__110moneypunctIwLb0EE16do_decimal_pointEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE10do_unshiftERS1_PcS4_RS4_,0,__ZNKSt3__17collateIcE12do_transformEPKcS3_,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6xsgetnEPwi,0,__ZNKSt3__17codecvtIwc11__mbstate_tE13do_max_lengthEv,0,__ZNKSt3__110moneypunctIwLb0EE14do_frac_digitsEv,0,__ZNSt3__18messagesIcED0Ev,0,__ZNKSt3__15ctypeIcE10do_tolowerEPcPKc,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjP2tmcc,0,__ZNKSt3__120__time_get_c_storageIcE7__am_pmEv,0,__ZNKSt3__110moneypunctIcLb0EE14do_curr_symbolEv,0,__ZNKSt3__15ctypeIwE8do_widenEPKcS3_Pw,0,__ZNKSt3__110moneypunctIwLb1EE16do_thousands_sepEv,0,__ZNK10__cxxabiv121__vmi_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib,0,__ZNKSt3__17codecvtIwc11__mbstate_tE9do_lengthERS1_PKcS5_j,0,__ZNSt3__18ios_baseD2Ev,0,__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__110__stdinbufIcED0Ev,0,__ZNSt3__16localeC2Ev,0,__ZNKSt3__17codecvtIwc11__mbstate_tE11do_encodingEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE13do_date_orderEv,0,__ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11do_get_yearES4_S4_RNS_8ios_baseERjP2tm,0,__ZNSt3__119__iostream_categoryD0Ev,0,__ZThn8_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNKSt3__110moneypunctIwLb0EE14do_curr_symbolEv,0,__ZNKSt3__18messagesIcE7do_openERKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEERKNS_6localeE,0,__ZNSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev,0,__ZNSt3__110moneypunctIcLb1EED1Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE8overflowEi,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE7seekoffExNS_8ios_base7seekdirEj,0,__ZNKSt3__120__time_get_c_storageIcE3__cEv,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRb,0,__Z11specialFunciii,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6setbufEPci,0,__ZNKSt3__110moneypunctIwLb0EE16do_positive_signEv,0,__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE8overflowEi,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjS8_,0,__ZNKSt3__120__time_get_c_storageIwE3__XEv,0,__ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE11do_get_dateES4_S4_RNS_8ios_baseERjP2tm,0,__ZTv0_n12_NSt3__113basic_istreamIwNS_11char_traitsIwEEED0Ev,0,__ZNKSt3__17codecvtIcc11__mbstate_tE6do_outERS1_PKcS5_RS5_PcS7_RS7_,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEED0Ev,0,__ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9pbackfailEi,0,__ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev,0,__ZNSt3__111__stdoutbufIwE8overflowEj,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRy,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRx,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRt,0,__Z7keyFunchii,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRm,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRl,0,__ZNKSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_putES4_bRNS_8ios_baseEce,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRe,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRd,0,__ZNSt9exceptionD0Ev,0,__ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6do_getES4_S4_RNS_8ios_baseERjRf,0,__ZNKSt3__17codecvtIDsc11__mbstate_tE13do_max_lengthEv,0,__ZNSt3__111__stdoutbufIcE6xsputnEPKci,0,__ZThn8_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev,0,___cxx_global_array_dtor,0,__ZN2cl7NDRangeD1Ev,0,__ZNSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZN10__cxxabiv120__si_class_type_infoD0Ev,0,__ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev,0,__ZNSt3__18messagesIwED1Ev,0,__ZNSt3__111__stdoutbufIwED1Ev,0,__ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE6do_getES4_S4_bRNS_8ios_baseERjRNS_12basic_stringIwS3_NS_9allocatorIwEEEE,0,__ZN10__cxxabiv116__shim_type_infoD2Ev,0,__ZNKSt3__15ctypeIwE11do_scan_notEtPKwS3_,0,__ZNKSt3__110moneypunctIwLb1EE14do_curr_symbolEv,0,__ZNSt3__18time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED1Ev,0,__ZNKSt3__18messagesIwE6do_getEiiiRKNS_12basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEE,0,__ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev,0,__ZNKSt3__17codecvtIcc11__mbstate_tE5do_inERS1_PKcS5_RS5_PcS7_RS7_,0,__ZNSt3__19money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNKSt3__110moneypunctIcLb1EE16do_positive_signEv,0,__ZNKSt3__17codecvtIDic11__mbstate_tE13do_max_lengthEv,0,__ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEED1Ev,0,__ZNSt3__115basic_streambufIwNS_11char_traitsIwEEE6xsputnEPKwi,0,__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev,0,__ZNSt3__15ctypeIcED2Ev,0,__ZNSt13runtime_errorD0Ev,0,__ZNSt3__113basic_istreamIwNS_11char_traitsIwEEED0Ev,0,___cxx_global_array_dtor120,0];
 // EMSCRIPTEN_START_FUNCS
 function ___cxx_global_var_init(){
@@ -12568,19 +12611,21 @@ function ___cxx_global_var_init(){
 }
 function __ZN2cl7NDRangeC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl7NDRangeC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7NDRangeD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl7NDRangeD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function _main($argc,$argv){
  var label=0;
@@ -13326,6 +13371,7 @@ function __ZNSt3__14endlIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_($
 }
 function __ZN2cl5ErrorC1ERKS0_($this,$0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  var $3;
  $2=$this;
@@ -13333,10 +13379,11 @@ function __ZN2cl5ErrorC1ERKS0_($this,$0){
  var $4=$2;
  var $5=$3;
  __ZN2cl5ErrorC2ERKS0_($4,$5);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl5Error4whatEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -13358,26 +13405,28 @@ function __ZNK2cl5Error4whatEv($this){
  label=4;break;
  case 4: 
  var $12=$1;
- return $12;
+ STACKTOP=sp;return $12;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl5Error3errEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+4)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl5ErrorD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl5ErrorD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 // WARNING: content after a branch in a label, line: 1827
 // WARNING: content after a branch in a label, line: 1829
@@ -13805,22 +13854,25 @@ function __ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_ite
 }
 function __ZN2cl5ErrorD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZNSt9exceptionD2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt9exceptionD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl5ErrorC2ERKS0_($this,$0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  var $3;
  $2=$this;
@@ -13842,10 +13894,11 @@ function __ZN2cl5ErrorC2ERKS0_($this,$0){
  var $15=(($14+8)|0);
  var $16=HEAP32[(($15)>>2)];
  HEAP32[(($13)>>2)]=$16;
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt9exceptionC2ERKS_($this,$0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  var $3;
  $2=$this;
@@ -13853,78 +13906,87 @@ function __ZNSt9exceptionC2ERKS_($this,$0){
  var $4=$2;
  var $5=$4;
  HEAP32[(($5)>>2)]=5320;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl5ErrorD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl5ErrorD1Ev($2);
  var $3=$2;
  __ZdlPv($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt9exceptionD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt9exceptionD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt9exceptionD0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt9exceptionD1Ev($2);
  var $3=$2;
  __ZdlPv($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNKSt9exception4whatEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return 624;
+ STACKTOP=sp;return 624;
 }
 function __ZN2cl7NDRangeD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  __ZN2cl6size_tILi3EED1Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6size_tILi3EED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6size_tILi3EED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6size_tILi3EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6vectorIjLj3EED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorIjLj3EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7NDRangeC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -13932,27 +13994,30 @@ function __ZN2cl7NDRangeC2Ev($this){
  __ZN2cl6size_tILi3EEC1Ev($3);
  var $4=(($2+20)|0);
  HEAP32[(($4)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6size_tILi3EEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6size_tILi3EEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6size_tILi3EEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6vectorIjLj3EEC2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorIjLj3EEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -13960,7 +14025,7 @@ function __ZN2cl6vectorIjLj3EEC2Ev($this){
  HEAP32[(($3)>>2)]=-1;
  var $4=(($2+16)|0);
  HEAP8[($4)]=1;
- return;
+ STACKTOP=sp;return;
 }
 function __GLOBAL__I_a(){
  var label=0;
@@ -14254,11 +14319,12 @@ function __ZN12RenderConfigC2ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorIP12RenderDeviceLj10EEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__16vectorIdNS_9allocatorIdEEE6resizeEjRKd($this,$__sz,$__x){
  var label=0;
@@ -14381,13 +14447,14 @@ function __ZNSt3__16vectorIdNS_9allocatorIdEEE6resizeEjRKd($this,$__sz,$__x){
 }
 function __ZNK2cl6vectorIP12RenderDeviceLj10EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+40)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN12RenderConfig9ReadSceneEPKc($this,$fileName){
  var label=0;
@@ -15215,22 +15282,25 @@ function __ZN12RenderConfig11SetUpOpenCLEbbj($this,$useCPUs,$useGPUs,$forceGPUWo
 }
 function __ZNSt3__16vectorIdNS_9allocatorIdEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__16vectorIdNS_9allocatorIdEEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorIP12RenderDeviceLj10EED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderConfigD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -15319,7 +15389,7 @@ function __ZN12RenderConfigD2Ev($this){
  case 19: 
  var $55=(($4+548)|0);
  __ZN2cl6vectorIP12RenderDeviceLj10EED1Ev($55);
- return;
+ STACKTOP=sp;return;
  case 20: 
  var $57$0 = ___cxa_find_matching_catch(-1, -1); var $57$1 = tempRet0;
  var $58=$57$0;
@@ -15354,6 +15424,7 @@ function __ZN12RenderConfigD2Ev($this){
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EEixEi($this,$index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -15362,15 +15433,16 @@ function __ZN2cl6vectorIP12RenderDeviceLj10EEixEi($this,$index){
  var $4=$2;
  var $5=(($3)|0);
  var $6=(($5+($4<<2))|0);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorINS_8PlatformELj10EEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8Platform3getEPNS_6vectorIS0_Lj10EEE($platforms){
  var label=0;
@@ -15431,16 +15503,18 @@ function __ZN2cl8Platform3getEPNS_6vectorIS0_Lj10EEE($platforms){
 }
 function __ZNK2cl6vectorINS_8PlatformELj10EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+40)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl8PlatformC1ERKS0_($this,$platform){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -15448,10 +15522,11 @@ function __ZN2cl8PlatformC1ERKS0_($this,$platform){
  var $3=$1;
  var $4=$2;
  __ZN2cl8PlatformC2ERKS0_($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EEixEi($this,$index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -15460,15 +15535,16 @@ function __ZN2cl6vectorINS_8PlatformELj10EEixEi($this,$index){
  var $4=$2;
  var $5=(($3)|0);
  var $6=(($5+($4<<2))|0);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZN2cl6vectorINS_6DeviceELj10EEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorINS_6DeviceELj10EEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl8Platform10getDevicesEyPNS_6vectorINS_6DeviceELj10EEE($this,$type$0,$type$1,$devices){
  var label=0;
@@ -15551,16 +15627,18 @@ function __ZNK2cl8Platform10getDevicesEyPNS_6vectorINS_6DeviceELj10EEE($this,$ty
 }
 function __ZNK2cl6vectorINS_6DeviceELj10EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+40)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6vectorINS_6DeviceELj10EEixEi($this,$index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -15569,7 +15647,7 @@ function __ZN2cl6vectorINS_6DeviceELj10EEixEi($this,$index){
  var $4=$2;
  var $5=(($3)|0);
  var $6=(($5+($4<<2))|0);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZNK2cl6Device7getInfoILi4096EEENS_6detail12param_traitsINS2_14cl_device_infoEXT_EE10param_typeEPi($this,$err){
  var label=0;
@@ -15605,6 +15683,7 @@ function __ZNK2cl6Device7getInfoILi4096EEENS_6detail12param_traitsINS2_14cl_devi
 }
 function __ZN2cl6vectorINS_6DeviceELj10EE9push_backERKS1_($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -15631,7 +15710,7 @@ function __ZN2cl6vectorINS_6DeviceELj10EE9push_backERKS1_($this,$x){
  HEAP8[($16)]=0;
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -16329,6 +16408,7 @@ function __ZNK2cl6Device7getInfoILi4098EEENS_6detail12param_traitsINS2_14cl_devi
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EE9push_backERKS2_($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16356,17 +16436,18 @@ function __ZN2cl6vectorIP12RenderDeviceLj10EE9push_backERKS2_($this,$x){
  HEAP8[($16)]=0;
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK12RenderDevice7GetNameEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN12RenderConfig20UpdateDeviceWorkloadEb($this,$calculateNewLoad){
  var label=0;
@@ -16571,6 +16652,7 @@ function __ZN12RenderConfig20UpdateDeviceWorkloadEb($this,$calculateNewLoad){
 }
 function __ZN12RenderConfig11ReInitSceneEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16625,12 +16707,13 @@ function __ZN12RenderConfig11ReInitSceneEv($this){
  $i1=$32;
  label=6;break;
  case 9: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN12RenderConfig6ReInitEi($this,$reallocBuffers){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16720,36 +16803,40 @@ function __ZN12RenderConfig6ReInitEi($this,$reallocBuffers){
  __ZN12RenderConfig12UpdateCameraEv($3);
  var $58=(($3+524)|0);
  HEAP32[(($58)>>2)]=0;
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6vectorINS_6DeviceELj10EED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorINS_6DeviceELj10EED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8PlatformD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl8PlatformD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorINS_8PlatformELj10EED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6Device7getInfoIjEEijPT_($this,$name,$param){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -16763,10 +16850,11 @@ function __ZNK2cl6Device7getInfoIjEEijPT_($this,$name,$param){
  var $8=$3;
  var $9=__ZN2cl6detail7getInfoIPFiP13_cl_device_idjjPvPjES3_jEEiT_RKT0_jPT1_(346,$6,$7,$8);
  var $10=__ZN2cl6detailL10errHandlerEiPKc($9,2672);
- return $10;
+ STACKTOP=sp;return $10;
 }
 function __ZN2cl6detailL10errHandlerEiPKc($err,$errStr){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16812,7 +16900,7 @@ function __ZN2cl6detailL10errHandlerEiPKc($err,$errStr){
  throw "Reached an unreachable!";
  case 8: 
  var $27=$1;
- return $27;
+ STACKTOP=sp;return $27;
  case 9: 
  var $29=$3;
  var $30=$4;
@@ -16869,6 +16957,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor0IPFiP13_cl_device_id
 }
 function __ZN2cl6detail15GetInfoFunctor0IPFiP13_cl_device_idjjPvPjES3_EclEjjS4_S5_($this,$param,$size,$value,$size_ret){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -16890,10 +16979,11 @@ function __ZN2cl6detail15GetInfoFunctor0IPFiP13_cl_device_idjjPvPjES3_EclEjjS4_S
  var $14=$4;
  var $15=$5;
  var $16=FUNCTION_TABLE[$8]($11,$12,$13,$14,$15);
- return $16;
+ STACKTOP=sp;return $16;
 }
 function __ZN2cl5ErrorC1EiPKc($this,$err,$errStr){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -16904,10 +16994,11 @@ function __ZN2cl5ErrorC1EiPKc($this,$err,$errStr){
  var $5=$2;
  var $6=$3;
  __ZN2cl5ErrorC2EiPKc($4,$5,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl5ErrorC2EiPKc($this,$err,$errStr){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -16929,10 +17020,11 @@ function __ZN2cl5ErrorC2EiPKc($this,$err,$errStr){
  var $12=(($5+8)|0);
  var $13=$4;
  HEAP32[(($12)>>2)]=$13;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6DeviceaSERKS0_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16951,12 +17043,13 @@ function __ZN2cl6DeviceaSERKS0_($this,$rhs){
  var $10=__ZN2cl6detail7WrapperIP13_cl_device_idEaSERKS4_($7,$9);
  label=3;break;
  case 3: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6detail7WrapperIP13_cl_device_idEaSERKS4_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -16986,44 +17079,49 @@ function __ZN2cl6detail7WrapperIP13_cl_device_idEaSERKS4_($this,$rhs){
  var $18=__ZNK2cl6detail7WrapperIP13_cl_device_idE6retainEv($3);
  label=5;break;
  case 5: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP13_cl_device_idE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP13_cl_device_idE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6detail7WrapperIP13_cl_device_idE6retainEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP13_cl_device_idE6retainES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP13_cl_device_idE6retainES3_($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return -33;
+ STACKTOP=sp;return -33;
 }
 function __ZN2cl6detail16ReferenceHandlerIP13_cl_device_idE7releaseES3_($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return -33;
+ STACKTOP=sp;return -33;
 }
 function __ZNK2cl6Device7getInfoIyEEijPT_($this,$name,$param){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -17037,7 +17135,7 @@ function __ZNK2cl6Device7getInfoIyEEijPT_($this,$name,$param){
  var $8=$3;
  var $9=__ZN2cl6detail7getInfoIPFiP13_cl_device_idjjPvPjES3_yEEiT_RKT0_jPT1_(346,$6,$7,$8);
  var $10=__ZN2cl6detailL10errHandlerEiPKc($9,2672);
- return $10;
+ STACKTOP=sp;return $10;
 }
 function __ZN2cl6detail7getInfoIPFiP13_cl_device_idjjPvPjES3_yEEiT_RKT0_jPT1_($f,$arg0,$name,$param){
  var label=0;
@@ -17082,6 +17180,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor0IPFiP13_cl_device_id
 }
 function __ZN2cl6vectorINS_6DeviceELj10EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17102,7 +17201,7 @@ function __ZN2cl6vectorINS_6DeviceELj10EED2Ev($this){
  var $12=($10|0)==($6|0);
  if($12){label=4;break;}else{var $9=$10;label=2;break;}
  case 4: 
- return;
+ STACKTOP=sp;return;
  case 5: 
  var $15$0 = ___cxa_find_matching_catch(-1, -1); var $15$1 = tempRet0;
  var $16=$15$0;
@@ -17137,23 +17236,26 @@ function __ZN2cl6vectorINS_6DeviceELj10EED2Ev($this){
 }
 function __ZN2cl6DeviceD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6DeviceD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6DeviceD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP13_cl_device_idED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP13_cl_device_idED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17168,12 +17270,13 @@ function __ZN2cl6detail7WrapperIP13_cl_device_idED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP13_cl_device_idE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6vectorINS_6DeviceELj10EEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17198,7 +17301,7 @@ function __ZN2cl6vectorINS_6DeviceELj10EEC2Ev($this){
  HEAP32[(($14)>>2)]=-1;
  var $15=(($4+44)|0);
  HEAP8[($15)]=1;
- return;
+ STACKTOP=sp;return;
  case 5: 
  var $17$0 = ___cxa_find_matching_catch(-1, -1); var $17$1 = tempRet0;
  var $18=$17$0;
@@ -17233,32 +17336,36 @@ function __ZN2cl6vectorINS_6DeviceELj10EEC2Ev($this){
 }
 function __ZN2cl6DeviceC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6DeviceC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6DeviceC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP13_cl_device_idEC2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP13_cl_device_idEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17279,7 +17386,7 @@ function __ZN2cl6vectorINS_8PlatformELj10EED2Ev($this){
  var $12=($10|0)==($6|0);
  if($12){label=4;break;}else{var $9=$10;label=2;break;}
  case 4: 
- return;
+ STACKTOP=sp;return;
  case 5: 
  var $15$0 = ___cxa_find_matching_catch(-1, -1); var $15$1 = tempRet0;
  var $16=$15$0;
@@ -17314,6 +17421,7 @@ function __ZN2cl6vectorINS_8PlatformELj10EED2Ev($this){
 }
 function __ZN2cl6vectorINS_8PlatformELj10EEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17338,7 +17446,7 @@ function __ZN2cl6vectorINS_8PlatformELj10EEC2Ev($this){
  HEAP32[(($14)>>2)]=-1;
  var $15=(($4+44)|0);
  HEAP8[($15)]=1;
- return;
+ STACKTOP=sp;return;
  case 5: 
  var $17$0 = ___cxa_find_matching_catch(-1, -1); var $17$1 = tempRet0;
  var $18=$17$0;
@@ -17373,39 +17481,44 @@ function __ZN2cl6vectorINS_8PlatformELj10EEC2Ev($this){
 }
 function __ZN2cl8PlatformC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl8PlatformC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8PlatformC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP15_cl_platform_idEC2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP15_cl_platform_idEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -17413,7 +17526,7 @@ function __ZN2cl6vectorIP12RenderDeviceLj10EEC2Ev($this){
  HEAP32[(($3)>>2)]=-1;
  var $4=(($2+44)|0);
  HEAP8[($4)]=1;
- return;
+ STACKTOP=sp;return;
 }
 // WARNING: content after a branch in a label, line: 6116
 // WARNING: content after a branch in a label, line: 6118
@@ -17712,6 +17825,7 @@ function __ZNSt3__16vectorIdNS_9allocatorIdEEE8__appendEjRKd($this,$__n,$__x){
 }
 function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEEC1EjjS3_($this,$__cap,$__start,$__a){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -17725,10 +17839,11 @@ function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEEC1EjjS3_($this,$__cap,$_
  var $7=$3;
  var $8=$4;
  __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEEC2EjjS3_($5,$6,$7,$8);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEE18__construct_at_endEjRKd($this,$__n,$__x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -17794,7 +17909,7 @@ function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEE18__construct_at_endEjRK
  var $40=($39>>>0)>0;
  if($40){label=2;break;}else{label=6;break;}
  case 6: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -17976,11 +18091,12 @@ function __ZNSt3__16vectorIdNS_9allocatorIdEEE26__swap_out_circular_bufferERNS_1
 }
 function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEED2Ev($this){
  var label=0;
@@ -18394,15 +18510,17 @@ function __ZNSt3__114__split_bufferIdRNS_9allocatorIdEEEC2EjjS3_($this,$__cap,$_
 }
 function __ZN2cl8PlatformD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP15_cl_platform_idED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP15_cl_platform_idED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -18417,38 +18535,42 @@ function __ZN2cl6detail7WrapperIP15_cl_platform_idED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP15_cl_platform_idE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP15_cl_platform_idE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP15_cl_platform_idE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP15_cl_platform_idE7releaseES3_($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return -32;
+ STACKTOP=sp;return -32;
 }
 function __ZN12RenderDevice6FinishEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+16)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZNK2cl12CommandQueue6finishEv($4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderConfig12UpdateCameraEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -18991,12 +19113,13 @@ function __ZN12RenderConfig12UpdateCameraEv($this){
  $i=$487;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN12RenderDevice18UpdateCameraBufferEP6Camera($this,$camera){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19009,10 +19132,11 @@ function __ZN12RenderDevice18UpdateCameraBufferEP6Camera($this,$camera){
  var $8=$2;
  var $9=$8;
  var $10=__ZNK2cl12CommandQueue18enqueueWriteBufferERKNS_6BufferEjjjPKvPKNS_6vectorINS_5EventELj10EEEPS7_($5,$7,0,0,60,$9,0,0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl12CommandQueue18enqueueWriteBufferERKNS_6BufferEjjjPKvPKNS_6vectorINS_5EventELj10EEEPS7_($this,$buffer,$blocking,$offset,$size,$ptr,$events,$event){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19075,40 +19199,44 @@ function __ZNK2cl12CommandQueue18enqueueWriteBufferERKNS_6BufferEjjjPKvPKNS_6vec
  var $42=$41;
  var $43=_clEnqueueWriteBuffer($12,$15,$16,$17,$18,$19,$27,$40,$42);
  var $44=__ZN2cl6detailL10errHandlerEiPKc($43,2280);
- return $44;
+ STACKTOP=sp;return $44;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP7_cl_memEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK2cl6vectorINS_5EventELj10EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+40)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6vectorINS_5EventELj10EE5frontEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=(($3)|0);
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK2cl12CommandQueue6finishEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -19117,10 +19245,11 @@ function __ZNK2cl12CommandQueue6finishEv($this){
  var $5=HEAP32[(($4)>>2)];
  var $6=_clFinish($5);
  var $7=__ZN2cl6detailL10errHandlerEiPKc($6,2192);
- return $7;
+ STACKTOP=sp;return $7;
 }
 function __ZN12RenderDevice17UpdateSceneBufferEP6Sphere($this,$spheres){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19136,10 +19265,11 @@ function __ZN12RenderDevice17UpdateSceneBufferEP6Sphere($this,$spheres){
  var $11=$2;
  var $12=$11;
  var $13=__ZNK2cl12CommandQueue18enqueueWriteBufferERKNS_6BufferEjjjPKvPKNS_6vectorINS_5EventELj10EEEPS7_($5,$7,0,0,$10,$12,0,0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK12RenderDevice14GetPerformanceEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19166,7 +19296,7 @@ function __ZNK12RenderDevice14GetPerformanceEv($this){
  var $18=$16;label=5;break;
  case 5: 
  var $18;
- return $18;
+ STACKTOP=sp;return $18;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -19232,6 +19362,7 @@ function __ZN2cl6vectorINS_6DeviceELj10EE6assignIPP13_cl_device_idEEvT_S7_($this
 }
 function __ZN2cl6vectorINS_6DeviceELj10EE5clearEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -19239,10 +19370,11 @@ function __ZN2cl6vectorINS_6DeviceELj10EE5clearEv($this){
  HEAP32[(($3)>>2)]=-1;
  var $4=(($2+44)|0);
  HEAP8[($4)]=1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6DeviceC1EP13_cl_device_id($this,$device){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19250,10 +19382,11 @@ function __ZN2cl6DeviceC1EP13_cl_device_id($this,$device){
  var $3=$1;
  var $4=$2;
  __ZN2cl6DeviceC2EP13_cl_device_id($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6DeviceC2EP13_cl_device_id($this,$device){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19265,10 +19398,11 @@ function __ZN2cl6DeviceC2EP13_cl_device_id($this,$device){
  var $6=$3;
  var $7=(($6)|0);
  HEAP32[(($7)>>2)]=$5;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8PlatformC2ERKS0_($this,$platform){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19278,10 +19412,11 @@ function __ZN2cl8PlatformC2ERKS0_($this,$platform){
  var $5=$2;
  var $6=$5;
  __ZN2cl6detail7WrapperIP15_cl_platform_idEC2ERKS4_($4,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP15_cl_platform_idEC2ERKS4_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19303,25 +19438,27 @@ function __ZN2cl6detail7WrapperIP15_cl_platform_idEC2ERKS4_($this,$rhs){
  var $12=__ZNK2cl6detail7WrapperIP15_cl_platform_idE6retainEv($3);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP15_cl_platform_idE6retainEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP15_cl_platform_idE6retainES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP15_cl_platform_idE6retainES3_($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return -32;
+ STACKTOP=sp;return -32;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EE6assignIPP15_cl_platform_idEEvT_S7_($this,$start,$end){
  var label=0;
@@ -19385,6 +19522,7 @@ function __ZN2cl6vectorINS_8PlatformELj10EE6assignIPP15_cl_platform_idEEvT_S7_($
 }
 function __ZN2cl6vectorINS_8PlatformELj10EE5clearEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -19392,10 +19530,11 @@ function __ZN2cl6vectorINS_8PlatformELj10EE5clearEv($this){
  HEAP32[(($3)>>2)]=-1;
  var $4=(($2+44)|0);
  HEAP8[($4)]=1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINS_8PlatformELj10EE9push_backERKS1_($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19422,12 +19561,13 @@ function __ZN2cl6vectorINS_8PlatformELj10EE9push_backERKS1_($this,$x){
  HEAP8[($16)]=0;
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl8PlatformC1EP15_cl_platform_id($this,$platform){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19435,10 +19575,11 @@ function __ZN2cl8PlatformC1EP15_cl_platform_id($this,$platform){
  var $3=$1;
  var $4=$2;
  __ZN2cl8PlatformC2EP15_cl_platform_id($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8PlatformC2EP15_cl_platform_id($this,$platform){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -19450,10 +19591,11 @@ function __ZN2cl8PlatformC2EP15_cl_platform_id($this,$platform){
  var $6=$3;
  var $7=(($6)|0);
  HEAP32[(($7)>>2)]=$5;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl8PlatformaSERKS0_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19472,12 +19614,13 @@ function __ZN2cl8PlatformaSERKS0_($this,$rhs){
  var $10=__ZN2cl6detail7WrapperIP15_cl_platform_idEaSERKS4_($7,$9);
  label=3;break;
  case 3: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6detail7WrapperIP15_cl_platform_idEaSERKS4_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -19507,18 +19650,19 @@ function __ZN2cl6detail7WrapperIP15_cl_platform_idEaSERKS4_($this,$rhs){
  var $18=__ZNK2cl6detail7WrapperIP15_cl_platform_idE6retainEv($3);
  label=5;break;
  case 5: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__16vectorIdNS_9allocatorIdEEED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZNSt3__113__vector_baseIdNS_9allocatorIdEEED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__113__vector_baseIdNS_9allocatorIdEEED2Ev($this){
  var label=0;
@@ -20032,6 +20176,7 @@ function __Z11displayFuncv(){
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EEC1ERKS3_($this,$vec){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -20039,18 +20184,20 @@ function __ZN2cl6vectorIP12RenderDeviceLj10EEC1ERKS3_($this,$vec){
  var $3=$1;
  var $4=$2;
  __ZN2cl6vectorIP12RenderDeviceLj10EEC2ERKS3_($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK12RenderConfig15GetRenderDeviceEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+548)|0);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZNK2cl6vectorIP12RenderDeviceLj10EEixEi($this,$index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -20060,25 +20207,27 @@ function __ZNK2cl6vectorIP12RenderDeviceLj10EEixEi($this,$index){
  var $5=(($3)|0);
  var $6=(($5+($4<<2))|0);
  var $7=HEAP32[(($6)>>2)];
- return $7;
+ STACKTOP=sp;return $7;
 }
 function __ZNK12RenderDevice13GetWorkOffsetEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+28)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK12RenderDevice13GetWorkAmountEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+32)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZL11PrintStringPvPKc($font,$string){
  var label=0;
@@ -20435,6 +20584,7 @@ function __ZL19PrintHelpAndDevicesv(){
 }
 function __Z11reshapeFuncii($newWidth,$newHeight){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$newWidth;
@@ -20463,7 +20613,7 @@ function __Z11reshapeFuncii($newWidth,$newHeight){
  var $19=HEAP32[((13400)>>2)];
  __ZN12RenderConfig6ReInitEi($19,1);
  _glutPostRedisplay();
- return;
+ STACKTOP=sp;return;
 }
 function __Z7keyFunchii($key,$x,$y){
  var label=0;
@@ -21547,6 +21697,7 @@ function __Z7keyFunchii($key,$x,$y){
 }
 function __ZN12RenderConfig24RestartWorkloadProcedureEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -21588,22 +21739,24 @@ function __ZN12RenderConfig24RestartWorkloadProcedureEv($this){
  HEAP8[($23)]=1;
  label=7;break;
  case 7: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK12RenderConfig11IsProfilingEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+616)|0);
  var $4=HEAP8[($3)];
  var $5=(($4)&1);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN12RenderConfig12DecPerfIndexEj($this,$deviceIndex){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -21625,10 +21778,11 @@ function __ZN12RenderConfig12DecPerfIndexEj($this,$deviceIndex){
  var $15=($14)*((0.95));
  (HEAPF64[(tempDoublePtr)>>3]=$15,HEAP32[(($13)>>2)]=HEAP32[((tempDoublePtr)>>2)],HEAP32[((($13)+(4))>>2)]=HEAP32[(((tempDoublePtr)+(4))>>2)]);
  __ZN12RenderConfig20UpdateDeviceWorkloadEb($5,0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderConfig12IncPerfIndexEj($this,$deviceIndex){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -21650,7 +21804,7 @@ function __ZN12RenderConfig12IncPerfIndexEj($this,$deviceIndex){
  var $15=($14)*((1.05));
  (HEAPF64[(tempDoublePtr)>>3]=$15,HEAP32[(($13)>>2)]=HEAP32[((tempDoublePtr)>>2)],HEAP32[((($13)+(4))>>2)]=HEAP32[(((tempDoublePtr)+(4))>>2)]);
  __ZN12RenderConfig20UpdateDeviceWorkloadEb($5,0);
- return;
+ STACKTOP=sp;return;
 }
 function __Z11specialFunciii($key,$x,$y){
  var label=0;
@@ -22302,6 +22456,7 @@ function __Z7RunGlutv(){
 }
 function __ZL13SetupGraphicsjj($width,$height){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$width;
@@ -22340,10 +22495,11 @@ function __ZL13SetupGraphicsjj($width,$height){
  _glVertexPointer(2,5126,0,13280);
  _glClientActiveTexture(33984);
  _glTexCoordPointer(2,5126,0,17432);
- return 0;
+ STACKTOP=sp;return 0;
 }
 function __ZN2cl6vectorIP12RenderDeviceLj10EEC2ERKS3_($this,$vec){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -22381,7 +22537,7 @@ function __ZN2cl6vectorIP12RenderDeviceLj10EEC2ERKS3_($this,$vec){
  assert($26 % 1 === 0);(_memcpy($20, $24, $26)|0);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -22526,6 +22682,7 @@ function __ZN12RenderConfig7ExecuteEv($this){
 }
 function __ZN12RenderConfig14ExecuteKernelsEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -22556,12 +22713,13 @@ function __ZN12RenderConfig14ExecuteKernelsEv($this){
  $i=$17;
  label=2;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN12RenderConfig19CheckDeviceWorkloadEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -22588,12 +22746,13 @@ function __ZN12RenderConfig19CheckDeviceWorkloadEv($this){
  HEAP8[($14)]=0;
  label=4;break;
  case 4: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN12RenderDevice7SetArgsEj($this,$count){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -22602,10 +22761,11 @@ function __ZN12RenderDevice7SetArgsEj($this,$count){
  var $4=$2;
  var $5=(($3+48)|0);
  HEAP32[(($5)>>2)]=$4;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderDevice16ResetPerformanceEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -22613,10 +22773,11 @@ function __ZN12RenderDevice16ResetPerformanceEv($this){
  HEAPF64[(($3)>>3)]=0;
  var $4=(($2+88)|0);
  HEAPF64[(($4)>>3)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK12RenderConfig12GetPerfIndexEj($this,$deviceIndex){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -22635,7 +22796,7 @@ function __ZNK12RenderConfig12GetPerfIndexEj($this,$deviceIndex){
  var $12=HEAP32[(($11)>>2)];
  var $13=(($12+($9<<3))|0);
  var $14=(HEAP32[((tempDoublePtr)>>2)]=HEAP32[(($13)>>2)],HEAP32[(((tempDoublePtr)+(4))>>2)]=HEAP32[((($13)+(4))>>2)],HEAPF64[(tempDoublePtr)>>3]);
- return $14;
+ STACKTOP=sp;return $14;
 }
 function __GLOBAL__I_a84(){
  var label=0;
@@ -23443,11 +23604,12 @@ function __ZN12RenderDeviceC2ERKN2cl6DeviceERKNSt3__112basic_stringIcNS4_11char_
 }
 function __ZN2cl5EventC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl5EventC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6Device7getInfoILi4145EEENS_6detail12param_traitsINS2_14cl_device_infoEXT_EE10param_typeEPi($this,$err){
  var label=0;
@@ -23480,14 +23642,16 @@ function __ZNK2cl6Device7getInfoILi4145EEENS_6detail12param_traitsINS2_14cl_devi
 }
 function __ZN2cl6detail7WrapperIP15_cl_platform_idEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl7ContextC1ERKNS_6vectorINS_6DeviceELj10EEEPiPFvPKcPKvjPvESB_S6_($this,$devices,$properties,$notifyFptr,$data,$err){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -23507,7 +23671,7 @@ function __ZN2cl7ContextC1ERKNS_6vectorINS_6DeviceELj10EEEPiPFvPKcPKvjPvESB_S6_(
  var $11=$6;
  var $12=$2;
  __ZN2cl7ContextC2ERKNS_6vectorINS_6DeviceELj10EEEPiPFvPKcPKvjPvESB_S6_($7,$12,$8,$9,$10,$11);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl12CommandQueueC1ERKNS_7ContextERKNS_6DeviceEyPi($this,$context,$device,$properties$0,$properties$1,$err){
  var label=0;
@@ -24080,6 +24244,7 @@ function __ZN12RenderDevice11ReadSourcesERKNSt3__112basic_stringIcNS0_11char_tra
 }
 function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EEC1EjRKS5_($this,$size,$val){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -24090,10 +24255,11 @@ function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EEC1EjRKS5_($this,$size,$val){
  var $5=$2;
  var $6=$3;
  __ZN2cl6vectorINSt3__14pairIPKcjEELj10EEC2EjRKS5_($4,$5,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7ProgramC1ERKNS_7ContextERKNS_6vectorINSt3__14pairIPKcjEELj10EEEPi($this,$context,$sources,$err){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -24107,10 +24273,11 @@ function __ZN2cl7ProgramC1ERKNS_7ContextERKNS_6vectorINSt3__14pairIPKcjEELj10EEE
  var $7=$2;
  var $8=$3;
  __ZN2cl7ProgramC2ERKNS_7ContextERKNS_6vectorINSt3__14pairIPKcjEELj10EEEPi($5,$7,$8,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl7Program5buildERKNS_6vectorINS_6DeviceELj10EEEPKcPFvP11_cl_programPvESA_($this,$devices,$options,$notifyFptr,$data){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -24135,10 +24302,11 @@ function __ZNK2cl7Program5buildERKNS_6vectorINS_6DeviceELj10EEEPKcPFvP11_cl_prog
  var $17=$5;
  var $18=_clBuildProgram($9,$11,$14,$15,$16,$17);
  var $19=__ZN2cl6detailL10errHandlerEiPKc131($18,1560);
- return $19;
+ STACKTOP=sp;return $19;
 }
 function __ZNK2cl7Program12getBuildInfoILi4483EEENS_6detail12param_traitsINS2_21cl_program_build_infoEXT_EE10param_typeERKNS_6DeviceEPi($agg_result,$this,$device,$err){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -24184,7 +24352,7 @@ function __ZNK2cl7Program12getBuildInfoILi4483EEENS_6detail12param_traitsINS2_21
  __ZN2cl6stringD1Ev($agg_result);
  label=7;break;
  case 7: 
- return;
+ STACKTOP=sp;return;
  case 8: 
  label=9;break;
  case 9: 
@@ -24204,6 +24372,7 @@ function __ZNK2cl7Program12getBuildInfoILi4483EEENS_6detail12param_traitsINS2_21
 }
 function __ZNK2cl6string5c_strEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -24222,20 +24391,22 @@ function __ZNK2cl6string5c_strEv($this){
  var $11=13408;label=4;break;
  case 4: 
  var $11;
- return $11;
+ STACKTOP=sp;return $11;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6stringD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6stringD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6KernelC1ERKNS_7ProgramEPKcPi($this,$program,$name,$err){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -24249,7 +24420,7 @@ function __ZN2cl6KernelC1ERKNS_7ProgramEPKcPi($this,$program,$name,$err){
  var $7=$4;
  var $8=$2;
  __ZN2cl6KernelC2ERKNS_7ProgramEPKcPi($5,$8,$6,$7);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6Kernel16getWorkGroupInfoIjEEiRKNS_6DeviceEjPT_($this,$device,$name,$param){
  var label=0;
@@ -24308,30 +24479,34 @@ function __ZN2cl6BufferC1ERKNS_7ContextEyjPvPi($this,$context,$flags$0,$flags$1,
 }
 function __ZN2cl7ProgramD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl7ProgramD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6vectorINSt3__14pairIPKcjEELj10EED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl5EventD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl5EventD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderDeviceD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -24549,7 +24724,7 @@ function __ZN12RenderDeviceD2Ev($this){
  case 47: 
  var $135=(($4)|0);
  __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev($135);
- return;
+ STACKTOP=sp;return;
  case 48: 
  var $137$0 = ___cxa_find_matching_catch(-1, -1); var $137$1 = tempRet0;
  var $138=$137$0;
@@ -24593,35 +24768,39 @@ function __ZN12RenderDeviceD2Ev($this){
 }
 function __ZN2cl12CommandQueueD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl12CommandQueueD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6KernelD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6KernelD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6BufferD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6BufferD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7ContextD1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl7ContextD2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderDevice12RenderThreadEPS_($renderDevice){
  var label=0;
@@ -24986,6 +25165,7 @@ function __ZN12RenderDevice13ExecuteKernelEv($this){
 }
 function __ZN12RenderDevice15ReadPixelBufferEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -25003,7 +25183,7 @@ function __ZN12RenderDevice15ReadPixelBufferEv($this){
  var $14=(($13+($11<<2))|0);
  var $15=$14;
  var $16=__ZNK2cl12CommandQueue17enqueueReadBufferERKNS_6BufferEjjjPvPKNS_6vectorINS_5EventELj10EEEPS6_($4,$6,0,0,$9,$15,0,0);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN12RenderDevice19FinishExecuteKernelEv($this){
  var label=0;
@@ -25038,6 +25218,7 @@ function __ZN12RenderDevice19FinishExecuteKernelEv($this){
 }
 function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$__mode){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25100,12 +25281,13 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
  __ZNSt3__18ios_base5clearEj($40,$44);
  label=4;break;
  case 4: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25120,7 +25302,7 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var $7=(($6+112)|0);
  var $8=$7;
  __ZNSt3__19basic_iosIcNS_11char_traitsIcEEED2Ev($8);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $10$0 = ___cxa_find_matching_catch(-1, -1); var $10$1 = tempRet0;
  var $11=$10$0;
@@ -25150,6 +25332,7 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
 }
 function __ZN12RenderDevice11SetWorkLoadEjjjjPj($this,$offset,$amount,$screenWidth,$screenHeght,$screenPixels){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -25479,7 +25662,7 @@ function __ZN12RenderDevice11SetWorkLoadEjjjjPj($this,$offset,$amount,$screenWid
  var $232=FUNCTION_TABLE[$231]($230);
  var $233=(($15+48)|0);
  HEAP32[(($233)>>2)]=0;
- return;
+ STACKTOP=sp;return;
  case 39: 
  var $235$0 = ___cxa_find_matching_catch(-1, -1); var $235$1 = tempRet0;
  var $236=$235$0;
@@ -25896,6 +26079,7 @@ function __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__init
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$__mode){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26006,20 +26190,22 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
  label=26;break;
  case 26: 
  var $57=$__rt;
- return $57;
+ STACKTOP=sp;return $57;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEEC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEEC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26032,7 +26218,7 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -26055,6 +26241,7 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
 }
 function __ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -26062,10 +26249,11 @@ function __ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var $4=((($3)-(8))|0);
  var $5=$4;
  __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($5);
- return;
+ STACKTOP=sp;return;
 }
 function __ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -26073,10 +26261,11 @@ function __ZThn8_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  var $4=((($3)-(8))|0);
  var $5=$4;
  __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($5);
- return;
+ STACKTOP=sp;return;
 }
 function __ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -26089,10 +26278,11 @@ function __ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($this){
  var $9=(($3+$8)|0);
  var $10=$9;
  __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED1Ev($10);
- return;
+ STACKTOP=sp;return;
 }
 function __ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -26105,10 +26295,11 @@ function __ZTv0_n12_NSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($this){
  var $9=(($3+$8)|0);
  var $10=$9;
  __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED0Ev($10);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26146,7 +26337,7 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
  var $26=$5;
  var $27=(($6+4)|0);
  __ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED2Ev($26,$27);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $29$0 = ___cxa_find_matching_catch(-1, -1); var $29$1 = tempRet0;
  var $30=$29$0;
@@ -26175,14 +26366,16 @@ function __ZNSt3__113basic_fstreamIcNS_11char_traitsIcEEED2Ev($this,$vtt){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26250,7 +26443,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED2Ev($this){
  case 15: 
  var $42=$4;
  __ZNSt3__115basic_streambufIcNS_11char_traitsIcEEED2Ev($42);
- return;
+ STACKTOP=sp;return;
  case 16: 
  label=17;break;
  case 17: 
@@ -26566,6 +26759,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5closeEv($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26578,7 +26772,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
  case 2: 
  var $6=$4;
  __ZdlPv($6);
- return;
+ STACKTOP=sp;return;
  case 3: 
  var $8$0 = ___cxa_find_matching_catch(-1, -1); var $8$1 = tempRet0;
  var $9=$8$0;
@@ -26601,6 +26795,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEED0Ev($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE($this,$__loc){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -26776,7 +26971,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE($t
  case 13: 
  label=14;break;
  case 14: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -28415,6 +28610,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9underflowEv($this){
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi($this,$__c){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -28550,7 +28746,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE9pbackfailEi($this,$__c
  label=13;break;
  case 13: 
  var $94=$18;
- return $94;
+ STACKTOP=sp;return $94;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -28983,6 +29179,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE8overflowEi($this,$__c)
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE12__write_modeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29100,12 +29297,13 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE12__write_modeEv($this)
  HEAP32[(($78)>>2)]=16;
  label=9;break;
  case 9: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE11__read_modeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29215,7 +29413,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE11__read_modeEv($this){
  label=7;break;
  case 7: 
  var $76=$12;
- return $76;
+ STACKTOP=sp;return $76;
   default: assert(0, "bad label: " + label);
  }
 }
@@ -29397,6 +29595,7 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEEC2Ev($this){
 }
 function __ZN2cl6detailL10errHandlerEiPKc131($err,$errStr){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29442,7 +29641,7 @@ function __ZN2cl6detailL10errHandlerEiPKc131($err,$errStr){
  throw "Reached an unreachable!";
  case 8: 
  var $27=$1;
- return $27;
+ STACKTOP=sp;return $27;
  case 9: 
  var $29=$3;
  var $30=$4;
@@ -29490,12 +29689,13 @@ function __ZN2cl6detail7getInfoIPFiP10_cl_kernelP13_cl_device_idjjPvPjES3_S5_jEE
 }
 function __ZNK2cl6detail7WrapperIP13_cl_device_idEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor1IPFiP10_cl_kernelP13_cl_device_idjjPvPjES4_S6_EEjE3getESB_jS8_($f,$name,$param){
  var label=0;
@@ -29513,6 +29713,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor1IPFiP10_cl_kernelP13
 }
 function __ZN2cl6detail15GetInfoFunctor1IPFiP10_cl_kernelP13_cl_device_idjjPvPjES3_S5_EclEjjS6_S7_($this,$param,$size,$value,$size_ret){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -29537,15 +29738,16 @@ function __ZN2cl6detail15GetInfoFunctor1IPFiP10_cl_kernelP13_cl_device_idjjPvPjE
  var $17=$4;
  var $18=$5;
  var $19=FUNCTION_TABLE[$8]($11,$14,$15,$16,$17,$18);
- return $19;
+ STACKTOP=sp;return $19;
 }
 function __ZN2cl6stringC1Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  __ZN2cl6stringC2Ev($2);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl7Program12getBuildInfoINS_6stringEEEiRKNS_6DeviceEjPT_($this,$device,$name,$param){
  var label=0;
@@ -29686,6 +29888,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor1IPFiP11_cl_programP1
 }
 function __ZN2cl6detail15GetInfoFunctor1IPFiP11_cl_programP13_cl_device_idjjPvPjES3_S5_EclEjjS6_S7_($this,$param,$size,$value,$size_ret){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -29710,10 +29913,11 @@ function __ZN2cl6detail15GetInfoFunctor1IPFiP11_cl_programP13_cl_device_idjjPvPj
  var $17=$4;
  var $18=$5;
  var $19=FUNCTION_TABLE[$8]($11,$14,$15,$16,$17,$18);
- return $19;
+ STACKTOP=sp;return $19;
 }
 function __ZN2cl6stringaSERKS0_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29786,12 +29990,13 @@ function __ZN2cl6stringaSERKS0_($this,$rhs){
  label=11;break;
  case 11: 
  var $49=$1;
- return $49;
+ STACKTOP=sp;return $49;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6stringC1EPc($this,$str){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -29799,10 +30004,11 @@ function __ZN2cl6stringC1EPc($this,$str){
  var $3=$1;
  var $4=$2;
  __ZN2cl6stringC2EPc($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6stringC2EPc($this,$str){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29842,12 +30048,13 @@ function __ZN2cl6stringC2EPc($this,$str){
  HEAP32[(($25)>>2)]=0;
  label=4;break;
  case 4: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6stringC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -29855,17 +30062,19 @@ function __ZN2cl6stringC2Ev($this){
  HEAP32[(($3)>>2)]=0;
  var $4=(($2+4)|0);
  HEAP32[(($4)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EEC2EjRKS5_($this,$size,$val){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29918,12 +30127,13 @@ function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EEC2EjRKS5_($this,$size,$val){
  $i=$29;
  label=4;break;
  case 7: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EE9push_backERKS5_($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -29964,22 +30174,24 @@ function __ZN2cl6vectorINSt3__14pairIPKcjEELj10EE9push_backERKS5_($this,$x){
  HEAP8[($26)]=0;
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6vectorINSt3__14pairIPKcjEELj10EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+80)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6Device7getInfoIP15_cl_platform_idEEijPT_($this,$name,$param){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -29993,7 +30205,7 @@ function __ZNK2cl6Device7getInfoIP15_cl_platform_idEEijPT_($this,$name,$param){
  var $8=$3;
  var $9=__ZN2cl6detail7getInfoIPFiP13_cl_device_idjjPvPjES3_P15_cl_platform_idEEiT_RKT0_jPT1_(346,$6,$7,$8);
  var $10=__ZN2cl6detailL10errHandlerEiPKc131($9,2264);
- return $10;
+ STACKTOP=sp;return $10;
 }
 function __ZN2cl6detail7getInfoIPFiP13_cl_device_idjjPvPjES3_P15_cl_platform_idEEiT_RKT0_jPT1_($f,$arg0,$name,$param){
  var label=0;
@@ -30038,6 +30250,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor0IPFiP13_cl_device_id
 }
 function __ZNK2cl5Event4waitEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
@@ -30045,10 +30258,11 @@ function __ZNK2cl5Event4waitEv($this){
  var $4=(($3)|0);
  var $5=_clWaitForEvents(1,$4);
  var $6=__ZN2cl6detailL10errHandlerEiPKc131($5,1728);
- return $6;
+ STACKTOP=sp;return $6;
 }
 function __ZNK2cl5Event16getProfilingInfoIyEEijPT_($this,$name,$param){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -30062,7 +30276,7 @@ function __ZNK2cl5Event16getProfilingInfoIyEEijPT_($this,$name,$param){
  var $8=$3;
  var $9=__ZN2cl6detail7getInfoIPFiP9_cl_eventjjPvPjES3_yEEiT_RKT0_jPT1_(384,$6,$7,$8);
  var $10=__ZN2cl6detailL10errHandlerEiPKc131($9,1776);
- return $10;
+ STACKTOP=sp;return $10;
 }
 function __ZN2cl6detail7getInfoIPFiP9_cl_eventjjPvPjES3_yEEiT_RKT0_jPT1_($f,$arg0,$name,$param){
  var label=0;
@@ -30107,6 +30321,7 @@ function __ZN2cl6detail13GetInfoHelperINS0_15GetInfoFunctor0IPFiP9_cl_eventjjPvP
 }
 function __ZN2cl6detail15GetInfoFunctor0IPFiP9_cl_eventjjPvPjES3_EclEjjS4_S5_($this,$param,$size,$value,$size_ret){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -30128,10 +30343,11 @@ function __ZN2cl6detail15GetInfoFunctor0IPFiP9_cl_eventjjPvPjES3_EclEjjS4_S5_($t
  var $14=$4;
  var $15=$5;
  var $16=FUNCTION_TABLE[$8]($11,$12,$13,$14,$15);
- return $16;
+ STACKTOP=sp;return $16;
 }
 function __ZNK2cl12CommandQueue17enqueueReadBufferERKNS_6BufferEjjjPvPKNS_6vectorINS_5EventELj10EEEPS6_($this,$buffer,$blocking,$offset,$size,$ptr,$events,$event){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30194,12 +30410,13 @@ function __ZNK2cl12CommandQueue17enqueueReadBufferERKNS_6BufferEjjjPvPKNS_6vecto
  var $42=$41;
  var $43=_clEnqueueReadBuffer($12,$15,$16,$17,$18,$19,$27,$40,$42);
  var $44=__ZN2cl6detailL10errHandlerEiPKc131($43,1704);
- return $44;
+ STACKTOP=sp;return $44;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl5EventaSERKS0_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30218,12 +30435,13 @@ function __ZN2cl5EventaSERKS0_($this,$rhs){
  var $10=__ZN2cl6detail7WrapperIP9_cl_eventEaSERKS4_($7,$9);
  label=3;break;
  case 3: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl12CommandQueue20enqueueNDRangeKernelERKNS_6KernelERKNS_7NDRangeES6_S6_PKNS_6vectorINS_5EventELj10EEEPS8_($this,$kernel,$offset,$global,$local,$events,$event){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30308,12 +30526,13 @@ function __ZNK2cl12CommandQueue20enqueueNDRangeKernelERKNS_6KernelERKNS_7NDRange
  var $59=$58;
  var $60=_clEnqueueNDRangeKernel($11,$14,$16,$25,$27,$36,$44,$57,$59);
  var $61=__ZN2cl6detailL10errHandlerEiPKc131($60,1640);
- return $61;
+ STACKTOP=sp;return $61;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl7NDRangeC1Ej($this,$size0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -30321,7 +30540,7 @@ function __ZN2cl7NDRangeC1Ej($this,$size0){
  var $3=$1;
  var $4=$2;
  __ZN2cl7NDRangeC2Ej($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7NDRangeC2Ej($this,$size0){
  var label=0;
@@ -30371,6 +30590,7 @@ function __ZN2cl7NDRangeC2Ej($this,$size0){
 }
 function __ZN2cl6vectorIjLj3EE9push_backERKj($this,$x){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30398,59 +30618,65 @@ function __ZN2cl6vectorIjLj3EE9push_backERKj($this,$x){
  HEAP8[($16)]=0;
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6vectorIjLj3EE4sizeEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+12)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=((($4)+(1))|0);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6detail7WrapperIP10_cl_kernelEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK2cl7NDRange10dimensionsEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2+20)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZNK2cl7NDRangecvPKjEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=$3;
  var $5=__ZNK2cl6vectorIjLj3EEcvPKjEv($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6vectorIjLj3EEcvPKjEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=(($3)|0);
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl6detail7WrapperIP9_cl_eventEaSERKS4_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30480,48 +30706,53 @@ function __ZN2cl6detail7WrapperIP9_cl_eventEaSERKS4_($this,$rhs){
  var $18=__ZNK2cl6detail7WrapperIP9_cl_eventE6retainEv($3);
  label=5;break;
  case 5: 
- return $3;
+ STACKTOP=sp;return $3;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP9_cl_eventE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP9_cl_eventE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZNK2cl6detail7WrapperIP9_cl_eventE6retainEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP9_cl_eventE6retainES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP9_cl_eventE6retainES3_($event){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$event;
  var $2=$1;
  var $3=_clRetainEvent($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6detail16ReferenceHandlerIP9_cl_eventE7releaseES3_($event){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$event;
  var $2=$1;
  var $3=_clReleaseEvent($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6Kernel6setArgINS_6BufferEEEijT_($this,$index,$value){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -30536,10 +30767,11 @@ function __ZN2cl6Kernel6setArgINS_6BufferEEEijT_($this,$index,$value){
  var $10=$9;
  var $11=_clSetKernelArg($6,$7,$8,$10);
  var $12=__ZN2cl6detailL10errHandlerEiPKc131($11,1624);
- return $12;
+ STACKTOP=sp;return $12;
 }
 function __ZN2cl6BufferC1ERKS0_($this,$buffer){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -30547,7 +30779,7 @@ function __ZN2cl6BufferC1ERKS0_($this,$buffer){
  var $3=$1;
  var $4=$2;
  __ZN2cl6BufferC2ERKS0_($3,$4);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6Kernel6setArgIjEEijT_($this,$index,$value){
  var label=0;
@@ -30572,19 +30804,22 @@ function __ZN2cl6Kernel6setArgIjEEijT_($this,$index,$value){
 }
 function __ZN2cl6detail21KernelArgumentHandlerIjE4sizeERKj($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return 4;
+ STACKTOP=sp;return 4;
 }
 function __ZN2cl6detail21KernelArgumentHandlerIjE3ptrERj($value){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$value;
  var $2=$1;
- return $2;
+ STACKTOP=sp;return $2;
 }
 function __ZN2cl6BufferC2ERKS0_($this,$buffer){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -30594,10 +30829,11 @@ function __ZN2cl6BufferC2ERKS0_($this,$buffer){
  var $5=$2;
  var $6=$5;
  __ZN2cl6MemoryC2ERKS0_($4,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6MemoryC2ERKS0_($this,$memory){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  $1=$this;
@@ -30607,10 +30843,11 @@ function __ZN2cl6MemoryC2ERKS0_($this,$memory){
  var $5=$2;
  var $6=$5;
  __ZN2cl6detail7WrapperIP7_cl_memEC2ERKS4_($4,$6);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP7_cl_memEC2ERKS4_($this,$rhs){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30632,52 +30869,58 @@ function __ZN2cl6detail7WrapperIP7_cl_memEC2ERKS4_($this,$rhs){
  var $12=__ZNK2cl6detail7WrapperIP7_cl_memE6retainEv($3);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP7_cl_memE6retainEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP7_cl_memE6retainES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP7_cl_memE6retainES3_($memory){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$memory;
  var $2=$1;
  var $3=_clRetainMemObject($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6detail21KernelArgumentHandlerINS_6BufferEE4sizeERKS2_($0){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $2;
  $2=$0;
- return 4;
+ STACKTOP=sp;return 4;
 }
 function __ZN2cl6detail21KernelArgumentHandlerINS_6BufferEE3ptrERS2_($value){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$value;
  var $2=$1;
- return $2;
+ STACKTOP=sp;return $2;
 }
 function __ZN2cl7ContextD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP11_cl_contextED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP11_cl_contextED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30692,48 +30935,53 @@ function __ZN2cl6detail7WrapperIP11_cl_contextED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP11_cl_contextE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP11_cl_contextE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP11_cl_contextE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP11_cl_contextE7releaseES3_($context){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$context;
  var $2=$1;
  var $3=_clReleaseContext($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6BufferD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6MemoryD2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6MemoryD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP7_cl_memED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP7_cl_memED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30748,39 +30996,43 @@ function __ZN2cl6detail7WrapperIP7_cl_memED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP7_cl_memE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP7_cl_memE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP7_cl_memE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP7_cl_memE7releaseES3_($memory){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$memory;
  var $2=$1;
  var $3=_clReleaseMemObject($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6KernelD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP10_cl_kernelED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP10_cl_kernelED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30795,39 +31047,43 @@ function __ZN2cl6detail7WrapperIP10_cl_kernelED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP10_cl_kernelE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP10_cl_kernelE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP10_cl_kernelE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP10_cl_kernelE7releaseES3_($kernel){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$kernel;
  var $2=$1;
  var $3=_clReleaseKernel($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl12CommandQueueD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP17_cl_command_queueED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP17_cl_command_queueED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30842,39 +31098,43 @@ function __ZN2cl6detail7WrapperIP17_cl_command_queueED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP17_cl_command_queueE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP17_cl_command_queueE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP17_cl_command_queueE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP17_cl_command_queueE7releaseES3_($queue){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$queue;
  var $2=$1;
  var $3=_clReleaseCommandQueue($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl5EventD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP9_cl_eventED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP9_cl_eventED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30889,21 +31149,23 @@ function __ZN2cl6detail7WrapperIP9_cl_eventED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP9_cl_eventE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZN2cl7ProgramD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP11_cl_programED2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP11_cl_programED2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -30918,27 +31180,29 @@ function __ZN2cl6detail7WrapperIP11_cl_programED2Ev($this){
  var $7=__ZNK2cl6detail7WrapperIP11_cl_programE7releaseEv($2);
  label=3;break;
  case 3: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6detail7WrapperIP11_cl_programE7releaseEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
  var $5=__ZN2cl6detail16ReferenceHandlerIP11_cl_programE7releaseES3_($4);
- return $5;
+ STACKTOP=sp;return $5;
 }
 function __ZN2cl6detail16ReferenceHandlerIP11_cl_programE7releaseES3_($program){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$program;
  var $2=$1;
  var $3=_clReleaseProgram($2);
- return $3;
+ STACKTOP=sp;return $3;
 }
 function __ZN2cl6BufferC2ERKNS_7ContextEyjPvPi($this,$context,$flags$0,$flags$1,$size,$host_ptr,$err){
  var label=0;
@@ -31022,30 +31286,33 @@ function __ZN2cl6BufferC2ERKNS_7ContextEyjPvPi($this,$context,$flags$0,$flags$1,
 }
 function __ZN2cl6MemoryC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP7_cl_memEC2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6detail7WrapperIP11_cl_contextEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl6detail7WrapperIP7_cl_memEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6KernelC2ERKNS_7ProgramEPKcPi($this,$program,$name,$err){
  var label=0;
@@ -31117,24 +31384,27 @@ function __ZN2cl6KernelC2ERKNS_7ProgramEPKcPi($this,$program,$name,$err){
 }
 function __ZN2cl6detail7WrapperIP10_cl_kernelEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6detail7WrapperIP11_cl_programEclEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=HEAP32[(($3)>>2)];
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl6stringD2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  label = 1; 
  while(1)switch(label){
  case 1: 
@@ -31156,18 +31426,19 @@ function __ZN2cl6stringD2Ev($this){
  case 4: 
  label=5;break;
  case 5: 
- return;
+ STACKTOP=sp;return;
   default: assert(0, "bad label: " + label);
  }
 }
 function __ZNK2cl6vectorINS_6DeviceELj10EE5frontEv($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  var $4=(($3)|0);
- return $4;
+ STACKTOP=sp;return $4;
 }
 function __ZN2cl7ProgramC2ERKNS_7ContextERKNS_6vectorINSt3__14pairIPKcjEELj10EEEPi($this,$context,$sources,$err){
  var label=0;
@@ -31296,15 +31567,17 @@ function __ZN2cl7ProgramC2ERKNS_7ContextERKNS_6vectorINSt3__14pairIPKcjEELj10EEE
 }
 function __ZN2cl6detail7WrapperIP11_cl_programEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZNK2cl6vectorINSt3__14pairIPKcjEELj10EEixEi($agg_result,$this,$index){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  var $2;
  var $3;
@@ -31334,7 +31607,7 @@ function __ZNK2cl6vectorINSt3__14pairIPKcjEELj10EEixEi($agg_result,$this,$index)
  var $20=(($19+4)|0);
  var $21=HEAP32[(($20)>>2)];
  HEAP32[(($18)>>2)]=$21;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl12CommandQueueC2ERKNS_7ContextERKNS_6DeviceEyPi($this,$context,$device,$properties$0,$properties$1,$err){
  var label=0;
@@ -31418,12 +31691,13 @@ function __ZN2cl12CommandQueueC2ERKNS_7ContextERKNS_6DeviceEyPi($this,$context,$
 }
 function __ZN2cl6detail7WrapperIP17_cl_command_queueEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl7ContextC2ERKNS_6vectorINS_6DeviceELj10EEEPiPFvPKcPKvjPvESB_S6_($this,$devices,$properties,$notifyFptr,$data,$err){
  var label=0;
@@ -31504,30 +31778,33 @@ function __ZN2cl7ContextC2ERKNS_6vectorINS_6DeviceELj10EEEPiPFvPKcPKvjPvESB_S6_(
 }
 function __ZN2cl6detail7WrapperIP11_cl_contextEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl5EventC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=$2;
  __ZN2cl6detail7WrapperIP9_cl_eventEC2Ev($3);
- return;
+ STACKTOP=sp;return;
 }
 function __ZN2cl6detail7WrapperIP9_cl_eventEC2Ev($this){
  var label=0;
+ var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
  var $1;
  $1=$this;
  var $2=$1;
  var $3=(($2)|0);
  HEAP32[(($3)>>2)]=0;
- return;
+ STACKTOP=sp;return;
 }
 function __GLOBAL__I_a132(){
  var label=0;
