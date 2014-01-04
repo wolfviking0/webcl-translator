@@ -299,7 +299,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",    
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",            
+      "valgpu"        : "",            
     },
     { 
       "title"         : "QJulia Attached",
@@ -310,7 +310,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&interop",
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",                
+      "valgpu"        : "",                
     },
   ],
   // ********************** //
