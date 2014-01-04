@@ -112,7 +112,7 @@ var configuration_pages_debug = {
       "compatibility" : "[Webkit]",
       "pages"         : "build_book/book",
       "id"            : 4,
-      "gl"            : "off",
+      "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
       "valcpu"        : "&validator=on",
