@@ -63,11 +63,11 @@ var LibraryOpenCL = {
         } else {
 
           // Add webcl constant for parser
-          webcl["SAMPLER"]          = 0x1300;
-          webcl["IMAGE2D"]          = 0x1301;
-          webcl["UNSIGNED_LONG"]    = 0x1302;
-          webcl["MAP_READ"]         = 0x1; 
-          webcl["MAP_WRITE"]        = 0x2;
+          // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+          // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+          // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+          // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+          // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
 
           for (var i = 0; i < CL.cl_extensions.length; i ++) {
 
@@ -155,15 +155,15 @@ var LibraryOpenCL = {
           return 'UINT16';
         case webcl.UNSIGNED_INT32:
           return 'UINT32';
-        case webcl.UNSIGNED_LONG:
+        case 0x1302 /*webcl.UNSIGNED_LONG*/:
           return 'ULONG';          
         case webcl.FLOAT:
           return 'FLOAT';
         case webcl.LOCAL:
           return '__local';   
-        case webcl.SAMPLER:
+        case 0x1300 /*webcl.SAMPLER*/:
           return 'sampler_t';   
-        case webcl.IMAGE2D:
+        case 0x1301 /*webcl.IMAGE2D*/:
           return 'image2d_t';          
         default:
           if (typeof(pn_type) == "string") return 'struct';
@@ -183,7 +183,7 @@ var LibraryOpenCL = {
       // First ulong for the webcl validator
       if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
         // \todo : long ???? 
-        _value = webcl.UNSIGNED_LONG;  
+        _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
       } else if (string.indexOf("float") >= 0 ) {
         _value = webcl.FLOAT;
       } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -199,9 +199,9 @@ var LibraryOpenCL = {
       } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
         _value = webcl.SIGNED_INT32;
       } else if ( string.indexOf("image2d_t") >= 0 ) {
-        _value = webcl.IMAGE2D;
+        _value = 0x1301 /*webcl.IMAGE2D*/;
       } else if ( string.indexOf("sampler_t") >= 0 ) {
-        _value = webcl.SAMPLER;
+        _value = 0x1300 /*webcl.SAMPLER*/;
       }
 
       return _value;
@@ -883,7 +883,8 @@ var LibraryOpenCL = {
 
 #if CL_GRAB_TRACE     
     stack_trace_offset: -1,
-    stack_trace: "// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",
+    stack_trace_complete: "// Javascript webcl Stack Trace\n(*) => all the stack_trace are print before the JS function call except for enqueueReadBuffer\n",
+    stack_trace: "",
 
     /**
      * Description
@@ -1013,8 +1014,9 @@ var LibraryOpenCL = {
 #if CL_PRINT_TRACE
       console.info(CL.stack_trace);
       //alert(CL.stack_trace); // Useful for step by step debugging
-      CL.stack_trace = "";
 #endif   
+      CL.stack_trace_complete += CL.stack_trace;
+      CL.stack_trace = "";
 
       if (CL.stack_trace_offset == "") {
         CL.stack_trace_offset = -1;
@@ -5919,7 +5921,7 @@ var LibraryOpenCL = {
     // { SIZE , BLOCKING_MAP , OFFSET }
     CL.cl_objects_map[mapped_ptr] = {"size":cb,"blocking":blocking_map,"offset":offset,"mode":map_flags_i64_1};
 
-    if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_READ) {
+    if (CL.cl_objects_map[mapped_ptr]["mode"] == 0x1 /*webcl.MAP_READ*/) {
 
       // Call write buffer .... may be add try ... catch
       _clEnqueueReadBuffer(command_queue,buffer,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
@@ -6022,7 +6024,7 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    if (CL.cl_objects_map[mapped_ptr]["mode"] == webcl.MAP_WRITE) {
+    if (CL.cl_objects_map[mapped_ptr]["mode"] == 0x2 /*webcl.MAP_WRITE*/) {
 
       // Call write buffer .... may be add try ... catch
       _clEnqueueWriteBuffer(command_queue,memobj,CL.cl_objects_map[mapped_ptr]["blocking"],CL.cl_objects_map[mapped_ptr]["offset"],CL.cl_objects_map[mapped_ptr]["size"],mapped_ptr,num_events_in_wait_list,event_wait_list,event);
