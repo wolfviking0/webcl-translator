@@ -620,7 +620,7 @@ var LibraryOpenCL = {
         case webcl.SIGNED_INT32:
           _type = SIGNED_INT32;
         case webcl.UNSIGNED_INT32:
-          _type = UNSIGNED_INT32;
+          _type = webcl.UNSIGNED_INT32;
           break;        
         case webcl.FLOAT:
           _type = webcl.FLOAT;
@@ -1077,7 +1077,7 @@ var LibraryOpenCL = {
     var _size = {{{ makeGetValue('param_value_size', '0', 'i32') }}} ;
     
     if (_size == 0) {
-      {{{ makeSetValue('param_value_size', '0', 'CL.stack_trace.length', 'i32') }}} /* Size of char stack */;
+      {{{ makeSetValue('param_value_size', '0', 'CL.stack_trace.length + 1', 'i32') }}} /* Size of char stack */;
     } else {
       writeStringToMemory(CL.stack_trace, param_value);
     }
@@ -1245,8 +1245,19 @@ var LibraryOpenCL = {
       CL.webclCallStackTrace(""+CL.cl_objects[platform]+".getInfo",[param_name]);
 #endif        
 
-      _info = CL.cl_objects[platform].getInfo(param_name);
-      
+      switch (param_name) {
+        case 0x0902 /*CL_PLATFORM_NAME*/ :
+          _info = "WEBCL_PLATFORM_NAME";
+        break;
+        case 0x0903 /*CL_PLATFORM_VENDOR*/ :
+          _info = "WEBCL_PLATFORM_VENDOR";
+        break;
+          case 0x0904 /*CL_PLATFORM_EXTENSIONS*/ :
+          _info = "WEBCL_PLATFORM_EXTENSIONS";
+        break;
+        default:
+          _info = CL.cl_objects[platform].getInfo(param_name);  
+      }      
     } catch (e) {
       
       var _error = CL.catchError(e);
@@ -1257,7 +1268,7 @@ var LibraryOpenCL = {
       }
   
       if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+        {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
       }
 
 #if CL_GRAB_TRACE
@@ -1271,7 +1282,7 @@ var LibraryOpenCL = {
     }
   
     if (param_value_size_ret != 0) {
-      {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+      {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
     }
 
 #if CL_GRAB_TRACE
@@ -1419,9 +1430,19 @@ var LibraryOpenCL = {
 #if CL_GRAB_TRACE
         CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
 #endif        
-
-        _info = _object.getInfo(param_name);
-
+      switch (param_name) {
+        case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
+          _info = CL.udid(_object);
+        break;
+        case 0x102B /*CL_DEVICE_NAME*/ :
+          _info = "WEBCL_DEVICE_NAME";
+        break;
+        case 0x102C /*CL_DEVICE_VENDOR*/ :
+          _info = "WEBCL_DEVICE_VENDOR";
+        break;
+        default:
+          _info = _object.getInfo(param_name);
+      }  
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -1457,7 +1478,7 @@ var LibraryOpenCL = {
     } else if(typeof(_info) == "string") {
 
       if (param_value != 0) writeStringToMemory(_info, param_value);
-      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
 
     } else if(typeof(_info) == "object") {
       
@@ -1917,11 +1938,20 @@ var LibraryOpenCL = {
 
     } else if(typeof(_info) == "object") {
 
-      if ( (_info instanceof WebCLPlatform) || ((typeof(WebCLContextProperties) !== "undefined") && (_info instanceof WebCLContextProperties)) ) {
+      if (_info instanceof WebCLPlatform) {
      
         var _id = CL.udid(_info);
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+
+      } else if (_info instanceof WebCLContextProperties) {
+
+        if (param_value != 0) {
+          {{{ makeSetValue('param_value', '0', 'webcl.CONTEXT_PLATFORM', 'i32') }}};
+          {{{ makeSetValue('param_value', '4', 'CL.udid(_info["platform"])', 'i32') }}};
+          {{{ makeSetValue('param_value', '8', '0', 'i32') }}};
+        }
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '12', 'i32') }}};
 
       } else if (_info instanceof Array) {
 
@@ -2575,7 +2605,7 @@ var LibraryOpenCL = {
         _type = SIGNED_INT32;
       case webcl.UNSIGNED_INT32:
         _sizeType = 4;
-        _type = UNSIGNED_INT32;
+        _type = webcl.UNSIGNED_INT32;
         break;        
       case webcl.FLOAT:
         _sizeType = 4;
@@ -2939,7 +2969,12 @@ var LibraryOpenCL = {
 
     } else if(typeof(_info) == "object") {
 
-      if (_info instanceof WebCLBuffer) {
+      if (_info instanceof WebCLImageDescriptor) {
+
+        if (param_value != 0) {{{ makeSetValue('param_value', '0', 'webcl.MEM_OBJECT_IMAGE2D', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
+
+      } else if (_info instanceof WebCLBuffer) {
      
         var _id = CL.udid(_info);
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
@@ -3668,7 +3703,7 @@ var LibraryOpenCL = {
       }
 
       if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+        {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
       }
     } else if(typeof(_info) == "object") {
 
@@ -3784,7 +3819,7 @@ var LibraryOpenCL = {
       }
     
       if (param_value_size_ret != 0) {
-        {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+        {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
       }
     } else {
 #if CL_GRAB_TRACE
@@ -4211,7 +4246,7 @@ var LibraryOpenCL = {
       } else if(typeof(_info) == "string") {
 
         if (param_value != 0) writeStringToMemory(_info, param_value);
-        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
     
       } else if(typeof(_info) == "object") {
 
@@ -5932,7 +5967,7 @@ var LibraryOpenCL = {
     CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+    CL.webclEndStackTrace([mapped_ptr],"","");
 #endif
 
     if (cl_errcode_ret != 0) {
@@ -6041,12 +6076,10 @@ var LibraryOpenCL = {
     CL.cl_pn_type = [];
 #endif 
 #if CL_GRAB_TRACE
-    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+    CL.webclEndStackTrace([mapped_ptr],"","");
 #endif
 
-    return webcl.SUCCESS; 
-
-
+    return mapped_ptr; 
   },
 
   /**
@@ -6158,10 +6191,44 @@ var LibraryOpenCL = {
    * @param {} event
    * @return MemberExpression
    */
+  clEnqueueTask__deps: ['clEnqueueNDRangeKernel'],
   clEnqueueTask: function(command_queue,kernel,num_events_in_wait_list,event_wait_list,event) {
-    console.error("clEnqueueTask: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+#if CL_GRAB_TRACE
+    CL.webclBeginStackTrace("clEnqueueTask",[command_queue,kernel,num_events_in_wait_list,event_wait_list,event]);
+#endif
+#if CL_CHECK_VALID_OBJECT   
+    if (!(command_queue in CL.cl_objects)) {    
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_COMMAND_QUEUE],"WebCLCommandQueue '"+command_queue+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_COMMAND_QUEUE;
+    }
+#endif 
+#if CL_CHECK_VALID_OBJECT   
+    if (!(kernel in CL.cl_objects)) {    
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_KERNEL],"WebCLKernel '"+kernel+"' are not inside the map","");
+#endif 
+      return webcl.INVALID_KERNEL;
+    }
+#endif 
 
-    return webcl.INVALID_VALUE; 
+    var global_work_size = _malloc(4);
+    setValue(global_work_size, 1, 'i32');
+
+    var local_work_size = _malloc(4);
+    setValue(local_work_size, 1, 'i32');
+
+    var _res = _clEnqueueNDRangeKernel(command_queue,kernel,1,0,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event);
+
+    _free(global_work_size);
+    _free(local_work_size);
+
+#if CL_GRAB_TRACE
+    CL.webclEndStackTrace([_res],"","");
+#endif
+
+    return _res;
   },
 
   /**
