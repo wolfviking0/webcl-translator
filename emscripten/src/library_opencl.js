@@ -1580,16 +1580,22 @@ var LibraryOpenCL = {
       }
 
       // Verify the property
+      var _propertiesCounter = 0;
+      var _properties = [];
+
       if (properties != 0) {
-        var _propertiesCounter = 0;
         while(1) {
           var _readprop = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+          _properties.push(_readprop);
+
           if (_readprop == 0) break;
 
           switch (_readprop) {
             case webcl.CONTEXT_PLATFORM:
               _propertiesCounter ++;
               var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+              _properties.push(_idxPlatform);
+
 #if CL_CHECK_VALID_OBJECT              
               if (_idxPlatform in CL.cl_objects) {
 #endif                
@@ -1662,6 +1668,9 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_context);
 
+    // Add properties array for getInfo
+    Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
 #endif
@@ -1705,18 +1714,23 @@ var LibraryOpenCL = {
       var _devices = null;
       var _deviceType = device_type_i64_1;
       var _glclSharedContext = false;
+      var _properties = [];
 
       // Verify the property
       if (properties != 0) {
         var _propertiesCounter = 0;
         while(1) {
           var _readprop = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+          _properties.push(_readprop);
+
           if (_readprop == 0) break;
 
           switch (_readprop) {
             case webcl.CONTEXT_PLATFORM:
               _propertiesCounter ++;
               var _idxPlatform = {{{ makeGetValue('properties', '_propertiesCounter*4', 'i32') }}};
+              _properties.push(_idxPlatform);
+
 #if CL_CHECK_VALID_OBJECT              
               if (_idxPlatform in CL.cl_objects) {
 #endif                
@@ -1757,7 +1771,7 @@ var LibraryOpenCL = {
           _propertiesCounter ++;
         }
       }
-
+  
       var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
       
 #if CL_GRAB_TRACE
@@ -1788,6 +1802,9 @@ var LibraryOpenCL = {
 
     _id = CL.udid(_context);
 
+    // Add properties array for getInfo
+    Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([_id,cl_errcode_ret],"","");
 #endif
@@ -1815,7 +1832,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[context] = CL.cl_objects[context];
+    if (!(context in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[context] = 1;
+    } else {
+      CL.cl_objects_retains[context] = CL.cl_objects_retains[context] + 1;
+    }
        
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -1843,12 +1864,19 @@ var LibraryOpenCL = {
     }
 #endif  
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (context in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[context] - 1;
+
+      CL.cl_objects_retains[context] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif      
-      return webcl.SUCCESS;
+        return webcl.SUCCESS;
+      }
     }
 
     try {
@@ -1914,18 +1942,14 @@ var LibraryOpenCL = {
       if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
         _info = 0;
 
-        for (var elt in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
-          if (CL.cl_objects[elt] instanceof WebCLContext) {
-            _info++;
-          }
+        if (context in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[context]);
+          _info++;
         }
 
-        for (var elt in CL.cl_objects_retains) {
-          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
-          if (CL.cl_objects_retains[elt] instanceof WebCLContext) {
-            _info++;
-          }
+        if (context in CL.cl_objects_retains) {
+          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[context]);
+          _info+=CL.cl_objects_retains[context];
         }
 
       } else {
@@ -1974,23 +1998,20 @@ var LibraryOpenCL = {
 
         if (param_value != 0) {
 
-          console.info("AL-->" + _info+ " - "+_info["platform"]);
+          if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+            var _properties = CL.cl_objects[context].properties;
 
-          if (_info["platform"] != null) {
-            {{{ makeSetValue('param_value', '0', 'webcl.CONTEXT_PLATFORM', 'i32') }}};
-            {{{ makeSetValue('param_value', '4', 'CL.udid(_info["platform"])', 'i32') }}};
-            {{{ makeSetValue('param_value', '8', '0', 'i32') }}};  
+            for (elt in _properties) {
+              console.info("_properties [ "+_size+" ] = "+_properties[elt]);
+              {{{ makeSetValue('param_value', '_size*4', '_properties[elt]', 'i32') }}};
+              _size ++;
 
-            _size = 12;
-          } else {
-            {{{ makeSetValue('param_value', '0', '0', 'i32') }}};  
-
-            _size = 4;
+            }
           }
-          
         }
-        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_size', 'i32') }}};
 
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_size*4', 'i32') }}};
+        
       } else if (_info instanceof Array) {
 
         for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
@@ -2126,7 +2147,12 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[command_queue] = CL.cl_objects[command_queue];
+    if (!(command_queue in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[command_queue] = 1;
+    } else {
+      CL.cl_objects_retains[command_queue] = CL.cl_objects_retains[command_queue] + 1;
+    }
+
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -2153,12 +2179,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (command_queue in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[command_queue] - 1;
+
+      CL.cl_objects_retains[command_queue] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
-#endif
-      return webcl.SUCCESS;
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
+        return webcl.SUCCESS;
+      }
     }
 
     try {
@@ -2223,18 +2256,14 @@ var LibraryOpenCL = {
       if (param_name == 0x1092 /* CL_QUEUE_REFERENCE_COUNT */) {
         _info = 0;
 
-        for (var elt in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
-          if (CL.cl_objects[elt] instanceof WebCLCommandQueue) {
-            _info++;
-          }
+        if (command_queue in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[command_queue]);
+          _info++;
         }
 
-        for (var elt in CL.cl_objects_retains) {
-          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
-          if (CL.cl_objects_retains[elt] instanceof WebCLCommandQueue) {
-            _info++;
-          }
+        if (command_queue in CL.cl_objects_retains) {
+          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[command_queue]);
+          _info+=CL.cl_objects_retains[command_queue];
         }
 
       } else {
@@ -2805,7 +2834,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[memobj] = CL.cl_objects[memobj];
+    if (!(memobj in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[memobj] = 1;
+    } else {
+      CL.cl_objects_retains[memobj] = CL.cl_objects_retains[memobj] + 1;
+    }
 
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -2833,12 +2866,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (memobj in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[memobj] - 1;
+
+      CL.cl_objects_retains[memobj] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif      
-      return webcl.SUCCESS;
+        return webcl.SUCCESS;
+      }
     }
 
     try {
@@ -2998,8 +3038,25 @@ var LibraryOpenCL = {
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[memobj]+".getInfo",[param_name]);
 #endif        
+      
+      if (param_name == 0x1105 /*CL_MEM_REFERENCE_COUNT*/) {
 
-      _info = CL.cl_objects[memobj].getInfo(param_name);
+        _info = 0;
+
+        if (memobj in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[memobj]);
+          _info++;
+        }
+
+        if (memobj in CL.cl_objects_retains) {
+          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[memobj]);
+          _info+=CL.cl_objects_retains[memobj];
+        }
+
+      } else {
+        _info = CL.cl_objects[memobj].getInfo();  
+      }
+      
 
     } catch (e) {
 
@@ -3243,7 +3300,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[sampler] = CL.cl_objects[sampler];
+    if (!(sampler in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[sampler] = 1;
+    } else {
+      CL.cl_objects_retains[sampler] = CL.cl_objects_retains[sampler] + 1;
+    }
 
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -3271,12 +3332,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (sampler in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[sampler] - 1;
+
+      CL.cl_objects_retains[sampler] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif      
-      return webcl.SUCCESS;
+        return webcl.SUCCESS;
+      }
     }
 
     try {
@@ -3343,18 +3411,14 @@ var LibraryOpenCL = {
       if (param_name == 0x1150 /*  CL_SAMPLER_REFERENCE_COUNT */) {
         _info = 0;
 
-        for (var elt in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
-          if (CL.cl_objects[elt] instanceof WebCLSampler) {
-            _info++;
-          }
+        if (sampler in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[sampler]);
+          _info++;
         }
 
-        for (var elt in CL.cl_objects_retains) {
-          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
-          if (CL.cl_objects_retains[elt] instanceof WebCLSampler) {
-            _info++;
-          }
+        if (sampler in CL.cl_objects_retains) {
+          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[sampler]);
+          _info+=CL.cl_objects_retains[sampler];
         }
 
       } else {
@@ -3549,7 +3613,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[program] = CL.cl_objects[program];
+    if (!(program in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[program] = 1;
+    } else {
+      CL.cl_objects_retains[program] = CL.cl_objects_retains[program] + 1;
+    }
         
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -3577,12 +3645,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (program in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[program] - 1;
+
+      CL.cl_objects_retains[program] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif      
-      return webcl.SUCCESS;
+        return webcl.SUCCESS;
+      }
     }
 
     try {
@@ -4089,7 +4164,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[kernel] = CL.cl_objects[kernel];
+    if (!(kernel in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[kernel] = 1;
+    } else {
+      CL.cl_objects_retains[kernel] = CL.cl_objects_retains[kernel] + 1;
+    }
 
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4116,12 +4195,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (kernel in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[kernel] - 1;
+
+      CL.cl_objects_retains[kernel] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
-#endif   
-      return webcl.SUCCESS;
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
+        return webcl.SUCCESS;
+      }
     }
 
 #if CL_GRAB_TRACE
@@ -4649,7 +4735,11 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    CL.cl_objects_retains[event] = CL.cl_objects[event];
+    if (!(event in CL.cl_objects_retains)) {
+      CL.cl_objects_retains[event] = 1;
+    } else {
+      CL.cl_objects_retains[event] = CL.cl_objects_retains[event] + 1;
+    }
        
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4676,12 +4766,19 @@ var LibraryOpenCL = {
     }
 #endif
 
-    // If is an object retain don't release it ...
+    // If is an object retain don't release it until retains > 0...
     if (event in CL.cl_objects_retains) {
+
+      var _retain = CL.cl_objects_retains[event] - 1;
+
+      CL.cl_objects_retains[event] = _retain;
+
+      if (_retain >= 0) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.SUCCESS],"","");
-#endif   
-      return webcl.SUCCESS;
+        CL.webclEndStackTrace([webcl.SUCCESS],"","");
+#endif      
+        return webcl.SUCCESS;
+      }
     }
 
 #if CL_GRAB_TRACE
