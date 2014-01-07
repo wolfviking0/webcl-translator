@@ -4784,14 +4784,19 @@ var LibraryOpenCL = {
     }
 #endif
 
+    var _callback = null
+    if (pfn_notify != 0) {
+      _callback = function() { FUNCTION_TABLE[pfn_notify](event, command_exec_callback_type , user_data) };
+    }
+
+
 #if CL_GRAB_TRACE
-    CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,pfn_notify,user_data]);
+    CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,_callback]);
 #endif        
 
-    console.error("/!\\ todo clSetEventCallback not yet finish to implement");
     try {
 
-      CL.cl_objects[event].setCallback(command_exec_callback_type);
+      CL.cl_objects[event].setCallback(command_exec_callback_type,_callback);
 
     } catch (e) {
       var _error = CL.catchError(e);
