@@ -1276,6 +1276,8 @@ var LibraryOpenCL = {
 #endif
       return _error;
     }
+
+    if (param_name == webcl.PLATFORM_VERSION) _info += " "; 
     
     if (param_value != 0) {
       writeStringToMemory(_info, param_value);
@@ -1432,7 +1434,7 @@ var LibraryOpenCL = {
 #endif        
       switch (param_name) {
         case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-          _info = CL.udid(_object);
+          _info = parseInt(CL.udid(_object));
         break;
         case 0x102B /*CL_DEVICE_NAME*/ :
           _info = "WEBCL_DEVICE_NAME";
@@ -1476,6 +1478,8 @@ var LibraryOpenCL = {
       if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
     } else if(typeof(_info) == "string") {
+
+      if (param_name == webcl.DEVICE_VERSION) _info += " ";
 
       if (param_value != 0) writeStringToMemory(_info, param_value);
       if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_info.length + 1', 'i32') }}};
@@ -1905,9 +1909,29 @@ var LibraryOpenCL = {
 
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[context]+".getInfo",[param_name]);
-#endif        
+#endif   
 
-      _info = CL.cl_objects[context].getInfo(param_name);
+      if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
+        _info = 0;
+
+        for (var elt in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
+          if (CL.cl_objects[elt] instanceof WebCLContext) {
+            _info++;
+          }
+        }
+
+        for (var elt in CL.cl_objects_retains) {
+          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
+          if (CL.cl_objects_retains[elt] instanceof WebCLContext) {
+            _info++;
+          }
+        }
+
+      } else {
+        _info = CL.cl_objects[context].getInfo(param_name);
+      }
+      
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1945,13 +1969,27 @@ var LibraryOpenCL = {
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
       } else if (_info instanceof WebCLContextProperties) {
+  
+        var _size = 0;
 
         if (param_value != 0) {
-          {{{ makeSetValue('param_value', '0', 'webcl.CONTEXT_PLATFORM', 'i32') }}};
-          {{{ makeSetValue('param_value', '4', 'CL.udid(_info["platform"])', 'i32') }}};
-          {{{ makeSetValue('param_value', '8', '0', 'i32') }}};
+
+          console.info("AL-->" + _info+ " - "+_info["platform"]);
+
+          if (_info["platform"] != null) {
+            {{{ makeSetValue('param_value', '0', 'webcl.CONTEXT_PLATFORM', 'i32') }}};
+            {{{ makeSetValue('param_value', '4', 'CL.udid(_info["platform"])', 'i32') }}};
+            {{{ makeSetValue('param_value', '8', '0', 'i32') }}};  
+
+            _size = 12;
+          } else {
+            {{{ makeSetValue('param_value', '0', '0', 'i32') }}};  
+
+            _size = 4;
+          }
+          
         }
-        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '12', 'i32') }}};
+        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_size', 'i32') }}};
 
       } else if (_info instanceof Array) {
 
@@ -2182,7 +2220,26 @@ var LibraryOpenCL = {
       CL.webclCallStackTrace(""+CL.cl_objects[command_queue]+".getInfo",[param_name]);
 #endif        
 
-      _info = CL.cl_objects[command_queue].getInfo(param_name);
+      if (param_name == 0x1092 /* CL_QUEUE_REFERENCE_COUNT */) {
+        _info = 0;
+
+        for (var elt in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
+          if (CL.cl_objects[elt] instanceof WebCLCommandQueue) {
+            _info++;
+          }
+        }
+
+        for (var elt in CL.cl_objects_retains) {
+          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
+          if (CL.cl_objects_retains[elt] instanceof WebCLCommandQueue) {
+            _info++;
+          }
+        }
+
+      } else {
+        _info = CL.cl_objects[command_queue].getInfo(param_name);
+      }
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -3281,9 +3338,29 @@ var LibraryOpenCL = {
 
 #if CL_GRAB_TRACE
         CL.webclCallStackTrace(""+CL.cl_objects[sampler]+".getInfo",[param_name]);
-#endif        
+#endif      
 
+      if (param_name == 0x1150 /*  CL_SAMPLER_REFERENCE_COUNT */) {
+        _info = 0;
+
+        for (var elt in CL.cl_objects) {
+          console.info("Inside Objects Map -->"+ CL.cl_objects[elt]);
+          if (CL.cl_objects[elt] instanceof WebCLSampler) {
+            _info++;
+          }
+        }
+
+        for (var elt in CL.cl_objects_retains) {
+          console.info("Inside Objects Reetains Map -->"+ CL.cl_objects_retains[elt]);
+          if (CL.cl_objects_retains[elt] instanceof WebCLSampler) {
+            _info++;
+          }
+        }
+
+      } else {
         _info = CL.cl_objects[sampler].getInfo(param_name);
+      }
+        
             
     } catch (e) {
 
