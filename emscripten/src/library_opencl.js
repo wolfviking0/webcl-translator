@@ -67,6 +67,7 @@ var LibraryOpenCL = {
           // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
           // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
           // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+          // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
           // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
           // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
 
@@ -157,7 +158,9 @@ var LibraryOpenCL = {
         case webcl.UNSIGNED_INT32:
           return 'UINT32';
         case 0x1302 /*webcl.UNSIGNED_LONG*/:
-          return 'ULONG';          
+          return 'ULONG';
+        case 0x1303 /*webcl.SIGNED_LONG*/:
+          return 'LONG';       
         case webcl.FLOAT:
           return 'FLOAT';
         case webcl.LOCAL:
@@ -185,6 +188,8 @@ var LibraryOpenCL = {
       if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
         // \todo : long ???? 
         _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
+      } else if ( string.indexOf("long") >= 0 ) {
+        _value = 0x1303 /*webcl.SIGNED_LONG*/;
       } else if (string.indexOf("float") >= 0 ) {
         _value = webcl.FLOAT;
       } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -492,7 +497,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-
+#if 0 
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -541,7 +546,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-
+#endif
       return _mini_kernel_string;
 
     },
@@ -909,7 +914,7 @@ var LibraryOpenCL = {
 
       CL.stack_trace += ")\n";
     },
-        
+                                                              
     /**
      * Description
      * @method webclCallStackTrace
@@ -1080,16 +1085,15 @@ var LibraryOpenCL = {
     var _size = {{{ makeGetValue('param_value_size', '0', 'i32') }}} ;
     
     if (_size == 0) {
-      {{{ makeSetValue('param_value_size', '0', 'CL.stack_trace.length + 1', 'i32') }}} /* Size of char stack */;
+      {{{ makeSetValue('param_value_size', '0', 'CL.stack_trace_complete.length + 1', 'i32') }}} /* Size of char stack */;
     } else {
-      writeStringToMemory(CL.stack_trace, param_value);
+      writeStringToMemory(CL.stack_trace_complete, param_value);
     }
 #else
     {{{ makeSetValue('param_value_size', '0', '0', 'i32') }}}
 #endif    
     return webcl.SUCCESS;
   },
-
 
   /**
    * Description
@@ -3269,7 +3273,7 @@ var LibraryOpenCL = {
 #endif
     try {
       
-      if ( normalized_coords == 0x1130 /* CL_ADDRESS_CLAMP */ ) normalized_coords = webcl.ADDRESS_CLAMP;
+      if ( addressing_mode == 0x1130 /* CL_ADDRESS_NONE */ ) addressing_mode = webcl.ADDRESS_CLAMP;
 
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createSampler",[normalized_coords,addressing_mode,filter_mode]);
