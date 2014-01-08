@@ -26,6 +26,7 @@ var LibraryOpenCL = {
     cl_objects: {},
     cl_objects_map: {},
     cl_objects_retains: {},
+    cl_objects_mem_callback: {},
 
 #if CL_VALIDATOR
     cl_validator: {},
@@ -1442,6 +1443,9 @@ var LibraryOpenCL = {
         case 0x102C /*CL_DEVICE_VENDOR*/ :
           _info = "WEBCL_DEVICE_VENDOR";
         break;
+        case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
+          _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN);
+        break;
         default:
           _info = _object.getInfo(param_name);
       }  
@@ -1943,12 +1947,10 @@ var LibraryOpenCL = {
         _info = 0;
 
         if (context in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[context]);
           _info++;
         }
 
         if (context in CL.cl_objects_retains) {
-          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[context]);
           _info+=CL.cl_objects_retains[context];
         }
 
@@ -2002,7 +2004,6 @@ var LibraryOpenCL = {
             var _properties = CL.cl_objects[context].properties;
 
             for (elt in _properties) {
-              console.info("_properties [ "+_size+" ] = "+_properties[elt]);
               {{{ makeSetValue('param_value', '_size*4', '_properties[elt]', 'i32') }}};
               _size ++;
 
@@ -2257,12 +2258,10 @@ var LibraryOpenCL = {
         _info = 0;
 
         if (command_queue in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[command_queue]);
           _info++;
         }
 
         if (command_queue in CL.cl_objects_retains) {
-          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[command_queue]);
           _info+=CL.cl_objects_retains[command_queue];
         }
 
@@ -2378,15 +2377,7 @@ var LibraryOpenCL = {
     } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
       _flags = webcl.MEM_READ_ONLY;
     } else {
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
-      }
-
-#if CL_GRAB_TRACE
-      CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
-#endif
-
-      return 0; 
+      _flags |= webcl.MEM_READ_WRITE;
     }
 
     var _host_ptr = null;
@@ -2518,15 +2509,7 @@ var LibraryOpenCL = {
     } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
       _flags = webcl.MEM_READ_ONLY;
     } else {
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
-      }
-
-#if CL_GRAB_TRACE
-      CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
-#endif
-
-      return 0; 
+      _flags |= webcl.MEM_READ_WRITE;
     }
   
     if (flags_i64_1 & ~_flags) {
@@ -2630,15 +2613,7 @@ var LibraryOpenCL = {
     } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
       _flags = webcl.MEM_READ_ONLY;
     } else {
-      if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
-      }
-
-#if CL_GRAB_TRACE
-      CL.webclEndStackTrace([0,cl_errcode_ret],"values specified "+flags_i64_1+" in flags are not valid","");
-#endif
-
-      return 0; 
+      _flags |= webcl.MEM_WRITE_ONLY
     }
 
     var _host_ptr = null;
@@ -2874,6 +2849,13 @@ var LibraryOpenCL = {
       CL.cl_objects_retains[memobj] = _retain;
 
       if (_retain >= 0) {
+        
+        // Call the callback 
+        if (memobj in CL.cl_objects_mem_callback) {
+          if (CL.cl_objects_mem_callback[memobj].length > 0)
+            CL.cl_objects_mem_callback[memobj].pop()();
+        }
+
 #if CL_GRAB_TRACE
         CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif      
@@ -2882,6 +2864,12 @@ var LibraryOpenCL = {
     }
 
     try {
+
+      // Call the callback 
+      if (memobj in CL.cl_objects_mem_callback) {
+        if (CL.cl_objects_mem_callback[memobj].length > 0)
+          CL.cl_objects_mem_callback[memobj].pop()();
+      }
 
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
@@ -3044,17 +3032,19 @@ var LibraryOpenCL = {
         _info = 0;
 
         if (memobj in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[memobj]);
           _info++;
         }
 
         if (memobj in CL.cl_objects_retains) {
-          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[memobj]);
           _info+=CL.cl_objects_retains[memobj];
         }
 
+      } else if (param_name == 0x1104 /*CL_MEM_MAP_COUNT*/) {
+        
+        _info = 0;
+
       } else {
-        _info = CL.cl_objects[memobj].getInfo();  
+        _info = CL.cl_objects[memobj].getInfo(param_name);  
       }
       
 
@@ -3210,8 +3200,37 @@ var LibraryOpenCL = {
    * @return MemberExpression
    */
   clSetMemObjectDestructorCallback: function(memobj,pfn_notify,user_data) {
-    console.error("clSetMemObjectDestructorCallback: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+#if CL_GRAB_TRACE
+    CL.webclBeginStackTrace("clSetMemObjectDestructorCallback",[memobj,pfn_notify,user_data]);
+#endif
 
+#if CL_CHECK_VALID_OBJECT
+    if (!(memobj in CL.cl_objects)) {
+#if CL_GRAB_TRACE
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],CL.cl_objects[memobj]+" is not a valid OpenCL Mem Object","");
+#endif
+      return webcl.INVALID_MEM_OBJECT;
+    }
+#endif 
+  
+    var _array = []
+
+    if (memobj in CL.cl_objects_mem_callback) {
+      _array = CL.cl_objects_mem_callback[memobj];
+    }
+
+    var _callback = null
+    if (pfn_notify != 0) {
+      _callback = function() { FUNCTION_TABLE[pfn_notify](memobj , user_data) };
+    }
+
+    _array.push(_callback);
+
+    CL.cl_objects_mem_callback[memobj] = _array;
+
+#if CL_GRAB_TRACE
+    CL.webclEndStackTrace([webcl.INVALID_VALUE],"","");
+#endif        
     return webcl.INVALID_VALUE;
   },
 
@@ -3247,7 +3266,9 @@ var LibraryOpenCL = {
     }
 #endif
     try {
-    
+      
+      if ( normalized_coords == 0x1130 /* CL_ADDRESS_CLAMP */ ) normalized_coords = webcl.ADDRESS_CLAMP;
+
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace( CL.cl_objects[context]+".createSampler",[normalized_coords,addressing_mode,filter_mode]);
 #endif      
@@ -3412,12 +3433,10 @@ var LibraryOpenCL = {
         _info = 0;
 
         if (sampler in CL.cl_objects) {
-          console.info("Inside Objects Map -->"+ CL.cl_objects[sampler]);
           _info++;
         }
 
         if (sampler in CL.cl_objects_retains) {
-          console.info("Inside Objects Retains Map -->"+ CL.cl_objects_retains[sampler]);
           _info+=CL.cl_objects_retains[sampler];
         }
 
@@ -3825,8 +3844,21 @@ var LibraryOpenCL = {
 #if CL_GRAB_TRACE
       CL.webclCallStackTrace(""+CL.cl_objects[program]+".getInfo",[param_name]);
 #endif        
+      if (param_name == 0x1160 /* CL_PROGRAM_REFERENCE_COUNT */) {
+        _info = 0;
 
-      _info = CL.cl_objects[program].getInfo(param_name);
+        if (program in CL.cl_objects) {
+          _info++;
+        }
+
+        if (program in CL.cl_objects_retains) {
+          _info+=CL.cl_objects_retains[program];
+        }
+
+      } else {
+        _info = CL.cl_objects[program].getInfo(param_name);
+      }
+      
     } catch (e) {
       var _error = CL.catchError(e);
 
@@ -4398,8 +4430,23 @@ var LibraryOpenCL = {
 #endif   
 
     try { 
+  
+      var _info = null;
 
-      var _info = CL.cl_objects[kernel].getInfo(param_name);
+      if (param_name == 0x1192 /* CL_KERNEL_REFERENCE_COUNT */) {
+        _info = 0;
+
+        if (kernel in CL.cl_objects) {
+          _info++;
+        }
+
+        if (kernel in CL.cl_objects_retains) {
+          _info+=CL.cl_objects_retains[kernel];
+        }
+
+      } else {
+        _info = CL.cl_objects[kernel].getInfo(param_name);
+      }
 
       if(typeof(_info) == "number") {
 
