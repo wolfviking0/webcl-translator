@@ -397,8 +397,10 @@ var LibraryOpenCL = {
         // Search name part
         var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
 
-        // Do not reparse again if the file was already parse (ie: Reduce sample)
-        if (_name in CL.cl_kernels_sig) return;
+        // If name already present reparse it may be is another test with not the same num of parameter ....
+        if (_name in CL.cl_kernels_sig) {
+          delete CL.cl_kernels_sig[_name]
+        }
 
         // Search parameter part
         var _param = [];
