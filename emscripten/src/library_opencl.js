@@ -3176,9 +3176,9 @@ var LibraryOpenCL = {
     CL.cl_objects_mem_callback[memobj] = _array;
 
 #if CL_GRAB_TRACE
-    CL.webclEndStackTrace([webcl.INVALID_VALUE],"","");
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif        
-    return webcl.INVALID_VALUE;
+    return webcl.SUCCESS;
   },
 
   /**
@@ -3713,7 +3713,10 @@ var LibraryOpenCL = {
          * Description
          * @return 
          */
-        _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
+        _callback = function() { 
+          console.info("\nCall callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+          FUNCTION_TABLE[pfn_notify](program, user_data) 
+        };
       }
 
 #if CL_GRAB_TRACE
