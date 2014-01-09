@@ -106,9 +106,6 @@ void Keyboard( unsigned char key, int x, int y )
    {
     case 27:
     case 'q':
-#ifdef __EMSCRIPTEN__
-         webclEndProfile();
-#endif
          Shutdown();
          break;
     case 'i':
@@ -206,10 +203,7 @@ static void ReportStats(uint64_t uiStartTime, uint64_t uiEndTime)
 Application *Application::get()
 {
     if(!instance)
-    {
-#ifdef __EMSCRIPTEN__
-         webclBeginProfile("Profile Attractor webcl");
-#endif        
+    {   
         instance = new Application();
         instance->init();
     }

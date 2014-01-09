@@ -33,11 +33,6 @@ var LibraryOpenCL = {
     cl_validator_argsize: {},
 #endif    
 
-#if CL_PROFILE
-    cl_elapsed_time: 0,
-    cl_objects_counter: 0,
-#endif
-
     /**
      * Description
      * @method init
@@ -128,10 +123,6 @@ var LibraryOpenCL = {
       if (obj !== undefined) {
         Object.defineProperty(obj, "udid", { value : _id,writable : false });
         CL.cl_objects[_id]=obj;
-#if CL_PROFILE             
-        CL.cl_objects_counter++;
-        //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
-#endif      
       }
 
       return _id;      
@@ -1037,44 +1028,6 @@ var LibraryOpenCL = {
 
   /**
    * Description
-   * @method webclBeginProfile
-   * @param {} name
-   * @return Literal
-   */
-  webclBeginProfile: function(name) {
-#if CL_PROFILE
-    // start profiling
-    if (typeof window !== 'undefined') // Not nodejs
-      console.profile(Pointer_stringify(name));
-    CL.cl_elapsed_time = Date.now();
-#endif
-    return 0;
-  },
-
-  /**
-   * Description
-   * @method webclEndProfile
-   * @return Literal
-   */
-  webclEndProfile: function() {
-#if CL_PROFILE
-    CL.cl_elapsed_time = Date.now() - CL.cl_elapsed_time;
-    
-    if (typeof window !== 'undefined') // Not nodejs
-      console.profileEnd();
-    
-    console.info("Profiling : WebCL Object : " + CL.cl_objects_counter);
-    var count = 0;
-    for (obj in CL.cl_objects) {
-      console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
-    }
-    console.info("Profiling : Elapsed Time : " + CL.cl_elapsed_time + " ms");
-#endif
-    return 0;
-  },
-
-  /**
-   * Description
    * @method webclPrintStackTrace
    * @param {} param_value
    * @param {} param_value_size
@@ -1895,11 +1848,7 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(CL.cl_objects[context]+".release",[]);
 #endif        
         CL.cl_objects[context].release();
-        delete CL.cl_objects[context];
-#if CL_PROFILE             
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
-#endif         
+        delete CL.cl_objects[context];     
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -2207,11 +2156,7 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(CL.cl_objects[command_queue]+".release",[]);
 #endif        
         CL.cl_objects[command_queue].release();
-        delete CL.cl_objects[command_queue];
-#if CL_PROFILE             
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
-#endif    
+        delete CL.cl_objects[command_queue];  
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -2881,11 +2826,7 @@ var LibraryOpenCL = {
       CL.webclCallStackTrace(CL.cl_objects[memobj]+".release",[]);
 #endif        
       CL.cl_objects[memobj].release();
-      delete CL.cl_objects[memobj];
-#if CL_PROFILE             
-      CL.cl_objects_counter--;
-      //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
-#endif    
+      delete CL.cl_objects[memobj];  
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -3381,10 +3322,6 @@ var LibraryOpenCL = {
 #endif        
       CL.cl_objects[sampler].release();
       delete CL.cl_objects[sampler];
-#if CL_PROFILE             
-      CL.cl_objects_counter--;
-      //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + sampler);
-#endif   
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -3691,11 +3628,7 @@ var LibraryOpenCL = {
         CL.webclCallStackTrace(CL.cl_objects[program]+".release",[]);
 #endif        
         CL.cl_objects[program].release();
-        delete CL.cl_objects[program];
-#if CL_PROFILE             
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
-#endif   
+        delete CL.cl_objects[program]; 
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -4267,10 +4200,6 @@ var LibraryOpenCL = {
     }
 
     delete CL.cl_objects[kernel];
-
-#if CL_PROFILE             
-    CL.cl_objects_counter--;
-#endif   
 
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
@@ -4854,10 +4783,6 @@ var LibraryOpenCL = {
 
     delete CL.cl_objects[event];
 
-#if CL_PROFILE             
-    CL.cl_objects_counter--;
-#endif   
-
 #if CL_GRAB_TRACE
     CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif
@@ -4936,9 +4861,11 @@ var LibraryOpenCL = {
 
     var _callback = null
     if (pfn_notify != 0) {
-      _callback = function() { FUNCTION_TABLE[pfn_notify](event, command_exec_callback_type , user_data) };
+      _callback = function() { 
+        console.info("\nCall callback function : FUNCTION_TABLE["+pfn_notify+"]("+event+", "+command_exec_callback_type+" , "+user_data+")");
+        FUNCTION_TABLE[pfn_notify](event, command_exec_callback_type , user_data); 
+      };
     }
-
 
 #if CL_GRAB_TRACE
     CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,_callback]);

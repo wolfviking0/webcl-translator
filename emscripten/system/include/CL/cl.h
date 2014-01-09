@@ -572,12 +572,6 @@ typedef struct _cl_buffer_region {
     webclPrintStackTrace(const char * /* param_value */,
                          cl_uint * /*param_value_size_ret*/);
 
-    extern CL_API_ENTRY cl_int
-    webclBeginProfile(const char * /* profiling_name */);
-
-    extern CL_API_ENTRY cl_int
-    webclEndProfile();
-
     extern CL_API_ENTRY cl_int 
     clSetTypePointer(cl_channel_type* /* pn_type */,
                      cl_uint /*num_pn_type*/);
