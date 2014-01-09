@@ -3714,7 +3714,7 @@ var LibraryOpenCL = {
          * @return 
          */
         _callback = function() { 
-          console.info("\nCall callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+          console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
           FUNCTION_TABLE[pfn_notify](program, user_data) 
         };
       }
@@ -4865,14 +4865,14 @@ var LibraryOpenCL = {
     var _callback = null
     if (pfn_notify != 0) {
       _callback = function() { 
-        console.info("\nCall callback function : FUNCTION_TABLE["+pfn_notify+"]("+event+", "+command_exec_callback_type+" , "+user_data+")");
+        console.info("\nCall ( clSetEventCallback ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+event+", "+command_exec_callback_type+" , "+user_data+")");
         FUNCTION_TABLE[pfn_notify](event, command_exec_callback_type , user_data); 
       };
     }
 
 #if CL_GRAB_TRACE
     CL.webclCallStackTrace(CL.cl_objects[event]+".setCallback",[command_exec_callback_type,_callback]);
-#endif        
+#endif     
 
     try {
 
