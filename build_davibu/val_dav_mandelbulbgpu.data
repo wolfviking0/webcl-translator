@@ -84,12 +84,12 @@ typedef struct _Wcl3Struct {
 } RenderingConfig;
 
 typedef struct {
+    float4 _wcl_shadowHitPoint;
+    uint _wcl_steps;
     const __global Camera *_wcl_camera;
     float4 _wcl_hitPoint;
     float _wcl_tmin;
     float _wcl_tmax;
-    uint _wcl_steps;
-    float4 _wcl_shadowHitPoint;
     uint _wcl_2_steps;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
@@ -397,7 +397,7 @@ __kernel void MandelbulbGPU(
   uint steps;
   float4 rayOrig = eyeRayOrig + eyeRayDir * (float4)_wcl_allocs->pa._wcl_tmin;
   dist = IntersectBulb(_wcl_allocs, rayOrig, eyeRayDir, mu, maxIterations,
-    epsilon, _wcl_allocs->pa._wcl_tmax - _wcl_allocs->pa._wcl_tmin, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_steps);
+    epsilon, _wcl_allocs->pa._wcl_tmax - _wcl_allocs->pa._wcl_tmin, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_2_steps);
 
   if (dist <= epsilon) {
 
@@ -455,11 +455,11 @@ __kernel void MandelbulbGPU(
 
     rO = rO + L * (float4)shadowDistSet;
     shadowDistSet = IntersectBulb(_wcl_allocs, rO, L, mu, maxIterations, epsilon,
-      _wcl_allocs->pa._wcl_tmax - _wcl_allocs->pa._wcl_tmin, &_wcl_allocs->pa._wcl_shadowHitPoint, &_wcl_allocs->pa._wcl_2_steps);
+      _wcl_allocs->pa._wcl_tmax - _wcl_allocs->pa._wcl_tmin, &_wcl_allocs->pa._wcl_shadowHitPoint, &_wcl_allocs->pa._wcl_steps);
     if (shadowDistSet < epsilon) {
      if (useAO) {
 
-      shadowFactor = 0.6f - min(_wcl_allocs->pa._wcl_2_steps / 255.f, 0.5f);
+      shadowFactor = 0.6f - min(_wcl_allocs->pa._wcl_steps / 255.f, 0.5f);
      } else
       shadowFactor = 0.6f;
     }

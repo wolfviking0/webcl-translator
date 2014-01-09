@@ -805,13 +805,11 @@ typedef uint _WclInitType;
     ( _WCL_ADDR_CHECK_local_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
 
 
-float4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
+void _wcl_vstore4_0(_WclProgramAllocations* _wcl_allocs, float4 arg0, size_t arg1, __global float * arg2)
 {
-    const __global float * ptr = arg1 + 4 * (size_t) arg0;
-    if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
-        return vload4(0, ptr);
-    else
-        return (float) 0;
+    __global float * ptr = arg2 + 4 * (size_t) arg1;
+    if (_WCL_ADDR_CHECK_global_2(__global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
+        vstore4(arg0, 0, ptr);
 }
 float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
@@ -821,11 +819,13 @@ float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __g
     else
         return (float) 0;
 }
-void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, float4 arg0, size_t arg1, __global float * arg2)
+float4 _wcl_vload4_2(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
-    __global float * ptr = arg2 + 4 * (size_t) arg1;
-    if (_WCL_ADDR_CHECK_global_2(__global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
-        vstore4(arg0, 0, ptr);
+    const __global float * ptr = arg1 + 4 * (size_t) arg0;
+    if (_WCL_ADDR_CHECK_global_2(const __global float *, ptr, 4, _wcl_allocs->gl.reduce__output_min, _wcl_allocs->gl.reduce__output_max, _wcl_allocs->gl.reduce__input_min, _wcl_allocs->gl.reduce__input_max))
+        return vload4(0, ptr);
+    else
+        return (float) 0;
 }
 // WebCL Validator: matching stage 2.
 // WebCL Validator: matching stage 1.
@@ -939,8 +939,8 @@ reduce(
         size_t i = group_id * group_stride + local_id;
         while (i < n)
         {
-            float4 a = _wcl_vload4_0(_wcl_allocs, (size_t)(i), (__global const float*)(input));
-            float4 b = _wcl_vload4_1(_wcl_allocs, (size_t)(i + group_size), (__global const float*)(input));
+            float4 a = _wcl_vload4_1(_wcl_allocs, (size_t)(i), (__global const float*)(input));
+            float4 b = _wcl_vload4_2(_wcl_allocs, (size_t)(i + group_size), (__global const float*)(input));
             float4 s = (float4)( ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(local_id)), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(local_id + (64))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(local_id + ((64) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(local_id + (((64) + (64)) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))));
             (*(_WCL_ADDR_CLAMP_local_1(__local float *, (((__local float*)(shared)))+((size_t)(local_id)), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln))) = ((*(_WCL_ADDR_CLAMP_private_1(float __attribute__((ext_vector_type(4))), (((a + b + s)))+(0), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn)))); (*(_WCL_ADDR_CLAMP_local_1(__local float *, (((__local float*)(shared)))+((size_t)(local_id + (64))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln))) = ((*(_WCL_ADDR_CLAMP_private_1(float __attribute__((ext_vector_type(4))), (((a + b + s)))+(1), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn)))); (*(_WCL_ADDR_CLAMP_local_1(__local float *, (((__local float*)(shared)))+((size_t)(local_id + ((64) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln))) = ((*(_WCL_ADDR_CLAMP_private_1(float __attribute__((ext_vector_type(4))), (((a + b + s)))+(2), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn)))); (*(_WCL_ADDR_CLAMP_local_1(__local float *, (((__local float*)(shared)))+((size_t)(local_id + (((64) + (64)) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln))) = ((*(_WCL_ADDR_CLAMP_private_1(float __attribute__((ext_vector_type(4))), (((a + b + s)))+(3), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))));
             i += local_stride;
@@ -997,7 +997,7 @@ reduce(
     if (get_local_id(0) == 0)
     {
         float4 v = (float4)( ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(0)), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(0 + (64))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(0 + ((64) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))), ((*(_WCL_ADDR_CLAMP_local_1(const __local float *, (((__local const float*)(shared)))+((size_t)(0 + (((64) + (64)) + (64)))), 1, _wcl_allocs->ll.reduce__shared_min, _wcl_allocs->ll.reduce__shared_max, _wcl_allocs->ln)))));
-        _wcl_vstore4_2(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
+        _wcl_vstore4_0(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
     }
 }
 

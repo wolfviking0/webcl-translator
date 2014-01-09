@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = 'val_book_gl_interop.data';
-    var PACKAGE_UUID = '49f0c7f5-b7b1-4f99-a414-c363d6ec9e2d';
+    var PACKAGE_UUID = '6f2d1a43-de25-43e9-9ed3-3bd4306cf57d';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -9742,7 +9742,7 @@ function copyTempDouble(ptr) {
       var stdout = HEAP32[((_stdout)>>2)];
       return _fprintf(stdout, format, varargs);
     }
-  var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_validator:{},cl_validator_argsize:{},cl_elapsed_time:0,cl_objects_counter:0,init:function () {
+  var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},cl_validator:{},cl_validator_argsize:{},init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator + Validator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
@@ -9759,6 +9759,7 @@ function copyTempDouble(ptr) {
             // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
             // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
             // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
             // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
             // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
             for (var i = 0; i < CL.cl_extensions.length; i ++) {
@@ -9790,8 +9791,6 @@ function copyTempDouble(ptr) {
         if (obj !== undefined) {
           Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects[_id]=obj;
-          CL.cl_objects_counter++;
-          //console.info("Counter++ HashMap Object : " + CL.cl_objects_counter + " - Udid : " + _id);
         }
         return _id;      
       },stringType:function (pn_type) {
@@ -9809,7 +9808,9 @@ function copyTempDouble(ptr) {
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
           case 0x1302 /*webcl.UNSIGNED_LONG*/:
-            return 'ULONG';          
+            return 'ULONG';
+          case 0x1303 /*webcl.SIGNED_LONG*/:
+            return 'LONG';       
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
@@ -9828,6 +9829,8 @@ function copyTempDouble(ptr) {
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
           _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
+        } else if ( string.indexOf("long") >= 0 ) {
+          _value = 0x1303 /*webcl.SIGNED_LONG*/;
         } else if (string.indexOf("float") >= 0 ) {
           _value = webcl.FLOAT;
         } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
@@ -9983,8 +9986,10 @@ function copyTempDouble(ptr) {
           _second_part = _second_part.replace(/^\s+|\s+$/g, ""); // trim
           // Search name part
           var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
-          // Do not reparse again if the file was already parse (ie: Reduce sample)
-          if (_name in CL.cl_kernels_sig) return;
+          // If name already present reparse it may be is another test with not the same num of parameter ....
+          if (_name in CL.cl_kernels_sig) {
+            delete CL.cl_kernels_sig[_name]
+          }
           // Search parameter part
           var _param = [];
           var _param_validator = [];
@@ -10040,47 +10045,6 @@ function copyTempDouble(ptr) {
           CL.cl_validator[_name] = _param_validator;
           CL.cl_validator_argsize[_name] = _param_argsize_validator;
         }
-        for (var name in CL.cl_kernels_sig) {
-          var _length = CL.cl_kernels_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_kernels_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-          console.info("Kernel " + name + "(" + _length + ")");  
-          console.info("\t" + _str);  
-          console.info("\tValidator Info : ");
-          console.info("\t\tARG PARAM KERNEL"); 
-          var _str = "( ";
-          var _length = CL.cl_validator[name].length;
-          for (var i = 0 ; i < _length ; i++) {
-              _str += CL.cl_validator[name][i];
-              if (i < _length - 1) _str += ", ";
-          }
-          _str += " )";
-          console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
-          var _str = "( ";
-          var _length = CL.cl_validator_argsize[name].length;
-          for (var i = 0 ; i < _length ; i++) {
-              _str += CL.cl_validator_argsize[name][i];
-              if (i < _length - 1) _str += ", ";
-          }
-          _str += " )";
-          console.info("\t\t\t"+_str);
-        }
-        for (var name in CL.cl_structs_sig) {
-          var _length = CL.cl_structs_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_structs_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-          console.info("\n\tStruct " + name + "(" + _length + ")");  
-          console.info("\t\t" + _str);              
-        }
         return _mini_kernel_string;
       },getImageSizeType:function (image) {
         var _sizeType = 0;
@@ -10131,7 +10095,7 @@ function copyTempDouble(ptr) {
           case webcl.SIGNED_INT32:
             _type = SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
-            _type = UNSIGNED_INT32;
+            _type = webcl.UNSIGNED_INT32;
             break;        
           case webcl.FLOAT:
             _type = webcl.FLOAT;
@@ -10608,15 +10572,18 @@ function copyTempDouble(ptr) {
             _devices.push(CL.cl_objects[_idxDevice]);
         }
         // Verify the property
+        var _propertiesCounter = 0;
+        var _properties = [];
         if (properties != 0) {
-          var _propertiesCounter = 0;
           while(1) {
             var _readprop = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+            _properties.push(_readprop);
             if (_readprop == 0) break;
             switch (_readprop) {
               case webcl.CONTEXT_PLATFORM:
                 _propertiesCounter ++;
                 var _idxPlatform = HEAP32[(((properties)+(_propertiesCounter*4))>>2)];
+                _properties.push(_idxPlatform);
                   _platform = CL.cl_objects[_idxPlatform];
                 break;
               // /!\ This part, it's for the CL_GL_Interop
@@ -10651,12 +10618,24 @@ function copyTempDouble(ptr) {
         HEAP32[((cl_errcode_ret)>>2)]=0;
       }
       _id = CL.udid(_context);
+      // Add properties array for getInfo
+      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
       return _id;
     }
   function _clGetContextInfo(context,param_name,param_value_size,param_value,param_value_size_ret) {
       var _info = null;
       try { 
-        _info = CL.cl_objects[context].getInfo(param_name);
+        if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
+          _info = 0;
+          if (context in CL.cl_objects) {
+            _info++;
+          }
+          if (context in CL.cl_objects_retains) {
+            _info+=CL.cl_objects_retains[context];
+          }
+        } else {
+          _info = CL.cl_objects[context].getInfo(param_name);
+        }
       } catch (e) {
         var _error = CL.catchError(e);
         if (param_value != 0) {
@@ -10674,10 +10653,22 @@ function copyTempDouble(ptr) {
         if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
       } else if(typeof(_info) == "object") {
-        if ( (_info instanceof WebCLPlatform) || ((typeof(WebCLContextProperties) !== "undefined") && (_info instanceof WebCLContextProperties)) ) {
+        if (_info instanceof WebCLPlatform) {
           var _id = CL.udid(_info);
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } else if (_info instanceof WebCLContextProperties) {
+          var _size = 0;
+          if (param_value != 0) {
+            if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+              var _properties = CL.cl_objects[context].properties;
+              for (elt in _properties) {
+                HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
+                _size ++;
+              }
+            }
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
         } else if (_info instanceof Array) {
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             var _id = CL.udid(_info[i]);
@@ -10808,7 +10799,7 @@ function copyTempDouble(ptr) {
           writeStringToMemory(_info, param_value);
         }
         if (param_value_size_ret != 0) {
-          HEAP32[((param_value_size_ret)>>2)]=_info.length;
+          HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
         }
       } else {
         return webcl.INVALID_VALUE;
@@ -10816,15 +10807,17 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clReleaseProgram(program) {
-      // If is an object retain don't release it ...
+      // If is an object retain don't release it until retains > 0...
       if (program in CL.cl_objects_retains) {
-        return webcl.SUCCESS;
+        var _retain = CL.cl_objects_retains[program] - 1;
+        CL.cl_objects_retains[program] = _retain;
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
       }
       try {
           CL.cl_objects[program].release();
-          delete CL.cl_objects[program];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + program);
+          delete CL.cl_objects[program]; 
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10895,15 +10888,17 @@ function copyTempDouble(ptr) {
       return _id;
     }
   function _clReleaseCommandQueue(command_queue) {
-      // If is an object retain don't release it ...
+      // If is an object retain don't release it until retains > 0...
       if (command_queue in CL.cl_objects_retains) {
-        return webcl.SUCCESS;
+        var _retain = CL.cl_objects_retains[command_queue] - 1;
+        CL.cl_objects_retains[command_queue] = _retain;
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
       }
       try {
           CL.cl_objects[command_queue].release();
-          delete CL.cl_objects[command_queue];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + command_queue);
+          delete CL.cl_objects[command_queue];  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10911,9 +10906,13 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clReleaseKernel(kernel) {
-      // If is an object retain don't release it ...
+      // If is an object retain don't release it until retains > 0...
       if (kernel in CL.cl_objects_retains) {
-        return webcl.SUCCESS;
+        var _retain = CL.cl_objects_retains[kernel] - 1;
+        CL.cl_objects_retains[kernel] = _retain;
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
       }
       try {
         CL.cl_objects[kernel].release();
@@ -10922,19 +10921,20 @@ function copyTempDouble(ptr) {
         return _error;
       }
       delete CL.cl_objects[kernel];
-      CL.cl_objects_counter--;
       return webcl.SUCCESS;
     }
   function _clReleaseContext(context) {
-      // If is an object retain don't release it ...
+      // If is an object retain don't release it until retains > 0...
       if (context in CL.cl_objects_retains) {
-        return webcl.SUCCESS;
+        var _retain = CL.cl_objects_retains[context] - 1;
+        CL.cl_objects_retains[context] = _retain;
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
       }
       try {
           CL.cl_objects[context].release();
-          delete CL.cl_objects[context];
-          CL.cl_objects_counter--;
-          //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + context);
+          delete CL.cl_objects[context];     
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;
@@ -10942,15 +10942,27 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
   function _clReleaseMemObject(memobj) {
-      // If is an object retain don't release it ...
+      // If is an object retain don't release it until retains > 0...
       if (memobj in CL.cl_objects_retains) {
-        return webcl.SUCCESS;
+        var _retain = CL.cl_objects_retains[memobj] - 1;
+        CL.cl_objects_retains[memobj] = _retain;
+        if (_retain >= 0) {
+          // Call the callback 
+          if (memobj in CL.cl_objects_mem_callback) {
+            if (CL.cl_objects_mem_callback[memobj].length > 0)
+              CL.cl_objects_mem_callback[memobj].pop()();
+          }
+          return webcl.SUCCESS;
+        }
       }
       try {
+        // Call the callback 
+        if (memobj in CL.cl_objects_mem_callback) {
+          if (CL.cl_objects_mem_callback[memobj].length > 0)
+            CL.cl_objects_mem_callback[memobj].pop()();
+        }
         CL.cl_objects[memobj].release();
-        delete CL.cl_objects[memobj];
-        CL.cl_objects_counter--;
-        //console.info("Counter-- HashMap Object : " + CL.cl_objects_counter + " - Udid : " + memobj);
+        delete CL.cl_objects[memobj];  
       } catch (e) {
         var _error = CL.catchError(e);
         return _error;

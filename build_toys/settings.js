@@ -8,6 +8,8 @@
 
 var SAMPLE = 0;
 var MEMORY = 0;
+var EXPORT = 0;
+var PROFILE = 0;
 var USE_GL = 0;
 var USE_VAL = "";
 var TITLE = "";
@@ -15,6 +17,9 @@ var PARAM = [];
 
 // Global Module
 var Module = {};
+
+// Global Time
+var Elapsed_time = 0;
 
 // parse parameter of html page
 if (typeof pageParams === 'undefined') {
@@ -31,8 +36,12 @@ for (var i = 0; i < urlParts.length; i++) {
     SAMPLE = eltParts[1];
   } else if (eltParts[0].toLowerCase() == "gl") {
     USE_GL = eltParts[1] == "off" ? 0 : 1;
+  } else if (eltParts[0].toLowerCase() == "export") {
+    EXPORT = eltParts[1] == "off" ? 0 : 1; 
   } else if (eltParts[0].toLowerCase() == "memory") {
     MEMORY = eltParts[1] == "off" ? 0 : 1; 
+  } else if (eltParts[0].toLowerCase() == "profile") {
+    PROFILE = eltParts[1] == "off" ? 0 : 1;     
   } else if (eltParts[0].toLowerCase() == "validator") {
     USE_VAL = eltParts[1] == "off" ? "" : "val_";     
   } else if (eltParts[0].toLowerCase() == "title") {
@@ -55,12 +64,100 @@ function includeJS(jsFile) {
 function loadModule(argv) {
   // connect to canvas
   var preRunFunc = [];
+  var postRunFunc = [];
+  
+  /**
+  * PRE RUN FUNCTION
+  */
   if (MEMORY == 1)
     preRunFunc.push(memoryprofiler_add_hooks);
+    
+  if (PROFILE == 1) {
+    preRunFunc.push(
+      function() {
+        Elapsed_time = Date.now();
+        if (typeof window !== 'undefined')
+          console.profile("webcl-profiling-result");
+      }
+    ); 
+  }
+  	
+  /**
+  * POST RUN FUNCTION
+  */
+  if (PROFILE == 1) {
+    postRunFunc.push(
+      function() {
+        if (typeof window !== 'undefined')
+          console.profileEnd();
 
+        console.info("Exec Time : " + (Date.now() - Elapsed_time) + " ms");
+        console.info("Leaks : ");
+        var count = 0;
+        for (obj in CL.cl_objects) {
+          console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
+        }
+      }
+    ); 
+  }
+
+  if (EXPORT == 1) {
+
+    postRunFunc.push(
+      function() { 
+        var string = "";
+
+        if (PROFILE == 1) {
+          string+="PROFILING\n"
+          string+="______________________________________________\n"
+          string+="\n"
+          string+="Exec Time : " + (Date.now() - Elapsed_time) + " ms\n";
+          string+="Leaks : \n";
+          var count = 0;
+          for (obj in CL.cl_objects) {
+            string+="\t"+(count++)+" : "+CL.cl_objects[obj]+"\n";
+          }
+          string+="______________________________________________\n";
+          string+="\n";
+        }
+        string+="\n";
+        string+="\n";
+        
+        var element = document.getElementById('output');
+        if (element) {
+          string+="OUTPUT\n"
+          string+="______________________________________________\n"
+          string+="\n"
+          string+=element.value;
+          string+="______________________________________________\n";
+          string+="\n";
+        }
+        string+="\n";
+        string+="\n";
+        
+        if (CL.stack_trace_complete) {
+          string+="STACK TRACER\n";
+          string+="______________________________________________\n";
+          string+="\n";
+          string+=CL.stack_trace_complete;
+          string+="______________________________________________\n";
+          string+="\n";
+        }
+
+        var contentType = 'text/plain;charset=UTF-8';
+        var a = document.createElement('a');
+        var blob = new Blob([string], {'type':contentType});
+        a.href = window.URL.createObjectURL(blob);
+        a.download = "stack_trace.xml";
+        a.click();
+
+      }
+    );    
+  }
+    
   Module = {
     preRun: preRunFunc,
-	  postRun: [],
+	  postRun: postRunFunc,
     print: (function() {
       var element = document.getElementById('output');
       element.value = '';
