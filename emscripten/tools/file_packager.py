@@ -350,18 +350,18 @@ for file_ in data_files:
 
 # Call webcl-validator
 if in_validator:
-    VALIDATOR = os.path.join(shared.LLVM_ROOT,'webcl-validator')
-    for file_ in data_files:
-      if file_['srcpath'].endswith('.validated'):
-        fullname = os.path.join(curr_abspath , file_['srcpath'])
-        # Launch webcl-validator
-        args = [VALIDATOR, unsuffixed(fullname)] + validator_params
-        proc = Popen(args, stdout=PIPE)
-        out, err = proc.communicate()
-        # Write the output inside file
-        validated = open(fullname, 'wb')
-        validated.write(out)
-        validated.close()
+  VALIDATOR = os.path.join(shared.LLVM_VALIDATOR_ROOT,'webcl-validator')
+  for file_ in data_files:
+    if file_['srcpath'].endswith('.validated'):
+      fullname = os.path.join(curr_abspath , file_['srcpath'])
+      # Launch webcl-validator
+      args = [VALIDATOR, unsuffixed(fullname)] + validator_params
+      proc = Popen(args, stdout=PIPE)
+      out, err = proc.communicate()
+      # Write the output inside file
+      validated = open(fullname, 'wb')
+      validated.write(out)
+      validated.close()
 
 if has_preloaded:
   # Bundle all datafiles into one archive. Avoids doing lots of simultaneous XHRs which has overhead.
