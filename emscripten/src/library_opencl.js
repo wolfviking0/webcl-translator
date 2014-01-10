@@ -671,6 +671,53 @@ var LibraryOpenCL = {
 
       return _sizeOrder;
     },
+    /**
+     * Description
+     * @method getHostPtrArray
+     * @param {} size
+     * @param {} type
+     * @return _host_ptr
+     */
+    getHostPtrArray: function(size,type) { 
+
+      var _host_ptr = null;
+
+      if (type.length == 0) {
+#if CL_DEBUG
+        console.error("getHostPtrArray : error unknow type with length null "+type);
+#endif
+      }
+
+      if (type.length == 1) {
+        switch(type[0][0]) {
+          case webcl.SIGNED_INT8:
+            _host_ptr = new Int8Array( size );
+            break;
+          case webcl.SIGNED_INT16:
+            _host_ptr = new Int16Array( size >> 1 );
+            break;
+          case webcl.SIGNED_INT32:
+            _host_ptr = new Int32Array( size >> 2 );
+            break;
+          case webcl.UNSIGNED_INT8:
+            _host_ptr = new Uint8Array( size );
+            break;
+          case webcl.UNSIGNED_INT16:
+            _host_ptr = new Uint16Array( size >> 1 );
+            break;
+          case webcl.UNSIGNED_INT32:
+            _host_ptr = new Uint32Array( size >> 2 );
+            break;         
+          default:
+            _host_ptr = new Float32Array( size >> 2 );
+            break;
+        }
+      } else {
+        _host_ptr = new Float32Array( size >> 2 );
+      }
+
+      return _host_ptr;
+    },
 
     /**
      * Description
@@ -2333,13 +2380,14 @@ var LibraryOpenCL = {
 
     var _host_ptr = null;
 
-    if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-      _host_ptr = new ArrayBuffer(size);
-    } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
-    } else if (flags_i64_1 & ~_flags) {
-      console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
-    }
+    if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type); 
+    else if (
+      (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR  */) ||
+      (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR   */) ||
+      (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR    */)
+      ) {
+      _host_ptr = CL.getHostPtrArray(size,CL.cl_pn_type);
+    } 
 
     try {
 
@@ -2654,23 +2702,14 @@ var LibraryOpenCL = {
 
     console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
 
-//     if (host_ptr != 0 ) {
-//       if (cl_errcode_ret != 0) {
-//         {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_HOST_PTR', 'i32') }}};
-//       }
-// #if CL_GRAB_TRACE
-//       CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
-// #endif
-//       return 0;
-//     }
-      
-    if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-      _host_ptr = new ArrayBuffer(_size);
-    } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-      _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type);
-    } else if (flags_i64_1 & ~_flags) {
-      console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
-    }
+    if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type); 
+    else if (
+      (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR  */) ||
+      (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR   */) ||
+      (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR    */)
+      ) {
+      _host_ptr = CL.getHostPtrArray(_size,_type);
+    } 
 
     var _descriptor = {channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
 
@@ -5693,15 +5732,15 @@ var LibraryOpenCL = {
 
     var _event_wait_list = [];
 
-    var _origin = new Int32Array(2);
-    var _region = new Int32Array(2);
+    var _origin = [];
+    var _region = [];
 
     var _size = CL.getImageSizeType(image);
     var _channel = CL.getImageFormatType(image);
 
     for (var i = 0; i < 2; i++) {
-      _origin[i] = ({{{ makeGetValue('origin', 'i*4', 'i32') }}});
-      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});  
+      _origin.push({{{ makeGetValue('origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});  
       _size *= _region[i];     
     }          
 
@@ -5800,14 +5839,14 @@ var LibraryOpenCL = {
 
     var _event_wait_list = [];
 
-    var _src_origin = new Int32Array(2);
-    var _dest_origin = new Int32Array(2);
-    var _region = new Int32Array(2);
+    var _src_origin = [];
+    var _dest_origin = [];
+    var _region = [];
 
     for (var i = 0; i < 2; i++) {
-      _src_origin[i] = ({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
-      _dest_origin[i] = ({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
-      _region[i] = ({{{ makeGetValue('region', 'i*4', 'i32') }}});            
+      _src_origin.push({{{ makeGetValue('src_origin', 'i*4', 'i32') }}});
+      _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
     }
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -6001,12 +6040,12 @@ var LibraryOpenCL = {
 
     var _event_wait_list = [];
 
-    var _dest_origin = new Int32Array(2); 
-    var _region = new Int32Array(2); 
+    var _dest_origin = []; 
+    var _region = []; 
 
     for (var i = 0; i < 2; i++) {
-      _dest_origin[i] = {{{ makeGetValue('dst_origin', 'i*4', 'i32') }}};
-      _region[i] = {{{ makeGetValue('region', 'i*4', 'i32') }}};            
+      _dest_origin.push({{{ makeGetValue('dst_origin', 'i*4', 'i32') }}});
+      _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
     }
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
