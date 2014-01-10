@@ -267,10 +267,10 @@ def main():
                     action="store_true", dest="copy", default=False,
                     help="copy all the javascript generated after build", metavar="COPY")
 
-  #parser.add_option('-r', '--repo',
-  #                  action='callback', dest="repo", type='string', default='',
-  #                  callback=list_repo_callback,
-  #                  help="work only on the repository list :\t\t\twebcl-translator/webcl,webcl-osx-sample,webcl-ocltoys,webcl-davibu,webcl-book-samples", metavar="A,B,...")
+  parser.add_option('-r', '--repo',
+                    action='callback', dest="repo", type='string', default='',
+                    callback=list_repo_callback,
+                    help="work only on the repository list :\t\t\twebcl-translator/webcl,webcl-osx-sample,webcl-ocltoys,webcl-davibu,webcl-book-samples", metavar="A,B,...")
 
   parser.add_option("-E", "--only-erase",
                     action="store_true", dest="onlyclean", default=False,
@@ -281,8 +281,6 @@ def main():
                     help="only copy all the javascript generated", metavar="ONLY_COPY")
 
   (options, args) = parser.parse_args()
-
-  print options
 
   # Launch the different step of the process
   launch(parser,options)
