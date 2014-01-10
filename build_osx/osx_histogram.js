@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'osx_histogram.data';
-    var PACKAGE_UUID = '205600a7-8469-4eb2-8f42-ebd2508d1866';
+    var PACKAGE_UUID = 'b656535c-37b3-4fb4-a703-81aea15c3fa4';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

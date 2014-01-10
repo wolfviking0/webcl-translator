@@ -107,7 +107,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     }
     var PACKAGE_NAME = '../build/val_attractor.data';
     var REMOTE_PACKAGE_NAME = 'val_attractor.data';
-    var PACKAGE_UUID = '6321f17c-8660-4685-b2cd-7690abc5b951';
+    var PACKAGE_UUID = '25c22d80-6566-4ccf-948a-2cce51b7109a';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

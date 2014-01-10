@@ -84,13 +84,13 @@ typedef struct _Wcl3Struct {
 } RenderingConfig;
 
 typedef struct {
-    const __global Camera *_wcl_camera;
-    float4 _wcl_shadowHitPoint;
-    uint _wcl_steps;
-    float4 _wcl_hitPoint;
-    uint _wcl_2_steps;
     float4 _wcl_z;
     float4 _wcl_zp;
+    float4 _wcl_hitPoint;
+    uint _wcl_steps;
+    const __global Camera *_wcl_camera;
+    float4 _wcl_shadowHitPoint;
+    uint _wcl_2_steps;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -424,7 +424,7 @@ __kernel void JuliaGPU(
   uint steps;
   float4 rayOrig = eyeRayOrig + eyeRayDir * (float4)distSet;
   distSet = IntersectJulia(_wcl_allocs, rayOrig, eyeRayDir, mu, maxIterations,
-    epsilon, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_2_steps);
+    epsilon, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_steps);
   if (distSet > epsilon)
    distSet = -1.f;
  }
@@ -484,11 +484,11 @@ __kernel void JuliaGPU(
 
     rO = rO + L * (float4)shadowDistSet;
     shadowDistSet = IntersectJulia(_wcl_allocs, rO, L, mu, maxIterations, epsilon,
-      &_wcl_allocs->pa._wcl_shadowHitPoint, &_wcl_allocs->pa._wcl_steps);
+      &_wcl_allocs->pa._wcl_shadowHitPoint, &_wcl_allocs->pa._wcl_2_steps);
     if (shadowDistSet < epsilon) {
      if (useAO) {
 
-      shadowFactor = 0.6f - min(_wcl_allocs->pa._wcl_steps / 255.f, 0.5f);
+      shadowFactor = 0.6f - min(_wcl_allocs->pa._wcl_2_steps / 255.f, 0.5f);
      } else
       shadowFactor = 0.6f;
     }

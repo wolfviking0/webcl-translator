@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_sinewave.data';
     var REMOTE_PACKAGE_NAME = 'book_sinewave.data';
-    var PACKAGE_UUID = 'bef7c889-92a7-47ec-9ee8-7152eaf66c01';
+    var PACKAGE_UUID = 'feebbc0c-6931-4234-9eb8-46eb8584566e';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

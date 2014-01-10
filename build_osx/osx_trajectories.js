@@ -105,7 +105,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
     }
     var PACKAGE_NAME = '../build/osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = 'osx_trajectories.data';
-    var PACKAGE_UUID = '36164ac4-9307-4b75-838a-8f5aeae925f2';
+    var PACKAGE_UUID = '72be09ad-32f6-4584-b248-56a2f9e1c26e';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

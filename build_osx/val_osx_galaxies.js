@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_galaxies.data';
-    var PACKAGE_UUID = '2f56952a-d2af-45c1-b48a-4b7378750087';
+    var PACKAGE_UUID = '6925e8d5-f076-49d7-8a8d-dc2af5f54a73';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

@@ -106,7 +106,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'val_dxtcompressor.data';
-    var PACKAGE_UUID = '89ec6db3-6e6c-4850-9e3e-dee5595990e1';
+    var PACKAGE_UUID = '406059ad-8fb3-4fd9-964f-327201813a4a';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

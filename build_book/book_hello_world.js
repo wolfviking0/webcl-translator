@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_hello_world.data';
     var REMOTE_PACKAGE_NAME = 'book_hello_world.data';
-    var PACKAGE_UUID = '66b26163-68b1-47a3-8ee4-7d9949e9e6ed';
+    var PACKAGE_UUID = 'eb6920ba-d143-4561-8ec4-e958390b24a9';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

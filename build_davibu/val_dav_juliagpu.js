@@ -93,7 +93,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 25102, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+      new DataRequest(0, 25104, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
     var PACKAGE_PATH;
     if (typeof window === 'object') {
       PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_juliagpu.data';
-    var PACKAGE_UUID = 'c5a86dde-2204-4db0-8f4c-b2d35026c95f';
+    var PACKAGE_UUID = '111d00d0-54ff-477f-8ffd-ddc809424112';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

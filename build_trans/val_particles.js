@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_particles.data';
     var REMOTE_PACKAGE_NAME = 'val_particles.data';
-    var PACKAGE_UUID = '15d50de7-6f2f-42a8-a303-186aa7135dc8';
+    var PACKAGE_UUID = '0d6ef89f-bbd4-4116-b5cd-920a350563ee';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');

@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_spmv.data';
     var REMOTE_PACKAGE_NAME = 'book_spmv.data';
-    var PACKAGE_UUID = '515fdac1-94d3-4e0d-b3ea-c543ec4fcb32';
+    var PACKAGE_UUID = 'aa27f005-e7a0-4011-8764-4ed070797cc4';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
