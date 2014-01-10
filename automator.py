@@ -66,29 +66,35 @@ root_repositories = os.getcwd() + "/"
 # Grab the website folder
 page_repositories=os.getcwd() + "/webcl-website/"
 
-def worker_update(repo):
+def worker_update(online,local,option):
     """thread worker_update function"""
-    directory = root_repositories + repo
+    directory = root_repositories + local
 
     if os.path.isdir(directory):
-      pr = subprocess.Popen( "/usr/bin/git reset --hard" , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+      pr = subprocess.Popen( "/usr/bin/git reset --hard" , cwd = os.path.dirname( root_repositories + local + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
 
-      pr = subprocess.Popen( "/usr/bin/git pull" , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+      pr = subprocess.Popen( "/usr/bin/git pull" , cwd = os.path.dirname( root_repositories + local + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()  
 
     else:
-      pr = subprocess.Popen( "/usr/bin/git clone https://github.com/wolfviking0/"+str(repo)+".git" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+      pr = subprocess.Popen( "/usr/bin/git clone https://github.com/wolfviking0/"+str(online)+".git "+ option + " " + local, cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
 
     return
 
 @profile
-def update(cores):
+def update(repo_list):
   print "Function 'update' ..."
   jobs = []
+  
+  # WebSite
+  p = multiprocessing.Process(target=worker_update, args=("webcl-translator","webcl-website","-b gh-pages"))
+  jobs.append(p)
+  p.start()
+
   for i in list_repositories[1:-2]:
-    p = multiprocessing.Process(target=worker_update, args=(i,))
+    p = multiprocessing.Process(target=worker_update, args=(i,i,""))
     jobs.append(p)
     p.start()
 
@@ -108,7 +114,7 @@ def worker_clean(repo,param):
     return    
 
 @profile
-def clean(cores,param):
+def clean(repo_list,param):
   print "Function 'clean' ..."
   jobs = []
   for i in list_repositories[:-2]:
@@ -137,7 +143,7 @@ def worker_build(repo,param,id):
     return   
 
 @profile
-def build(cores,param):
+def build(repo_list,param):
   print "Function 'build' ..."
   jobs = []
   for i in list_repositories[:-2]:
@@ -162,8 +168,9 @@ def worker_copy(folder,repo):
     return   
 
 @profile
-def copy(cores):
+def copy(repo_list):
   print "Function 'copy' ..."
+
   jobs = []
   for (folder,repo) in zip(page_subfolder, list_repositories[:-2]):
     p = multiprocessing.Process(target=worker_copy, args=(folder,repo))
@@ -171,10 +178,13 @@ def copy(cores):
     p.start()
 
   for j in jobs:
-    j.join()     
+    j.join()
+
+  pr = subprocess.Popen( "ln -Fs "+page_repositories+"index.html "+root_repositories+"webcl-samples.html", cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+  (out, error) = pr.communicate()  
 
 @profile
-def launch(options):
+def launch(parser,options):
   # Multi process 
   cores = multiprocessing.cpu_count()
   # Keep one cores for system
@@ -202,25 +212,28 @@ def launch(options):
 
   # 1 Clone or/and Update all the repositories of sample
   if(options.update or options.all):
-    update(cores)
+    update(options.repo)
     os.chdir(root_repositories)
 
   # 2 Clean or Only Clean
   if(options.onlyclean or options.clean or options.all):
-    clean(cores,param)
+    clean(options.repo,param)
     os.chdir(root_repositories)
 
   # 3 Build
   if(not options.onlyclean and not options.onlycopy):
     build(cores,param)
     if (options.all):
-      build(cores," VAL=1")
+      build(options.repo," VAL=1")
     os.chdir(root_repositories)
 
   # 4 Copy or Only Copy
   if(options.onlycopy or options.copy or options.all):
-    copy(cores)
+    copy(options.repo)
     os.chdir(root_repositories)
+
+def list_repo_callback(option, opt, value, parser):
+  setattr(parser.values, option.dest, value.split(','))
 
 def main():
   usage = "usage: %prog [opts]"
@@ -254,6 +267,11 @@ def main():
                     action="store_true", dest="copy", default=False,
                     help="copy all the javascript generated after build", metavar="COPY")
 
+  #parser.add_option('-r', '--repo',
+  #                  action='callback', dest="repo", type='string', default='',
+  #                  callback=list_repo_callback,
+  #                  help="work only on the repository list :\t\t\twebcl-translator/webcl,webcl-osx-sample,webcl-ocltoys,webcl-davibu,webcl-book-samples", metavar="A,B,...")
+
   parser.add_option("-E", "--only-erase",
                     action="store_true", dest="onlyclean", default=False,
                     help="only clean all the javascript generated", metavar="ONLY_CLEAN")
@@ -264,8 +282,10 @@ def main():
 
   (options, args) = parser.parse_args()
 
+  print options
+
   # Launch the different step of the process
-  launch(options)
+  launch(parser,options)
 
   # If we want profile
   if(options.profile or options.all):
