@@ -66,8 +66,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
+      "valcpu"        : "",
+      "valgpu"        : "",   
     },    
   ],
   // ************************ //
@@ -287,8 +287,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",   
-      "valcpu"        : "",
-      "valgpu"        : "",             
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",             
     },
     { 
       "title"         : "Noise Attached",
@@ -299,7 +299,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&interop", 
       "valcpu"        : "",
-      "valgpu"        : "",               
+      "valgpu"        : "&validator=on",               
     },
     { 
       "title"         : "QJulia Copying",

@@ -111,7 +111,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/val_dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_smallptgpuv2.data';
-    var PACKAGE_UUID = 'ca22d252-a4b0-435a-b9a5-aae292f83209';
+    var PACKAGE_UUID = '5df94ec2-2c3e-4a44-946d-e4022cf5f673';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -6164,6 +6164,38 @@ function copyTempDouble(ptr) {
             console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
         }
         return _sizeOrder;
+      },getHostPtrArray:function (size,type) { 
+        var _host_ptr = null;
+        if (type.length == 0) {
+        }
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = new Int8Array( size );
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = new Int16Array( size >> 1 );
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = new Int32Array( size >> 2 );
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = new Uint8Array( size );
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = new Uint16Array( size >> 1 );
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = new Uint32Array( size >> 2 );
+              break;         
+            default:
+              _host_ptr = new Float32Array( size >> 2 );
+              break;
+          }
+        } else {
+          _host_ptr = new Float32Array( size >> 2 );
+        }
+        return _host_ptr;
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
@@ -11665,13 +11697,14 @@ function copyTempDouble(ptr) {
         _flags |= webcl.MEM_READ_WRITE;
       }
       var _host_ptr = null;
-      if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-        _host_ptr = new ArrayBuffer(size);
-      } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-        _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);      
-      } else if (flags_i64_1 & ~_flags) {
-        console.error("clCreateBuffer : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
-      }
+      if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type); 
+      else if (
+        (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR  */) ||
+        (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR   */) ||
+        (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR    */)
+        ) {
+        _host_ptr = CL.getHostPtrArray(size,CL.cl_pn_type);
+      } 
       try {
         if (_host_ptr != null) {
           _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
@@ -11762,7 +11795,10 @@ function copyTempDouble(ptr) {
            * Description
            * @return 
            */
-          _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
+          _callback = function() { 
+            console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+            FUNCTION_TABLE[pfn_notify](program, user_data) 
+          };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
       } catch (e) {

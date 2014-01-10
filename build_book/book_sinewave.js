@@ -104,7 +104,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_sinewave.data';
     var REMOTE_PACKAGE_NAME = 'book_sinewave.data';
-    var PACKAGE_UUID = '28ab7d76-6857-4c3f-9821-59db8cd935bd';
+    var PACKAGE_UUID = 'bef7c889-92a7-47ec-9ee8-7152eaf66c01';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -10257,6 +10257,38 @@ function copyTempDouble(ptr) {
             console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
         }
         return _sizeOrder;
+      },getHostPtrArray:function (size,type) { 
+        var _host_ptr = null;
+        if (type.length == 0) {
+        }
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = new Int8Array( size );
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = new Int16Array( size >> 1 );
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = new Int32Array( size >> 2 );
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = new Uint8Array( size );
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = new Uint16Array( size >> 1 );
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = new Uint32Array( size >> 2 );
+              break;         
+            default:
+              _host_ptr = new Float32Array( size >> 2 );
+              break;
+          }
+        } else {
+          _host_ptr = new Float32Array( size >> 2 );
+        }
+        return _host_ptr;
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
@@ -11062,7 +11094,10 @@ function copyTempDouble(ptr) {
            * Description
            * @return 
            */
-          _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
+          _callback = function() { 
+            console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+            FUNCTION_TABLE[pfn_notify](program, user_data) 
+          };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
       } catch (e) {

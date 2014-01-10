@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'imagecopy.data';
-    var PACKAGE_UUID = '73ba3258-4f89-4b96-9383-f7e900a29714';
+    var PACKAGE_UUID = '83230499-7161-41ad-a6fd-0271a70effd6';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5370,6 +5370,38 @@ function copyTempDouble(ptr) {
             console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
         }
         return _sizeOrder;
+      },getHostPtrArray:function (size,type) { 
+        var _host_ptr = null;
+        if (type.length == 0) {
+        }
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = new Int8Array( size );
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = new Int16Array( size >> 1 );
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = new Int32Array( size >> 2 );
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = new Uint8Array( size );
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = new Uint16Array( size >> 1 );
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = new Uint32Array( size >> 2 );
+              break;         
+            default:
+              _host_ptr = new Float32Array( size >> 2 );
+              break;
+          }
+        } else {
+          _host_ptr = new Float32Array( size >> 2 );
+        }
+        return _host_ptr;
       },getCopyPointerToArray:function (ptr,size,type) { 
         var _host_ptr = null;
         if (type.length == 0) {
@@ -6002,22 +6034,14 @@ function copyTempDouble(ptr) {
       }
       var _size = image_width * image_height * _sizeOrder;
       console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
-  //     if (host_ptr != 0 ) {
-  //       if (cl_errcode_ret != 0) {
-  //         HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_HOST_PTR;
-  //       }
-  // #if CL_GRAB_TRACE
-  //       CL.webclEndStackTrace([0,cl_errcode_ret],"Can't have the size of the host_ptr","");
-  // #endif
-  //       return 0;
-  //     }
-      if (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR */) {
-        _host_ptr = new ArrayBuffer(_size);
-      } else if ( (host_ptr != 0 && (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR */)) || (host_ptr != 0 && (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR */)) ) {      
-        _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type);
-      } else if (flags_i64_1 & ~_flags) {
-        console.error("clCreateImage2D : This flag is not yet implemented => "+(flags_i64_1 & ~_flags));
-      }
+      if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type); 
+      else if (
+        (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR  */) ||
+        (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR   */) ||
+        (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR    */)
+        ) {
+        _host_ptr = CL.getHostPtrArray(_size,_type);
+      } 
       var _descriptor = {channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
       try {
         if (_host_ptr != null)
@@ -6067,13 +6091,13 @@ function copyTempDouble(ptr) {
     }var _llvm_memset_p0i8_i32=_memset;
   function _clEnqueueWriteImage(command_queue,image,blocking_write,origin,region,input_row_pitch,input_slice_pitch,ptr,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _origin = new Int32Array(2);
-      var _region = new Int32Array(2);
+      var _origin = [];
+      var _region = [];
       var _size = CL.getImageSizeType(image);
       var _channel = CL.getImageFormatType(image);
       for (var i = 0; i < 2; i++) {
-        _origin[i] = (HEAP32[(((origin)+(i*4))>>2)]);
-        _region[i] = (HEAP32[(((region)+(i*4))>>2)]);  
+        _origin.push(HEAP32[(((origin)+(i*4))>>2)]);
+        _region.push(HEAP32[(((region)+(i*4))>>2)]);  
         _size *= _region[i];     
       }          
       console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
@@ -6154,7 +6178,10 @@ function copyTempDouble(ptr) {
            * Description
            * @return 
            */
-          _callback = function() { FUNCTION_TABLE[pfn_notify](program, user_data) };
+          _callback = function() { 
+            console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+            FUNCTION_TABLE[pfn_notify](program, user_data) 
+          };
         }
         CL.cl_objects[program].build(_devices,_option,_callback);
       } catch (e) {
@@ -6276,13 +6303,13 @@ function copyTempDouble(ptr) {
     }
   function _clEnqueueCopyImage(command_queue,src_image,dst_image,src_origin,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
       var _event_wait_list = [];
-      var _src_origin = new Int32Array(2);
-      var _dest_origin = new Int32Array(2);
-      var _region = new Int32Array(2);
+      var _src_origin = [];
+      var _dest_origin = [];
+      var _region = [];
       for (var i = 0; i < 2; i++) {
-        _src_origin[i] = (HEAP32[(((src_origin)+(i*4))>>2)]);
-        _dest_origin[i] = (HEAP32[(((dst_origin)+(i*4))>>2)]);
-        _region[i] = (HEAP32[(((region)+(i*4))>>2)]);            
+        _src_origin.push(HEAP32[(((src_origin)+(i*4))>>2)]);
+        _dest_origin.push(HEAP32[(((dst_origin)+(i*4))>>2)]);
+        _region.push(HEAP32[(((region)+(i*4))>>2)]);            
       }
       for (var i = 0; i < num_events_in_wait_list; i++) {
         var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
