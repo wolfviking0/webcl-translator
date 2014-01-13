@@ -66,8 +66,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "",
-      "valgpu"        : "",   
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",   
     },    
   ],
   // ************************ //
@@ -94,7 +94,7 @@ var configuration_pages = {
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
       "valcpu"        : "&validator=on",
-      "valgpu"        : "",                
+      "valgpu"        : "&validator=on",                
     },
     { 
       "title"         : "Info",
@@ -137,8 +137,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "",
-      "valgpu"        : "",              
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",              
     },
     /*{ 
       "title"         : "SinWave",
@@ -277,7 +277,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&float", 
       "valcpu"        : "",
-      "valgpu"        : "",               
+      "valgpu"        : "&validator=on",               
     },
     { 
       "title"         : "Noise Copying",
@@ -310,7 +310,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",    
       "valcpu"        : "",
-      "valgpu"        : "",            
+      "valgpu"        : "&validator=on",            
     },
     { 
       "title"         : "QJulia Attached",
@@ -321,7 +321,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&interop",
       "valcpu"        : "",
-      "valgpu"        : "",                
+      "valgpu"        : "&validator=on",                
     },
   ],
   // ********************** //
@@ -409,7 +409,7 @@ var configuration_pages = {
       "cpu"           : "&-o&ALL_CPUS",
       "gpu"           : "&-o&ALL_GPUS",    
       "valcpu"        : "&validator=on",
-      "valgpu"        : "",            
+      "valgpu"        : "&validator=on",            
     },
     // caustic.scn / caustic3.scn / cornell_fog.scn / cornell_large.scn / cornell_sss.scn / cornell.scn / simple.scn 
     { 
