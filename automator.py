@@ -85,7 +85,7 @@ def worker_update(online,local,option):
 
 @profile
 def update(repo_list):
-  print "Function 'update' ..."
+  print "Function 'update' ... "+str(repo_list)
   jobs = []
   
   # WebSite
@@ -93,7 +93,7 @@ def update(repo_list):
   jobs.append(p)
   p.start()
 
-  for i in list_repositories[1:-2]:
+  for i in repo_list:
     p = multiprocessing.Process(target=worker_update, args=(i,i,""))
     jobs.append(p)
     p.start()
@@ -115,9 +115,9 @@ def worker_clean(repo,param):
 
 @profile
 def clean(repo_list,param):
-  print "Function 'clean' ..."
+  print "Function 'clean' ... "+str(repo_list)
   jobs = []
-  for i in list_repositories[:-2]:
+  for i in repo_list:
     p = multiprocessing.Process(target=worker_clean, args=(i,param,))
     jobs.append(p)
     p.start()
@@ -144,9 +144,9 @@ def worker_build(repo,param,id):
 
 @profile
 def build(repo_list,param):
-  print "Function 'build' ..."
+  print "Function 'build' ... "+str(repo_list)
   jobs = []
-  for i in list_repositories[:-2]:
+  for i in repo_list:
     for j in range(1,4):
       p = multiprocessing.Process(target=worker_build, args=(i,param,j,))
       jobs.append(p)
@@ -169,10 +169,12 @@ def worker_copy(folder,repo):
 
 @profile
 def copy(repo_list):
-  print "Function 'copy' ..."
+  print "Function 'copy' ... "+str(repo_list)
 
   jobs = []
-  for (folder,repo) in zip(page_subfolder, list_repositories[:-2]):
+  for repo in repo_list:
+    index = repo_list.index(repo)
+    folder = page_subfolder[index]
     p = multiprocessing.Process(target=worker_copy, args=(folder,repo))
     jobs.append(p)
     p.start()
@@ -201,6 +203,11 @@ def launch(parser,options):
   if options.debug:
     param += " DEB=1 "
 
+  if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 4 ) for repo in options.repo) ) ) :
+    print "/!\ You must use --repo with integer between 0 & 4"
+    parser.print_help()
+    exit(-1)
+
   # \todo Need to add the possibility
   # Check Error case
   if ( options.all and num_opt_enabled > 1 ):
@@ -208,29 +215,38 @@ def launch(parser,options):
     parser.print_help()
     exit(-1)
 
+  repolist = []
+
+  if (len(options.repo) > 0):
+    for repo in options.repo:
+      repolist.append(str(list_repositories[int(repo)]))
+  else :
+    for repo in list_repositories[0:-2]:
+      repolist.append(repo)
+
   # 1 Clone or/and Update all the repositories of sample
   if(options.update or options.all):
-    update(options.repo)
+    update(repolist)
     os.chdir(root_repositories)
 
   # 2 Clean or Only Clean
   if(options.clean or options.all):
-    clean(options.repo,param)
+    clean(repolist,param)
     os.chdir(root_repositories)
 
   # 3 Build without validator
   if(options.without_validator or options.all):
-    build(options.repo,param)
+    build(repolist,param)
     os.chdir(root_repositories)
   
   # 4 Build with validator
   if(options.validator or options.all):
-    build(options.repo," VAL=1" + param)
+    build(repolist," VAL=1" + param)
     os.chdir(root_repositories)
 
   # 5 Copy
   if(options.copy or options.all):
-    copy(options.repo)
+    copy(repolist)
     os.chdir(root_repositories)
 
 def list_repo_callback(option, opt, value, parser):
