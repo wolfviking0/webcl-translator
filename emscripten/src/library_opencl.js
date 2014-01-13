@@ -6361,7 +6361,8 @@ var LibraryOpenCL = {
       return webcl.CL_INVALID_MEM_OBJECT;
     }
 #endif 
-#if CL_CHECK_VALID_OBJECT   
+//#if CL_CHECK_VALID_OBJECT   
+    // If the call is comming from clEnqueueMapImage the Unmap can't work
     if (!(mapped_ptr in CL.cl_objects_map)) {
 #if CL_CHECK_SET_POINTER    
       CL.cl_pn_type = [];
@@ -6371,7 +6372,7 @@ var LibraryOpenCL = {
 #endif
       return webcl.CL_INVALID_MEM_OBJECT;
     }
-#endif 
+//#endif 
 
     if (CL.cl_objects_map[mapped_ptr]["mode"] == 0x2 /*webcl.MAP_WRITE*/) {
 

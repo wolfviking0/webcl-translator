@@ -182,8 +182,8 @@ def copy(repo_list):
   for j in jobs:
     j.join()
 
-  pr = subprocess.Popen( "ln -Fs "+page_repositories+"index.html "+root_repositories+"webcl-samples.html", cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
-  (out, error) = pr.communicate()  
+  #pr = subprocess.Popen( "ln -Fs "+page_repositories+"index.html "+root_repositories+"webcl-samples.html", cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+  #(out, error) = pr.communicate()  
 
 @profile
 def launch(parser,options):
