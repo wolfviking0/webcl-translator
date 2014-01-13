@@ -210,8 +210,11 @@ def launch(parser,options):
 
   # \todo Need to add the possibility
   # Check Error case
-  if ( options.all and num_opt_enabled > 1 ):
-    print "/!\ You must use --all alone"
+  if ( not ( (options.all and num_opt_enabled == 1) or
+  (options.all and num_opt_enabled == 2 and options.debug) or
+  (options.all and num_opt_enabled == 2 and len(options.repo) > 0) or
+  (options.all and num_opt_enabled == 3 and len(options.repo) > 0 and options.debug) ) ):
+    print "/!\ You must use --all alone or with --repo and/or --debug options"
     parser.print_help()
     exit(-1)
 
@@ -292,7 +295,12 @@ def main():
   parser.add_option('-r', '--repo',
                     action='callback', dest="repo", type='string', default='',
                     callback=list_repo_callback,
-                    help="work only on the repository list :\t\t\twebcl-translator/webcl,webcl-osx-sample,webcl-ocltoys,webcl-davibu,webcl-book-samples", metavar="A,B,...")
+                    help="work only on the repository list :\t\t\t\
+                    0 : webcl-translator/webcl\t\t\t\
+                    1 : webcl-osx-sample\t\t\t\
+                    2 : webcl-ocltoys\t\t\t\
+                    3 : webcl-davibu\t\t\t\
+                    4 : webcl-book-samples", metavar="0,2,...")
 
   '''
   parser.add_option("-U", "--only-update",
