@@ -89,13 +89,13 @@ typedef struct _Wcl3Struct {
 } RenderingConfig;
 
 typedef struct {
+    float4 _wcl_z;
+    float4 _wcl_zp;
     const __global Camera *_wcl_camera;
     float4 _wcl_hitPoint;
     uint _wcl_steps;
     float4 _wcl_shadowHitPoint;
     uint _wcl_2_steps;
-    float4 _wcl_z;
-    float4 _wcl_zp;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {

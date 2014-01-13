@@ -103,7 +103,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = 'a8502524-0d23-407e-a7bf-a1684b8242b7';
+    var PACKAGE_UUID = '2df72223-298f-4994-88b4-dc1ea12704fe';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -5937,8 +5937,16 @@ function copyTempDouble(ptr) {
         while (_found && _security) {
           // Just in case no more than 10 loop
           _security --;
-          var _kern = _stringKern.indexOf("__kernel");
-          if (_kern == -1) {
+          var _kern = _stringKern.indexOf("kernel ");
+          if (_kern > 0) {
+            // Check the char before 'k' could be "_" or " "
+            if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
+              console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
+              _kern = -1
+              _found = 0;
+              continue;
+            }
+          } else if (_kern == -1) {
             _found = 0;
             continue;
           }

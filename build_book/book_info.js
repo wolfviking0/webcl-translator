@@ -1915,8 +1915,16 @@ function copyTempDouble(ptr) {
         while (_found && _security) {
           // Just in case no more than 10 loop
           _security --;
-          var _kern = _stringKern.indexOf("__kernel");
-          if (_kern == -1) {
+          var _kern = _stringKern.indexOf("kernel ");
+          if (_kern > 0) {
+            // Check the char before 'k' could be "_" or " "
+            if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
+              console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
+              _kern = -1
+              _found = 0;
+              continue;
+            }
+          } else if (_kern == -1) {
             _found = 0;
             continue;
           }

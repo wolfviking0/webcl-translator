@@ -112,7 +112,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = 'dav_smallptgpuv1.data';
-    var PACKAGE_UUID = 'b9c0e65e-2b91-45d4-8d2d-db4f733289a4';
+    var PACKAGE_UUID = '62cef4da-a9f6-47a6-b0df-42b83ee71f9a';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -2010,8 +2010,16 @@ function copyTempDouble(ptr) {
         while (_found && _security) {
           // Just in case no more than 10 loop
           _security --;
-          var _kern = _stringKern.indexOf("__kernel");
-          if (_kern == -1) {
+          var _kern = _stringKern.indexOf("kernel ");
+          if (_kern > 0) {
+            // Check the char before 'k' could be "_" or " "
+            if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
+              console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
+              _kern = -1
+              _found = 0;
+              continue;
+            }
+          } else if (_kern == -1) {
             _found = 0;
             continue;
           }

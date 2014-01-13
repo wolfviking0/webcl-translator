@@ -105,7 +105,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
     }
     var PACKAGE_NAME = '../build/val_osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_trajectories.data';
-    var PACKAGE_UUID = '7d809c66-cf1b-4d96-bee5-43f4471505e3';
+    var PACKAGE_UUID = '6aed7e55-a34f-4b4b-b786-e8f42fcd50f9';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -2291,8 +2291,16 @@ function copyTempDouble(ptr) {
         while (_found && _security) {
           // Just in case no more than 10 loop
           _security --;
-          var _kern = _stringKern.indexOf("__kernel");
-          if (_kern == -1) {
+          var _kern = _stringKern.indexOf("kernel ");
+          if (_kern > 0) {
+            // Check the char before 'k' could be "_" or " "
+            if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
+              console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
+              _kern = -1
+              _found = 0;
+              continue;
+            }
+          } else if (_kern == -1) {
             _found = 0;
             continue;
           }

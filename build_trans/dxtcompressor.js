@@ -106,7 +106,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'fe24789f-38d8-4c76-83b5-515d48b7f862';
+    var PACKAGE_UUID = '98ca0aec-2d94-4f02-937f-5e7a2c794b09';
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
       assert(arrayBuffer, 'Loading data file failed.');
@@ -2097,8 +2097,16 @@ function copyTempDouble(ptr) {
         while (_found && _security) {
           // Just in case no more than 10 loop
           _security --;
-          var _kern = _stringKern.indexOf("__kernel");
-          if (_kern == -1) {
+          var _kern = _stringKern.indexOf("kernel ");
+          if (_kern > 0) {
+            // Check the char before 'k' could be "_" or " "
+            if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
+              console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
+              _kern = -1
+              _found = 0;
+              continue;
+            }
+          } else if (_kern == -1) {
             _found = 0;
             continue;
           }
