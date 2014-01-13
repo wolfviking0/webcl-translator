@@ -210,10 +210,19 @@ def launch(parser,options):
 
   # \todo Need to add the possibility
   # Check Error case
-  if ( not ( (options.all and num_opt_enabled == 1) or
-  (options.all and num_opt_enabled == 2 and options.debug) or
-  (options.all and num_opt_enabled == 2 and len(options.repo) > 0) or
-  (options.all and num_opt_enabled == 3 and len(options.repo) > 0 and options.debug) ) ):
+  stop = True
+
+  if (options.all):
+    if (
+      (num_opt_enabled == 1) or
+      (num_opt_enabled == 2 and options.debug) or
+      (num_opt_enabled == 2 and len(options.repo) > 0) or
+      (num_opt_enabled == 3 and len(options.repo) > 0 and options.debug) ):
+      stop = False
+  else:
+    stop = False
+
+  if stop:
     print "/!\ You must use --all alone or with --repo and/or --debug options"
     parser.print_help()
     exit(-1)
