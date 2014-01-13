@@ -198,15 +198,13 @@ def launch(parser,options):
 
   # Paramater for makefile
   param = " "
-  if options.validator:
-    param += "VAL=1 "
   if options.debug:
-    param += "DEB=1 "
+    param += " DEB=1 "
 
-  # \todo Need to add the possibility to make it work the onlycopy and onlyclean options with --profile
+  # \todo Need to add the possibility
   # Check Error case
-  if ( options.onlycopy and num_opt_enabled > 1 ) or ( options.onlyclean and num_opt_enabled > 1 ) or ( options.all and num_opt_enabled > 1 ):
-    print "/!\ You must use --only-clean or --only-copy or --all alone"
+  if ( options.all and num_opt_enabled > 1 ):
+    print "/!\ You must use --all alone"
     parser.print_help()
     exit(-1)
 
@@ -216,19 +214,22 @@ def launch(parser,options):
     os.chdir(root_repositories)
 
   # 2 Clean or Only Clean
-  if(options.onlyclean or options.clean or options.all):
+  if(options.clean or options.all):
     clean(options.repo,param)
     os.chdir(root_repositories)
 
-  # 3 Build
-  if(not options.onlyclean and not options.onlycopy):
-    build(cores,param)
-    if (options.all):
-      build(options.repo," VAL=1")
+  # 3 Build without validator
+  if(options.without_validator or options.all):
+    build(options.repo,param)
+    os.chdir(root_repositories)
+  
+  # 4 Build with validator
+  if(options.validator or options.all):
+    build(options.repo," VAL=1" + param)
     os.chdir(root_repositories)
 
-  # 4 Copy or Only Copy
-  if(options.onlycopy or options.copy or options.all):
+  # 5 Copy
+  if(options.copy or options.all):
     copy(options.repo)
     os.chdir(root_repositories)
 
@@ -239,13 +240,14 @@ def main():
   usage = "usage: %prog [opts]"
   parser = OptionParser(usage=usage)
 
-  parser.add_option("-u", "--update", 
-                    action="store_true", dest="update", default=False,
-                    help="update the sample repositories", metavar="UPDATE")
 
   parser.add_option("-a", "--all", 
                     action="store_true", dest="all", default=False,
-                    help="complete process -u -e (-v with/without) -c", metavar="ALL")
+                    help="complete process -u -e -w -v -c -p", metavar="ALL")
+
+  parser.add_option("-u", "--update", 
+                    action="store_true", dest="update", default=False,
+                    help="update the sample repositories", metavar="UPDATE")
 
   parser.add_option("-p", "--profile", 
                     action="store_true", dest="profile", default=False,
@@ -253,7 +255,11 @@ def main():
 
   parser.add_option("-v", "--validator", 
                     action="store_true", dest="validator", default=False,
-                    help="enable webcl-validator", metavar="VALIDATOR")
+                    help="Build with webcl-validator enabled", metavar="VALIDATOR")
+
+  parser.add_option("-w", "--without-validator", 
+                    action="store_true", dest="without_validator", default=False,
+                    help="Build without webcl-validator enabled", metavar="WITHOUT_VALIDATOR")  
 
   parser.add_option("-d", "--debug",
                     action="store_true", dest="debug", default=False,
@@ -272,6 +278,11 @@ def main():
                     callback=list_repo_callback,
                     help="work only on the repository list :\t\t\twebcl-translator/webcl,webcl-osx-sample,webcl-ocltoys,webcl-davibu,webcl-book-samples", metavar="A,B,...")
 
+  '''
+  parser.add_option("-U", "--only-update",
+                    action="store_true", dest="onlyclean", default=False,
+                    help="only update all the javascript generated", metavar="ONLY_CLEAN")
+
   parser.add_option("-E", "--only-erase",
                     action="store_true", dest="onlyclean", default=False,
                     help="only clean all the javascript generated", metavar="ONLY_CLEAN")
@@ -279,6 +290,7 @@ def main():
   parser.add_option("-C", "--only-copy",
                     action="store_true", dest="onlycopy", default=False,
                     help="only copy all the javascript generated", metavar="ONLY_COPY")
+  '''
 
   (options, args) = parser.parse_args()
 
