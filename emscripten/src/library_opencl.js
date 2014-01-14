@@ -356,18 +356,21 @@ var LibraryOpenCL = {
         // Just in case no more than 10 loop
         _security --;
 
-        var _kern = _stringKern.indexOf("kernel ");
-        if (_kern > 0) {
-          // Check the char before 'k' could be "_" or " "
-          if ( (_stringKern.charAt(_kern - 1) != '_') && (_stringKern.charAt(_kern - 1) != '_') ) {
-            console.error("/!\\ Seems to be a weird kernel ... ("+_kern+") : "+_stringKern.charAt(_kern - 1));
-            _kern = -1
-            _found = 0;
-            continue;
+        var _kern = _stringKern.indexOf("__kernel ");
+
+        if (_kern == -1) {
+          _kern = _stringKern.indexOf(" kernel ");
+          if (_kern == -1) { 
+            _kern = _stringKern.indexOf("kernel ");
+            if (_kern == -1) {
+              _found = 0;
+              continue;
+            } else if (_kern != 0) {
+              console.error("/!\\ Fin workd 'kernel' but is not a real kernel  .. ("+_kern+")");
+              _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+              continue;
+            }
           }
-        } else if (_kern == -1) {
-          _found = 0;
-          continue;
         }
 
         _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
@@ -496,7 +499,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-#if 0 
+//#if 1
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -545,7 +548,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-#endif
+//#endif
       return _mini_kernel_string;
 
     },
@@ -4330,23 +4333,26 @@ var LibraryOpenCL = {
           CL.webclCallStackTrace(_kernel+".setArg",[_posarg,CL.cl_objects[_value]]);
 #endif        
           _kernel.setArg(_posarg,CL.cl_objects[_value]);
+          
+          if (! (CL.cl_objects[_value] instanceof WebCLSampler)) {
 
 #if CL_VALIDATOR 
-
+          
 #if CL_GRAB_TRACE
-          CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
+            CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
 #endif     
-          var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-          var _sizearg = new Int32Array([_size]);
+            var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
+            var _sizearg = new Int32Array([_size]);
 
-          if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
+            if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
-            CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
+              CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
 #endif        
-            _kernel.setArg(_posarg+1,_sizearg);
+              _kernel.setArg(_posarg+1,_sizearg);
+            }
+#endif      
           }
-#endif    
-
+          
         } else {
 
           var _array = CL.getReferencePointerToArray(arg_value,arg_size,[[_sig,1]]);
