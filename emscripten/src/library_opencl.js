@@ -2925,9 +2925,9 @@ var LibraryOpenCL = {
 #endif
     if (image_type != webcl.MEM_OBJECT_IMAGE2D) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_VALUE],"image_type "+image_type+" are not valid","");
+      CL.webclEndStackTrace([webcl.INVALID_VALUE],"image_type "+image_type+" are not valid","");
 #endif
-      return webcl.CL_INVALID_VALUE;       
+      return webcl.INVALID_VALUE;       
     }
     
     var _flags;
@@ -3226,9 +3226,9 @@ var LibraryOpenCL = {
     CL.cl_objects_mem_callback[memobj] = _array;
 
 #if CL_GRAB_TRACE
-    CL.webclEndStackTrace([webcl.SUCCESS],"","");
+    CL.webclEndStackTrace([webcl.INVALID_VALUE],"","");
 #endif        
-    return webcl.SUCCESS;
+    return webcl.INVALID_VALUE;
   },
 
   /**
