@@ -1461,7 +1461,7 @@ var LibraryOpenCL = {
           _info = "WEBCL_DEVICE_VENDOR";
         break;
         case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
-          _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN);
+          _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
         break;
         default:
           _info = _object.getInfo(param_name);
@@ -3226,9 +3226,9 @@ var LibraryOpenCL = {
     CL.cl_objects_mem_callback[memobj] = _array;
 
 #if CL_GRAB_TRACE
-    CL.webclEndStackTrace([webcl.INVALID_VALUE],"","");
+    CL.webclEndStackTrace([webcl.SUCCESS],"","");
 #endif        
-    return webcl.INVALID_VALUE;
+    return webcl.SUCCESS;
   },
 
   /**
