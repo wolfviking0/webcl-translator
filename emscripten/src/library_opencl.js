@@ -448,7 +448,7 @@ var LibraryOpenCL = {
                 } else if (_chara != ' ') {
                   _kernels_struct_name = _chara + _kernels_struct_name;
                 }
-              }
+              }             
 
               // Parse struct only if is not already inside the map
               if (!(_kernels_struct_name in CL.cl_structs_sig))
@@ -499,7 +499,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-//#if 1
+#if 1
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -548,7 +548,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-//#endif
+#endif
       return _mini_kernel_string;
 
     },
