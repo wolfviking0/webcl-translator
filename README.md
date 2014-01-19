@@ -32,10 +32,10 @@ If you build a sample using settings _-s CL_VALIDATOR=1_, automaticaly all the .
 
 The sample are using a Settings.js file who automaticaly add parameter to all the webcl-translator samples. When you launch the translator.html file (and all the html samples files from the samples repositories), you can add some parameter:
 
-	| 	&gl=on/off 			|	Add a canvas inside the webpage					|	
-	| 	&validator=on/off 	|	Enable the validator, call val_.....js samples 	|
-	|	&profile=on/off 	|	Enable the console profile of the browser		|
-	|	&export=on/off		|	Open a new page with stack_tracer (if enabled)	|
+	&gl=on/off 			:	Add a canvas inside the webpage				
+	&validator=on/off 	:	Enable the validator, call val_.....js samples 
+	&profile=on/off 	:	Enable the console profile of the browser	
+	&export=on/off		:	Open a new page with stack_tracer (if enabled)
 
 
 Samples repositories :
