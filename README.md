@@ -16,12 +16,11 @@ Need [webkit-webcl](https://github.com/SRA-SiliconValley/webkit-webcl) from Sams
 
 Links to **demos**, **tutorial**, **patch**, etc: [Wiki](https://github.com/wolfviking0/webcl-translator/wiki)
 
-Automator :
------------
+### Automator :
 
 At the top of the repositories, you can use _python automator.py_ for update all the samples repositories and automaticaly build all the demos.
 
-You can call _python automator.ph -h_ for call the automator script help.
+You can call _python automator.py -h_ for call the automator script help.
 
 Samples repositories :
 ----------------------
