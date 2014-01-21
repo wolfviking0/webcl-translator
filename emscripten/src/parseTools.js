@@ -46,10 +46,15 @@ function preprocess(text) {
               error('unsupported preprecessor op ' + op);
             }
           } else {
-            showStack.push(ident in this && this[ident] > 0);
+            if (ident[0] === '!') {
+              showStack.push(!(this[ident.substr(1)] > 0));
+            } else {
+              showStack.push(ident in this && this[ident] > 0);
+            }
           }
         } else if (line[2] == 'n') { // include
-          ret += '\n' + read(line.substr(line.indexOf(' ')+1)) + '\n'
+          var included = read(line.substr(line.indexOf(' ')+1));
+          ret += '\n' + preprocess(included) + '\n'
         }
       } else if (line[2] == 'l') { // else
         showStack.push(!showStack.pop());
@@ -462,7 +467,7 @@ function parseParamTokens(params) {
       // handle 'byval' and 'byval align X'. We store the alignment in 'byVal'
       byVal = QUANTUM_SIZE;
       segment.splice(1, 1);
-      if (segment[1] && segment[1].text === 'nocapture') {
+      if (segment[1] && (segment[1].text === 'nocapture' || segment[1].text === 'readonly')) {
         segment.splice(1, 1);
       }
       if (segment[1] && segment[1].text === 'align') {
@@ -471,7 +476,7 @@ function parseParamTokens(params) {
         segment.splice(1, 2);
       }
     }
-    if (segment[1] && segment[1].text === 'nocapture') {
+    if (segment[1] && (segment[1].text === 'nocapture' || segment[1].text === 'readonly')) {
       segment.splice(1, 1);
     }
     if (segment.length == 1) {
@@ -627,7 +632,7 @@ function parseLLVMSegment(segment) {
 }
 
 function cleanSegment(segment) {
-  while (segment.length >= 2 && ['noalias', 'sret', 'nocapture', 'nest', 'zeroext', 'signext'].indexOf(segment[1].text) != -1) {
+  while (segment.length >= 2 && ['noalias', 'sret', 'nocapture', 'nest', 'zeroext', 'signext', 'readnone'].indexOf(segment[1].text) != -1) {
     segment.splice(1, 1);
   }
   return segment;
@@ -961,8 +966,13 @@ function parseNumerical(value, type) {
   }
   if (isNumber(value)) {
     var ret = parseFloat(value); // will change e.g. 5.000000e+01 to 50
+    // type may be undefined here, like when this is called from makeConst with a single argument.
+    // but if it is a number, then we can safely assume that this should handle negative zeros
+    // correctly.
+    if (type === undefined || type === 'double' || type === 'float') {
+      if (value[0] === '-' && ret === 0) { return '-.0'; } // fix negative 0, toString makes it 0
+    }
     if (type === 'double' || type === 'float') {
-      if (value[0] === '-' && ret === 0) return '-.0'; // fix negative 0, toString makes it 0
       if (!RUNNING_JS_OPTS) ret = asmEnsureFloat(ret, type);
     }
     return ret.toString();
@@ -1321,18 +1331,22 @@ function makeGetValue(ptr, pos, type, noNeedFirst, unsigned, ignore, align, noSa
     var printType = type;
     if (printType !== 'null' && printType[0] !== '#') printType = '"' + safeQuote(printType) + '"';
     if (printType[0] === '#') printType = printType.substr(1);
-    return asmCoercion('SAFE_HEAP_LOAD(' + asmCoercion(offset, 'i32') + ', ' + (ASM_JS ? 0 : printType) + ', ' + (!!unsigned+0) + ', ' + ((!checkSafeHeap() || ignore)|0) + ')', type);
-  } else {
-    var ret = makeGetSlabs(ptr, type, false, unsigned)[0] + '[' + getHeapOffset(offset, type, forceAsm) + ']';
-    if (ASM_JS && (phase == 'funcs' || forceAsm)) {
-      ret = asmCoercion(ret, type);
+    if (ASM_JS) {
+      if (!ignore) return asmCoercion('SAFE_HEAP_LOAD(' + asmCoercion(offset, 'i32') + ', ' + Runtime.getNativeTypeSize(type) + ', ' + ((type in Runtime.FLOAT_TYPES)|0) + ', ' + (!!unsigned+0) + ')', type);
+      // else fall through
+    } else {
+      return asmCoercion('SAFE_HEAP_LOAD(' + offset + ', ' + (ASM_JS ? 0 : printType) + ', ' + (!!unsigned+0) + ', ' + ((!checkSafeHeap() || ignore)|0) + ')', type);
     }
-    if (ASM_HEAP_LOG) {
-      ret = makeInlineCalculation('(asmPrint' + (type in Runtime.FLOAT_TYPES ? 'Float' : 'Int') + '(' + (asmPrintCounter++) + ',' + asmCoercion('VALUE', type) + '), VALUE)', ret,
-                                  'temp' + (type in Runtime.FLOAT_TYPES ? 'Double' : 'Int'));
-    }
-    return ret;
   }
+  var ret = makeGetSlabs(ptr, type, false, unsigned)[0] + '[' + getHeapOffset(offset, type, forceAsm) + ']';
+  if (ASM_JS && (phase == 'funcs' || forceAsm)) {
+    ret = asmCoercion(ret, type);
+  }
+  if (ASM_HEAP_LOG) {
+    ret = makeInlineCalculation('(asmPrint' + (type in Runtime.FLOAT_TYPES ? 'Float' : 'Int') + '(' + (asmPrintCounter++) + ',' + asmCoercion('VALUE', type) + '), VALUE)', ret,
+                                'temp' + (type in Runtime.FLOAT_TYPES ? 'Double' : 'Int'));
+  }
+  return ret;
 }
 
 function makeGetValueAsm(ptr, pos, type, unsigned) {
@@ -1429,10 +1443,14 @@ function makeSetValue(ptr, pos, value, type, noNeedFirst, ignore, align, noSafe,
     var printType = type;
     if (printType !== 'null' && printType[0] !== '#') printType = '"' + safeQuote(printType) + '"';
     if (printType[0] === '#') printType = printType.substr(1);
-    return 'SAFE_HEAP_STORE(' + asmCoercion(offset, 'i32') + ', ' + asmCoercion(value, type) + ', ' + (ASM_JS ? 0 : printType) + ', ' + ((!checkSafeHeap() || ignore)|0) + ')';
-  } else {
-    return makeGetSlabs(ptr, type, true).map(function(slab) { return slab + '[' + getHeapOffset(offset, type, forceAsm) + ']=' + value }).join(sep);
+    if (ASM_JS) {
+      if (!ignore) return asmCoercion('SAFE_HEAP_STORE(' + asmCoercion(offset, 'i32') + ', ' + asmCoercion(value, type) + ', ' + Runtime.getNativeTypeSize(type) + ', ' + ((type in Runtime.FLOAT_TYPES)|0) + ')', type);
+      // else fall through
+    } else {
+      return 'SAFE_HEAP_STORE(' + offset + ', ' + value + ', ' + (ASM_JS ? 0 : printType) + ', ' + ((!checkSafeHeap() || ignore)|0) + ')';
+    }
   }
+  return makeGetSlabs(ptr, type, true).map(function(slab) { return slab + '[' + getHeapOffset(offset, type, forceAsm) + ']=' + value }).join(sep);
 }
 
 function makeSetValueAsm(ptr, pos, value, type, noNeedFirst, ignore, align, noSafe, sep, forcedAlign) {
@@ -1639,7 +1657,10 @@ function getFastValue(a, op, b, type) {
 }
 
 function getFastValues(list, op, type) {
-  assert(op == '+');
+  assert(op === '+' && type === 'i32');
+  for (var i = 0; i < list.length; i++) {
+    if (isNumber(list[i])) list[i] = (list[i]|0) + '';
+  }
   var changed = true;
   while (changed) {
     changed = false;
@@ -1647,6 +1668,7 @@ function getFastValues(list, op, type) {
       var fast = getFastValue(list[i], op, list[i+1], type);
       var raw = list[i] + op + list[i+1];
       if (fast.length < raw.length || fast.indexOf(op) < 0) {
+        if (isNumber(fast)) fast = (fast|0) + '';
         list[i] = fast;
         list.splice(i+1, 1);
         i--;
@@ -1771,31 +1793,12 @@ function makePointer(slab, pos, allocator, type, ptr, finalMemoryInitialization)
     types = 'i8';
   }
 
-  // JS engines sometimes say array initializers are too large. Work around that by chunking and calling concat to combine at runtime
-  var chunkSize = JS_CHUNK_SIZE;
-  function chunkify(array) {
-    // break very large slabs into parts
-    var ret = '';
-    var index = 0;
-    while (index < array.length) {
-      ret = (ret ? ret + '.concat(' : '') + '[' + array.slice(index, index + chunkSize).map(JSON.stringify) + ']' + (ret ? ')\n' : '');
-      index += chunkSize;
-    }
-    return ret;
-  }
-  if (typeof slab == 'object' && slab.length > chunkSize) {
-    slab = chunkify(slab);
-  }
   if (typeof types == 'object') {
     while (types.length < slab.length) types.push(0);
   }
-  if (typeof types != 'string' && types.length > chunkSize) {
-    types = chunkify(types);
-  } else {
-    types = JSON.stringify(types);
-  }
+  types = JSON.stringify(types);
   if (typeof slab == 'object') slab = '[' + slab.join(',') + ']';
-  return 'allocate(' + slab + ', ' + types + (allocator ? ', ' + allocator : '') + (allocator == 'ALLOC_NONE' ? ', ' + ptr : '') + ')';
+  return 'allocate(' + slab + ', ' + types + (allocator ? ', ' + allocator : '') + (allocator == 'ALLOC_NONE' ? ', ' + ptr : '') + ');';
 }
 
 function makeGetSlabs(ptr, type, allowMultiple, unsigned) {
@@ -2140,9 +2143,9 @@ function makeRounding(value, bits, signed, floatConversion) {
       }
     }
     // Math.floor is reasonably fast if we don't care about corrections (and even correct if unsigned)
-    if (!correctRoundings() || !signed) return 'Math_floor(' + value + ')';
+    if (!correctRoundings() || !signed) return '(+Math_floor(' + value + '))';
     // We are left with >32 bits
-    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? Math_floor(VALUE) : Math_ceil(VALUE)', value, 'tempBigIntR');
+    return makeInlineCalculation(makeComparison('VALUE', '>=', '0', 'float') + ' ? +Math_floor(VALUE) : +Math_ceil(VALUE)', value, 'tempBigIntR');
   }
 }
 

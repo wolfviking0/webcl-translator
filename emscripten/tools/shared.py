@@ -272,9 +272,17 @@ if EM_POPEN_WORKAROUND and os.name == 'nt':
 
 EXPECTED_LLVM_VERSION = (3,2)
 
+actual_clang_version = None
+
+def get_clang_version():
+  global actual_clang_version
+  if actual_clang_version is None:
+    actual_clang_version = Popen([CLANG, '-v'], stderr=PIPE).communicate()[1].split('\n')[0].split(' ')[2]
+  return actual_clang_version
+
 def check_clang_version():
-  expected = 'clang version ' + '.'.join(map(str, EXPECTED_LLVM_VERSION))
-  actual = Popen([CLANG, '-v'], stderr=PIPE).communicate()[1].split('\n')[0]
+  expected = '.'.join(map(str, EXPECTED_LLVM_VERSION))
+  actual = get_clang_version()
   if expected in actual:
     return True
   logging.warning('LLVM version appears incorrect (seeing "%s", expected "%s")' % (actual, expected))
@@ -337,10 +345,10 @@ def find_temp_directory():
 # we re-check sanity when the settings are changed)
 # We also re-check sanity and clear the cache when the version changes
 
-EMSCRIPTEN_VERSION = '1.8.2'
+EMSCRIPTEN_VERSION = '1.9.3'
 
 def generate_sanity():
-  return EMSCRIPTEN_VERSION + '|' + get_llvm_target() + '|' + LLVM_ROOT
+  return EMSCRIPTEN_VERSION + '|' + get_llvm_target() + '|' + LLVM_ROOT + '|' + get_clang_version()
 
 def check_sanity(force=False):
   try:
@@ -1163,6 +1171,8 @@ class Building:
     if type(opts) is int:
       opts = Building.pick_llvm_opts(opts)
     #opts += ['-debug-pass=Arguments']
+    if get_clang_version() == '3.4' and not Settings.SIMD:
+      opts += ['-disable-loop-vectorization', '-disable-slp-vectorization'] # llvm 3.4 has these on by default
     logging.debug('emcc: LLVM opts: ' + str(opts))
     target = out or (filename + '.opt.bc')
     output = Popen([LLVM_OPT, filename] + opts + ['-o', target], stdout=PIPE).communicate()[0]
@@ -1404,6 +1414,8 @@ class Building:
     if not os.path.exists(CLOSURE_COMPILER):
       raise Exception('Closure compiler appears to be missing, looked at: ' + str(CLOSURE_COMPILER))
 
+    CLOSURE_EXTERNS = path_from_root('src', 'closure-externs.js')
+
     # Something like this (adjust memory as needed):
     #   java -Xmx1024m -jar CLOSURE_COMPILER --compilation_level ADVANCED_OPTIMIZATIONS --variable_map_output_file src.cpp.o.js.vars --js src.cpp.o.js --js_output_file src.cpp.o.cc.js
     args = [JAVA,
@@ -1411,6 +1423,7 @@ class Building:
             '-jar', CLOSURE_COMPILER,
             '--compilation_level', 'ADVANCED_OPTIMIZATIONS',
             '--language_in', 'ECMASCRIPT5',
+            '--externs', CLOSURE_EXTERNS,
             #'--variable_map_output_file', filename + '.vars',
             '--js', filename, '--js_output_file', filename + '.cc.js']
     if pretty: args += ['--formatting', 'PRETTY_PRINT']
@@ -1555,7 +1568,7 @@ JCache = cache.JCache(Cache)
 chunkify = cache.chunkify
 
 class JS:
-  memory_initializer_pattern = '/\* memory initializer \*/ allocate\(([\d,\.concat\(\)\[\]\\n ]+)"i8", ALLOC_NONE, ([\dRuntime\.GLOBAL_BASEH+]+)\)'
+  memory_initializer_pattern = '/\* memory initializer \*/ allocate\(\[([\d, ]+)\], "i8", ALLOC_NONE, ([\d+Runtime\.GLOBAL_BASEH]+)\);'
   no_memory_initializer_pattern = '/\* no memory initializer \*/'
 
   memory_staticbump_pattern = 'STATICTOP = STATIC_BASE \+ (\d+);'
@@ -1638,6 +1651,75 @@ class JS:
   def align(x, by):
     while x % by != 0: x += 1
     return x
+
+  INITIALIZER_CHUNK_SIZE = 10240
+
+  @staticmethod
+  def collect_initializers(src):
+    ret = []
+    max_offset = -1
+    for init in re.finditer(JS.memory_initializer_pattern, src):
+      contents = init.group(1).split(',')
+      offset = sum([int(x) if x[0] != 'R' else 0 for x in init.group(2).split('+')])
+      ret.append((offset, contents))
+      assert offset > max_offset
+      max_offset = offset
+    return ret
+
+  @staticmethod
+  def split_initializer(contents):
+    # given a memory initializer (see memory_initializer_pattern), split it up into multiple initializers to avoid long runs of zeros or a single overly-large allocator
+    ret = []
+    l = len(contents)
+    maxx = JS.INITIALIZER_CHUNK_SIZE
+    i = 0
+    start = 0
+    while 1:
+      if i - start >= maxx or (i > start and i == l):
+        #print >> sys.stderr, 'new', start, i-start
+        ret.append((start, contents[start:i]))
+        start = i
+      if i == l: break
+      if contents[i] != '0':
+        i += 1
+      else:
+        # look for a sequence of zeros
+        j = i + 1
+        while j < l and contents[j] == '0': j += 1
+        if j-i > maxx/10 or j-start >= maxx:
+          #print >> sys.stderr, 'skip', start, i-start, j-start
+          ret.append((start, contents[start:i])) # skip over the zeros starting at i and ending at j
+          start = j
+        i = j
+    return ret
+
+  @staticmethod
+  def replace_initializers(src, inits):
+    class State:
+      first = True
+    def rep(m):
+      if not State.first: return ''
+      # write out all the new initializers in place of the first old one
+      State.first = False
+      def gen_init(init):
+        offset, contents = init
+        return '/* memory initializer */ allocate([%s], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE%s);' % (
+          ','.join(contents),
+          '' if offset == 0 else ('+%d' % offset)
+        )
+      return '\n'.join(map(gen_init, inits))
+    return re.sub(JS.memory_initializer_pattern, rep, src)
+
+  @staticmethod
+  def optimize_initializer(src):
+    inits = JS.collect_initializers(src)
+    if len(inits) == 0: return None
+    assert len(inits) == 1
+    init = inits[0]
+    offset, contents = init
+    assert offset == 0 # offset 0, singleton
+    if len(contents) <= JS.INITIALIZER_CHUNK_SIZE: return None
+    return JS.replace_initializers(src, JS.split_initializer(contents))
 
 # Compression of code and data for smaller downloads
 class Compression:

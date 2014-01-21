@@ -215,6 +215,9 @@ function JSify(data, functionsOnly) {
 
   function parseConst(value, type, ident) {
     var constant = makeConst(value, type);
+    // Sadly, we've thrown away type information in makeConst, so we're not
+    // passing correct type info to parseNumerical which works around this
+    // lack.
     constant = flatten(constant).map(function(x) { return parseNumerical(x) })
     return constant;
   }
@@ -625,8 +628,8 @@ function JSify(data, functionsOnly) {
       }
     }
 
-    if (CLOSURE_ANNOTATIONS) func.JS += '/** @type {number} */';
     if (!ASM_JS) {
+      if (CLOSURE_ANNOTATIONS) func.JS += '/** @type {number} */';
       func.JS += INDENTATION + 'var label=0;\n';
     }
 
@@ -878,8 +881,8 @@ function JSify(data, functionsOnly) {
   function makeAssign(item) {
     var valueJS = item.JS;
     item.JS = '';
-    if (CLOSURE_ANNOTATIONS) item.JS += '/** @type {number} */ ';
     if (!ASM_JS || item.intertype != 'alloca' || item.funcData.variables[item.assignTo].impl == VAR_EMULATED) { // asm only needs non-allocas
+      if (CLOSURE_ANNOTATIONS) item.JS += '/** @type {number} */ ';
       item.JS += ((ASM_JS || item.overrideSSA) ? '' : 'var ') + toNiceIdent(item.assignTo);
     }
     var value = parseNumerical(valueJS);
@@ -1871,7 +1874,7 @@ function JSify(data, functionsOnly) {
       print('// Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included');
       print('var i64Math = null;');
     }
-    if (Types.usesSIMD) {
+    if (Types.usesSIMD || SIMD) {
       print(read('simd.js'));
     }
 

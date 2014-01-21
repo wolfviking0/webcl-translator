@@ -12,7 +12,7 @@ EMSCRIPTEN_ROOT:=../../emscripten
 #LLVM_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/compilo/llvm/bin
 #VALIDATOR = $(LLVM_ROOT)/webcl-validator
 
-CXX = $(EMSCRIPTEN_ROOT)/emcc
+CXX = $(EMSCRIPTEN_ROOT)/em++
 
 CHDIR_SHELL := $(SHELL)
 define chdir

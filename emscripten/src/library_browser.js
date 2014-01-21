@@ -319,7 +319,7 @@ mergeInto(LibraryManager.library, {
         }, false);
       }
       if (setInModule) {
-        Module.ctx = ctx;
+        GLctx = Module.ctx = ctx;
         Module.useWebGL = useWebGL;
         Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
         Browser.init();
@@ -774,6 +774,15 @@ mergeInto(LibraryManager.library, {
         Browser.mainLoop.shouldPause = false;
         return;
       }
+
+      // Signal GL rendering layer that processing of a new frame is about to start. This helps it optimize
+      // VBO double-buffering and reduce GPU stalls.
+#if FULL_ES2
+      GL.newRenderingFrameStarted();
+#endif
+#if LEGACY_GL_EMULATION
+      GL.newRenderingFrameStarted();
+#endif
 
       if (Module['preMainLoop']) {
         Module['preMainLoop']();

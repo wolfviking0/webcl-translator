@@ -57,7 +57,7 @@ struct Block {
   BlockBranchMap ProcessedBranchesOut;
   BlockSet ProcessedBranchesIn;
   Shape *Parent; // The shape we are directly inside
-  int Id; // A unique identifier, defined when added to relooper
+  int Id; // A unique identifier, defined when added to relooper. Note that this uniquely identifies a *logical* block - if we split it, the two instances have the same content *and* the same Id
   const char *Code; // The string representation of the code in this block. Owning pointer (we copy the input)
   const char *BranchVar; // If we have more than one branch out, the variable whose value determines where we go
   bool IsCheckedMultipleEntry; // If true, we are a multiple entry, so reaching us requires setting the label variable
@@ -89,11 +89,11 @@ struct Block {
 //            setjmp returns, etc.)
 //
 
-class SimpleShape;
-class LabeledShape;
-class MultipleShape;
-class LoopShape;
-class EmulatedShape;
+struct SimpleShape;
+struct LabeledShape;
+struct MultipleShape;
+struct LoopShape;
+struct EmulatedShape;
 
 struct Shape {
   int Id; // A unique identifier. Used to identify loops, labels are Lx where x is the Id. Defined when added to relooper
@@ -191,7 +191,7 @@ struct Relooper {
   Relooper();
   ~Relooper();
 
-  void AddBlock(Block *New);
+  void AddBlock(Block *New, int Id=-1);
 
   // Calculates the shapes
   void Calculate(Block *Entry);
@@ -200,10 +200,15 @@ struct Relooper {
   void Render();
 
   // Sets the global buffer all printing goes to. Must call this or MakeOutputBuffer.
+  // XXX: this is deprecated, see MakeOutputBuffer
   static void SetOutputBuffer(char *Buffer, int Size);
 
-  // Creates an output buffer. Must call this or SetOutputBuffer.
+  // Creates an internal output buffer. Must call this or SetOutputBuffer. Size is
+  // a hint for the initial size of the buffer, it can be resized later one demand.
+  // For that reason this is more recommended than SetOutputBuffer.
   static void MakeOutputBuffer(int Size);
+
+  static char *GetOutputBuffer();
 
   // Sets asm.js mode on or off (default is off)
   static void SetAsmJSMode(int On);

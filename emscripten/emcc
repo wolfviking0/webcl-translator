@@ -693,7 +693,7 @@ if os.environ.get('EMMAKEN_CXX'):
 CC_ADDITIONAL_ARGS = shared.COMPILER_OPTS
 
 EMMAKEN_CFLAGS = os.environ.get('EMMAKEN_CFLAGS')
-if EMMAKEN_CFLAGS: CC_ADDITIONAL_ARGS += shlex.split(EMMAKEN_CFLAGS)
+if EMMAKEN_CFLAGS: sys.argv += shlex.split(EMMAKEN_CFLAGS)
 
 # ---------------- Utilities ---------------
 
@@ -786,6 +786,14 @@ def filename_type_suffix(filename):
 def filename_type_ending(filename):
   suffix = filename_type_suffix(filename)
   return '' if not suffix else ('.' + suffix)
+
+# Log out times for emcc stages
+log_time_last = time.time()
+def log_time(name):
+  global log_time_last
+  now = time.time()
+  logging.debug('emcc step "%s" took %.2f seconds' % (name, now - log_time_last))
+  log_time_last = now
 
 try:
   call = CXX if use_cxx else CC
@@ -1200,12 +1208,8 @@ try:
 
   if fastcomp:
     shared.Settings.ASM_JS = 1
-    if shared.Settings.DISABLE_EXCEPTION_CATCHING == 0:
-      logging.warning('disabling exception catching since not supported in fastcomp yet')
-      shared.Settings.DISABLE_EXCEPTION_CATCHING = 1
     assert shared.Settings.ALLOW_MEMORY_GROWTH == 0, 'memory growth not supported in fastcomp yet'
     assert shared.Settings.UNALIGNED_MEMORY == 0, 'forced unaligned memory not supported in fastcomp'
-    assert shared.Settings.SAFE_HEAP == 0, 'safe heap not supported in fastcomp yet'
     assert shared.Settings.CHECK_HEAP_ALIGN == 0, 'check heap align not supported in fastcomp yet'
     assert shared.Settings.SAFE_DYNCALLS == 0, 'safe dyncalls not supported in fastcomp'
     assert shared.Settings.RESERVED_FUNCTION_POINTERS == 0, 'reserved function pointers not supported in fastcomp'
@@ -1216,10 +1220,15 @@ try:
     assert shared.Settings.NAMED_GLOBALS == 0, 'named globals not supported in fastcomp'
     assert shared.Settings.PGO == 0, 'pgo not supported in fastcomp'
     assert shared.Settings.TARGET_LE32 == 1, 'fastcomp requires le32'
+    assert shared.Settings.USE_TYPED_ARRAYS == 2, 'fastcomp assumes ta2'
     assert not bind, 'embind not supported in fastcomp yet'
     if jcache:
       logging.warning('jcache is not supported in fastcomp (you should not need it anyhow), disabling')
       jcache = False
+
+    fastcomp_opts = ['-pnacl-abi-simplify-preopt', '-pnacl-abi-simplify-postopt']
+    if not shared.Settings.DISABLE_EXCEPTION_CATCHING:
+      fastcomp_opts += ['-enable-emscripten-cxx-exceptions']
 
   if shared.Settings.ASM_JS:
     assert opt_level >= 1 or fastcomp, 'asm.js requires -O1 or above'
@@ -1233,6 +1242,13 @@ try:
       logging.warning('setting CORRECT_OVERFLOWS to 1 for asm.js code generation')
       shared.Settings.CORRECT_OVERFLOWS = 1
     assert not shared.Settings.PGO, 'cannot run PGO in ASM_JS mode'
+
+    if shared.Settings.SAFE_HEAP and not js_opts:
+      logging.warning('asm.js+SAFE_HEAP requires js opts to be run (-O1 or above by default)')
+
+    if shared.Settings.ALLOW_MEMORY_GROWTH:
+      logging.error('Cannot enable ALLOW_MEMORY_GROWTH with asm.js, build with -s ASM_JS=0 if you need a growable heap');
+      sys.exit(1);
 
   if shared.Settings.CORRECT_SIGNS >= 2 or shared.Settings.CORRECT_OVERFLOWS >= 2 or shared.Settings.CORRECT_ROUNDINGS >= 2:
     debug_level = 4 # must keep debug info to do line-by-line operations
@@ -1299,6 +1315,8 @@ try:
 
   temp_files = []
 
+  log_time('parse arguments and setup')
+
   # First, generate LLVM bitcode. For each input file, we get base.o with bitcode
   for input_file in input_files:
     file_ending = filename_type_ending(input_file)
@@ -1337,6 +1355,8 @@ try:
       else:
         logging.error(input_file + ': Unknown file suffix when compiling to LLVM bitcode!')
         sys.exit(1)
+
+  log_time('bitcodeize inputs')
 
   if not LEAVE_INPUTS_RAW:
     assert len(temp_files) == len(input_files)
@@ -1383,6 +1403,8 @@ try:
         logging.debug('link: ' + str(temp_files) + specified_target)
         shared.Building.link(temp_files, specified_target)
     exit(0)
+
+  log_time('bitcodeize inputs')
 
   ## Continue on to create JavaScript
 
@@ -1444,18 +1466,26 @@ try:
       libc_files = [
         'dlmalloc.c',
         os.path.join('libcxx', 'new.cpp'),
-        os.path.join('libc', 'stdlib', 'getopt_long.c'),
-        os.path.join('libc', 'gen', 'err.c'),
-        os.path.join('libc', 'gen', 'errx.c'),
-        os.path.join('libc', 'gen', 'warn.c'),
-        os.path.join('libc', 'gen', 'warnx.c'),
-        os.path.join('libc', 'gen', 'verr.c'),
-        os.path.join('libc', 'gen', 'verrx.c'),
-        os.path.join('libc', 'gen', 'vwarn.c'),
-        os.path.join('libc', 'gen', 'vwarnx.c'),
-        os.path.join('libc', 'stdlib', 'strtod.c'),
       ]
       musl_files = [
+        ['internal', [
+         'floatscan.c',
+         'shgetc.c',
+        ]],
+        ['math', [
+         'scalbn.c',
+         'scalbnl.c',
+        ]],
+        ['stdio', [
+         '__overflow.c',
+         '__toread.c',
+         '__towrite.c',
+         '__uflow.c',
+        ]],
+        ['stdlib', [
+         'atof.c',
+         'strtod.c',
+        ]]
       ]
       for directory, sources in musl_files:
         libc_files += [os.path.join('libc', 'musl', 'src', directory, source) for source in sources]
@@ -1496,6 +1526,12 @@ try:
           'wctrans.c',
           'wcwidth.c',
          ]],
+         ['internal', [
+          'intscan.c',
+         ]],
+         ['legacy', [
+          'err.c',
+         ]],
          ['locale', [
           'iconv.c',
           'iswalnum_l.c',
@@ -1511,7 +1547,9 @@ try:
           'iswspace_l.c',
           'iswupper_l.c',
           'iswxdigit_l.c',
+          'strcasecmp_l.c',
           'strfmon.c',
+          'strncasecmp_l.c',
           'strxfrm.c',
           'towctrans_l.c',
           'towlower_l.c',
@@ -1522,6 +1560,35 @@ try:
           'wcsxfrm_l.c',
           'wctrans_l.c',
           'wctype_l.c',
+         ]],
+         ['math', [
+          '__cos.c',
+          '__cosdf.c',
+          '__sin.c',
+          '__sindf.c',
+          'ilogb.c',
+          'ilogbf.c',
+          'ilogbl.c',
+          'ldexp.c',
+          'ldexpf.c',
+          'ldexpl.c',
+          'logb.c',
+          'logbf.c',
+          'logbl.c',
+          'lgamma.c',
+          'lgamma_r.c',
+          'lgammaf.c',
+          'lgammaf_r.c',
+          'lgammal.c',
+          'scalbnf.c',
+          'signgam.c',
+          'tgamma.c',
+          'tgammaf.c',
+          'tgammal.c'
+         ]],
+         ['misc', [
+          'getopt.c',
+          'getopt_long.c',
          ]],
          ['multibyte', [
           'btowc.c',
@@ -1541,6 +1608,7 @@ try:
           'wctomb.c',
          ]],
          ['regex', [
+          'fnmatch.c',
           'regcomp.c',
           'regerror.c',
           'regexec.c',
@@ -1553,13 +1621,27 @@ try:
           'vswprintf.c',
           'vwprintf.c',
           'wprintf.c',
+          'fputwc.c',
+          'fputws.c',
          ]],
          ['stdlib', [
            'ecvt.c',
            'fcvt.c',
            'gcvt.c',
+           'wcstod.c',
+           'wcstol.c',
          ]],
          ['string', [
+           'memccpy.c',
+           'memmem.c',
+           'mempcpy.c',
+           'memrchr.c',
+           'strcasestr.c',
+           'strchrnul.c',
+           'strlcat.c',
+           'strlcpy.c',
+           'strsep.c',
+           'strverscmp.c',
            'wcpcpy.c',
            'wcpncpy.c',
            'wcscasecmp.c',
@@ -1697,15 +1779,14 @@ try:
           libfile = shared.Cache.get(name, create)
           extra_files_to_link.append(libfile)
 
+  log_time('calculate system libraries')
+
   # First, combine the bitcode files if there are several. We must also link if we have a singleton .a
   if len(input_files) + len(extra_files_to_link) > 1 or \
      (not LEAVE_INPUTS_RAW and not (suffix(temp_files[0]) in BITCODE_ENDINGS or suffix(temp_files[0]) in DYNAMICLIB_ENDINGS) and shared.Building.is_ar(temp_files[0])):
     linker_inputs = temp_files + extra_files_to_link
     logging.debug('linking: ' + str(linker_inputs))
-    t0 = time.time()
     shared.Building.link(linker_inputs, in_temp(target_basename + '.bc'), force_archive_contents = len(filter(lambda temp: not temp.endswith(STATICLIB_ENDINGS), temp_files)) == 0)
-    t1 = time.time()
-    logging.debug('    linking took %.2f seconds' % (t1 - t0))
     final = in_temp(target_basename + '.bc')
   else:
     if not LEAVE_INPUTS_RAW:
@@ -1715,19 +1796,16 @@ try:
       final = in_temp(input_files[0])
       shutil.copyfile(input_files[0], final)
 
+  log_time('link')
+
   if DEBUG:
     logging.debug('saving intermediate processing steps to %s' % shared.EMSCRIPTEN_TEMP_DIR)
 
     intermediate_counter = 0
-    intermediate_time = None
     def save_intermediate(name=None, suffix='js'):
-      global intermediate_counter, intermediate_time
+      global intermediate_counter
       shutil.copyfile(final, os.path.join(shared.EMSCRIPTEN_TEMP_DIR, 'emcc-%d%s.%s' % (intermediate_counter, '' if name is None else '-' + name, suffix)))
       intermediate_counter += 1
-      now = time.time()
-      if intermediate_time:
-        logging.debug('    step took %.2f seconds' % (now - intermediate_time))
-      intermediate_time = now
 
     if not LEAVE_INPUTS_RAW: save_intermediate('basebc', 'bc')
 
@@ -1749,7 +1827,6 @@ try:
       # At minimum remove dead functions etc., this potentially saves a lot in the size of the generated code (and the time to compile it)
       link_opts += shared.Building.get_safe_internalize() + ['-globaldce']
 
-
     if (not save_bc and not fastcomp) or AUTODEBUG:
       # let llvm opt directly emit ll, to skip writing and reading all the bitcode
       link_opts += ['-S']
@@ -1759,13 +1836,13 @@ try:
     else:
       if fastcomp and not save_bc:
         # Simplify LLVM bitcode for fastcomp
-        link_opts += ['-pnacl-abi-simplify-preopt', '-pnacl-abi-simplify-postopt']
+        link_opts += fastcomp_opts
       shared.Building.llvm_opt(final, link_opts)
       if DEBUG: save_intermediate('linktime', 'bc')
       if save_bc:
         shutil.copyfile(final, save_bc)
         if fastcomp:
-          shared.Building.llvm_opt(final, ['-pnacl-abi-simplify-preopt', '-pnacl-abi-simplify-postopt'], final + '.adsimp.bc')
+          shared.Building.llvm_opt(final, fastcomp_opts, final + '.adsimp.bc')
           final += '.adsimp.bc'
           if DEBUG: save_intermediate('adsimp', 'bc')
 
@@ -1785,9 +1862,11 @@ try:
 
   # Simplify bitcode after autodebug
   if fastcomp and (AUTODEBUG or LEAVE_INPUTS_RAW):
-    shared.Building.llvm_opt(final, ['-pnacl-abi-simplify-preopt', '-pnacl-abi-simplify-postopt'], final + '.adsimp.bc')
+    shared.Building.llvm_opt(final, fastcomp_opts, final + '.adsimp.bc')
     final += '.adsimp.bc'
     if DEBUG: save_intermediate('adsimp', 'bc')
+
+  log_time('post-link')
 
   # Emscripten
   logging.debug('LLVM => JS')
@@ -1795,6 +1874,8 @@ try:
   if jcache: extra_args.append('--jcache')
   final = shared.Building.emscripten(final, append_ext=False, extra_args=extra_args)
   if DEBUG: save_intermediate('original')
+
+  log_time('emscript (llvm=>js)')
 
   # Embed and preload files
   if len(preload_files) + len(embed_files) > 0:
@@ -1858,9 +1939,7 @@ try:
       shared.try_delete(memfile)
       def repl(m):
         # handle chunking of the memory initializer
-        s = re.sub('[\[\]\n\(\)\. ]', '', m.groups(0)[0])
-        s = s.replace('concat', ',')
-        if s[-1] == ',': s = s[:-1]
+        s = m.groups(0)[0]
         open(memfile, 'wb').write(''.join(map(lambda x: chr(int(x or '0')), s.split(','))))
         if DEBUG:
           # Copy into temp dir as well, so can be run there too
@@ -1871,6 +1950,7 @@ try:
       src = re.sub(shared.JS.memory_initializer_pattern, repl, open(final).read(), count=1)
       open(final + '.mem.js', 'w').write(src)
       final += '.mem.js'
+      src = None
       js_transform_tempfiles[-1] = final # simple text substitution preserves comment line number mappings
       if DEBUG:
         if os.path.exists(memfile):
@@ -1878,6 +1958,17 @@ try:
           logging.debug('wrote memory initialization to %s' % memfile)
         else:
           logging.debug('did not see memory initialization')
+  elif shared.Settings.USE_TYPED_ARRAYS == 2 and not shared.Settings.MAIN_MODULE and not shared.Settings.SIDE_MODULE:
+    # not writing a binary init, but we can at least optimize them by splitting them up
+    src = open(final).read()
+    src = shared.JS.optimize_initializer(src)
+    if src is not None:
+      logging.debug('optimizing memory initialization')
+      open(final + '.mem.js', 'w').write(src)
+      final += '.mem.js'
+      src = None
+
+  log_time('source transforms')
 
   # It is useful to run several js optimizer passes together, to save on unneeded unparsing/reparsing
   js_optimizer_queue = []
@@ -1923,6 +2014,9 @@ try:
 
     js_optimizer_queue += [get_eliminate()]
 
+    if shared.Settings.AGGRESSIVE_VARIABLE_ELIMINATION:
+      js_optimizer_queue += ['aggressiveVariableElimination']
+
     if opt_level >= 2:
       js_optimizer_queue += ['simplifyExpressions']
 
@@ -1936,6 +2030,8 @@ try:
     if DEBUG: save_intermediate('closure')
 
   if js_opts:
+    if shared.Settings.ASM_JS and shared.Settings.SAFE_HEAP: js_optimizer_queue += ['safeHeap']
+
     if shared.Settings.OUTLINING_LIMIT > 0 and shared.Settings.ASM_JS:
       js_optimizer_queue += ['outline']
       js_optimizer_extra_info['sizeToOutline'] = shared.Settings.OUTLINING_LIMIT
@@ -1944,7 +2040,7 @@ try:
       js_optimizer_queue += ['registerize']
 
     if opt_level > 0:
-      if debug_level < 2 and shared.Settings.ASM_JS: js_optimizer_queue = map(lambda p: p if p != 'registerize' else 'registerizeAndMinify', js_optimizer_queue)
+      if debug_level < 2 and shared.Settings.ASM_JS: js_optimizer_queue += ['minifyNames']
       if debug_level == 0: js_optimizer_queue += ['minifyWhitespace']
 
     if closure and shared.Settings.ASM_JS: 
@@ -1954,10 +2050,12 @@ try:
 
     flush_js_optimizer_queue()
 
+  log_time('js opts')
+
   # Remove some trivial whitespace # TODO: do not run when compress has already been done on all parts of the code
-  src = open(final).read()
-  src = re.sub(r'\n+[ \n]*\n+', '\n', src)
-  open(final, 'w').write(src)
+  #src = open(final).read()
+  #src = re.sub(r'\n+[ \n]*\n+', '\n', src)
+  #open(final, 'w').write(src)
 
   def generate_source_map(map_file_base_name, offset=0):
     jsrun.run_js(shared.path_from_root('tools', 'source-maps', 'sourcemapper.js'),
@@ -1981,6 +2079,11 @@ try:
       if debug_level >= 4:
         generate_source_map(target)
       shutil.move(final, js_target)
+      # TODO: use an async blob, which would allow code rewriting on the client:
+      #   var blob = new Blob([codeString]);
+      #   var script = document.createElement('script');
+      #   script.src = URL.createObjectURL(blob);
+      #   document.body.appendChild(script);
       script_tag = '''<script async type="text/javascript" src="%s"></script>''' % base_js_target
       html.write(shell.replace('{{{ SCRIPT }}}', script_tag))
     else:
@@ -2054,6 +2157,8 @@ try:
       if debug_level >= 4: generate_source_map(target)
       # copy final JS to output
       shutil.move(final, target)
+
+  log_time('final emitting')
 
   if DEBUG: logging.debug('total time: %.2f seconds' % (time.time() - start_time))
 
