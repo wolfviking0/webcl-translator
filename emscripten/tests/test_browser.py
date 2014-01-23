@@ -683,6 +683,9 @@ If manually bisecting:
 
   def test_sdl_canvas(self):
     self.btest('sdl_canvas.c', expected='1', args=['-s', 'LEGACY_GL_EMULATION=1'])
+    # some extra coverage
+    self.btest('sdl_canvas.c', expected='1', args=['-s', 'LEGACY_GL_EMULATION=1', '-s', '-O0', 'SAFE_HEAP=1'])
+    self.btest('sdl_canvas.c', expected='1', args=['-s', 'LEGACY_GL_EMULATION=1', '-s', '-O2', 'SAFE_HEAP=1'])
 
   def test_sdl_canvas_proxy(self):
     def post():
@@ -1543,6 +1546,9 @@ keydown(100);keyup(100); // trigger the end
   def test_cube_explosion(self):
     self.btest('cube_explosion.c', reference='cube_explosion.png', args=['-s', 'LEGACY_GL_EMULATION=1'])
 
+  def test_glgettexenv(self):
+    self.btest('glgettexenv.c', args=['-s', 'LEGACY_GL_EMULATION=1'], expected=['1'])
+
   def test_sdl_canvas_blank(self):
     self.btest('sdl_canvas_blank.c', reference='sdl_canvas_blank.png')
 
@@ -1598,6 +1604,10 @@ keydown(100);keyup(100); // trigger the end
   def test_s3tc(self):
     shutil.copyfile(path_from_root('tests', 'screenshot.dds'), os.path.join(self.get_dir(), 'screenshot.dds'))
     self.btest('s3tc.c', reference='s3tc.png', args=['--preload-file', 'screenshot.dds', '-s', 'LEGACY_GL_EMULATION=1'])
+
+  def test_s3tc_ffp_only(self):
+    shutil.copyfile(path_from_root('tests', 'screenshot.dds'), os.path.join(self.get_dir(), 'screenshot.dds'))
+    self.btest('s3tc.c', reference='s3tc.png', args=['--preload-file', 'screenshot.dds', '-s', 'LEGACY_GL_EMULATION=1', '-s', 'GL_FFP_ONLY=1'])
 
   def test_s3tc_crunch(self):
     shutil.copyfile(path_from_root('tests', 'ship.dds'), 'ship.dds')

@@ -1117,50 +1117,42 @@ class T(RunnerCore): # Short name, to make it more fun to use manually on the co
       self.do_run_from_file(src, output)
 
   def test_longjmp(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp2(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp2')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp3(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp3')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp4(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp4')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp_funcptr(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp_funcptr')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp_repeat(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     Settings.MAX_SETJMPS = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp_repeat')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp_stacked(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp_stacked')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
 
   def test_longjmp_exc(self):
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
     test_path = path_from_root('tests', 'core', 'test_longjmp_exc')
     src, output = (test_path + s for s in ('.in', '.out'))
     self.do_run_from_file(src, output)
@@ -4665,7 +4657,6 @@ return malloc(size);
   def test_lua(self):
     if self.emcc_args is None: return self.skip('requires emcc')
     if Settings.QUANTUM_SIZE == 1: return self.skip('TODO: make this work')
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
 
     for aggro in ([0, 1] if Settings.ASM_JS and '-O2' in self.emcc_args else [0]):
       print aggro
@@ -4686,7 +4677,6 @@ return malloc(size);
   def test_freetype(self):
     if self.emcc_args is None: return self.skip('requires emcc')
     if Settings.QUANTUM_SIZE == 1: return self.skip('TODO: Figure out and try to fix')
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
 
     assert 'asm2g' in test_modes
     if self.run_name == 'asm2g':
@@ -4832,7 +4822,6 @@ def process(filename):
 
   def test_poppler(self):
     if self.emcc_args is None: return self.skip('very slow, we only do this in emcc runs')
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
 
     Settings.CORRECT_OVERFLOWS = 1
     Settings.CORRECT_SIGNS = 1
@@ -5039,7 +5028,6 @@ def process(filename):
   # to process.
   def test_cases(self):
     if Building.LLVM_OPTS: return self.skip("Our code is not exactly 'normal' llvm assembly")
-    if os.environ.get('EMCC_FAST_COMPILER') == '1': Settings.DISABLE_EXCEPTION_CATCHING = 1
 
     emcc_args = self.emcc_args
 
@@ -5966,7 +5954,7 @@ def process(filename):
   def test_debug(self):
     if '-g' not in Building.COMPILER_TEST_OPTS: Building.COMPILER_TEST_OPTS.append('-g')
     if self.emcc_args is not None:
-      if '-O1' in self.emcc_args or '-O2' in self.emcc_args: return self.skip('optimizations remove LLVM debug info')
+      if '-O1' in self.emcc_args or '-O2' in self.emcc_args or '-O3' in self.emcc_args: return self.skip('optimizations remove LLVM debug info')
 
     src = '''
       #include <stdio.h>
@@ -6355,7 +6343,7 @@ def make_run(fullname, name=-1, compiler=-1, embetter=0, quantum_size=0,
     if self.emcc_args is not None:
       Settings.load(self.emcc_args)
       Building.LLVM_OPTS = 0
-      if '-O2' in self.emcc_args:
+      if '-O2' in self.emcc_args or '-O3' in self.emcc_args:
         Building.COMPILER_TEST_OPTS = [] # remove -g in -O2 tests, for more coverage
       #Building.COMPILER_TEST_OPTS += self.emcc_args
       for arg in self.emcc_args:
@@ -6409,6 +6397,7 @@ o2 = make_run("o2", compiler=CLANG, emcc_args=["-O2", "-s", "ASM_JS=0", "-s", "J
 # asm.js
 asm1 = make_run("asm1", compiler=CLANG, emcc_args=["-O1"])
 asm2 = make_run("asm2", compiler=CLANG, emcc_args=["-O2"])
+asm3 = make_run("asm3", compiler=CLANG, emcc_args=["-O3"])
 asm2f = make_run("asm2f", compiler=CLANG, emcc_args=["-O2", "-s", "PRECISE_F32=1"])
 if os.environ.get('EMCC_FAST_COMPILER') == '1':
   asm2g = make_run("asm2g", compiler=CLANG, emcc_args=["-O2", "-g", "-s", "ASSERTIONS=1", "--memory-init-file", "1", "-s", "SAFE_HEAP=1"])

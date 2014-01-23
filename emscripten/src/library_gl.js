@@ -2696,7 +2696,7 @@ var LibraryGL = {
             return "float";
         }
 
-        return Abort_NoSupport("Unsupported combiner op: 0x" + op.toString(16));
+        return abort_noSupport("Unsupported combiner op: 0x" + op.toString(16));
       }
 
       function getCurTexUnit() {
@@ -3049,7 +3049,7 @@ var LibraryGL = {
           }
         }
 
-        return Abort_NoSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
+        return abort_noSupport("Unsupported TexEnv mode: 0x" + this.mode.toString(16));
       }
 
       CTexEnv.prototype.genCombinerLines = function CTexEnv_getCombinerLines(isColor, outputVar,
@@ -3469,6 +3469,107 @@ var LibraryGL = {
               Module.printErr('WARNING: Unhandled `pname` in call to `glTexEnvfv`.');
           }
         },
+
+        hook_getTexEnviv: function(target, pname, param) {
+          if (target != GL_TEXTURE_ENV)
+            return;
+
+          var env = getCurTexUnit().env;
+          switch (pname) {
+            case GL_TEXTURE_ENV_MODE:
+              {{{ makeSetValue('param', '0', 'env.mode', 'i32') }}};
+              return;
+
+            case GL_TEXTURE_ENV_COLOR:
+              {{{ makeSetValue('param', '0', 'Math.max(Math.min(env.envColor[0]*255, 255, -255))', 'i32') }}};
+              {{{ makeSetValue('param', '1', 'Math.max(Math.min(env.envColor[1]*255, 255, -255))', 'i32') }}};
+              {{{ makeSetValue('param', '2', 'Math.max(Math.min(env.envColor[2]*255, 255, -255))', 'i32') }}};
+              {{{ makeSetValue('param', '3', 'Math.max(Math.min(env.envColor[3]*255, 255, -255))', 'i32') }}};
+              return;
+
+            case GL_COMBINE_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorCombiner', 'i32') }}};
+              return;
+
+            case GL_COMBINE_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaCombiner', 'i32') }}};
+              return;
+
+            case GL_SRC0_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorSrc[0]', 'i32') }}};
+              return;
+
+            case GL_SRC1_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorSrc[1]', 'i32') }}};
+              return;
+
+            case GL_SRC2_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorSrc[2]', 'i32') }}};
+              return;
+
+            case GL_SRC0_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaSrc[0]', 'i32') }}};
+              return;
+
+            case GL_SRC1_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaSrc[1]', 'i32') }}};
+              return;
+
+            case GL_SRC2_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaSrc[2]', 'i32') }}};
+              return;
+
+            case GL_OPERAND0_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorOp[0]', 'i32') }}};
+              return;
+
+            case GL_OPERAND1_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorOp[1]', 'i32') }}};
+              return;
+
+            case GL_OPERAND2_RGB:
+              {{{ makeSetValue('param', '0', 'env.colorOp[2]', 'i32') }}};
+              return;
+
+            case GL_OPERAND0_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaOp[0]', 'i32') }}};
+              return;
+
+            case GL_OPERAND1_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaOp[1]', 'i32') }}};
+              return;
+
+            case GL_OPERAND2_ALPHA:
+              {{{ makeSetValue('param', '0', 'env.alphaOp[2]', 'i32') }}};
+              return;
+
+            case GL_RGB_SCALE:
+              {{{ makeSetValue('param', '0', 'env.colorScale', 'i32') }}};
+              return;
+
+            case GL_ALPHA_SCALE:
+              {{{ makeSetValue('param', '0', 'env.alphaScale', 'i32') }}};
+              return;
+
+            default:
+              Module.printErr('WARNING: Unhandled `pname` in call to `glGetTexEnvi`.');
+          }
+        },
+
+        hook_getTexEnvfv: function(target, pname, param) {
+          if (target != GL_TEXTURE_ENV)
+            return;
+
+          var env = getCurTexUnit().env;
+          switch (pname) {
+            case GL_TEXTURE_ENV_COLOR:
+              {{{ makeSetValue('param', '0', 'env.envColor[0]', 'float') }}};
+              {{{ makeSetValue('param', '4', 'env.envColor[1]', 'float') }}};
+              {{{ makeSetValue('param', '8', 'env.envColor[2]', 'float') }}};
+              {{{ makeSetValue('param', '12', 'env.envColor[3]', 'float') }}};
+              return;
+          }
+        }
       };
     },
 
@@ -3557,7 +3658,7 @@ var LibraryGL = {
         // We can enable the correct attribute stream index immediately here, since the same attribute in each shader
         // will be bound to this same index.
         GL.enableVertexAttribArray(name);
-#endif        
+#endif
       } else {
         GLImmediate.rendererComponents[name]++;
       }
@@ -3790,7 +3891,8 @@ var LibraryGL = {
             GLctx.bindAttribLocation(this.program, GLImmediate.VERTEX, 'a_position');
             GLctx.bindAttribLocation(this.program, GLImmediate.COLOR, 'a_color');
             GLctx.bindAttribLocation(this.program, GLImmediate.NORMAL, 'a_normal');
-            for (var i = 0; i < GLImmediate.MAX_TEXTURES; i++) {
+            var maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
+            for (var i = 0; i < GLImmediate.MAX_TEXTURES && GLImmediate.TEXTURE0 + i < maxVertexAttribs; i++) {
               GLctx.bindAttribLocation(this.program, GLImmediate.TEXTURE0 + i, 'a_texCoord'+i);
               GLctx.bindAttribLocation(this.program, GLImmediate.TEXTURE0 + i, aTexCoordPrefix+i);
             }
@@ -3817,7 +3919,6 @@ var LibraryGL = {
               this.texCoordLocations[i] = GLctx.getAttribLocation(this.program, aTexCoordPrefix + i);
             }
           }
-
           this.colorLocation = GLctx.getAttribLocation(this.program, 'a_color');
           if (!useCurrProgram) {
             // Temporarily switch to the program so we can set our sampler uniforms early.
@@ -3832,7 +3933,7 @@ var LibraryGL = {
             }
             // The default color attribute value is not the same as the default for all other attribute streams (0,0,0,1) but (1,1,1,1),
             // so explicitly set it right at start.
-            GLctx.vertexAttrib4fv(this.colorLocation, [1,1,1,1]);            
+            GLctx.vertexAttrib4fv(this.colorLocation, [1,1,1,1]);
             GLctx.useProgram(prevBoundProg);
           }
 
@@ -4144,6 +4245,14 @@ var LibraryGL = {
         GLImmediate.TexEnvJIT.hook_texEnvfv(target, pname, param);
         // Don't call old func, since we are the implementor.
         //glTexEnvfv(target, pname, param);
+      };
+
+      _glGetTexEnviv = function _glGetTexEnviv(target, pname, param) {
+        GLImmediate.TexEnvJIT.hook_getTexEnviv(target, pname, param);
+      };
+
+      _glGetTexEnvfv = function _glGetTexEnvfv(target, pname, param) {
+        GLImmediate.TexEnvJIT.hook_getTexEnvfv(target, pname, param);
       };
 
       var glGetIntegerv = _glGetIntegerv;
@@ -4937,6 +5046,9 @@ var LibraryGL = {
   glTexEnvi: function() { Runtime.warnOnce('glTexEnvi: TODO') },
   glTexEnvf: function() { Runtime.warnOnce('glTexEnvf: TODO') },
   glTexEnvfv: function() { Runtime.warnOnce('glTexEnvfv: TODO') },
+
+  glGetTexEnviv: function(target, pname, param) { throw 'GL emulation not initialized!'; },
+  glGetTexEnvfv: function(target, pname, param) { throw 'GL emulation not initialized!'; },
 
   glTexImage1D: function() { throw 'glTexImage1D: TODO' },
   glTexCoord3f: function() { throw 'glTexCoord3f: TODO' },
