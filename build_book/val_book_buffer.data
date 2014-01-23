@@ -89,12 +89,15 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-         )
-#define _WCL_ADDR_CLAMP_global_1(type, addr, size, min0, max0, asnull) \
-    ( _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_1__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max0)) );
+}
+__global int *_wcl_addr_clamp_global_1__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0, __global int * asnull)
+{
+     return _wcl_addr_check_global_1__u_uglobal__int__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -126,5 +129,5 @@ __kernel void square(__global int * buffer, ulong _wcl_buffer_size)
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
  size_t id = get_global_id(0);
- (*(_WCL_ADDR_CLAMP_global_1(__global int *, (buffer)+(id), 1, _wcl_allocs->gl.square__buffer_min, _wcl_allocs->gl.square__buffer_max, _wcl_allocs->gn))) = (*(_WCL_ADDR_CLAMP_global_1(__global int *, (buffer)+(id), 1, _wcl_allocs->gl.square__buffer_min, _wcl_allocs->gl.square__buffer_max, _wcl_allocs->gn))) * (*(_WCL_ADDR_CLAMP_global_1(__global int *, (buffer)+(id), 1, _wcl_allocs->gl.square__buffer_min, _wcl_allocs->gl.square__buffer_max, _wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_global_1__u_uglobal__int__Ptr((buffer)+(id), 1, (__global int *)_wcl_allocs->gl.square__buffer_min, (__global int *)_wcl_allocs->gl.square__buffer_max, (__global int *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_global_1__u_uglobal__int__Ptr((buffer)+(id), 1, (__global int *)_wcl_allocs->gl.square__buffer_min, (__global int *)_wcl_allocs->gl.square__buffer_max, (__global int *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_1__u_uglobal__int__Ptr((buffer)+(id), 1, (__global int *)_wcl_allocs->gl.square__buffer_min, (__global int *)_wcl_allocs->gl.square__buffer_max, (__global int *)_wcl_allocs->gn)));
 }

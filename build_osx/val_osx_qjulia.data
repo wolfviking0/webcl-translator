@@ -104,12 +104,15 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-         )
-#define _WCL_ADDR_CLAMP_global_1(type, addr, size, min0, max0, asnull) \
-    ( _WCL_ADDR_CHECK_global_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_1__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max0)) );
+}
+__global uchar4 *_wcl_addr_clamp_global_1__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0, __global uchar4 * asnull)
+{
+     return _wcl_addr_check_global_1__u_uglobal__uchar4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -425,7 +428,7 @@ QJuliaKernel(
     {
         float4 color = QJulia(_wcl_allocs, coord, mu, diffuse, epsilon, (10), (0), (512), (512));
         uchar4 output = convert_uchar4_sat_rte(color * 255.0f);
-        (*(_WCL_ADDR_CLAMP_global_1(__global uchar4 *, (result)+(index), 1, _wcl_allocs->gl.QJuliaKernel__result_min, _wcl_allocs->gl.QJuliaKernel__result_max, _wcl_allocs->gn))) = output;
+        (*(_wcl_addr_clamp_global_1__u_uglobal__uchar4__Ptr((result)+(index), 1, (__global uchar4 *)_wcl_allocs->gl.QJuliaKernel__result_min, (__global uchar4 *)_wcl_allocs->gl.QJuliaKernel__result_max, (__global uchar4 *)_wcl_allocs->gn))) = output;
     }
 }
 

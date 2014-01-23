@@ -132,20 +132,37 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-             )
-#define _WCL_ADDR_CLAMP_global_2(type, addr, size, min0, max0, min1, max1, asnull) \
-    ( _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_2__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) );
+}
+__global uint *_wcl_addr_clamp_global_2__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * asnull)
+{
+     return _wcl_addr_check_global_2__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
 
-#define _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-         )
-#define _WCL_ADDR_CLAMP_constant_1(type, addr, size, min0, max0, asnull) \
-    ( _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_2_const___u_uglobal__uint__Ptr(const __global uint *addr, unsigned size, const __global uint * min0, const __global uint * max0, const __global uint * min1, const __global uint * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max1)) );
+}
+const __global uint *_wcl_addr_clamp_global_2_const___u_uglobal__uint__Ptr(const __global uint *addr, unsigned size, const __global uint * min0, const __global uint * max0, const __global uint * min1, const __global uint * max1, const __global uint * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_constant_1__u_uconstant__uint__Ptr(__constant uint *addr, unsigned size, __constant uint * min0, __constant uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant uint *, max0)) );
+}
+__constant uint *_wcl_addr_clamp_constant_1__u_uconstant__uint__Ptr(__constant uint *addr, unsigned size, __constant uint * min0, __constant uint * max0, __constant uint * asnull)
+{
+     return _wcl_addr_check_constant_1__u_uconstant__uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -193,9 +210,9 @@ __kernel void convolve(
 
         for (int c = 0; c < maskWidth; c++)
         {
-   sum += (*(_WCL_ADDR_CLAMP_constant_1(__constant uint *, (mask)+((r * maskWidth) + c), 1, _wcl_allocs->cl.convolve__mask_min, _wcl_allocs->cl.convolve__mask_max, _wcl_allocs->cn))) * (*(_WCL_ADDR_CLAMP_global_2(const __global uint *, (input)+(idxIntmp + c), 1, _wcl_allocs->gl.convolve__input_min, _wcl_allocs->gl.convolve__input_max, _wcl_allocs->gl.convolve__output_min, _wcl_allocs->gl.convolve__output_max, _wcl_allocs->gn)));
+   sum += (*(_wcl_addr_clamp_constant_1__u_uconstant__uint__Ptr((mask)+((r * maskWidth) + c), 1, (__constant uint *)_wcl_allocs->cl.convolve__mask_min, (__constant uint *)_wcl_allocs->cl.convolve__mask_max, (__constant uint *)_wcl_allocs->cn))) * (*(_wcl_addr_clamp_global_2_const___u_uglobal__uint__Ptr((input)+(idxIntmp + c), 1, (const __global uint *)_wcl_allocs->gl.convolve__input_min, (const __global uint *)_wcl_allocs->gl.convolve__input_max, (const __global uint *)_wcl_allocs->gl.convolve__output_min, (const __global uint *)_wcl_allocs->gl.convolve__output_max, (const __global uint *)_wcl_allocs->gn)));
         }
     }
 
- (*(_WCL_ADDR_CLAMP_global_2(__global uint *, (output)+(y * get_global_size(0) + x), 1, _wcl_allocs->gl.convolve__input_min, _wcl_allocs->gl.convolve__input_max, _wcl_allocs->gl.convolve__output_min, _wcl_allocs->gl.convolve__output_max, _wcl_allocs->gn))) = sum;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__uint__Ptr((output)+(y * get_global_size(0) + x), 1, (__global uint *)_wcl_allocs->gl.convolve__input_min, (__global uint *)_wcl_allocs->gl.convolve__input_max, (__global uint *)_wcl_allocs->gl.convolve__output_min, (__global uint *)_wcl_allocs->gl.convolve__output_max, (__global uint *)_wcl_allocs->gn))) = sum;
 }

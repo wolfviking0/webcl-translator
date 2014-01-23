@@ -154,20 +154,79 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_private_1(type, addr, size, min0, max0) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-         )
-#define _WCL_ADDR_CLAMP_private_1(type, addr, size, min0, max0, asnull) \
-    ( _WCL_ADDR_CHECK_private_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(float *, max0)) );
+}
+float *_wcl_addr_clamp_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0, float * asnull)
+{
+     return _wcl_addr_check_private_1_float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
 
-#define _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-             )
-#define _WCL_ADDR_CLAMP_global_2(type, addr, size, min0, max0, min1, max1, asnull) \
-    ( _WCL_ADDR_CHECK_global_2(type, addr, size, min0, max0, min1, max1) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_private_1_float4__Ptr(float4 *addr, unsigned size, float4 * min0, float4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(float4 *, max0)) );
+}
+float4 *_wcl_addr_clamp_private_1_float4__Ptr(float4 *addr, unsigned size, float4 * min0, float4 * max0, float4 * asnull)
+{
+     return _wcl_addr_check_private_1_float4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(uint *, max0)) );
+}
+uint *_wcl_addr_clamp_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0, uint * asnull)
+{
+     return _wcl_addr_check_private_1_uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) );
+}
+__global float *_wcl_addr_clamp_global_2__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * asnull)
+{
+     return _wcl_addr_check_global_2__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__Camera__Ptr(const __global Camera *addr, unsigned size, const __global Camera * min0, const __global Camera * max0, const __global Camera * min1, const __global Camera * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max1)) );
+}
+const __global Camera *_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr(const __global Camera *addr, unsigned size, const __global Camera * min0, const __global Camera * max0, const __global Camera * min1, const __global Camera * max1, const __global Camera * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__Camera__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__RenderingConfig__Ptr(const __global RenderingConfig *addr, unsigned size, const __global RenderingConfig * min0, const __global RenderingConfig * max0, const __global RenderingConfig * min1, const __global RenderingConfig * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global RenderingConfig *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global RenderingConfig *, max1)) );
+}
+const __global RenderingConfig *_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr(const __global RenderingConfig *addr, unsigned size, const __global RenderingConfig * min0, const __global RenderingConfig * max0, const __global RenderingConfig * min1, const __global RenderingConfig * max1, const __global RenderingConfig * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__RenderingConfig__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__float__Ptr(const __global float *addr, unsigned size, const __global float * min0, const __global float * max0, const __global float * min1, const __global float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max1)) );
+}
+const __global float *_wcl_addr_clamp_global_2_const___u_uglobal__float__Ptr(const __global float *addr, unsigned size, const __global float * min0, const __global float * max0, const __global float * min1, const __global float * max1, const __global float * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -229,8 +288,8 @@ typedef uint _WclInitType;
   s++;
  } while ((dist > epsilon) && (distDone < maxDist));
 
- (*(_WCL_ADDR_CLAMP_private_1(float4 *, (hitPoint), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = r0;
- (*(_WCL_ADDR_CLAMP_private_1(uint *, (steps), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = s;
+ (*(_wcl_addr_clamp_private_1_float4__Ptr((hitPoint), 1, (float4 *)&_wcl_allocs->pa, (float4 *)(&_wcl_allocs->pa + 1), (float4 *)_wcl_allocs->pn))) = r0;
+ (*(_wcl_addr_clamp_private_1_uint__Ptr((steps), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = s;
  return dist;
 }
 
@@ -269,14 +328,14 @@ int IntersectBoundingSphere(_WclProgramAllocations *_wcl_allocs, const float4 ey
  float t1 = b - det;
  float t2 = b + det;
  if (t1 > 0.f) {
-  (*(_WCL_ADDR_CLAMP_private_1(float *, (tmin), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = t1;
-  (*(_WCL_ADDR_CLAMP_private_1(float *, (tmax), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = t2;
+  (*(_wcl_addr_clamp_private_1_float__Ptr((tmin), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = t1;
+  (*(_wcl_addr_clamp_private_1_float__Ptr((tmax), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = t2;
   return 1;
  } else {
   if (t2 > 0.f) {
 
-   (*(_WCL_ADDR_CLAMP_private_1(float *, (tmin), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = 0.f;
-   (*(_WCL_ADDR_CLAMP_private_1(float *, (tmax), 1, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), _wcl_allocs->pn))) = t2;
+   (*(_wcl_addr_clamp_private_1_float__Ptr((tmin), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = 0.f;
+   (*(_wcl_addr_clamp_private_1_float__Ptr((tmax), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = t2;
 
    return 1;
   } else
@@ -347,8 +406,8 @@ __kernel void MandelbulbGPU(
     if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     const int gid = get_global_id(0);
- const unsigned width = (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).width;
- const unsigned height = (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).height;
+ const unsigned width = (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).width;
+ const unsigned height = (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).height;
 
  const unsigned int x = gid % width;
  const int y = gid / width;
@@ -357,12 +416,12 @@ __kernel void MandelbulbGPU(
  if (y >= height)
   return;
 
- const float epsilon = (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).actvateFastRendering ? ((*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).epsilon * (1.5f / 0.75f)) : (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).epsilon;
- const uint maxIterations = (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).actvateFastRendering ? (max(3u, (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).maxIterations) - 2u) : (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).maxIterations;
+ const float epsilon = (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).actvateFastRendering ? ((*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).epsilon * (1.5f / 0.75f)) : (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).epsilon;
+ const uint maxIterations = (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).actvateFastRendering ? (max(3u, (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).maxIterations) - 2u) : (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).maxIterations;
 
- const float4 mu = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).mu[0], (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).mu[1], (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).mu[2], (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).mu[3]);
- const float4 light = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).light[0], (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).light[1], (*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).light[2], 0.f);
- const __global Camera *camera = &(*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).camera;;_wcl_allocs->pa._wcl_camera = camera;
+ const float4 mu = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).mu[0], (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).mu[1], (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).mu[2], (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).mu[3]);
+ const float4 light = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).light[0], (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).light[1], (*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).light[2], 0.f);
+ const __global Camera *camera = &(*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).camera;;_wcl_allocs->pa._wcl_camera = camera;
 
 
 
@@ -375,10 +434,10 @@ __kernel void MandelbulbGPU(
  const float kcy = (y + sampleY) * invHeight - .5f;
  const float4 kcy4 = (float4)kcy;
 
- const float4 cameraX = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).x.x, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).x.y, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).x.z, 0.f);
- const float4 cameraY = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).y.x, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).y.y, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).y.z, 0.f);
- const float4 cameraDir = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).dir.x, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).dir.y, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).dir.z, 0.f);
- const float4 cameraOrig = (float4)((*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).orig.x, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).orig.y, (*(_WCL_ADDR_CLAMP_global_2(const __global Camera *, (_wcl_allocs->pa._wcl_camera), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).orig.z, 0.f);
+ const float4 cameraX = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).x.x, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).x.y, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).x.z, 0.f);
+ const float4 cameraY = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).y.x, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).y.y, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).y.z, 0.f);
+ const float4 cameraDir = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).dir.x, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).dir.y, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).dir.z, 0.f);
+ const float4 cameraOrig = (float4)((*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).orig.x, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).orig.y, (*(_wcl_addr_clamp_global_2_const___u_uglobal__Camera__Ptr((_wcl_allocs->pa._wcl_camera), 1, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global Camera *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global Camera *)_wcl_allocs->gn))).orig.z, 0.f);
 
  const float4 eyeRayDir = normalize(cameraX * kcx4 + cameraY * kcy4 + cameraDir);
  const float4 eyeRayOrig = eyeRayDir * (float4)0.1f + cameraOrig;
@@ -446,7 +505,7 @@ __kernel void MandelbulbGPU(
 
  if (dist >= 0.f) {
   float shadowFactor = 1.f;
-  if ((*(_WCL_ADDR_CLAMP_global_2(const __global RenderingConfig *, (config), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))).enableShadow) {
+  if ((*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).enableShadow) {
    float4 L = normalize(light - _wcl_allocs->pa._wcl_hitPoint);
    float4 rO = _wcl_allocs->pa._wcl_hitPoint + n * 1e-2f;
    float4 shadowHitPoint;
@@ -483,12 +542,12 @@ __kernel void MandelbulbGPU(
  int offset = 3 * (x + y * width);
  color = clamp(color, (float4)(0.f, 0.f ,0.f, 0.f), (float4)(1.f, 1.f ,1.f, 0.f));
  if (enableAccumulation) {
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset++), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) += color.s0;
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset++), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) += color.s1;
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) += color.s2;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s0;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s1;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s2;
  } else {
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset++), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) = color.s0;
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset++), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) = color.s1;
-  (*(_WCL_ADDR_CLAMP_global_2(__global float *, (pixels)+(offset), 1, _wcl_allocs->gl.MandelbulbGPU__pixels_min, _wcl_allocs->gl.MandelbulbGPU__pixels_max, _wcl_allocs->gl.MandelbulbGPU__config_min, _wcl_allocs->gl.MandelbulbGPU__config_max, _wcl_allocs->gn))) = color.s2;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s0;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s1;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s2;
  }
 }

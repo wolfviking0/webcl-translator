@@ -150,16 +150,19 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
-                || ( ((addr) >= ((type)min3)) && ((addr + size - 1) <= _WCL_LAST(type, max3)) ) \
-                    || ( ((addr) >= ((type)min4)) && ((addr + size - 1) <= _WCL_LAST(type, max4)) ) \
-                         )
-#define _WCL_ADDR_CLAMP_global_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, asnull) \
-    ( _WCL_ADDR_CHECK_global_5(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_5__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2, __global float4 * min3, __global float4 * max3, __global float4 * min4, __global float4 * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max4)) );
+}
+__global float4 *_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2, __global float4 * min3, __global float4 * max3, __global float4 * min4, __global float4 * max4, __global float4 * asnull)
+{
+     return _wcl_addr_check_global_5__u_uglobal__float4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -184,18 +187,18 @@ __kernel void part2(__global float4* pos, ulong _wcl_pos_size, __global float4* 
     //copy position and velocity for this iteration to a local variable
     //note: if we were doing many more calculations we would want to have opencl
     //copy to a local memory array to speed up memory access (this will be the subject of a later tutorial)
-    float4 p = (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (pos)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn)));
-    float4 v = (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (vel)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn)));
+    float4 p = (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((pos)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn)));
+    float4 v = (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((vel)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn)));
 
     //we've stored the life in the fourth component of our velocity array
-    float life = (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (vel)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn))).w;
+    float life = (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((vel)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn))).w;
     //decrease the life by the time step (this value could be adjusted to lengthen or shorten particle life
     life -= dt;
     //if the life is 0 or less we reset the particle's values back to the original values and set life to 1
     if(life <= 0)
     {
-        p = (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (pos_gen)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn)));
-        v = (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (vel_gen)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn)));
+        p = (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((pos_gen)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn)));
+        v = (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((vel_gen)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn)));
         life = 1.0;
     }
 
@@ -208,12 +211,12 @@ __kernel void part2(__global float4* pos, ulong _wcl_pos_size, __global float4* 
     v.w = life;
 
     //update the arrays with our newly computed values
-    (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (pos)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn))) = p;
-    (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (vel)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn))) = v;
+    (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((pos)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn))) = p;
+    (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((vel)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn))) = v;
 
     //you can manipulate the color based on properties of the system
     //here we adjust the alpha
-    (*(_WCL_ADDR_CLAMP_global_5(__global float4 *, (color)+(i), 1, _wcl_allocs->gl.part2__pos_min, _wcl_allocs->gl.part2__pos_max, _wcl_allocs->gl.part2__color_min, _wcl_allocs->gl.part2__color_max, _wcl_allocs->gl.part2__vel_min, _wcl_allocs->gl.part2__vel_max, _wcl_allocs->gl.part2__pos_gen_min, _wcl_allocs->gl.part2__pos_gen_max, _wcl_allocs->gl.part2__vel_gen_min, _wcl_allocs->gl.part2__vel_gen_max, _wcl_allocs->gn))).w = life;
+    (*(_wcl_addr_clamp_global_5__u_uglobal__float4__Ptr((color)+(i), 1, (__global float4 *)_wcl_allocs->gl.part2__pos_min, (__global float4 *)_wcl_allocs->gl.part2__pos_max, (__global float4 *)_wcl_allocs->gl.part2__color_min, (__global float4 *)_wcl_allocs->gl.part2__color_max, (__global float4 *)_wcl_allocs->gl.part2__vel_min, (__global float4 *)_wcl_allocs->gl.part2__vel_max, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_min, (__global float4 *)_wcl_allocs->gl.part2__pos_gen_max, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_min, (__global float4 *)_wcl_allocs->gl.part2__vel_gen_max, (__global float4 *)_wcl_allocs->gn))).w = life;
 
 }
 //);

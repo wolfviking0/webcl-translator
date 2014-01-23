@@ -122,14 +122,17 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
-                 )
-#define _WCL_ADDR_CLAMP_global_3(type, addr, size, min0, max0, min1, max1, min2, max2, asnull) \
-    ( _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_3__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0, __global int * min1, __global int * max1, __global int * min2, __global int * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max2)) );
+}
+__global int *_wcl_addr_clamp_global_3__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0, __global int * min1, __global int * max1, __global int * min2, __global int * max2, __global int * asnull)
+{
+     return _wcl_addr_check_global_3__u_uglobal__int__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -153,9 +156,9 @@ __kernel void ker(__global int * A, ulong _wcl_A_size, __global int * B, ulong _
   for(int i=0;i<width;i++){
    sum = 0;
    for(int j=0;j<width;j++){
-    sum = sum + ((*(_WCL_ADDR_CLAMP_global_3(__global int *, (A)+(width*row_no+j), 1, _wcl_allocs->gl.ker__A_min, _wcl_allocs->gl.ker__A_max, _wcl_allocs->gl.ker__B_min, _wcl_allocs->gl.ker__B_max, _wcl_allocs->gl.ker__C_min, _wcl_allocs->gl.ker__C_max, _wcl_allocs->gn)))*(*(_WCL_ADDR_CLAMP_global_3(__global int *, (B)+(width*j+i), 1, _wcl_allocs->gl.ker__A_min, _wcl_allocs->gl.ker__A_max, _wcl_allocs->gl.ker__B_min, _wcl_allocs->gl.ker__B_max, _wcl_allocs->gl.ker__C_min, _wcl_allocs->gl.ker__C_max, _wcl_allocs->gn))));
+    sum = sum + ((*(_wcl_addr_clamp_global_3__u_uglobal__int__Ptr((A)+(width*row_no+j), 1, (__global int *)_wcl_allocs->gl.ker__A_min, (__global int *)_wcl_allocs->gl.ker__A_max, (__global int *)_wcl_allocs->gl.ker__B_min, (__global int *)_wcl_allocs->gl.ker__B_max, (__global int *)_wcl_allocs->gl.ker__C_min, (__global int *)_wcl_allocs->gl.ker__C_max, (__global int *)_wcl_allocs->gn)))*(*(_wcl_addr_clamp_global_3__u_uglobal__int__Ptr((B)+(width*j+i), 1, (__global int *)_wcl_allocs->gl.ker__A_min, (__global int *)_wcl_allocs->gl.ker__A_max, (__global int *)_wcl_allocs->gl.ker__B_min, (__global int *)_wcl_allocs->gl.ker__B_max, (__global int *)_wcl_allocs->gl.ker__C_min, (__global int *)_wcl_allocs->gl.ker__C_max, (__global int *)_wcl_allocs->gn))));
    }
-   (*(_WCL_ADDR_CLAMP_global_3(__global int *, (C)+(width*row_no+i), 1, _wcl_allocs->gl.ker__A_min, _wcl_allocs->gl.ker__A_max, _wcl_allocs->gl.ker__B_min, _wcl_allocs->gl.ker__B_max, _wcl_allocs->gl.ker__C_min, _wcl_allocs->gl.ker__C_max, _wcl_allocs->gn))) = sum;
+   (*(_wcl_addr_clamp_global_3__u_uglobal__int__Ptr((C)+(width*row_no+i), 1, (__global int *)_wcl_allocs->gl.ker__A_min, (__global int *)_wcl_allocs->gl.ker__A_max, (__global int *)_wcl_allocs->gl.ker__B_min, (__global int *)_wcl_allocs->gl.ker__B_max, (__global int *)_wcl_allocs->gl.ker__C_min, (__global int *)_wcl_allocs->gl.ker__C_max, (__global int *)_wcl_allocs->gn))) = sum;
   }
  }
 }

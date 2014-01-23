@@ -309,22 +309,38 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_4(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
-                || ( ((addr) >= ((type)min3)) && ((addr + size - 1) <= _WCL_LAST(type, max3)) ) \
-                     )
-#define _WCL_ADDR_CLAMP_global_4(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3, asnull) \
-    ( _WCL_ADDR_CHECK_global_4(type, addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_4__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0, __global uchar4 * min1, __global uchar4 * max1, __global uchar4 * min2, __global uchar4 * max2, __global uchar4 * min3, __global uchar4 * max3)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max3)) );
+}
+__global uchar4 *_wcl_addr_clamp_global_4__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0, __global uchar4 * min1, __global uchar4 * max1, __global uchar4 * min2, __global uchar4 * max2, __global uchar4 * min3, __global uchar4 * max3, __global uchar4 * asnull)
+{
+     return _wcl_addr_check_global_4__u_uglobal__uchar4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? addr : asnull;
+}
 
-#define _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-         )
-#define _WCL_ADDR_CLAMP_constant_1(type, addr, size, min0, max0, asnull) \
-    ( _WCL_ADDR_CHECK_constant_1(type, addr, size, min0, max0) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_constant_1__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant float *, max0)) );
+}
+__constant float *_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0, __constant float * asnull)
+{
+     return _wcl_addr_check_constant_1__u_uconstant__float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_constant_1__u_uconstant__int__Ptr(__constant int *addr, unsigned size, __constant int * min0, __constant int * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant int *, max0)) );
+}
+__constant int *_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr(__constant int *addr, unsigned size, __constant int * min0, __constant int * max0, __constant int * asnull)
+{
+     return _wcl_addr_check_constant_1__u_uconstant__int__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -500,17 +516,17 @@ float4 mix3d(_WclProgramAllocations *_wcl_allocs, float4 a, float4 b, float t)
 
 int lattice1d(_WclProgramAllocations *_wcl_allocs, int i)
 {
- return (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)));
+ return (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)));
 }
 
 int lattice2d(_WclProgramAllocations *_wcl_allocs, int2 i)
 {
- return (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i.x + (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i.y), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)))), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)));
+ return (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i.x + (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i.y), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)))), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)));
 }
 
 int lattice3d(_WclProgramAllocations *_wcl_allocs, int4 i)
 {
- return (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i.x + (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i.y + (*(_WCL_ADDR_CLAMP_constant_1(__constant int *, (_wcl_constant_allocations.P)+(i.z), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)))), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)))), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)));
+ return (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i.x + (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i.y + (*(_wcl_addr_clamp_constant_1__u_uconstant__int__Ptr((_wcl_constant_allocations.P)+(i.z), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)))), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)))), 1, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant int *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant int *)_wcl_allocs->cn)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,21 +534,21 @@ int lattice3d(_WclProgramAllocations *_wcl_allocs, int4 i)
 float gradient1d(_WclProgramAllocations *_wcl_allocs, int i, float v)
 {
  int index = (lattice1d(_wcl_allocs, i) & _wcl_constant_allocations.G_MASK) * _wcl_constant_allocations.G_VECSIZE;
- float g = (*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 0), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn)));
+ float g = (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 0), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn)));
  return (v * g);
 }
 
 float gradient2d(_WclProgramAllocations *_wcl_allocs, int2 i, float2 v)
 {
  int index = (lattice2d(_wcl_allocs, i) & _wcl_constant_allocations.G_MASK) * _wcl_constant_allocations.G_VECSIZE;
- float2 g = (float2)((*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 0), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn))), (*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 1), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn))));
+ float2 g = (float2)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 0), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn))), (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 1), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn))));
  return dot(v, g);
 }
 
 float gradient3d(_WclProgramAllocations *_wcl_allocs, int4 i, float4 v)
 {
  int index = (lattice3d(_wcl_allocs, i) & _wcl_constant_allocations.G_MASK) * _wcl_constant_allocations.G_VECSIZE;
- float4 g = (float4)((*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 0), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn))), (*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 1), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn))), (*(_WCL_ADDR_CLAMP_constant_1(__constant float *, (_wcl_constant_allocations.G)+(index + 2), 1, _wcl_allocs->cl._wcl_constant_allocations_min, _wcl_allocs->cl._wcl_constant_allocations_max, _wcl_allocs->cn))), 1.0f);
+ float4 g = (float4)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 0), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn))), (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 1), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn))), (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((_wcl_constant_allocations.G)+(index + 2), 1, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_min, (__constant float *)_wcl_allocs->cl._wcl_constant_allocations_max, (__constant float *)_wcl_allocs->cn))), 1.0f);
  return dot(v, g);
 }
 
@@ -947,7 +963,7 @@ GradientNoiseArray2d(
  float4 result = (float4)(value, value, value, 1.0f) * amplitude;
 
     uint index = coord.y * size.x + coord.x;
-    (*(_WCL_ADDR_CLAMP_global_4(__global uchar4 *, (output)+(index), 1, _wcl_allocs->gl.GradientNoiseArray2d__output_min, _wcl_allocs->gl.GradientNoiseArray2d__output_max, _wcl_allocs->gl.MonoFractalArray2d__output_min, _wcl_allocs->gl.MonoFractalArray2d__output_max, _wcl_allocs->gl.TurbulenceArray2d__output_min, _wcl_allocs->gl.TurbulenceArray2d__output_max, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, _wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
+    (*(_wcl_addr_clamp_global_4__u_uglobal__uchar4__Ptr((output)+(index), 1, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
 }
 
 __kernel void
@@ -986,7 +1002,7 @@ MonoFractalArray2d(
  float4 result = (float4)(value, value, value, 1.0f) * amplitude;
 
     uint index = coord.y * size.x + coord.x;
-    (*(_WCL_ADDR_CLAMP_global_4(__global uchar4 *, (output)+(index), 1, _wcl_allocs->gl.GradientNoiseArray2d__output_min, _wcl_allocs->gl.GradientNoiseArray2d__output_max, _wcl_allocs->gl.MonoFractalArray2d__output_min, _wcl_allocs->gl.MonoFractalArray2d__output_max, _wcl_allocs->gl.TurbulenceArray2d__output_min, _wcl_allocs->gl.TurbulenceArray2d__output_max, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, _wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
+    (*(_wcl_addr_clamp_global_4__u_uglobal__uchar4__Ptr((output)+(index), 1, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
 }
 
 __kernel void
@@ -1024,7 +1040,7 @@ TurbulenceArray2d(
  float4 result = (float4)(value, value, value, 1.0f) * amplitude;
 
     uint index = coord.y * size.x + coord.x;
-    (*(_WCL_ADDR_CLAMP_global_4(__global uchar4 *, (output)+(index), 1, _wcl_allocs->gl.GradientNoiseArray2d__output_min, _wcl_allocs->gl.GradientNoiseArray2d__output_max, _wcl_allocs->gl.MonoFractalArray2d__output_min, _wcl_allocs->gl.MonoFractalArray2d__output_max, _wcl_allocs->gl.TurbulenceArray2d__output_min, _wcl_allocs->gl.TurbulenceArray2d__output_max, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, _wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
+    (*(_wcl_addr_clamp_global_4__u_uglobal__uchar4__Ptr((output)+(index), 1, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
 }
 
 __kernel void
@@ -1063,7 +1079,7 @@ RidgedMultiFractalArray2d(
  float4 result = (float4)(value, value, value, 1.0f) * amplitude;
 
     uint index = coord.y * size.x + coord.x;
-    (*(_WCL_ADDR_CLAMP_global_4(__global uchar4 *, (output)+(index), 1, _wcl_allocs->gl.GradientNoiseArray2d__output_min, _wcl_allocs->gl.GradientNoiseArray2d__output_max, _wcl_allocs->gl.MonoFractalArray2d__output_min, _wcl_allocs->gl.MonoFractalArray2d__output_max, _wcl_allocs->gl.TurbulenceArray2d__output_min, _wcl_allocs->gl.TurbulenceArray2d__output_max, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, _wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, _wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
+    (*(_wcl_addr_clamp_global_4__u_uglobal__uchar4__Ptr((output)+(index), 1, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.GradientNoiseArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.MonoFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.TurbulenceArray2d__output_max, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_min, (__global uchar4 *)_wcl_allocs->gl.RidgedMultiFractalArray2d__output_max, (__global uchar4 *)_wcl_allocs->gn))) = tonemap(_wcl_allocs, result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

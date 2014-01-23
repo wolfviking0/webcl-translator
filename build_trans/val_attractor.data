@@ -137,14 +137,29 @@ typedef uint _WclInitType;
 
 // <= General code that doesn't depend on input.
 
-#define _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) \
-    ( 0\
-    || ( ((addr) >= ((type)min0)) && ((addr + size - 1) <= _WCL_LAST(type, max0)) ) \
-        || ( ((addr) >= ((type)min1)) && ((addr + size - 1) <= _WCL_LAST(type, max1)) ) \
-            || ( ((addr) >= ((type)min2)) && ((addr + size - 1) <= _WCL_LAST(type, max2)) ) \
-                 )
-#define _WCL_ADDR_CLAMP_global_3(type, addr, size, min0, max0, min1, max1, min2, max2, asnull) \
-    ( _WCL_ADDR_CHECK_global_3(type, addr, size, min0, max0, min1, max1, min2, max2) ? (addr) : (type)(asnull))
+bool _wcl_addr_check_global_3__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) );
+}
+__global float *_wcl_addr_clamp_global_3__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * asnull)
+{
+     return _wcl_addr_check_global_3__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_3__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max2)) );
+}
+__global float4 *_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2, __global float4 * asnull)
+{
+     return _wcl_addr_check_global_3__u_uglobal__float4__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
 
 
 // WebCL Validator: matching stage 2.
@@ -183,20 +198,20 @@ __kernel void kernelStep( __global float4 *posArray, ulong _wcl_posArray_size,
 
  int gid = get_global_id(0);
 
- float4 pos = (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (posArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn)));
+ float4 pos = (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((posArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn)));
 
- (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) -= deltaTime;
- if ( (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) < 0.f )
+ (*(_wcl_addr_clamp_global_3__u_uglobal__float__Ptr((lifetimeArray)+(gid), 1, (__global float *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float *)_wcl_allocs->gn))) -= deltaTime;
+ if ( (*(_wcl_addr_clamp_global_3__u_uglobal__float__Ptr((lifetimeArray)+(gid), 1, (__global float *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float *)_wcl_allocs->gn))) < 0.f )
  {
-  (*(_WCL_ADDR_CLAMP_global_3(__global float *, (lifetimeArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = 32.f;
+  (*(_wcl_addr_clamp_global_3__u_uglobal__float__Ptr((lifetimeArray)+(gid), 1, (__global float *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float *)_wcl_allocs->gn))) = 32.f;
   float fgid = as_float(gid);
   pos = (float4) ( 5.f*sin(fgid*36245.434+pos.x), 5.f*sin(fgid*56509.678+pos.y), 64.f+sin(fgid*12655.678+pos.z), 1.f );
  }
 
  float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0.f);
 
- (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (posArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = pos + vel*(deltaTime*par.w);
- (*(_WCL_ADDR_CLAMP_global_3(__global float4 *, (colorArray)+(gid), 1, _wcl_allocs->gl.kernelStep__posArray_min, _wcl_allocs->gl.kernelStep__posArray_max, _wcl_allocs->gl.kernelStep__colorArray_min, _wcl_allocs->gl.kernelStep__colorArray_max, _wcl_allocs->gl.kernelStep__lifetimeArray_min, _wcl_allocs->gl.kernelStep__lifetimeArray_max, _wcl_allocs->gn))) = baseColor + 0.1f*fast_normalize(vel);
+ (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((posArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn))) = pos + vel*(deltaTime*par.w);
+ (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((colorArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn))) = baseColor + 0.1f*fast_normalize(vel);
 }
 // Copyright (c) 2013 Andrey Tuganov
 //
