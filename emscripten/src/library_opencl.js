@@ -2695,7 +2695,7 @@ var LibraryOpenCL = {
         break;
       case webcl.SIGNED_INT32:
         _sizeType = 4;
-        _type = SIGNED_INT32;
+        _type = webcl.SIGNED_INT32;
       case webcl.UNSIGNED_INT32:
         _sizeType = 4;
         _type = webcl.UNSIGNED_INT32;
