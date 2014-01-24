@@ -521,7 +521,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-//#if 0
+#if 0
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -570,7 +570,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-//#endif
+#endif
       return _mini_kernel_string;
 
     },
@@ -650,7 +650,7 @@ var LibraryOpenCL = {
           _type = webcl.UNSIGNED_INT16;
           break;
         case webcl.SIGNED_INT32:
-          _type = SIGNED_INT32;
+          _type = webcl.SIGNED_INT32;
         case webcl.UNSIGNED_INT32:
           _type = webcl.UNSIGNED_INT32;
           break;        
@@ -2733,7 +2733,7 @@ var LibraryOpenCL = {
 
     var _size = image_width * image_height * _sizeOrder;
 
-    console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
+    // console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
 
     if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type); 
     else if (
@@ -5263,7 +5263,7 @@ var LibraryOpenCL = {
       _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
     }
 
-    console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
+    // console.info("/!\\ clEnqueueReadBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
     var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -5479,7 +5479,7 @@ var LibraryOpenCL = {
       _region.push({{{ makeGetValue('region', 'i*4', 'i32') }}});            
     }
 
-    console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
+    // console.info("/!\\ clEnqueueWriteBufferRect : Check the size of the ptr '"+_region.reduce(function (a, b) { return a * b; })+"'... need to be more tested");
     var _host_ptr = CL.getReferencePointerToArray(ptr,_region.reduce(function (a, b) { return a * b; }),CL.cl_pn_type);
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -5785,7 +5785,7 @@ var LibraryOpenCL = {
       _size *= _region[i];     
     }          
 
-    console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+    // console.info("/!\\ clEnqueueReadImage : Check the size of the ptr '"+_size+"'... need to be more tested");
     var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -5885,7 +5885,7 @@ var LibraryOpenCL = {
       _size *= _region[i];     
     }          
 
-    console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
+    // console.info("/!\\ clEnqueueWriteImage : Check the size of the ptr '"+_size+"'... need to be more tested");
     var _host_ptr = CL.getReferencePointerToArray(ptr,_size,[_channel,1]);
 
     for (var i = 0; i < num_events_in_wait_list; i++) {
@@ -6065,7 +6065,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+src_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+src_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -6073,7 +6073,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -6165,7 +6165,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(src_buffer in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+src_buffer+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -6173,7 +6173,7 @@ var LibraryOpenCL = {
 #if CL_CHECK_VALID_OBJECT   
     if (!(dst_image in CL.cl_objects)) {
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_image+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+dst_image+"' are not inside the map","");
 #endif
       return webcl.INVALID_MEM_OBJECT;
     }
@@ -6284,10 +6284,10 @@ var LibraryOpenCL = {
       CL.cl_pn_type = [];
 #endif  
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+buffer+"' are not inside the map","");
 #endif
       if (cl_errcode_ret != 0) {
-        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.CL_INVALID_MEM_OBJECT', 'i32') }}};
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_MEM_OBJECT', 'i32') }}};
       }
       return 0;
     }
@@ -6384,9 +6384,9 @@ var LibraryOpenCL = {
       CL.cl_pn_type = [];
 #endif        
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"WebCLBuffer '"+memobj+"' are not inside the map","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"WebCLBuffer '"+memobj+"' are not inside the map","");
 #endif
-      return webcl.CL_INVALID_MEM_OBJECT;
+      return webcl.INVALID_MEM_OBJECT;
     }
 #endif 
 //#if CL_CHECK_VALID_OBJECT   
@@ -6396,9 +6396,9 @@ var LibraryOpenCL = {
       CL.cl_pn_type = [];
 #endif       
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.CL_INVALID_MEM_OBJECT],"MappedPtr '"+mapped_ptr+"' are not inside the map objects","");
+      CL.webclEndStackTrace([webcl.INVALID_MEM_OBJECT],"MappedPtr '"+mapped_ptr+"' are not inside the map objects","");
 #endif
-      return webcl.CL_INVALID_MEM_OBJECT;
+      return webcl.INVALID_MEM_OBJECT;
     }
 //#endif 
 
