@@ -20,7 +20,9 @@
 #include <cmath>
 
 // TODO platform specific
-#include <GL/glx.h>
+#if !defined(__APPLE__) && !defined(__EMSCRIPTEN__)
+	#include <GL/glx.h>
+#endif
 
 using namespace std;
 
@@ -64,14 +66,33 @@ void LorenzAttractorOpenCLSolver::__init()
 
     // TODO check if interop is supported
     // global::par().disable("CL_GL_interop")
-
-    cl_context_properties context_properties[] =
-    {
-        CL_GL_CONTEXT_KHR, (cl_context_properties) glXGetCurrentContext(),
-        CL_GLX_DISPLAY_KHR, (cl_context_properties) glXGetCurrentDisplay(),
-        CL_CONTEXT_PLATFORM, (cl_context_properties) platforms[0](),
-        0
-    };
+    
+     #if defined (__APPLE__) || defined(MACOSX)
+        CGLContextObj kCGLContext = CGLGetCurrentContext();
+        CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+        cl_context_properties context_properties[] =
+        {
+            CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)kCGLShareGroup,
+            CL_CONTEXT_PLATFORM, (cl_context_properties) platforms[0](),
+            0
+        };
+	#elif defined(__EMSCRIPTEN__)
+    	cl_context_properties context_properties[] =
+    	{
+        	CL_GL_CONTEXT_KHR, (cl_context_properties) 0,
+        	CL_GLX_DISPLAY_KHR, (cl_context_properties) 0,
+        	CL_CONTEXT_PLATFORM, (cl_context_properties) platforms[0](),
+        	0
+    	};
+    #else
+      	cl_context_properties context_properties[] =
+    	{
+        	CL_GL_CONTEXT_KHR, (cl_context_properties) glXGetCurrentContext(),
+        	CL_GLX_DISPLAY_KHR, (cl_context_properties) glXGetCurrentDisplay(),
+        	CL_CONTEXT_PLATFORM, (cl_context_properties) platforms[0](),
+        	0
+    	};  
+    #endif
 
     m_context = cl::Context (CL_DEVICE_TYPE_GPU, context_properties);
 

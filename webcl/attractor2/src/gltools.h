@@ -23,7 +23,6 @@
 #else
 	#define GLFW_INCLUDE_GLU
 	#include <GL/glfw.h>
-
 #endif
 
 #include <glm/glm.hpp>

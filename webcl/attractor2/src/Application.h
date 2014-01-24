@@ -41,7 +41,6 @@ private:
     void operator=(const Application &) = delete;
 
     void setupLorenzAttractor();
-    void mainLoop();
 
 public:
 
@@ -56,6 +55,7 @@ public:
 
     void init ();
     void run ();
+	void mainLoop();
 
     static float getRealTime();
     float getSimTime();

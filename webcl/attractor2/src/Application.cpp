@@ -22,7 +22,14 @@
 #include "LorenzAttractorDemo.h"
 #include "Solver.h"
 #include "Demo.h"
-#include "FrameCaptor.h"
+
+#ifdef USE_FRAME_CAPTOR
+	#include "FrameCaptor.h"
+#endif
+
+#ifdef __EMSCRIPTEN__
+	#include <emscripten/emscripten.h>
+#endif
 
 #include "global.h"
 #include "error.h"
@@ -54,8 +61,12 @@ Application::Application()
 Application::~Application()
 {
     if ( m_window )
-    {
-        glfwDestroyWindow(m_window);
+    {	
+		#ifndef __EMSCRIPTEN__
+	        glfwDestroyWindow(m_window);
+	    #else
+		    glfwCloseWindow();
+	    #endif
         m_window = nullptr;
     }
 }
@@ -64,6 +75,8 @@ void error_callback(int error, const char* description)
 {
     error::throw_ex(description);
 }
+
+#ifndef __EMSCRIPTEN__
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -84,6 +97,40 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 }
 
+#else
+
+void key_callback(int key, int action)
+{
+    if (key == GLFW_KEY_ESC && action == GLFW_PRESS) {
+        emscripten_cancel_main_loop();
+        glfwCloseWindow();
+		glfwTerminate();
+    }
+}
+
+void cursor_pos_callback(int dx,int dy)
+{
+    if (Application::get())
+        Application::get()->setCursorPos(float(dx),float(dy));
+}
+
+void framebuffer_size_callback(int width, int height)
+{
+    if (Application::get())
+    	Application::get()->resizeWindow(width, height);
+
+}
+
+#endif
+
+#ifdef __EMSCRIPTEN__
+void cursor_pos_callback(GLFWwindow* window, double dx,double dy)
+{
+    if (Application::get())
+        Application::get()->mainLoop();
+}
+#endif
+
 void Application::resizeWindow(int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -93,9 +140,10 @@ void Application::resizeWindow(int width, int height)
 void Application::init()
 {
     // initialize GLFW and create window, setup callbacks
-
-    glfwSetErrorCallback(error_callback);
-
+	#ifndef __EMSCRIPTEN__
+	    glfwSetErrorCallback(error_callback);
+	#endif
+	
     if( !glfwInit() )
         error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
 
@@ -103,37 +151,108 @@ void Application::init()
     int windowHeight = 1080;
     string windowTitle = global::par().getString("windowTitle");
 
-    m_window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
-
-    if( !m_window )
-    {
-        glfwTerminate();
+	#ifndef __EMSCRIPTEN__
+    	m_window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
+    	if( !m_window ) {
+	#else
+		int b_window = glfwOpenWindow( windowWidth, windowHeight, 8,8,8,0,0,0, GLFW_WINDOW);
+	    glfwSetWindowTitle(windowTitle.c_str());
+	    if( !b_window ) {
+    #endif    
+       
+       	glfwTerminate();
         error::throw_ex("unable to create GLFW window",__FILE__,__LINE__);
     }
-
-    glfwMakeContextCurrent(m_window);
-
+    
+	#ifndef __EMSCRIPTEN__
+	    glfwMakeContextCurrent(m_window);
+	#endif
+	
     if ( glewInit() != GLEW_OK )
         error::throw_ex("unable to initialize GLEW",__FILE__,__LINE__);
 
-    glfwSetKeyCallback(m_window,key_callback);
-    glfwSetCursorPosCallback(m_window, cursor_pos_callback);
-    glfwSetFramebufferSizeCallback(m_window,framebuffer_size_callback);
-
+	#ifndef __EMSCRIPTEN__
+	    glfwSetKeyCallback(m_window,key_callback);
+	    glfwSetCursorPosCallback(m_window, cursor_pos_callback);
+    	glfwSetFramebufferSizeCallback(m_window,framebuffer_size_callback);
+	#else
+		glfwSetKeyCallback(key_callback);
+	    glfwSetMousePosCallback(cursor_pos_callback);
+	    glfwSetWindowSizeCallback(framebuffer_size_callback);
+	#endif
+	
     glViewport(0, 0, windowWidth, windowHeight);
 }
+
+#ifdef __EMSCRIPTEN__
+
+// Global
+int framesLastSecond = 0;
+int lastSecond = 0;
+int curFrame = 0;
+    
+void emscripten_loop_callback()
+{
+    if (Application::get())
+        Application::get()->mainLoop();
+}
+
+void Application::run()
+{
+    setupLorenzAttractor();
+    
+    emscripten_set_main_loop(emscripten_loop_callback,-1,0);
+    
+}
+
+void Application::mainLoop()
+{
+	float realTime = getRealTime();
+    
+    ++framesLastSecond;
+    if ( lastSecond != (int)realTime )
+    {
+        lastSecond = (int)realTime;
+        cout << "FPS: " << framesLastSecond << endl;
+        framesLastSecond = 0;
+    }
+
+    // render and swap buffers
+    Demo::get()->render(m_simTime);
+	
+	glfwSwapBuffers();
+
+    // step simulation
+    Solver::get()->step(m_simTime,m_simDeltaTime);
+
+    // exchanges information between solver and renderer if not already shared
+    Demo::get()->update();
+
+    // process UI events
+    glfwPollEvents();
+
+    m_simTime += m_simDeltaTime;
+
+	++curFrame;
+}
+    
+#else
 
 void Application::run()
 {
     setupLorenzAttractor();
 
     mainLoop();
-
-    glfwDestroyWindow(m_window);
-
+	
+	#ifndef __EMSCRIPTEN__
+	   glfwDestroyWindow(m_window);
+	#else
+		glfwCloseWindow();
+	#endif
+	
     m_window = nullptr;
 
-    glfwTerminate();
+	glfwTerminate();
 
 }
 
@@ -143,9 +262,12 @@ void Application::mainLoop()
     int lastSecond = 0;
 
     int curFrame = 0;
-    int exportStartFrame = global::par().getInt("exportStartFrame");
-    int simulationEndFrame = global::par().getInt("simulationEndFrame");
 
+	#ifdef USE_FRAME_CAPTOR
+    	int exportStartFrame = global::par().getInt("exportStartFrame");
+	    int simulationEndFrame = global::par().getInt("simulationEndFrame");
+	#endif
+	
     while (!glfwWindowShouldClose(m_window))
     {
         float realTime = getRealTime();
@@ -159,13 +281,15 @@ void Application::mainLoop()
 
         // render and swap buffers
         Demo::get()->render(m_simTime);
-
-        glfwSwapBuffers(m_window);
+	
+		glfwSwapBuffers(m_window);
 
         // export the rendered frame
+        #ifdef USE_FRAME_CAPTOR
         if ( FrameCaptor::get() && curFrame >= exportStartFrame )
             FrameCaptor::get()->capture();
-
+		#endif
+		
         // check if we should stop the simulation
         if ( simulationEndFrame && curFrame == simulationEndFrame )
             break;
@@ -187,13 +311,21 @@ void Application::mainLoop()
         //    cout << "simTime: " << m_simTime << endl;
     }
 
+	#ifdef USE_FRAME_CAPTOR
     if ( FrameCaptor::get() )
         FrameCaptor::get()->release();
+    #endif
 }
+
+#endif
 
 void Application::getWindowSize(int &width, int &height) const
 {
-    glfwGetWindowSize(m_window, &width, &height);
+	#ifndef __EMSCRIPTEN__
+		glfwGetWindowSize(m_window, &width, &height);
+	#else
+		glfwGetWindowSize(&width, &height);
+	#endif
 }
 
 void Application::setCursorPos(float x, float y)
@@ -320,7 +452,9 @@ void Application::setupLorenzAttractor()
     Demo::create(Demo::LorenzAttractor);
     Solver::create(Solver::LorenzAttractorOpenCL);
 
-    if ( global::par().isEnabled("export") )
-        FrameCaptor::create(FrameCaptor::OpenCV);
+	#ifdef USE_FRAME_CAPTOR
+    	if ( global::par().isEnabled("export") )
+        	FrameCaptor::create(FrameCaptor::OpenCV);
+    #endif
 }
 
