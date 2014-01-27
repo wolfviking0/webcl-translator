@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = 'dav_mandelgpu.data';
-    var PACKAGE_UUID = 'afed4aed-09d5-4097-a992-433b47f9c096';
+    var PACKAGE_UUID = 'ba34c6a7-e4a1-425a-866c-279c85410edf';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -2576,35 +2576,6 @@ function copyTempDouble(ptr) {
   
         }
   
-  //#if 0
-        for (var name in CL.cl_kernels_sig) {
-          var _length = CL.cl_kernels_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_kernels_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("Kernel " + name + "(" + _length + ")");  
-          console.info("\t" + _str);  
-  
-  
-        }
-  
-        for (var name in CL.cl_structs_sig) {
-          var _length = CL.cl_structs_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_structs_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("\n\tStruct " + name + "(" + _length + ")");  
-          console.info("\t\t" + _str);              
-        }
-  //#endif
         return _mini_kernel_string;
   
       },getImageSizeType:function (image) {
@@ -2661,7 +2632,7 @@ function copyTempDouble(ptr) {
             _type = webcl.UNSIGNED_INT16;
             break;
           case webcl.SIGNED_INT32:
-            _type = SIGNED_INT32;
+            _type = webcl.SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
             _type = webcl.UNSIGNED_INT32;
             break;        

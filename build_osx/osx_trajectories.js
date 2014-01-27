@@ -114,7 +114,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
     }
     var PACKAGE_NAME = '../build/osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = 'osx_trajectories.data';
-    var PACKAGE_UUID = 'a7c7609b-ba0d-4195-95ad-1a4f19d73b00';
+    var PACKAGE_UUID = 'd15451ea-7c14-437e-aee6-3b2d02e9fd22';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3652,35 +3652,6 @@ function copyTempDouble(ptr) {
   
         }
   
-  //#if 0
-        for (var name in CL.cl_kernels_sig) {
-          var _length = CL.cl_kernels_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_kernels_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("Kernel " + name + "(" + _length + ")");  
-          console.info("\t" + _str);  
-  
-  
-        }
-  
-        for (var name in CL.cl_structs_sig) {
-          var _length = CL.cl_structs_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_structs_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("\n\tStruct " + name + "(" + _length + ")");  
-          console.info("\t\t" + _str);              
-        }
-  //#endif
         return _mini_kernel_string;
   
       },getImageSizeType:function (image) {
@@ -3737,7 +3708,7 @@ function copyTempDouble(ptr) {
             _type = webcl.UNSIGNED_INT16;
             break;
           case webcl.SIGNED_INT32:
-            _type = SIGNED_INT32;
+            _type = webcl.SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
             _type = webcl.UNSIGNED_INT32;
             break;        

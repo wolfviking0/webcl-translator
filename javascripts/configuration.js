@@ -49,7 +49,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "DXT Compressor",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_trans/translator",
       "id"            : 3,
       "gl"            : "on",
@@ -127,7 +127,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",
       "valcpu"        : "",
-      "valgpu"        : "",               
+      "valgpu"        : "&validator=on",               
     },
     { 
       "title"         : "OpenGL Interop",
@@ -213,7 +213,7 @@ var configuration_pages = {
   "Demos OSX" : [
     { 
       "title"         : "Hello World",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 0,
       "gl"            : "off",
@@ -224,19 +224,19 @@ var configuration_pages = {
     },
     { 
       "title"         : "Transpose",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "",
       "gpu"           : "&gpu", 
       "valcpu"        : "",
-      "valgpu"        : "",               
+      "valgpu"        : "&validator=on",               
     },
     /*
     { 
       "title"         : "Trajectory",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 2,
       "gl"            : "off",
@@ -248,29 +248,29 @@ var configuration_pages = {
     */
     { 
       "title"         : "Scan",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 3,
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu", 
-      "valcpu"        : "",
-      "valgpu"        : "",               
+      "valcpu"        : "&validator=on",
+      "valgpu"        : "&validator=on",               
     },
     { 
       "title"         : "Reduce Int",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 4,
       "gl"            : "off",
       "cpu"           : "",
       "gpu"           : "&gpu&int",  
       "valcpu"        : "",
-      "valgpu"        : "",              
+      "valgpu"        : "&validator=on",              
     },
     { 
       "title"         : "Reduce Float",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 4,
       "gl"            : "off",
@@ -281,7 +281,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Noise Copying",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 5,
       "gl"            : "on",
@@ -303,7 +303,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "QJulia Copying",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 6,
       "gl"            : "on",
@@ -337,7 +337,7 @@ var configuration_pages = {
       "cpu"           : "&1&0&preprocessed_rendering_kernel.cl&512&512",
       "gpu"           : "&0&1&preprocessed_rendering_kernel.cl&512&512",   
       "valcpu"        : "&validator=on",
-      "valgpu"        : "",             
+      "valgpu"        : "&validator=on",             
     },
     { 
       "title"         : "QJulia",
@@ -348,7 +348,7 @@ var configuration_pages = {
       "cpu"           : "&1&0&preprocessed_rendering_kernel.cl&512&512",
       "gpu"           : "&0&1&preprocessed_rendering_kernel.cl&512&512",       
       "valcpu"        : "&validator=on",
-      "valgpu"        : "",         
+      "valgpu"        : "&validator=on",         
     },
     // caustic.scn / caustic3.scn / complex.scn / cornell_large.scn / cornell.scn /simple.scn
     { 
@@ -391,7 +391,7 @@ var configuration_pages = {
   "Demos OCLToys" : [
     { 
       "title"         : "Mandel",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 1,
       "gl"            : "on",
@@ -402,7 +402,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "JugCLer",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 0,
       "gl"            : "on",
@@ -414,7 +414,7 @@ var configuration_pages = {
     // caustic.scn / caustic3.scn / cornell_fog.scn / cornell_large.scn / cornell_sss.scn / cornell.scn / simple.scn 
     { 
       "title"         : "SmallPT Caustic 3",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",
@@ -425,7 +425,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "SmallPT Cornell Fog",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",
@@ -436,7 +436,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "SmallPT Cornell sss",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",

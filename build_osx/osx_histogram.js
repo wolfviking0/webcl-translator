@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'osx_histogram.data';
-    var PACKAGE_UUID = 'e2302091-2d7f-4424-b05a-ebac055ee681';
+    var PACKAGE_UUID = 'f88a6bcc-6615-4949-a46d-8b7e9bcbc198';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -5806,35 +5806,6 @@ function copyTempDouble(ptr) {
   
         }
   
-  //#if 0
-        for (var name in CL.cl_kernels_sig) {
-          var _length = CL.cl_kernels_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_kernels_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("Kernel " + name + "(" + _length + ")");  
-          console.info("\t" + _str);  
-  
-  
-        }
-  
-        for (var name in CL.cl_structs_sig) {
-          var _length = CL.cl_structs_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_structs_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("\n\tStruct " + name + "(" + _length + ")");  
-          console.info("\t\t" + _str);              
-        }
-  //#endif
         return _mini_kernel_string;
   
       },getImageSizeType:function (image) {
@@ -5891,7 +5862,7 @@ function copyTempDouble(ptr) {
             _type = webcl.UNSIGNED_INT16;
             break;
           case webcl.SIGNED_INT32:
-            _type = SIGNED_INT32;
+            _type = webcl.SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
             _type = webcl.UNSIGNED_INT32;
             break;        
@@ -6849,7 +6820,7 @@ function copyTempDouble(ptr) {
           break;
         case webcl.SIGNED_INT32:
           _sizeType = 4;
-          _type = SIGNED_INT32;
+          _type = webcl.SIGNED_INT32;
         case webcl.UNSIGNED_INT32:
           _sizeType = 4;
           _type = webcl.UNSIGNED_INT32;
@@ -6887,7 +6858,7 @@ function copyTempDouble(ptr) {
   
       var _size = image_width * image_height * _sizeOrder;
   
-      console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
+      // console.info("/!\\ clCreateImage2D : Compute the size of ptr with image Info '"+_size+"'... need to be more tested");
   
       if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,_size,_type); 
       else if (

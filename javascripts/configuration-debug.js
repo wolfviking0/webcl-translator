@@ -49,7 +49,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "DXT Compressor",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_trans/translator",
       "id"            : 3,
       "gl"            : "on",
@@ -213,7 +213,7 @@ var configuration_pages_debug = {
   "Demos OSX" : [
     { 
       "title"         : "Hello World",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 0,
       "gl"            : "off",
@@ -224,7 +224,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "Transpose",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 1,
       "gl"            : "off",
@@ -236,7 +236,7 @@ var configuration_pages_debug = {
     /*
     { 
       "title"         : "Trajectory",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 2,
       "gl"            : "off",
@@ -248,7 +248,7 @@ var configuration_pages_debug = {
     */
     { 
       "title"         : "Scan",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 3,
       "gl"            : "off",
@@ -259,7 +259,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "Reduce Int",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 4,
       "gl"            : "off",
@@ -270,7 +270,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "Reduce Float",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 4,
       "gl"            : "off",
@@ -281,7 +281,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "Noise Copying",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 5,
       "gl"            : "on",
@@ -303,7 +303,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "QJulia Copying",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_osx/osxsample",
       "id"            : 6,
       "gl"            : "on",
@@ -391,7 +391,7 @@ var configuration_pages_debug = {
   "Demos OCLToys" : [
     { 
       "title"         : "Mandel",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 1,
       "gl"            : "on",
@@ -402,7 +402,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "JugCLer",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 0,
       "gl"            : "on",
@@ -414,7 +414,7 @@ var configuration_pages_debug = {
     // caustic.scn / caustic3.scn / cornell_fog.scn / cornell_large.scn / cornell_sss.scn / cornell.scn / simple.scn 
     { 
       "title"         : "SmallPT Caustic 3",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",
@@ -425,7 +425,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "SmallPT Cornell Fog",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",
@@ -436,7 +436,7 @@ var configuration_pages_debug = {
     },
     { 
       "title"         : "SmallPT Cornell sss",
-      "compatibility" : "[Webkit/Firefox]",
+      "compatibility" : "[Webkit]",
       "pages"         : "build_toys/ocltoys",
       "id"            : 2,
       "gl"            : "on",

@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'val_dxtcompressor.data';
-    var PACKAGE_UUID = 'b0eae25c-cba8-46dc-b051-39dc1ab1e99c';
+    var PACKAGE_UUID = '42b32a1f-612b-48e9-a2eb-4a9273038a00';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3785,54 +3785,6 @@ function copyTempDouble(ptr) {
           CL.cl_validator_argsize[_name] = _param_argsize_validator;
         }
   
-  //#if 0
-        for (var name in CL.cl_kernels_sig) {
-          var _length = CL.cl_kernels_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_kernels_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("Kernel " + name + "(" + _length + ")");  
-          console.info("\t" + _str);  
-  
-          console.info("\tValidator Info : ");
-          console.info("\t\tARG PARAM KERNEL"); 
-          var _str = "( ";
-          var _length = CL.cl_validator[name].length;
-          for (var i = 0 ; i < _length ; i++) {
-              _str += CL.cl_validator[name][i];
-              if (i < _length - 1) _str += ", ";
-          }
-          _str += " )";
-          console.info("\t\t\t"+_str);
-          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
-          var _str = "( ";
-          var _length = CL.cl_validator_argsize[name].length;
-          for (var i = 0 ; i < _length ; i++) {
-              _str += CL.cl_validator_argsize[name][i];
-              if (i < _length - 1) _str += ", ";
-          }
-          _str += " )";
-          console.info("\t\t\t"+_str);
-  
-        }
-  
-        for (var name in CL.cl_structs_sig) {
-          var _length = CL.cl_structs_sig[name].length;
-          var _str = "";
-          for (var i = 0; i < _length ; i++) {
-            var _type = CL.cl_structs_sig[name][i];
-            _str += _type + "("+CL.stringType(_type)+")";
-            if (i < _length - 1) _str += ", ";
-          }
-  
-          console.info("\n\tStruct " + name + "(" + _length + ")");  
-          console.info("\t\t" + _str);              
-        }
-  //#endif
         return _mini_kernel_string;
   
       },getImageSizeType:function (image) {
@@ -3889,7 +3841,7 @@ function copyTempDouble(ptr) {
             _type = webcl.UNSIGNED_INT16;
             break;
           case webcl.SIGNED_INT32:
-            _type = SIGNED_INT32;
+            _type = webcl.SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
             _type = webcl.UNSIGNED_INT32;
             break;        
