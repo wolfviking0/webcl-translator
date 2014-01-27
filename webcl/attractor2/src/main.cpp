@@ -30,6 +30,41 @@ int main(int argc, char *argv[])
     global::par().setInt("exportStartFrame",100);
     global::par().setInt("simulationEndFrame",6000);
 */
+        // Parse command line options
+    //
+    int use_gpu = 1;
+    int use_interop = 0;
+    int use_filter = 0;
+    
+    for(int i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+          
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+      
+        else if(strstr(argv[i], "interop"))
+            use_interop = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
+    global::par().setInt("gpuDevice",use_gpu);
+    
+    if (use_interop == 1)
+      global::par().enable("CL_GL_interop");
+    else
+      global::par().disable("CL_GL_interop");
+
+    if (use_filter == 1)
+      global::par().enable("filtering");
+    else
+      global::par().disable("filtering");
+
 
     Application *app = Application::get();
     if ( app == nullptr )

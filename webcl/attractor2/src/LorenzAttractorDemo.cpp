@@ -130,7 +130,7 @@ void LorenzAttractorDemo::init()
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // init frame buffers for filtering
 
-    int nFrameBuffers = global::par().isEnabled("filtering") ? 3 : 0;
+    int nFrameBuffers = 0; //global::par().isEnabled("filtering") ? 3 : 0;
     m_fbo.resize(nFrameBuffers+1);
     m_tex.resize(nFrameBuffers);
     m_fbo.back() = 0;
@@ -138,6 +138,7 @@ void LorenzAttractorDemo::init()
     int windowWidth = -1, windowHeight = -1;
     Application::get()->getWindowSize(windowWidth, windowHeight);
 
+    
     if ( nFrameBuffers )
     {
         glGenFramebuffers(nFrameBuffers, m_fbo.data());
@@ -161,6 +162,7 @@ void LorenzAttractorDemo::init()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+    
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // setup a fullscreen billboard for filtering
@@ -280,7 +282,7 @@ void LorenzAttractorDemo::render(float simTime)
     glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();
-
+    
     // apply filters
     for ( int i = 1; i < (int)m_fbo.size(); ++i )
     {
@@ -294,6 +296,7 @@ void LorenzAttractorDemo::render(float simTime)
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
     }
+    
 }
 
 void LorenzAttractorDemo::update()

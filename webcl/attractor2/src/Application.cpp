@@ -93,18 +93,34 @@ void cursor_pos_callback(GLFWwindow* window, double dx,double dy)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     if (Application::get())
-            Application::get()->resizeWindow(width, height);
+        Application::get()->resizeWindow(width, height);
 
 }
 
 #else
 
+bool bFullScreen;
+
 void key_callback(int key, int action)
 {
-    if (key == GLFW_KEY_ESC && action == GLFW_PRESS) {
-        emscripten_cancel_main_loop();
+    if ((key == 255 /*ESC*/ || key == 81 /*q*/ ) && action == GLFW_PRESS) {
+        glViewport(0, 0, 0, 0);
         glfwCloseWindow();
 		glfwTerminate();
+        //
+        emscripten_cancel_main_loop();  
+        //
+        exit(0);
+    } else if (key == 32 /* */ && action == GLFW_PRESS) {
+
+    } else if (key == 70 /*f*/ && action == GLFW_PRESS) {
+        bFullScreen = !bFullScreen;
+        if (bFullScreen)
+        {
+            glfwOpenWindow( 1920, 1080, 8, 8, 8, 0, 0, 0, GLFW_FULLSCREEN);
+        } else {
+            glfwOpenWindow( 1280, 720, 8, 8, 8, 0, 0, 0, GLFW_WINDOW);
+        }
     }
 }
 
@@ -123,14 +139,6 @@ void framebuffer_size_callback(int width, int height)
 
 #endif
 
-#ifdef __EMSCRIPTEN__
-void cursor_pos_callback(GLFWwindow* window, double dx,double dy)
-{
-    if (Application::get())
-        Application::get()->mainLoop();
-}
-#endif
-
 void Application::resizeWindow(int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -147,8 +155,8 @@ void Application::init()
     if( !glfwInit() )
         error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
 
-    int windowWidth = 1920;
-    int windowHeight = 1080;
+    int windowWidth = 1280;
+    int windowHeight = 720;
     string windowTitle = global::par().getString("windowTitle");
 
 	#ifndef __EMSCRIPTEN__
@@ -213,7 +221,9 @@ void Application::mainLoop()
     if ( lastSecond != (int)realTime )
     {
         lastSecond = (int)realTime;
-        cout << "FPS: " << framesLastSecond << endl;
+        printf("[%s] Particles: %d  Display: %d fps (%s)\n",
+            (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", global::par().getInt("nParticles"),
+            framesLastSecond, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
         framesLastSecond = 0;
     }
 
@@ -247,7 +257,7 @@ void Application::run()
 	#ifndef __EMSCRIPTEN__
 	   glfwDestroyWindow(m_window);
 	#else
-		glfwCloseWindow();
+	   glfwCloseWindow();
 	#endif
 	
     m_window = nullptr;
@@ -386,8 +396,8 @@ void Application::setupLorenzAttractor()
     global::par().setString("fragmentShaderFilename","shader/lorenz.frag");
 
     global::par().setString("kernelFilename","kernel/lorenz.cl");
-    global::par().enable("CL_GL_interop");
-    global::par().disable("filtering");
+    // global::par().enable("CL_GL_interop");
+    // global::par().disable("filtering");
 
     void *onePiece = nullptr;
     //if ( posix_memalign(&buffer, 16, 8*nParticles*sizeof(float)) || buffer == nullptr )

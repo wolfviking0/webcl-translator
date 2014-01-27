@@ -29,6 +29,7 @@ class LorenzAttractorDemo: public Demo
 
     std::vector<GLuint> m_fbo;
     std::vector<GLuint> m_tex;
+    std::vector<GLuint> m_rbo;
 
     GLuint m_vaoScreen;
 

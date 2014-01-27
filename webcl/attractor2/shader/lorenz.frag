@@ -26,6 +26,8 @@ uniform sampler2D Texture0;
 uniform float windowWidth;
 uniform float windowHeight;
 
+//vec2 blurCoordinates[5];
+
 float blurPar[3];
  
 vec4 gammaCorrection()
@@ -68,6 +70,22 @@ vec4 render()
 
 void main()
 {    
+    /*
+    vec2 singleStepOffset = vec2(windowWidth, windowHeight);
+    blurCoordinates[0] = texCoord.xy;
+    blurCoordinates[1] = texCoord.xy + singleStepOffset * 1.407333;
+    blurCoordinates[2] = texCoord.xy - singleStepOffset * 1.407333;
+    blurCoordinates[3] = texCoord.xy + singleStepOffset * 3.294215;
+    blurCoordinates[4] = texCoord.xy - singleStepOffset * 3.294215;
+
+    lowp vec4 sum = color;
+    sum += texture2D(Texture0, blurCoordinates[0]) * 0.204164;
+    sum += texture2D(Texture0, blurCoordinates[1]) * 0.304005;
+    sum += texture2D(Texture0, blurCoordinates[2]) * 0.304005;
+    sum += texture2D(Texture0, blurCoordinates[3]) * 0.093913;
+    sum += texture2D(Texture0, blurCoordinates[4]) * 0.093913;
+    gl_FragColor = sum;
+    */
     blurPar[0] = 0.6;
     blurPar[1] = 0.15;
     blurPar[2] = 0.05;
@@ -79,7 +97,7 @@ void main()
     else if ( task == 1 )
         gl_FragColor = blurX();
     else if ( task == 2 )
-        gl_FragColor = blurY();    
+        gl_FragColor = blurY();  
 }
 
 #if 0

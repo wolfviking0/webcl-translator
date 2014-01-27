@@ -1584,10 +1584,14 @@ var LibraryOpenCL = {
 
     // Init webcl variable if necessary
     if (CL.init() == 0) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+      }
+
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+      CL.webclEndStackTrace([0,cl_errcode_ret],"Can't initialise webcl","");
 #endif
-      return webcl.INVALID_VALUE;
+      return 0; // NULL Pointer      
     }
     
     var _id = null;
@@ -1597,7 +1601,6 @@ var LibraryOpenCL = {
 
       var _platform = null;
       var _devices = [];
-      var _deviceType = null;
       var _glclSharedContext = false;
 
       // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
@@ -1681,16 +1684,45 @@ var LibraryOpenCL = {
         }
       }
 
-      var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-      
+      if (num_devices > 0) {
+ 
+        if (_glclSharedContext) {
 #if CL_GRAB_TRACE
-      var _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
-      CL.webclCallStackTrace(webcl+".createContext",[_str]);
-#endif      
-      if (_glclSharedContext)
-        _context = webcl.createContext(Module.ctx, _prop);
-      else
-        _context = webcl.createContext(_prop);
+          CL.webclCallStackTrace(webcl+".createContext",[Module.ctx, _devices]);
+#endif          
+          _context = webcl.createContext(Module.ctx,_devices);  
+        } else {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[,_devices]);
+#endif          
+          _context = webcl.createContext(_devices);  
+        }
+
+      } else if (_platform != null) {
+        
+        if (_glclSharedContext) {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[Module.ctx, _platform]);
+#endif          
+          _context = webcl.createContext(Module.ctx,_platform);  
+        } else {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[,_platform]);
+#endif          
+          _context = webcl.createContext(_platform);  
+        }
+
+      } else {
+
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+        }
+
+#if CL_GRAB_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"webcl can't create context !!!!","");
+#endif
+        return 0; // NULL Pointer      
+      }
 
     } catch (e) {
       var _error = CL.catchError(e);
@@ -1742,10 +1774,14 @@ var LibraryOpenCL = {
 
     // Init webcl variable if necessary
     if (CL.init() == 0) {
+      if (cl_errcode_ret != 0) {
+        {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
+      }
+
 #if CL_GRAB_TRACE
-      CL.webclEndStackTrace([webcl.INVALID_VALUE],"webcl is not found !!!!","");
+      CL.webclEndStackTrace([0,cl_errcode_ret],"Can't initialise webcl","");
 #endif
-      return webcl.INVALID_VALUE;
+      return 0; // NULL Pointer      
     }
 
     var _id = null;
@@ -1754,7 +1790,6 @@ var LibraryOpenCL = {
     try { 
 
       var _platform = null;
-      var _devices = null;
       var _deviceType = device_type_i64_1;
       var _glclSharedContext = false;
       var _properties = [];
@@ -1814,18 +1849,46 @@ var LibraryOpenCL = {
           _propertiesCounter ++;
         }
       }
-  
-      var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-      
+
+      if (_deviceType != 0 && _platform != null) {
+
+        if (_glclSharedContext) {
 #if CL_GRAB_TRACE
-      var _str = "{platform: "+_platform+", devices: "+_devices+", deviceType: "+_deviceType+"}";
-      CL.webclCallStackTrace(webcl+".createContext",[_str]);
-#endif      
-      if (_glclSharedContext)
-        _context = webcl.createContext(Module.ctx, _prop);
-      else
-        _context = webcl.createContext(_prop);
-     
+          CL.webclCallStackTrace(webcl+".createContext",[Module.ctx, _platform,_deviceType]);
+#endif          
+          _context = webcl.createContext(Module.ctx, _platform,_deviceType);  
+        } else {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[_platform,_deviceType]);
+#endif          
+          _context = webcl.createContext(_platform,_deviceType);  
+        }
+            
+      } else if (_deviceType != 0) {
+
+        if (_glclSharedContext) {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[Module.ctx, _deviceType]);
+#endif          
+          _context = webcl.createContext(Module.ctx,_deviceType);  
+        } else {
+#if CL_GRAB_TRACE
+          CL.webclCallStackTrace(webcl+".createContext",[,_deviceType]);
+#endif          
+          _context = webcl.createContext(_deviceType);  
+        }
+
+      } else {
+        if (cl_errcode_ret != 0) {
+          {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_CONTEXT', 'i32') }}};
+        }
+
+#if CL_GRAB_TRACE
+        CL.webclEndStackTrace([0,cl_errcode_ret],"webcl can't create context !!!!","");
+#endif
+        return 0; // NULL Pointer   
+      }
+   
     } catch (e) {
       var _error = CL.catchError(e);
     
