@@ -159,7 +159,7 @@ def build(repo_list,param):
         
         print "\tFunction no thread 'build' ... "+str(root_repositories + i)
 
-        pr = subprocess.Popen( "make" , cwd = os.path.dirname( root_repositories + i + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+        pr = subprocess.Popen( "make"+param , cwd = os.path.dirname( root_repositories + i + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
         (out, error) = pr.communicate()  
   else:
     jobs = []
