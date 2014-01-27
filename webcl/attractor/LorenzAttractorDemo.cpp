@@ -61,13 +61,14 @@ void LorenzAttractorDemo::init()
     m_program = glCreateProgram();
     if ( !m_program )
         error::throw_ex("unable to create GLSL program",__FILE__,__LINE__);
+    
+    for ( auto it = shaders.begin(); it != shaders.end(); ++it )
+        glAttachShader(m_program, *it);
 
     glBindAttribLocation(m_program, 0, "a_position");
     glBindAttribLocation(m_program, 1, "a_color");
     glBindAttribLocation(m_program, 2, "a_texCoord0");
 
-    for ( auto it = shaders.begin(); it != shaders.end(); ++it )
-        glAttachShader(m_program, *it);
 
     glLinkProgram(m_program);
 

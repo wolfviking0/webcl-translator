@@ -12,6 +12,78 @@
 //
 // 3. This notice may not be removed or altered from any source distribution.
 
+#version 100
+
+precision mediump float;
+
+varying vec2 texCoord;
+varying vec4 color;
+
+uniform int task;
+
+uniform sampler2D Texture0;
+
+uniform float windowWidth;
+uniform float windowHeight;
+
+float blurPar[3];
+ 
+vec4 gammaCorrection()
+{
+    float gamma = 0.1;
+    vec4 c = texture2D(Texture0, texCoord);
+    float l = (c.r+c.g+c.b)/3.0;
+    c.xyz *= pow(l,gamma)/l; 
+    return c;
+}
+                                   
+vec4 blurX()
+{    
+    float step = 1./windowHeight;
+    vec4 c = texture2D(Texture0, texCoord) * blurPar[0];      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += texture2D( Texture0, texCoord + vec2(0,step*float(i))) * blurPar[i];
+         c += texture2D( Texture0, texCoord - vec2(0,step*float(i))) * blurPar[i];
+    }        
+    return c;      
+}
+
+vec4 blurY()
+{   
+    float step = 1./windowWidth;
+    vec4 c = texture2D(Texture0, texCoord) * blurPar[0];      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += texture2D( Texture0, texCoord + vec2(step*float(i),0)) * blurPar[i];
+         c += texture2D( Texture0, texCoord - vec2(step*float(i),0)) * blurPar[i];
+    }
+    return c;    
+}
+
+vec4 render()
+{    
+    return color;    
+}
+
+void main()
+{    
+    blurPar[0] = 0.6;
+    blurPar[1] = 0.15;
+    blurPar[2] = 0.05;
+
+    if ( task == 0 )
+        gl_FragColor = render();
+    else if ( task == 3 )
+        gl_FragColor = gammaCorrection();
+    else if ( task == 1 )
+        gl_FragColor = blurX();
+    else if ( task == 2 )
+        gl_FragColor = blurY();    
+}
+
+#if 0
+
 #version 400
 
 layout( location = 0 ) out vec4 FragColor;
@@ -77,3 +149,13 @@ void main()
     else if ( task == 2 )
         FragColor = blurY();    
 }
+
+#endif
+
+
+
+
+
+
+
+

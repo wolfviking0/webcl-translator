@@ -387,7 +387,7 @@ void Application::setupLorenzAttractor()
 
     global::par().setString("kernelFilename","kernel/lorenz.cl");
     global::par().enable("CL_GL_interop");
-    global::par().enable("filtering");
+    global::par().disable("filtering");
 
     void *onePiece = nullptr;
     //if ( posix_memalign(&buffer, 16, 8*nParticles*sizeof(float)) || buffer == nullptr )

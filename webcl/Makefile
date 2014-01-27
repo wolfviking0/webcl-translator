@@ -105,7 +105,7 @@ attractor_sample:
 
 attractor2_sample:
 	$(call chdir,attractor2/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
 

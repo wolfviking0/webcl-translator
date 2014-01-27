@@ -61,13 +61,13 @@ void LorenzAttractorDemo::init()
     m_program = glCreateProgram();
     if ( !m_program )
         error::throw_ex("unable to create GLSL program",__FILE__,__LINE__);
+    
+    for ( auto it = shaders.cbegin(); it != shaders.cend(); ++it )
+        glAttachShader(m_program, *it);
 
     glBindAttribLocation(m_program, 0, "vertexPos");
     glBindAttribLocation(m_program, 1, "vertexColor");
     glBindAttribLocation(m_program, 2, "vertexTexCoord");
-
-    for ( auto it = shaders.cbegin(); it != shaders.cend(); ++it )
-        glAttachShader(m_program, *it);
 
     glLinkProgram(m_program);
 
@@ -274,7 +274,9 @@ void LorenzAttractorDemo::render(float simTime)
     glUniform1i(hTask,0);
     glUniformMatrix4fv(hMVP, 1, GL_FALSE, &MVP[0][0]);
     glBindVertexArray(m_vaoParticles);
-    glPointSize(1.f);
+    #ifndef __EMSCRIPTEN__
+        glPointSize(1.f);
+    #endif
     glDrawArrays(GL_POINTS, 0, nParticles );
 
     glFinish();

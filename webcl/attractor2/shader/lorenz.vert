@@ -12,9 +12,29 @@
 //
 // 3. This notice may not be removed or altered from any source distribution.
 
+#version 100
+
+attribute vec4 vertexPos;
+attribute vec4 vertexColor;
+attribute vec2 vertexTexCoord;
+
+varying vec4 color;
+varying vec2 texCoord;
+
+uniform mat4 MVP;
+
+void main()
+{    
+    texCoord = vertexTexCoord;
+    color = vertexColor;
+    gl_Position = MVP*vertexPos;    
+}
+
+#if 0
+
 #version 400
 
-layout(location = 0) in vec4 vertexPos;
+layout (location = 0) in vec4 vertexPos;
 layout (location = 1) in vec4 vertexColor;
 layout (location = 2) in vec2 vertexTexCoord;
 
@@ -29,3 +49,6 @@ void main()
     color = vertexColor;
     gl_Position = MVP*vertexPos;    
 }
+
+#endif
+
