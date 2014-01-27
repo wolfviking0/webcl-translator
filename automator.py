@@ -9,6 +9,8 @@ import time
 from optparse import OptionParser
 from functools import wraps
 
+NO_THREAD = True;
+
 PROF_DATA = {}
 
 def profile(fn):
@@ -94,6 +96,11 @@ def update(repo_list):
   p.start()
 
   for i in repo_list:
+    if i.find("webcl-translator/webcl") != -1:
+      var = raw_input("Do you want force update on the webcl-translator repository: [y]/[n]").strip()
+      if (var.find("y") == -1):
+        continue
+
     p = multiprocessing.Process(target=worker_update, args=(i,i,""))
     jobs.append(p)
     p.start()
@@ -145,15 +152,20 @@ def worker_build(repo,param,id):
 @profile
 def build(repo_list,param):
   print "Function 'build' ... "+str(repo_list)
-  jobs = []
-  for i in repo_list:
-    for j in range(1,4):
-      p = multiprocessing.Process(target=worker_build, args=(i,param,j,))
-      jobs.append(p)
-      p.start()
+  if NO_THREAD:
+      for i in repo_list:
+        pr = subprocess.Popen( "make" , cwd = os.path.dirname( root_repositories + i + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+        (out, error) = pr.communicate()  
+  else:
+    jobs = []
+    for i in repo_list:
+      for j in range(1,4):
+        p = multiprocessing.Process(target=worker_build, args=(i,param,j,))
+        jobs.append(p)
+        p.start()
 
-  for j in jobs:
-    j.join()   
+    for j in jobs:
+      j.join()   
 
 def worker_copy(folder,repo):
     """thread worker_copy function"""
@@ -187,6 +199,9 @@ def copy(repo_list):
 
 @profile
 def launch(parser,options):
+  global NO_THREAD
+  NO_THREAD = options.nothread
+
   # Multi process 
   cores = multiprocessing.cpu_count()
   # Keep one cores for system
@@ -197,6 +212,15 @@ def launch(parser,options):
   for item in options.__dict__:
     if options.__dict__[item]:
       num_opt_enabled+=1
+
+  if (options.nothread):
+    num_opt_enabled-=1
+
+  if (options.debug):
+    num_opt_enabled-=1
+
+  if (len(options.repo) > 0):
+    num_opt_enabled-=1
 
   # Paramater for makefile
   param = " "
@@ -210,19 +234,7 @@ def launch(parser,options):
 
   # \todo Need to add the possibility
   # Check Error case
-  stop = True
-
-  if (options.all):
-    if (
-      (num_opt_enabled == 1) or
-      (num_opt_enabled == 2 and options.debug) or
-      (num_opt_enabled == 2 and len(options.repo) > 0) or
-      (num_opt_enabled == 3 and len(options.repo) > 0 and options.debug) ):
-      stop = False
-  else:
-    stop = False
-
-  if stop:
+  if (options.all and num_opt_enabled != 1):
     print "/!\ You must use --all alone or with --repo and/or --debug options"
     parser.print_help()
     exit(-1)
@@ -233,6 +245,7 @@ def launch(parser,options):
     for repo in options.repo:
       repolist.append(str(list_repositories[int(repo)]))
   else :
+    # Don't update the first by default
     for repo in list_repositories[0:-2]:
       repolist.append(repo)
 
@@ -300,6 +313,10 @@ def main():
   parser.add_option("-c", "--copy",
                     action="store_true", dest="copy", default=False,
                     help="copy all the javascript generated after build", metavar="COPY")
+  
+  parser.add_option("-n", "--no-thread",
+                    action="store_true", dest="nothread", default=False,
+                    help="disable thread build", metavar="NO_TREAD")
 
   parser.add_option('-r', '--repo',
                     action='callback', dest="repo", type='string', default='',
