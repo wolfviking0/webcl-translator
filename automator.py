@@ -72,6 +72,8 @@ def worker_update(online,local,option):
     """thread worker_update function"""
     directory = root_repositories + local
 
+    print "\tFunction worker 'update' ... "+str(directory)
+
     if os.path.isdir(directory):
       pr = subprocess.Popen( "/usr/bin/git reset --hard" , cwd = os.path.dirname( root_repositories + local + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
@@ -87,7 +89,7 @@ def worker_update(online,local,option):
 
 @profile
 def update(repo_list):
-  print "Function 'update' ... "+str(repo_list)
+  print "\nFunction 'update' ... "+str(repo_list)
   jobs = []
   
   # WebSite
@@ -111,6 +113,8 @@ def update(repo_list):
 def worker_clean(repo,param):
     """thread worker_clean function"""
     directory = root_repositories + repo
+    
+    print "\tFunction worker 'clean' ... "+str(directory)
 
     if os.path.isdir(directory):
       pr = subprocess.Popen( "make clean"+param , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
@@ -122,7 +126,7 @@ def worker_clean(repo,param):
 
 @profile
 def clean(repo_list,param):
-  print "Function 'clean' ... "+str(repo_list)
+  print "\nFunction 'clean' ... "+str(repo_list)
   jobs = []
   for i in repo_list:
     p = multiprocessing.Process(target=worker_clean, args=(i,param,))
@@ -136,13 +140,11 @@ def worker_build(repo,param,id):
     """thread worker_build function"""
     directory = root_repositories + repo
 
+    print "\tFunction worker 'build' ... "+str(directory)
+
     if os.path.isdir(directory):
       pr = subprocess.Popen( "make all_"+str(id)+param , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()  
-
-      #if (len(error)):
-      #  print "/!\ Cmd : 'make all_"+str(id)+param+"' on '",directory,"' make an error : "
-      #  print error
 
     else:
       print "/!\ '",directory,"' doesn't exist, call with -u / --update options"
@@ -151,9 +153,12 @@ def worker_build(repo,param,id):
 
 @profile
 def build(repo_list,param):
-  print "Function 'build' ... "+str(repo_list)
+  print "\nFunction 'build' ... "+str(repo_list)
   if NO_THREAD:
       for i in repo_list:
+        
+        print "\tFunction no thread 'build' ... "+str(root_repositories + i)
+
         pr = subprocess.Popen( "make" , cwd = os.path.dirname( root_repositories + i + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
         (out, error) = pr.communicate()  
   else:
@@ -171,6 +176,8 @@ def worker_copy(folder,repo):
     """thread worker_copy function"""
     directory = page_repositories + folder
 
+    print "\tFunction worker 'copy' ... "+str(directory)
+
     if os.path.isdir(directory):
       pr = subprocess.Popen( "cp -rf "+root_repositories + repo + "/build/ "+directory+"/" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()  
@@ -181,7 +188,7 @@ def worker_copy(folder,repo):
 
 @profile
 def copy(repo_list):
-  print "Function 'copy' ... "+str(repo_list)
+  print "\nFunction 'copy' ... "+str(repo_list)
 
   jobs = []
   for repo in repo_list:
