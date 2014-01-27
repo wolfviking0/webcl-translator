@@ -14,27 +14,41 @@
 
 #version 100
 
-precision mediump float;
+attribute vec4 vertexPos;
+attribute vec4 vertexColor;
+attribute vec2 vertexTexCoord;
 
-uniform mat4 u_matViewProjection;
-uniform float u_pointSize;
+varying vec4 color;
+varying vec2 texCoord;
 
-attribute vec4 a_position;
-attribute vec4 a_color;
-attribute vec2 a_texCoord0;
+uniform mat4 MVP;
 
-varying vec4 v_color;
-varying vec2 v_texCoord;
-
-void main() {
-	float pointSize = 500.0 * u_pointSize;
-	vec4 vert = vec4(a_position);
-	vert.w = 1.0;
-	vec4 pos_eye = vec4(u_matViewProjection * vert);
-	
-	gl_PointSize = max(2.0, pointSize / (1.0-pos_eye.z));
-	gl_Position = pos_eye;           
-	
-	v_color = a_color;
-	v_texCoord = a_texCoord0;
+void main()
+{    
+    texCoord = vertexTexCoord;
+    color = vertexColor;
+    gl_Position = MVP*vertexPos;    
 }
+
+#if 0
+
+#version 400
+
+layout (location = 0) in vec4 vertexPos;
+layout (location = 1) in vec4 vertexColor;
+layout (location = 2) in vec2 vertexTexCoord;
+
+out vec4 color;
+out vec2 texCoord;
+
+uniform mat4 MVP;
+
+void main()
+{    
+    texCoord = vertexTexCoord;
+    color = vertexColor;
+    gl_Position = MVP*vertexPos;    
+}
+
+#endif
+

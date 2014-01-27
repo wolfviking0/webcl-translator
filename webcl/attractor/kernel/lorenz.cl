@@ -17,23 +17,48 @@ __kernel void kernelStep( __global float4 *posArray,
 					__global float *lifetimeArray,
 					float4 baseColor,					
 					float4 par,
+					float4 rayOrigin,
+					float4 rayDir,
 					float time,
 					float deltaTime ) 	
 {
 	int gid = get_global_id(0);
 	
 	float4 pos = posArray[gid];
+
+	const float lifetime = 30.;	
 	
 	lifetimeArray[gid] -= deltaTime;	
-	if ( lifetimeArray[gid] < 0.f )
+	if ( lifetimeArray[gid] < 0 )
 	{
-		lifetimeArray[gid] = 32.f;
-		float fgid = as_float(gid);		
-		pos = (float4) ( 5.f*sin(fgid*36245.434+pos.x), 5.f*sin(fgid*56509.678+pos.y), 64.f+sin(fgid*12655.678+pos.z), 1.f );
-	}
+		lifetimeArray[gid] = lifetime;							
+		float r = 0.005*(((float)gid)/10000.+100.);		
+		int num = gid%10000;
+		float phi = 0.02*3.14159*(gid%100);
+		num = num/100;		
+		float theta = 0.01*3.14159*((float)num);
+		float sintheta = sin(theta);
+		float4 offset = (float4)(r*sintheta*cos(phi),r*sintheta*sin(phi),r*cos(theta),0.0); 
+		pos = rayOrigin+100.0*rayDir+0.2*offset;										
+	}		
 	 	
-	float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0.f);
+	float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0);
 			
 	posArray[gid] = pos + vel*(deltaTime*par.w);
-	colorArray[gid] = baseColor + 0.1f*fast_normalize(vel);
+	
+	colorArray[gid] = baseColor + 0.1*fast_normalize(vel);
+	
+	const float decayTime = 1.0;
+	const float birthTime = 1.0;
+		
+	if ( lifetimeArray[gid] < decayTime )
+	{
+		colorArray[gid].w *= lifetimeArray[gid]/decayTime;
+	}
+	else if ( lifetimeArray[gid] > lifetime - birthTime )
+	{
+		float tmp = (lifetime-lifetimeArray[gid])/birthTime;
+		colorArray[gid].w *= 2.0*(1.0-4.0*(tmp-0.5)*(tmp-0.5)) + tmp;
+	}
+		 
 }

@@ -99,12 +99,6 @@ dxt_sample:
 	
 attractor_sample:
 	$(call chdir,attractor/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*128 -s FULL_ES2=1 $(MODE) \
-	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
-	-o ../build/$(PREFIX)attractor.js
-
-attractor2_sample:
-	$(call chdir,attractor2/)
 	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
@@ -121,11 +115,6 @@ particles_sample:
 	-o ../build/$(PREFIX)particles.js	
 	
 attractor_sample_osx:
-	$(call chdir,attractor/)
-	clang++ -02 -std=c++11 Application.cpp Demo.cpp error.cpp global.cpp gltools.cpp LorenzAttractorDemo.cpp LorenzAttractorOpenCLSolver.cpp main.cpp Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -framework OpenCL -framework OpenGL -framework GLUT \
-	-o attractor.out
-	
-attractor2_sample_osx:
 	$(call chdir,attractor2/)
 	clang++ -02 -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -DUSE_GLFW3 -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework Cocoa -framework IOKit -lglfw3 -lGLEW \
 	-o attractor.out
