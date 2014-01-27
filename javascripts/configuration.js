@@ -31,9 +31,9 @@ var configuration_pages = {
       "pages"         : "build_trans/translator",
       "id"            : 2,
       "gl"            : "on",
-      "cpu"           : "&cpu",
+      "cpu"           : "",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
+      "valcpu"        : "",
       "valgpu"        : "&validator=on",   
     },
     { 
@@ -42,9 +42,9 @@ var configuration_pages = {
       "pages"         : "build_trans/translator",
       "id"            : 2,
       "gl"            : "on",
-      "cpu"           : "&cpu&interop",
+      "cpu"           : "",
       "gpu"           : "&gpu&interop",
-      "valcpu"        : "&validator=on",
+      "valcpu"        : "",
       "valgpu"        : "&validator=on",   
     },
     { 
