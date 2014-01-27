@@ -80,11 +80,17 @@ typedef uint _WclInitType;
 // <= General code that doesn't depend on input.
 
 
+void _wcl_write_imagef_1(_WclProgramAllocations* _wcl_allocs, image2d_t arg0, int2 arg1, float4 arg2)
+{
+    int2 size = get_image_dim(arg0);
+    if (arg1.x >= 0 && arg1.y >= 0 && arg1.x < size.x && arg1.y < size.y)
+        write_imagef(arg0, arg1, arg2);
+}
 // WebCL Validator: matching stage 2.
 // WebCL Validator: matching stage 1.
 // copy image1 to image2 using image read function
 
-__kernel void image_copy(__read_only image2d_t image1, ulong _wcl_image1_size, __write_only image2d_t image2, ulong _wcl_image2_size)
+__kernel void image_copy(__read_only image2d_t image1, __write_only image2d_t image2)
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 
@@ -95,5 +101,5 @@ __kernel void image_copy(__read_only image2d_t image1, ulong _wcl_image1_size, _
  float4 pixel;
 
  pixel = read_imagef(image1, sampler, (int2)(xout,yout));
- write_imagef(image2, (int2)(xout,yout), pixel);
+ _wcl_write_imagef_1(_wcl_allocs, image2, (int2)(xout,yout), pixel);
 }

@@ -7893,7 +7893,11 @@ function copyTempDouble(ptr) {
   
       // Init webcl variable if necessary
       if (CL.init() == 0) {
-        return webcl.INVALID_VALUE;
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+        }
+  
+        return 0; // NULL Pointer      
       }
   
       var _id = null;
@@ -7902,7 +7906,6 @@ function copyTempDouble(ptr) {
       try { 
   
         var _platform = null;
-        var _devices = null;
         var _deviceType = device_type_i64_1;
         var _glclSharedContext = false;
         var _properties = [];
@@ -7944,14 +7947,31 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-    
-        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        
-        if (_glclSharedContext)
-          _context = webcl.createContext(Module.ctx, _prop);
-        else
-          _context = webcl.createContext(_prop);
-       
+  
+        if (_deviceType != 0 && _platform != null) {
+  
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx, _platform,_deviceType);  
+          } else {
+            _context = webcl.createContext(_platform,_deviceType);  
+          }
+              
+        } else if (_deviceType != 0) {
+  
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_deviceType);  
+          } else {
+            _context = webcl.createContext(_deviceType);  
+          }
+  
+        } else {
+          if (cl_errcode_ret != 0) {
+            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+          }
+  
+          return 0; // NULL Pointer   
+        }
+     
       } catch (e) {
         var _error = CL.catchError(e);
       

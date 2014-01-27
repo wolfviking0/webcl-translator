@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_transpose.data';
     var REMOTE_PACKAGE_NAME = 'osx_transpose.data';
-    var PACKAGE_UUID = '4e0cc143-c8e8-43b2-a1c1-3b1ed26e85d7';
+    var PACKAGE_UUID = '99df2280-7ca4-4729-bfb6-e0eb814c6abc';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6153,7 +6153,11 @@ function copyTempDouble(ptr) {
   
       // Init webcl variable if necessary
       if (CL.init() == 0) {
-        return webcl.INVALID_VALUE;
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+        }
+  
+        return 0; // NULL Pointer      
       }
       
       var _id = null;
@@ -6163,7 +6167,6 @@ function copyTempDouble(ptr) {
   
         var _platform = null;
         var _devices = [];
-        var _deviceType = null;
         var _glclSharedContext = false;
   
         // Verify the device, theorically on OpenCL there are CL_INVALID_VALUE when devices or num_devices is null,
@@ -6214,12 +6217,30 @@ function copyTempDouble(ptr) {
           }
         }
   
-        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        
-        if (_glclSharedContext)
-          _context = webcl.createContext(Module.ctx, _prop);
-        else
-          _context = webcl.createContext(_prop);
+        if (num_devices > 0) {
+   
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_devices);  
+          } else {
+            _context = webcl.createContext(_devices);  
+          }
+  
+        } else if (_platform != null) {
+          
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }
+  
+        } else {
+  
+          if (cl_errcode_ret != 0) {
+            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+          }
+  
+          return 0; // NULL Pointer      
+        }
   
       } catch (e) {
         var _error = CL.catchError(e);

@@ -17,101 +17,50 @@ __kernel void kernelStep( __global float4 *posArray,
 					__global float *lifetimeArray,
 					float4 baseColor,					
 					float4 par,
+					float4 rayOrigin,
+					float4 rayDir,
 					float time,
 					float deltaTime ) 	
 {
 	int gid = get_global_id(0);
 	
 	float4 pos = posArray[gid];
+
+	const float lifetime = 30.;	
 	
 	lifetimeArray[gid] -= deltaTime;	
-	if ( lifetimeArray[gid] < 0.f )
+	if ( lifetimeArray[gid] < 0 )
 	{
-		lifetimeArray[gid] = 32.f;
-		float fgid = as_float(gid);		
-		pos = (float4) ( 5.f*sin(fgid*36245.434+pos.x), 5.f*sin(fgid*56509.678+pos.y), 64.f+sin(fgid*12655.678+pos.z), 1.f );
-	}
+		lifetimeArray[gid] = lifetime;							
+		float r = 0.005*(((float)gid)/10000.+100.);		
+		int num = gid%10000;
+		float phi = 0.02*3.14159*(gid%100);
+		num = num/100;		
+		float theta = 0.01*3.14159*((float)num);
+		float sintheta = sin(theta);
+		float4 offset = (float4)(r*sintheta*cos(phi),r*sintheta*sin(phi),r*cos(theta),0.0); 
+		pos = rayOrigin+100.0*rayDir+0.2*offset;										
+	}		
 	 	
-	float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0.f);
+	float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0);
 			
 	posArray[gid] = pos + vel*(deltaTime*par.w);
-	colorArray[gid] = baseColor + 0.1f*fast_normalize(vel);
-}
-// Copyright (c) 2013 Andrey Tuganov
-//
-// The zlib/libpng license
-//
-// This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
-//
-// Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
-//
-// 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
-//
-// 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-//
-// 3. This notice may not be removed or altered from any source distribution.                                
-
-#version 100
-
-precision mediump float;
-
-uniform int u_task;
-
-uniform float u_width;
-uniform float u_height;
-
-varying vec4 v_color;
-varying vec2 v_texCoord;
-
-uniform sampler2D Texture0;
-
-vec4 gammaCorrection()
-{
-    float gamma = 0.1;
-    vec4 c = texture2D(Texture0, gl_PointCoord);
-    float l = (c.r+c.g+c.b)/3.0;
-    c.xyz *= pow(l,gamma)/l; 
-    return c;
-}
-
-vec4 blurX()
-{    
-    float step = 1./u_height;
-    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
-    
-    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
-
-    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
-      
-    return c;      
-}
-
-vec4 blurY()
-{   
-    float step = 1./u_width;
-    vec4 c = 0.6 * texture2D(Texture0, gl_PointCoord);      
-
-    c += 0.15 * texture2D( Texture0, gl_PointCoord + vec2(0,step));
-    c += 0.15 * texture2D( Texture0, gl_PointCoord - vec2(0,step));
-
-    c += 0.05 * texture2D( Texture0, gl_PointCoord + vec2(0,step * 2.0));
-    c += 0.05 * texture2D( Texture0, gl_PointCoord - vec2(0,step * 2.0));
-      
-    return c;    
-}
-
-vec4 render()
-{    
-    vec4 color = (0.6 + 0.4 * v_color) * texture2D(Texture0, gl_PointCoord);
-    return color * mix(vec4(v_color.r, v_color.g, v_color.b, color.w), vec4(0.0, 0.2, 0.2, color.w), color.w);
-}
-
-void main()
-{    
-    if ( u_task == 0 )
-        gl_FragColor = render(); 
+	
+	colorArray[gid] = baseColor + 0.1*fast_normalize(vel);
+	
+	const float decayTime = 1.0;
+	const float birthTime = 1.0;
+		
+	if ( lifetimeArray[gid] < decayTime )
+	{
+		colorArray[gid].w *= lifetimeArray[gid]/decayTime;
+	}
+	else if ( lifetimeArray[gid] > lifetime - birthTime )
+	{
+		float tmp = (lifetime-lifetimeArray[gid])/birthTime;
+		colorArray[gid].w *= 2.0*(1.0-4.0*(tmp-0.5)*(tmp-0.5)) + tmp;
+	}
+		 
 }
 // Copyright (c) 2013 Andrey Tuganov
 //
@@ -131,25 +80,218 @@ void main()
 
 precision mediump float;
 
-uniform mat4 u_matViewProjection;
-uniform float u_pointSize;
+varying vec2 texCoord;
+varying vec4 color;
 
-attribute vec4 a_position;
-attribute vec4 a_color;
-attribute vec2 a_texCoord0;
+uniform int task;
 
-varying vec4 v_color;
-varying vec2 v_texCoord;
+uniform sampler2D Texture0;
 
-void main() {
-	float pointSize = 500.0 * u_pointSize;
-	vec4 vert = vec4(a_position);
-	vert.w = 1.0;
-	vec4 pos_eye = vec4(u_matViewProjection * vert);
-	
-	gl_PointSize = max(2.0, pointSize / (1.0-pos_eye.z));
-	gl_Position = pos_eye;           
-	
-	v_color = a_color;
-	v_texCoord = a_texCoord0;
+uniform float windowWidth;
+uniform float windowHeight;
+
+//vec2 blurCoordinates[5];
+
+float blurPar[3];
+ 
+vec4 gammaCorrection()
+{
+    float gamma = 0.1;
+    vec4 c = texture2D(Texture0, texCoord);
+    float l = (c.r+c.g+c.b)/3.0;
+    c.xyz *= pow(l,gamma)/l; 
+    return c;
 }
+                                   
+vec4 blurX()
+{    
+    float step = 1./windowHeight;
+    vec4 c = texture2D(Texture0, texCoord) * blurPar[0];      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += texture2D( Texture0, texCoord + vec2(0,step*float(i))) * blurPar[i];
+         c += texture2D( Texture0, texCoord - vec2(0,step*float(i))) * blurPar[i];
+    }        
+    return c;      
+}
+
+vec4 blurY()
+{   
+    float step = 1./windowWidth;
+    vec4 c = texture2D(Texture0, texCoord) * blurPar[0];      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += texture2D( Texture0, texCoord + vec2(step*float(i),0)) * blurPar[i];
+         c += texture2D( Texture0, texCoord - vec2(step*float(i),0)) * blurPar[i];
+    }
+    return c;    
+}
+
+vec4 render()
+{    
+    return color;    
+}
+
+void main()
+{    
+    /*
+    vec2 singleStepOffset = vec2(windowWidth, windowHeight);
+    blurCoordinates[0] = texCoord.xy;
+    blurCoordinates[1] = texCoord.xy + singleStepOffset * 1.407333;
+    blurCoordinates[2] = texCoord.xy - singleStepOffset * 1.407333;
+    blurCoordinates[3] = texCoord.xy + singleStepOffset * 3.294215;
+    blurCoordinates[4] = texCoord.xy - singleStepOffset * 3.294215;
+
+    lowp vec4 sum = color;
+    sum += texture2D(Texture0, blurCoordinates[0]) * 0.204164;
+    sum += texture2D(Texture0, blurCoordinates[1]) * 0.304005;
+    sum += texture2D(Texture0, blurCoordinates[2]) * 0.304005;
+    sum += texture2D(Texture0, blurCoordinates[3]) * 0.093913;
+    sum += texture2D(Texture0, blurCoordinates[4]) * 0.093913;
+    gl_FragColor = sum;
+    */
+    blurPar[0] = 0.6;
+    blurPar[1] = 0.15;
+    blurPar[2] = 0.05;
+
+    if ( task == 0 )
+        gl_FragColor = render();
+    else if ( task == 3 )
+        gl_FragColor = gammaCorrection();
+    else if ( task == 1 )
+        gl_FragColor = blurX();
+    else if ( task == 2 )
+        gl_FragColor = blurY();  
+}
+
+#if 0
+
+#version 400
+
+layout( location = 0 ) out vec4 FragColor;
+
+in vec2 texCoord;
+in vec4 color;
+
+uniform int task;
+
+uniform sampler2D Texture0;
+
+uniform float windowWidth;
+uniform float windowHeight;
+
+uniform float blurPar[3] = float[]( /* #, #, */ 0.6, 0.15, 0.05 );                                   
+ 
+vec4 gammaCorrection()
+{
+    float gamma = 0.1;
+    vec4 c = texture(Texture0, texCoord);
+    float l = (c.r+c.g+c.b)/3.0;
+    c.xyz *= pow(l,gamma)/l; 
+    return c;
+}
+                                   
+vec4 blurX()
+{    
+    float step = 1./windowHeight;
+    vec4 c = blurPar[0]*texture(Texture0, texCoord);      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += blurPar[i]*texture( Texture0, texCoord + vec2(0,step*i));
+         c += blurPar[i]*texture( Texture0, texCoord - vec2(0,step*i));
+    }        
+    return c;      
+}
+
+vec4 blurY()
+{   
+    float step = 1./windowWidth;
+    vec4 c = blurPar[0]*texture(Texture0, texCoord);      
+    for( int i = 1; i < 3; i++ )
+    {        
+         c += blurPar[i]*texture( Texture0, texCoord + vec2(step*i,0));
+         c += blurPar[i]*texture( Texture0, texCoord - vec2(step*i,0));
+    }
+    return c;    
+}
+
+vec4 render()
+{    
+    return color;    
+}
+
+void main()
+{    
+    if ( task == 0 )
+        FragColor = render();
+    else if ( task == 3 )
+        FragColor = gammaCorrection();
+    else if ( task == 1 )
+        FragColor = blurX();
+    else if ( task == 2 )
+        FragColor = blurY();    
+}
+
+#endif
+
+
+
+
+
+
+
+
+// Copyright (c) 2013 Andrey Tuganov
+//
+// The zlib/libpng license
+//
+// This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+//
+// 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+//
+// 3. This notice may not be removed or altered from any source distribution.
+
+#version 100
+
+attribute vec4 vertexPos;
+attribute vec4 vertexColor;
+attribute vec2 vertexTexCoord;
+
+varying vec4 color;
+varying vec2 texCoord;
+
+uniform mat4 MVP;
+
+void main()
+{    
+    texCoord = vertexTexCoord;
+    color = vertexColor;
+    gl_Position = MVP*vertexPos;    
+}
+
+#if 0
+
+#version 400
+
+layout (location = 0) in vec4 vertexPos;
+layout (location = 1) in vec4 vertexColor;
+layout (location = 2) in vec2 vertexTexCoord;
+
+out vec4 color;
+out vec2 texCoord;
+
+uniform mat4 MVP;
+
+void main()
+{    
+    texCoord = vertexTexCoord;
+    color = vertexColor;
+    gl_Position = MVP*vertexPos;    
+}
+
+#endif
+

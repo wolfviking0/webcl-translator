@@ -139,6 +139,12 @@ __global float4 *_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr(__global float
 }
 
 
+void _wcl_write_imagef_0(_WclProgramAllocations* _wcl_allocs, image2d_t arg0, int2 arg1, float4 arg2)
+{
+    int2 size = get_image_dim(arg0);
+    if (arg1.x >= 0 && arg1.y >= 0 && arg1.x < size.x && arg1.y < size.y)
+        write_imagef(arg0, arg1, arg2);
+}
 // WebCL Validator: matching stage 2.
 // WebCL Validator: matching stage 1.
 
@@ -168,7 +174,7 @@ __kernel void init_vbo_kernel(__global float4 *vbo, ulong _wcl_vbo_size, int w, 
  (*(_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr((vbo)+(gid), 1, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_min, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global float4 *)_wcl_allocs->gn))) = linepts;
 }
 
-__kernel void init_texture_kernel(__write_only image2d_t im, ulong _wcl_im_size, int w, int h, int seq )
+__kernel void init_texture_kernel(__write_only image2d_t im, int w, int h, int seq )
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 
@@ -186,5 +192,5 @@ __kernel void init_texture_kernel(__write_only image2d_t im, ulong _wcl_im_size,
        (float)coord.y/(float)h,
        (float)abs(seq-w)/(float)w,
        1.0f};
- write_imagef( im, coord, color );
+ _wcl_write_imagef_0(_wcl_allocs,  im, coord, color );
 }

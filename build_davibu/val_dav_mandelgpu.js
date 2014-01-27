@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_mandelgpu.data';
-    var PACKAGE_UUID = '7ee9573c-39a6-4d4e-9dff-b50fb99574d5';
+    var PACKAGE_UUID = 'b2ea2484-b418-46d5-ba3e-d5cb2aef0437';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7083,7 +7083,11 @@ function copyTempDouble(ptr) {
   
       // Init webcl variable if necessary
       if (CL.init() == 0) {
-        return webcl.INVALID_VALUE;
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+        }
+  
+        return 0; // NULL Pointer      
       }
   
       var _id = null;
@@ -7092,7 +7096,6 @@ function copyTempDouble(ptr) {
       try { 
   
         var _platform = null;
-        var _devices = null;
         var _deviceType = device_type_i64_1;
         var _glclSharedContext = false;
         var _properties = [];
@@ -7134,14 +7137,31 @@ function copyTempDouble(ptr) {
             _propertiesCounter ++;
           }
         }
-    
-        var _prop = {platform: _platform, devices: _devices, deviceType: _deviceType};
-        
-        if (_glclSharedContext)
-          _context = webcl.createContext(Module.ctx, _prop);
-        else
-          _context = webcl.createContext(_prop);
-       
+  
+        if (_deviceType != 0 && _platform != null) {
+  
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx, _platform,_deviceType);  
+          } else {
+            _context = webcl.createContext(_platform,_deviceType);  
+          }
+              
+        } else if (_deviceType != 0) {
+  
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_deviceType);  
+          } else {
+            _context = webcl.createContext(_deviceType);  
+          }
+  
+        } else {
+          if (cl_errcode_ret != 0) {
+            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+          }
+  
+          return 0; // NULL Pointer   
+        }
+     
       } catch (e) {
         var _error = CL.catchError(e);
       
