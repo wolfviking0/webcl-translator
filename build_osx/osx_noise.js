@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = 'd7aef75d-74c2-467f-bb1b-bb86348bef91';
+    var PACKAGE_UUID = 'f5143179-3071-470b-bf5b-c71d37f073c2';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -11810,11 +11810,23 @@ function copyTempDouble(ptr) {
 
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
   
-      var _event_wait_list = [];
+      var _event_wait_list;
+      var _local_work_size;
+  
+      // \todo need to be remove when webkit will be support null
+      /**** **** **** **** **** **** **** ****/
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+        _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
+        _local_work_size = (local_work_size != 0) ? [] : null;
+      } else {
+        _event_wait_list = [];
+        _local_work_size = [];
+      }
+  
   
       var _global_work_offset = [];
       var _global_work_size = [];
-      var _local_work_size = [];
+      
   
       for (var i = 0; i < work_dim; i++) {
         _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
@@ -12169,12 +12181,6 @@ function copyTempDouble(ptr) {
   
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
-  
-        // \todo need to be remove when webkit work with -D
-        // if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-        //   _option = _option.replace(/-D/g, "-D ");
-        //   _option = _option.replace(/-D\s{2,}/g, "-D ");
-        // }
   
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {

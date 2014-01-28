@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'val_dxtcompressor.data';
-    var PACKAGE_UUID = 'a8371414-6df2-4338-9e4c-f2e0fa6c2a3a';
+    var PACKAGE_UUID = 'b29e7d08-b24e-482f-a281-bdff4e527e3a';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -1204,7 +1204,7 @@ function enlargeMemory() {
 }
 
 var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
-var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
+var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 367001600;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
 
@@ -14653,12 +14653,6 @@ function copyTempDouble(ptr) {
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
   
-        // \todo need to be remove when webkit work with -D
-        // if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-        //   _option = _option.replace(/-D/g, "-D ");
-        //   _option = _option.replace(/-D\s{2,}/g, "-D ");
-        // }
-  
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
@@ -14828,11 +14822,23 @@ function copyTempDouble(ptr) {
 
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
   
-      var _event_wait_list = [];
+      var _event_wait_list;
+      var _local_work_size;
+  
+      // \todo need to be remove when webkit will be support null
+      /**** **** **** **** **** **** **** ****/
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+        _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
+        _local_work_size = (local_work_size != 0) ? [] : null;
+      } else {
+        _event_wait_list = [];
+        _local_work_size = [];
+      }
+  
   
       var _global_work_offset = [];
       var _global_work_size = [];
-      var _local_work_size = [];
+      
   
       for (var i = 0; i < work_dim; i++) {
         _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);

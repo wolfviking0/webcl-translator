@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'val_eventprofiling.data';
-    var PACKAGE_UUID = 'bf42ad6b-4076-46b3-b119-f9f31b867509';
+    var PACKAGE_UUID = '79705f76-c68e-4499-b657-527934522038';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7629,12 +7629,6 @@ function copyTempDouble(ptr) {
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
   
-        // \todo need to be remove when webkit work with -D
-        // if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-        //   _option = _option.replace(/-D/g, "-D ");
-        //   _option = _option.replace(/-D\s{2,}/g, "-D ");
-        // }
-  
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
@@ -7829,11 +7823,23 @@ function copyTempDouble(ptr) {
 
   function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
   
-      var _event_wait_list = [];
+      var _event_wait_list;
+      var _local_work_size;
+  
+      // \todo need to be remove when webkit will be support null
+      /**** **** **** **** **** **** **** ****/
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+        _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
+        _local_work_size = (local_work_size != 0) ? [] : null;
+      } else {
+        _event_wait_list = [];
+        _local_work_size = [];
+      }
+  
   
       var _global_work_offset = [];
       var _global_work_size = [];
-      var _local_work_size = [];
+      
   
       for (var i = 0; i < work_dim; i++) {
         _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
