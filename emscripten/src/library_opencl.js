@@ -2052,8 +2052,14 @@ var LibraryOpenCL = {
           _info+=CL.cl_objects_retains[context];
         }
 
+      }  else if (param_name == 0x1082 /* CL_CONTEXT_PROPERTIES */) {
+      
+        _info = "WebCLContextProperties";
+
       } else {
+
         _info = CL.cl_objects[context].getInfo(param_name);
+
       }
       
 
@@ -2073,8 +2079,27 @@ var LibraryOpenCL = {
 #endif
       return _error;
     }
+    
+     if (_info == "WebCLContextProperties") {
 
-    if(typeof(_info) == "number") {
+      var _size = 0;
+
+      if (param_value != 0) {
+
+        if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+          var _properties = CL.cl_objects[context].properties;
+
+          for (elt in _properties) {
+            {{{ makeSetValue('param_value', '_size*4', '_properties[elt]', 'i32') }}};
+            _size ++;
+
+          }
+        }
+      }
+
+      if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_size*4', 'i32') }}};
+
+    } else if(typeof(_info) == "number") {
 
       if (param_value != 0) {{{ makeSetValue('param_value', '0', '_info', 'i32') }}};
       if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
@@ -2092,25 +2117,6 @@ var LibraryOpenCL = {
         if (param_value != 0) {{{ makeSetValue('param_value', '0', '_id', 'i32') }}};
         if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '4', 'i32') }}};
 
-      } else if (_info instanceof WebCLContextProperties) {
-  
-        var _size = 0;
-
-        if (param_value != 0) {
-
-          if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
-            var _properties = CL.cl_objects[context].properties;
-
-            for (elt in _properties) {
-              {{{ makeSetValue('param_value', '_size*4', '_properties[elt]', 'i32') }}};
-              _size ++;
-
-            }
-          }
-        }
-
-        if (param_value_size_ret != 0) {{{ makeSetValue('param_value_size_ret', '0', '_size*4', 'i32') }}};
-        
       } else if (_info instanceof Array) {
 
         for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
