@@ -103,9 +103,9 @@ Module['FS_createPath']('/', 'shader', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 16857, 0, 0).open('GET', '/kernel/lorenz.cl');
-    new DataRequest(16857, 21540, 0, 0).open('GET', '/shader/lorenz.frag');
-    new DataRequest(21540, 23048, 0, 0).open('GET', '/shader/lorenz.vert');
+      new DataRequest(0, 16860, 0, 0).open('GET', '/kernel/lorenz.cl');
+    new DataRequest(16860, 21543, 0, 0).open('GET', '/shader/lorenz.frag');
+    new DataRequest(21543, 23051, 0, 0).open('GET', '/shader/lorenz.vert');
 
     var PACKAGE_PATH;
     if (typeof window === 'object') {
@@ -116,7 +116,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     }
     var PACKAGE_NAME = '../build/val_attractor.data';
     var REMOTE_PACKAGE_NAME = 'val_attractor.data';
-    var PACKAGE_UUID = '4ccbfb20-47a9-4f86-a115-1ce8d09f18dd';
+    var PACKAGE_UUID = '49e58efd-4779-4116-a1f7-59f41006d3c9';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -9265,10 +9265,14 @@ function copyTempDouble(ptr) {
             _info+=CL.cl_objects_retains[context];
           }
   
-        } 
+        }  else if (param_name == 0x1082 /* CL_CONTEXT_PROPERTIES */) {
         
-        else {
+          _info = "WebCLContextProperties";
+  
+        } else {
+  
           _info = CL.cl_objects[context].getInfo(param_name);
+  
         }
         
   
@@ -9285,8 +9289,27 @@ function copyTempDouble(ptr) {
   
         return _error;
       }
+      
+       if (_info == "WebCLContextProperties") {
   
-      if(typeof(_info) == "number") {
+        var _size = 0;
+  
+        if (param_value != 0) {
+  
+          if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+            var _properties = CL.cl_objects[context].properties;
+  
+            for (elt in _properties) {
+              HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
+              _size ++;
+  
+            }
+          }
+        }
+  
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
+  
+      } else if(typeof(_info) == "number") {
   
         if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
@@ -9304,26 +9327,7 @@ function copyTempDouble(ptr) {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
-        } /* else if (_info instanceof WebCLContextProperties) {
-    
-          var _size = 0;
-  
-          if (param_value != 0) {
-  
-            if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
-              var _properties = CL.cl_objects[context].properties;
-  
-              for (elt in _properties) {
-                HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
-                _size ++;
-  
-              }
-            }
-          }
-  
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
-          
-        } */ else if (_info instanceof Array) {
+        } else if (_info instanceof Array) {
   
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             var _id = CL.udid(_info[i]);
@@ -10096,7 +10100,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

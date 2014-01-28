@@ -225,14 +225,14 @@ __kernel void kernelStep( __global float4 *posArray, ulong _wcl_posArray_size,
   float theta = 0.01*3.14159*((float)num);
   float sintheta = sin(theta);
   float4 offset = (float4)(r*sintheta*cos(phi),r*sintheta*sin(phi),r*cos(theta),0.0);
-  pos = rayOrigin+100.0*rayDir+0.2*offset;
+  pos = rayOrigin+100.0f*rayDir+0.2f*offset;
  }
 
  float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0);
 
  (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((posArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn))) = pos + vel*(deltaTime*par.w);
 
- (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((colorArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn))) = baseColor + 0.1*fast_normalize(vel);
+ (*(_wcl_addr_clamp_global_3__u_uglobal__float4__Ptr((colorArray)+(gid), 1, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__posArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__colorArray_max, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_min, (__global float4 *)_wcl_allocs->gl.kernelStep__lifetimeArray_max, (__global float4 *)_wcl_allocs->gn))) = baseColor + 0.1f*fast_normalize(vel);
 
  const float decayTime = 1.0;
  const float birthTime = 1.0;

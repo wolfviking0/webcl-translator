@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/particles.data';
     var REMOTE_PACKAGE_NAME = 'particles.data';
-    var PACKAGE_UUID = '47297274-8869-43a2-b468-4502dfa155e6';
+    var PACKAGE_UUID = '8fd85842-ae4a-471b-88cd-752447ab94bb';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -8017,7 +8017,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

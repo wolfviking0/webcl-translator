@@ -39,14 +39,14 @@ __kernel void kernelStep( __global float4 *posArray,
 		float theta = 0.01*3.14159*((float)num);
 		float sintheta = sin(theta);
 		float4 offset = (float4)(r*sintheta*cos(phi),r*sintheta*sin(phi),r*cos(theta),0.0); 
-		pos = rayOrigin+100.0*rayDir+0.2*offset;										
+		pos = rayOrigin+100.0f*rayDir+0.2f*offset;										
 	}		
 	 	
 	float4 vel = (float4)(par.x*(pos.y-pos.x), pos.x*(par.z-pos.z)-pos.y, pos.y*pos.x-par.y*pos.z, 0);
 			
 	posArray[gid] = pos + vel*(deltaTime*par.w);
 	
-	colorArray[gid] = baseColor + 0.1*fast_normalize(vel);
+	colorArray[gid] = baseColor + 0.1f*fast_normalize(vel);
 	
 	const float decayTime = 1.0;
 	const float birthTime = 1.0;
