@@ -385,9 +385,9 @@ void Application::setupLorenzAttractor()
     m_simTime = 0.f;
     m_simDeltaTime = 1.f/60.f;
 
-    int nX = 200;
-    int nY = 200;
-    int nZ = 200;
+    int nX = 128;
+    int nY = 128;
+    int nZ = 128;
     int nParticles = nX*nY*nZ;
 
     global::par().setInt("nParticles",nParticles);
