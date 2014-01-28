@@ -138,7 +138,7 @@ void LorenzAttractorDemo::init()
     int windowWidth = -1, windowHeight = -1;
     Application::get()->getWindowSize(windowWidth, windowHeight);
 
-    
+    /*
     if ( nFrameBuffers )
     {
         glGenFramebuffers(nFrameBuffers, m_fbo.data());
@@ -197,7 +197,7 @@ void LorenzAttractorDemo::init()
 
         glBindVertexArray(0);
     }
-
+    */
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // enable blending
 
@@ -284,6 +284,7 @@ void LorenzAttractorDemo::render(float simTime)
     glFinish();
     
     // apply filters
+    /*
     for ( int i = 1; i < (int)m_fbo.size(); ++i )
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo[i]);
@@ -296,7 +297,7 @@ void LorenzAttractorDemo::render(float simTime)
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
     }
-    
+    */
 }
 
 void LorenzAttractorDemo::update()

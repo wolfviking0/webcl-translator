@@ -1693,7 +1693,7 @@ var LibraryOpenCL = {
           _context = webcl.createContext(Module.ctx,_devices);  
         } else {
 #if CL_GRAB_TRACE
-          CL.webclCallStackTrace(webcl+".createContext",[,_devices]);
+          CL.webclCallStackTrace(webcl+".createContext",[_devices]);
 #endif          
           _context = webcl.createContext(_devices);  
         }
@@ -1707,7 +1707,7 @@ var LibraryOpenCL = {
           _context = webcl.createContext(Module.ctx,_platform);  
         } else {
 #if CL_GRAB_TRACE
-          CL.webclCallStackTrace(webcl+".createContext",[,_platform]);
+          CL.webclCallStackTrace(webcl+".createContext",[_platform]);
 #endif          
           _context = webcl.createContext(_platform);  
         }
@@ -1873,7 +1873,7 @@ var LibraryOpenCL = {
           _context = webcl.createContext(Module.ctx,_deviceType);  
         } else {
 #if CL_GRAB_TRACE
-          CL.webclCallStackTrace(webcl+".createContext",[,_deviceType]);
+          CL.webclCallStackTrace(webcl+".createContext",[_deviceType]);
 #endif          
           _context = webcl.createContext(_deviceType);  
         }
@@ -3814,12 +3814,6 @@ var LibraryOpenCL = {
 
       var _devices = [];
       var _option = (options == 0) ? "" : Pointer_stringify(options); 
-
-      // \todo need to be remove when webkit work with -D
-      // if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-      //   _option = _option.replace(/-D/g, "-D ");
-      //   _option = _option.replace(/-D\s{2,}/g, "-D ");
-      // }
 
       if (device_list != 0 && num_devices > 0 ) {
         for (var i = 0; i < num_devices ; i++) {
@@ -6523,11 +6517,23 @@ var LibraryOpenCL = {
     }
 #endif 
 
-    var _event_wait_list = [];
+    var _event_wait_list;
+    var _local_work_size;
+
+    // \todo need to be remove when webkit will be support null
+    /**** **** **** **** **** **** **** ****/
+    if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+      _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
+      _local_work_size = (local_work_size != 0) ? [] : null;
+    } else {
+      _event_wait_list = [];
+      _local_work_size = [];
+    }
+
 
     var _global_work_offset = [];
     var _global_work_size = [];
-    var _local_work_size = [];
+    
 
     for (var i = 0; i < work_dim; i++) {
       _global_work_size.push({{{ makeGetValue('global_work_size', 'i*4', 'i32') }}});
