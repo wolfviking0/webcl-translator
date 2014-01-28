@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_imagecopy.data';
     var REMOTE_PACKAGE_NAME = 'val_imagecopy.data';
-    var PACKAGE_UUID = '7f481fb5-851e-4f4d-ba87-fab7ce17097b';
+    var PACKAGE_UUID = '39f3b43c-c196-4a66-8f83-a5a7b28f66e1';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

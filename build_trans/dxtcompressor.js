@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '8573c22d-bf2e-4174-8400-bdf845b843e4';
+    var PACKAGE_UUID = 'c269f3b9-9066-406f-98ee-e7b0c6e1b006';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

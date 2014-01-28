@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_particles.data';
     var REMOTE_PACKAGE_NAME = 'val_particles.data';
-    var PACKAGE_UUID = '478ee937-1c2c-4c32-b7b4-5e364e329144';
+    var PACKAGE_UUID = 'd8fe987e-44a9-4474-bbde-70c5d096158f';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

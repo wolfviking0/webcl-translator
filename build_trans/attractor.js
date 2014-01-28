@@ -116,7 +116,7 @@ Module['FS_createPath']('/', 'shader', true, true);
     }
     var PACKAGE_NAME = '../build/attractor.data';
     var REMOTE_PACKAGE_NAME = 'attractor.data';
-    var PACKAGE_UUID = 'ba8ae3e5-1793-44c1-a03e-8e37851c5591';
+    var PACKAGE_UUID = 'b93f5049-48af-409f-b7e7-bc0bdda94d7f';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12538,9 +12538,9 @@ function __ZN11Application20setupLorenzAttractorEv($this){
  HEAPF32[(($105)>>2)]=0;
  var $106=(($104+52)|0);
  HEAPF32[(($106)>>2)]=0.01666666753590107;
- $nX=200;
- $nY=200;
- $nZ=200;
+ $nX=128;
+ $nY=128;
+ $nZ=128;
  var $107=$nX;
  var $108=$nY;
  var $109=(Math_imul($107,$108)|0);
