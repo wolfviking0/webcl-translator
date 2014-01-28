@@ -117,7 +117,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = 'osx_reduce.data';
-    var PACKAGE_UUID = '02f36d05-f56a-4d44-b193-bc88f9ea6f08';
+    var PACKAGE_UUID = 'a63cb11b-0ea6-4ba8-9867-29d42cc49ce4';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6442,7 +6442,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

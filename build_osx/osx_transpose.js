@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_transpose.data';
     var REMOTE_PACKAGE_NAME = 'osx_transpose.data';
-    var PACKAGE_UUID = 'a11338f5-953c-4687-ac76-aa2c0df6c505';
+    var PACKAGE_UUID = 'f27cbdc5-6603-4b33-924b-0e2e3b49e715';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6259,7 +6259,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

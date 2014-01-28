@@ -121,7 +121,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = '044d3559-1966-4c8d-ad17-d5e0966a5082';
+    var PACKAGE_UUID = '366a05f9-3726-400a-9c84-ba676f593e9c';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13883,7 +13883,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

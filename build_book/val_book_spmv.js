@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_spmv.data';
     var REMOTE_PACKAGE_NAME = 'val_book_spmv.data';
-    var PACKAGE_UUID = '4818a48d-59e4-45a7-8f5a-567c6b42dafc';
+    var PACKAGE_UUID = 'dfb8f4a0-f4ad-449d-936f-5e0352095245';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7361,7 +7361,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

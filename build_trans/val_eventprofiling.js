@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'val_eventprofiling.data';
-    var PACKAGE_UUID = '79705f76-c68e-4499-b657-527934522038';
+    var PACKAGE_UUID = '2dc27fed-89a0-4686-93f3-33e3fff27bed';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7349,7 +7349,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

@@ -120,7 +120,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/val_dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_smallptgpuv2.data';
-    var PACKAGE_UUID = '64a05485-deb7-4ffa-a8e5-53d08d04f6a8';
+    var PACKAGE_UUID = '6102b754-630e-40d8-a730-536f5748d3ba';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -14713,7 +14713,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

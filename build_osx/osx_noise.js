@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = 'f5143179-3071-470b-bf5b-c71d37f073c2';
+    var PACKAGE_UUID = '8b6672d5-98a3-4026-850c-783b659028bb';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12746,7 +12746,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;
@@ -12872,7 +12872,7 @@ function copyTempDouble(ptr) {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
-        } else if (_info instanceof WebCLContextProperties) {
+        } /* else if (_info instanceof WebCLContextProperties) {
     
           var _size = 0;
   
@@ -12891,7 +12891,7 @@ function copyTempDouble(ptr) {
   
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
           
-        } else if (_info instanceof Array) {
+        } */ else if (_info instanceof Array) {
   
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             var _id = CL.udid(_info[i]);

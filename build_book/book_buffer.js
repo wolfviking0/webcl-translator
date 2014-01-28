@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_buffer.data';
     var REMOTE_PACKAGE_NAME = 'book_buffer.data';
-    var PACKAGE_UUID = '4a79092c-5799-45a9-90b5-a5ed9a2ca350';
+    var PACKAGE_UUID = '37974642-2454-4b32-9f39-963a638a1d31';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -4102,7 +4102,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

@@ -7204,7 +7204,9 @@ function copyTempDouble(ptr) {
             _info+=CL.cl_objects_retains[context];
           }
   
-        } else {
+        } 
+        
+        else {
           _info = CL.cl_objects[context].getInfo(param_name);
         }
         
@@ -7222,8 +7224,28 @@ function copyTempDouble(ptr) {
   
         return _error;
       }
+      
+       if (_info == "WebCLContextProperties") {
+  	   var _size = 0;
   
-      if(typeof(_info) == "number") {
+          if (param_value != 0) {
+  
+            if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+              var _properties = CL.cl_objects[context].properties;
+  
+              for (elt in _properties) {
+                HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
+                _size ++;
+  
+              }
+            }
+          }
+  
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
+          
+        } 
+  
+      else if(typeof(_info) == "number") {
   
         if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
@@ -7241,25 +7263,6 @@ function copyTempDouble(ptr) {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
-        } else if (_info instanceof WebCLContextProperties) {
-    
-          var _size = 0;
-  
-          if (param_value != 0) {
-  
-            if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
-              var _properties = CL.cl_objects[context].properties;
-  
-              for (elt in _properties) {
-                HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
-                _size ++;
-  
-              }
-            }
-          }
-  
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
-          
         } else if (_info instanceof Array) {
   
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
@@ -7995,7 +7998,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;

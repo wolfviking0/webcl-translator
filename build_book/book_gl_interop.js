@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = 'book_gl_interop.data';
-    var PACKAGE_UUID = 'd421c0bd-9872-4ae4-ac5f-6835fcbc7790';
+    var PACKAGE_UUID = '1745dc4e-0872-4977-b05b-55df8a4b8603';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13030,7 +13030,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;
@@ -13055,7 +13055,9 @@ function copyTempDouble(ptr) {
             _info+=CL.cl_objects_retains[context];
           }
   
-        } else {
+        } 
+        
+        else {
           _info = CL.cl_objects[context].getInfo(param_name);
         }
         
@@ -13092,7 +13094,7 @@ function copyTempDouble(ptr) {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
-        } else if (_info instanceof WebCLContextProperties) {
+        } /* else if (_info instanceof WebCLContextProperties) {
     
           var _size = 0;
   
@@ -13111,7 +13113,7 @@ function copyTempDouble(ptr) {
   
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
           
-        } else if (_info instanceof Array) {
+        } */ else if (_info instanceof Array) {
   
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             var _id = CL.udid(_info[i]);
