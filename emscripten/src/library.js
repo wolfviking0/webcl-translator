@@ -4848,6 +4848,7 @@ LibraryManager.library = {
     return sig;
   },
   frexpf: 'frexp',
+  frexpl: 'frexp',
   finite: function(x) {
     return isFinite(x);
   },
