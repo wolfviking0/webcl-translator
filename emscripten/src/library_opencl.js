@@ -2818,7 +2818,7 @@ var LibraryOpenCL = {
     try {
 
 #if CL_GRAB_TRACE
-      CL.webclCallStackTrace( CL.cl_objects[context]+".createImage",[_flags,_descriptor,_host_ptr]);
+      CL.webclCallStackTrace( CL.cl_objects[context]+".createImage",[_flags,"{channelOrder:"+_channel_order+", channelType:"+_channel_type+", width:"+image_width+", height:"+image_height+", rowPitch:"+image_row_pitch +"}",_host_ptr]);
 #endif      
 
       if (_host_ptr != null)
