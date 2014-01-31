@@ -378,33 +378,36 @@ var LibraryOpenCL = {
         // Just in case no more than 10 loop
         _security --;
 
-        var _kern = _stringKern.indexOf("__kernel ");
+        var _pattern = "__kernel ";
+        var _kern = _stringKern.indexOf(_pattern);
 
         if (_kern == -1) {
+          _pattern = " kernel ";
           _kern = _stringKern.indexOf(" kernel ");
           if (_kern == -1) { 
+            _pattern = "kernel ";
             _kern = _stringKern.indexOf("kernel ");
             if (_kern == -1) {
               _found = 0;
               continue;
             } else if (_kern != 0) {
-              console.error("/!\\ Fin workd 'kernel' but is not a real kernel  .. ("+_kern+")");
-              _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+              console.error("/!\\ Find word 'kernel' but is not a real kernel  .. ("+_kern+")");
+              _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
               continue;
             }
           }
         }
 
-        _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
-        
+        _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
+ 
         var _brace = _stringKern.indexOf("{");
         var _stringKern2 = _stringKern.substr(0,_brace);
         var _braceOpen = _stringKern2.lastIndexOf("(");
         var _braceClose = _stringKern2.lastIndexOf(")");
-        var _stringKern3 = _stringKern2.substr(0,_braceOpen);
+        var _stringKern3 = _stringKern2.substr(0,_braceOpen).replace(/^\s+|\s+$/g, ""); // trim
         var _space = _stringKern3.lastIndexOf(" ");
 
-        _stringKern2 = _stringKern2.substr(_space,_braceClose);
+        _stringKern2 = _stringKern2.substr(_space + 1,_braceClose);
 
         // Add the kernel result like name_kernel(..., ... ,...)
         _matches.push(_stringKern2);
@@ -521,7 +524,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-#if 0
+//#if 0
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -570,7 +573,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-#endif
+//#endif
       return _mini_kernel_string;
 
     },
