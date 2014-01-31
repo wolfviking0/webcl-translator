@@ -242,11 +242,35 @@ var LibraryOpenCL = {
           CL.cl_structs_sig[struct_name].push(_type);
         } else {
           var _lastSpace = _str.lastIndexOf(" ");
-          var _str = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
+          var _res = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
 
-          CL.parseStruct(kernel_string,_str);
+          CL.parseStruct(kernel_string,_res);
         }
     
+        return;
+      }
+
+      // Second search if is typedef type name;
+      var _re_typedef = new RegExp("typedef[\ ]*[A-Za-z0-9_\s]*[\ ]*"+struct_name+"[\ ]*;");
+      var _typedef = kernel_string.match(_re_typedef);
+
+      if (_typedef != null && _typedef.length == 1) {
+
+        // Get type of the line
+        var _str = _typedef[0];
+        var _type = CL.parseType(_str);
+
+        if (_type != -1) {
+          CL.cl_structs_sig[struct_name].push(_type);
+        } else {
+          _str = _str.replace(/^\s+|\s+$/g, ""); // trim
+          var _firstSpace = _str.indexOf(" ");
+          var _lastSpace = _str.lastIndexOf(" ");
+          var _res = _str.substr(_firstSpace + 1,_lastSpace - _firstSpace - 1);
+          
+          CL.parseStruct(kernel_string,_res);
+        }
+        
         return;
       }
 
@@ -524,7 +548,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-//#if 0
+#if 0
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -573,7 +597,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-//#endif
+#endif
       return _mini_kernel_string;
 
     },
