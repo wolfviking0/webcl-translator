@@ -117,9 +117,9 @@ void key_callback(int key, int action)
         bFullScreen = !bFullScreen;
         if (bFullScreen)
         {
-            glfwOpenWindow( 1920, 1080, 8, 8, 8, 0, 0, 0, GLFW_FULLSCREEN);
+            glfwOpenWindow( 512, 512, 8, 8, 8, 0, 0, 0, GLFW_FULLSCREEN);
         } else {
-            glfwOpenWindow( 1280, 720, 8, 8, 8, 0, 0, 0, GLFW_WINDOW);
+            glfwOpenWindow( 512, 512, 8, 8, 8, 0, 0, 0, GLFW_WINDOW);
         }
     }
 }
@@ -155,8 +155,8 @@ void Application::init()
     if( !glfwInit() )
         error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
 
-    int windowWidth = 1280;
-    int windowHeight = 720;
+    int windowWidth = 512;
+    int windowHeight = 512;
     string windowTitle = global::par().getString("windowTitle");
 
 	#ifndef __EMSCRIPTEN__
@@ -221,9 +221,9 @@ void Application::mainLoop()
     if ( lastSecond != (int)realTime )
     {
         lastSecond = (int)realTime;
-        printf("[%s] Particles: %d  Display: %d fps (%s)\n",
+        printf("[%s] Particles: %d  Display: %d fps (%s%s)\n",
             (global::par().getInt("gpuDevice")) ? "GPU" : "CPU", global::par().getInt("nParticles"),
-            framesLastSecond, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying");
+            framesLastSecond, global::par().isEnabled("CL_GL_interop") ? "attached" : "copying",global::par().isEnabled("filtering") ? "&filter" : "");
         framesLastSecond = 0;
     }
 
@@ -386,7 +386,7 @@ void Application::setupLorenzAttractor()
     m_simDeltaTime = 1.f/60.f;
 
     int nX = 128;
-    int nY = 128;
+    int nY = 256;
     int nZ = 128;
     int nParticles = nX*nY*nZ;
 

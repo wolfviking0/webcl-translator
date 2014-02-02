@@ -35,7 +35,7 @@ endif
 
 DEBUG = -O0 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s CL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s CL_DEBUG=1 -s CL_GRAB_TRACE=1 -s CL_CHECK_VALID_OBJECT=1
 
-NO_DEBUG = -02 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s WARN_ON_UNDEFINED_SYMBOLS=0  -s CL_DEBUG=0 -s CL_GRAB_TRACE=0 -s CL_PRINT_TRACE=0 -s CL_CHECK_VALID_OBJECT=0
+NO_DEBUG = -03 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s WARN_ON_UNDEFINED_SYMBOLS=0  -s CL_DEBUG=0 -s CL_GRAB_TRACE=0 -s CL_PRINT_TRACE=0 -s CL_CHECK_VALID_OBJECT=0
 
 ifeq ($(DEB),1)
 MODE=$(DEBUG)
@@ -99,7 +99,7 @@ dxt_sample:
 	
 attractor_sample:
 	$(call chdir,attractor/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
 	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
 	-o ../build/$(PREFIX)attractor.js
 
@@ -115,8 +115,8 @@ particles_sample:
 	-o ../build/$(PREFIX)particles.js	
 	
 attractor_sample_osx:
-	$(call chdir,attractor2/)
-	clang++ -02 -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -DUSE_GLFW3 -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework Cocoa -framework IOKit -lglfw3 -lGLEW \
+	$(call chdir,attractor/)
+	clang++ -02 -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -D__EMSCRIPTEN__ -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework Cocoa -framework IOKit -lglfw -lGLEW \
 	-o attractor.out
 
 clean:

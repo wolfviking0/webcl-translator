@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
       
         else if(strstr(argv[i], "interop"))
             use_interop = 1;
+
+        else if(strstr(argv[i], "filter"))
+            use_filter = 1;
     }
 
     printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");

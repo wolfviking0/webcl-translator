@@ -130,7 +130,7 @@ void LorenzAttractorDemo::init()
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // init frame buffers for filtering
 
-    int nFrameBuffers = 0; //global::par().isEnabled("filtering") ? 3 : 0;
+    int nFrameBuffers = global::par().isEnabled("filtering") ? 3 : 0;
     m_fbo.resize(nFrameBuffers+1);
     m_tex.resize(nFrameBuffers);
     m_fbo.back() = 0;
@@ -138,7 +138,7 @@ void LorenzAttractorDemo::init()
     int windowWidth = -1, windowHeight = -1;
     Application::get()->getWindowSize(windowWidth, windowHeight);
 
-    /*
+    
     if ( nFrameBuffers )
     {
         glGenFramebuffers(nFrameBuffers, m_fbo.data());
@@ -157,8 +157,8 @@ void LorenzAttractorDemo::init()
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex[i], 0);
-            GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
-            glDrawBuffers(1, drawBuffers);
+            //GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
+            //glDrawBuffers(1, drawBuffers);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -197,7 +197,7 @@ void LorenzAttractorDemo::init()
 
         glBindVertexArray(0);
     }
-    */
+    
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // enable blending
 
@@ -284,7 +284,6 @@ void LorenzAttractorDemo::render(float simTime)
     glFinish();
     
     // apply filters
-    /*
     for ( int i = 1; i < (int)m_fbo.size(); ++i )
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo[i]);
@@ -297,7 +296,6 @@ void LorenzAttractorDemo::render(float simTime)
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glFinish();
     }
-    */
 }
 
 void LorenzAttractorDemo::update()
