@@ -386,7 +386,7 @@ void Application::setupLorenzAttractor()
     m_simDeltaTime = 1.f/60.f;
 
     int nX = 128;
-    int nY = 256;
+    int nY = 128;
     int nZ = 128;
     int nParticles = nX*nY*nZ;
 
