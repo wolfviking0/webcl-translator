@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_histogram.data';
-    var PACKAGE_UUID = 'fe5956ee-f29e-4a19-9aa7-3d7d501af4f7';
+    var PACKAGE_UUID = '19bf0e9c-4759-4d0f-9ca8-aff866980e5e';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -5582,11 +5582,35 @@ function copyTempDouble(ptr) {
             CL.cl_structs_sig[struct_name].push(_type);
           } else {
             var _lastSpace = _str.lastIndexOf(" ");
-            var _str = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
+            var _res = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
   
-            CL.parseStruct(kernel_string,_str);
+            CL.parseStruct(kernel_string,_res);
           }
       
+          return;
+        }
+  
+        // Second search if is typedef type name;
+        var _re_typedef = new RegExp("typedef[\ ]*[A-Za-z0-9_\s]*[\ ]*"+struct_name+"[\ ]*;");
+        var _typedef = kernel_string.match(_re_typedef);
+  
+        if (_typedef != null && _typedef.length == 1) {
+  
+          // Get type of the line
+          var _str = _typedef[0];
+          var _type = CL.parseType(_str);
+  
+          if (_type != -1) {
+            CL.cl_structs_sig[struct_name].push(_type);
+          } else {
+            _str = _str.replace(/^\s+|\s+$/g, ""); // trim
+            var _firstSpace = _str.indexOf(" ");
+            var _lastSpace = _str.lastIndexOf(" ");
+            var _res = _str.substr(_firstSpace + 1,_lastSpace - _firstSpace - 1);
+            
+            CL.parseStruct(kernel_string,_res);
+          }
+          
           return;
         }
   
@@ -5701,33 +5725,36 @@ function copyTempDouble(ptr) {
           // Just in case no more than 10 loop
           _security --;
   
-          var _kern = _stringKern.indexOf("__kernel ");
+          var _pattern = "__kernel ";
+          var _kern = _stringKern.indexOf(_pattern);
   
           if (_kern == -1) {
+            _pattern = " kernel ";
             _kern = _stringKern.indexOf(" kernel ");
             if (_kern == -1) { 
+              _pattern = "kernel ";
               _kern = _stringKern.indexOf("kernel ");
               if (_kern == -1) {
                 _found = 0;
                 continue;
               } else if (_kern != 0) {
-                console.error("/!\\ Fin workd 'kernel' but is not a real kernel  .. ("+_kern+")");
-                _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
+                console.error("/!\\ Find word 'kernel' but is not a real kernel  .. ("+_kern+")");
+                _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
                 continue;
               }
             }
           }
   
-          _stringKern = _stringKern.substr(_kern + 8,_stringKern.length - _kern);
-          
+          _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
+   
           var _brace = _stringKern.indexOf("{");
           var _stringKern2 = _stringKern.substr(0,_brace);
           var _braceOpen = _stringKern2.lastIndexOf("(");
           var _braceClose = _stringKern2.lastIndexOf(")");
-          var _stringKern3 = _stringKern2.substr(0,_braceOpen);
+          var _stringKern3 = _stringKern2.substr(0,_braceOpen).replace(/^\s+|\s+$/g, ""); // trim
           var _space = _stringKern3.lastIndexOf(" ");
   
-          _stringKern2 = _stringKern2.substr(_space,_braceClose);
+          _stringKern2 = _stringKern2.substr(_space + 1,_braceClose);
   
           // Add the kernel result like name_kernel(..., ... ,...)
           _matches.push(_stringKern2);
@@ -5825,6 +5852,54 @@ function copyTempDouble(ptr) {
           CL.cl_validator_argsize[_name] = _param_argsize_validator;
         }
   
+  //#if 0
+        for (var name in CL.cl_kernels_sig) {
+          var _length = CL.cl_kernels_sig[name].length;
+          var _str = "";
+          for (var i = 0; i < _length ; i++) {
+            var _type = CL.cl_kernels_sig[name][i];
+            _str += _type + "("+CL.stringType(_type)+")";
+            if (i < _length - 1) _str += ", ";
+          }
+  
+          console.info("Kernel " + name + "(" + _length + ")");  
+          console.info("\t" + _str);  
+  
+          console.info("\tValidator Info : ");
+          console.info("\t\tARG PARAM KERNEL"); 
+          var _str = "( ";
+          var _length = CL.cl_validator[name].length;
+          for (var i = 0 ; i < _length ; i++) {
+              _str += CL.cl_validator[name][i];
+              if (i < _length - 1) _str += ", ";
+          }
+          _str += " )";
+          console.info("\t\t\t"+_str);
+          console.info("\t\tARG SIZE PARAM KERNEL (ulong _wcl...)"); 
+          var _str = "( ";
+          var _length = CL.cl_validator_argsize[name].length;
+          for (var i = 0 ; i < _length ; i++) {
+              _str += CL.cl_validator_argsize[name][i];
+              if (i < _length - 1) _str += ", ";
+          }
+          _str += " )";
+          console.info("\t\t\t"+_str);
+  
+        }
+  
+        for (var name in CL.cl_structs_sig) {
+          var _length = CL.cl_structs_sig[name].length;
+          var _str = "";
+          for (var i = 0; i < _length ; i++) {
+            var _type = CL.cl_structs_sig[name][i];
+            _str += _type + "("+CL.stringType(_type)+")";
+            if (i < _length - 1) _str += ", ";
+          }
+  
+          console.info("\n\tStruct " + name + "(" + _length + ")");  
+          console.info("\t\t" + _str);              
+        }
+  //#endif
         return _mini_kernel_string;
   
       },getImageSizeType:function (image) {
@@ -6559,6 +6634,20 @@ function copyTempDouble(ptr) {
           }
         }
       } catch (e) {
+        var name = _kernel.getInfo(webcl.KERNEL_FUNCTION_NAME);
+        var num = _kernel.getInfo(webcl.KERNEL_NUM_ARGS);
+        console.info("AL "+ name +" -> "+ num + " parameters : ");
+        for (var i = 0; i < num; i++) {
+          
+          try {
+            var webCLKernelArgInfo = _kernel.getArgInfo(i);
+            console.info("\t" +i+" -> "+webCLKernelArgInfo.name +" : "+webCLKernelArgInfo.typeName+" : "+webCLKernelArgInfo.addressQualifier+ " : " + webCLKernelArgInfo.accessQualifier );
+          } catch(e) {
+            console.error("ARRGGGGGGGGG");
+          }
+          
+        }
+  
         var _error = CL.catchError(e);
   
   
@@ -6913,7 +7002,7 @@ function copyTempDouble(ptr) {
         _host_ptr = CL.getHostPtrArray(_size,_type);
       } 
   
-      var _descriptor = {channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
+      var _descriptor = { channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
   
       try {
   
@@ -7025,6 +7114,9 @@ function copyTempDouble(ptr) {
           break;
           case 0x102C /*CL_DEVICE_VENDOR*/ :
             _info = "WEBCL_DEVICE_VENDOR";
+          break;
+          case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
+            _info = webcl.getSupportedExtensions() ;
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
@@ -7227,7 +7319,7 @@ function copyTempDouble(ptr) {
       _id = CL.udid(_context);
   
       // Add properties array for getInfo
-      // Object.defineProperty(_context, "properties", { value : _properties,writable : false });
+      Object.defineProperty(_context, "properties", { value : _properties,writable : false });
   
   
       return _id;
