@@ -548,7 +548,7 @@ var LibraryOpenCL = {
       console.info(_mini_kernel_string);
       console.info("--------------------------------------------------------------------");
 #endif
-#if 0
+//#if 0
       for (var name in CL.cl_kernels_sig) {
         var _length = CL.cl_kernels_sig[name].length;
         var _str = "";
@@ -597,7 +597,7 @@ var LibraryOpenCL = {
         console.info("\n\tStruct " + name + "(" + _length + ")");  
         console.info("\t\t" + _str);              
       }
-#endif
+//#endif
       return _mini_kernel_string;
 
     },
@@ -1508,6 +1508,9 @@ var LibraryOpenCL = {
         break;
         case 0x102C /*CL_DEVICE_VENDOR*/ :
           _info = "WEBCL_DEVICE_VENDOR";
+        break;
+        case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
+          _info = webcl.getSupportedExtensions() ;
         break;
         case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
           _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
@@ -2840,7 +2843,7 @@ var LibraryOpenCL = {
       _host_ptr = CL.getHostPtrArray(_size,_type);
     } 
 
-    var _descriptor = {channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
+    var _descriptor = { channelOrder:_channel_order, channelType:_channel_type, width:image_width, height:image_height, rowPitch:image_row_pitch }
 
     try {
 
@@ -4487,6 +4490,20 @@ var LibraryOpenCL = {
         }
       }
     } catch (e) {
+      var name = _kernel.getInfo(webcl.KERNEL_FUNCTION_NAME);
+      var num = _kernel.getInfo(webcl.KERNEL_NUM_ARGS);
+      console.info("AL "+ name +" -> "+ num + " parameters : ");
+      for (var i = 0; i < num; i++) {
+        
+        try {
+          var webCLKernelArgInfo = _kernel.getArgInfo(i);
+          console.info("\t" +i+" -> "+webCLKernelArgInfo.name +" : "+webCLKernelArgInfo.typeName+" : "+webCLKernelArgInfo.addressQualifier+ " : " + webCLKernelArgInfo.accessQualifier );
+        } catch(e) {
+          console.error("ARRGGGGGGGGG");
+        }
+        
+      }
+
       var _error = CL.catchError(e);
 
 #if CL_GRAB_TRACE
@@ -7119,7 +7136,7 @@ var LibraryOpenCL = {
     CL.webclBeginStackTrace("clCreateFromGLTexture3D",[context,flags_i64_1,target,miplevel,texture,cl_errcode_ret]);
 #endif
 
-    console.error("clCreateImage3D: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
+    console.error("clCreateFromGLTexture3D: Can't be implemented - Differences between WebCL and OpenCL 1.1\n");
 
     if (cl_errcode_ret != 0) {{{ makeSetValue('cl_errcode_ret', '0', 'webcl.INVALID_VALUE', 'i32') }}};
 
