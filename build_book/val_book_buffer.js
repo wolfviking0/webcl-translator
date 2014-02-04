@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_buffer.data';
     var REMOTE_PACKAGE_NAME = 'val_book_buffer.data';
-    var PACKAGE_UUID = '64763995-4170-4103-838e-a770aa25ada5';
+    var PACKAGE_UUID = 'fb3d5fb7-ce70-4512-a377-3a0661b33daa';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -8271,7 +8271,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

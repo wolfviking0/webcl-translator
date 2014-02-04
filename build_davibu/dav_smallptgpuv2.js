@@ -120,7 +120,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = 'dav_smallptgpuv2.data';
-    var PACKAGE_UUID = '160ab61d-9b05-4ff4-b632-8acc1ccba58d';
+    var PACKAGE_UUID = 'ca56f068-c51d-4794-b529-ec8495114c77';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -8098,7 +8098,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

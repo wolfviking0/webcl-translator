@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_hello_world.data';
     var REMOTE_PACKAGE_NAME = 'val_book_hello_world.data';
-    var PACKAGE_UUID = '9e0fb561-07fe-4554-86a6-824f7dd16908';
+    var PACKAGE_UUID = '79996e11-f6d3-4035-94a1-4e622d8250fa';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

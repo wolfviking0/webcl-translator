@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'eventprofiling.data';
-    var PACKAGE_UUID = 'a30c7d94-db8b-41bc-8ca8-4a3a6cb19963';
+    var PACKAGE_UUID = 'e77bfa64-4727-47ae-a137-0fd260d95330';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

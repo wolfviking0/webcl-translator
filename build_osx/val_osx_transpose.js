@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_transpose.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_transpose.data';
-    var PACKAGE_UUID = 'f26094d4-95b2-469e-989d-90190682d0af';
+    var PACKAGE_UUID = '605b0c3e-be60-44c8-b134-0976717e2510';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

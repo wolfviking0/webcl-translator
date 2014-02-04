@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_convolution.data';
     var REMOTE_PACKAGE_NAME = 'book_convolution.data';
-    var PACKAGE_UUID = 'f6e0a574-c764-47f5-88c3-7479e9e0efc0';
+    var PACKAGE_UUID = 'ff7b1e88-ab13-49e3-98b8-1f9c00d31bf0';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

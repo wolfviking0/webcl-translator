@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = 'eba510ff-7915-4302-84ff-0d7da46d9fff';
+    var PACKAGE_UUID = '39c11b1e-4213-4e78-87af-0094fe7566e2';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -4150,7 +4150,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

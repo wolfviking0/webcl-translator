@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_sinewave.data';
     var REMOTE_PACKAGE_NAME = 'val_book_sinewave.data';
-    var PACKAGE_UUID = 'c59b46d1-730b-464b-998c-e2ba173f0526';
+    var PACKAGE_UUID = '67435b52-c152-440e-981e-0bfdf4209c8a';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13053,7 +13053,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

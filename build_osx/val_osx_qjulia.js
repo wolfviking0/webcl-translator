@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_qjulia.data';
-    var PACKAGE_UUID = '8733eab7-fc8f-485f-9bd7-232bec41dc46';
+    var PACKAGE_UUID = '518be3e6-2117-47a5-ba04-ddac7275148d';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12256,7 +12256,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

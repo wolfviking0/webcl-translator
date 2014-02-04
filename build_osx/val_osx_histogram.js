@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_histogram.data';
-    var PACKAGE_UUID = '19bf0e9c-4759-4d0f-9ca8-aff866980e5e';
+    var PACKAGE_UUID = 'cd46b3d3-b936-4874-9f6b-fe65c27aa81a';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7116,7 +7116,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;

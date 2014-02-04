@@ -114,7 +114,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
     }
     var PACKAGE_NAME = '../build/val_osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_trajectories.data';
-    var PACKAGE_UUID = '98561fe6-c4ed-4c00-a140-b818773e1fe9';
+    var PACKAGE_UUID = '646d0189-586a-4484-ba48-fe781f13281e';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

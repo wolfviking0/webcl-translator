@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = 'dav_mandelbulbgpu.data';
-    var PACKAGE_UUID = '4c65603a-16d9-4305-932e-36b1767701a7';
+    var PACKAGE_UUID = 'e2da9c7f-422e-4354-b5fd-3794e96275f5';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7171,7 +7171,7 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_DEVICE_VENDOR";
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions() ;
+            _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
