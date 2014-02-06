@@ -1509,7 +1509,21 @@ var LibraryOpenCL = {
           _info = parseInt(CL.udid(_object));
         break;
         case 0x102B /*CL_DEVICE_NAME*/ :
-          _info = "WEBCL_DEVICE_NAME";
+          var _type = _object.getInfo(webcl.DEVICE_TYPE);
+          switch (_type) {
+            case webcl.DEVICE_TYPE_CPU:
+              _info = "WEBCL_DEVICE_CPU";
+            break;
+            case webcl.DEVICE_TYPE_GPU:
+              _info = "WEBCL_DEVICE_GPU";
+            break;
+            case webcl.DEVICE_TYPE_ACCELERATOR:
+              _info = "WEBCL_DEVICE_ACCELERATOR";
+            break;
+            case webcl.DEVICE_TYPE_DEFAULT:
+              _info = "WEBCL_DEVICE_DEFAULT";
+            break;
+          }
         break;
         case 0x102C /*CL_DEVICE_VENDOR*/ :
           _info = "WEBCL_DEVICE_VENDOR";
