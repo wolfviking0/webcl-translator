@@ -61,6 +61,7 @@ all: all_1 all_2 all_3
 
 all_1: \
 	imagecopy_sample			\
+	marching_cubes_sample		\
 
 all_2: \
 	eventprofiling_sample		\
@@ -70,19 +71,42 @@ all_3: \
 	attractor_sample			\
 	dxt_sample					\
 	
-#	fft_sample					\
-#	video_sample				\
-
-all_osx: \
-	mandelbulb_sample_osx \
-	smallpt_sample_osx \
-	attractor_sample_osx \
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
 	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) image_copy.cpp $(MODE) \
 	--preload-file image_copy.cl \
 	-o ../build/$(PREFIX)imagecopy.js
+
+marching_cubes_sample:
+	$(call chdir,marching_cubes/)
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) $(MODE) -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*50 \
+	-I./ \
+	-I./OpenCLUtilities/ \
+	./OpenCLUtilities/histogram-pyramids.cpp \
+	./OpenCLUtilities/openCLGLUtilities.cpp \
+	./OpenCLUtilities/openCLUtilities.cpp \
+	gpu-mc.cpp \
+	main.cpp \
+	rawUtilities.cpp \
+	--preload-file gpu-mc-morton.cl \
+	--preload-file gpu-mc.cl \
+	--preload-file data/nucleon_41_41_41.raw \
+	--preload-file data/silicium_98_34_34.raw \
+	-o ../build/$(PREFIX)marching_cubes.js
+
+marching_cubes_sample_osx:
+	$(call chdir,marching_cubes/)
+	clang++ -02 -D__EMSCRIPTEN__ -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework GLUT -framework Cocoa -framework IOKit -lGLEW \
+	-I./ \
+	-I./OpenCLUtilities/ \
+	./OpenCLUtilities/histogram-pyramids.cpp \
+	./OpenCLUtilities/openCLGLUtilities.cpp \
+	./OpenCLUtilities/openCLUtilities.cpp \
+	gpu-mc.cpp \
+	main.cpp \
+	rawUtilities.cpp \
+	-o marching_cubes.out
 
 eventprofiling_sample:
 	$(call chdir,eventprofiling/)
@@ -113,11 +137,6 @@ particles_sample:
 	$(MODE) -s TOTAL_MEMORY=1024*1024*200 -s GL_UNSAFE_OPTS=0 -s GL_MAX_TEMP_BUFFER_SIZE=1024*1024*50 -s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 \
 	--preload-file part2.cl \
 	-o ../build/$(PREFIX)particles.js	
-	
-attractor_sample_osx:
-	$(call chdir,attractor/)
-	clang++ -02 -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -D__EMSCRIPTEN__ -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework Cocoa -framework IOKit -lglfw -lGLEW \
-	-o attractor.out
 
 clean:
 	$(call chdir,build/)
