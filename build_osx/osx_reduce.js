@@ -117,7 +117,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = 'osx_reduce.data';
-    var PACKAGE_UUID = '8a72edd5-f4cb-4e55-a9f6-6af424832a48';
+    var PACKAGE_UUID = '11db5289-0a4d-4a45-ad57-e1e1452739f7';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -2244,6 +2244,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:

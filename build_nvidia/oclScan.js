@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclScan.data';
     var REMOTE_PACKAGE_NAME = 'oclScan.data';
-    var PACKAGE_UUID = 'ffb3c20b-e3f8-4a8b-b4ff-7a889330ac61';
+    var PACKAGE_UUID = '369097f5-ca13-4c05-ac34-f03debe988b1';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3413,6 +3413,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:

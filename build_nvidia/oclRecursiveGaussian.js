@@ -114,7 +114,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//oclRecursiveGaussian.data';
     var REMOTE_PACKAGE_NAME = 'oclRecursiveGaussian.data';
-    var PACKAGE_UUID = '839c3b08-ec5e-4af0-9668-064ac3d278f2';
+    var PACKAGE_UUID = '6b279f14-4c47-4a8e-82f2-bb54d8c0ba35';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3589,6 +3589,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:

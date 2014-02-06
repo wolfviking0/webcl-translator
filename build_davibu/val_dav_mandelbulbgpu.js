@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_mandelbulbgpu.data';
-    var PACKAGE_UUID = '10d571b1-6fb7-4110-b193-e91f0e127831';
+    var PACKAGE_UUID = '9ed6a1d4-34af-4d7a-9cfa-af07bb260369';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -2294,6 +2294,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:
@@ -3035,7 +3047,7 @@ function copyTempDouble(ptr) {
   
           _kernel.setArg(_posarg,_array);
   
-          var _sizearg = new Int32Array([arg_size]);
+          var _sizearg = CL.cast_long(arg_size);
   
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
             _kernel.setArg(_posarg+1,_sizearg);
@@ -3054,7 +3066,7 @@ function copyTempDouble(ptr) {
   
             
               var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-              var _sizearg = new Int32Array([_size]);
+              var _sizearg = CL.cast_long(_size);
   
               if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
                 _kernel.setArg(_posarg+1,_sizearg);
@@ -3067,7 +3079,7 @@ function copyTempDouble(ptr) {
            
             _kernel.setArg(_posarg,_array);
   
-            var _sizearg = new Int32Array([arg_size]);
+            var _sizearg = CL.cast_long(arg_size);
   
             if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
               _kernel.setArg(_posarg+1,_sizearg);

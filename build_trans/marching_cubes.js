@@ -116,7 +116,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/marching_cubes.data';
     var REMOTE_PACKAGE_NAME = 'marching_cubes.data';
-    var PACKAGE_UUID = '09be65bb-4b09-441c-912d-21ad184a3d56';
+    var PACKAGE_UUID = '7a9e7ed3-a085-455c-8b8d-17e6bb60a8eb';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3510,6 +3510,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:

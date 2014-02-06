@@ -121,7 +121,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_galaxies.data';
-    var PACKAGE_UUID = '18ad004f-1a54-4f94-84c1-85013bea476f';
+    var PACKAGE_UUID = '1bcc05b1-4294-4143-81c2-caff9d1bbb39';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12744,6 +12744,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:
@@ -14430,7 +14442,7 @@ function copyTempDouble(ptr) {
   
           _kernel.setArg(_posarg,_array);
   
-          var _sizearg = new Int32Array([arg_size]);
+          var _sizearg = CL.cast_long(arg_size);
   
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
             _kernel.setArg(_posarg+1,_sizearg);
@@ -14449,7 +14461,7 @@ function copyTempDouble(ptr) {
   
             
               var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-              var _sizearg = new Int32Array([_size]);
+              var _sizearg = CL.cast_long(_size);
   
               if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
                 _kernel.setArg(_posarg+1,_sizearg);
@@ -14462,7 +14474,7 @@ function copyTempDouble(ptr) {
            
             _kernel.setArg(_posarg,_array);
   
-            var _sizearg = new Int32Array([arg_size]);
+            var _sizearg = CL.cast_long(arg_size);
   
             if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
               _kernel.setArg(_posarg+1,_sizearg);

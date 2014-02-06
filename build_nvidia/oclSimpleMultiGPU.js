@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclSimpleMultiGPU.data';
     var REMOTE_PACKAGE_NAME = 'oclSimpleMultiGPU.data';
-    var PACKAGE_UUID = 'c35b702d-70e6-424a-93e5-05bb4d2e2b85';
+    var PACKAGE_UUID = '0afbbb60-c8d8-4902-b426-e25c4f53ba0a';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3410,6 +3410,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:

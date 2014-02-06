@@ -114,7 +114,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclSobelFilter.data';
     var REMOTE_PACKAGE_NAME = 'val_oclSobelFilter.data';
-    var PACKAGE_UUID = '80a5843d-2327-4442-a159-aa0b387aa25e';
+    var PACKAGE_UUID = 'e4652c0c-fc6b-4437-a958-9e39664fe7f9';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3596,6 +3596,18 @@ function copyTempDouble(ptr) {
         }
   
         return _id;      
+      },cast_long:function (arg_size) {
+    
+        console.info("arg_size : "+arg_size);
+  
+        var _sizelong = [];
+  
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        
+        // var _origin = x << 32 | y;
+  
+        return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
           case webcl.SIGNED_INT8:
@@ -9767,7 +9779,7 @@ function copyTempDouble(ptr) {
           CL.webclCallStackTrace(_kernel+".setArg<<__local>>",[_posarg,_array]);
           _kernel.setArg(_posarg,_array);
   
-          var _sizearg = new Int32Array([arg_size]);
+          var _sizearg = CL.cast_long(arg_size);
   
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
             CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
@@ -9789,7 +9801,7 @@ function copyTempDouble(ptr) {
             
               CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
               var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-              var _sizearg = new Int32Array([_size]);
+              var _sizearg = CL.cast_long(_size);
   
               if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
                 CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
@@ -9804,7 +9816,7 @@ function copyTempDouble(ptr) {
             CL.webclCallStackTrace(_kernel+".setArg",[_posarg,_array]);
             _kernel.setArg(_posarg,_array);
   
-            var _sizearg = new Int32Array([arg_size]);
+            var _sizearg = CL.cast_long(arg_size);
   
             if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
               CL.webclCallStackTrace(_kernel+".setArg<<VALIDATOR>>",[_posarg+1,_sizearg]);
