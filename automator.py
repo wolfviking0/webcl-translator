@@ -55,9 +55,9 @@ def clear_prof_data():
     global PROF_DATA
     PROF_DATA = {}
 
-list_repositories=["webcl-translator/webcl","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples","boost","freeimage"]
+list_repositories=["webcl-translator/webcl","webcl-ocl-nvidia","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples","boost","freeimage"]
 
-page_subfolder=["build_trans","build_osx","build_toys","build_davibu","build_book"]
+page_subfolder=["build_trans","build_nvidia","build_osx","build_toys","build_davibu","build_book"]
 
 # Go Up folder
 os.chdir("../");
@@ -330,10 +330,11 @@ def main():
                     callback=list_repo_callback,
                     help="work only on the repository list :\t\t\t\
                     0 : webcl-translator/webcl\t\t\t\
-                    1 : webcl-osx-sample\t\t\t\
-                    2 : webcl-ocltoys\t\t\t\
-                    3 : webcl-davibu\t\t\t\
-                    4 : webcl-book-samples", metavar="0,2,...")
+                    1 : webcl-nvidia-sample\t\t\t\
+                    2 : webcl-osx-sample\t\t\t\
+                    3 : webcl-ocltoys\t\t\t\
+                    4 : webcl-davibu\t\t\t\
+                    5 : webcl-book-samples", metavar="0,2,...")
 
   '''
   parser.add_option("-U", "--only-update",
