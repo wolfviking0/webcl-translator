@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_buffer.data';
     var REMOTE_PACKAGE_NAME = 'book_buffer.data';
-    var PACKAGE_UUID = '9aac538f-1db5-4182-a0a9-0d4ac561ead6';
+    var PACKAGE_UUID = 'e0dd6541-d81d-4f80-92c7-bf57fd804727';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -8253,7 +8253,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_sinewave.data';
     var REMOTE_PACKAGE_NAME = 'book_sinewave.data';
-    var PACKAGE_UUID = '7cf4387a-024f-434d-96f2-af0bb90c0458';
+    var PACKAGE_UUID = '1b9485a1-ed97-4dbe-9844-c7a0d671e4f9';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13054,7 +13054,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

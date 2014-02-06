@@ -1,0 +1,919 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "d_render" :
+                {
+                    "d_output" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_output_size"
+                        },
+                    "_wcl_d_output_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "imageW" :
+                        {
+                            "index" : 2,
+                            "type" : "uint"
+                        },
+                    "imageH" :
+                        {
+                            "index" : 3,
+                            "type" : "uint"
+                        },
+                    "density" :
+                        {
+                            "index" : 4,
+                            "type" : "float"
+                        },
+                    "brightness" :
+                        {
+                            "index" : 5,
+                            "type" : "float"
+                        },
+                    "transferOffset" :
+                        {
+                            "index" : 6,
+                            "type" : "float"
+                        },
+                    "transferScale" :
+                        {
+                            "index" : 7,
+                            "type" : "float"
+                        },
+                    "invViewMatrix" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_invViewMatrix_size"
+                        },
+                    "_wcl_invViewMatrix_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (32/CHAR_BIT)
+typedef struct {
+    float _wcl_tnear;
+    float _wcl_tfar;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global uint *d_render__d_output_min;
+    __global uint *d_render__d_output_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __constant float *d_render__invViewMatrix_min;
+    __constant float *d_render__invViewMatrix_max;
+} _WclConstantLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclConstantLimits cl;
+    __constant uint *cn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(float *, max0)) );
+}
+float *_wcl_addr_clamp_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0, float * asnull)
+{
+     return _wcl_addr_check_private_1_float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_1__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) );
+}
+__global uint *_wcl_addr_clamp_global_1__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * asnull)
+{
+     return _wcl_addr_check_global_1__u_uglobal__uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_constant_1__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant float *, max0)) );
+}
+__constant float *_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0, __constant float * asnull)
+{
+     return _wcl_addr_check_constant_1__u_uconstant__float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+
+// intersect ray with a box
+// http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
+
+int intersectBox(_WclProgramAllocations *_wcl_allocs, float4 r_o, float4 r_d, float4 boxmin, float4 boxmax, float *tnear, float *tfar)
+{
+    // compute intersection of ray with all six bbox planes
+    float4 invR = (float4)(1.0f,1.0f,1.0f,1.0f) / r_d;
+    float4 tbot = invR * (boxmin - r_o);
+    float4 ttop = invR * (boxmax - r_o);
+
+    // re-order intersections to find smallest and largest on each axis
+    float4 tmin = min(ttop, tbot);
+    float4 tmax = max(ttop, tbot);
+
+    // find the largest tmin and the smallest tmax
+    float largest_tmin = max(max(tmin.x, tmin.y), max(tmin.x, tmin.z));
+    float smallest_tmax = min(min(tmax.x, tmax.y), min(tmax.x, tmax.z));
+
+ (*(_wcl_addr_clamp_private_1_float__Ptr((tnear), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = largest_tmin;
+ (*(_wcl_addr_clamp_private_1_float__Ptr((tfar), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = smallest_tmax;
+
+ return smallest_tmax > largest_tmin;
+}
+
+uint rgbaFloatToInt(_WclProgramAllocations *_wcl_allocs, float4 rgba)
+{
+    rgba.x = clamp(rgba.x,0.0f,1.0f);
+    rgba.y = clamp(rgba.y,0.0f,1.0f);
+    rgba.z = clamp(rgba.z,0.0f,1.0f);
+    rgba.w = clamp(rgba.w,0.0f,1.0f);
+    return ((uint)(rgba.w*255.0f)<<24) | ((uint)(rgba.z*255.0f)<<16) | ((uint)(rgba.y*255.0f)<<8) | (uint)(rgba.x*255.0f);
+}
+
+__kernel void
+d_render(__global uint *d_output, ulong _wcl_d_output_size,
+         uint imageW, uint imageH,
+         float density, float brightness,
+         float transferOffset, float transferScale,
+         __constant float* invViewMatrix, ulong _wcl_invViewMatrix_size
+
+
+
+
+
+
+         )
+
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &d_output[0], &d_output[_wcl_d_output_size] },
+        0,
+        { &invViewMatrix[0], &invViewMatrix[_wcl_invViewMatrix_size] },
+        _wcl_constant_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.d_render__d_output_min, _wcl_allocs->gl.d_render__d_output_max, (__global uint*)0);
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    uint x = get_global_id(0);
+    uint y = get_global_id(1);
+
+    float u = (x / (float) imageW)*2.0f-1.0f;
+    float v = (y / (float) imageH)*2.0f-1.0f;
+
+    //float tstep = 0.01f;
+    float4 boxMin = (float4)(-1.0f, -1.0f, -1.0f,1.0f);
+    float4 boxMax = (float4)(1.0f, 1.0f, 1.0f,1.0f);
+
+    // calculate eye ray in world space
+    float4 eyeRay_o;
+    float4 eyeRay_d;
+
+    eyeRay_o = (float4)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(3), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))), (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(7), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))), (*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(11), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))), 1.0f);
+
+    float4 temp = normalize(((float4)(u, v, -2.0f,0.0f)));
+    eyeRay_d.x = dot(temp, ((float4)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(0), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(1), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(2), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(3), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))))));
+    eyeRay_d.y = dot(temp, ((float4)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(4), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(5), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(6), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(7), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))))));
+    eyeRay_d.z = dot(temp, ((float4)((*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(8), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(9), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(10), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))),(*(_wcl_addr_clamp_constant_1__u_uconstant__float__Ptr((invViewMatrix)+(11), 1, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_min, (__constant float *)_wcl_allocs->cl.d_render__invViewMatrix_max, (__constant float *)_wcl_allocs->cn))))));
+    eyeRay_d.w = 0.0f;
+
+    // find intersection with box
+ float tnear, tfar;
+ int hit = intersectBox(_wcl_allocs, eyeRay_o, eyeRay_d, boxMin, boxMax, &_wcl_allocs->pa._wcl_tnear, &_wcl_allocs->pa._wcl_tfar);
+    if (!hit) {
+        if ((x < imageW) && (y < imageH)) {
+            // write output color
+            uint i =(y * imageW) + x;
+            (*(_wcl_addr_clamp_global_1__u_uglobal__uint__Ptr((d_output)+(i), 1, (__global uint *)_wcl_allocs->gl.d_render__d_output_min, (__global uint *)_wcl_allocs->gl.d_render__d_output_max, (__global uint *)_wcl_allocs->gn))) = 0;
+        }
+        return;
+    }
+ if (_wcl_allocs->pa._wcl_tnear < 0.0f) _wcl_allocs->pa._wcl_tnear = 0.0f; // clamp to near plane
+
+    // march along ray from back to front, accumulating color
+    temp = (float4)(0.0f,0.0f,0.0f,0.0f);
+    float t = _wcl_allocs->pa._wcl_tfar;
+
+    for(uint i=0; i<500; i++) {
+        float4 pos = eyeRay_o + eyeRay_d*t;
+        pos = pos*0.5f+0.5f; // map position to [0, 1] coordinates
+
+        // read from 3D texture        
+
+
+
+
+
+
+
+        float4 col = (float4)(pos.x,pos.y,pos.z,.25f);
+
+
+
+        // accumulate result
+        float a = col.w*density;
+        temp = mix(temp, col, (float4)(a, a, a, a));
+
+        t -= 0.01f;
+        if (t < _wcl_allocs->pa._wcl_tnear) break;
+    }
+    temp *= brightness;
+
+    if ((x < imageW) && (y < imageH)) {
+        // write output color
+        uint i =(y * imageW) + x;
+        (*(_wcl_addr_clamp_global_1__u_uglobal__uint__Ptr((d_output)+(i), 1, (__global uint *)_wcl_allocs->gl.d_render__d_output_min, (__global uint *)_wcl_allocs->gl.d_render__d_output_max, (__global uint *)_wcl_allocs->gn))) = rgbaFloatToInt(_wcl_allocs, temp);
+    }
+}
+	2\|kF32H{Ÿ¥ù’êmP5	 =VXJAIdàØºöxVD3"
+	#4:;@MdqiXA1'  &-9DD6'$!
+		&2		8*#;5'
+!A?F8!	">mQ_I)			:císzU+		
+	(N{í¬•\*		*Nkj∫ c'		(EUG?≥e%		'AM?Ÿ b(
+	)GYN©óZ*			*PquhsS+				&JxóJXE'			3Zã=B45b:2#
+87'0"
+	
+	
+%+(	%+2?MOA0!
+)<B@BOhzylR=1'$D`]K?C^à¡—ÆëeO;' 28-(OüûëùY5!	$",HrêÇ]:%	(5@A8)		  
+		
+				 
+7	(Q%( 
+	4XA>,
+
+!4GÅh;
+
+ */™ñJ
+
+
+	
+!ÄòQ 
+			ÆèG		#!m[7
+
+!-578)
+
+ 5M!$		1X
+
+
+%K
+	
+0		
+
+	 %&"
+*:JQF3"
+
+!(%,KÅ£îoC*
+	-YáÇV-	
+
+#:NL5 				 &#
+		
+
+&&
+#
+	+:;0(!
+-		 5FG>876/",!	+9?;7:DK@)	!D4	)680%$,<KA)
+}R*	':A6$0@;%ñ^/		,@F5 ,<7$
+oK(	$6?7'3C<%	9-%394*)0?MB*)9B@;;CG=(	$	3EF=520*.	
+'56+#
+
+," 
+	 		
+
+
+	
+
+		
+
+	
+
+
+&.+ 
+%A\Z>#		,=:'	$#					  	
+)1*
+
+!?WQ8%	.]áâkK?:6/$	?yù£ívyzlK/
+
+2UÄòây|¢üè].	#	4WxzeLEXãßïU'	9%1Wáü|H*$6dîÅGD)!9fì°z@!-WrA4"
+,O}ò|M0*=lùâJ 
+,LmzqZQbî§îY)	
+	,OÇ†ïÖÄûúã[/
+:sò†çmii]D-	+V~|]@4/-)!9LD/%+#		
+
+
+		  
+
+
+*(
+
+	
+	 
+
+ 
+
+(&)<>,
+
+2TaK+	:u®èS1#!(/2*	Dõ´••jVU\YO9#
+
+
+([∑rÉË±ªØ∏ê]9 
+	
+%D{–ﬂ≈¿¬È^¢¶R+#3Pá¿¬†scÑ≈èÆÑ:
+&;\õ©Õ…j:0LòÊ∆d(	-EnªuuΩ_-$=}¬®X$
+#6Rà±· rD9V¶ÍŒk+	
+
+*Br™√∂ãxñÕdõé@	;r––¬’∆ÏÅ¥ßW/	#T≠hzﬁ°üû£É[;"
+
+Aïø∞èYFCJMH6#
+
+
+8kízE( (+&0MVA$
+
+&77'
+
+		#!
+	
+
+		
+	
+
+
+	&20#	
+&D\V6
+
+.YäÑO%
+	
+*\û™n6*97&
+#Q•Â∞[0"%6Tmc@!	N∂„∆übPYtï©ÜP)
+	&X∂äè÷°©∏‡œ≠wE&'Bs¬’ª≥∞ÿçﬂŒwH+#3?I^Ü¥∂òp_zπüΩéE%
+5Wwéƒ¿«¡h:0IãŒ≤])
+
+	<gì≥ˆ¢~∂^.$;u≠ïP#
+1Ni|™ø÷¡pC8Ró’Ωf-
+	
++4<Koü∂¨Örã¡ÖªüP+
+ 8j¬À∫≈¥ÿ¶÷ÖT1	
+
+#T≥åèÕìê§∆ƒ¥ÄK(Nµ˘“çSAG`ÑúÄO(
+	$S°—õO(-G]W9+]ù¢e1$0/!	-VÄyH"		
+#<QK1		 )(	
+
+					
+
+
+
+	
+	
+&+)"
+,F]^G/,MÑöük6!%
+	1[°¢ΩÅ70>7#'HìÈÙã<(LqkC!-b∑ŸñJ%#BÇ≠üu8
+EéŒ¨f?6FsÕ¿çóN&
+=y®ûy]aÅ∞ÊÌ¥âO--5/&$.ImÑxfc§√≠èlP;*	'Hgi[S[hi[F>KoëìhC/'% 		0jû¬¿©®ñqD*#1Qqd>"	4vû◊ı◊…°r>")HaV5	.bñ∞•ëïåoH/(6WymE(
+$@WUIDL^idPGSvò°wQ:/*#	)-'(DoéÑne|¢∆ø´É^A,	=}≤•wWVq°ÈÓ±ìQ,	!Jï“©_7.;e∫µãíI#	
+3n…‡ëE!9r§úi2
+
+*OõﬂÌä:$C`Z91[ûô≤}7,6/
+(Euììc5!
+%9KN?,	##	
+
+		
+
+
+				&,*#&3BLL@3+'$$1C_ÄícH626;5$	)<U~ºù”Øb:*-;QS;  2Gcõ”3ê©N(";at\3
+	'09Jp¥æ”â<=yµüX(	%+)&*;dú¢h5!H°œ∏ïH#	
+%21&6XkW5!/^ªlWÃt= 	0ED0$<NG5,.Cl∑√≈“àX49[eN0%284--6JauÑáÅvbA$@}∞ôcA410*"#0>E@9:CPP?%
+E¢∏ØªvUB2"&0.#$3?7#	
+G°XbﬂèfJ3",)-94#
+Dùœø•iM>1$(32(  )8B9$	>sôÅR6--0-&#&2BLKFGOYVA&7U[D)#3<90.5JfÜû§ñ}b?"-?>,'AUK5**>k¿±Æ€ÜR/	"//&#=dt[4+Xµu\øj6"*+*1Fw¥∑o5Dò›»Ö>	%1>S¬ùƒí?<qüâL#
+1Gcõ”9òØT,$;^kR-%7Loß≠‘ße?./:KK4)7Lgxq`H7135/ 
+(7AD;/(#
+	 %%	
+
+			"
++
+
+
+')"	'@Y[I7+#
+!$3P|†ì|^TL<%	0CLNYsó∑«°ÜtÑätE 2ZÇòõ∫¬Â ùt]eç¨™f-	'Iy°¿∆Îµ…§`=4Crª»};
+!:YxÖäéÆ≠ùg7 *Tú…úQ%
+5VhbRFGTd_?"Fîﬂ«C&(S|~X6$ '36*@Ü¥∆ΩyP10hûó\.!!;kûÕ‘Ωö`1	.f≠≤r: /C]~•’øàE%U°”•Y.%,@f†¨éJI¶È»àG+
+	">pñ|E
+E¢∫£ôS0			5_ÅpAL¶ÒÃ}A(
+'EzüÉF'Y¢∆îO(#+5LuØÆéJ/iÆ≠k5!3Lnî≥Ÿ¿ÇA/dïèY.!% !=t¶”÷¨ÜS+%KsyY;)'/;>.Aãæƒ≠jC)/Ncg^TVfxnG&!Hïﬂ¡q9 5V|êù°≈¥©u?% .Z§∆ëJ!#Ctüø≈È∫÷≤mH<Kzº∆x8	
+,OrÑÜ†∂Ÿ ≠Ñjlê•ù^*(7=@H^Ç´≈£äry|e<*ClèàpTH?2		 5IL=.#!	
+	(C$		'		+=?1"
+		-[ãèvO<0&"*( )O°•ŒôÑz^:	+PkdL?JsÃœúÌœÂ´úl/#Pê§»òtvå¨¡¨§±ﬁfõè:	:|¥w‚∆ïÜq_ONh©Õ‚ç;
+0[ù‰«øírdU@."#5a¢Æs;)Xù∆ªîeI=7/#;eÇpJ1%
+Aã∞›•Y2!
+(IkwndYA'	Oùá∏îB
+	4Stó√πåI Aï‚Ëä=
+			"7Z¢€nôj(+]¢∂ÄC
+
+ <{ΩÄ≠n)<oõÖN'	&V≥ı«`&2díÖQ*
+!Lô◊´Y%AwüÑK%
+*^ºÒÕd'	0k∑ƒÅA
+%CáΩWúp*Gû÷„ç=
+
+
+		'>b§‰ï°d'Nö~∂óF!
+
+ 9Ywé™§x@	;ÅΩ‰©c;(" ,OqucSG5!#Kà∏»´{YIA7(!BoâoD*		*Qó‡∂œ¶p`J7*+?qπ¡x:
+
+4q®y„ƒìáásc_y∫∂◊í;
+FÉ§≤Ñfkâ∫÷ΩΩ¿Ëiîâ9	$AUP>5@j«ΩÑÓ»”±ñ_+	!$FêßèªÖmbL0'Lv{`A1&
+#01'
+&	-5G4,%	
+
+
+	#<OJ3!	8u±§yM9/(.<5##Jß±~ÕñzjH)
+	4févG+-Q¶•âÛ–‚∞ΩçC%Yßµƒ{D9Juü®¨∏‚d≤≠M";Ö¥>≠óQ;;DJLRl§≠√Ö>1^®˜∆¨rC/'$!$3TzyQ-		/a©ﬁ÷®h=')>D8+')("Q†§Áøe6
+%/6=N^V8*jªHçúF 
+	&:]õ√Æ^('W¨√æx5
+
+8t∂ö∆w-4[ÉU,	-g±ô¥k)	.CM@'
+#R´‰≤W##5B:&
+ Kí∆ôN!	 5MUD(
+%V¥‰∫\$<núì\.	0m¨~±p+)_πÆ∏Å8 :q∫∏Õt-)gµDî¶L$		(9UÜ´ñT&Hìø¯ƒp>#		)357ALG0(QíÀ‚¿|H.!1HM<)""!	*S°Ì¢∞I3,*('->eêé\0
+4z´H¥ñP<@N\_d∑ùƒìC
+!Oûƒ∫m>6MÑ∞∂«∆Îl¥≠M",Ts`<&*P¨öpÒ«Œ¥±{=&0+ Fü¡óªÇiaS;#	3eóéc?.% 			
+1?:)
+*		6	
+	3S-	
+6S*
+
+(8	
+()		":T\G*
+))" ,RçµìU3&#$!	 <UP7'-UßÒ âYMSZO8!3lûäO,(CÇ¿µñxÑ§Ωó`5H¢Ó«g1#.Kjrkoñƒπo= 		*Y©—ºe1'05:Ikô´ÉS4#	
+$?i°™ÇH&%7LSD3,*%
+*HoááqI*			$(%&1AE3(Rïµ≥~J),KsyS*
+9xŸ·≤m4=xΩ¥k1;q∑ ìO% Gï›≈i-
+-JcgR2AÅ≠íM!	*12, 
+
+6b~c6
+!%%"
+	2XkU1		 09;3$
+8iàl:1Tv}`8Câª†U$<w ‹†W)	 Fíﬂ…l/	5qŒÿ¥s99l™ßh0#G¶´Q/	
+)CdjK&	#<_}åU1 */*(-9;+8e•¥íP)!-B]eQ:-(!&U™ﬂ∆h2!.:AESy™√ñ]7"Có·ºb0$3WÖyuòƒÔπp=	.^àyH+)Hè“æòswê£ÑW03GD1%.WßÌ≈}OBCH@/
+!#+Nú}H+
+"
+2GL:#	@!	 !	W,
++†c7		$ñQ(		#W3	&6>4!	' &*2FmàoB!
+
+
+
+-GQKI_ôœ≥k5# $QâìnPXÖæ∫~E+'4HWO41nøƒ{H<Oq~fD6=\å≤û_0	5sª≤i6$)8B<34Ft≤„¬{B"	1aå~L&%7ZÑüîrN3	"3IWJ.!2COW[_Q5$19>?7)
+'7YÑâ^/
+.NimV=(1e¥Ãä=	$Oçµ•l:2nƒÿà=	,dØÀû_0
+	/_ïì],+VÜåf= %D\T5$AVQ:#/80":IA.
+ *0(%E`\B(3?6",\ïüvF$(Kia=+bÆœßf4	1e£¶h1!G}£öi;!	2m«ﬂè?		'AW]O=+	2a®ΩÅ;	
+(1;@=/		%.<XyyS*1NcV5&;Q_d`YH-2göåS*$$$*<dî∑§wL.	4t¡ºo;)1DOF86Fr∞‚¬w>.i∂Ω{KC\ÑêoG48RzöâT+	!GwÇfQ]èÃ¡}B'"+;G@+	&;DBD[ì√•a00
+#+>^s^9		
+
+	h; ,1*üW+
+
+$´±[-
+	üÑ<
+ #	}K$*=W\C%4"	1?HWÑ£¨åB		Asèîéæ≥Ωƒ]'&)
++l≥≠ ¢®¿”ØY)$AcjK(0|⁄Õª{bkvb># =}√¨èI *`ØæÄG1-1.#%K°’Üµq4	<\_B% >y∫«”åR,
+	%/. $?cç´±êT( #!	
+0UòŸ∏éC
+6PUC-=ã∂{•W 3p±∑xA 	0r…–°J
+Gô«ËóF #J{á\.
+Hôæ√y7
+ +;;*
+?Ç≥îR&  	;pñ{F!  
+
+Aäæ°Z*  	"!
+JöπÕÑ< 1FH4
+CîœÈïF 'Tì£n5	-`óõj<		3z…¡™P,@E9(		 Aè∫|°T#9^õÿøÅ<	
+)87'
+	
+
+
+*Kx£∂§{G#"DmsN,"Cà«ª“áI&	,j≈“ìR:8=8)$Iü◊à¨g.
+0}”Ω¬àsÉëuF%7mØ©Ä@	(bßØ≈£∂≈◊Ω]*5OT=!	
+6_yÅ∂Ø∑ºX% A*
+'2;Joïûx:	
+
+ëY*	"1DH6 òëD
+à¬b/	ãèB&)!$éU'	$0GemQ-
+%<'		$:KVhû°°†N"
+		#Ná¶∫≤ÎwS¡a("00$
+	4ÅôWÍ–’æ™¶R%&Ht}V,			7ä∞^¬ôvwsV28≈•òQ"+_¶ÆÑP7/-%?ï©>µ|8
+3MQ<$
+1m´ΩÏõX.""
+9fü¿≈úZ+	$#3\™Á±ñJ#BZT9 @êõK¨c%	?áµ±j1
+-l∏√∑Y# XõIüé:	 @sãi9
+!YØ}®Ä4 !4;0N¨Ú√b)  
+	IîŒ§W%      		QµÚÀi+       
+![•Jïá6  	(?H;$Sût≤ä9	 "Käß~A8u•õ],
+	1v≥©º_$5GC/	!Eô¶Q¶_$	!<g≠Ì√ãB
+	)* 		"Dz∂ŒµÜK$	=_fJ,6{ÆùÂïN(	/lπµô`C<8.?ñ±F™q1
+	8é†;À¨åíåi:4rª±çG0vüÌ—Ê≤ñµX'!=]dF%Aríù°›yZæ_'&%		L/.:FWÖü¶çF		†d-	'9PVA&	%uúJ 	 
+"ªÅD#		,√m1
+	!'%
+
+4ÜF 	%7SfY;!
+
+
+		1?%
+"2;AMq¢œ≥f6
+"
+	'MyàÖ}£øÔ‰}@% &5>8%
+	?â‘ºªíìÆ«©c7%'=dá}M%	 Jü˙÷≠rZ\aS9$)MîËŸÖ=?u∞©o@-''#"HîÎ‘ùS(
+,BTM5
+1`õ≠òd="	
+#% 0Ljzyc?"
+'44*	'Cn†¢x=)OpjF&
+0h∫‡º]&
+@ë€≈n2	&Z∏˘≈c*OØŸﬂÑ5 ?v†ÜM$
+Jùºπm-   &ATM2
+?Ç∂óQ#    $0- 		:qöÄH!    
+&&
+Aã¿¢V%   )62#	M°∑øu0    +LcY8MØÍÊÇ5FàπóT&	;¿≠d/	(_¿ˇÃd*$B]Y=#4j¥œ≠V#	 +,%.Joóíg5
+	!).(
+:\zÄrW51Nf_@&7n≤πù`7 DÉÀ¡ÅL611, $Köˆ›õN$	 I†˘Œ∂~hpyeC) )Kã”«x7	
+9{¡∑¥íû∫Ÿøm;&&7WpgA "!?crqrõºÓ‚|?#!,2-M,		(/6Baê∑õ\1&õQ$-CQH2
+		3≈t5	2l>"
+
+0W?
+#'"	(Xg2
+!6P\P6"B> #$$)9aó¥úd=.*)%		(	
+)BSM@=Kz¿Ê«ÄUIQ]X>#
+%MÅ¢ã^EGbê®ñjSY~≠¨s=	4qøﬁ≠d<19JTL=<Oá‘‚ûS&	<uµæáL) #!#5bù∑ëT+*@[smM-6Tf^D/-=EE?4%'2797/#8YfU;'
+%6KUG,	.`ùßr;	>póÉM$	:—“Ä<Féÿƒn0	9~«ºo4  
+@â‹œv2.\Ü|L$   /böñ\+$AWN1      !BdgE#":KC+	    :VY>!%F_V6    $HnpI$1eóåU(    4m¨•d-	;Ç–«u7	  
+Cè‰÷x28y»Õ=EâÀµg.)Våñk:
+
+ ;fÖrE!/KYO=+(6DI<%	'6CII?-
+/<>;4*
+'?cÖÄ[4"?dykI.
+;x¿ŒïS.!!(,)$)<m±…öV*
+
+1i≥◊´f@7BYf[HBTä”›óO#
+!Cpç|WEJl°ø©tVXtôïe6$
+	"7C@88Hxæ‰≈}QCELH3H%	#2WÑúâX6(#!
+.q6	-BKB-	 I~@	
+*Z> 		.\®V%
+&(!	CéV$				#?_iS7&	*Z;8qƒ√°sQG?1	,*98+"CãÒª¡ÆéöíuB
+0^ÖzP.!8mª¿π£¥…™…q1	$S•Ê÷w:$=Zhdgêº∆Ê7
+6sµÃﬂz8%)+4PÜµ°^/,OÑª∑òS(	&=QM6"
+	,R~ëãrK,
+""#Pî∂∞pA%'0,0w”Œ¥`,
+)IheB!3wﬁÚßM 
+;ÅœÀ{4)Sâñg4	  
+D£»¥õA2GI6    <å∂±î?	''	    /kª»}7      +]ù©n4
+!,-!	    1r≈–Ñ99TW@#   	?î≠†ñA,]†±w:
+  
+C°⁄…ô?3|ÁÙ∞R#7r∂≥k/-pƒ√≥d0%>UR7FÇ≠™tJ,	"'$%FoãòÖZ4	 **#
+'HÇææÆ_-.Ke]?%	
+1l≥ÿÁ:".36?^öÀ∫h2 Jñ◊¬o8)HoÅzvûøµÊÅ7	
+	(MlfF*"<x—≈ƒÆ±»Æ∏f-
+%	
+!.-$!Bäæº§~Ç{`7C	3d™¥êbD92'5Y&
+4LSB,
+0iQ$	 Iñ/
+	
+:z–D
+#(#
+#SùG
+2Wm^@,"	0d5	
+	
+'[ßê™èbSG4,'/*/v∫-¨›∞πûy?5a|e;,cµ§œÀﬁÕR§d'	+eúù∏f. ;bwwx´Øfπk) Eôó+π{3)/1;[îµóM!8h∏∞•\**EVI,
+5l±Õ¿î[2%"
+%]°ªÎïQ," .{è+≠{5	&@VR7*kπ≥¨Y%>∏™p1?pâh7
+ L™ãeîC 190
+Böûì†D
+
+  	3v‘Êè>    .f≤¬}:   	6ŸÍó?	&<G:#  F†ÇkùF!Jà§|? J¶¶Ñê?-tµëÆb(8n¢ò`,-vç7πÇ:
+!5DA-"Sù‘Ìõ\4
+	-[ô√‘´n<		$-)
+1^¥‡çØg- 3UkX3>çè5º{3$3;=Gm¶Ω´V$&Xó≠©[*#Ewëíçæ≠@≤n*	
+,NcQ2.løáŒ⁄€Ÿw°\%	#%".s∏5®œõùãe5;	
+	#PóùüxQC7)6I
+*FVJ3$8v?
+
+
+	(]ß5	2b±A	
+!Då=		*FVJ2$	)Q+	
+	$Pó¨ïhI?7)
+% '$3t€—øòzÉ}]2		
+,OgZ:"7p≈”Æãîªº•R!%Rñøºl8!.Mnr_YzøÍÃa&:z≥ΩËäE%+21+0MéƒüR#0Véƒ√Øj9+Lh]9.ZåûìxV8"				'54'Oñ¿øwD)
+ "#%%'f±≠¬k0
+&9OXI,
+#Yµ‰º\',TéºùW&
+7içuB*Y±Ú…y31A=)
+  Dâ≈∑v4 !  
+-Xåîa. 	&It}V,	&& 
+1bö†f/"<OH/
+ "Kó“ªz5?~©àI!	+Z∞Ú…t0%`Ω‡√a(+N~†ÜK"&c´©¡n4	$3BG;%	Fâæπ{M0  $" 	'Mzó°çiC'
+/?<+	
+*Nã««ƒv>!2Z|k?4q≠øËàD%#2><59Xü€±W$!HÜ±£_31WÉãsfÖ¡ﬂ»a%%?QH07v’›ªîí≥±îJ	0n–…∫ênphM*0
+ EÅôÇY>3,!-@	"8D;)	
+/a?		#LóL 6]F	
+
+)R5	
+%46,4 
+*MptS5'" 		 "%GÉπØrG;?E9#5MTH6.9_¢«§fDFdÇn?2`ó¶ã`FD[ÅähB4F|π£[(	"@wª“≤xM>@IG6%$<y¬∏i.0GfáïÉ]:*$# /^ôõa03HNKKIC3";]hR8$	2\wfD-$
+!5GNK@2!	EçªêN'
+ 6QpjE%Gî“™\*
+*Pê¬∞u<6n§óZ*	Az≥ºâH"CfhE$
+)Il~i>
+(>D3(:HD/"5;/ -9:+-EJ6.CRK2'MutK&/U~êtB	;z≥ü\+	"GÖø¡âGIò‘®Y)-Qã∂°i6
+
+AÉ™ÖJ'	$9PfmY: -Ph^C2+%
+&=MNE6(,@KPWYQ<'#DktU5 ,Fmò™îg@0**'3fßße/
+=uº—±wMAGVVA+'?|ƒ∑g-
+-UÉêzU@B_éúxK8GyØòU%
+,?D:-(4[†ÃØmGD[q_7
+
+ ?u©•mD779/%
+
+		
+$A^cH/"	:		*,$	<H
+,Wq0	-P!	,/	!&#
+
+3OYF,	
+"&'-Am´±t>!%#	";Sa\[s´ÿÏçB$#5KJ16dß«≠ñìπº¿u:%/Xêï\*	=t–Ìø§}ÄÅpJ-&=ÄﬂÂë>	2Wí∏ùpM@:4*!%@Ö«¿¶T'		 #'3L\Q8&2`ù¡Øl?"	1<5)%)-&
+
+6^å°útE$.UqcB)
+5_¶»∏ãE:{¡µm9!Fë¥€≈`+9Ü„€çA
+2jÆ“§Y+,h±∏Ä<$AalX;!"KÉïf3
+)33,"Cp[0#'& $Pé†m5
+.;<4&0qæøÜ?'JtÑiC$;áÊ›â@ 	7u∑·µ^-	8s¨üa5	
+%Lô∂“Ω\)*KaU9' 
+!=g•≈¨w<)3.&'.5. #?nù£ãc9!):ZpbC.# 7l©¬∞e75aßÕ´ÄYMH?1$&Aâ”À¢N#>u–Ì¡®áìñÑT0&:w“€Ü9
+2[ëÆúâêª¬–~<$+N{}O%1DMKNfüŸÈãB$!/?>*
+%6\ëòi: 
+
+*@I<&	6
+	"Y%
+	-Ü:P$		'
+	
+	&:LH1			 +3?Zâ•†]+
+
+,NpÇâØ»Uµå=%45'
+"Kú¶ΩÏ‰ÌcªòJ/3Q{ÅU*&YºjjÌ∂µ¨¶vOCVòø¢ïI
+!Jü¡ØûeROQLFKjºÑ9øp2
+	7då}N0# %+1<Uéµ◊ıóT)	%')4GPA($0I{ª‚ﬁõR&;V[ND@7(	#?x‹‘†å?
+0m¥Ωó^?)		'X¥_V©O9ë§|∫l7EôÃ√ëB6â•àØZ);lìÇO)	/s◊ÓúF6SZE*,f∫–Ü@5LN8 
+1z€Ï•I7XcN08çêcØa,>v™ö^/
+8å∏†ªk:!H¢∏≤üH,_úßÉX?,		,_ΩcP•M2EIB>@;,		*JÉ·Òµ9	 $3KZK.!)9Xë”Á«ÖE!;r£ì^:+(-26A]†´∞ÔçI#	"O´ØüµxfdbVJKhªç>≤f,	&Yªmt¯…–¥πÅO>MÖΩ±à@ Dâ™¡◊ﬂÂ?±öG*+CchF#	%?Yhrôø{ºÇ8*+	
+
+"(3IqíàQ'
+.;9(/
+	])		m3
+>
+	#1;5#
+&0=RváyI% =^u|ô¿êΩÜD'!&&	6uõºÃ¿◊ÆÔ∂pNFRb]?!Füû†Õñó™¬≤ûâá©√†y<J®ÌÃéWGPháõ§∞€€õ©^-
+	%MêºïQ- $6Pk|É†º«¬}I&(<aèìc4,;ADMgè™¨~C
+*D]oáëzK& #5]ß ¶n/$Rí¬¬†ÇZ7
+
+"K†º®Ñ90xï•ÁëY8$	!K†“t12Ä´†∏f5		
+*Xù√îM"/pœﬁèD	6k´Æl5	.g≤øz;
+	;p¶•b-0u’‡ôJ#
+2g©±r9
+3Äñäƒq=$		
+'Súœ•V%.q°¿Èòd@)	
+ J°Î—|4!G~©¨ùâb< 
+
+%N†µüÅ8	#7K_}ëÅP)%&&*>eßÕ•c+	!4Zéök:!3ENQ^{¢Øúm:
+#Lïœ©]5',?]yãì∂ ¡√u@!J´‡≈†eWbzî¢§≠Ÿ‹ôûV(	Cñï¢÷¶ØºŸ∏ïzvëÆój5	1gï∂ºΩ◊úÊÆdB:BNK42L_iá≤ò∞v;!&2Case=
+		'.*	$	I";$	
+
+ $! (2BNH4!
+	%8BHSkÇÜfG0$#Eisg`rìØßïrYJC6%	3jõêjPPlö‹·¬∫èÅeB$	Fá∑ìT4->k¡´ØÌ¥†Y4/g¥ƒÇB!#CÑØπ¨Åuk[D,,Sü€‡É:-RtmSB?GSS@'	4Uç÷©≤Ä;$7A7&"4Ph_;
+3`ï∫Â…§m<#')!0[Ö|I" HÖ∑∑ò}`H4$"Bw¢àK #LÖôÄT:-*%$:nπÃáB!FqwS0&9_® Êê;	!BfgG(+Aq≥{¥è8!Hv[6"#4Vù€Ìé=	#Má¢èbF70( 2_§ºÜED∑æ≠ñsQ7$;núáL!
+-TÑ≤Ï«™t="+-%/V}uG!+I~»ÆºÇ:&=J@.%'7PbW6%Hê›‡Å;1]áÉeOJOTN:#	*]§ΩÖE$(LìØºƒìÑs\@(AÄ¥ñZ;4Hwœ∏≥Ï¥ü}U0/aèãmUZy§‘€∏†}qY: <\g``uî™ñ|\G=7-	.8@KbwvX:&		!+7B;*	
+			*	
+
+		
+
+#$ 
+ #*6@B:.!
+
+"-.*'-?YxàsS8(!8E<+"$8cµ∂ü¶eB,
+8ZcJ+*Y∑g[«xL4$
+0e¢ù^- J©·∆ùY:+$
+'U°≠∆É:"FÖπòV1"!!	"AÇæ,ùÆT.#+Hr}Y1!(&3TâŒµ€≥nG57G^]@$-94"#;UhyÖäpU?6:CE9( "2KXG*		#6A@:7?LTJ6)&+7<;=Kmóòa/	!/0'-::*.CWkêÕ®∑3 ,,"&54&+FdÇ≤ÏRÇÖ5	!03+"$2?=,!0AP_}∑∫øy3$8GIFELW\N:-+1:;54>YÉY.!:Wrë°¶érS>8>JI:&+ANB(	/Qç’î‘πiA15HddD%(40 ;yµ4ú§M)(Gvád7 &#"Jñ≈…y6 FéœØf:'"! 
+)VääW,"MØ≈Æ≠d@.$
+1OZF+-]∫j^«xL3#2?9+$';c™ø¶íZ<)		(*('.?Tho\B/"
+
+!(297/$
+		
+				
+	#%!,BSN7"	
+7iîèe8 	#23$>ã¡∞ÄA#
+$DbZ9I°ÙŒo4=xúûf7 /`∑·üN#
+'Qî•ﬁÆhE=Oà—‹É:,MÑªÚ‹∏âosù∞µx8		&5Klñ»’ÆêsíúuK.$%++"	#1MÉ¨†xPGWpwbVY]R5	+RÅÇS1'4ZïØæ±ªÆÖL"#FnoI(,Tñ≥‰„Ì»ìU%	1Zåã[7-:^ë¶ßò°úzG!	$+<[ï∑§ÅZSdz{hPFHLF0	(<YÉØ”Ÿ≠çwåù•uD'$&,Qéæ˙◊£wblú∏Ωz7	%Mê†ŒúY94F~—·à>
+6kìçX.)XÆÂ¨V'
+:RM2FùÔŒw9
++,!<É≥¶}A$		5`ÜÅZ3	(9D?.
+		
+	
+		 			
+ )(
+
+
+4JG2
+)Pti? 	
+$0.!>tôzB!=UXD."%9n¡’Ö=	
+)LyékXWs∂µŸò=
+	%Bp†œ’∏≤∑‚SñßJ!	
+*IÄ‚£ÖÊµ∆¡Ë∫j;#
+(Q®¶ùπue¨»∂~U@4(4x””B1DÇ›≥√Øx]@%
+
+
+-f±±i4%7x¡E¥›îpJ*
+		8ÇŸŸåK:Mà‡œºóiS:#	
+	/\∑é«ázóø¿ûhD4+"0SäË¡°ÂæŸ∞›∏_2		'Gw°ºæ§ò™⁄Qí°E			
+(JsÇnWEGa¶“Ïï<
+6KK8&/^©¡Ä>	)&7iêxB
+
+	%Hib= 	
+	/A?,#!		
+
+  
+		   	
+
+	 		*4.-HS@$	$*("$5YãåX*
+!3EOROUo®†≠x3	
+
+7Yãß¨¨Øﬁ~§ôF,W®ãî‡≠π¿›Æe8
+	Bë™¨≥o^tü∏©oA)
+1uŒÕy>->vŒ¿®yF-
+	,fÆ¨d1!2møzüïS3 
+	4|’÷ÜG6G|ŒŒ°k?)
+		!Hòêî¡Ärã±≤ì]6"	/Z®ù®ﬁµÕª⁄¨\0	
+
+ 7U|îñî£÷uöê@
+
+ 0>CB?F^î´±p0 #!+JvzQ(
+	
+&>J;"
+	%/*				
+7KG.
+"-*		
+
+  	
+	
+		%(	#	$6GD.- )039FawlC!(,E^hdgÄéÑX.	
+.YÉê~dhu}bB&
+	)VâéhE;FZh_B'	!"IuuJ*)GrÉh?#3!DifA!"@rçvI)		 :	#L||P/$.Kp{_9 /		+YâëqNEPbfW9"/V}ã|isÉa<!
+*)=QYY`|åÄS*	+#'*0=Ulc> 
+-<<*
+		 #		  		'41"
+	"@uòìY+ 
+
+*F^Y>%
+	!*,%	
+
+		
+
+	
+	)	
+		G!	
+	
+\-
+")/+		S.(,,.384&5%	&5:3-,01, 	%	
+&79," )-)+E		#11#!.3*
+<o		"/. /7/
+C		#33%#.1(	8f"	'8;/%!$+-'
+
+';=(	$373./32+
+	 X/#'),273$Y*
+	%,(?		
+
+$	
+		
+		
+		
+(45*
+0SohE'.Gw∂uØõK()=D5!0IrìûvL0#!&-+ 	!0?JH=/$
+!&'"
+
+	
+
+		!<
+j0		õK'
+
+"óY6
++2dP:$
+		!;M892$
+
+&OÑ'* 
+	
+	)gØ#& 		+nñ#*+!		
+)bÆA?5%
+
+%IsqU;#		 7EüX3
+'-ëE#		
+!]*	
+
+3	
+
+			
+(-,&	)<PZSB0% !"%6Vá¢≤ÉM/! '01$
+

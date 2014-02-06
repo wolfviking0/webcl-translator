@@ -1,0 +1,164 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "sine_wave" :
+                {
+                    "pos" :
+                        {
+                            "index" : 0,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_pos_size"
+                        },
+                    "_wcl_pos_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 2,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 3,
+                            "type" : "uint"
+                        },
+                    "time" :
+                        {
+                            "index" : 4,
+                            "type" : "float"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global float4 *sine_wave__pos_min;
+    __global float4 *sine_wave__pos_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_1__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max0)) );
+}
+__global float4 *_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * asnull)
+{
+     return _wcl_addr_check_global_1__u_uglobal__float4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+ /* This example demonstrates how to use the OpenCL/OpenGL bindings  */
+
+///////////////////////////////////////////////////////////////////////////////
+//! Simple kernel to modify vertex positions in sine wave pattern
+//! @param data  data in global memory
+///////////////////////////////////////////////////////////////////////////////
+__kernel void sine_wave(__global float4* pos, ulong _wcl_pos_size, unsigned int width, unsigned int height, float time)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &pos[0], &pos[_wcl_pos_size] },
+        0
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.sine_wave__pos_min, _wcl_allocs->gl.sine_wave__pos_max, (__global uint*)0);
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    unsigned int x = get_global_id(0);
+    unsigned int y = get_global_id(1);
+
+    // calculate uv coordinates
+    float u = x / (float) width;
+    float v = y / (float) height;
+    u = u*2.0f - 1.0f;
+    v = v*2.0f - 1.0f;
+
+    // calculate simple sine wave pattern
+    float freq = 4.0f;
+    float w = sin(u*freq + time) * cos(v*freq + time) * 0.5f;
+
+    // write output vertex
+    (*(_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr((pos)+(y*width+x), 1, (__global float4 *)_wcl_allocs->gl.sine_wave__pos_min, (__global float4 *)_wcl_allocs->gl.sine_wave__pos_max, (__global float4 *)_wcl_allocs->gn))) = (float4)(u, w, v, 1.0f);
+}

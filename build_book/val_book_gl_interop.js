@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = 'val_book_gl_interop.data';
-    var PACKAGE_UUID = 'd1d6b8f2-28da-470c-9862-64964d743d50';
+    var PACKAGE_UUID = '88336c0e-df02-4f38-8702-118db5c8c86c';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

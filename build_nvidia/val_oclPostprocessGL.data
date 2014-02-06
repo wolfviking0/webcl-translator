@@ -1,0 +1,345 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "postprocess" :
+                {
+                    "g_data" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_g_data_size"
+                        },
+                    "_wcl_g_data_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "g_odata" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_g_odata_size"
+                        },
+                    "_wcl_g_odata_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "imgw" :
+                        {
+                            "index" : 4,
+                            "type" : "int"
+                        },
+                    "imgh" :
+                        {
+                            "index" : 5,
+                            "type" : "int"
+                        },
+                    "tilew" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "radius" :
+                        {
+                            "index" : 7,
+                            "type" : "int"
+                        },
+                    "threshold" :
+                        {
+                            "index" : 8,
+                            "type" : "float"
+                        },
+                    "highlight" :
+                        {
+                            "index" : 9,
+                            "type" : "float"
+                        },
+                    "sdata" :
+                        {
+                            "index" : 10,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_sdata_size"
+                        },
+                    "_wcl_sdata_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global uint *postprocess__g_data_min;
+    __global uint *postprocess__g_data_max;
+    __global uint *postprocess__g_odata_min;
+    __global uint *postprocess__g_odata_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local uint *postprocess__sdata_min;
+    __local uint *postprocess__sdata_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_2__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) );
+}
+__global uint *_wcl_addr_clamp_global_2__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * asnull)
+{
+     return _wcl_addr_check_global_2__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max0)) );
+}
+__local uint *_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+// macros to make indexing local memory easier
+
+
+int iclamp(_WclProgramAllocations *_wcl_allocs, int x, int a, int b)
+{
+    return max(a, min(b, x));
+}
+
+// convert floating point rgb color to 8-bit integer
+uint rgbToInt(_WclProgramAllocations *_wcl_allocs, float r, float g, float b)
+{
+  r = clamp(r, 0.0f, 255.0f);
+  g = clamp(g, 0.0f, 255.0f);
+  b = clamp(b, 0.0f, 255.0f);
+  return (convert_uint(b)<<16) + (convert_uint(g)<<8) + convert_uint(r);
+}
+
+// get pixel from 2D image, with clamping to border
+uint getPixel(_WclProgramAllocations *_wcl_allocs, __global uint *data, int x, int y, int width, int height)
+{
+    x = iclamp(_wcl_allocs, x, 0, width - 1);
+    y = iclamp(_wcl_allocs, y, 0, height - 1);
+    return (*(_wcl_addr_clamp_global_2__u_uglobal__uint__Ptr((data)+(y * width + x), 1, (__global uint *)_wcl_allocs->gl.postprocess__g_data_min, (__global uint *)_wcl_allocs->gl.postprocess__g_data_max, (__global uint *)_wcl_allocs->gl.postprocess__g_odata_min, (__global uint *)_wcl_allocs->gl.postprocess__g_odata_max, (__global uint *)_wcl_allocs->gn)));
+}
+
+/*
+    2D convolution using local memory
+    - operates on 8-bit RGB data stored in 32-bit uint
+    - assumes kernel radius is less than or equal to block size
+    - not optimized for performance
+     _____________
+    |   :     :   |
+    |_ _:_____:_ _|
+    |   |     |   |
+    |   |     |   |
+    |_ _|_____|_ _|
+  r |   :     :   |
+    |___:_____:___|
+      r    bw   r
+    <----tilew---->
+*/
+
+__kernel void postprocess(__global uint* g_data, ulong _wcl_g_data_size, __global uint* g_odata, ulong _wcl_g_odata_size, int imgw, int imgh, int tilew, int radius, float threshold, float highlight, __local uint* sdata, ulong _wcl_sdata_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &g_data[0], &g_data[_wcl_g_data_size],&g_odata[0], &g_odata[_wcl_g_odata_size] },
+        0,
+        { &sdata[0], &sdata[_wcl_sdata_size] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.postprocess__g_data_min, _wcl_allocs->gl.postprocess__g_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.postprocess__g_odata_min, _wcl_allocs->gl.postprocess__g_odata_max, (__global uint*)0));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.postprocess__sdata_min, _wcl_allocs->ll.postprocess__sdata_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const int tx = get_local_id(0);
+    const int ty = get_local_id(1);
+    const int bw = get_local_size(0);
+    const int bh = get_local_size(1);
+    const int x = get_global_id(0);
+    const int y = get_global_id(1);
+
+    if( x >= imgw || y >= imgh ) return;
+
+
+    // copy tile to shared memory
+    // center region
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + ty)*tilew+(radius + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x, y, imgw, imgh);
+
+    // borders
+    if (tx < radius) {
+        // left
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + ty)*tilew+(tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x - radius, y, imgw, imgh);
+        // right
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + ty)*tilew+(radius + bw + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x + bw, y, imgw, imgh);
+    }
+    if (ty < radius) {
+        // top
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((ty)*tilew+(radius + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x, y - radius, imgw, imgh);
+        // bottom
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + bh + ty)*tilew+(radius + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x, y + bh, imgw, imgh);
+    }
+
+    // load corners
+    if ((tx < radius) && (ty < radius)) {
+        // tl
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((ty)*tilew+(tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x - radius, y - radius, imgw, imgh);
+        // bl
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + bh + ty)*tilew+(tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x - radius, y + bh, imgw, imgh);
+        // tr
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((ty)*tilew+(radius + bw + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x + bh, y - radius, imgw, imgh);
+        // br
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + bh + ty)*tilew+(radius + bw + tx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln))) = getPixel(_wcl_allocs, g_data, x + bw, y + bh, imgw, imgh);
+    }
+
+    // wait for loads to complete
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+
+    // perform convolution
+    float rsum = 0.0f;
+    float gsum = 0.0f;
+    float bsum = 0.0f;
+    float samples = 0.0f;
+
+    for(int dy=-radius; dy<=radius; dy++)
+    {
+        for(int dx=-radius; dx<=radius; dx++)
+        {
+
+
+         uint pixel = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((sdata)+((radius + ty + dy)*tilew+(radius + tx + dx)), 1, (__local uint *)_wcl_allocs->ll.postprocess__sdata_min, (__local uint *)_wcl_allocs->ll.postprocess__sdata_max, (__local uint *)_wcl_allocs->ln)));
+
+
+
+
+            // only sum pixels within disc-shaped kernel
+            float l = dx*dx + dy*dy;
+         if (l <= radius*radius)
+            {
+                float r = convert_float(pixel&0x0ff);
+                float g = convert_float((pixel>>8)&0x0ff);
+                float b = convert_float((pixel>>16)&0x0ff);
+
+                // brighten highlights
+                float lum = (r + g + b) * 0.001307189542f;// /(255*3);
+                if (lum > threshold)
+                {
+                    r *= highlight;
+                    g *= highlight;
+                 b *= highlight;
+                }
+
+             rsum += r;
+             gsum += g;
+             bsum += b;
+             samples += 1.0f;
+            }
+        }
+    }
+
+    rsum /= samples;
+    gsum /= samples;
+    bsum /= samples;
+
+    (*(_wcl_addr_clamp_global_2__u_uglobal__uint__Ptr((g_odata)+(y * imgw + x), 1, (__global uint *)_wcl_allocs->gl.postprocess__g_data_min, (__global uint *)_wcl_allocs->gl.postprocess__g_data_max, (__global uint *)_wcl_allocs->gl.postprocess__g_odata_min, (__global uint *)_wcl_allocs->gl.postprocess__g_odata_max, (__global uint *)_wcl_allocs->gn))) = rgbToInt(_wcl_allocs, rsum, gsum, bsum);
+}

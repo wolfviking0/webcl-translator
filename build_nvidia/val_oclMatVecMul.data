@@ -1,0 +1,1016 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "MatVecMulUncoalesced0" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        }
+                },
+            "MatVecMulUncoalesced1" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        }
+                },
+            "MatVecMulCoalesced0" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "partialDotProduct" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_partialDotProduct_size"
+                        },
+                    "_wcl_partialDotProduct_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                },
+            "MatVecMulCoalesced1" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "partialDotProduct" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_partialDotProduct_size"
+                        },
+                    "_wcl_partialDotProduct_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                },
+            "MatVecMulCoalesced2" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "partialDotProduct" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_partialDotProduct_size"
+                        },
+                    "_wcl_partialDotProduct_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                },
+            "MatVecMulCoalesced3" :
+                {
+                    "M" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_M_size"
+                        },
+                    "_wcl_M_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "V" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_V_size"
+                        },
+                    "_wcl_V_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "width" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "W" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_W_size"
+                        },
+                    "_wcl_W_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "partialDotProduct" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_partialDotProduct_size"
+                        },
+                    "_wcl_partialDotProduct_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    const __global float *_wcl_row;
+    const __global float *_wcl_2_row;
+    const __global float *_wcl_3_row;
+    const __global float *_wcl_4_row;
+    const __global float *_wcl_5_row;
+    const __global float *_wcl_6_row;
+    volatile __local float *_wcl_p;
+    volatile __local float *_wcl_2_p;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    const __global float *MatVecMulUncoalesced0__M_min;
+    const __global float *MatVecMulUncoalesced0__M_max;
+    const __global float *MatVecMulUncoalesced0__V_min;
+    const __global float *MatVecMulUncoalesced0__V_max;
+    __global float *MatVecMulUncoalesced0__W_min;
+    __global float *MatVecMulUncoalesced0__W_max;
+    const __global float *MatVecMulUncoalesced1__M_min;
+    const __global float *MatVecMulUncoalesced1__M_max;
+    const __global float *MatVecMulUncoalesced1__V_min;
+    const __global float *MatVecMulUncoalesced1__V_max;
+    __global float *MatVecMulUncoalesced1__W_min;
+    __global float *MatVecMulUncoalesced1__W_max;
+    const __global float *MatVecMulCoalesced0__M_min;
+    const __global float *MatVecMulCoalesced0__M_max;
+    const __global float *MatVecMulCoalesced0__V_min;
+    const __global float *MatVecMulCoalesced0__V_max;
+    __global float *MatVecMulCoalesced0__W_min;
+    __global float *MatVecMulCoalesced0__W_max;
+    const __global float *MatVecMulCoalesced1__M_min;
+    const __global float *MatVecMulCoalesced1__M_max;
+    const __global float *MatVecMulCoalesced1__V_min;
+    const __global float *MatVecMulCoalesced1__V_max;
+    __global float *MatVecMulCoalesced1__W_min;
+    __global float *MatVecMulCoalesced1__W_max;
+    const __global float *MatVecMulCoalesced2__M_min;
+    const __global float *MatVecMulCoalesced2__M_max;
+    const __global float *MatVecMulCoalesced2__V_min;
+    const __global float *MatVecMulCoalesced2__V_max;
+    __global float *MatVecMulCoalesced2__W_min;
+    __global float *MatVecMulCoalesced2__W_max;
+    const __global float *MatVecMulCoalesced3__M_min;
+    const __global float *MatVecMulCoalesced3__M_max;
+    const __global float *MatVecMulCoalesced3__V_min;
+    const __global float *MatVecMulCoalesced3__V_max;
+    __global float *MatVecMulCoalesced3__W_min;
+    __global float *MatVecMulCoalesced3__W_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local float *MatVecMulCoalesced0__partialDotProduct_min;
+    __local float *MatVecMulCoalesced0__partialDotProduct_max;
+    __local float *MatVecMulCoalesced1__partialDotProduct_min;
+    __local float *MatVecMulCoalesced1__partialDotProduct_max;
+    __local float *MatVecMulCoalesced2__partialDotProduct_min;
+    __local float *MatVecMulCoalesced2__partialDotProduct_max;
+    __local float *MatVecMulCoalesced3__partialDotProduct_min;
+    __local float *MatVecMulCoalesced3__partialDotProduct_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_18__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9, __global float * min10, __global float * max10, __global float * min11, __global float * max11, __global float * min12, __global float * max12, __global float * min13, __global float * max13, __global float * min14, __global float * max14, __global float * min15, __global float * max15, __global float * min16, __global float * max16, __global float * min17, __global float * max17)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max17)) );
+}
+__global float *_wcl_addr_clamp_global_18__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9, __global float * min10, __global float * max10, __global float * min11, __global float * max11, __global float * min12, __global float * max12, __global float * min13, __global float * max13, __global float * min14, __global float * max14, __global float * min15, __global float * max15, __global float * min16, __global float * max16, __global float * min17, __global float * max17, __global float * asnull)
+{
+     return _wcl_addr_check_global_18__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_18_const___u_uglobal__float__Ptr(const __global float *addr, unsigned size, const __global float * min0, const __global float * max0, const __global float * min1, const __global float * max1, const __global float * min2, const __global float * max2, const __global float * min3, const __global float * max3, const __global float * min4, const __global float * max4, const __global float * min5, const __global float * max5, const __global float * min6, const __global float * max6, const __global float * min7, const __global float * max7, const __global float * min8, const __global float * max8, const __global float * min9, const __global float * max9, const __global float * min10, const __global float * max10, const __global float * min11, const __global float * max11, const __global float * min12, const __global float * max12, const __global float * min13, const __global float * max13, const __global float * min14, const __global float * max14, const __global float * min15, const __global float * max15, const __global float * min16, const __global float * max16, const __global float * min17, const __global float * max17)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(const __global float *, max17)) );
+}
+const __global float *_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr(const __global float *addr, unsigned size, const __global float * min0, const __global float * max0, const __global float * min1, const __global float * max1, const __global float * min2, const __global float * max2, const __global float * min3, const __global float * max3, const __global float * min4, const __global float * max4, const __global float * min5, const __global float * max5, const __global float * min6, const __global float * max6, const __global float * min7, const __global float * max7, const __global float * min8, const __global float * max8, const __global float * min9, const __global float * max9, const __global float * min10, const __global float * max10, const __global float * min11, const __global float * max11, const __global float * min12, const __global float * max12, const __global float * min13, const __global float * max13, const __global float * min14, const __global float * max14, const __global float * min15, const __global float * max15, const __global float * min16, const __global float * max16, const __global float * min17, const __global float * max17, const __global float * asnull)
+{
+     return _wcl_addr_check_global_18_const___u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_4__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1, __local float * min2, __local float * max2, __local float * min3, __local float * max3)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max3)) );
+}
+__local float *_wcl_addr_clamp_local_4__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1, __local float * min2, __local float * max2, __local float * min3, __local float * max3, __local float * asnull)
+{
+     return _wcl_addr_check_local_4__u_ulocal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_4_volatile___u_ulocal__float__Ptr(volatile __local float *addr, unsigned size, volatile __local float * min0, volatile __local float * max0, volatile __local float * min1, volatile __local float * max1, volatile __local float * min2, volatile __local float * max2, volatile __local float * min3, volatile __local float * max3)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(volatile __local float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(volatile __local float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(volatile __local float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(volatile __local float *, max3)) );
+}
+volatile __local float *_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr(volatile __local float *addr, unsigned size, volatile __local float * min0, volatile __local float * max0, volatile __local float * min1, volatile __local float * max1, volatile __local float * min2, volatile __local float * max2, volatile __local float * min3, volatile __local float * max3, volatile __local float * asnull)
+{
+     return _wcl_addr_check_local_4_volatile___u_ulocal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+/* Matrix-vector multiplication: W = M * V.
+ * Device code.
+ *
+ * This sample implements matrix-vector multiplication.
+ * It has been written for clarity of exposition to illustrate various OpenCL
+ * programming principles and optimizatoins, not with the goal of providing
+ * the most performant generic kernel for matrix-vector multiplication.
+ *
+ * CUBLAS provides high-performance matrix-vector multiplication on GPU.
+ */
+
+// Matrix multiplication kernel called by MatrixMul()
+__kernel void MatVecMulUncoalesced0(const __global float* M, ulong _wcl_M_size,
+                                    const __global float* V, ulong _wcl_V_size,
+                                    uint width, uint height,
+                                    __global float* W, ulong _wcl_W_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    // Row index
+    uint y = get_global_id(0);
+    if (y < height) {
+
+        // Row pointer
+        const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_row = row;
+
+        // Compute dot product  
+        float dotProduct = 0;
+        for (int x = 0; x < width; ++x)
+            dotProduct += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+        // Write result to global memory
+        (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = dotProduct;
+    }
+}
+
+// Matrix multiplication kernel called by MatrixMul()
+__kernel void MatVecMulUncoalesced1(const __global float* M, ulong _wcl_M_size,
+                                    const __global float* V, ulong _wcl_V_size,
+                                    uint width, uint height,
+                                    __global float* W, ulong _wcl_W_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,&M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    // Each work-item handles as many matrix rows as necessary
+    for (uint y = get_global_id(0);
+         y < height;
+         y += get_global_size(0))
+    {
+
+        // Row pointer
+        const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_2_row = row;
+
+        // Compute dot product  
+        float dotProduct = 0;
+        for (uint x = 0; x < width; ++x)
+            dotProduct += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_2_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+        // Write result to global memory
+        (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = dotProduct;
+    }
+}
+
+// Matrix multiplication kernel called by MatrixMul()
+__kernel void MatVecMulCoalesced0(const __global float* M, ulong _wcl_M_size,
+                                  const __global float* V, ulong _wcl_V_size,
+                                  uint width, uint height,
+                                  __global float* W, ulong _wcl_W_size,
+                                  __local float* partialDotProduct, ulong _wcl_partialDotProduct_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &partialDotProduct[0], &partialDotProduct[_wcl_partialDotProduct_size],0, 0,0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    // Each work-group handles as many matrix rows as necessary
+    for (uint y = get_group_id(0); y < height; y += get_num_groups(0)) {
+
+        // Row pointer
+        const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_3_row = row;
+
+        // Each work-item accumulates as many products as necessary
+        // into local variable "sum"
+        float sum = 0;
+        for (uint x = get_local_id(0); x < width; x += get_local_size(0))
+            sum += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_3_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+        // Each partial dot product is stored in shared memory
+        (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0)), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) = sum;
+
+        // Synchronize to make sure each work-item is done updating
+        // shared memory; this is necessary because in the next step,
+        // the first work-item needs to read from shared memory
+        // the partial dot products written by the other work-items
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        // The first work-item in the work-group adds all partial
+        // dot products together and writes the result to global memory
+        if (get_local_id(0) == 0) {
+            float dotProduct = 0;
+            for (uint t = 0; t < get_local_size(0); ++t)
+                dotProduct += (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(t), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+            (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = dotProduct;
+     }
+
+        // Synchronize to make sure the first work-item is done with
+        // reading partialDotProduct
+        barrier(CLK_LOCAL_MEM_FENCE);
+ }
+}
+
+// Matrix multiplication kernel called by MatrixMul()
+__kernel void MatVecMulCoalesced1(const __global float* M, ulong _wcl_M_size,
+                                  const __global float* V, ulong _wcl_V_size,
+                                  uint width, uint height,
+                                  __global float* W, ulong _wcl_W_size,
+                                  __local float* partialDotProduct, ulong _wcl_partialDotProduct_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,&partialDotProduct[0], &partialDotProduct[_wcl_partialDotProduct_size],0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    // Each work-group handles as many matrix rows as necessary
+    for (uint y = get_group_id(0); y < height; y += get_num_groups(0)) {
+
+        // Row pointer
+        const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_4_row = row;
+
+        // Each work-item accumulates as many products as necessary
+        // into local variable "sum"
+        float sum = 0;
+        for (uint x = get_local_id(0); x < width; x += get_local_size(0))
+            sum += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_4_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+        // Each partial dot product is stored in shared memory
+        (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0)), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) = sum;
+
+        // Perform parallel reduction to add each work-item's
+        // partial dot product together
+        for (uint stride = 1; stride < get_local_size(0); stride *= 2) {
+
+            // Synchronize to make sure each work-item is done updating
+            // shared memory; this is necessary because work-items read
+            // results that have been written by other work-items
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            // Index into the "partialDotProduct" array where
+            // the work-item will write during this step
+            uint index = 2 * stride * get_local_id(0);
+
+            // Check for valid indices
+            if (index < get_local_size(0)) {
+
+                // Add two elements from the "partialDotProduct" array
+                // and store the result in partialDotProduct[index]
+                (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(index), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(index + stride), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+            }
+        }
+
+        // Write the result of the reduction to global memory
+        if (get_local_id(0) == 0)
+            (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(0), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+
+        // Synchronize to make sure the first work-item is done with
+        // reading partialDotProduct
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+}
+
+// Matrix multiplication kernel called by MatrixMul()
+__kernel void MatVecMulCoalesced2(const __global float* M, ulong _wcl_M_size,
+                                  const __global float* V, ulong _wcl_V_size,
+                                  uint width, uint height,
+                                  __global float* W, ulong _wcl_W_size,
+                                  __local float* partialDotProduct, ulong _wcl_partialDotProduct_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size],0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,&partialDotProduct[0], &partialDotProduct[_wcl_partialDotProduct_size],0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    // Each work-group handles as many matrix rows as necessary
+    for (uint y = get_group_id(0); y < height; y += get_num_groups(0)) {
+
+        // Row pointer
+        const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_5_row = row;
+
+        // Each work-item accumulates as many products as necessary
+        // into local variable "sum"
+        float sum = 0;
+        for (uint x = get_local_id(0); x < width; x += get_local_size(0))
+            sum += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_5_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+        // Each partial dot product is stored in shared memory
+        (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0)), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) = sum;
+
+        // Perform parallel reduction to add each work-item's
+        // partial dot product together
+        for (uint stride = get_local_size(0) / 2; stride > 0; stride /= 2) {
+
+            // Synchronize to make sure each work-item is done updating
+            // shared memory; this is necessary because work-items read
+            // results that have been written by other work-items
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            // Only the first work-items in the work-group add elements together
+            if (get_local_id(0) < stride) {
+
+                // Add two elements from the "partialDotProduct" array
+                // and store the result in partialDotProduct[index]
+                (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0)), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0) + stride), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+            }
+        }
+
+        // Write the result of the reduction to global memory
+        if (get_local_id(0) == 0)
+            (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(0), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+
+        // Synchronize to make sure the first work-item is done with
+        // reading partialDotProduct
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+}
+
+
+__kernel void MatVecMulCoalesced3(const __global float* M, ulong _wcl_M_size,
+                                  const __global float* V, ulong _wcl_V_size,
+                                  uint width, uint height,
+                                  __global float* W, ulong _wcl_W_size,
+                                  __local float* partialDotProduct, ulong _wcl_partialDotProduct_size)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&M[0], &M[_wcl_M_size],&V[0], &V[_wcl_V_size],&W[0], &W[_wcl_W_size] },
+        0,
+        { 0, 0,0, 0,0, 0,&partialDotProduct[0], &partialDotProduct[_wcl_partialDotProduct_size] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, _wcl_allocs->gl.MatVecMulUncoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, _wcl_allocs->gl.MatVecMulUncoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, _wcl_allocs->gl.MatVecMulUncoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, _wcl_allocs->gl.MatVecMulUncoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, _wcl_allocs->gl.MatVecMulUncoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, _wcl_allocs->gl.MatVecMulUncoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__M_min, _wcl_allocs->gl.MatVecMulCoalesced0__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__V_min, _wcl_allocs->gl.MatVecMulCoalesced0__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced0__W_min, _wcl_allocs->gl.MatVecMulCoalesced0__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__M_min, _wcl_allocs->gl.MatVecMulCoalesced1__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__V_min, _wcl_allocs->gl.MatVecMulCoalesced1__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced1__W_min, _wcl_allocs->gl.MatVecMulCoalesced1__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__M_min, _wcl_allocs->gl.MatVecMulCoalesced2__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__V_min, _wcl_allocs->gl.MatVecMulCoalesced2__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced2__W_min, _wcl_allocs->gl.MatVecMulCoalesced2__W_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__M_min, _wcl_allocs->gl.MatVecMulCoalesced3__M_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__V_min, _wcl_allocs->gl.MatVecMulCoalesced3__V_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.MatVecMulCoalesced3__W_min, _wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global uint*)0))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, _wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+   // Each work-group computes multiple elements of W
+   for (uint y = get_group_id(0); y < height; y += get_num_groups(0)) {
+      const __global float* row = M + y * width;;_wcl_allocs->pa._wcl_6_row = row;
+
+      // Each work-item accumulates as many products as necessary
+      // into local variable "sum"
+      float sum = 0;
+      for (uint x = get_local_id(0); x < width; x += get_local_size(0))
+         sum += (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((_wcl_allocs->pa._wcl_6_row)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn))) * (*(_wcl_addr_clamp_global_18_const___u_uglobal__float__Ptr((V)+(x), 1, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (const __global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (const __global float *)_wcl_allocs->gn)));
+
+      // Each partial dot product is stored in shared memory
+      (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0)), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) = sum;
+
+      // Perform parallel reduction to add each work-item's
+      // partial dot product together
+
+      // Synchronize to make sure each work-item is done writing to
+      // partialDotProduct
+      barrier(CLK_LOCAL_MEM_FENCE);
+
+      // Thread local ID within a warp
+      uint id = get_local_id(0) & (32 - 1);
+
+      // Each warp reduces 64 consecutive elements
+      float warpResult = 0.0f;
+      if (get_local_id(0) < get_local_size(0)/2 )
+      {
+          volatile __local float* p = partialDotProduct + 2 * get_local_id(0) - id;;_wcl_allocs->pa._wcl_p = p;
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(32), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(16), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(8), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(4), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(2), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(1), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+          warpResult = (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+      }
+
+      // Synchronize to make sure each warp is done reading
+      // partialDotProduct before it is overwritten in the next step
+      barrier(CLK_LOCAL_MEM_FENCE);
+
+      // The first thread of each warp stores the result of the reduction
+      // at the beginning of partialDotProduct
+      if (id == 0)
+         (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(get_local_id(0) / 32), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln))) = warpResult;
+
+      // Synchronize to make sure each warp is done writing to
+      // partialDotProduct before it is read in the next step
+      barrier(CLK_LOCAL_MEM_FENCE);
+
+      // Number of remaining elements after the first reduction
+      uint size = get_local_size(0) / (2 * 32);
+
+      // get_local_size(0) is less or equal to 512 on NVIDIA GPUs, so
+      // only a single warp is needed for the following last reduction
+      // step
+      if (get_local_id(0) < size / 2) {
+         volatile __local float* p = partialDotProduct + get_local_id(0);;_wcl_allocs->pa._wcl_2_p = p;
+         if (size >= 8)
+            (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(4), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+         if (size >= 4)
+            (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(2), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+         if (size >= 2)
+            (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(0), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_4_volatile___u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_p)+(1), 1, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (volatile __local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (volatile __local float *)_wcl_allocs->ln)));
+      }
+
+      // Write the result of the reduction to global memory
+      if (get_local_id(0) == 0)
+         (*(_wcl_addr_clamp_global_18__u_uglobal__float__Ptr((W)+(y), 1, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulUncoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced0__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced1__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced2__W_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__M_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__V_max, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_min, (__global float *)_wcl_allocs->gl.MatVecMulCoalesced3__W_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_4__u_ulocal__float__Ptr((partialDotProduct)+(0), 1, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced0__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced1__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced2__partialDotProduct_max, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_min, (__local float *)_wcl_allocs->ll.MatVecMulCoalesced3__partialDotProduct_max, (__local float *)_wcl_allocs->ln)));
+
+      // Synchronize to make sure the first work-item is done with
+      // reading partialDotProduct
+      barrier(CLK_LOCAL_MEM_FENCE);
+   }
+}

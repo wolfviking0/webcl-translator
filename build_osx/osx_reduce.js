@@ -117,7 +117,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = 'osx_reduce.data';
-    var PACKAGE_UUID = 'fea4aa61-c35e-49b4-b81b-182a034f4a16';
+    var PACKAGE_UUID = '7506e55a-0a47-461d-8122-744956d35c23';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6356,7 +6356,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

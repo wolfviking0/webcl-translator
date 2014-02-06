@@ -121,7 +121,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = 'd090ddc0-fc50-4c12-8aed-377f5b244334';
+    var PACKAGE_UUID = '369ae656-6b12-4237-8bbd-1e57929dfff5';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13797,7 +13797,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

@@ -1,0 +1,1009 @@
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+// #include "defines.h"
+// #include "tables.h"
+
+#define mix(x,y,a) x + (y - x) * a
+
+
+// The number of threads to use for triangle generation (limited by shared memory size)
+#define NTHREADS 32
+
+// volume data
+sampler_t volumeSampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
+sampler_t tableSampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
+
+
+// compute position in 3d grid from 1d index
+// only works for power of 2 sizes
+int4 calcGridPos(uint i, uint4 gridSizeShift, uint4 gridSizeMask)
+{
+    int4 gridPos;
+    gridPos.x = (i & gridSizeMask.x);
+    gridPos.y = ((i >> gridSizeShift.y) & gridSizeMask.y);
+    gridPos.z = ((i >> gridSizeShift.z) & gridSizeMask.z);
+    return gridPos;
+}
+
+// classify voxel based on number of vertices it will generate
+// one thread per voxel
+__kernel
+void
+classifyVoxel(__global uint* voxelVerts, __global uint *voxelOccupied, __read_only image3d_t volume,
+              uint4 gridSize, uint4 gridSizeShift, uint4 gridSizeMask, uint numVoxels,
+              float4 voxelSize, float isoValue,  __read_only image2d_t numVertsTex)
+{
+    uint blockId = get_group_id(0);
+    uint i = get_global_id(0);
+
+    int4 gridPos = calcGridPos(i, gridSizeShift, gridSizeMask);
+
+    // read field values at neighbouring grid vertices
+    float field[8];
+    field[0] = read_imagef(volume, volumeSampler, gridPos).x;
+    field[1] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 0, 0 ,0)).x;
+    field[2] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 1, 0,0)).x;
+    field[3] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 1, 0,0)).x;
+    field[4] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 0, 1,0)).x;
+    field[5] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 0, 1,0)).x;
+    field[6] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 1, 1,0)).x;
+    field[7] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 1, 1,0)).x;
+
+    // calculate flag indicating if each vertex is inside or outside isosurface
+    int cubeindex;
+	cubeindex =  (field[0] < isoValue); 
+	cubeindex += (field[1] < isoValue)*2; 
+	cubeindex += (field[2] < isoValue)*4; 
+	cubeindex += (field[3] < isoValue)*8; 
+	cubeindex += (field[4] < isoValue)*16; 
+	cubeindex += (field[5] < isoValue)*32; 
+	cubeindex += (field[6] < isoValue)*64; 
+	cubeindex += (field[7] < isoValue)*128;
+
+    // read number of vertices from texture
+    uint numVerts = read_imageui(numVertsTex, tableSampler, (int2)(cubeindex,0)).x;
+
+    if (i < numVoxels) {
+        voxelVerts[i] = numVerts;
+        voxelOccupied[i] = (numVerts > 0);
+    }
+}
+     
+
+// compact voxel array
+__kernel
+void
+compactVoxels(__global uint *compactedVoxelArray, __global uint *voxelOccupied, __global uint *voxelOccupiedScan, uint numVoxels)
+{
+    uint i = get_global_id(0);
+
+    if (voxelOccupied[i] && (i < numVoxels)) {
+        compactedVoxelArray[ voxelOccupiedScan[i] ] = i;
+    }
+}
+
+
+
+// compute interpolated vertex along an edge
+float4 vertexInterp(float isolevel, float4 p0, float4 p1, float f0, float f1)
+{
+    float t = (isolevel - f0) / (f1 - f0);
+	return mix(p0, p1, t);
+} 
+
+// compute interpolated vertex position and normal along an edge
+void vertexInterp2(float isolevel, float4 p0, float4 p1, float4 f0, float4 f1, float4* p, float4* n)
+{
+    float t = (isolevel - f0.w) / (f1.w - f0.w);
+	*p = mix(p0, p1, t);
+    (*n).x = mix(f0.x, f1.x, t);
+    (*n).y = mix(f0.y, f1.y, t);
+    (*n).z = mix(f0.z, f1.z, t);
+//    n = normalize(n);
+} 
+
+
+
+// calculate triangle normal
+float4 calcNormal(float4 v0, float4 v1, float4 v2)
+{
+    float4 edge0 = v1 - v0;
+    float4 edge1 = v2 - v0;
+    // note - it's faster to perform normalization in vertex shader rather than here
+    return cross(edge0, edge1);
+}
+
+// version that calculates flat surface normal for each triangle
+__kernel
+void
+generateTriangles2(__global float4 *pos, __global float4 *norm, __global uint *compactedVoxelArray, __global uint *numVertsScanned, 
+                   __read_only image3d_t volume,
+                   uint4 gridSize, uint4 gridSizeShift, uint4 gridSizeMask,
+                   float4 voxelSize, float isoValue, uint activeVoxels, uint maxVerts, 
+                   __read_only image2d_t numVertsTex, __read_only image2d_t triTex)
+{
+    uint i = get_global_id(0);
+    uint tid = get_local_id(0);
+
+    if (i > activeVoxels - 1) {
+        i = activeVoxels - 1;
+    }
+
+    uint voxel = compactedVoxelArray[i];
+
+    // compute position in 3d grid
+    int4 gridPos = calcGridPos(voxel, gridSizeShift, gridSizeMask);
+
+    float4 p;
+    p.x = -1.0f + (gridPos.x * voxelSize.x);
+    p.y = -1.0f + (gridPos.y * voxelSize.y);
+    p.z = -1.0f + (gridPos.z * voxelSize.z);
+    p.w = 1.0f;
+
+    // calculate cell vertex positions
+    float4 v[8];
+    v[0] = p;
+    v[1] = p + (float4)(voxelSize.x, 0, 0,0);
+    v[2] = p + (float4)(voxelSize.x, voxelSize.y, 0,0);
+    v[3] = p + (float4)(0, voxelSize.y, 0,0);
+    v[4] = p + (float4)(0, 0, voxelSize.z,0);
+    v[5] = p + (float4)(voxelSize.x, 0, voxelSize.z,0);
+    v[6] = p + (float4)(voxelSize.x, voxelSize.y, voxelSize.z,0);
+    v[7] = p + (float4)(0, voxelSize.y, voxelSize.z,0);
+
+    float field[8];
+    field[0] = read_imagef(volume, volumeSampler, gridPos).x;
+    field[1] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 0, 0 ,0)).x;
+    field[2] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 1, 0,0)).x;
+    field[3] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 1, 0,0)).x;
+    field[4] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 0, 1,0)).x;
+    field[5] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 0, 1,0)).x;
+    field[6] = read_imagef(volume, volumeSampler, gridPos + (int4)(1, 1, 1,0)).x;
+    field[7] = read_imagef(volume, volumeSampler, gridPos + (int4)(0, 1, 1,0)).x;
+
+    // recalculate flag
+    int cubeindex;
+	cubeindex =  (field[0] < isoValue); 
+	cubeindex += (field[1] < isoValue)*2; 
+	cubeindex += (field[2] < isoValue)*4; 
+	cubeindex += (field[3] < isoValue)*8; 
+	cubeindex += (field[4] < isoValue)*16; 
+	cubeindex += (field[5] < isoValue)*32; 
+	cubeindex += (field[6] < isoValue)*64; 
+	cubeindex += (field[7] < isoValue)*128;
+
+	// find the vertices where the surface intersects the cube 
+	__local float4 vertlist[16*NTHREADS];
+
+	vertlist[tid] = vertexInterp(isoValue, v[0], v[1], field[0], field[1]);
+    vertlist[NTHREADS+tid] = vertexInterp(isoValue, v[1], v[2], field[1], field[2]);
+    vertlist[(NTHREADS*2)+tid] = vertexInterp(isoValue, v[2], v[3], field[2], field[3]);
+    vertlist[(NTHREADS*3)+tid] = vertexInterp(isoValue, v[3], v[0], field[3], field[0]);
+	vertlist[(NTHREADS*4)+tid] = vertexInterp(isoValue, v[4], v[5], field[4], field[5]);
+    vertlist[(NTHREADS*5)+tid] = vertexInterp(isoValue, v[5], v[6], field[5], field[6]);
+    vertlist[(NTHREADS*6)+tid] = vertexInterp(isoValue, v[6], v[7], field[6], field[7]);
+    vertlist[(NTHREADS*7)+tid] = vertexInterp(isoValue, v[7], v[4], field[7], field[4]);
+	vertlist[(NTHREADS*8)+tid] = vertexInterp(isoValue, v[0], v[4], field[0], field[4]);
+    vertlist[(NTHREADS*9)+tid] = vertexInterp(isoValue, v[1], v[5], field[1], field[5]);
+    vertlist[(NTHREADS*10)+tid] = vertexInterp(isoValue, v[2], v[6], field[2], field[6]);
+    vertlist[(NTHREADS*11)+tid] = vertexInterp(isoValue, v[3], v[7], field[3], field[7]);
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // output triangle vertices
+    uint numVerts = read_imageui(numVertsTex, tableSampler, (int2)(cubeindex,0)).x;
+
+    for(int i=0; i<numVerts; i+=3) {
+        uint index = numVertsScanned[voxel] + i;
+
+        float4 v[3];
+        uint edge;
+        edge = read_imageui(triTex, tableSampler, (int2)(i,cubeindex)).x;
+        v[0] = vertlist[(edge*NTHREADS)+tid];
+
+        edge = read_imageui(triTex, tableSampler, (int2)(i+1,cubeindex)).x;
+        v[1] = vertlist[(edge*NTHREADS)+tid];
+
+        edge = read_imageui(triTex, tableSampler, (int2)(i+2,cubeindex)).x;
+        v[2] = vertlist[(edge*NTHREADS)+tid];
+
+        // calculate triangle surface normal
+        float4 n = calcNormal(v[0], v[1], v[2]);
+
+        if (index < (maxVerts - 3)) {
+            pos[index] = v[0];
+            norm[index] = n;
+
+            pos[index+1] = v[1];
+            norm[index+1] = n;
+
+            pos[index+2] = v[2];
+            norm[index+2] = n;
+        }
+    }
+}
+
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+//Passed down with -D option on clBuildProgram
+//Must be a power of two
+//#define WORKGROUP_SIZE 256
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Scan codelets
+////////////////////////////////////////////////////////////////////////////////
+#if(1)
+    //Naive inclusive scan: O(N * log2(N)) operations
+    //Allocate 2 * 'size' local memory, initialize the first half
+    //with 'size' zeros avoiding if(pos >= offset) condition evaluation
+    //and saving instructions
+    inline uint scan1Inclusive(uint idata, __local uint *l_Data, uint size){
+        uint pos = 2 * get_local_id(0) - (get_local_id(0) & (size - 1));
+        l_Data[pos] = 0;
+        pos += size;
+        l_Data[pos] = idata;
+
+        for(uint offset = 1; offset < size; offset <<= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint t = l_Data[pos] + l_Data[pos - offset];
+            barrier(CLK_LOCAL_MEM_FENCE);
+            l_Data[pos] = t;
+        }
+
+        return l_Data[pos];
+    }
+
+    inline uint scan1Exclusive(uint idata, __local uint *l_Data, uint size){
+        return scan1Inclusive(idata, l_Data, size) - idata;
+    }
+
+#else
+    #define LOG2_WARP_SIZE 5U
+    #define      WARP_SIZE (1U << LOG2_WARP_SIZE)
+
+    //Almost the same as naive scan1Inclusive but doesn't need barriers
+    //and works only for size <= WARP_SIZE
+    inline uint warpScanInclusive(uint idata, __local uint *l_Data, uint size){
+        uint pos = 2 * get_local_id(0) - (get_local_id(0) & (size - 1));
+        l_Data[pos] = 0;
+        pos += size;
+        l_Data[pos] = idata;
+
+        if(size >=  2) l_Data[pos] += l_Data[pos -  1];
+        if(size >=  4) l_Data[pos] += l_Data[pos -  2];
+        if(size >=  8) l_Data[pos] += l_Data[pos -  4];
+        if(size >= 16) l_Data[pos] += l_Data[pos -  8];
+        if(size >= 32) l_Data[pos] += l_Data[pos - 16];
+
+        return l_Data[pos];
+    }
+
+    inline uint warpScanExclusive(uint idata, __local uint *l_Data, uint size){
+        return warpScanInclusive(idata, l_Data, size) - idata;
+    }
+
+    inline uint scan1Inclusive(uint idata, __local uint *l_Data, uint size){
+        if(size > WARP_SIZE){
+            //Bottom-level inclusive warp scan
+            uint warpResult = warpScanInclusive(idata, l_Data, WARP_SIZE);
+
+            //Save top elements of each warp for exclusive warp scan
+            //sync to wait for warp scans to complete (because l_Data is being overwritten)
+            barrier(CLK_LOCAL_MEM_FENCE);
+            if( (get_local_id(0) & (WARP_SIZE - 1)) == (WARP_SIZE - 1) )
+                l_Data[get_local_id(0) >> LOG2_WARP_SIZE] = warpResult;
+
+            //wait for warp scans to complete
+            barrier(CLK_LOCAL_MEM_FENCE);
+            if( get_local_id(0) < (WORKGROUP_SIZE / WARP_SIZE) ){
+                //grab top warp elements
+                uint val = l_Data[get_local_id(0)];
+                //calculate exclsive scan and write back to shared memory
+                l_Data[get_local_id(0)] = warpScanExclusive(val, l_Data, size >> LOG2_WARP_SIZE);
+            }
+
+            //return updated warp scans with exclusive scan results
+            barrier(CLK_LOCAL_MEM_FENCE);
+            return warpResult + l_Data[get_local_id(0) >> LOG2_WARP_SIZE];
+        }else{
+            return warpScanInclusive(idata, l_Data, size);
+        }
+    }
+
+    inline uint scan1Exclusive(uint idata, __local uint *l_Data, uint size){
+        return scan1Inclusive(idata, l_Data, size) - idata;
+    }
+#endif
+
+
+//Vector scan: the array to be scanned is stored
+//in work-item private memory as uint4
+inline uint4 scan4Inclusive(uint4 data4, __local uint *l_Data, uint size){
+    //Level-0 inclusive scan
+    data4.y += data4.x;
+    data4.z += data4.y;
+    data4.w += data4.z;
+
+    //Level-1 exclusive scan
+    uint val = scan1Inclusive(data4.w, l_Data, size / 4) - data4.w;
+
+    return (data4 + (uint4)val);
+}
+
+inline uint4 scan4Exclusive(uint4 data4, __local uint *l_Data, uint size){
+    return scan4Inclusive(data4, l_Data, size) - data4;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Scan kernels
+////////////////////////////////////////////////////////////////////////////////
+__kernel __attribute__((reqd_work_group_size(WORKGROUP_SIZE, 1, 1)))
+void scanExclusiveLocal1(
+    __global uint4 *d_Dst,
+    __global uint4 *d_Src,
+    __local uint *l_Data,
+    uint size
+){
+    //Load data
+    uint4 idata4 = d_Src[get_global_id(0)];
+
+    //Calculate exclusive scan
+    uint4 odata4  = scan4Exclusive(idata4, l_Data, size);
+
+    //Write back
+    d_Dst[get_global_id(0)] = odata4;
+}
+
+//Exclusive scan of top elements of bottom-level scans (4 * THREADBLOCK_SIZE)
+__kernel __attribute__((reqd_work_group_size(WORKGROUP_SIZE, 1, 1)))
+void scanExclusiveLocal2(
+    __global uint *d_Buf,
+    __global uint *d_Dst,
+    __global uint *d_Src,
+    __local uint *l_Data,
+    uint N,
+    uint arrayLength
+){
+    //Load top elements
+    //Convert results of bottom-level scan back to inclusive
+    //Skip loads and stores for inactive work-items of the work-group with highest index(pos >= N)
+    uint data = 0;
+    if(get_global_id(0) < N)
+    data =
+        d_Dst[(4 * WORKGROUP_SIZE - 1) + (4 * WORKGROUP_SIZE) * get_global_id(0)] + 
+        d_Src[(4 * WORKGROUP_SIZE - 1) + (4 * WORKGROUP_SIZE) * get_global_id(0)];
+
+    //Compute
+    uint odata = scan1Exclusive(data, l_Data, arrayLength);
+
+    //Avoid out-of-bound access
+    if(get_global_id(0) < N)
+        d_Buf[get_global_id(0)] = odata;
+}
+
+//Final step of large-array scan: combine basic inclusive scan with exclusive scan of top elements of input arrays
+__kernel __attribute__((reqd_work_group_size(WORKGROUP_SIZE, 1, 1)))
+void uniformUpdate(
+    __global uint4 *d_Data,
+    __global uint *d_Buf
+){
+    __local uint buf[1];
+
+    uint4 data4 = d_Data[get_global_id(0)];
+
+    if(get_local_id(0) == 0)
+        buf[0] = d_Buf[get_group_id(0)];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+    data4 += (uint4)buf[0];
+    d_Data[get_global_id(0)] = data4;
+}
+	2\|kF32H{Ÿ¥ù’êmP5	 =VXJAIdàØºöxVD3"
+	#4:;@MdqiXA1'  &-9DD6'$!
+		&2		8*#;5'
+!A?F8!	">mQ_I)			:císzU+		
+	(N{í¬•\*		*Nkj∫ c'		(EUG?≥e%		'AM?Ÿ b(
+	)GYN©óZ*			*PquhsS+				&JxóJXE'			3Zã=B45b:2#
+87'0"
+	
+	
+%+(	%+2?MOA0!
+)<B@BOhzylR=1'$D`]K?C^à¡—ÆëeO;' 28-(OüûëùY5!	$",HrêÇ]:%	(5@A8)		  
+		
+				 
+7	(Q%( 
+	4XA>,
+
+!4GÅh;
+
+ */™ñJ
+
+
+	
+!ÄòQ 
+			ÆèG		#!m[7
+
+!-578)
+
+ 5M!$		1X
+
+
+%K
+	
+0		
+
+	 %&"
+*:JQF3"
+
+!(%,KÅ£îoC*
+	-YáÇV-	
+
+#:NL5 				 &#
+		
+
+&&
+#
+	+:;0(!
+-		 5FG>876/",!	+9?;7:DK@)	!D4	)680%$,<KA)
+}R*	':A6$0@;%ñ^/		,@F5 ,<7$
+oK(	$6?7'3C<%	9-%394*)0?MB*)9B@;;CG=(	$	3EF=520*.	
+'56+#
+
+," 
+	 		
+
+
+	
+
+		
+
+	
+
+
+&.+ 
+%A\Z>#		,=:'	$#					  	
+)1*
+
+!?WQ8%	.]áâkK?:6/$	?yù£ívyzlK/
+
+2UÄòây|¢üè].	#	4WxzeLEXãßïU'	9%1Wáü|H*$6dîÅGD)!9fì°z@!-WrA4"
+,O}ò|M0*=lùâJ 
+,LmzqZQbî§îY)	
+	,OÇ†ïÖÄûúã[/
+:sò†çmii]D-	+V~|]@4/-)!9LD/%+#		
+
+
+		  
+
+
+*(
+
+	
+	 
+
+ 
+
+(&)<>,
+
+2TaK+	:u®èS1#!(/2*	Dõ´••jVU\YO9#
+
+
+([∑rÉË±ªØ∏ê]9 
+	
+%D{–ﬂ≈¿¬È^¢¶R+#3Pá¿¬†scÑ≈èÆÑ:
+&;\õ©Õ…j:0LòÊ∆d(	-EnªuuΩ_-$=}¬®X$
+#6Rà±· rD9V¶ÍŒk+	
+
+*Br™√∂ãxñÕdõé@	;r––¬’∆ÏÅ¥ßW/	#T≠hzﬁ°üû£É[;"
+
+Aïø∞èYFCJMH6#
+
+
+8kízE( (+&0MVA$
+
+&77'
+
+		#!
+	
+
+		
+	
+
+
+	&20#	
+&D\V6
+
+.YäÑO%
+	
+*\û™n6*97&
+#Q•Â∞[0"%6Tmc@!	N∂„∆übPYtï©ÜP)
+	&X∂äè÷°©∏‡œ≠wE&'Bs¬’ª≥∞ÿçﬂŒwH+#3?I^Ü¥∂òp_zπüΩéE%
+5Wwéƒ¿«¡h:0IãŒ≤])
+
+	<gì≥ˆ¢~∂^.$;u≠ïP#
+1Ni|™ø÷¡pC8Ró’Ωf-
+	
++4<Koü∂¨Örã¡ÖªüP+
+ 8j¬À∫≈¥ÿ¶÷ÖT1	
+
+#T≥åèÕìê§∆ƒ¥ÄK(Nµ˘“çSAG`ÑúÄO(
+	$S°—õO(-G]W9+]ù¢e1$0/!	-VÄyH"		
+#<QK1		 )(	
+
+					
+
+
+
+	
+	
+&+)"
+,F]^G/,MÑöük6!%
+	1[°¢ΩÅ70>7#'HìÈÙã<(LqkC!-b∑ŸñJ%#BÇ≠üu8
+EéŒ¨f?6FsÕ¿çóN&
+=y®ûy]aÅ∞ÊÌ¥âO--5/&$.ImÑxfc§√≠èlP;*	'Hgi[S[hi[F>KoëìhC/'% 		0jû¬¿©®ñqD*#1Qqd>"	4vû◊ı◊…°r>")HaV5	.bñ∞•ëïåoH/(6WymE(
+$@WUIDL^idPGSvò°wQ:/*#	)-'(DoéÑne|¢∆ø´É^A,	=}≤•wWVq°ÈÓ±ìQ,	!Jï“©_7.;e∫µãíI#	
+3n…‡ëE!9r§úi2
+
+*OõﬂÌä:$C`Z91[ûô≤}7,6/
+(Euììc5!
+%9KN?,	##	
+
+		
+
+
+				&,*#&3BLL@3+'$$1C_ÄícH626;5$	)<U~ºù”Øb:*-;QS;  2Gcõ”3ê©N(";at\3
+	'09Jp¥æ”â<=yµüX(	%+)&*;dú¢h5!H°œ∏ïH#	
+%21&6XkW5!/^ªlWÃt= 	0ED0$<NG5,.Cl∑√≈“àX49[eN0%284--6JauÑáÅvbA$@}∞ôcA410*"#0>E@9:CPP?%
+E¢∏ØªvUB2"&0.#$3?7#	
+G°XbﬂèfJ3",)-94#
+Dùœø•iM>1$(32(  )8B9$	>sôÅR6--0-&#&2BLKFGOYVA&7U[D)#3<90.5JfÜû§ñ}b?"-?>,'AUK5**>k¿±Æ€ÜR/	"//&#=dt[4+Xµu\øj6"*+*1Fw¥∑o5Dò›»Ö>	%1>S¬ùƒí?<qüâL#
+1Gcõ”9òØT,$;^kR-%7Loß≠‘ße?./:KK4)7Lgxq`H7135/ 
+(7AD;/(#
+	 %%	
+
+			"
++
+
+
+')"	'@Y[I7+#
+!$3P|†ì|^TL<%	0CLNYsó∑«°ÜtÑätE 2ZÇòõ∫¬Â ùt]eç¨™f-	'Iy°¿∆Îµ…§`=4Crª»};
+!:YxÖäéÆ≠ùg7 *Tú…úQ%
+5VhbRFGTd_?"Fîﬂ«C&(S|~X6$ '36*@Ü¥∆ΩyP10hûó\.!!;kûÕ‘Ωö`1	.f≠≤r: /C]~•’øàE%U°”•Y.%,@f†¨éJI¶È»àG+
+	">pñ|E
+E¢∫£ôS0			5_ÅpAL¶ÒÃ}A(
+'EzüÉF'Y¢∆îO(#+5LuØÆéJ/iÆ≠k5!3Lnî≥Ÿ¿ÇA/dïèY.!% !=t¶”÷¨ÜS+%KsyY;)'/;>.Aãæƒ≠jC)/Ncg^TVfxnG&!Hïﬂ¡q9 5V|êù°≈¥©u?% .Z§∆ëJ!#Ctüø≈È∫÷≤mH<Kzº∆x8	
+,OrÑÜ†∂Ÿ ≠Ñjlê•ù^*(7=@H^Ç´≈£äry|e<*ClèàpTH?2		 5IL=.#!	
+	(C$		'		+=?1"
+		-[ãèvO<0&"*( )O°•ŒôÑz^:	+PkdL?JsÃœúÌœÂ´úl/#Pê§»òtvå¨¡¨§±ﬁfõè:	:|¥w‚∆ïÜq_ONh©Õ‚ç;
+0[ù‰«øírdU@."#5a¢Æs;)Xù∆ªîeI=7/#;eÇpJ1%
+Aã∞›•Y2!
+(IkwndYA'	Oùá∏îB
+	4Stó√πåI Aï‚Ëä=
+			"7Z¢€nôj(+]¢∂ÄC
+
+ <{ΩÄ≠n)<oõÖN'	&V≥ı«`&2díÖQ*
+!Lô◊´Y%AwüÑK%
+*^ºÒÕd'	0k∑ƒÅA
+%CáΩWúp*Gû÷„ç=
+
+
+		'>b§‰ï°d'Nö~∂óF!
+
+ 9Ywé™§x@	;ÅΩ‰©c;(" ,OqucSG5!#Kà∏»´{YIA7(!BoâoD*		*Qó‡∂œ¶p`J7*+?qπ¡x:
+
+4q®y„ƒìáásc_y∫∂◊í;
+FÉ§≤Ñfkâ∫÷ΩΩ¿Ëiîâ9	$AUP>5@j«ΩÑÓ»”±ñ_+	!$FêßèªÖmbL0'Lv{`A1&
+#01'
+&	-5G4,%	
+
+
+	#<OJ3!	8u±§yM9/(.<5##Jß±~ÕñzjH)
+	4févG+-Q¶•âÛ–‚∞ΩçC%Yßµƒ{D9Juü®¨∏‚d≤≠M";Ö¥>≠óQ;;DJLRl§≠√Ö>1^®˜∆¨rC/'$!$3TzyQ-		/a©ﬁ÷®h=')>D8+')("Q†§Áøe6
+%/6=N^V8*jªHçúF 
+	&:]õ√Æ^('W¨√æx5
+
+8t∂ö∆w-4[ÉU,	-g±ô¥k)	.CM@'
+#R´‰≤W##5B:&
+ Kí∆ôN!	 5MUD(
+%V¥‰∫\$<núì\.	0m¨~±p+)_πÆ∏Å8 :q∫∏Õt-)gµDî¶L$		(9UÜ´ñT&Hìø¯ƒp>#		)357ALG0(QíÀ‚¿|H.!1HM<)""!	*S°Ì¢∞I3,*('->eêé\0
+4z´H¥ñP<@N\_d∑ùƒìC
+!Oûƒ∫m>6MÑ∞∂«∆Îl¥≠M",Ts`<&*P¨öpÒ«Œ¥±{=&0+ Fü¡óªÇiaS;#	3eóéc?.% 			
+1?:)
+*		6	
+	3S-	
+6S*
+
+(8	
+()		":T\G*
+))" ,RçµìU3&#$!	 <UP7'-UßÒ âYMSZO8!3lûäO,(CÇ¿µñxÑ§Ωó`5H¢Ó«g1#.Kjrkoñƒπo= 		*Y©—ºe1'05:Ikô´ÉS4#	
+$?i°™ÇH&%7LSD3,*%
+*HoááqI*			$(%&1AE3(Rïµ≥~J),KsyS*
+9xŸ·≤m4=xΩ¥k1;q∑ ìO% Gï›≈i-
+-JcgR2AÅ≠íM!	*12, 
+
+6b~c6
+!%%"
+	2XkU1		 09;3$
+8iàl:1Tv}`8Câª†U$<w ‹†W)	 Fíﬂ…l/	5qŒÿ¥s99l™ßh0#G¶´Q/	
+)CdjK&	#<_}åU1 */*(-9;+8e•¥íP)!-B]eQ:-(!&U™ﬂ∆h2!.:AESy™√ñ]7"Có·ºb0$3WÖyuòƒÔπp=	.^àyH+)Hè“æòswê£ÑW03GD1%.WßÌ≈}OBCH@/
+!#+Nú}H+
+"
+2GL:#	@!	 !	W,
++†c7		$ñQ(		#W3	&6>4!	' &*2FmàoB!
+
+
+
+-GQKI_ôœ≥k5# $QâìnPXÖæ∫~E+'4HWO41nøƒ{H<Oq~fD6=\å≤û_0	5sª≤i6$)8B<34Ft≤„¬{B"	1aå~L&%7ZÑüîrN3	"3IWJ.!2COW[_Q5$19>?7)
+'7YÑâ^/
+.NimV=(1e¥Ãä=	$Oçµ•l:2nƒÿà=	,dØÀû_0
+	/_ïì],+VÜåf= %D\T5$AVQ:#/80":IA.
+ *0(%E`\B(3?6",\ïüvF$(Kia=+bÆœßf4	1e£¶h1!G}£öi;!	2m«ﬂè?		'AW]O=+	2a®ΩÅ;	
+(1;@=/		%.<XyyS*1NcV5&;Q_d`YH-2göåS*$$$*<dî∑§wL.	4t¡ºo;)1DOF86Fr∞‚¬w>.i∂Ω{KC\ÑêoG48RzöâT+	!GwÇfQ]èÃ¡}B'"+;G@+	&;DBD[ì√•a00
+#+>^s^9		
+
+	h; ,1*üW+
+
+$´±[-
+	üÑ<
+ #	}K$*=W\C%4"	1?HWÑ£¨åB		Asèîéæ≥Ωƒ]'&)
++l≥≠ ¢®¿”ØY)$AcjK(0|⁄Õª{bkvb># =}√¨èI *`ØæÄG1-1.#%K°’Üµq4	<\_B% >y∫«”åR,
+	%/. $?cç´±êT( #!	
+0UòŸ∏éC
+6PUC-=ã∂{•W 3p±∑xA 	0r…–°J
+Gô«ËóF #J{á\.
+Hôæ√y7
+ +;;*
+?Ç≥îR&  	;pñ{F!  
+
+Aäæ°Z*  	"!
+JöπÕÑ< 1FH4
+CîœÈïF 'Tì£n5	-`óõj<		3z…¡™P,@E9(		 Aè∫|°T#9^õÿøÅ<	
+)87'
+	
+
+
+*Kx£∂§{G#"DmsN,"Cà«ª“áI&	,j≈“ìR:8=8)$Iü◊à¨g.
+0}”Ω¬àsÉëuF%7mØ©Ä@	(bßØ≈£∂≈◊Ω]*5OT=!	
+6_yÅ∂Ø∑ºX% A*
+'2;Joïûx:	
+
+ëY*	"1DH6 òëD
+à¬b/	ãèB&)!$éU'	$0GemQ-
+%<'		$:KVhû°°†N"
+		#Ná¶∫≤ÎwS¡a("00$
+	4ÅôWÍ–’æ™¶R%&Ht}V,			7ä∞^¬ôvwsV28≈•òQ"+_¶ÆÑP7/-%?ï©>µ|8
+3MQ<$
+1m´ΩÏõX.""
+9fü¿≈úZ+	$#3\™Á±ñJ#BZT9 @êõK¨c%	?áµ±j1
+-l∏√∑Y# XõIüé:	 @sãi9
+!YØ}®Ä4 !4;0N¨Ú√b)  
+	IîŒ§W%      		QµÚÀi+       
+![•Jïá6  	(?H;$Sût≤ä9	 "Käß~A8u•õ],
+	1v≥©º_$5GC/	!Eô¶Q¶_$	!<g≠Ì√ãB
+	)* 		"Dz∂ŒµÜK$	=_fJ,6{ÆùÂïN(	/lπµô`C<8.?ñ±F™q1
+	8é†;À¨åíåi:4rª±çG0vüÌ—Ê≤ñµX'!=]dF%Aríù°›yZæ_'&%		L/.:FWÖü¶çF		†d-	'9PVA&	%uúJ 	 
+"ªÅD#		,√m1
+	!'%
+
+4ÜF 	%7SfY;!
+
+
+		1?%
+"2;AMq¢œ≥f6
+"
+	'MyàÖ}£øÔ‰}@% &5>8%
+	?â‘ºªíìÆ«©c7%'=dá}M%	 Jü˙÷≠rZ\aS9$)MîËŸÖ=?u∞©o@-''#"HîÎ‘ùS(
+,BTM5
+1`õ≠òd="	
+#% 0Ljzyc?"
+'44*	'Cn†¢x=)OpjF&
+0h∫‡º]&
+@ë€≈n2	&Z∏˘≈c*OØŸﬂÑ5 ?v†ÜM$
+Jùºπm-   &ATM2
+?Ç∂óQ#    $0- 		:qöÄH!    
+&&
+Aã¿¢V%   )62#	M°∑øu0    +LcY8MØÍÊÇ5FàπóT&	;¿≠d/	(_¿ˇÃd*$B]Y=#4j¥œ≠V#	 +,%.Joóíg5
+	!).(
+:\zÄrW51Nf_@&7n≤πù`7 DÉÀ¡ÅL611, $Köˆ›õN$	 I†˘Œ∂~hpyeC) )Kã”«x7	
+9{¡∑¥íû∫Ÿøm;&&7WpgA "!?crqrõºÓ‚|?#!,2-M,		(/6Baê∑õ\1&õQ$-CQH2
+		3≈t5	2l>"
+
+0W?
+#'"	(Xg2
+!6P\P6"B> #$$)9aó¥úd=.*)%		(	
+)BSM@=Kz¿Ê«ÄUIQ]X>#
+%MÅ¢ã^EGbê®ñjSY~≠¨s=	4qøﬁ≠d<19JTL=<Oá‘‚ûS&	<uµæáL) #!#5bù∑ëT+*@[smM-6Tf^D/-=EE?4%'2797/#8YfU;'
+%6KUG,	.`ùßr;	>póÉM$	:—“Ä<Féÿƒn0	9~«ºo4  
+@â‹œv2.\Ü|L$   /böñ\+$AWN1      !BdgE#":KC+	    :VY>!%F_V6    $HnpI$1eóåU(    4m¨•d-	;Ç–«u7	  
+Cè‰÷x28y»Õ=EâÀµg.)Våñk:
+
+ ;fÖrE!/KYO=+(6DI<%	'6CII?-
+/<>;4*
+'?cÖÄ[4"?dykI.
+;x¿ŒïS.!!(,)$)<m±…öV*
+
+1i≥◊´f@7BYf[HBTä”›óO#
+!Cpç|WEJl°ø©tVXtôïe6$
+	"7C@88Hxæ‰≈}QCELH3H%	#2WÑúâX6(#!
+.q6	-BKB-	 I~@	
+*Z> 		.\®V%
+&(!	CéV$				#?_iS7&	*Z;8qƒ√°sQG?1	,*98+"CãÒª¡ÆéöíuB
+0^ÖzP.!8mª¿π£¥…™…q1	$S•Ê÷w:$=Zhdgêº∆Ê7
+6sµÃﬂz8%)+4PÜµ°^/,OÑª∑òS(	&=QM6"
+	,R~ëãrK,
+""#Pî∂∞pA%'0,0w”Œ¥`,
+)IheB!3wﬁÚßM 
+;ÅœÀ{4)Sâñg4	  
+D£»¥õA2GI6    <å∂±î?	''	    /kª»}7      +]ù©n4
+!,-!	    1r≈–Ñ99TW@#   	?î≠†ñA,]†±w:
+  
+C°⁄…ô?3|ÁÙ∞R#7r∂≥k/-pƒ√≥d0%>UR7FÇ≠™tJ,	"'$%FoãòÖZ4	 **#
+'HÇææÆ_-.Ke]?%	
+1l≥ÿÁ:".36?^öÀ∫h2 Jñ◊¬o8)HoÅzvûøµÊÅ7	
+	(MlfF*"<x—≈ƒÆ±»Æ∏f-
+%	
+!.-$!Bäæº§~Ç{`7C	3d™¥êbD92'5Y&
+4LSB,
+0iQ$	 Iñ/
+	
+:z–D
+#(#
+#SùG
+2Wm^@,"	0d5	
+	
+'[ßê™èbSG4,'/*/v∫-¨›∞πûy?5a|e;,cµ§œÀﬁÕR§d'	+eúù∏f. ;bwwx´Øfπk) Eôó+π{3)/1;[îµóM!8h∏∞•\**EVI,
+5l±Õ¿î[2%"
+%]°ªÎïQ," .{è+≠{5	&@VR7*kπ≥¨Y%>∏™p1?pâh7
+ L™ãeîC 190
+Böûì†D
+
+  	3v‘Êè>    .f≤¬}:   	6ŸÍó?	&<G:#  F†ÇkùF!Jà§|? J¶¶Ñê?-tµëÆb(8n¢ò`,-vç7πÇ:
+!5DA-"Sù‘Ìõ\4
+	-[ô√‘´n<		$-)
+1^¥‡çØg- 3UkX3>çè5º{3$3;=Gm¶Ω´V$&Xó≠©[*#Ewëíçæ≠@≤n*	
+,NcQ2.løáŒ⁄€Ÿw°\%	#%".s∏5®œõùãe5;	
+	#PóùüxQC7)6I
+*FVJ3$8v?
+
+
+	(]ß5	2b±A	
+!Då=		*FVJ2$	)Q+	
+	$Pó¨ïhI?7)
+% '$3t€—øòzÉ}]2		
+,OgZ:"7p≈”Æãîªº•R!%Rñøºl8!.Mnr_YzøÍÃa&:z≥ΩËäE%+21+0MéƒüR#0Véƒ√Øj9+Lh]9.ZåûìxV8"				'54'Oñ¿øwD)
+ "#%%'f±≠¬k0
+&9OXI,
+#Yµ‰º\',TéºùW&
+7içuB*Y±Ú…y31A=)
+  Dâ≈∑v4 !  
+-Xåîa. 	&It}V,	&& 
+1bö†f/"<OH/
+ "Kó“ªz5?~©àI!	+Z∞Ú…t0%`Ω‡√a(+N~†ÜK"&c´©¡n4	$3BG;%	Fâæπ{M0  $" 	'Mzó°çiC'
+/?<+	
+*Nã««ƒv>!2Z|k?4q≠øËàD%#2><59Xü€±W$!HÜ±£_31WÉãsfÖ¡ﬂ»a%%?QH07v’›ªîí≥±îJ	0n–…∫ênphM*0
+ EÅôÇY>3,!-@	"8D;)	
+/a?		#LóL 6]F	
+
+)R5	
+%46,4 
+*MptS5'" 		 "%GÉπØrG;?E9#5MTH6.9_¢«§fDFdÇn?2`ó¶ã`FD[ÅähB4F|π£[(	"@wª“≤xM>@IG6%$<y¬∏i.0GfáïÉ]:*$# /^ôõa03HNKKIC3";]hR8$	2\wfD-$
+!5GNK@2!	EçªêN'
+ 6QpjE%Gî“™\*
+*Pê¬∞u<6n§óZ*	Az≥ºâH"CfhE$
+)Il~i>
+(>D3(:HD/"5;/ -9:+-EJ6.CRK2'MutK&/U~êtB	;z≥ü\+	"GÖø¡âGIò‘®Y)-Qã∂°i6
+
+AÉ™ÖJ'	$9PfmY: -Ph^C2+%
+&=MNE6(,@KPWYQ<'#DktU5 ,Fmò™îg@0**'3fßße/
+=uº—±wMAGVVA+'?|ƒ∑g-
+-UÉêzU@B_éúxK8GyØòU%
+,?D:-(4[†ÃØmGD[q_7
+
+ ?u©•mD779/%
+
+		
+$A^cH/"	:		*,$	<H
+,Wq0	-P!	,/	!&#
+
+3OYF,	
+"&'-Am´±t>!%#	";Sa\[s´ÿÏçB$#5KJ16dß«≠ñìπº¿u:%/Xêï\*	=t–Ìø§}ÄÅpJ-&=ÄﬂÂë>	2Wí∏ùpM@:4*!%@Ö«¿¶T'		 #'3L\Q8&2`ù¡Øl?"	1<5)%)-&
+
+6^å°útE$.UqcB)
+5_¶»∏ãE:{¡µm9!Fë¥€≈`+9Ü„€çA
+2jÆ“§Y+,h±∏Ä<$AalX;!"KÉïf3
+)33,"Cp[0#'& $Pé†m5
+.;<4&0qæøÜ?'JtÑiC$;áÊ›â@ 	7u∑·µ^-	8s¨üa5	
+%Lô∂“Ω\)*KaU9' 
+!=g•≈¨w<)3.&'.5. #?nù£ãc9!):ZpbC.# 7l©¬∞e75aßÕ´ÄYMH?1$&Aâ”À¢N#>u–Ì¡®áìñÑT0&:w“€Ü9
+2[ëÆúâêª¬–~<$+N{}O%1DMKNfüŸÈãB$!/?>*
+%6\ëòi: 
+
+*@I<&	6
+	"Y%
+	-Ü:P$		'
+	
+	&:LH1			 +3?Zâ•†]+
+
+,NpÇâØ»Uµå=%45'
+"Kú¶ΩÏ‰ÌcªòJ/3Q{ÅU*&YºjjÌ∂µ¨¶vOCVòø¢ïI
+!Jü¡ØûeROQLFKjºÑ9øp2
+	7då}N0# %+1<Uéµ◊ıóT)	%')4GPA($0I{ª‚ﬁõR&;V[ND@7(	#?x‹‘†å?
+0m¥Ωó^?)		'X¥_V©O9ë§|∫l7EôÃ√ëB6â•àØZ);lìÇO)	/s◊ÓúF6SZE*,f∫–Ü@5LN8 
+1z€Ï•I7XcN08çêcØa,>v™ö^/
+8å∏†ªk:!H¢∏≤üH,_úßÉX?,		,_ΩcP•M2EIB>@;,		*JÉ·Òµ9	 $3KZK.!)9Xë”Á«ÖE!;r£ì^:+(-26A]†´∞ÔçI#	"O´ØüµxfdbVJKhªç>≤f,	&Yªmt¯…–¥πÅO>MÖΩ±à@ Dâ™¡◊ﬂÂ?±öG*+CchF#	%?Yhrôø{ºÇ8*+	
+
+"(3IqíàQ'
+.;9(/
+	])		m3
+>
+	#1;5#
+&0=RváyI% =^u|ô¿êΩÜD'!&&	6uõºÃ¿◊ÆÔ∂pNFRb]?!Füû†Õñó™¬≤ûâá©√†y<J®ÌÃéWGPháõ§∞€€õ©^-
+	%MêºïQ- $6Pk|É†º«¬}I&(<aèìc4,;ADMgè™¨~C
+*D]oáëzK& #5]ß ¶n/$Rí¬¬†ÇZ7
+
+"K†º®Ñ90xï•ÁëY8$	!K†“t12Ä´†∏f5		
+*Xù√îM"/pœﬁèD	6k´Æl5	.g≤øz;
+	;p¶•b-0u’‡ôJ#
+2g©±r9
+3Äñäƒq=$		
+'Súœ•V%.q°¿Èòd@)	
+ J°Î—|4!G~©¨ùâb< 
+
+%N†µüÅ8	#7K_}ëÅP)%&&*>eßÕ•c+	!4Zéök:!3ENQ^{¢Øúm:
+#Lïœ©]5',?]yãì∂ ¡√u@!J´‡≈†eWbzî¢§≠Ÿ‹ôûV(	Cñï¢÷¶ØºŸ∏ïzvëÆój5	1gï∂ºΩ◊úÊÆdB:BNK42L_iá≤ò∞v;!&2Case=
+		'.*	$	I";$	
+
+ $! (2BNH4!
+	%8BHSkÇÜfG0$#Eisg`rìØßïrYJC6%	3jõêjPPlö‹·¬∫èÅeB$	Fá∑ìT4->k¡´ØÌ¥†Y4/g¥ƒÇB!#CÑØπ¨Åuk[D,,Sü€‡É:-RtmSB?GSS@'	4Uç÷©≤Ä;$7A7&"4Ph_;
+3`ï∫Â…§m<#')!0[Ö|I" HÖ∑∑ò}`H4$"Bw¢àK #LÖôÄT:-*%$:nπÃáB!FqwS0&9_® Êê;	!BfgG(+Aq≥{¥è8!Hv[6"#4Vù€Ìé=	#Má¢èbF70( 2_§ºÜED∑æ≠ñsQ7$;núáL!
+-TÑ≤Ï«™t="+-%/V}uG!+I~»ÆºÇ:&=J@.%'7PbW6%Hê›‡Å;1]áÉeOJOTN:#	*]§ΩÖE$(LìØºƒìÑs\@(AÄ¥ñZ;4Hwœ∏≥Ï¥ü}U0/aèãmUZy§‘€∏†}qY: <\g``uî™ñ|\G=7-	.8@KbwvX:&		!+7B;*	
+			*	
+
+		
+
+#$ 
+ #*6@B:.!
+
+"-.*'-?YxàsS8(!8E<+"$8cµ∂ü¶eB,
+8ZcJ+*Y∑g[«xL4$
+0e¢ù^- J©·∆ùY:+$
+'U°≠∆É:"FÖπòV1"!!	"AÇæ,ùÆT.#+Hr}Y1!(&3TâŒµ€≥nG57G^]@$-94"#;UhyÖäpU?6:CE9( "2KXG*		#6A@:7?LTJ6)&+7<;=Kmóòa/	!/0'-::*.CWkêÕ®∑3 ,,"&54&+FdÇ≤ÏRÇÖ5	!03+"$2?=,!0AP_}∑∫øy3$8GIFELW\N:-+1:;54>YÉY.!:Wrë°¶érS>8>JI:&+ANB(	/Qç’î‘πiA15HddD%(40 ;yµ4ú§M)(Gvád7 &#"Jñ≈…y6 FéœØf:'"! 
+)VääW,"MØ≈Æ≠d@.$
+1OZF+-]∫j^«xL3#2?9+$';c™ø¶íZ<)		(*('.?Tho\B/"
+
+!(297/$
+		
+				
+	#%!,BSN7"	
+7iîèe8 	#23$>ã¡∞ÄA#
+$DbZ9I°ÙŒo4=xúûf7 /`∑·üN#
+'Qî•ﬁÆhE=Oà—‹É:,MÑªÚ‹∏âosù∞µx8		&5Klñ»’ÆêsíúuK.$%++"	#1MÉ¨†xPGWpwbVY]R5	+RÅÇS1'4ZïØæ±ªÆÖL"#FnoI(,Tñ≥‰„Ì»ìU%	1Zåã[7-:^ë¶ßò°úzG!	$+<[ï∑§ÅZSdz{hPFHLF0	(<YÉØ”Ÿ≠çwåù•uD'$&,Qéæ˙◊£wblú∏Ωz7	%Mê†ŒúY94F~—·à>
+6kìçX.)XÆÂ¨V'
+:RM2FùÔŒw9
++,!<É≥¶}A$		5`ÜÅZ3	(9D?.
+		
+	
+		 			
+ )(
+
+
+4JG2
+)Pti? 	
+$0.!>tôzB!=UXD."%9n¡’Ö=	
+)LyékXWs∂µŸò=
+	%Bp†œ’∏≤∑‚SñßJ!	
+*IÄ‚£ÖÊµ∆¡Ë∫j;#
+(Q®¶ùπue¨»∂~U@4(4x””B1DÇ›≥√Øx]@%
+
+
+-f±±i4%7x¡E¥›îpJ*
+		8ÇŸŸåK:Mà‡œºóiS:#	
+	/\∑é«ázóø¿ûhD4+"0SäË¡°ÂæŸ∞›∏_2		'Gw°ºæ§ò™⁄Qí°E			
+(JsÇnWEGa¶“Ïï<
+6KK8&/^©¡Ä>	)&7iêxB
+
+	%Hib= 	
+	/A?,#!		
+
+  
+		   	
+
+	 		*4.-HS@$	$*("$5YãåX*
+!3EOROUo®†≠x3	
+
+7Yãß¨¨Øﬁ~§ôF,W®ãî‡≠π¿›Æe8
+	Bë™¨≥o^tü∏©oA)
+1uŒÕy>->vŒ¿®yF-
+	,fÆ¨d1!2møzüïS3 
+	4|’÷ÜG6G|ŒŒ°k?)
+		!Hòêî¡Ärã±≤ì]6"	/Z®ù®ﬁµÕª⁄¨\0	
+
+ 7U|îñî£÷uöê@
+
+ 0>CB?F^î´±p0 #!+JvzQ(
+	
+&>J;"
+	%/*				
+7KG.
+"-*		
+
+  	
+	
+		%(	#	$6GD.- )039FawlC!(,E^hdgÄéÑX.	
+.YÉê~dhu}bB&
+	)VâéhE;FZh_B'	!"IuuJ*)GrÉh?#3!DifA!"@rçvI)		 :	#L||P/$.Kp{_9 /		+YâëqNEPbfW9"/V}ã|isÉa<!
+*)=QYY`|åÄS*	+#'*0=Ulc> 
+-<<*
+		 #		  		'41"
+	"@uòìY+ 
+
+*F^Y>%
+	!*,%	
+
+		
+
+	
+	)	
+		G!	
+	
+\-
+")/+		S.(,,.384&5%	&5:3-,01, 	%	
+&79," )-)+E		#11#!.3*
+<o		"/. /7/
+C		#33%#.1(	8f"	'8;/%!$+-'
+
+';=(	$373./32+
+	 X/#'),273$Y*
+	%,(?		
+
+$	
+		
+		
+		
+(45*
+0SohE'.Gw∂uØõK()=D5!0IrìûvL0#!&-+ 	!0?JH=/$
+!&'"
+
+	
+
+		!<
+j0		õK'
+
+"óY6
++2dP:$
+		!;M892$
+
+&OÑ'* 
+	
+	)gØ#& 		+nñ#*+!		
+)bÆA?5%
+
+%IsqU;#		 7EüX3
+'-ëE#		
+!]*	
+
+3	
+
+			
+(-,&	)<PZSB0% !"%6Vá¢≤ÉM/! '01$
+

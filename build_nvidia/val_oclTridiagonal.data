@@ -1,0 +1,1197 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "cyclic_small_systems_kernel" :
+                {
+                    "a_d" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_a_d_size"
+                        },
+                    "_wcl_a_d_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "b_d" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_b_d_size"
+                        },
+                    "_wcl_b_d_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_d" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_c_d_size"
+                        },
+                    "_wcl_c_d_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_d" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_d_size"
+                        },
+                    "_wcl_d_d_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "x_d" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_x_d_size"
+                        },
+                    "_wcl_x_d_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "shared" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_size"
+                        },
+                    "_wcl_shared_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "system_size" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        },
+                    "num_systems" :
+                        {
+                            "index" : 13,
+                            "type" : "int"
+                        },
+                    "iterations" :
+                        {
+                            "index" : 14,
+                            "type" : "int"
+                        }
+                },
+            "cyclic_branch_free_kernel" :
+                {
+                    "a_d" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_a_d_size"
+                        },
+                    "_wcl_a_d_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "b_d" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_b_d_size"
+                        },
+                    "_wcl_b_d_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_d" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_c_d_size"
+                        },
+                    "_wcl_c_d_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_d" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_d_size"
+                        },
+                    "_wcl_d_d_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "x_d" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_x_d_size"
+                        },
+                    "_wcl_x_d_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "shared" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_size"
+                        },
+                    "_wcl_shared_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "system_size" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        },
+                    "num_systems" :
+                        {
+                            "index" : 13,
+                            "type" : "int"
+                        },
+                    "iterations" :
+                        {
+                            "index" : 14,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __local float *_wcl_a;
+    __local float *_wcl_b;
+    __local float *_wcl_c;
+    __local float *_wcl_d;
+    __local float *_wcl_x;
+    __local float *_wcl_2_a;
+    __local float *_wcl_2_b;
+    __local float *_wcl_2_c;
+    __local float *_wcl_2_d;
+    __local float *_wcl_2_x;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global float *cyclic_small_systems_kernel__a_d_min;
+    __global float *cyclic_small_systems_kernel__a_d_max;
+    __global float *cyclic_small_systems_kernel__b_d_min;
+    __global float *cyclic_small_systems_kernel__b_d_max;
+    __global float *cyclic_small_systems_kernel__c_d_min;
+    __global float *cyclic_small_systems_kernel__c_d_max;
+    __global float *cyclic_small_systems_kernel__d_d_min;
+    __global float *cyclic_small_systems_kernel__d_d_max;
+    __global float *cyclic_small_systems_kernel__x_d_min;
+    __global float *cyclic_small_systems_kernel__x_d_max;
+    __global float *cyclic_branch_free_kernel__a_d_min;
+    __global float *cyclic_branch_free_kernel__a_d_max;
+    __global float *cyclic_branch_free_kernel__b_d_min;
+    __global float *cyclic_branch_free_kernel__b_d_max;
+    __global float *cyclic_branch_free_kernel__c_d_min;
+    __global float *cyclic_branch_free_kernel__c_d_max;
+    __global float *cyclic_branch_free_kernel__d_d_min;
+    __global float *cyclic_branch_free_kernel__d_d_max;
+    __global float *cyclic_branch_free_kernel__x_d_min;
+    __global float *cyclic_branch_free_kernel__x_d_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local float *cyclic_small_systems_kernel__shared_min;
+    __local float *cyclic_small_systems_kernel__shared_max;
+    __local float *cyclic_branch_free_kernel__shared_min;
+    __local float *cyclic_branch_free_kernel__shared_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_10__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max9)) );
+}
+__global float *_wcl_addr_clamp_global_10__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9, __global float * asnull)
+{
+     return _wcl_addr_check_global_10__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_2__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max1)) );
+}
+__local float *_wcl_addr_clamp_local_2__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1, __local float * asnull)
+{
+     return _wcl_addr_check_local_2__u_ulocal__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+ /*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ * 
+ * Tridiagonal solvers.
+ * Device code for cyclic reduction (CR).
+ *
+ * Original CUDA kernel: UC Davis, Yao Zhang & John Owens, 2009
+ * 
+ * NVIDIA, Nikolai Sakharnykh, 2009
+ */
+
+
+
+__kernel void cyclic_small_systems_kernel(__global float *a_d, ulong _wcl_a_d_size, __global float *b_d, ulong _wcl_b_d_size, __global float *c_d, ulong _wcl_c_d_size, __global float *d_d, ulong _wcl_d_d_size, __global float *x_d, ulong _wcl_x_d_size,
+            __local float *shared, ulong _wcl_shared_size, int system_size, int num_systems, int iterations)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &a_d[0], &a_d[_wcl_a_d_size],&b_d[0], &b_d[_wcl_b_d_size],&c_d[0], &c_d[_wcl_c_d_size],&d_d[0], &d_d[_wcl_d_d_size],&x_d[0], &x_d[_wcl_x_d_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &shared[0], &shared[_wcl_shared_size],0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global uint*)0))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, _wcl_allocs->ll.cyclic_small_systems_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, _wcl_allocs->ll.cyclic_branch_free_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    int thid = get_local_id(0);
+    int blid = get_group_id(0);
+
+ int stride = 1;
+    int half_size = system_size >> 1;
+ int thid_num = half_size;
+
+ __local float* a = shared;;_wcl_allocs->pa._wcl_a = a;
+ __local float* b = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_b = b;
+ __local float* c = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_c = c;
+ __local float* d = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_d = d;
+ __local float* x = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_x = x;
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ // forward elimination
+ for (int j = 0; j < iterations; j++)
+ {
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  stride <<= 1;
+  int delta = stride >> 1;
+        if (thid < thid_num)
+  {
+   int i = stride * thid + stride - 1;
+
+   if (i == system_size - 1)
+   {
+
+
+
+    float tmp = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = 0;
+   }
+   else
+   {
+
+
+
+
+    float tmp1 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+    float tmp2 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1;
+    (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+   }
+  }
+        thid_num >>= 1;
+ }
+
+    if (thid < 2)
+    {
+  int addr1 = stride - 1;
+  int addr2 = (stride << 1) - 1;
+  float tmp3 = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+
+
+
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+
+    }
+
+    // backward substitution
+    thid_num = 2;
+    for (int j = 0; j < iterations; j++)
+ {
+  int delta = stride >> 1;
+  barrier(CLK_LOCAL_MEM_FENCE);
+  if (thid < thid_num)
+        {
+            int i = stride * thid + (stride >> 1) - 1;
+
+
+
+
+
+
+            if (i == delta - 1)
+                (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+      else
+          (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+         }
+   stride >>= 1;
+         thid_num <<= 1;
+ }
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+    (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+ (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + half_size + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(thid + half_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+}
+
+__kernel void cyclic_branch_free_kernel(__global float *a_d, ulong _wcl_a_d_size, __global float *b_d, ulong _wcl_b_d_size, __global float *c_d, ulong _wcl_c_d_size, __global float *d_d, ulong _wcl_d_d_size, __global float *x_d, ulong _wcl_x_d_size,
+          __local float *shared, ulong _wcl_shared_size, int system_size, int num_systems, int iterations)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&a_d[0], &a_d[_wcl_a_d_size],&b_d[0], &b_d[_wcl_b_d_size],&c_d[0], &c_d[_wcl_c_d_size],&d_d[0], &d_d[_wcl_d_d_size],&x_d[0], &x_d[_wcl_x_d_size] },
+        0,
+        { 0, 0,&shared[0], &shared[_wcl_shared_size] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, _wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, _wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global uint*)0))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, _wcl_allocs->ll.cyclic_small_systems_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, _wcl_allocs->ll.cyclic_branch_free_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    int thid = get_local_id(0);
+    int blid = get_group_id(0);
+
+ int stride = 1;
+    int half_size = system_size >> 1;
+ int thid_num = half_size;
+
+ __local float* a = shared;;_wcl_allocs->pa._wcl_2_a = a;
+ __local float* b = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_b = b;
+ __local float* c = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_c = c;
+ __local float* d = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_d = d;
+ __local float* x = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(system_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_x = x;
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(thid + thid_num), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + thid_num + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ // forward elimination
+ for (int j = 0; j < iterations; j++)
+ {
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  stride <<= 1;
+  int delta = stride >> 1;
+        if (thid < thid_num)
+  {
+   int i = stride * thid + stride - 1;
+   int iRight = i+delta;
+   iRight = iRight & (system_size-1);
+
+
+
+
+   float tmp1 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+   float tmp2 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(iRight), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(iRight), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(iRight), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1;
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(iRight), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+  }
+
+        thid_num >>= 1;
+ }
+
+    if (thid < 2)
+    {
+  int addr1 = stride - 1;
+  int addr2 = (stride << 1) - 1;
+  float tmp3 = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+
+
+
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+
+    }
+
+    // backward substitution
+    thid_num = 2;
+    for (int j = 0; j < iterations; j++)
+ {
+  int delta = stride >> 1;
+  barrier(CLK_LOCAL_MEM_FENCE);
+  if (thid < thid_num)
+        {
+            int i = stride * thid + (stride >> 1) - 1;
+
+
+
+
+
+
+            if (i == delta - 1)
+                (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+      else
+          (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(i-delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(i+delta), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+         }
+   stride >>= 1;
+         thid_num <<= 1;
+ }
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+    (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(thid), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+ (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + half_size + blid * system_size), 1, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.cyclic_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(thid + half_size), 1, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.cyclic_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+}
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "pcr_small_systems_kernel" :
+                {
+                    "a_d" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_a_d_size"
+                        },
+                    "_wcl_a_d_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "b_d" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_b_d_size"
+                        },
+                    "_wcl_b_d_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_d" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_c_d_size"
+                        },
+                    "_wcl_c_d_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_d" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_d_size"
+                        },
+                    "_wcl_d_d_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "x_d" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_x_d_size"
+                        },
+                    "_wcl_x_d_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "shared" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_size"
+                        },
+                    "_wcl_shared_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "system_size" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        },
+                    "num_systems" :
+                        {
+                            "index" : 13,
+                            "type" : "int"
+                        },
+                    "iterations" :
+                        {
+                            "index" : 14,
+                            "type" : "int"
+                        }
+                },
+            "pcr_branch_free_kernel" :
+                {
+                    "a_d" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_a_d_size"
+                        },
+                    "_wcl_a_d_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "b_d" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_b_d_size"
+                        },
+                    "_wcl_b_d_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_d" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_c_d_size"
+                        },
+                    "_wcl_c_d_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_d" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_d_size"
+                        },
+                    "_wcl_d_d_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "x_d" :
+                        {
+                            "index" : 8,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_x_d_size"
+                        },
+                    "_wcl_x_d_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "shared" :
+                        {
+                            "index" : 10,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_shared_size"
+                        },
+                    "_wcl_shared_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "system_size" :
+                        {
+                            "index" : 12,
+                            "type" : "int"
+                        },
+                    "num_systems" :
+                        {
+                            "index" : 13,
+                            "type" : "int"
+                        },
+                    "iterations" :
+                        {
+                            "index" : 14,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __local float *_wcl_a;
+    __local float *_wcl_b;
+    __local float *_wcl_c;
+    __local float *_wcl_d;
+    __local float *_wcl_x;
+    __local float *_wcl_2_a;
+    __local float *_wcl_2_b;
+    __local float *_wcl_2_c;
+    __local float *_wcl_2_d;
+    __local float *_wcl_2_x;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global float *pcr_small_systems_kernel__a_d_min;
+    __global float *pcr_small_systems_kernel__a_d_max;
+    __global float *pcr_small_systems_kernel__b_d_min;
+    __global float *pcr_small_systems_kernel__b_d_max;
+    __global float *pcr_small_systems_kernel__c_d_min;
+    __global float *pcr_small_systems_kernel__c_d_max;
+    __global float *pcr_small_systems_kernel__d_d_min;
+    __global float *pcr_small_systems_kernel__d_d_max;
+    __global float *pcr_small_systems_kernel__x_d_min;
+    __global float *pcr_small_systems_kernel__x_d_max;
+    __global float *pcr_branch_free_kernel__a_d_min;
+    __global float *pcr_branch_free_kernel__a_d_max;
+    __global float *pcr_branch_free_kernel__b_d_min;
+    __global float *pcr_branch_free_kernel__b_d_max;
+    __global float *pcr_branch_free_kernel__c_d_min;
+    __global float *pcr_branch_free_kernel__c_d_max;
+    __global float *pcr_branch_free_kernel__d_d_min;
+    __global float *pcr_branch_free_kernel__d_d_max;
+    __global float *pcr_branch_free_kernel__x_d_min;
+    __global float *pcr_branch_free_kernel__x_d_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local float *pcr_small_systems_kernel__shared_min;
+    __local float *pcr_small_systems_kernel__shared_max;
+    __local float *pcr_branch_free_kernel__shared_min;
+    __local float *pcr_branch_free_kernel__shared_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[items_offset+i] = _WCL_FILLCHAR;                          \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_10__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max9)) );
+}
+__global float *_wcl_addr_clamp_global_10__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * min4, __global float * max4, __global float * min5, __global float * max5, __global float * min6, __global float * max6, __global float * min7, __global float * max7, __global float * min8, __global float * max8, __global float * min9, __global float * max9, __global float * asnull)
+{
+     return _wcl_addr_check_global_10__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_2__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max1)) );
+}
+__local float *_wcl_addr_clamp_local_2__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * min1, __local float * max1, __local float * asnull)
+{
+     return _wcl_addr_check_local_2__u_ulocal__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+ /*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ * 
+ * Tridiagonal solvers.
+ * Device code for parallel cyclic reduction (PCR).
+ *
+ * Original CUDA kernels: UC Davis, Yao Zhang & John Owens, 2009
+ * 
+ * NVIDIA, Nikolai Sakharnykh, 2009
+ */
+
+
+
+__kernel void pcr_small_systems_kernel(__global float *a_d, ulong _wcl_a_d_size, __global float *b_d, ulong _wcl_b_d_size, __global float *c_d, ulong _wcl_c_d_size, __global float *d_d, ulong _wcl_d_d_size, __global float *x_d, ulong _wcl_x_d_size,
+            __local float *shared, ulong _wcl_shared_size, int system_size, int num_systems, int iterations)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &a_d[0], &a_d[_wcl_a_d_size],&b_d[0], &b_d[_wcl_b_d_size],&c_d[0], &c_d[_wcl_c_d_size],&d_d[0], &d_d[_wcl_d_d_size],&x_d[0], &x_d[_wcl_x_d_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &shared[0], &shared[_wcl_shared_size],0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global uint*)0))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, _wcl_allocs->ll.pcr_small_systems_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, _wcl_allocs->ll.pcr_branch_free_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    int thid = get_local_id(0);
+    int blid = get_group_id(0);
+
+ int delta = 1;
+
+ __local float* a = shared;;_wcl_allocs->pa._wcl_a = a;
+ __local float* b = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_b = b;
+ __local float* c = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_c = c;
+ __local float* d = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_d = d;
+ __local float* x = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_x = x;
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ float aNew, bNew, cNew, dNew;
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ // parallel cyclic reduction
+ for (int j = 0; j < iterations; j++)
+ {
+  int i = thid;
+
+  if(i < delta)
+  {
+
+
+
+   float tmp2 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+   bNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+    dNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+   aNew = 0;
+   cNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+  }
+  else if((system_size-i-1) < delta)
+  {
+
+
+
+   float tmp = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+   bNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+   dNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+   aNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp;
+   cNew = 0;
+  }
+  else
+  {
+
+
+
+
+   float tmp1 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+   float tmp2 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+      bNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+    dNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+   aNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i-delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1;
+   cNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i+delta), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+  }
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = bNew;
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = dNew;
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = aNew;
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = cNew;
+
+  delta *= 2;
+  barrier(CLK_LOCAL_MEM_FENCE);
+ }
+
+ if (thid < delta)
+ {
+  int addr1 = thid;
+  int addr2 = thid + delta;
+  float tmp3 = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+
+
+
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+
+ }
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+    (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_x)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+}
+
+__kernel void pcr_branch_free_kernel(__global float *a_d, ulong _wcl_a_d_size, __global float *b_d, ulong _wcl_b_d_size, __global float *c_d, ulong _wcl_c_d_size, __global float *d_d, ulong _wcl_d_d_size, __global float *x_d, ulong _wcl_x_d_size,
+          __local float *shared, ulong _wcl_shared_size, int system_size, int num_systems, int iterations)
+{
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&a_d[0], &a_d[_wcl_a_d_size],&b_d[0], &b_d[_wcl_b_d_size],&c_d[0], &c_d[_wcl_c_d_size],&d_d[0], &d_d[_wcl_d_d_size],&x_d[0], &x_d[_wcl_x_d_size] },
+        0,
+        { 0, 0,&shared[0], &shared[_wcl_shared_size] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, _wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, _wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global uint*)0))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, _wcl_allocs->ll.pcr_small_systems_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, _wcl_allocs->ll.pcr_branch_free_kernel__shared_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+ int thid = get_local_id(0);
+    int blid = get_group_id(0);
+
+ int delta = 1;
+
+ __local float* a = shared;;_wcl_allocs->pa._wcl_2_a = a;
+ __local float* b = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_b = b;
+ __local float* c = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_c = c;
+ __local float* d = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_d = d;
+ __local float* x = &(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(system_size+1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));;_wcl_allocs->pa._wcl_2_x = x;
+
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((a_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((b_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((c_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+ (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((d_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn)));
+
+ float aNew, bNew, cNew, dNew;
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ // parallel cyclic reduction
+ for (int j = 0; j < iterations; j++)
+ {
+  int i = thid;
+
+  int iRight = i+delta;
+  iRight = iRight & (system_size-1);
+
+  int iLeft = i-delta;
+  iLeft = iLeft & (system_size-1);
+
+
+
+
+
+  float tmp1 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(iLeft), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+  float tmp2 = native_divide((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))), (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(iRight), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))));
+
+
+  bNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(iLeft), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(iRight), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+  dNew = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(iLeft), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1 - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(iRight), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+  aNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(iLeft), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp1;
+  cNew = -(*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(iRight), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * tmp2;
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = bNew;
+   (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = dNew;
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = aNew;
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(i), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = cNew;
+
+     delta *= 2;
+  barrier(CLK_LOCAL_MEM_FENCE);
+ }
+
+ if (thid < delta)
+ {
+  int addr1 = thid;
+  int addr2 = thid + delta;
+  float tmp3 = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+
+
+
+
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_c)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+  (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) = native_divide(((*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_b)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) - (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_d)+(addr1), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln))) * (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_a)+(addr2), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)))), tmp3);
+
+ }
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+    (*(_wcl_addr_clamp_global_10__u_uglobal__float__Ptr((x_d)+(thid + blid * system_size), 1, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_small_systems_kernel__x_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__a_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__b_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__c_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__d_d_max, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_min, (__global float *)_wcl_allocs->gl.pcr_branch_free_kernel__x_d_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_2__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_x)+(thid), 1, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_small_systems_kernel__shared_max, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_min, (__local float *)_wcl_allocs->ll.pcr_branch_free_kernel__shared_max, (__local float *)_wcl_allocs->ln)));
+}

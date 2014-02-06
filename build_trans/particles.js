@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/particles.data';
     var REMOTE_PACKAGE_NAME = 'particles.data';
-    var PACKAGE_UUID = 'd79ba985-8e16-4e72-8c26-a7b3a8316d5d';
+    var PACKAGE_UUID = '47f90ec3-7b04-4a93-9664-46e02ec5bbfa';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7579,7 +7579,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

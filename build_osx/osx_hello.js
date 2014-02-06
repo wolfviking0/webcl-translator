@@ -7525,283 +7525,290 @@ function _main($argc,$argv){
  case 14: 
  var $42=$use_gpu;
  var $43=($42|0)==1;
- var $44=($43?208:200);
- var $45=_printf(216,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$44,tempVarArgs)); STACKTOP=tempVarArgs;
+ if($43){label=15;break;}else{label=16;break;}
+ case 15: 
+ var $47=208;label=17;break;
+ case 16: 
+ var $47=200;label=17;break;
+ case 17: 
+ var $47;
+ var $48=(($47)|0);
+ var $49=_printf(216,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$48,tempVarArgs)); STACKTOP=tempVarArgs;
  HEAP32[(($count)>>2)]=1024;
  $i=0;
- label=15;break;
- case 15: 
- var $47=$i;
- var $48=HEAP32[(($count)>>2)];
- var $49=($47>>>0)<($48>>>0);
- if($49){label=16;break;}else{label=18;break;}
- case 16: 
- var $51=_rand();
- var $52=($51|0);
- var $53=($52)/(2147483648);
- var $54=$i;
- var $55=(($data+($54<<2))|0);
- HEAPF32[(($55)>>2)]=$53;
- label=17;break;
- case 17: 
- var $57=$i;
- var $58=((($57)+(1))|0);
- $i=$58;
- label=15;break;
+ label=18;break;
  case 18: 
- var $60=$use_gpu;
- var $61=($60|0)!=0;
- var $62=($61?4:2);
- var $63$0=$62;
- var $63$1=((((($62|0)<0))|0)?-1:0);
- var $64=_clGetDeviceIDs(0,$63$0,$63$1,1,$device_id,0);
- HEAP32[(($err)>>2)]=$64;
- var $65=HEAP32[(($err)>>2)];
- var $66=($65|0)!=0;
- if($66){label=19;break;}else{label=20;break;}
+ var $51=$i;
+ var $52=HEAP32[(($count)>>2)];
+ var $53=($51>>>0)<($52>>>0);
+ if($53){label=19;break;}else{label=21;break;}
  case 19: 
- var $68=_printf(152,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=51;break;
+ var $55=_rand();
+ var $56=($55|0);
+ var $57=($56)/(2147483648);
+ var $58=$i;
+ var $59=(($data+($58<<2))|0);
+ HEAPF32[(($59)>>2)]=$57;
+ label=20;break;
  case 20: 
- var $70=_clCreateContext(0,1,$device_id,0,0,$err);
- $context=$70;
- var $71=$context;
- var $72=($71|0)!=0;
- if($72){label=22;break;}else{label=21;break;}
+ var $61=$i;
+ var $62=((($61)+(1))|0);
+ $i=$62;
+ label=18;break;
  case 21: 
- var $74=_printf(104,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=51;break;
+ var $64=$use_gpu;
+ var $65=($64|0)!=0;
+ var $66=($65?4:2);
+ var $67$0=$66;
+ var $67$1=((((($66|0)<0))|0)?-1:0);
+ var $68=_clGetDeviceIDs(0,$67$0,$67$1,1,$device_id,0);
+ HEAP32[(($err)>>2)]=$68;
+ var $69=HEAP32[(($err)>>2)];
+ var $70=($69|0)!=0;
+ if($70){label=22;break;}else{label=23;break;}
  case 22: 
- var $76=$context;
- var $77=HEAP32[(($device_id)>>2)];
+ var $72=_printf(152,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ $1=1;
+ label=54;break;
+ case 23: 
+ var $74=_clCreateContext(0,1,$device_id,0,0,$err);
+ $context=$74;
+ var $75=$context;
+ var $76=($75|0)!=0;
+ if($76){label=25;break;}else{label=24;break;}
+ case 24: 
+ var $78=_printf(104,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ $1=1;
+ label=54;break;
+ case 25: 
+ var $80=$context;
+ var $81=HEAP32[(($device_id)>>2)];
  var $$etemp$0$0=0;
  var $$etemp$0$1=0;
- var $78=_clCreateCommandQueue($76,$77,$$etemp$0$0,$$etemp$0$1,$err);
- $commands=$78;
- var $79=$commands;
- var $80=($79|0)!=0;
- if($80){label=24;break;}else{label=23;break;}
- case 23: 
- var $82=_printf(56,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=51;break;
- case 24: 
- var $84=$context;
- var $85=_clCreateProgramWithSource($84,1,1352,0,$err);
- $program=$85;
- var $86=$program;
- var $87=($86|0)!=0;
- if($87){label=26;break;}else{label=25;break;}
- case 25: 
- var $89=_printf(8,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=51;break;
+ var $82=_clCreateCommandQueue($80,$81,$$etemp$0$0,$$etemp$0$1,$err);
+ $commands=$82;
+ var $83=$commands;
+ var $84=($83|0)!=0;
+ if($84){label=27;break;}else{label=26;break;}
  case 26: 
- var $91=$program;
- var $92=_clBuildProgram($91,0,0,0,0,0);
- HEAP32[(($err)>>2)]=$92;
- var $93=HEAP32[(($err)>>2)];
- var $94=($93|0)!=0;
- if($94){label=27;break;}else{label=28;break;}
+ var $86=_printf(56,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ $1=1;
+ label=54;break;
  case 27: 
- var $96=_printf(640,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $97=$program;
- var $98=HEAP32[(($device_id)>>2)];
- var $99=(($buffer)|0);
- var $100=_clGetProgramBuildInfo($97,$98,4483,2048,$99,$len);
- var $101=(($buffer)|0);
- var $102=_printf(632,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$101,tempVarArgs)); STACKTOP=tempVarArgs;
- _exit(1);
- throw "Reached an unreachable!";
+ var $88=$context;
+ var $89=_clCreateProgramWithSource($88,1,1352,0,$err);
+ $program=$89;
+ var $90=$program;
+ var $91=($90|0)!=0;
+ if($91){label=29;break;}else{label=28;break;}
  case 28: 
- var $104=$program;
- var $105=_clCreateKernel($104,624,$err);
- $kernel=$105;
- var $106=$kernel;
- var $107=($106|0)!=0;
- if($107){label=29;break;}else{label=30;break;}
+ var $93=_printf(8,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ $1=1;
+ label=54;break;
  case 29: 
- var $109=HEAP32[(($err)>>2)];
- var $110=($109|0)!=0;
- if($110){label=30;break;}else{label=31;break;}
+ var $95=$program;
+ var $96=_clBuildProgram($95,0,0,0,0,0);
+ HEAP32[(($err)>>2)]=$96;
+ var $97=HEAP32[(($err)>>2)];
+ var $98=($97|0)!=0;
+ if($98){label=30;break;}else{label=31;break;}
  case 30: 
- var $112=_printf(576,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $100=_printf(640,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $101=$program;
+ var $102=HEAP32[(($device_id)>>2)];
+ var $103=(($buffer)|0);
+ var $104=_clGetProgramBuildInfo($101,$102,4483,2048,$103,$len);
+ var $105=(($buffer)|0);
+ var $106=_printf(632,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$105,tempVarArgs)); STACKTOP=tempVarArgs;
  _exit(1);
  throw "Reached an unreachable!";
  case 31: 
- var $114=$context;
- var $115=HEAP32[(($count)>>2)];
- var $116=($115<<2);
- var $$etemp$1$0=4;
- var $$etemp$1$1=0;
- var $117=_clCreateBuffer($114,$$etemp$1$0,$$etemp$1$1,$116,0,0);
- HEAP32[(($input)>>2)]=$117;
- var $118=$context;
- var $119=HEAP32[(($count)>>2)];
- var $120=($119<<2);
- var $$etemp$2$0=2;
- var $$etemp$2$1=0;
- var $121=_clCreateBuffer($118,$$etemp$2$0,$$etemp$2$1,$120,0,0);
- HEAP32[(($output)>>2)]=$121;
- var $122=HEAP32[(($input)>>2)];
- var $123=($122|0)!=0;
- if($123){label=32;break;}else{label=33;break;}
+ var $108=$program;
+ var $109=_clCreateKernel($108,624,$err);
+ $kernel=$109;
+ var $110=$kernel;
+ var $111=($110|0)!=0;
+ if($111){label=32;break;}else{label=33;break;}
  case 32: 
- var $125=HEAP32[(($output)>>2)];
- var $126=($125|0)!=0;
- if($126){label=34;break;}else{label=33;break;}
+ var $113=HEAP32[(($err)>>2)];
+ var $114=($113|0)!=0;
+ if($114){label=33;break;}else{label=34;break;}
  case 33: 
- var $128=_printf(528,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $116=_printf(576,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
  _exit(1);
  throw "Reached an unreachable!";
  case 34: 
- var $130=$commands;
- var $131=HEAP32[(($input)>>2)];
- var $132=HEAP32[(($count)>>2)];
- var $133=($132<<2);
- var $134=(($data)|0);
- var $135=$134;
- var $136=_clEnqueueWriteBuffer($130,$131,1,0,$133,$135,0,0,0);
- HEAP32[(($err)>>2)]=$136;
- var $137=HEAP32[(($err)>>2)];
- var $138=($137|0)!=0;
- if($138){label=35;break;}else{label=36;break;}
+ var $118=$context;
+ var $119=HEAP32[(($count)>>2)];
+ var $120=($119<<2);
+ var $$etemp$1$0=4;
+ var $$etemp$1$1=0;
+ var $121=_clCreateBuffer($118,$$etemp$1$0,$$etemp$1$1,$120,0,0);
+ HEAP32[(($input)>>2)]=$121;
+ var $122=$context;
+ var $123=HEAP32[(($count)>>2)];
+ var $124=($123<<2);
+ var $$etemp$2$0=2;
+ var $$etemp$2$1=0;
+ var $125=_clCreateBuffer($122,$$etemp$2$0,$$etemp$2$1,$124,0,0);
+ HEAP32[(($output)>>2)]=$125;
+ var $126=HEAP32[(($input)>>2)];
+ var $127=($126|0)!=0;
+ if($127){label=35;break;}else{label=36;break;}
  case 35: 
- var $140=_printf(480,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- _exit(1);
- throw "Reached an unreachable!";
+ var $129=HEAP32[(($output)>>2)];
+ var $130=($129|0)!=0;
+ if($130){label=37;break;}else{label=36;break;}
  case 36: 
- HEAP32[(($err)>>2)]=0;
- var $142=$kernel;
- var $143=$input;
- var $144=_clSetKernelArg($142,0,4,$143);
- HEAP32[(($err)>>2)]=$144;
- var $145=$kernel;
- var $146=$output;
- var $147=_clSetKernelArg($145,1,4,$146);
- var $148=HEAP32[(($err)>>2)];
- var $149=$148|$147;
- HEAP32[(($err)>>2)]=$149;
- var $150=$kernel;
- var $151=$count;
- var $152=_clSetKernelArg($150,2,4,$151);
- var $153=HEAP32[(($err)>>2)];
- var $154=$153|$152;
- HEAP32[(($err)>>2)]=$154;
- var $155=HEAP32[(($err)>>2)];
- var $156=($155|0)!=0;
- if($156){label=37;break;}else{label=38;break;}
+ var $132=_printf(528,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ _exit(1);
+ throw "Reached an unreachable!";
  case 37: 
- var $158=HEAP32[(($err)>>2)];
- var $159=_printf(432,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$158,tempVarArgs)); STACKTOP=tempVarArgs;
- _exit(1);
- throw "Reached an unreachable!";
+ var $134=$commands;
+ var $135=HEAP32[(($input)>>2)];
+ var $136=HEAP32[(($count)>>2)];
+ var $137=($136<<2);
+ var $138=(($data)|0);
+ var $139=$138;
+ var $140=_clEnqueueWriteBuffer($134,$135,1,0,$137,$139,0,0,0);
+ HEAP32[(($err)>>2)]=$140;
+ var $141=HEAP32[(($err)>>2)];
+ var $142=($141|0)!=0;
+ if($142){label=38;break;}else{label=39;break;}
  case 38: 
- var $161=$kernel;
- var $162=HEAP32[(($device_id)>>2)];
- var $163=$local;
- var $164=_clGetKernelWorkGroupInfo($161,$162,4528,4,$163,0);
- HEAP32[(($err)>>2)]=$164;
- var $165=HEAP32[(($err)>>2)];
- var $166=($165|0)!=0;
- if($166){label=39;break;}else{label=40;break;}
+ var $144=_printf(480,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ _exit(1);
+ throw "Reached an unreachable!";
  case 39: 
- var $168=HEAP32[(($err)>>2)];
- var $169=_printf(376,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$168,tempVarArgs)); STACKTOP=tempVarArgs;
- _exit(1);
- throw "Reached an unreachable!";
+ HEAP32[(($err)>>2)]=0;
+ var $146=$kernel;
+ var $147=$input;
+ var $148=_clSetKernelArg($146,0,4,$147);
+ HEAP32[(($err)>>2)]=$148;
+ var $149=$kernel;
+ var $150=$output;
+ var $151=_clSetKernelArg($149,1,4,$150);
+ var $152=HEAP32[(($err)>>2)];
+ var $153=$152|$151;
+ HEAP32[(($err)>>2)]=$153;
+ var $154=$kernel;
+ var $155=$count;
+ var $156=_clSetKernelArg($154,2,4,$155);
+ var $157=HEAP32[(($err)>>2)];
+ var $158=$157|$156;
+ HEAP32[(($err)>>2)]=$158;
+ var $159=HEAP32[(($err)>>2)];
+ var $160=($159|0)!=0;
+ if($160){label=40;break;}else{label=41;break;}
  case 40: 
- var $171=HEAP32[(($count)>>2)];
- HEAP32[(($global)>>2)]=$171;
- var $172=$commands;
- var $173=$kernel;
- var $174=_clEnqueueNDRangeKernel($172,$173,1,0,$global,$local,0,0,0);
- HEAP32[(($err)>>2)]=$174;
- var $175=HEAP32[(($err)>>2)];
- var $176=($175|0)!=0;
- if($176){label=41;break;}else{label=42;break;}
- case 41: 
- var $178=_printf(336,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=51;break;
- case 42: 
- var $180=$commands;
- var $181=_clFinish($180);
- var $182=$commands;
- var $183=HEAP32[(($output)>>2)];
- var $184=HEAP32[(($count)>>2)];
- var $185=($184<<2);
- var $186=(($results)|0);
- var $187=$186;
- var $188=_clEnqueueReadBuffer($182,$183,1,0,$185,$187,0,0,0);
- HEAP32[(($err)>>2)]=$188;
- var $189=HEAP32[(($err)>>2)];
- var $190=($189|0)!=0;
- if($190){label=43;break;}else{label=44;break;}
- case 43: 
- var $192=HEAP32[(($err)>>2)];
- var $193=_printf(296,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$192,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $162=HEAP32[(($err)>>2)];
+ var $163=_printf(432,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$162,tempVarArgs)); STACKTOP=tempVarArgs;
  _exit(1);
  throw "Reached an unreachable!";
+ case 41: 
+ var $165=$kernel;
+ var $166=HEAP32[(($device_id)>>2)];
+ var $167=$local;
+ var $168=_clGetKernelWorkGroupInfo($165,$166,4528,4,$167,0);
+ HEAP32[(($err)>>2)]=$168;
+ var $169=HEAP32[(($err)>>2)];
+ var $170=($169|0)!=0;
+ if($170){label=42;break;}else{label=43;break;}
+ case 42: 
+ var $172=HEAP32[(($err)>>2)];
+ var $173=_printf(376,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$172,tempVarArgs)); STACKTOP=tempVarArgs;
+ _exit(1);
+ throw "Reached an unreachable!";
+ case 43: 
+ var $175=HEAP32[(($count)>>2)];
+ HEAP32[(($global)>>2)]=$175;
+ var $176=$commands;
+ var $177=$kernel;
+ var $178=_clEnqueueNDRangeKernel($176,$177,1,0,$global,$local,0,0,0);
+ HEAP32[(($err)>>2)]=$178;
+ var $179=HEAP32[(($err)>>2)];
+ var $180=($179|0)!=0;
+ if($180){label=44;break;}else{label=45;break;}
  case 44: 
+ var $182=_printf(336,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
+ $1=1;
+ label=54;break;
+ case 45: 
+ var $184=$commands;
+ var $185=_clFinish($184);
+ var $186=$commands;
+ var $187=HEAP32[(($output)>>2)];
+ var $188=HEAP32[(($count)>>2)];
+ var $189=($188<<2);
+ var $190=(($results)|0);
+ var $191=$190;
+ var $192=_clEnqueueReadBuffer($186,$187,1,0,$189,$191,0,0,0);
+ HEAP32[(($err)>>2)]=$192;
+ var $193=HEAP32[(($err)>>2)];
+ var $194=($193|0)!=0;
+ if($194){label=46;break;}else{label=47;break;}
+ case 46: 
+ var $196=HEAP32[(($err)>>2)];
+ var $197=_printf(296,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$196,tempVarArgs)); STACKTOP=tempVarArgs;
+ _exit(1);
+ throw "Reached an unreachable!";
+ case 47: 
  $correct=0;
  $i=0;
- label=45;break;
- case 45: 
- var $196=$i;
- var $197=HEAP32[(($count)>>2)];
- var $198=($196>>>0)<($197>>>0);
- if($198){label=46;break;}else{label=50;break;}
- case 46: 
- var $200=$i;
- var $201=(($results+($200<<2))|0);
- var $202=HEAPF32[(($201)>>2)];
- var $203=$i;
- var $204=(($data+($203<<2))|0);
- var $205=HEAPF32[(($204)>>2)];
- var $206=$i;
- var $207=(($data+($206<<2))|0);
- var $208=HEAPF32[(($207)>>2)];
- var $209=($205)*($208);
- var $210=($202)-($209);
- var $211=$210;
- var $212=$211<(1e-7);
- if($212){label=47;break;}else{label=48;break;}
- case 47: 
- var $214=$correct;
- var $215=((($214)+(1))|0);
- $correct=$215;
  label=48;break;
  case 48: 
- label=49;break;
+ var $200=$i;
+ var $201=HEAP32[(($count)>>2)];
+ var $202=($200>>>0)<($201>>>0);
+ if($202){label=49;break;}else{label=53;break;}
  case 49: 
- var $218=$i;
- var $219=((($218)+(1))|0);
- $i=$219;
- label=45;break;
+ var $204=$i;
+ var $205=(($results+($204<<2))|0);
+ var $206=HEAPF32[(($205)>>2)];
+ var $207=$i;
+ var $208=(($data+($207<<2))|0);
+ var $209=HEAPF32[(($208)>>2)];
+ var $210=$i;
+ var $211=(($data+($210<<2))|0);
+ var $212=HEAPF32[(($211)>>2)];
+ var $213=($209)*($212);
+ var $214=($206)-($213);
+ var $215=$214;
+ var $216=$215<(1e-7);
+ if($216){label=50;break;}else{label=51;break;}
  case 50: 
- var $221=$correct;
- var $222=HEAP32[(($count)>>2)];
- var $223=_printf(248,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$221,HEAP32[(((tempVarArgs)+(8))>>2)]=$222,tempVarArgs)); STACKTOP=tempVarArgs;
- var $224=HEAP32[(($input)>>2)];
- var $225=_clReleaseMemObject($224);
- var $226=HEAP32[(($output)>>2)];
- var $227=_clReleaseMemObject($226);
- var $228=$program;
- var $229=_clReleaseProgram($228);
- var $230=$kernel;
- var $231=_clReleaseKernel($230);
- var $232=$commands;
- var $233=_clReleaseCommandQueue($232);
- var $234=$context;
- var $235=_clReleaseContext($234);
- $1=0;
+ var $218=$correct;
+ var $219=((($218)+(1))|0);
+ $correct=$219;
  label=51;break;
  case 51: 
- var $237=$1;
- STACKTOP=sp;return $237;
+ label=52;break;
+ case 52: 
+ var $222=$i;
+ var $223=((($222)+(1))|0);
+ $i=$223;
+ label=48;break;
+ case 53: 
+ var $225=$correct;
+ var $226=HEAP32[(($count)>>2)];
+ var $227=_printf(248,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$225,HEAP32[(((tempVarArgs)+(8))>>2)]=$226,tempVarArgs)); STACKTOP=tempVarArgs;
+ var $228=HEAP32[(($input)>>2)];
+ var $229=_clReleaseMemObject($228);
+ var $230=HEAP32[(($output)>>2)];
+ var $231=_clReleaseMemObject($230);
+ var $232=$program;
+ var $233=_clReleaseProgram($232);
+ var $234=$kernel;
+ var $235=_clReleaseKernel($234);
+ var $236=$commands;
+ var $237=_clReleaseCommandQueue($236);
+ var $238=$context;
+ var $239=_clReleaseContext($238);
+ $1=0;
+ label=54;break;
+ case 54: 
+ var $241=$1;
+ STACKTOP=sp;return $241;
   default: assert(0, "bad label: " + label);
  }
 

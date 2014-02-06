@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = 'osx_qjulia.data';
-    var PACKAGE_UUID = '0aebaea1-524a-4aa4-90fa-2e5ae5e1739a';
+    var PACKAGE_UUID = '79c917db-3c09-4b8b-811e-29458637afa1';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12240,7 +12240,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;

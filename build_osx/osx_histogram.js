@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'osx_histogram.data';
-    var PACKAGE_UUID = '827ebda2-e1ab-436f-bda3-82003a4d0edb';
+    var PACKAGE_UUID = '3689a4a3-a6e1-4e59-bdcb-5249671a7210';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7098,7 +7098,7 @@ function copyTempDouble(ptr) {
   
       } else if(typeof(_info) == "string") {
   
-        if (param_name == webcl.DEVICE_VERSION) _info += " ";
+        _info += " ";
   
         if (param_value != 0) writeStringToMemory(_info, param_value);
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
