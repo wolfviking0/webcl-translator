@@ -1,5 +1,7 @@
 //#pragma OPENCL EXTENSION cl_amd_printf:enable
 
+#define mix(x,y,a) x + (y - x) * a
+
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
 
 /* Morton Code Functions - Kudos to http://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/ */
