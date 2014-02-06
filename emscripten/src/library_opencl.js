@@ -4446,7 +4446,7 @@ var LibraryOpenCL = {
         _kernel.setArg(_posarg,_array);
 
 #if CL_VALIDATOR 
-        var _sizearg = new Int32Array([arg_size]);
+        var _sizearg = new Int32Array([0,arg_size]);
 
         if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
@@ -4476,7 +4476,7 @@ var LibraryOpenCL = {
             CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
 #endif     
             var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-            var _sizearg = new Int32Array([_size]);
+            var _sizearg = new Int32Array([0,_size]);
 
             if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
@@ -4497,7 +4497,7 @@ var LibraryOpenCL = {
           _kernel.setArg(_posarg,_array);
 
 #if CL_VALIDATOR
-          var _sizearg = new Int32Array([arg_size]);
+          var _sizearg = new Int32Array([0,arg_size]);
 
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
