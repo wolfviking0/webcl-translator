@@ -94,7 +94,7 @@ def update(repo_list):
   
   for i in repo_list:
     if i.find("webcl-translator/webcl") != -1:
-      var = raw_input("Do you want force update on the webcl-translator repository ? [y]es/[n]o").strip()
+      var = raw_input("\tDo you want force update on the webcl-translator repository ? [y]es / [n]o\n").strip()
       if (var.find("y") == -1):
         continue
 
@@ -207,7 +207,7 @@ def copy(repo_list):
 @profile
 def launch(parser,options):
   global NO_THREAD
-  NO_THREAD = options.nothread
+  NO_THREAD = options.thread
 
   # Multi process 
   cores = multiprocessing.cpu_count()
@@ -321,9 +321,9 @@ def main():
                     action="store_true", dest="copy", default=False,
                     help="copy all the javascript generated after build", metavar="COPY")
   
-  parser.add_option("-n", "--no-thread",
-                    action="store_true", dest="nothread", default=False,
-                    help="disable thread build", metavar="NO_TREAD")
+  parser.add_option("-t", "--thread",
+                    action="store_true", dest="thread", default=False,
+                    help="use thread build", metavar="TREAD")
 
   parser.add_option('-r', '--repo',
                     action='callback', dest="repo", type='string', default='',

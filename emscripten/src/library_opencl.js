@@ -131,6 +131,26 @@ var LibraryOpenCL = {
 
     /**
      * Description
+     * @method cast_long
+     * @param {} arg_size
+     * @return 
+     */
+    cast_long: function(arg_size) {
+  
+      console.info("arg_size : "+arg_size);
+
+      var _sizelong = [];
+
+      _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+      _sizelong.push((arg_size & 0xFFFFFFFF));
+      
+      // var _origin = x << 32 | y;
+
+      return new Int32Array(_sizelong);
+    },
+
+    /**
+     * Description
      * @method stringType
      * @param {} pn_type
      * @return 
@@ -4446,7 +4466,7 @@ var LibraryOpenCL = {
         _kernel.setArg(_posarg,_array);
 
 #if CL_VALIDATOR 
-        var _sizearg = new Int32Array([0,arg_size]);
+        var _sizearg = CL.cast_long(arg_size);
 
         if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
@@ -4476,7 +4496,7 @@ var LibraryOpenCL = {
             CL.webclCallStackTrace(CL.cl_objects[_value]+".getInfo",[webcl.MEM_SIZE]);
 #endif     
             var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
-            var _sizearg = new Int32Array([0,_size]);
+            var _sizearg = CL.cast_long(_size);
 
             if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
@@ -4497,7 +4517,7 @@ var LibraryOpenCL = {
           _kernel.setArg(_posarg,_array);
 
 #if CL_VALIDATOR
-          var _sizearg = new Int32Array([0,arg_size]);
+          var _sizearg = CL.cast_long(arg_size);
 
           if (_kernel.val_param_argsize.indexOf(_posarg+1) >= 0) {
 #if CL_GRAB_TRACE
