@@ -49,7 +49,7 @@
             var tag = title.replace(" ","_");
             // Title
             document.write("<h3><a name=\""+tag+"\" class=\"anchor\" href=\"#"+tag+"\"><span class=\"octicon octicon-link\"></span></a>"+title+"</h3>");
-            document.write("<table border=\"1\" width=\"100%\"><tr><th></th><th></th><th colspan=2 width=\"20%\">NATIVE</th><th colspan=2  width=\"20%\">VALIDATOR</th></tr><tr><th>Title</th><th>Compatibility</th><th>CPU</th><th>GPU</th><th>CPU</th><th>GPU</th></tr>");
+            document.write("<table border=\"1\" width=\"100%\"><tr><th></th><th width=\"30%\"></th><th colspan=2 width=\"20%\">NATIVE</th><th colspan=2  width=\"20%\">VALIDATOR</th></tr><tr><th>Title</th><th>Compatibility</th><th>CPU</th><th>GPU</th><th>CPU</th><th>GPU</th></tr>");
 
             for (var i = 0; i < configuration[title].length; i++) {
               var object = configuration[title][i];
