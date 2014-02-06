@@ -153,7 +153,7 @@ def worker_build(repo,param,id):
 
 @profile
 def build(repo_list,param):
-  print "\nFunction 'build' ... "+str(repo_list)
+  print "\nFunction 'build "+param+"' ... "+str(repo_list)
   if NO_THREAD:
       for i in repo_list:
         
