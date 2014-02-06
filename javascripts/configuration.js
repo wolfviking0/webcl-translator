@@ -456,9 +456,9 @@ var configuration_pages = {
       "pages"         : "build_nvidia/oclnvidia",
       "id"            : 2,
       "gl"            : "on",
-      "cpu"           : "",
-      "gpu"           : " ",     
-      "valcpu"        : "",
+      "cpu"           : "&cpu",
+      "gpu"           : "&gpu",     
+      "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",           
     },  
     { 

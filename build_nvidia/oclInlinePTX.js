@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclInlinePTX.data';
     var REMOTE_PACKAGE_NAME = 'oclInlinePTX.data';
-    var PACKAGE_UUID = 'be73fa8c-acd0-4901-b764-31f8148f5d4d';
+    var PACKAGE_UUID = 'dce6b2c6-9b28-4b56-8dbe-0a921cbdc536';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3218,7 +3218,8 @@ function copyTempDouble(ptr) {
             // Add webcl constant for parser
             // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
             // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
-            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });          
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
             // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
             // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
             // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
@@ -3280,7 +3281,7 @@ function copyTempDouble(ptr) {
             return 'UINT16';
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
-          case 0x1302 /*webcl.UNSIGNED_LONG*/:
+          case 0x1304 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';
           case 0x1303 /*webcl.SIGNED_LONG*/:
             return 'LONG';       
@@ -3291,7 +3292,9 @@ function copyTempDouble(ptr) {
           case 0x1300 /*webcl.SAMPLER*/:
             return 'sampler_t';   
           case 0x1301 /*webcl.IMAGE2D*/:
-            return 'image2d_t';          
+            return 'image2d_t';        
+          case 0x1302 /*webcl.IMAGE3D*/:
+            return 'image3d_t';            
           default:
             if (typeof(pn_type) == "string") return 'struct';
             return 'UNKNOWN';
@@ -3302,7 +3305,7 @@ function copyTempDouble(ptr) {
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
-          _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
+          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;  
         } else if ( string.indexOf("long") >= 0 ) {
           _value = 0x1303 /*webcl.SIGNED_LONG*/;
         } else if (string.indexOf("float") >= 0 ) {
@@ -3319,6 +3322,8 @@ function copyTempDouble(ptr) {
           _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
+        } else if ( string.indexOf("image3d_t") >= 0 ) {
+          _value = 0x1302 /*webcl.IMAGE3D*/;        
         } else if ( string.indexOf("image2d_t") >= 0 ) {
           _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {

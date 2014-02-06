@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclMersenneTwister.data';
     var REMOTE_PACKAGE_NAME = 'val_oclMersenneTwister.data';
-    var PACKAGE_UUID = 'b51ecee6-9d96-4d72-a6e3-2cfbec3ea38a';
+    var PACKAGE_UUID = '4a5f84eb-f0c5-4c61-a97a-9b2f73207fc5';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3500,7 +3500,8 @@ function copyTempDouble(ptr) {
             // Add webcl constant for parser
             // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
             // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
-            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1302,writable : false });
+            // Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });          
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
             // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
             // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
             // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
@@ -3562,7 +3563,7 @@ function copyTempDouble(ptr) {
             return 'UINT16';
           case webcl.UNSIGNED_INT32:
             return 'UINT32';
-          case 0x1302 /*webcl.UNSIGNED_LONG*/:
+          case 0x1304 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';
           case 0x1303 /*webcl.SIGNED_LONG*/:
             return 'LONG';       
@@ -3573,7 +3574,9 @@ function copyTempDouble(ptr) {
           case 0x1300 /*webcl.SAMPLER*/:
             return 'sampler_t';   
           case 0x1301 /*webcl.IMAGE2D*/:
-            return 'image2d_t';          
+            return 'image2d_t';        
+          case 0x1302 /*webcl.IMAGE3D*/:
+            return 'image3d_t';            
           default:
             if (typeof(pn_type) == "string") return 'struct';
             return 'UNKNOWN';
@@ -3584,7 +3587,7 @@ function copyTempDouble(ptr) {
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
           // \todo : long ???? 
-          _value = 0x1302 /*webcl.UNSIGNED_LONG*/;  
+          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;  
         } else if ( string.indexOf("long") >= 0 ) {
           _value = 0x1303 /*webcl.SIGNED_LONG*/;
         } else if (string.indexOf("float") >= 0 ) {
@@ -3601,6 +3604,8 @@ function copyTempDouble(ptr) {
           _value = webcl.UNSIGNED_INT32;          
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
+        } else if ( string.indexOf("image3d_t") >= 0 ) {
+          _value = 0x1302 /*webcl.IMAGE3D*/;        
         } else if ( string.indexOf("image2d_t") >= 0 ) {
           _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {
@@ -4507,7 +4512,21 @@ function copyTempDouble(ptr) {
             _info = parseInt(CL.udid(_object));
           break;
           case 0x102B /*CL_DEVICE_NAME*/ :
-            _info = "WEBCL_DEVICE_NAME";
+            var _type = _object.getInfo(webcl.DEVICE_TYPE);
+            switch (_type) {
+              case webcl.DEVICE_TYPE_CPU:
+                _info = "WEBCL_DEVICE_CPU";
+              break;
+              case webcl.DEVICE_TYPE_GPU:
+                _info = "WEBCL_DEVICE_GPU";
+              break;
+              case webcl.DEVICE_TYPE_ACCELERATOR:
+                _info = "WEBCL_DEVICE_ACCELERATOR";
+              break;
+              case webcl.DEVICE_TYPE_DEFAULT:
+                _info = "WEBCL_DEVICE_DEFAULT";
+              break;
+            }
           break;
           case 0x102C /*CL_DEVICE_VENDOR*/ :
             _info = "WEBCL_DEVICE_VENDOR";
