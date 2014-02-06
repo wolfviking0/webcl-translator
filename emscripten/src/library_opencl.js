@@ -137,8 +137,6 @@ var LibraryOpenCL = {
      */
     cast_long: function(arg_size) {
   
-      console.info("arg_size : "+arg_size);
-
       var _sizelong = [];
 
       _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
