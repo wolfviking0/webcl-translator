@@ -137,8 +137,19 @@ int main(int argc, char** argv)
  
     err = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
  
-    if (err == CL_BUILD_PROGRAM_FAILURE)
-        cout<<"clBulidProgram Fail...."<<endl;
+    if (err == CL_BUILD_PROGRAM_FAILURE){
+
+		cout << "CL_BUILD_PROGRAM_FAILURE" ;
+		size_t build_log_size=sizeof(char)*900;
+		char * build_log=  new char[900];
+		size_t *build_log_ret;
+		err =  clGetProgramBuildInfo(program,device_id,CL_PROGRAM_BUILD_LOG,build_log_size,build_log,build_log_ret);
+		for(int i=0;i<(*build_log_ret)/sizeof(char);i++){
+			cout << build_log[i];
+		}
+		
+		cout << endl;
+	}
     err_check(err, "clBuildProgram");
  
     // Step 8 : Create Kernel

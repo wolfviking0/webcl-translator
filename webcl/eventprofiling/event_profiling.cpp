@@ -12,8 +12,14 @@ using namespace std;
 #else
 #include <CL/opencl.h>
 #endif
+
+#ifndef __EMSCRIPTEN__
+	#ifndef CL_SET_TYPE_POINTER
+	#define CL_SET_TYPE_POINTER(x)
+	#endif
+#endif
  
-#define DIM 300
+#define DIM 800
 #define MAX_SOURCE_SIZE (0x100000)
  
 int main(int argc, char *argv[])
