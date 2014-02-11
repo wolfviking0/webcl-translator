@@ -9,7 +9,7 @@ import time
 from optparse import OptionParser
 from functools import wraps
 
-NO_THREAD = True;
+THREAD = False;
 
 PROF_DATA = {}
 
@@ -154,7 +154,7 @@ def worker_build(repo,param,id):
 @profile
 def build(repo_list,param):
   print "\nFunction 'build "+param+"' ... "+str(repo_list)
-  if NO_THREAD:
+  if THREAD == False:
       for i in repo_list:
         
         print "\tFunction no thread 'build' ... "+str(root_repositories + i)
@@ -206,8 +206,8 @@ def copy(repo_list):
 
 @profile
 def launch(parser,options):
-  global NO_THREAD
-  NO_THREAD = options.thread
+  global THREAD
+  THREAD = options.thread
 
   # Multi process 
   cores = multiprocessing.cpu_count()
@@ -220,7 +220,7 @@ def launch(parser,options):
     if options.__dict__[item]:
       num_opt_enabled+=1
 
-  if (options.nothread):
+  if (options.thread):
     num_opt_enabled-=1
 
   if (options.debug):
