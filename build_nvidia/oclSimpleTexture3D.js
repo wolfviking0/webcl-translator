@@ -116,7 +116,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//oclSimpleTexture3D.data';
     var REMOTE_PACKAGE_NAME = 'oclSimpleTexture3D.data';
-    var PACKAGE_UUID = 'd08d54dc-c010-4867-919b-fca26a301112';
+    var PACKAGE_UUID = '05d0660a-d224-42d2-905b-6640a0a848ca';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3590,8 +3590,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

@@ -121,7 +121,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = 'osx_galaxies.data';
-    var PACKAGE_UUID = '461f2099-c3d8-47a2-a88c-61c726aa0aaf';
+    var PACKAGE_UUID = '5a5f7414-45ff-4371-a4f7-86e6315402ea';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12746,8 +12746,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclVectorAdd.data';
     var REMOTE_PACKAGE_NAME = 'oclVectorAdd.data';
-    var PACKAGE_UUID = '16549d37-fb8f-46f6-a6c0-7957f9da0180';
+    var PACKAGE_UUID = '972f5d64-c3e1-4f98-8079-2df85017682c';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3296,8 +3296,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

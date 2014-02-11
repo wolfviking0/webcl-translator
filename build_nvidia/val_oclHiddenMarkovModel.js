@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclHiddenMarkovModel.data';
     var REMOTE_PACKAGE_NAME = 'val_oclHiddenMarkovModel.data';
-    var PACKAGE_UUID = '4cd6622e-de0e-4023-a133-f59fce0c012d';
+    var PACKAGE_UUID = '722c44d9-4357-4202-b9da-e44028eee30d';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3550,8 +3550,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

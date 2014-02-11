@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_qjulia.data';
-    var PACKAGE_UUID = '70a391d7-9e2f-4c68-a1ae-e3e583f4111d';
+    var PACKAGE_UUID = 'cee0dc08-2cae-4143-88c1-7c9059a9e881';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6447,8 +6447,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

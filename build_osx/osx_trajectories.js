@@ -114,7 +114,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
     }
     var PACKAGE_NAME = '../build/osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = 'osx_trajectories.data';
-    var PACKAGE_UUID = 'be50225a-bebc-41b0-ba32-a715cc010d33';
+    var PACKAGE_UUID = 'eb71f916-f48e-4526-b4c2-618a8c99130b';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3340,8 +3340,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

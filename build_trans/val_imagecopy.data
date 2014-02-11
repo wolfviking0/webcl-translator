@@ -80,7 +80,7 @@ typedef uint _WclInitType;
 // <= General code that doesn't depend on input.
 
 
-void _wcl_write_imagef_1(_WclProgramAllocations* _wcl_allocs, image2d_t arg0, int2 arg1, float4 arg2)
+void _wcl_write_imagef_1(write_only image2d_t arg0, int2 arg1, float4 arg2)
 {
     int2 size = get_image_dim(arg0);
     if (arg1.x >= 0 && arg1.y >= 0 && arg1.x < size.x && arg1.y < size.y)
@@ -101,5 +101,5 @@ __kernel void image_copy(__read_only image2d_t image1, __write_only image2d_t im
  float4 pixel;
 
  pixel = read_imagef(image1, sampler, (int2)(xout,yout));
- _wcl_write_imagef_1(_wcl_allocs, image2, (int2)(xout,yout), pixel);
+ _wcl_write_imagef_1(image2, (int2)(xout,yout), pixel);
 }

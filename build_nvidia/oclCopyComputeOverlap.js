@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclCopyComputeOverlap.data';
     var REMOTE_PACKAGE_NAME = 'oclCopyComputeOverlap.data';
-    var PACKAGE_UUID = '91404972-dfcf-4165-84d0-c947279f89bd';
+    var PACKAGE_UUID = '6f46d5e0-33b7-43e5-b501-fedbf55a1253';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3499,8 +3499,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

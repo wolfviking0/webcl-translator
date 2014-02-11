@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclFDTD3d.data';
     var REMOTE_PACKAGE_NAME = 'val_oclFDTD3d.data';
-    var PACKAGE_UUID = '1d40b551-1e33-4251-a622-cb5278076488';
+    var PACKAGE_UUID = '4a48c396-b589-41cc-9ecc-a83f6c197290';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3607,8 +3607,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

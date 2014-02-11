@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclMultiThreads.data';
     var REMOTE_PACKAGE_NAME = 'oclMultiThreads.data';
-    var PACKAGE_UUID = '3c293a3c-b675-48c7-8992-964e0a51e39c';
+    var PACKAGE_UUID = '3bc121e8-8dfb-4077-91b6-ac994a239ed8';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3419,8 +3419,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

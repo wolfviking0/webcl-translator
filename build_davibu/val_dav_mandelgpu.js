@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_mandelgpu.data';
-    var PACKAGE_UUID = '8f082daa-4fb3-4a5b-b5d8-f3fe20db1965';
+    var PACKAGE_UUID = 'c13635a3-8391-437c-a38e-d3bb0186c49f';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -2264,8 +2264,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclMarchingCubes.data';
     var REMOTE_PACKAGE_NAME = 'val_oclMarchingCubes.data';
-    var PACKAGE_UUID = '9874f59d-47e3-41e4-a4aa-38cef2810ed0';
+    var PACKAGE_UUID = 'e84a65dd-b402-400c-9299-35f5d80ac245';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3702,8 +3702,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_histogram.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_histogram.data';
-    var PACKAGE_UUID = 'b71c2089-3d11-42c4-98d8-bcf7cf0a3185';
+    var PACKAGE_UUID = 'b8596976-b022-4eb4-b00d-db01011a4afe';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -5494,8 +5494,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

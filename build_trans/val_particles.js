@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_particles.data';
     var REMOTE_PACKAGE_NAME = 'val_particles.data';
-    var PACKAGE_UUID = 'fc7b5590-a725-431d-a8d1-597046e18bad';
+    var PACKAGE_UUID = '62314045-de7d-47bf-a4a1-bb62499c8dac';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6683,8 +6683,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

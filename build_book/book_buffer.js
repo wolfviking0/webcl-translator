@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_buffer.data';
     var REMOTE_PACKAGE_NAME = 'book_buffer.data';
-    var PACKAGE_UUID = '7552c7ab-c4f0-4811-8d69-f6c14333c17b';
+    var PACKAGE_UUID = '1a01c878-8a78-4155-a057-01040e3861d6';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3266,8 +3266,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

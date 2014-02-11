@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclQuasirandomGenerator.data';
     var REMOTE_PACKAGE_NAME = 'val_oclQuasirandomGenerator.data';
-    var PACKAGE_UUID = '44c76465-9054-4199-b278-0a46d49ab61f';
+    var PACKAGE_UUID = '534da52b-73d4-4305-a9ed-94a58cfa5666';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3543,8 +3543,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

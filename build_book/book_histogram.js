@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_histogram.data';
     var REMOTE_PACKAGE_NAME = 'book_histogram.data';
-    var PACKAGE_UUID = 'e57c06b6-992d-4ef8-a7e2-a8a16a72f829';
+    var PACKAGE_UUID = '99466321-776d-4401-a938-3d0443eda424';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -5478,8 +5478,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

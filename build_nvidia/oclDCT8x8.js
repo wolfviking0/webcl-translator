@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclDCT8x8.data';
     var REMOTE_PACKAGE_NAME = 'oclDCT8x8.data';
-    var PACKAGE_UUID = 'e149fee3-b6c2-4f6d-83c0-70e49c3bfe8f';
+    var PACKAGE_UUID = 'ed53e02e-6d6a-4ff1-8efb-e83f77eee9f1';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3308,8 +3308,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

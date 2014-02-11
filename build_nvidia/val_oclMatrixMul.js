@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclMatrixMul.data';
     var REMOTE_PACKAGE_NAME = 'val_oclMatrixMul.data';
-    var PACKAGE_UUID = 'a593ac25-dac2-4e3e-a5a3-58cba743e33f';
+    var PACKAGE_UUID = 'bee4af2c-0c19-40a6-bb9d-a3e99ea653f6';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3441,8 +3441,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

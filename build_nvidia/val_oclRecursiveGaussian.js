@@ -114,7 +114,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclRecursiveGaussian.data';
     var REMOTE_PACKAGE_NAME = 'val_oclRecursiveGaussian.data';
-    var PACKAGE_UUID = '5cbb9a0d-beb8-451e-b2fe-13ff08b5dc33';
+    var PACKAGE_UUID = '62cb0156-d757-4666-9c9e-dcaa94458e73';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3591,8 +3591,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

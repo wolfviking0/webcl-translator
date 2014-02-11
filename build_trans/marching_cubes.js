@@ -116,7 +116,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/marching_cubes.data';
     var REMOTE_PACKAGE_NAME = 'marching_cubes.data';
-    var PACKAGE_UUID = '7a9e7ed3-a085-455c-8b8d-17e6bb60a8eb';
+    var PACKAGE_UUID = 'd07908ab-d260-4899-a7b9-6a8f34014cbf';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3512,8 +3512,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

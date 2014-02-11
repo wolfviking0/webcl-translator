@@ -114,7 +114,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclTridiagonal.data';
     var REMOTE_PACKAGE_NAME = 'oclTridiagonal.data';
-    var PACKAGE_UUID = '278032d7-75d3-4973-9b5a-a0f0bf91bd1b';
+    var PACKAGE_UUID = 'b20067cb-f7c2-4a90-9874-e57d50a1605f';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3492,8 +3492,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

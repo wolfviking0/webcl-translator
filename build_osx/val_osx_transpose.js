@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_osx_transpose.data';
     var REMOTE_PACKAGE_NAME = 'val_osx_transpose.data';
-    var PACKAGE_UUID = '936a5560-8a16-4843-b248-a30647db5366';
+    var PACKAGE_UUID = '4f20bae3-b414-4f24-8e3c-12e4da197000';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -5465,8 +5465,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

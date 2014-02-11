@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclTranspose.data';
     var REMOTE_PACKAGE_NAME = 'val_oclTranspose.data';
-    var PACKAGE_UUID = '88976c1c-3e0a-43aa-8ac3-c473ee824107';
+    var PACKAGE_UUID = '60a25ba7-6c8d-48ef-b597-8cbbf0ccdfd6';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3416,8 +3416,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

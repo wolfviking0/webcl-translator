@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = 'dxtcompressor.data';
-    var PACKAGE_UUID = '9ee764b3-0a4a-4593-8d72-0cea5e1b090d';
+    var PACKAGE_UUID = '62de3b4c-a1f9-4dfc-9ca7-bc727f7fec5c';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3454,8 +3454,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

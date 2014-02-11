@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclParticles.data';
     var REMOTE_PACKAGE_NAME = 'oclParticles.data';
-    var PACKAGE_UUID = '48311723-c770-4fa0-9aec-3d49d230972d';
+    var PACKAGE_UUID = '1249fffd-909d-4aaa-9bdf-a697d6988425';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3681,8 +3681,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

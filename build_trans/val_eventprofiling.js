@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/val_eventprofiling.data';
     var REMOTE_PACKAGE_NAME = 'val_eventprofiling.data';
-    var PACKAGE_UUID = 'f9b86f2c-6dcb-4625-908f-a67035f4b952';
+    var PACKAGE_UUID = '1ae4d720-afce-48c8-aedf-bdb452fac4cb';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6494,8 +6494,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
@@ -10316,7 +10314,7 @@ function _main($argc,$argv){
  var $93;
  var $94=(($93)|0);
  var $95=_printf(1744,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$94,tempVarArgs)); STACKTOP=tempVarArgs;
- var $96=Math_ceil(2.34375);
+ var $96=Math_ceil(6.25);
  var $97=(($96)&-1);
  $t=$97;
  var $98=$t;
@@ -10358,31 +10356,31 @@ function _main($argc,$argv){
  HEAP32[(($source_size)>>2)]=$120;
  var $121=$fp;
  var $122=_fclose($121);
- var $123=_malloc(360000);
+ var $123=_malloc(2560000);
  var $124=$123;
  $MAT_A=$124;
- var $125=_malloc(360000);
+ var $125=_malloc(2560000);
  var $126=$125;
  $MAT_B=$126;
- var $127=_malloc(360000);
+ var $127=_malloc(2560000);
  var $128=$127;
  $output=$128;
  $i1=0;
  label=23;break;
  case 23: 
  var $130=$i1;
- var $131=($130|0)<300;
+ var $131=($130|0)<800;
  if($131){label=24;break;}else{label=30;break;}
  case 24: 
  $j=0;
  label=25;break;
  case 25: 
  var $134=$j;
- var $135=($134|0)<300;
+ var $135=($134|0)<800;
  if($135){label=26;break;}else{label=28;break;}
  case 26: 
  var $137=$i1;
- var $138=((($137)*(300))&-1);
+ var $138=((($137)*(800))&-1);
  var $139=$j;
  var $140=((($138)+($139))|0);
  var $141=$output;
@@ -10447,17 +10445,17 @@ function _main($argc,$argv){
  var $178=$context;
  var $$etemp$1$0=4;
  var $$etemp$1$1=0;
- var $179=_clCreateBuffer($178,$$etemp$1$0,$$etemp$1$1,360000,0,$ret);
+ var $179=_clCreateBuffer($178,$$etemp$1$0,$$etemp$1$1,2560000,0,$ret);
  HEAP32[(($Amobj)>>2)]=$179;
  var $180=$context;
  var $$etemp$2$0=4;
  var $$etemp$2$1=0;
- var $181=_clCreateBuffer($180,$$etemp$2$0,$$etemp$2$1,360000,0,$ret);
+ var $181=_clCreateBuffer($180,$$etemp$2$0,$$etemp$2$1,2560000,0,$ret);
  HEAP32[(($Bmobj)>>2)]=$181;
  var $182=$context;
  var $$etemp$3$0=1;
  var $$etemp$3$1=0;
- var $183=_clCreateBuffer($182,$$etemp$3$0,$$etemp$3$1,360000,0,$ret);
+ var $183=_clCreateBuffer($182,$$etemp$3$0,$$etemp$3$1,2560000,0,$ret);
  HEAP32[(($Cmobj)>>2)]=$183;
  $size=1;
  var $184=$_arr_;
@@ -10489,7 +10487,7 @@ function _main($argc,$argv){
  var $202=$MAT_A;
  var $203=$202;
  var $204=(($event)|0);
- var $205=_clEnqueueWriteBuffer($200,$201,1,0,360000,$203,0,0,$204);
+ var $205=_clEnqueueWriteBuffer($200,$201,1,0,2560000,$203,0,0,$204);
  HEAP32[(($ret)>>2)]=$205;
  var $206=HEAP32[(($ret)>>2)];
  var $207=($206|0)!=0;
@@ -10534,7 +10532,7 @@ function _main($argc,$argv){
  var $233=$232;
  var $234=(($event)|0);
  var $235=(($234+4)|0);
- var $236=_clEnqueueWriteBuffer($230,$231,1,0,360000,$233,0,0,$235);
+ var $236=_clEnqueueWriteBuffer($230,$231,1,0,2560000,$233,0,0,$235);
  HEAP32[(($ret)>>2)]=$236;
  var $237=HEAP32[(($ret)>>2)];
  var $238=($237|0)!=0;
@@ -10579,7 +10577,7 @@ function _main($argc,$argv){
  var $264=$263;
  var $265=(($event)|0);
  var $266=(($265+8)|0);
- var $267=_clEnqueueWriteBuffer($261,$262,1,0,360000,$264,0,0,$266);
+ var $267=_clEnqueueWriteBuffer($261,$262,1,0,2560000,$264,0,0,$266);
  HEAP32[(($ret)>>2)]=$267;
  var $268=HEAP32[(($ret)>>2)];
  var $269=($268|0)!=0;
@@ -10702,7 +10700,7 @@ function _main($argc,$argv){
  var $350=FUNCTION_TABLE[$349]($348);
  label=66;break;
  case 66: 
- HEAP32[(($width)>>2)]=300;
+ HEAP32[(($width)>>2)]=800;
  var $352=$kernel;
  var $353=$width;
  var $354=_clSetKernelArg($352,3,4,$353);
@@ -10781,7 +10779,7 @@ function _main($argc,$argv){
  var $404=$403;
  var $405=(($event)|0);
  var $406=(($405+16)|0);
- var $407=_clEnqueueReadBuffer($401,$402,1,0,360000,$404,0,0,$406);
+ var $407=_clEnqueueReadBuffer($401,$402,1,0,2560000,$404,0,0,$406);
  HEAP32[(($ret)>>2)]=$407;
  var $408=HEAP32[(($ret)>>2)];
  var $409=($408|0)!=0;

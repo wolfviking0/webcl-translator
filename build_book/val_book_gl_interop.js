@@ -101,7 +101,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 8019, 0, 0).open('GET', '/GLinterop.cl');
+      new DataRequest(0, 7980, 0, 0).open('GET', '/GLinterop.cl');
 
     var PACKAGE_PATH;
     if (typeof window === 'object') {
@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/val_book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = 'val_book_gl_interop.data';
-    var PACKAGE_UUID = '1f49c00a-ea48-41e1-8178-3436d8b8bcef';
+    var PACKAGE_UUID = 'e73e458c-7b19-4954-84fb-62d4f7694852';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -11902,8 +11902,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

@@ -114,7 +114,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclBoxFilter.data';
     var REMOTE_PACKAGE_NAME = 'val_oclBoxFilter.data';
-    var PACKAGE_UUID = 'bac46434-926f-466a-8e35-b85778caafdc';
+    var PACKAGE_UUID = 'e1e82591-bde0-411d-b256-a376c768e0fa';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3651,8 +3651,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

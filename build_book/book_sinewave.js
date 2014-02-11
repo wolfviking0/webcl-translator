@@ -113,7 +113,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../build/book_sinewave.data';
     var REMOTE_PACKAGE_NAME = 'book_sinewave.data';
-    var PACKAGE_UUID = '291d8a0d-0aae-4d65-a86a-646d4ce703ad';
+    var PACKAGE_UUID = 'c3628fa6-486c-409e-9780-677b3d62a0b8';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -12167,8 +12167,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

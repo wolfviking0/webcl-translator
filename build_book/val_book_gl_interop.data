@@ -139,7 +139,7 @@ __global float4 *_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr(__global float
 }
 
 
-void _wcl_write_imagef_0(_WclProgramAllocations* _wcl_allocs, image2d_t arg0, int2 arg1, float4 arg2)
+void _wcl_write_imagef_0(write_only image2d_t arg0, int2 arg1, float4 arg2)
 {
     int2 size = get_image_dim(arg0);
     if (arg1.x >= 0 && arg1.y >= 0 && arg1.x < size.x && arg1.y < size.y)
@@ -192,5 +192,5 @@ __kernel void init_texture_kernel(__write_only image2d_t im, int w, int h, int s
        (float)coord.y/(float)h,
        (float)abs(seq-w)/(float)w,
        1.0f};
- _wcl_write_imagef_0(_wcl_allocs,  im, coord, color );
+ _wcl_write_imagef_0( im, coord, color );
 }

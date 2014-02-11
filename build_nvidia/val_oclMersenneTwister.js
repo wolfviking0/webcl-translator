@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclMersenneTwister.data';
     var REMOTE_PACKAGE_NAME = 'val_oclMersenneTwister.data';
-    var PACKAGE_UUID = '4d9b2c68-7dbd-4312-80df-8b568b38832b';
+    var PACKAGE_UUID = '18c154a5-e410-4948-8ce5-64f87ffc0ebe';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3551,8 +3551,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

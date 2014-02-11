@@ -115,7 +115,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclDXTCompression.data';
     var REMOTE_PACKAGE_NAME = 'val_oclDXTCompression.data';
-    var PACKAGE_UUID = 'cd980474-4484-4fc2-a185-edaef7272274';
+    var PACKAGE_UUID = '6cbacbcc-6af0-4e49-a53d-bb53b0e0d2cf';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3442,8 +3442,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

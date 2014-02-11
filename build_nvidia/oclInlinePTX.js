@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//oclInlinePTX.data';
     var REMOTE_PACKAGE_NAME = 'oclInlinePTX.data';
-    var PACKAGE_UUID = 'fe27c993-4546-4958-8567-174ecab39d3f';
+    var PACKAGE_UUID = 'b6db255a-30c9-4a12-b891-4a03f8f58faf';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3269,8 +3269,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

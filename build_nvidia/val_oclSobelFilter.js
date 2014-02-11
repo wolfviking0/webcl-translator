@@ -114,7 +114,7 @@ Module['FS_createPath']('/', 'data', true, true);
     }
     var PACKAGE_NAME = '../../../../build//val_oclSobelFilter.data';
     var REMOTE_PACKAGE_NAME = 'val_oclSobelFilter.data';
-    var PACKAGE_UUID = 'e4652c0c-fc6b-4437-a958-9e39664fe7f9';
+    var PACKAGE_UUID = 'd11818bc-699f-46a5-b469-13322fe24d26';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3598,8 +3598,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

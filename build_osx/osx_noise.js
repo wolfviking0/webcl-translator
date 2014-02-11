@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = 'osx_noise.data';
-    var PACKAGE_UUID = '2f1d5e4e-74d7-4e63-a805-6743edbc4361';
+    var PACKAGE_UUID = '402a48ee-9542-43b4-940a-90b936204ab6';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6422,8 +6422,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

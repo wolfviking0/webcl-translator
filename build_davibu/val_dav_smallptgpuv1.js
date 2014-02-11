@@ -121,7 +121,7 @@ Module['FS_createPath']('/', 'scenes', true, true);
     }
     var PACKAGE_NAME = '../build/val_dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = 'val_dav_smallptgpuv1.data';
-    var PACKAGE_UUID = '9abf75b4-3b6d-4009-81ed-735c0748b980';
+    var PACKAGE_UUID = 'b145797c-63fb-4ca6-bfb8-652455ffb05a';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -2348,8 +2348,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));

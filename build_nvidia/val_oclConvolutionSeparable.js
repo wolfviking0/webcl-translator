@@ -112,7 +112,7 @@ function assert(check, msg) {
     }
     var PACKAGE_NAME = '../../../../build//val_oclConvolutionSeparable.data';
     var REMOTE_PACKAGE_NAME = 'val_oclConvolutionSeparable.data';
-    var PACKAGE_UUID = 'ad386622-60d1-4592-a0f1-fe9336990bba';
+    var PACKAGE_UUID = 'dd62d77b-44d0-4304-84e1-943243af0e74';
   
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -3396,8 +3396,6 @@ function copyTempDouble(ptr) {
         return _id;      
       },cast_long:function (arg_size) {
     
-        console.info("arg_size : "+arg_size);
-  
         var _sizelong = [];
   
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
