@@ -3,13 +3,36 @@ webcl-translator
 
 ![logo](http://wolfviking0.github.io/webcl-translator/images/webcl.png)
 
-First :
-------
+How To (OSX) :
+--------------
 
+#### Step 1 :
+
+	cd YOUR_ROOT_DIRECTORY
 	git clone https://github.com/wolfviking0/webcl-translator
 	cd webcl-translator/
 	git submodule init
 	git submodule update
+	
+#### Step 2 :
+
+	cd YOUR_ROOT_DIRECTORY
+	rm ~/.emscripten
+	rm -rf ~/.emscripten_cache
+	cd webcl-translator/emscripten
+	./emcc --help
+	open ~/.emscripten
+	set LLVM_ROOT with your llvm path
+	add LLVM_VALIDATOR_ROOT with your webcl-validator path
+	
+#### Step 3 :
+
+	cd YOUR_ROOT_DIRECTORY/webcl-translator
+	python automator.py --help
+	or
+	cd YOUR_ROOT_DIRECTORY/webcl-translator/webcl
+	make
+	
 
 General :
 ---------
