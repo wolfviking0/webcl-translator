@@ -3,6 +3,17 @@ webcl-translator
 
 ![logo](http://wolfviking0.github.io/webcl-translator/images/webcl.png)
 
+Firt :
+------
+
+git clone https://github.com/wolfviking0/webcl-translator
+
+cd webcl-translator/
+
+git submodule init
+
+git submodule update
+
 General :
 ---------
 
