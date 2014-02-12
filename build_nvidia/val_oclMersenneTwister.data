@@ -77,7 +77,18 @@ typedef struct _WclStruct{
 } mt_struct_stripped;
 
 typedef struct {
+    int _wcl_iState;
+    int _wcl_iState1;
+    int _wcl_iStateM;
+    int _wcl_iOut;
+    unsigned int _wcl_mti;
+    unsigned int _wcl_mti1;
+    unsigned int _wcl_mtiM;
+    unsigned int _wcl_x;
     unsigned int _wcl_mt[19];
+    unsigned int _wcl_matrix_a;
+    unsigned int _wcl_mask_b;
+    unsigned int _wcl_mask_c;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -221,41 +232,41 @@ __kernel void MersenneTwister(__global float* d_Rand, ulong _wcl_d_Rand_size,
     unsigned int mt[19], matrix_a, mask_b, mask_c;
 
     //Load bit-vector Mersenne Twister parameters
-    matrix_a = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).matrix_a;
-    mask_b = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).mask_b;
-    mask_c = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).mask_c;
+    _wcl_allocs->pa._wcl_matrix_a = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).matrix_a;
+    _wcl_allocs->pa._wcl_mask_b = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).mask_b;
+    _wcl_allocs->pa._wcl_mask_c = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).mask_c;
 
     //Initialize current state
     (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_global_3__u_uglobal__mt_ustruct_ustripped__Ptr((d_MT)+(globalID), 1, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global mt_struct_stripped *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global mt_struct_stripped *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global mt_struct_stripped *)_wcl_allocs->gn))).seed;
-    for (iState = 1; iState < 19; iState++)
-        (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iState), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = (1812433253U * ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iState - 1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) ^ ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iState - 1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) >> 30)) + iState) & 0xFFFFFFFFU;
+    for (_wcl_allocs->pa._wcl_iState = 1; _wcl_allocs->pa._wcl_iState < 19; _wcl_allocs->pa._wcl_iState++)
+        (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iState), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = (1812433253U * ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iState - 1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) ^ ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iState - 1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) >> 30)) + _wcl_allocs->pa._wcl_iState) & 0xFFFFFFFFU;
 
-    iState = 0;
-    mti1 = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
-    for (iOut = 0; iOut < nPerRng; iOut++) {
-        iState1 = iState + 1;
-        iStateM = iState + 9;
-        if(iState1 >= 19) iState1 -= 19;
-        if(iStateM >= 19) iStateM -= 19;
-        mti = mti1;
-        mti1 = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iState1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
-        mtiM = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iStateM), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
+    _wcl_allocs->pa._wcl_iState = 0;
+    _wcl_allocs->pa._wcl_mti1 = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
+    for (_wcl_allocs->pa._wcl_iOut = 0; _wcl_allocs->pa._wcl_iOut < nPerRng; _wcl_allocs->pa._wcl_iOut++) {
+        _wcl_allocs->pa._wcl_iState1 = _wcl_allocs->pa._wcl_iState + 1;
+        _wcl_allocs->pa._wcl_iStateM = _wcl_allocs->pa._wcl_iState + 9;
+        if(_wcl_allocs->pa._wcl_iState1 >= 19) _wcl_allocs->pa._wcl_iState1 -= 19;
+        if(_wcl_allocs->pa._wcl_iStateM >= 19) _wcl_allocs->pa._wcl_iStateM -= 19;
+        _wcl_allocs->pa._wcl_mti = _wcl_allocs->pa._wcl_mti1;
+        _wcl_allocs->pa._wcl_mti1 = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iState1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
+        _wcl_allocs->pa._wcl_mtiM = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iStateM), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
 
      // MT recurrence
-        x = (mti & 0xFFFFFFFEU) | (mti1 & 0x1U);
-     x = mtiM ^ (x >> 1) ^ ((x & 1) ? matrix_a : 0);
+        _wcl_allocs->pa._wcl_x = (_wcl_allocs->pa._wcl_mti & 0xFFFFFFFEU) | (_wcl_allocs->pa._wcl_mti1 & 0x1U);
+     _wcl_allocs->pa._wcl_x = _wcl_allocs->pa._wcl_mtiM ^ (_wcl_allocs->pa._wcl_x >> 1) ^ ((_wcl_allocs->pa._wcl_x & 1) ? _wcl_allocs->pa._wcl_matrix_a : 0);
 
-        (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(iState), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = x;
-        iState = iState1;
+        (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_mt)+(_wcl_allocs->pa._wcl_iState), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_x;
+        _wcl_allocs->pa._wcl_iState = _wcl_allocs->pa._wcl_iState1;
 
         //Tempering transformation
-        x ^= (x >> 12);
-        x ^= (x << 7) & mask_b;
-        x ^= (x << 15) & mask_c;
-        x ^= (x >> 18);
+        _wcl_allocs->pa._wcl_x ^= (_wcl_allocs->pa._wcl_x >> 12);
+        _wcl_allocs->pa._wcl_x ^= (_wcl_allocs->pa._wcl_x << 7) & _wcl_allocs->pa._wcl_mask_b;
+        _wcl_allocs->pa._wcl_x ^= (_wcl_allocs->pa._wcl_x << 15) & _wcl_allocs->pa._wcl_mask_c;
+        _wcl_allocs->pa._wcl_x ^= (_wcl_allocs->pa._wcl_x >> 18);
 
         //Convert to (0, 1] float and write to global memory
-        (*(_wcl_addr_clamp_global_3__u_uglobal__float__Ptr((d_Rand)+(globalID + iOut * 4096), 1, (__global float *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global float *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global float *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global float *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global float *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global float *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global float *)_wcl_allocs->gn))) = ((float)x + 1.0f) / 4294967296.0f;
+        (*(_wcl_addr_clamp_global_3__u_uglobal__float__Ptr((d_Rand)+(globalID + _wcl_allocs->pa._wcl_iOut * 4096), 1, (__global float *)_wcl_allocs->gl.MersenneTwister__d_Rand_min, (__global float *)_wcl_allocs->gl.MersenneTwister__d_Rand_max, (__global float *)_wcl_allocs->gl.MersenneTwister__d_MT_min, (__global float *)_wcl_allocs->gl.MersenneTwister__d_MT_max, (__global float *)_wcl_allocs->gl.BoxMuller__d_Rand_min, (__global float *)_wcl_allocs->gl.BoxMuller__d_Rand_max, (__global float *)_wcl_allocs->gn))) = ((float)_wcl_allocs->pa._wcl_x + 1.0f) / 4294967296.0f;
     }
 }
 

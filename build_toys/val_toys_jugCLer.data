@@ -81,6 +81,20 @@ struct Scene {
 };
 
 typedef struct {
+    float _wcl_floorDist;
+    int _wcl_sphereIdx;
+    float _wcl_sphereDist;
+    float3 _wcl_normal;
+    float3 _wcl_position;
+    float3 _wcl_reflected;
+    float3 _wcl_color;
+    float3 _wcl_ambientColor;
+    float _wcl_ambient;
+    float _wcl_diffuse;
+    float _wcl_highlight;
+    float _wcl_roughness;
+    float _wcl_reflection;
+    float2 _wcl_checker;
     struct Ray _wcl_ray;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
@@ -345,115 +359,115 @@ float3 trace(_WclProgramAllocations *_wcl_allocs, struct Ray ray, __global const
   rayDepth++;
 
   // test ground floor (at y = 0) first
-  floorDist = MAXFLOAT;
+  _wcl_allocs->pa._wcl_floorDist = MAXFLOAT;
   if (ray.dir.y != 0.0f) {
-   floorDist = -ray.base.y / ray.dir.y; // in terms of ray parameter t
-   if (floorDist < 0.0f) {
-    floorDist = MAXFLOAT; // floor is behind camera, so it's a miss
+   _wcl_allocs->pa._wcl_floorDist = -ray.base.y / ray.dir.y; // in terms of ray parameter t
+   if (_wcl_allocs->pa._wcl_floorDist < 0.0f) {
+    _wcl_allocs->pa._wcl_floorDist = MAXFLOAT; // floor is behind camera, so it's a miss
    }
   }
 
-  sphereIdx = -1; // remember closest valid sphere hit
-  sphereDist = MAXFLOAT; // and that hit's distance
+  _wcl_allocs->pa._wcl_sphereIdx = -1; // remember closest valid sphere hit
+  _wcl_allocs->pa._wcl_sphereDist = MAXFLOAT; // and that hit's distance
 
   for (int i = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).numSpheres - 1; i >= 0; i--) { // test all spheres
    float dist = sphIntersect(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[i]), ray);
-   if (dist < sphereDist) {
-    sphereDist = dist; // remember closest hit
-    sphereIdx = i;
+   if (dist < _wcl_allocs->pa._wcl_sphereDist) {
+    _wcl_allocs->pa._wcl_sphereDist = dist; // remember closest hit
+    _wcl_allocs->pa._wcl_sphereIdx = i;
    }
   }
 
   // initialize as default material (for floor)
-  ambient = 0.3f;
-  diffuse = 0.7f;
-  highlight = 0.0f;
-  roughness = 0.05f;
-  reflection = 0.0f;
+  _wcl_allocs->pa._wcl_ambient = 0.3f;
+  _wcl_allocs->pa._wcl_diffuse = 0.7f;
+  _wcl_allocs->pa._wcl_highlight = 0.0f;
+  _wcl_allocs->pa._wcl_roughness = 0.05f;
+  _wcl_allocs->pa._wcl_reflection = 0.0f;
 
   // did we hit anything?  
-  if (fmin(sphereDist, floorDist) >= MAXFLOAT) {
+  if (fmin(_wcl_allocs->pa._wcl_sphereDist, _wcl_allocs->pa._wcl_floorDist) >= MAXFLOAT) {
    // we missed the floor and all spheres, so it's sky dome color
-   color = (float3) (0.7f, 0.8f, 0.9f) * (1.0f - ray.dir.y)
+   _wcl_allocs->pa._wcl_color = (float3) (0.7f, 0.8f, 0.9f) * (1.0f - ray.dir.y)
      + (float3) (0.1f, 0.1f, 0.9f) * ray.dir.y;
   } else {
    // what is closer, floor or sphere?
-   if (floorDist < sphereDist) {
+   if (_wcl_allocs->pa._wcl_floorDist < _wcl_allocs->pa._wcl_sphereDist) {
     // ray did hit the floor, make checkerboard pattern
-    position = ray.base + floorDist * ray.dir; // location of floor hit
+    _wcl_allocs->pa._wcl_position = ray.base + _wcl_allocs->pa._wcl_floorDist * ray.dir; // location of floor hit
     float2 checker;
-    checker.x = 0.125f * position.x + 0.5f;
-    checker.y = 0.125f * position.z + 0.5f;
+    _wcl_allocs->pa._wcl_checker.x = 0.125f * _wcl_allocs->pa._wcl_position.x + 0.5f;
+    _wcl_allocs->pa._wcl_checker.y = 0.125f * _wcl_allocs->pa._wcl_position.z + 0.5f;
 
     // fake floor antialiasing by blurring the pattern with distance
-    float toggle = fabs(checker.x - floor(checker.x) - 0.5f);
-    toggle = fmax(toggle, fabs(checker.y - floor(checker.y) - 0.5f));
-    toggle = fmax(toggle, (float) (((int) (floor(checker.x)) ^
-      (int) (floor(checker.y))) & 1) - toggle);
-    float m = fast_distance(position, (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam.eye);
+    float toggle = fabs(_wcl_allocs->pa._wcl_checker.x - floor(_wcl_allocs->pa._wcl_checker.x) - 0.5f);
+    toggle = fmax(toggle, fabs(_wcl_allocs->pa._wcl_checker.y - floor(_wcl_allocs->pa._wcl_checker.y) - 0.5f));
+    toggle = fmax(toggle, (float) (((int) (floor(_wcl_allocs->pa._wcl_checker.x)) ^
+      (int) (floor(_wcl_allocs->pa._wcl_checker.y))) & 1) - toggle);
+    float m = fast_distance(_wcl_allocs->pa._wcl_position, (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam.eye);
     m = 100000.0f / (m * m * (16.0f * ((float) rayDepth) - 15.0f));
     float b = 0.5f * m - 0.5f;
     toggle = m * toggle - b;
     toggle = clamp(toggle, 0.0f, 1.0f);
 
-    color = (float3) (0.9f, 0.9f, 0.1f) * toggle
+    _wcl_allocs->pa._wcl_color = (float3) (0.9f, 0.9f, 0.1f) * toggle
       + (float3) (0.1f, 0.9f, 0.1f) * (1.0f - toggle);
-    normal = (float3) (0.0f, 1.0f, 0.0f); // floor normal
+    _wcl_allocs->pa._wcl_normal = (float3) (0.0f, 1.0f, 0.0f); // floor normal
    } else {
     // ray did hit a sphere
-    position = ray.base + sphereDist * ray.dir; // location of sphere hit
-    normal = sphNormal(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx]), position); // normal
+    _wcl_allocs->pa._wcl_position = ray.base + _wcl_allocs->pa._wcl_sphereDist * ray.dir; // location of sphere hit
+    _wcl_allocs->pa._wcl_normal = sphNormal(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx]), _wcl_allocs->pa._wcl_position); // normal
 
     // sphere material
-    color = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].color;
-    ambient = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].ambient;
-    diffuse = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].diffuse;
-    highlight = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].highlight;
-    roughness = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].roughness;
-    reflection = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[sphereIdx].reflection;
+    _wcl_allocs->pa._wcl_color = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].color;
+    _wcl_allocs->pa._wcl_ambient = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].ambient;
+    _wcl_allocs->pa._wcl_diffuse = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].diffuse;
+    _wcl_allocs->pa._wcl_highlight = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].highlight;
+    _wcl_allocs->pa._wcl_roughness = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].roughness;
+    _wcl_allocs->pa._wcl_reflection = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].reflection;
    }
    // light that point
 
    // cheat to avoid erroneous self intersections
-   position += 0.0008f * normal;
+   _wcl_allocs->pa._wcl_position += 0.0008f * _wcl_allocs->pa._wcl_normal;
 
    // reflected direction
-   reflected = ray.dir - ((2.0f * dot(normal, ray.dir)) * normal);
+   _wcl_allocs->pa._wcl_reflected = ray.dir - ((2.0f * dot(_wcl_allocs->pa._wcl_normal, ray.dir)) * _wcl_allocs->pa._wcl_normal);
 
    // fake ambient illumination: mix average floor and sky colors depending
    // on y component of surface normal
-   ambientColor = 1.65f * (color + 0.1f) * mix((float3) (0.4f, 0.45f, 0.9f),
+   _wcl_allocs->pa._wcl_ambientColor = 1.65f * (_wcl_allocs->pa._wcl_color + 0.1f) * mix((float3) (0.4f, 0.45f, 0.9f),
      (float3) (0.5f, 0.9f, 0.1f) * lightDir.y,
-     (float3) (0.5f - 0.5f * normal.y)) * ambient;
+     (float3) (0.5f - 0.5f * _wcl_allocs->pa._wcl_normal.y)) * _wcl_allocs->pa._wcl_ambient;
 
    float brightness = 0.0f;
    float cosAngle = 0.0f; // temporary for diffuse and highlight
 
    if (!shadow(_wcl_allocs, (struct Ray) {
-     position, lightDir}, scene)) {
+     _wcl_allocs->pa._wcl_position, lightDir}, scene)) {
    // if light source is visible, add its diffuse contribution
-   cosAngle = dot(lightDir, normal);
+   cosAngle = dot(lightDir, _wcl_allocs->pa._wcl_normal);
    cosAngle = fmax(cosAngle, 0.0f); // only if we're facing the light
-   brightness = diffuse*cosAngle;
+   brightness = _wcl_allocs->pa._wcl_diffuse*cosAngle;
 
    // add specular highlight, i.e. a reflection of the light source	
-   cosAngle = dot(reflected, lightDir);
+   cosAngle = dot(_wcl_allocs->pa._wcl_reflected, lightDir);
    cosAngle = fmax(cosAngle, 0.0f); // if reflection is towards light
 
    // resize highlight (shrinks with increasing factor)
-   cosAngle = ((cosAngle - 1.0f) / roughness) + 1.0f;
+   cosAngle = ((cosAngle - 1.0f) / _wcl_allocs->pa._wcl_roughness) + 1.0f;
    cosAngle = fmax(cosAngle, 0.0f); // only if inside the highlight
-   cosAngle = cosAngle * cosAngle * highlight;
+   cosAngle = cosAngle * cosAngle * _wcl_allocs->pa._wcl_highlight;
   }
    // ambient and diffuse contributions + highlight
-   color = (color * brightness) + ambientColor + (float3) (cosAngle);
+   _wcl_allocs->pa._wcl_color = (_wcl_allocs->pa._wcl_color * brightness) + _wcl_allocs->pa._wcl_ambientColor + (float3) (cosAngle);
   }
-  result += color * weight; // add weighted contribution of (reflected) ray
-  weight *= reflection; // diminish weight of further reflections
+  result += _wcl_allocs->pa._wcl_color * weight; // add weighted contribution of (reflected) ray
+  weight *= _wcl_allocs->pa._wcl_reflection; // diminish weight of further reflections
 
   // follow the reflected ray next
-  ray.base = position;
-  ray.dir = reflected;
+  ray.base = _wcl_allocs->pa._wcl_position;
+  ray.dir = _wcl_allocs->pa._wcl_reflected;
  }
 
  return result;

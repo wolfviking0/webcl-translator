@@ -85,6 +85,10 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (32/CHAR_BIT)
 typedef struct {
+    float _wcl_z;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
     __global float *QuasirandomGenerator__d_Output_min;
     __global float *QuasirandomGenerator__d_Output_max;
     __global float *InverseCND__d_Output_min;
@@ -101,6 +105,8 @@ typedef struct {
     __global uint *gn;
     _WclConstantLimits cl;
     __constant uint *cn;
+    _WclPrivates pa;
+    __private uint *pn;
 } _WclProgramAllocations;
 
 __constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
@@ -203,11 +209,16 @@ __kernel void QuasirandomGenerator(__global float *d_Output, ulong _wcl_d_Output
         { &d_Output[0], &d_Output[_wcl_d_Output_size],0, 0 },
         0,
         { &c_Table[0], &c_Table[_wcl_c_Table_size] },
-        _wcl_constant_null
+        _wcl_constant_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.QuasirandomGenerator__d_Output_min, _wcl_allocs->gl.QuasirandomGenerator__d_Output_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.InverseCND__d_Output_min, _wcl_allocs->gl.InverseCND__d_Output_max, (__global uint*)0));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     unsigned int globalID_x = get_global_id(0);
     unsigned int localID_y = get_local_id(1);
@@ -276,19 +287,19 @@ float MoroInvCNDgpu(_WclProgramAllocations *_wcl_allocs, unsigned int x)
     // Main body of the bell curve for |p| < 0.42
     if (p2 > -0.42f)
     {
-        z = p2 * p2;
-        z = p2 * (((a4 * z + a3) * z + a2) * z + a1) / ((((b4 * z + b3) * z + b2) * z + b1) * z + 1.0f);
+        _wcl_allocs->pa._wcl_z = p2 * p2;
+        _wcl_allocs->pa._wcl_z = p2 * (((a4 * _wcl_allocs->pa._wcl_z + a3) * _wcl_allocs->pa._wcl_z + a2) * _wcl_allocs->pa._wcl_z + a1) / ((((b4 * _wcl_allocs->pa._wcl_z + b3) * _wcl_allocs->pa._wcl_z + b2) * _wcl_allocs->pa._wcl_z + b1) * _wcl_allocs->pa._wcl_z + 1.0f);
     }
     // Special case (Chebychev) for tail
     else
     {
-        z = log(-log(p1));
-        z = - (c1 + z * (c2 + z * (c3 + z * (c4 + z * (c5 + z * (c6 + z * (c7 + z * (c8 + z * c9))))))));
+        _wcl_allocs->pa._wcl_z = log(-log(p1));
+        _wcl_allocs->pa._wcl_z = - (c1 + _wcl_allocs->pa._wcl_z * (c2 + _wcl_allocs->pa._wcl_z * (c3 + _wcl_allocs->pa._wcl_z * (c4 + _wcl_allocs->pa._wcl_z * (c5 + _wcl_allocs->pa._wcl_z * (c6 + _wcl_allocs->pa._wcl_z * (c7 + _wcl_allocs->pa._wcl_z * (c8 + _wcl_allocs->pa._wcl_z * c9))))))));
     }
 
     // If the original input (x) was in the top half of the range, reflect
     // to get the positive side of the bell curve
-    return negate ? -z : z;
+    return negate ? -_wcl_allocs->pa._wcl_z : _wcl_allocs->pa._wcl_z;
 }
 
 __kernel void InverseCND(__global float *d_Output, ulong _wcl_d_Output_size,
@@ -302,11 +313,16 @@ __kernel void InverseCND(__global float *d_Output, ulong _wcl_d_Output_size,
         { 0, 0,&d_Output[0], &d_Output[_wcl_d_Output_size] },
         0,
         { 0, 0 },
-        _wcl_constant_null
+        _wcl_constant_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.QuasirandomGenerator__d_Output_min, _wcl_allocs->gl.QuasirandomGenerator__d_Output_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.InverseCND__d_Output_min, _wcl_allocs->gl.InverseCND__d_Output_max, (__global uint*)0));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     const unsigned int distance = ((unsigned int)-1) / (pathN * nDevice + 1);
     const unsigned int globalID = get_global_id(0);

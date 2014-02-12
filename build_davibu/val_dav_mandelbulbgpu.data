@@ -84,8 +84,13 @@ typedef struct _Wcl3Struct {
 } RenderingConfig;
 
 typedef struct {
+    float _wcl_dist;
     const __global Camera *_wcl_camera;
+    float4 _wcl_diffuse;
+    float4 _wcl_n;
+    float4 _wcl_color;
     float4 _wcl_hitPoint;
+    float _wcl_2_dist;
     float _wcl_tmin;
     float _wcl_tmax;
     uint _wcl_steps;
@@ -278,19 +283,19 @@ const __global float *_wcl_addr_clamp_global_2_const___u_uglobal__float__Ptr(con
 
  uint s = 0;
  do {
-  dist = IterateIntersect(_wcl_allocs, r0, c, maxIterations);
-  distDone += dist;
+  _wcl_allocs->pa._wcl_dist = IterateIntersect(_wcl_allocs, r0, c, maxIterations);
+  distDone += _wcl_allocs->pa._wcl_dist;
 
-  if (dist <= 0.f)
+  if (_wcl_allocs->pa._wcl_dist <= 0.f)
    break;
 
-  r0 += eyeRayDir * dist;
+  r0 += eyeRayDir * _wcl_allocs->pa._wcl_dist;
   s++;
- } while ((dist > epsilon) && (distDone < maxDist));
+ } while ((_wcl_allocs->pa._wcl_dist > epsilon) && (distDone < maxDist));
 
  (*(_wcl_addr_clamp_private_1_float4__Ptr((hitPoint), 1, (float4 *)&_wcl_allocs->pa, (float4 *)(&_wcl_allocs->pa + 1), (float4 *)_wcl_allocs->pn))) = r0;
  (*(_wcl_addr_clamp_private_1_uint__Ptr((steps), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = s;
- return dist;
+ return _wcl_allocs->pa._wcl_dist;
 }
 
 
@@ -458,56 +463,56 @@ __kernel void MandelbulbGPU(
 
   uint steps;
   float4 rayOrig = eyeRayOrig + eyeRayDir * (float4)_wcl_allocs->pa._wcl_tmin;
-  dist = IntersectBulb(_wcl_allocs, rayOrig, eyeRayDir, mu, maxIterations,
+  _wcl_allocs->pa._wcl_2_dist = IntersectBulb(_wcl_allocs, rayOrig, eyeRayDir, mu, maxIterations,
     epsilon, _wcl_allocs->pa._wcl_tmax - _wcl_allocs->pa._wcl_tmin, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_steps);
 
-  if (dist <= epsilon) {
+  if (_wcl_allocs->pa._wcl_2_dist <= epsilon) {
 
-   diffuse = (float4) (1.f, 0.35f, 0.15f, 0.f);
-   n = NormEstimate(_wcl_allocs, _wcl_allocs->pa._wcl_hitPoint, mu, dist, maxIterations);
+   _wcl_allocs->pa._wcl_diffuse = (float4) (1.f, 0.35f, 0.15f, 0.f);
+   _wcl_allocs->pa._wcl_n = NormEstimate(_wcl_allocs, _wcl_allocs->pa._wcl_hitPoint, mu, _wcl_allocs->pa._wcl_2_dist, maxIterations);
   } else
-   dist = -1.f;
+   _wcl_allocs->pa._wcl_2_dist = -1.f;
  } else
-  dist = -1.f;
+  _wcl_allocs->pa._wcl_2_dist = -1.f;
 
 
 
 
 
- if (dist < 0.f) {
-  dist = IntersectFloorSphere(_wcl_allocs, eyeRayOrig, eyeRayDir);
+ if (_wcl_allocs->pa._wcl_2_dist < 0.f) {
+  _wcl_allocs->pa._wcl_2_dist = IntersectFloorSphere(_wcl_allocs, eyeRayOrig, eyeRayDir);
 
-  if (dist >= 0.f) {
+  if (_wcl_allocs->pa._wcl_2_dist >= 0.f) {
 
-   _wcl_allocs->pa._wcl_hitPoint = eyeRayOrig + eyeRayDir * (float4)dist;
-   n = _wcl_allocs->pa._wcl_hitPoint - ((float4)(0.f, -1000.f - 2.f, 0.f, 0.f));
-   n = normalize(n);
+   _wcl_allocs->pa._wcl_hitPoint = eyeRayOrig + eyeRayDir * (float4)_wcl_allocs->pa._wcl_2_dist;
+   _wcl_allocs->pa._wcl_n = _wcl_allocs->pa._wcl_hitPoint - ((float4)(0.f, -1000.f - 2.f, 0.f, 0.f));
+   _wcl_allocs->pa._wcl_n = normalize(_wcl_allocs->pa._wcl_n);
 
    const int ix = (_wcl_allocs->pa._wcl_hitPoint.x > 0.f) ? _wcl_allocs->pa._wcl_hitPoint.x : (1.f - _wcl_allocs->pa._wcl_hitPoint.x);
    const int iz = (_wcl_allocs->pa._wcl_hitPoint.z > 0.f) ? _wcl_allocs->pa._wcl_hitPoint.z : (1.f - _wcl_allocs->pa._wcl_hitPoint.z);
    if ((ix + iz) % 2)
-    diffuse = (float4) (0.75f, 0.75f, 0.75f, 0.f);
+    _wcl_allocs->pa._wcl_diffuse = (float4) (0.75f, 0.75f, 0.75f, 0.f);
    else
-    diffuse = (float4) (0.75f, 0.f, 0.f, 0.f);
+    _wcl_allocs->pa._wcl_diffuse = (float4) (0.75f, 0.f, 0.f, 0.f);
    useAO = 0;
   } else {
 
-   color = (float4)(0.f, 0.1f, 0.3f, 0.f);
+   _wcl_allocs->pa._wcl_color = (float4)(0.f, 0.1f, 0.3f, 0.f);
   }
  } else {
 
-  color = (float4)(0.f, 0.1f, 0.3f, 0.f);
+  _wcl_allocs->pa._wcl_color = (float4)(0.f, 0.1f, 0.3f, 0.f);
  }
 
 
 
 
 
- if (dist >= 0.f) {
+ if (_wcl_allocs->pa._wcl_2_dist >= 0.f) {
   float shadowFactor = 1.f;
   if ((*(_wcl_addr_clamp_global_2_const___u_uglobal__RenderingConfig__Ptr((config), 1, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_min, (const __global RenderingConfig *)_wcl_allocs->gl.MandelbulbGPU__config_max, (const __global RenderingConfig *)_wcl_allocs->gn))).enableShadow) {
    float4 L = normalize(light - _wcl_allocs->pa._wcl_hitPoint);
-   float4 rO = _wcl_allocs->pa._wcl_hitPoint + n * 1e-2f;
+   float4 rO = _wcl_allocs->pa._wcl_hitPoint + _wcl_allocs->pa._wcl_n * 1e-2f;
    float4 shadowHitPoint;
 
 
@@ -532,7 +537,7 @@ __kernel void MandelbulbGPU(
 
 
 
-  color = Phong(_wcl_allocs, light, eyeRayOrig, _wcl_allocs->pa._wcl_hitPoint, n, diffuse) * shadowFactor;
+  _wcl_allocs->pa._wcl_color = Phong(_wcl_allocs, light, eyeRayOrig, _wcl_allocs->pa._wcl_hitPoint, _wcl_allocs->pa._wcl_n, _wcl_allocs->pa._wcl_diffuse) * shadowFactor;
  }
 
 
@@ -540,14 +545,14 @@ __kernel void MandelbulbGPU(
 
 
  int offset = 3 * (x + y * width);
- color = clamp(color, (float4)(0.f, 0.f ,0.f, 0.f), (float4)(1.f, 1.f ,1.f, 0.f));
+ _wcl_allocs->pa._wcl_color = clamp(_wcl_allocs->pa._wcl_color, (float4)(0.f, 0.f ,0.f, 0.f), (float4)(1.f, 1.f ,1.f, 0.f));
  if (enableAccumulation) {
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s0;
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s1;
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += color.s2;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += _wcl_allocs->pa._wcl_color.s0;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += _wcl_allocs->pa._wcl_color.s1;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) += _wcl_allocs->pa._wcl_color.s2;
  } else {
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s0;
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s1;
-  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = color.s2;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_color.s0;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset++), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_color.s1;
+  (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((pixels)+(offset), 1, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__pixels_max, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_min, (__global float *)_wcl_allocs->gl.MandelbulbGPU__config_max, (__global float *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_color.s2;
  }
 }

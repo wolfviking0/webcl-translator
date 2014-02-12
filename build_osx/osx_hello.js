@@ -509,6 +509,8 @@ var Runtime = {
 }
 
 
+Module['Runtime'] = Runtime;
+
 
 
 
@@ -1130,6 +1132,9 @@ function preMain() {
 }
 
 function exitRuntime() {
+  if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+    Module.printErr('Exiting runtime. Any attempt to access the compiled C code may fail from now. If you want to keep the runtime alive, set Module["noExitRuntime"] = true or build with -s NO_EXIT_RUNTIME=1');
+  }
   callRuntimeCallbacks(__ATEXIT__);
 }
 
@@ -1227,14 +1232,14 @@ function writeAsciiToMemory(str, buffer, dontAddNull) {
 }
 Module['writeAsciiToMemory'] = writeAsciiToMemory;
 
-function unSign(value, bits, ignore, sig) {
+function unSign(value, bits, ignore) {
   if (value >= 0) {
     return value;
   }
   return bits <= 32 ? 2*Math.abs(1 << (bits-1)) + value // Need some trickery, since if bits == 32, we are right at the limit of the bits JS uses in bitshifts
                     : Math.pow(2, bits)         + value;
 }
-function reSign(value, bits, ignore, sig) {
+function reSign(value, bits, ignore) {
   if (value <= 0) {
     return value;
   }
@@ -1985,7 +1990,8 @@ function copyTempDouble(ptr) {
   
   var IDBFS={dbs:{},indexedDB:function () {
         return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-      },DB_VERSION:20,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
+      },DB_VERSION:21,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
+        // reuse all of the core MEMFS functionality
         return MEMFS.mount.apply(null, arguments);
       },syncfs:function (mount, populate, callback) {
         IDBFS.getLocalSet(mount, function(err, local) {
@@ -2000,102 +2006,45 @@ function copyTempDouble(ptr) {
             IDBFS.reconcile(src, dst, callback);
           });
         });
-      },reconcile:function (src, dst, callback) {
-        var total = 0;
-  
-        var create = {};
-        for (var key in src.files) {
-          if (!src.files.hasOwnProperty(key)) continue;
-          var e = src.files[key];
-          var e2 = dst.files[key];
-          if (!e2 || e.timestamp > e2.timestamp) {
-            create[key] = e;
-            total++;
-          }
+      },getDB:function (name, callback) {
+        // check the cache first
+        var db = IDBFS.dbs[name];
+        if (db) {
+          return callback(null, db);
         }
   
-        var remove = {};
-        for (var key in dst.files) {
-          if (!dst.files.hasOwnProperty(key)) continue;
-          var e = dst.files[key];
-          var e2 = src.files[key];
-          if (!e2) {
-            remove[key] = e;
-            total++;
-          }
+        var req;
+        try {
+          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        } catch (e) {
+          return callback(e);
         }
+        req.onupgradeneeded = function(e) {
+          var db = e.target.result;
+          var transaction = e.target.transaction;
   
-        if (!total) {
-          // early out
-          return callback(null);
-        }
+          var fileStore;
   
-        var completed = 0;
-        function done(err) {
-          if (err) return callback(err);
-          if (++completed >= total) {
-            return callback(null);
+          if (db.objectStoreNames.contains(IDBFS.DB_STORE_NAME)) {
+            fileStore = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          } else {
+            fileStore = db.createObjectStore(IDBFS.DB_STORE_NAME);
           }
+  
+          fileStore.createIndex('timestamp', 'timestamp', { unique: false });
         };
+        req.onsuccess = function() {
+          db = req.result;
   
-        // create a single transaction to handle and IDB reads / writes we'll need to do
-        var db = src.type === 'remote' ? src.db : dst.db;
-        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
-        transaction.onerror = function transaction_onerror() { callback(this.error); };
-        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
-  
-        for (var path in create) {
-          if (!create.hasOwnProperty(path)) continue;
-          var entry = create[path];
-  
-          if (dst.type === 'local') {
-            // save file to local
-            try {
-              if (FS.isDir(entry.mode)) {
-                FS.mkdir(path, entry.mode);
-              } else if (FS.isFile(entry.mode)) {
-                var stream = FS.open(path, 'w+', 0666);
-                FS.write(stream, entry.contents, 0, entry.contents.length, 0, true /* canOwn */);
-                FS.close(stream);
-              }
-              done(null);
-            } catch (e) {
-              return done(e);
-            }
-          } else {
-            // save file to IDB
-            var req = store.put(entry, path);
-            req.onsuccess = function req_onsuccess() { done(null); };
-            req.onerror = function req_onerror() { done(this.error); };
-          }
-        }
-  
-        for (var path in remove) {
-          if (!remove.hasOwnProperty(path)) continue;
-          var entry = remove[path];
-  
-          if (dst.type === 'local') {
-            // delete file from local
-            try {
-              if (FS.isDir(entry.mode)) {
-                // TODO recursive delete?
-                FS.rmdir(path);
-              } else if (FS.isFile(entry.mode)) {
-                FS.unlink(path);
-              }
-              done(null);
-            } catch (e) {
-              return done(e);
-            }
-          } else {
-            // delete file from IDB
-            var req = store.delete(path);
-            req.onsuccess = function req_onsuccess() { done(null); };
-            req.onerror = function req_onerror() { done(this.error); };
-          }
-        }
+          // add to the cache
+          IDBFS.dbs[name] = db;
+          callback(null, db);
+        };
+        req.onerror = function() {
+          callback(this.error);
+        };
       },getLocalSet:function (mount, callback) {
-        var files = {};
+        var entries = {};
   
         function isRealDir(p) {
           return p !== '.' && p !== '..';
@@ -2106,80 +2055,183 @@ function copyTempDouble(ptr) {
           }
         };
   
-        var check = FS.readdir(mount.mountpoint)
-          .filter(isRealDir)
-          .map(toAbsolute(mount.mountpoint));
+        var check = FS.readdir(mount.mountpoint).filter(isRealDir).map(toAbsolute(mount.mountpoint));
   
         while (check.length) {
           var path = check.pop();
-          var stat, node;
+          var stat;
   
           try {
-            var lookup = FS.lookupPath(path);
-            node = lookup.node;
             stat = FS.stat(path);
           } catch (e) {
             return callback(e);
           }
   
           if (FS.isDir(stat.mode)) {
-            check.push.apply(check, FS.readdir(path)
-              .filter(isRealDir)
-              .map(toAbsolute(path)));
-  
-            files[path] = { mode: stat.mode, timestamp: stat.mtime };
-          } else if (FS.isFile(stat.mode)) {
-            files[path] = { contents: node.contents, mode: stat.mode, timestamp: stat.mtime };
-          } else {
-            return callback(new Error('node type not supported'));
+            check.push.apply(check, FS.readdir(path).filter(isRealDir).map(toAbsolute(path)));
           }
+  
+          entries[path] = { timestamp: stat.mtime };
         }
   
-        return callback(null, { type: 'local', files: files });
-      },getDB:function (name, callback) {
-        // look it up in the cache
-        var db = IDBFS.dbs[name];
-        if (db) {
-          return callback(null, db);
-        }
-        var req;
-        try {
-          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
-        } catch (e) {
-          return onerror(e);
-        }
-        req.onupgradeneeded = function req_onupgradeneeded() {
-          db = req.result;
-          db.createObjectStore(IDBFS.DB_STORE_NAME);
-        };
-        req.onsuccess = function req_onsuccess() {
-          db = req.result;
-          // add to the cache
-          IDBFS.dbs[name] = db;
-          callback(null, db);
-        };
-        req.onerror = function req_onerror() {
-          callback(this.error);
-        };
+        return callback(null, { type: 'local', entries: entries });
       },getRemoteSet:function (mount, callback) {
-        var files = {};
+        var entries = {};
   
         IDBFS.getDB(mount.mountpoint, function(err, db) {
           if (err) return callback(err);
   
           var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
-          transaction.onerror = function transaction_onerror() { callback(this.error); };
+          transaction.onerror = function() { callback(this.error); };
   
           var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
-          store.openCursor().onsuccess = function store_openCursor_onsuccess(event) {
+          var index = store.index('timestamp');
+  
+          index.openKeyCursor().onsuccess = function(event) {
             var cursor = event.target.result;
+  
             if (!cursor) {
-              return callback(null, { type: 'remote', db: db, files: files });
+              return callback(null, { type: 'remote', db: db, entries: entries });
             }
   
-            files[cursor.key] = cursor.value;
+            entries[cursor.primaryKey] = { timestamp: cursor.key };
+  
             cursor.continue();
           };
+        });
+      },loadLocalEntry:function (path, callback) {
+        var stat, node;
+  
+        try {
+          var lookup = FS.lookupPath(path);
+          node = lookup.node;
+          stat = FS.stat(path);
+        } catch (e) {
+          return callback(e);
+        }
+  
+        if (FS.isDir(stat.mode)) {
+          return callback(null, { timestamp: stat.mtime, mode: stat.mode });
+        } else if (FS.isFile(stat.mode)) {
+          return callback(null, { timestamp: stat.mtime, mode: stat.mode, contents: node.contents });
+        } else {
+          return callback(new Error('node type not supported'));
+        }
+      },storeLocalEntry:function (path, entry, callback) {
+        try {
+          if (FS.isDir(entry.mode)) {
+            FS.mkdir(path, entry.mode);
+          } else if (FS.isFile(entry.mode)) {
+            FS.writeFile(path, entry.contents, { encoding: 'binary', canOwn: true });
+          } else {
+            return callback(new Error('node type not supported'));
+          }
+  
+          FS.utime(path, entry.timestamp, entry.timestamp);
+        } catch (e) {
+          return callback(e);
+        }
+  
+        callback(null);
+      },removeLocalEntry:function (path, callback) {
+        try {
+          var lookup = FS.lookupPath(path);
+          var stat = FS.stat(path);
+  
+          if (FS.isDir(stat.mode)) {
+            FS.rmdir(path);
+          } else if (FS.isFile(stat.mode)) {
+            FS.unlink(path);
+          }
+        } catch (e) {
+          return callback(e);
+        }
+  
+        callback(null);
+      },loadRemoteEntry:function (store, path, callback) {
+        var req = store.get(path);
+        req.onsuccess = function(event) { callback(null, event.target.result); };
+        req.onerror = function() { callback(this.error); };
+      },storeRemoteEntry:function (store, path, entry, callback) {
+        var req = store.put(entry, path);
+        req.onsuccess = function() { callback(null); };
+        req.onerror = function() { callback(this.error); };
+      },removeRemoteEntry:function (store, path, callback) {
+        var req = store.delete(path);
+        req.onsuccess = function() { callback(null); };
+        req.onerror = function() { callback(this.error); };
+      },reconcile:function (src, dst, callback) {
+        var total = 0;
+  
+        var create = [];
+        Object.keys(src.entries).forEach(function (key) {
+          var e = src.entries[key];
+          var e2 = dst.entries[key];
+          if (!e2 || e.timestamp > e2.timestamp) {
+            create.push(key);
+            total++;
+          }
+        });
+  
+        var remove = [];
+        Object.keys(dst.entries).forEach(function (key) {
+          var e = dst.entries[key];
+          var e2 = src.entries[key];
+          if (!e2) {
+            remove.push(key);
+            total++;
+          }
+        });
+  
+        if (!total) {
+          return callback(null);
+        }
+  
+        var errored = false;
+        var completed = 0;
+        var db = src.type === 'remote' ? src.db : dst.db;
+        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+  
+        function done(err) {
+          if (err) {
+            if (!done.errored) {
+              done.errored = true;
+              return callback(err);
+            }
+            return;
+          }
+          if (++completed >= total) {
+            return callback(null);
+          }
+        };
+  
+        transaction.onerror = function() { done(this.error); };
+  
+        // sort paths in ascending order so directory entries are created
+        // before the files inside them
+        create.sort().forEach(function (path) {
+          if (dst.type === 'local') {
+            IDBFS.loadRemoteEntry(store, path, function (err, entry) {
+              if (err) return done(err);
+              IDBFS.storeLocalEntry(path, entry, done);
+            });
+          } else {
+            IDBFS.loadLocalEntry(path, function (err, entry) {
+              if (err) return done(err);
+              IDBFS.storeRemoteEntry(store, path, entry, done);
+            });
+          }
+        });
+  
+        // sort paths in descending order so files are deleted before their
+        // parent directories
+        remove.sort().reverse().forEach(function(path) {
+          if (dst.type === 'local') {
+            IDBFS.removeLocalEntry(path, done);
+          } else {
+            IDBFS.removeRemoteEntry(store, path, done);
+          }
         });
       }};
   
@@ -2421,12 +2473,22 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,mounts:[],devices:[null],streams:[null],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,genericErrors:{},handleFSError:function (e) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,genericErrors:{},handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
         return ___setErrNo(e.errno);
       },lookupPath:function (path, opts) {
         path = PATH.resolve(FS.cwd(), path);
-        opts = opts || { recurse_count: 0 };
+        opts = opts || {};
+  
+        var defaults = {
+          follow_mount: true,
+          recurse_count: 0
+        };
+        for (var key in defaults) {
+          if (opts[key] === undefined) {
+            opts[key] = defaults[key];
+          }
+        }
   
         if (opts.recurse_count > 8) {  // max recursive lookup of 8
           throw new FS.ErrnoError(ERRNO_CODES.ELOOP);
@@ -2453,10 +2515,11 @@ function copyTempDouble(ptr) {
   
           // jump to the mount's root node if this is a mountpoint
           if (FS.isMountpoint(current)) {
-            current = current.mount.root;
+            if (!islast || (islast && opts.follow_mount)) {
+              current = current.mounted.root;
+            }
           }
   
-          // follow symlinks
           // by default, lookupPath will not follow a symlink if it is the final path component.
           // setting opts.follow = true will override this behavior.
           if (!islast || opts.follow) {
@@ -2530,27 +2593,25 @@ function copyTempDouble(ptr) {
       },createNode:function (parent, name, mode, rdev) {
         if (!FS.FSNode) {
           FS.FSNode = function(parent, name, mode, rdev) {
+            if (!parent) {
+              parent = this;  // root node sets parent to itself
+            }
+            this.parent = parent;
+            this.mount = parent.mount;
+            this.mounted = null;
             this.id = FS.nextInode++;
             this.name = name;
             this.mode = mode;
             this.node_ops = {};
             this.stream_ops = {};
             this.rdev = rdev;
-            this.parent = null;
-            this.mount = null;
-            if (!parent) {
-              parent = this;  // root node sets parent to itself
-            }
-            this.parent = parent;
-            this.mount = parent.mount;
-            FS.hashAddNode(this);
           };
+  
+          FS.FSNode.prototype = {};
   
           // compatibility
           var readMode = 292 | 73;
           var writeMode = 146;
-  
-          FS.FSNode.prototype = {};
   
           // NOTE we must use Object.defineProperties instead of individual calls to
           // Object.defineProperty in order to make closure compiler happy
@@ -2571,13 +2632,18 @@ function copyTempDouble(ptr) {
             },
           });
         }
-        return new FS.FSNode(parent, name, mode, rdev);
+  
+        var node = new FS.FSNode(parent, name, mode, rdev);
+  
+        FS.hashAddNode(node);
+  
+        return node;
       },destroyNode:function (node) {
         FS.hashRemoveNode(node);
       },isRoot:function (node) {
         return node === node.parent;
       },isMountpoint:function (node) {
-        return node.mounted;
+        return !!node.mounted;
       },isFile:function (mode) {
         return (mode & 61440) === 32768;
       },isDir:function (mode) {
@@ -2665,7 +2731,7 @@ function copyTempDouble(ptr) {
         }
         return FS.nodePermissions(node, FS.flagsToPermissionString(flags));
       },MAX_OPEN_FDS:4096,nextfd:function (fd_start, fd_end) {
-        fd_start = fd_start || 1;
+        fd_start = fd_start || 0;
         fd_end = fd_end || FS.MAX_OPEN_FDS;
         for (var fd = fd_start; fd <= fd_end; fd++) {
           if (!FS.streams[fd]) {
@@ -2712,6 +2778,10 @@ function copyTempDouble(ptr) {
         return stream;
       },closeStream:function (fd) {
         FS.streams[fd] = null;
+      },getStreamFromPtr:function (ptr) {
+        return FS.streams[ptr - 1];
+      },getPtrForStream:function (stream) {
+        return stream ? stream.fd + 1 : 0;
       },chrdev_stream_ops:{open:function (stream) {
           var device = FS.getDevice(stream.node.rdev);
           // override node's stream ops with the device's
@@ -2732,60 +2802,128 @@ function copyTempDouble(ptr) {
         FS.devices[dev] = { stream_ops: ops };
       },getDevice:function (dev) {
         return FS.devices[dev];
+      },getMounts:function (mount) {
+        var mounts = [];
+        var check = [mount];
+  
+        while (check.length) {
+          var m = check.pop();
+  
+          mounts.push(m);
+  
+          check.push.apply(check, m.mounts);
+        }
+  
+        return mounts;
       },syncfs:function (populate, callback) {
         if (typeof(populate) === 'function') {
           callback = populate;
           populate = false;
         }
   
+        var mounts = FS.getMounts(FS.root.mount);
         var completed = 0;
-        var total = FS.mounts.length;
+  
         function done(err) {
           if (err) {
-            return callback(err);
+            if (!done.errored) {
+              done.errored = true;
+              return callback(err);
+            }
+            return;
           }
-          if (++completed >= total) {
+          if (++completed >= mounts.length) {
             callback(null);
           }
         };
   
         // sync all mounts
-        for (var i = 0; i < FS.mounts.length; i++) {
-          var mount = FS.mounts[i];
+        mounts.forEach(function (mount) {
           if (!mount.type.syncfs) {
-            done(null);
-            continue;
+            return done(null);
           }
           mount.type.syncfs(mount, populate, done);
-        }
+        });
       },mount:function (type, opts, mountpoint) {
-        var lookup;
-        if (mountpoint) {
-          lookup = FS.lookupPath(mountpoint, { follow: false });
+        var root = mountpoint === '/';
+        var pseudo = !mountpoint;
+        var node;
+  
+        if (root && FS.root) {
+          throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+        } else if (!root && !pseudo) {
+          var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
+  
           mountpoint = lookup.path;  // use the absolute path
+          node = lookup.node;
+  
+          if (FS.isMountpoint(node)) {
+            throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
+          }
+  
+          if (!FS.isDir(node.mode)) {
+            throw new FS.ErrnoError(ERRNO_CODES.ENOTDIR);
+          }
         }
+  
         var mount = {
           type: type,
           opts: opts,
           mountpoint: mountpoint,
-          root: null
+          mounts: []
         };
+  
         // create a root node for the fs
-        var root = type.mount(mount);
-        root.mount = mount;
-        mount.root = root;
-        // assign the mount info to the mountpoint's node
-        if (lookup) {
-          lookup.node.mount = mount;
-          lookup.node.mounted = true;
-          // compatibility update FS.root if we mount to /
-          if (mountpoint === '/') {
-            FS.root = mount.root;
+        var mountRoot = type.mount(mount);
+        mountRoot.mount = mount;
+        mount.root = mountRoot;
+  
+        if (root) {
+          FS.root = mountRoot;
+        } else if (node) {
+          // set as a mountpoint
+          node.mounted = mount;
+  
+          // add the new mount to the current mount's children
+          if (node.mount) {
+            node.mount.mounts.push(mount);
           }
         }
-        // add to our cached list of mounts
-        FS.mounts.push(mount);
-        return root;
+  
+        return mountRoot;
+      },unmount:function (mountpoint) {
+        var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
+  
+        if (!FS.isMountpoint(lookup.node)) {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
+  
+        // destroy the nodes for this mount, and all its child mounts
+        var node = lookup.node;
+        var mount = node.mounted;
+        var mounts = FS.getMounts(mount);
+  
+        Object.keys(FS.nameTable).forEach(function (hash) {
+          var current = FS.nameTable[hash];
+  
+          while (current) {
+            var next = current.name_next;
+  
+            if (mounts.indexOf(current.mount) !== -1) {
+              FS.destroyNode(current);
+            }
+  
+            current = next;
+          }
+        });
+  
+        // no longer a mountpoint
+        node.mounted = null;
+  
+        // remove this mount from the child mounts
+        var idx = node.mount.mounts.indexOf(mount);
+        assert(idx !== -1);
+        node.mount.mounts.splice(idx, 1);
       },lookup:function (parent, name) {
         return parent.node_ops.lookup(parent, name);
       },mknod:function (path, mode, dev) {
@@ -2954,7 +3092,7 @@ function copyTempDouble(ptr) {
         parent.node_ops.unlink(parent, name);
         FS.destroyNode(node);
       },readlink:function (path) {
-        var lookup = FS.lookupPath(path, { follow: false });
+        var lookup = FS.lookupPath(path);
         var link = lookup.node;
         if (!link.node_ops.readlink) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
@@ -3232,6 +3370,9 @@ function copyTempDouble(ptr) {
         opts = opts || {};
         opts.flags = opts.flags || 'r';
         opts.encoding = opts.encoding || 'binary';
+        if (opts.encoding !== 'utf8' && opts.encoding !== 'binary') {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
         var ret;
         var stream = FS.open(path, opts.flags);
         var stat = FS.stat(path);
@@ -3246,8 +3387,6 @@ function copyTempDouble(ptr) {
           }
         } else if (opts.encoding === 'binary') {
           ret = buf;
-        } else {
-          throw new Error('Invalid encoding type "' + opts.encoding + '"');
         }
         FS.close(stream);
         return ret;
@@ -3255,15 +3394,16 @@ function copyTempDouble(ptr) {
         opts = opts || {};
         opts.flags = opts.flags || 'w';
         opts.encoding = opts.encoding || 'utf8';
+        if (opts.encoding !== 'utf8' && opts.encoding !== 'binary') {
+          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+        }
         var stream = FS.open(path, opts.flags, opts.mode);
         if (opts.encoding === 'utf8') {
           var utf8 = new Runtime.UTF8Processor();
           var buf = new Uint8Array(utf8.processJSString(data));
-          FS.write(stream, buf, 0, buf.length, 0);
+          FS.write(stream, buf, 0, buf.length, 0, opts.canOwn);
         } else if (opts.encoding === 'binary') {
-          FS.write(stream, data, 0, data.length, 0);
-        } else {
-          throw new Error('Invalid encoding type "' + opts.encoding + '"');
+          FS.write(stream, data, 0, data.length, 0, opts.canOwn);
         }
         FS.close(stream);
       },cwd:function () {
@@ -3327,16 +3467,16 @@ function copyTempDouble(ptr) {
   
         // open default streams for the stdin, stdout and stderr devices
         var stdin = FS.open('/dev/stdin', 'r');
-        HEAP32[((_stdin)>>2)]=stdin.fd;
-        assert(stdin.fd === 1, 'invalid handle for stdin (' + stdin.fd + ')');
+        HEAP32[((_stdin)>>2)]=FS.getPtrForStream(stdin);
+        assert(stdin.fd === 0, 'invalid handle for stdin (' + stdin.fd + ')');
   
         var stdout = FS.open('/dev/stdout', 'w');
-        HEAP32[((_stdout)>>2)]=stdout.fd;
-        assert(stdout.fd === 2, 'invalid handle for stdout (' + stdout.fd + ')');
+        HEAP32[((_stdout)>>2)]=FS.getPtrForStream(stdout);
+        assert(stdout.fd === 1, 'invalid handle for stdout (' + stdout.fd + ')');
   
         var stderr = FS.open('/dev/stderr', 'w');
-        HEAP32[((_stderr)>>2)]=stderr.fd;
-        assert(stderr.fd === 3, 'invalid handle for stderr (' + stderr.fd + ')');
+        HEAP32[((_stderr)>>2)]=FS.getPtrForStream(stderr);
+        assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
       },ensureErrnoError:function () {
         if (FS.ErrnoError) return;
         FS.ErrnoError = function ErrnoError(errno) {
@@ -3362,7 +3502,6 @@ function copyTempDouble(ptr) {
   
         FS.nameTable = new Array(4096);
   
-        FS.root = FS.createNode(null, '/', 16384 | 0777, 0);
         FS.mount(MEMFS, {}, '/');
   
         FS.createDefaultDirectories();
@@ -3804,7 +3943,7 @@ function copyTempDouble(ptr) {
   
   
   
-  var _mkport=undefined;var SOCKFS={mount:function (mount) {
+  function _mkport() { throw 'TODO' }var SOCKFS={mount:function (mount) {
         return FS.createNode(null, '/', 16384 | 0777, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
@@ -4332,14 +4471,21 @@ function copyTempDouble(ptr) {
         FS.handleFSError(e);
         return -1;
       }
+    }
+  
+  function _fileno(stream) {
+      // int fileno(FILE *stream);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
+      return FS.getStreamFromPtr(stream).fd;
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
       var bytesToWrite = nitems * size;
       if (bytesToWrite == 0) return 0;
-      var bytesWritten = _write(stream, ptr, bytesToWrite);
+      var fd = _fileno(stream);
+      var bytesWritten = _write(fd, ptr, bytesToWrite);
       if (bytesWritten == -1) {
-        var streamObj = FS.getStream(stream);
+        var streamObj = FS.getStreamFromPtr(stream);
         if (streamObj) streamObj.error = true;
         return 0;
       } else {
@@ -4777,8 +4923,17 @@ function copyTempDouble(ptr) {
       return _fprintf(stdout, format, varargs);
     }
 
-  function _rand() {
-      return Math.floor(Math.random()*0x80000000);
+  
+  function _rand_r(seedp) {
+      seedp = seedp|0; 
+      var val = 0;
+      val = ((Math_imul(HEAP32[((seedp)>>2)], 31010991)|0) + 0x676e6177 ) & 2147483647; // assumes RAND_MAX is in bit mask form (power of 2 minus 1)
+      HEAP32[((seedp)>>2)]=val;
+      return val|0;
+    }
+  
+  var ___rand_seed=allocate([0x0273459b, 0, 0, 0], "i32", ALLOC_STATIC);function _rand() {
+      return _rand_r(___rand_seed)|0;
     }
 
   
@@ -4890,32 +5045,6 @@ function copyTempDouble(ptr) {
         for(var i = 0; i <= largestIndex; ++i) {
           GL.tempVertexBufferCounters1[i] = 0;
         }
-      },findToken:function (source, token) {
-        function isIdentChar(ch) {
-          if (ch >= 48 && ch <= 57) // 0-9
-            return true;
-          if (ch >= 65 && ch <= 90) // A-Z
-            return true;
-          if (ch >= 97 && ch <= 122) // a-z
-            return true;
-          return false;
-        }
-        var i = -1;
-        do {
-          i = source.indexOf(token, i + 1);
-          if (i < 0) {
-            break;
-          }
-          if (i > 0 && isIdentChar(source[i - 1])) {
-            continue;
-          }
-          i += token.length;
-          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
-            continue;
-          }
-          return true;
-        } while (true);
-        return false;
       },getSource:function (shader, count, string, length) {
         var source = '';
         for (var i = 0; i < count; ++i) {
@@ -4931,16 +5060,6 @@ function copyTempDouble(ptr) {
             frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
           }
           source += frag;
-        }
-        // Let's see if we need to enable the standard derivatives extension
-        type = GLctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
-        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
-          if (GL.findToken(source, "dFdx") ||
-              GL.findToken(source, "dFdy") ||
-              GL.findToken(source, "fwidth")) {
-            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
-            var extension = GLctx.getExtension("OES_standard_derivatives");
-          }
         }
         return source;
       },computeImageSize:function (width, height, sizePerPixel, alignment) {
@@ -5153,10 +5272,12 @@ function copyTempDouble(ptr) {
                             GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
   
         GL.floatExt = GLctx.getExtension('OES_texture_float');
-  	  // Extension available from Firefox 25
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');   
+        
         // Extension available from Firefox 26 and Google Chrome 30
         GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
+  
+        // Tested on WebKit and FF25
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
   
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -5230,7 +5351,7 @@ function copyTempDouble(ptr) {
         }
       }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},init:function () {
         if (CL.cl_init == 0) {
-          console.log('%c WebCL-Translator V2.0 by Anthony Liot & Steven Eliuk ! ', 'background: #222; color: #bada55');
+          console.log('%c WebCL-Translator V2.0 ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
           if(nodejs) {
             webcl = require('../webcl');
@@ -6886,9 +7007,14 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
 
-  function _memcpy(dest, src, num) {
+  
+  function _emscripten_memcpy_big(dest, src, num) {
+      HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
+      return dest;
+    }function _memcpy(dest, src, num) {
       dest = dest|0; src = src|0; num = num|0;
       var ret = 0;
+      if ((num|0) >= 4096) return _emscripten_memcpy_big(dest|0, src|0, num|0)|0;
       ret = dest|0;
       if ((dest&3) == (src&3)) {
         while (dest & 3) {
@@ -6959,7 +7085,7 @@ function copyTempDouble(ptr) {
   Module["_free"] = _free;
 
 
-  var Browser={mainLoop:{scheduler:null,shouldPause:false,paused:false,queue:[],pause:function () {
+  var Browser={mainLoop:{scheduler:null,method:"",shouldPause:false,paused:false,queue:[],pause:function () {
           Browser.mainLoop.shouldPause = true;
         },resume:function () {
           if (Browser.mainLoop.paused) {
@@ -7297,6 +7423,8 @@ function copyTempDouble(ptr) {
                event['mozMovementY'] ||
                event['webkitMovementY'] ||
                0;
+      },getMouseWheelDelta:function (event) {
+        return Math.max(-1, Math.min(1, event.type === 'DOMMouseScroll' ? event.detail : -event.wheelDelta));
       },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
@@ -8026,6 +8154,7 @@ var shouldRunNow = true;
 if (Module['noInitialRun']) {
   shouldRunNow = false;
 }
+
 
 run();
 

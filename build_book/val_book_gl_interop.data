@@ -72,6 +72,10 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
+    float4 _wcl_linepts;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
     __global float4 *init_vbo_kernel__vbo_min;
     __global float4 *init_vbo_kernel__vbo_max;
 } _WclGlobalLimits;
@@ -79,6 +83,8 @@ typedef struct {
 typedef struct {
     _WclGlobalLimits gl;
     __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
 } _WclProgramAllocations;
 
 __constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
@@ -154,11 +160,16 @@ __kernel void init_vbo_kernel(__global float4 *vbo, ulong _wcl_vbo_size, int w, 
 
     _WclProgramAllocations _wcl_allocations_allocation = {
         { &vbo[0], &vbo[_wcl_vbo_size] },
+        0,
+        { },
         0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.init_vbo_kernel__vbo_min, _wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global uint*)0);
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     int gid = get_global_id(0);
  float4 linepts;
@@ -166,12 +177,12 @@ __kernel void init_vbo_kernel(__global float4 *vbo, ulong _wcl_vbo_size, int w, 
  float a = (float)h/4.0f;
  float b = w/2.0f;
 
- linepts.x = gid;
- linepts.y = b + a*sin(3.14*2.0*((float)gid/(float)w*f + (float)seq/(float)w));
- linepts.z = gid+1.0f;
- linepts.w = b + a*sin(3.14*2.0*((float)(gid+1.0f)/(float)w*f + (float)seq/(float)w));
+ _wcl_allocs->pa._wcl_linepts.x = gid;
+ _wcl_allocs->pa._wcl_linepts.y = b + a*sin(3.14*2.0*((float)gid/(float)w*f + (float)seq/(float)w));
+ _wcl_allocs->pa._wcl_linepts.z = gid+1.0f;
+ _wcl_allocs->pa._wcl_linepts.w = b + a*sin(3.14*2.0*((float)(gid+1.0f)/(float)w*f + (float)seq/(float)w));
 
- (*(_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr((vbo)+(gid), 1, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_min, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global float4 *)_wcl_allocs->gn))) = linepts;
+ (*(_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr((vbo)+(gid), 1, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_min, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global float4 *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_linepts;
 }
 
 __kernel void init_texture_kernel(__write_only image2d_t im, int w, int h, int seq )
@@ -180,11 +191,16 @@ __kernel void init_texture_kernel(__write_only image2d_t im, int w, int h, int s
 
     _WclProgramAllocations _wcl_allocations_allocation = {
         { 0, 0 },
+        0,
+        { },
         0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.init_vbo_kernel__vbo_min, _wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global uint*)0);
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
  int2 coord = { get_global_id(0), get_global_id(1) };
  float4 color = {

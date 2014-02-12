@@ -63,6 +63,7 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
+    int _wcl_t;
     unsigned int _wcl_iter[4];
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
@@ -203,8 +204,8 @@ __kernel void mandelGPU(
 
  int t;
  unsigned int iter[4];
- for (t = 0; t < 4; ++t) {
-  const int tid = gid4 + t;
+ for (_wcl_allocs->pa._wcl_t = 0; _wcl_allocs->pa._wcl_t < 4; ++_wcl_allocs->pa._wcl_t) {
+  const int tid = gid4 + _wcl_allocs->pa._wcl_t;
 
   const int screenX = tid % width;
   const int screenY = tid / width;
@@ -220,7 +221,7 @@ __kernel void mandelGPU(
   float y = y0;
   float x2 = x * x;
   float y2 = y * y;
-  for ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 0; (x2 + y2 <= 4.f) && ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) < maxIterations); ++(*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) {
+  for ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 0; (x2 + y2 <= 4.f) && ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) < maxIterations); ++(*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) {
    y = 2 * x * y + y0;
    x = x2 - y2 + x0;
 
@@ -228,12 +229,12 @@ __kernel void mandelGPU(
    y2 = y * y;
   }
 
-  if ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) == maxIterations)
-   (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 0;
+  if ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) == maxIterations)
+   (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 0;
   else {
-   (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) % 512;
-   if ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) > 255)
-    (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 511 - (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
+   (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) % 512;
+   if ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) > 255)
+    (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 511 - (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((_wcl_allocs->pa._wcl_iter)+(_wcl_allocs->pa._wcl_t), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)));
   }
  }
 

@@ -32,6 +32,15 @@
 #define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    float4 _wcl_pixel;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
 __constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
 
 // => General code that doesn't depend on input.
@@ -94,12 +103,21 @@ __kernel void image_copy(__read_only image2d_t image1, __write_only image2d_t im
 {
     __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
 
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
 
  const int xout = get_global_id(0);
  const int yout = get_global_id(1);
  const sampler_t sampler=CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
  float4 pixel;
 
- pixel = read_imagef(image1, sampler, (int2)(xout,yout));
- _wcl_write_imagef_1(image2, (int2)(xout,yout), pixel);
+ _wcl_allocs->pa._wcl_pixel = read_imagef(image1, sampler, (int2)(xout,yout));
+ _wcl_write_imagef_1(image2, (int2)(xout,yout), _wcl_allocs->pa._wcl_pixel);
 }

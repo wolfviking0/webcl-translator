@@ -312,6 +312,11 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
+    uint2 _wcl_global_index;
+    uint2 _wcl_local_index;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
     __global float *PreScanKernel__output_data_min;
     __global float *PreScanKernel__output_data_max;
     const __global float *PreScanKernel__input_data_min;
@@ -356,6 +361,8 @@ typedef struct {
     __global uint *gn;
     _WclLocalLimits ll;
     __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
 } _WclProgramAllocations;
 
 __constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
@@ -555,14 +562,14 @@ GetAddressMapping(_WclProgramAllocations *_wcl_allocs, int index)
     const uint group_size = get_local_size(0);
 
     uint2 global_index;
-    global_index.x = index + local_id;
-    global_index.y = global_index.x + group_size;
+    _wcl_allocs->pa._wcl_global_index.x = index + local_id;
+    _wcl_allocs->pa._wcl_global_index.y = _wcl_allocs->pa._wcl_global_index.x + group_size;
 
     uint2 local_index;
-    local_index.x = local_id;
-    local_index.y = local_id + group_size;
+    _wcl_allocs->pa._wcl_local_index.x = local_id;
+    _wcl_allocs->pa._wcl_local_index.y = local_id + group_size;
 
-    return (uint4)(global_index.x, global_index.y, local_index.x, local_index.y);
+    return (uint4)(_wcl_allocs->pa._wcl_global_index.x, _wcl_allocs->pa._wcl_global_index.y, _wcl_allocs->pa._wcl_local_index.x, _wcl_allocs->pa._wcl_local_index.y);
 }
 
 void
@@ -799,11 +806,16 @@ PreScanKernel(
         { &output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
         0,
         { &shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0,0, 0,0, 0 },
-        _wcl_local_null
+        _wcl_local_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, (__global uint*)0))))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     // => Local memory zeroing.
     _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
@@ -842,11 +854,16 @@ PreScanStoreSumKernel(
         { 0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],&partial_sums[0], &partial_sums[_wcl_partial_sums_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
         0,
         { 0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0,0, 0 },
-        _wcl_local_null
+        _wcl_local_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, (__global uint*)0))))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     // => Local memory zeroing.
     _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
@@ -885,11 +902,16 @@ PreScanStoreSumNonPowerOfTwoKernel(
         { 0, 0,0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],&partial_sums[0], &partial_sums[_wcl_partial_sums_size],0, 0,0, 0,0, 0,0, 0 },
         0,
         { 0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0,0, 0 },
-        _wcl_local_null
+        _wcl_local_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, (__global uint*)0))))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     // => Local memory zeroing.
     _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
@@ -928,11 +950,16 @@ PreScanNonPowerOfTwoKernel(
         { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size],0, 0,0, 0 },
         0,
         { 0, 0,0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size],0, 0 },
-        _wcl_local_null
+        _wcl_local_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, (__global uint*)0))))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     // => Local memory zeroing.
     _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);
@@ -972,11 +999,16 @@ __kernel void UniformAddKernel(
         { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&output_data[0], &output_data[_wcl_output_data_size],&input_data[0], &input_data[_wcl_input_data_size] },
         0,
         { 0, 0,0, 0,0, 0,0, 0,&shared_data[0], &shared_data[_wcl_shared_data_size] },
-        _wcl_local_null
+        _wcl_local_null,
+        { },
+        0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__output_data_min, _wcl_allocs->gl.PreScanKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanKernel__input_data_min, _wcl_allocs->gl.PreScanKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_min, _wcl_allocs->gl.PreScanStoreSumNonPowerOfTwoKernel__partial_sums_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_min, _wcl_allocs->gl.PreScanNonPowerOfTwoKernel__input_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__output_data_min, _wcl_allocs->gl.UniformAddKernel__output_data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.UniformAddKernel__input_data_min, _wcl_allocs->gl.UniformAddKernel__input_data_max, (__global uint*)0))))))))))));
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     // => Local memory zeroing.
     _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.PreScanKernel__shared_data_min, _wcl_allocs->ll.PreScanKernel__shared_data_max);

@@ -48,6 +48,13 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
+    float4 _wcl_r;
+    float3 _wcl_t;
+    float4 _wcl_2_r;
+    float3 _wcl_2_t;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
     __global uchar4 *QJuliaKernel__result_min;
     __global uchar4 *QJuliaKernel__result_max;
 } _WclGlobalLimits;
@@ -55,6 +62,8 @@ typedef struct {
 typedef struct {
     _WclGlobalLimits gl;
     __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
 } _WclProgramAllocations;
 
 __constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
@@ -177,11 +186,11 @@ float4 qmult(_WclProgramAllocations *_wcl_allocs,  float4 q1, float4 q2 )
     float3 q2yzw = (float3)(q2.y, q2.z, q2.w);
     float3 c = cross( q1yzw, q2yzw );
 
-    t = q2yzw * q1.x + q1yzw * q2.x + c;
-    r.x = q1.x * q2.x - dot( q1yzw, q2yzw );
-    r.yzw = t.xyz;
+    _wcl_allocs->pa._wcl_t = q2yzw * q1.x + q1yzw * q2.x + c;
+    _wcl_allocs->pa._wcl_r.x = q1.x * q2.x - dot( q1yzw, q2yzw );
+    _wcl_allocs->pa._wcl_r.yzw = _wcl_allocs->pa._wcl_t.xyz;
 
-    return r;
+    return _wcl_allocs->pa._wcl_r;
 }
 
 float4 qsqr(_WclProgramAllocations *_wcl_allocs,  float4 q )
@@ -191,11 +200,11 @@ float4 qsqr(_WclProgramAllocations *_wcl_allocs,  float4 q )
 
     float3 qyzw = (float3)(q.y, q.z, q.w);
 
-    t = 2.0f * q.x * qyzw;
-    r.x = q.x * q.x - dot( qyzw, qyzw );
-    r.yzw = t.xyz;
+    _wcl_allocs->pa._wcl_2_t = 2.0f * q.x * qyzw;
+    _wcl_allocs->pa._wcl_2_r.x = q.x * q.x - dot( qyzw, qyzw );
+    _wcl_allocs->pa._wcl_2_r.yzw = _wcl_allocs->pa._wcl_2_t.xyz;
 
-    return r;
+    return _wcl_allocs->pa._wcl_2_r;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -409,11 +418,16 @@ QJuliaKernel(
 
     _WclProgramAllocations _wcl_allocations_allocation = {
         { &result[0], &result[_wcl_result_size] },
+        0,
+        { },
         0
+
     };
     _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
     _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.QJuliaKernel__result_min, _wcl_allocs->gl.QJuliaKernel__result_max, (__global uint*)0);
     if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
 
     int tx = get_global_id(0);
     int ty = get_global_id(1);
