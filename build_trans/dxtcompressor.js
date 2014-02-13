@@ -17,21 +17,24 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dxtcompressor.data';
-    var PACKAGE_UUID = '75c58877-ad69-4d64-8446-9e7f4622e95a';
+    var REMOTE_PACKAGE_SIZE = 930879;
+    var PACKAGE_UUID = '54bddf2b-1536-4ff5-a374-61de5244ab85';
   
-    function fetchRemotePackage(packageName, callback, errback) {
+    function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
       xhr.responseType = 'arraybuffer';
       xhr.onprogress = function(event) {
         var url = packageName;
-        if (event.loaded && event.total) {
+        var size = packageSize;
+        if (event.total) size = event.total;
+        if (event.loaded) {
           if (!xhr.addedTotal) {
             xhr.addedTotal = true;
             if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
             Module.dataFileDownloads[url] = {
               loaded: event.loaded,
-              total: event.total
+              total: size
             };
           } else {
             Module.dataFileDownloads[url].loaded = event.loaded;
@@ -63,7 +66,7 @@ Module.expectedDataFileDownloads++;
     };
   
       var fetched = null, fetchedCallback = null;
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, function(data) {
+      fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, function(data) {
         if (fetchedCallback) {
           fetchedCallback(data);
           fetchedCallback = null;
@@ -361,7 +364,7 @@ var Runtime = {
   isStructType: function isStructType(type) {
   if (isPointerType(type)) return false;
   if (isArrayType(type)) return true;
-  if (/<?{ ?[^}]* ?}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
+  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
   // See comment in isStructPointerType()
   return type[0] == '%';
 },
@@ -3462,14 +3465,10 @@ function copyTempDouble(ptr) {
   
         return _id;      
       },cast_long:function (arg_size) {
-    
         var _sizelong = [];
-  
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
         _sizelong.push((arg_size & 0xFFFFFFFF));
-        
         // var _origin = x << 32 | y;
-  
         return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
@@ -9342,26 +9341,33 @@ function copyTempDouble(ptr) {
         return r | g << 8 | b << 16 | a << 24;
       },makeSurface:function (width, height, flags, usePageCanvas, source, rmask, gmask, bmask, amask) {
         flags = flags || 0;
-        var surf = _malloc(60);  // SDL_Surface has 15 fields of quantum size
+        var is_SDL_HWSURFACE = flags & 0x00000001;
+        var is_SDL_HWPALETTE = flags & 0x00200000;
+        var is_SDL_OPENGL = flags & 0x04000000;
+  
+        var surf = _malloc(60);
         var pixelFormat = _malloc(44);
-        flags |= 1; // SDL_HWSURFACE - this tells SDL_MUSTLOCK that this needs to be locked
-  
         //surface with SDL_HWPALETTE flag is 8bpp surface (1 byte)
-        var is_SDL_HWPALETTE = flags & 0x00200000;  
         var bpp = is_SDL_HWPALETTE ? 1 : 4;
-   
-        HEAP32[((surf)>>2)]=flags;        // SDL_Surface.flags
-        HEAP32[(((surf)+(4))>>2)]=pixelFormat;// SDL_Surface.format TODO
-        HEAP32[(((surf)+(8))>>2)]=width;        // SDL_Surface.w
-        HEAP32[(((surf)+(12))>>2)]=height;       // SDL_Surface.h
-        HEAP32[(((surf)+(16))>>2)]=width * bpp;      // SDL_Surface.pitch, assuming RGBA or indexed for now,
-                                                                                 // since that is what ImageData gives us in browsers
-        HEAP32[(((surf)+(20))>>2)]=0;     // SDL_Surface.pixels, lazily initialized inside of SDL_LockSurface
-        HEAP32[(((surf)+(36))>>2)]=0;     // SDL_Surface.offset
+        var buffer = 0;
   
+        // preemptively initialize this for software surfaces,
+        // otherwise it will be lazily initialized inside of SDL_LockSurface
+        if (!is_SDL_HWSURFACE && !is_SDL_OPENGL) {
+          buffer = _malloc(width * height * 4);
+        }
+  
+        HEAP32[((surf)>>2)]=flags;
+        HEAP32[(((surf)+(4))>>2)]=pixelFormat;
+        HEAP32[(((surf)+(8))>>2)]=width;
+        HEAP32[(((surf)+(12))>>2)]=height;
+        HEAP32[(((surf)+(16))>>2)]=width * bpp;  // assuming RGBA or indexed for now,
+                                                                                          // since that is what ImageData gives us in browsers
+        HEAP32[(((surf)+(20))>>2)]=buffer;
+        HEAP32[(((surf)+(36))>>2)]=0;
         HEAP32[(((surf)+(56))>>2)]=1;
   
-        HEAP32[((pixelFormat)>>2)]=0 /* XXX missing C define SDL_PIXELFORMAT_RGBA8888 */;// SDL_PIXELFORMAT_RGBA8888
+        HEAP32[((pixelFormat)>>2)]=0 /* XXX missing C define SDL_PIXELFORMAT_RGBA8888 */;
         HEAP32[(((pixelFormat)+(4))>>2)]=0;// TODO
         HEAP8[(((pixelFormat)+(8))|0)]=bpp * 8;
         HEAP8[(((pixelFormat)+(9))|0)]=bpp;
@@ -9372,8 +9378,7 @@ function copyTempDouble(ptr) {
         HEAP32[(((pixelFormat)+(24))>>2)]=amask || 0xff000000;
   
         // Decide if we want to use WebGL or not
-        var useWebGL = (flags & 0x04000000) != 0; // SDL_OPENGL
-        SDL.GL = SDL.GL || useWebGL;
+        SDL.GL = SDL.GL || is_SDL_OPENGL;
         var canvas;
         if (!usePageCanvas) {
           if (SDL.canvasPool.length > 0) {
@@ -9393,7 +9398,7 @@ function copyTempDouble(ptr) {
           stencil: (SDL.glAttributes[7 /*SDL_GL_STENCIL_SIZE*/] > 0)
         };
         
-        var ctx = Browser.createContext(canvas, useWebGL, usePageCanvas, webGLContextAttributes);
+        var ctx = Browser.createContext(canvas, is_SDL_OPENGL, usePageCanvas, webGLContextAttributes);
               
         SDL.surfaces[surf] = {
           width: width,
@@ -9401,7 +9406,7 @@ function copyTempDouble(ptr) {
           canvas: canvas,
           ctx: ctx,
           surf: surf,
-          buffer: 0,
+          buffer: buffer,
           pixelFormat: pixelFormat,
           alpha: 255,
           flags: flags,

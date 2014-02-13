@@ -1,160 +1,3 @@
-
-var Module;
-if (typeof Module === 'undefined') Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
-if (!Module.expectedDataFileDownloads) {
-  Module.expectedDataFileDownloads = 0;
-  Module.finishedDataFileDownloads = 0;
-}
-Module.expectedDataFileDownloads++;
-(function() {
-
-    var PACKAGE_PATH;
-    if (typeof window === 'object') {
-      PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
-    } else {
-      // worker
-      PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
-    }
-    var PACKAGE_NAME = '../build/val_dxtcompressor.data';
-    var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dxtcompressor.data';
-    var PACKAGE_UUID = '993b295c-b9e6-453d-b03a-614bbeecc409';
-  
-    function fetchRemotePackage(packageName, callback, errback) {
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', packageName, true);
-      xhr.responseType = 'arraybuffer';
-      xhr.onprogress = function(event) {
-        var url = packageName;
-        if (event.loaded && event.total) {
-          if (!xhr.addedTotal) {
-            xhr.addedTotal = true;
-            if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
-            Module.dataFileDownloads[url] = {
-              loaded: event.loaded,
-              total: event.total
-            };
-          } else {
-            Module.dataFileDownloads[url].loaded = event.loaded;
-          }
-          var total = 0;
-          var loaded = 0;
-          var num = 0;
-          for (var download in Module.dataFileDownloads) {
-          var data = Module.dataFileDownloads[download];
-            total += data.total;
-            loaded += data.loaded;
-            num++;
-          }
-          total = Math.ceil(total * Module.expectedDataFileDownloads/num);
-          if (Module['setStatus']) Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
-        } else if (!Module.dataFileDownloads) {
-          if (Module['setStatus']) Module['setStatus']('Downloading data...');
-        }
-      };
-      xhr.onload = function(event) {
-        var packageData = xhr.response;
-        callback(packageData);
-      };
-      xhr.send(null);
-    };
-
-    function handleError(error) {
-      console.error('package error:', error);
-    };
-  
-      var fetched = null, fetchedCallback = null;
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, function(data) {
-        if (fetchedCallback) {
-          fetchedCallback(data);
-          fetchedCallback = null;
-        } else {
-          fetched = data;
-        }
-      }, handleError);
-    
-  function runWithFS() {
-
-function assert(check, msg) {
-  if (!check) throw msg + new Error().stack;
-}
-Module['FS_createPath']('/', 'data', true, true);
-
-    function DataRequest(start, end, crunched, audio) {
-      this.start = start;
-      this.end = end;
-      this.crunched = crunched;
-      this.audio = audio;
-    }
-    DataRequest.prototype = {
-      requests: {},
-      open: function(mode, name) {
-        this.name = name;
-        this.requests[name] = this;
-        Module['addRunDependency']('fp ' + this.name);
-      },
-      send: function() {},
-      onload: function() {
-        var byteArray = this.byteArray.subarray(this.start, this.end);
-
-          this.finish(byteArray);
-
-      },
-      finish: function(byteArray) {
-        var that = this;
-        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
-          Module['removeRunDependency']('fp ' + that.name);
-        }, function() {
-          if (that.audio) {
-            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
-          } else {
-            Module.printErr('Preloading file ' + that.name + ' failed');
-          }
-        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
-        this.requests[this.name] = null;
-      },
-    };
-      new DataRequest(0, 131200, 0, 0).open('GET', '/data/lena_ref.dds');
-    new DataRequest(131200, 917647, 0, 0).open('GET', '/data/lena.ppm');
-    new DataRequest(917647, 1040453, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
-
-    function processPackageData(arrayBuffer) {
-      Module.finishedDataFileDownloads++;
-      assert(arrayBuffer, 'Loading data file failed.');
-      var byteArray = new Uint8Array(arrayBuffer);
-      var curr;
-      
-      // copy the entire loaded file into a spot in the heap. Files will refer to slices in that. They cannot be freed though.
-      var ptr = Module['_malloc'](byteArray.length);
-      Module['HEAPU8'].set(byteArray, ptr);
-      DataRequest.prototype.byteArray = Module['HEAPU8'].subarray(ptr, ptr+byteArray.length);
-          DataRequest.prototype.requests["/data/lena_ref.dds"].onload();
-          DataRequest.prototype.requests["/data/lena.ppm"].onload();
-          DataRequest.prototype.requests["/DXTCompressor_kernel.cl"].onload();
-          Module['removeRunDependency']('datafile_../build/val_dxtcompressor.data');
-
-    };
-    Module['addRunDependency']('datafile_../build/val_dxtcompressor.data');
-  
-    if (!Module.preloadResults) Module.preloadResults = {};
-  
-      Module.preloadResults[PACKAGE_NAME] = {fromCache: false};
-      if (fetched) {
-        processPackageData(fetched);
-        fetched = null;
-      } else {
-        fetchedCallback = processPackageData;
-      }
-    
-  }
-  if (Module['calledRun']) {
-    runWithFS();
-  } else {
-    if (!Module['preRun']) Module['preRun'] = [];
-    Module["preRun"].push(runWithFS); // FS is not initialized yet, wait for it
-  }
-
-})();
-
 // Note: Some Emscripten settings will significantly limit the speed of the generated code.
 // Note: Some Emscripten settings may limit the speed of the generated code.
 // The Module object: Our interface to the outside world. We import
@@ -361,7 +204,7 @@ var Runtime = {
   isStructType: function isStructType(type) {
   if (isPointerType(type)) return false;
   if (isArrayType(type)) return true;
-  if (/<?{ ?[^}]* ?}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
+  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
   // See comment in isStructPointerType()
   return type[0] == '%';
 },
@@ -3462,14 +3305,10 @@ function copyTempDouble(ptr) {
   
         return _id;      
       },cast_long:function (arg_size) {
-    
         var _sizelong = [];
-  
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
         _sizelong.push((arg_size & 0xFFFFFFFF));
-        
         // var _origin = x << 32 | y;
-  
         return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
@@ -9380,26 +9219,33 @@ function copyTempDouble(ptr) {
         return r | g << 8 | b << 16 | a << 24;
       },makeSurface:function (width, height, flags, usePageCanvas, source, rmask, gmask, bmask, amask) {
         flags = flags || 0;
-        var surf = _malloc(60);  // SDL_Surface has 15 fields of quantum size
+        var is_SDL_HWSURFACE = flags & 0x00000001;
+        var is_SDL_HWPALETTE = flags & 0x00200000;
+        var is_SDL_OPENGL = flags & 0x04000000;
+  
+        var surf = _malloc(60);
         var pixelFormat = _malloc(44);
-        flags |= 1; // SDL_HWSURFACE - this tells SDL_MUSTLOCK that this needs to be locked
-  
         //surface with SDL_HWPALETTE flag is 8bpp surface (1 byte)
-        var is_SDL_HWPALETTE = flags & 0x00200000;  
         var bpp = is_SDL_HWPALETTE ? 1 : 4;
-   
-        HEAP32[((surf)>>2)]=flags;        // SDL_Surface.flags
-        HEAP32[(((surf)+(4))>>2)]=pixelFormat;// SDL_Surface.format TODO
-        HEAP32[(((surf)+(8))>>2)]=width;        // SDL_Surface.w
-        HEAP32[(((surf)+(12))>>2)]=height;       // SDL_Surface.h
-        HEAP32[(((surf)+(16))>>2)]=width * bpp;      // SDL_Surface.pitch, assuming RGBA or indexed for now,
-                                                                                 // since that is what ImageData gives us in browsers
-        HEAP32[(((surf)+(20))>>2)]=0;     // SDL_Surface.pixels, lazily initialized inside of SDL_LockSurface
-        HEAP32[(((surf)+(36))>>2)]=0;     // SDL_Surface.offset
+        var buffer = 0;
   
+        // preemptively initialize this for software surfaces,
+        // otherwise it will be lazily initialized inside of SDL_LockSurface
+        if (!is_SDL_HWSURFACE && !is_SDL_OPENGL) {
+          buffer = _malloc(width * height * 4);
+        }
+  
+        HEAP32[((surf)>>2)]=flags;
+        HEAP32[(((surf)+(4))>>2)]=pixelFormat;
+        HEAP32[(((surf)+(8))>>2)]=width;
+        HEAP32[(((surf)+(12))>>2)]=height;
+        HEAP32[(((surf)+(16))>>2)]=width * bpp;  // assuming RGBA or indexed for now,
+                                                                                          // since that is what ImageData gives us in browsers
+        HEAP32[(((surf)+(20))>>2)]=buffer;
+        HEAP32[(((surf)+(36))>>2)]=0;
         HEAP32[(((surf)+(56))>>2)]=1;
   
-        HEAP32[((pixelFormat)>>2)]=0 /* XXX missing C define SDL_PIXELFORMAT_RGBA8888 */;// SDL_PIXELFORMAT_RGBA8888
+        HEAP32[((pixelFormat)>>2)]=0 /* XXX missing C define SDL_PIXELFORMAT_RGBA8888 */;
         HEAP32[(((pixelFormat)+(4))>>2)]=0;// TODO
         HEAP8[(((pixelFormat)+(8))|0)]=bpp * 8;
         HEAP8[(((pixelFormat)+(9))|0)]=bpp;
@@ -9410,8 +9256,7 @@ function copyTempDouble(ptr) {
         HEAP32[(((pixelFormat)+(24))>>2)]=amask || 0xff000000;
   
         // Decide if we want to use WebGL or not
-        var useWebGL = (flags & 0x04000000) != 0; // SDL_OPENGL
-        SDL.GL = SDL.GL || useWebGL;
+        SDL.GL = SDL.GL || is_SDL_OPENGL;
         var canvas;
         if (!usePageCanvas) {
           if (SDL.canvasPool.length > 0) {
@@ -9431,7 +9276,7 @@ function copyTempDouble(ptr) {
           stencil: (SDL.glAttributes[7 /*SDL_GL_STENCIL_SIZE*/] > 0)
         };
         
-        var ctx = Browser.createContext(canvas, useWebGL, usePageCanvas, webGLContextAttributes);
+        var ctx = Browser.createContext(canvas, is_SDL_OPENGL, usePageCanvas, webGLContextAttributes);
               
         SDL.surfaces[surf] = {
           width: width,
@@ -9439,7 +9284,7 @@ function copyTempDouble(ptr) {
           canvas: canvas,
           ctx: ctx,
           surf: surf,
-          buffer: 0,
+          buffer: buffer,
           pixelFormat: pixelFormat,
           alpha: 255,
           flags: flags,

@@ -204,7 +204,7 @@ var Runtime = {
   isStructType: function isStructType(type) {
   if (isPointerType(type)) return false;
   if (isArrayType(type)) return true;
-  if (/<?{ ?[^}]* ?}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
+  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
   // See comment in isStructPointerType()
   return type[0] == '%';
 },
@@ -3228,14 +3228,10 @@ function copyTempDouble(ptr) {
   
         return _id;      
       },cast_long:function (arg_size) {
-    
         var _sizelong = [];
-  
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
         _sizelong.push((arg_size & 0xFFFFFFFF));
-        
         // var _origin = x << 32 | y;
-  
         return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {

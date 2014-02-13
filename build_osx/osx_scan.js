@@ -17,21 +17,24 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_scan.data';
-    var PACKAGE_UUID = '79be8964-79d9-4ed4-bc74-5fa29b9a8735';
+    var REMOTE_PACKAGE_SIZE = 15054;
+    var PACKAGE_UUID = '31267de7-8e4a-4044-b7e1-a35c39385779';
   
-    function fetchRemotePackage(packageName, callback, errback) {
+    function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', packageName, true);
       xhr.responseType = 'arraybuffer';
       xhr.onprogress = function(event) {
         var url = packageName;
-        if (event.loaded && event.total) {
+        var size = packageSize;
+        if (event.total) size = event.total;
+        if (event.loaded) {
           if (!xhr.addedTotal) {
             xhr.addedTotal = true;
             if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
             Module.dataFileDownloads[url] = {
               loaded: event.loaded,
-              total: event.total
+              total: size
             };
           } else {
             Module.dataFileDownloads[url].loaded = event.loaded;
@@ -63,7 +66,7 @@ Module.expectedDataFileDownloads++;
     };
   
       var fetched = null, fetchedCallback = null;
-      fetchRemotePackage(REMOTE_PACKAGE_NAME, function(data) {
+      fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, function(data) {
         if (fetchedCallback) {
           fetchedCallback(data);
           fetchedCallback = null;
@@ -356,7 +359,7 @@ var Runtime = {
   isStructType: function isStructType(type) {
   if (isPointerType(type)) return false;
   if (isArrayType(type)) return true;
-  if (/<?{ ?[^}]* ?}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
+  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
   // See comment in isStructPointerType()
   return type[0] == '%';
 },
@@ -2189,14 +2192,10 @@ function copyTempDouble(ptr) {
   
         return _id;      
       },cast_long:function (arg_size) {
-    
         var _sizelong = [];
-  
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
         _sizelong.push((arg_size & 0xFFFFFFFF));
-        
         // var _origin = x << 32 | y;
-  
         return new Int32Array(_sizelong);
       },stringType:function (pn_type) {
         switch(pn_type) {
