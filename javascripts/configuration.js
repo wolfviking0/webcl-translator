@@ -470,8 +470,19 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : " ",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     }, 
+    { 
+      "title"         : "Particles",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_nvidia/oclnvidia",
+      "id"            : 19,
+      "gl"            : "on",
+      "cpu"           : "",
+      "gpu"           : " ",     
+      "valcpu"        : "",
+      "valgpu"        : "",           
+    },     
     { 
       "title"         : "Recursive Gaussian",
       "compatibility" : "[Webkit]",
@@ -481,7 +492,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : " ",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     },   
     { 
       "title"         : "SinWave",
@@ -492,7 +503,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : " ",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     },    
     { 
       "title"         : "Sobel Filter",
@@ -503,7 +514,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : " ",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     }, 
   ],
 }
