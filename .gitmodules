@@ -1,4 +1,0 @@
-[submodule "emscripten"]
-	path = emscripten
-	url = https://github.com/wolfviking0/emscripten.git
-	branch = incoming
