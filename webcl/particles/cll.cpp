@@ -25,7 +25,7 @@ CL::CL(int use_gpu)
     printf("platforms.size(): %d\n", platforms.size());
 
     deviceUsed = 0;
-    err = platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
+    err = platforms[0].getDevices(use_gpu?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU, &devices);
     printf("getDevices: %s\n", oclErrorString(err));
     printf("devices.size(): %d\n", devices.size());
     int t = devices.front().getInfo<CL_DEVICE_TYPE>();

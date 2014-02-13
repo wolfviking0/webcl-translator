@@ -93,10 +93,10 @@ def update(repo_list):
   jobs = []
   
   for i in repo_list:
-    if i.find("webcl-translator/webcl") != -1:
-      var = raw_input("\tDo you want force update on the webcl-translator repository ? [y]es / [n]o\n").strip()
-      if (var.find("y") == -1):
-        continue
+    #if i.find("webcl-translator/webcl") != -1:
+    #  var = raw_input("\tDo you want force update on the webcl-translator repository ? [y]es / [n]o\n").strip()
+    #  if (var.find("y") == -1):
+    #    continue
 
     p = multiprocessing.Process(target=worker_update, args=(i,i,""))
     jobs.append(p)
