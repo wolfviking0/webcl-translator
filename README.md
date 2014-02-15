@@ -70,7 +70,7 @@ You can call _python automator.py -h_ for call the automator script help.
 
 You can use the [webcl-validator](https://github.com/KhronosGroup/webcl-validator) with the webcl-translator. You need to add the LLVM_VALIDATOR_ROOT inside the ~/.emscripten config file.
 
-If you build a sample using settings __-s CL \_ VALIDATOR=1__, automaticaly all the .cl file embedded are modify by the validator. You can specify parameter to the webcl-validator using __-s CL \_ VAL_PARAM='["-DPARAM1","-DPARAM2"]'__.
+If you build a sample using settings -s CL_VALIDATOR=1, automaticaly all the .cl file embedded are modify by the validator. You can specify parameter to the webcl-validator using -s CL_VAL_PARAM='["-DPARAM1","-DPARAM2"]'.
 
 #### Settings.js :
 
