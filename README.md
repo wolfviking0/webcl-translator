@@ -3,10 +3,27 @@ webcl-translator
 
 ![logo](http://wolfviking0.github.io/webcl-translator/images/webcl.png)
 
+Requirement :
+-------------
+
+[Python2.7](http://python.org)
+
+[NodeJS](http://nodejs.org)
+
+[Emscripten Fastcomp](https://github.com/kripken/emscripten/wiki/LLVM-Backend)
+
+[WebCL Validator](https://github.com/KhronosGroup/webcl-validator)
+
 How To (OSX) :
 --------------
 
 #### Step 1 :
+
+	install python and nodejs on your system
+	build the llvm/clang emscripten-fastcomp
+	build the llvm/clang webcl-validator
+
+#### Step 2 :
 
 	cd YOUR_ROOT_DIRECTORY
 	git clone https://github.com/wolfviking0/webcl-translator
@@ -14,7 +31,7 @@ How To (OSX) :
 	git submodule init
 	git submodule update
 	
-#### Step 2 :
+#### Step 3 :
 
 	cd YOUR_ROOT_DIRECTORY
 	rm ~/.emscripten
@@ -25,7 +42,7 @@ How To (OSX) :
 	set LLVM_ROOT with your llvm path
 	add LLVM_VALIDATOR_ROOT with your webcl-validator path
 	
-#### Step 3 :
+#### Step 4 :
 
 	cd YOUR_ROOT_DIRECTORY/webcl-translator
 	python automator.py --help
@@ -79,6 +96,8 @@ Samples repositories :
 [David Bucciarelli](https://github.com/wolfviking0/webcl-davibu)
 
 [OpenCL Book Samples](https://github.com/wolfviking0/webcl-book-samples)
+
+[OpenCL Nvidia Samples](https://github.com/wolfviking0/webcl-ocl-nvidia)
 
 License :
 ---------
