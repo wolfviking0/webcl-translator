@@ -56,7 +56,7 @@ General :
 
 webcl-translator is an OpenCL to WebCL converter, it's based on the [Emscripten](https://github.com/kripken/emscripten) LLVM-to-JavaScript compiler.
 
-Need [webkit-webcl](https://github.com/SRA-SiliconValley/webkit-webcl) from Samsung research for OS X 10.8, you can use my custom version of [webkit-webcl](https://github.com/SRA-wolfviking0/webcl-webkit) for OS X 10.9.
+Need [webkit-webcl](https://github.com/SRA-SiliconValley/webkit-webcl) from Samsung research for OS X 10.8, you can use my custom version of [webkit-webcl](https://github.com/wolfviking0/webcl-webkit) for OS X 10.9.
 
 Links to **demos**, **tutorial**, **patch**, etc: [Wiki](https://github.com/wolfviking0/webcl-translator/wiki)
 
@@ -70,7 +70,7 @@ You can call _python automator.py -h_ for call the automator script help.
 
 You can use the [webcl-validator](https://github.com/KhronosGroup/webcl-validator) with the webcl-translator. You need to add the LLVM_VALIDATOR_ROOT inside the ~/.emscripten config file.
 
-If you build a sample using settings _-s CL\_VALIDATOR=1_, automaticaly all the .cl file embedded are modify by the validator. You can specify parameter to the webcl-validator using _-s CL\_VAL_PARAM='["-DPARAM1","-DPARAM2"]'_.
+If you build a sample using settings __-s CL \_ VALIDATOR=1__, automaticaly all the .cl file embedded are modify by the validator. You can specify parameter to the webcl-validator using __-s CL \_ VAL_PARAM='["-DPARAM1","-DPARAM2"]'__.
 
 #### Settings.js :
 
