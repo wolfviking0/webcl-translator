@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_buffer.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_buffer.data';
     var REMOTE_PACKAGE_SIZE = 536;
-    var PACKAGE_UUID = 'a58154c4-5c87-4c4f-b720-33d6b704b554';
+    var PACKAGE_UUID = '20280556-5b0f-49e8-9a3a-fc9a88bae238';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

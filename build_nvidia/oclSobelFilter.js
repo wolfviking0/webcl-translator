@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclSobelFilter.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclSobelFilter.data';
     var REMOTE_PACKAGE_SIZE = 3156850;
-    var PACKAGE_UUID = '779e0e07-e71e-4bb7-b383-e26c6f8bb4c3';
+    var PACKAGE_UUID = 'cb1d2c25-b580-4f5b-a887-ee47f8a6178c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

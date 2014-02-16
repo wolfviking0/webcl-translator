@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/marching_cubes.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'marching_cubes.data';
     var REMOTE_PACKAGE_SIZE = 235375;
-    var PACKAGE_UUID = 'a2c24d7e-3f63-47c2-ad83-d55a7b7cba2f';
+    var PACKAGE_UUID = '7c8b7ddb-2eac-41ae-bfaa-8f4313150ee6';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

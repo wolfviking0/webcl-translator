@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclSortingNetworks.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclSortingNetworks.data';
     var REMOTE_PACKAGE_SIZE = 9789;
-    var PACKAGE_UUID = '9d957616-da6a-45ae-b824-d79805eb23b8';
+    var PACKAGE_UUID = '009ef1df-2bd5-46ee-b7cf-3a58b30524b2';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

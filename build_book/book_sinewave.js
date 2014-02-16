@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_sinewave.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_sinewave.data';
     var REMOTE_PACKAGE_SIZE = 177949;
-    var PACKAGE_UUID = '4b24bc7c-d155-492f-92cf-afc93376f2ec';
+    var PACKAGE_UUID = '74a8c0b5-2df8-4b14-93f6-693bf21460b7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

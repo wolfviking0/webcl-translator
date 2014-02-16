@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_gl_interop.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_gl_interop.data';
     var REMOTE_PACKAGE_SIZE = 733;
-    var PACKAGE_UUID = '661b8f92-4def-4f02-85cc-d316df7d64ff';
+    var PACKAGE_UUID = '4692d66e-8dfc-4586-9ba5-a0f1d704f5ef';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

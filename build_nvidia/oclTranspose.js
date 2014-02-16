@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclTranspose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclTranspose.data';
     var REMOTE_PACKAGE_SIZE = 3814;
-    var PACKAGE_UUID = 'ad32d977-8f5b-4bb3-ad54-caff9fee3e2f';
+    var PACKAGE_UUID = 'a43e3eea-d0e2-4d3c-92ea-48fade87e1bc';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

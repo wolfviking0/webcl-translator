@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_galaxies.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_galaxies.data';
     var REMOTE_PACKAGE_SIZE = 15724462;
-    var PACKAGE_UUID = 'bf22cdf7-91b9-4344-a306-9c8cf982febf';
+    var PACKAGE_UUID = 'b4920c04-f364-47e4-a477-424c44430da3';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

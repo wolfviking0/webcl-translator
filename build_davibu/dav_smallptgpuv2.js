@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_smallptgpuv2.data';
     var REMOTE_PACKAGE_SIZE = 55950;
-    var PACKAGE_UUID = '38f079f6-30af-4823-89d8-ee7494afcc43';
+    var PACKAGE_UUID = '2ce65c88-75ee-4a22-9d8a-3bc18967aa85';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
