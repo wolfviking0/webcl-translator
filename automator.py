@@ -223,6 +223,9 @@ def launch(parser,options):
   if (options.thread):
     num_opt_enabled-=1
 
+  if (options.original):
+    num_opt_enabled-=1
+
   if (options.debug):
     num_opt_enabled-=1
 
@@ -233,6 +236,9 @@ def launch(parser,options):
   param = " "
   if options.debug:
     param += " DEB=1 "
+  
+  if options.original:
+    param += " ORIG=1 "
 
   if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 4 ) for repo in options.repo) ) ) :
     print "/!\ You must use --repo with integer between 0 & 4"
@@ -300,6 +306,10 @@ def main():
   parser.add_option("-p", "--profile", 
                     action="store_true", dest="profile", default=False,
                     help="print the profile log", metavar="PROFILE")
+
+  parser.add_option("-o", "--original", 
+                    action="store_true", dest="original", default=False,
+                    help="Build using emscripten fork not submodule", metavar="ORIGNAL")
 
   parser.add_option("-v", "--validator", 
                     action="store_true", dest="validator", default=False,
