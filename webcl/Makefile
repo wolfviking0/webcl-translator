@@ -6,7 +6,12 @@
 #  Copyright (c) 2013 Anthony Liot. All rights reserved.
 #
 
+ORIG=0
+ifeq ($(ORIG),1)
+EMSCRIPTEN_ROOT:=../../../emscripten
+else
 EMSCRIPTEN_ROOT:=../../emscripten
+endif
 
 #EMSCRIPTEN_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/emscripten
 #LLVM_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/compilo/llvm/bin
