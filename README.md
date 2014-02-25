@@ -10,7 +10,11 @@ Requirement :
 
 [NodeJS](http://nodejs.org)
 
-[Emscripten Fastcomp](https://github.com/kripken/emscripten/wiki/LLVM-Backend)
+[Emscripten Tutorial](https://github.com/kripken/emscripten/wiki/LLVM-Backend)
+
+[Emscripten Fastcomp](https://github.com/kripken/emscripten-fastcomp.git)
+
+[Emscripten Fastcomp Clang](https://github.com/kripken/emscripten-fastcomp-clang.git)
 
 [WebCL Validator](https://github.com/KhronosGroup/webcl-validator)
 
@@ -20,8 +24,16 @@ How To (OSX) :
 #### Step 1 :
 
 	install python and nodejs on your system
-	build the [llvm](https://github.com/kripken/emscripten-fastcomp.git)/[clang](https://github.com/kripken/emscripten-fastcomp-clang.git) emscripten-fastcomp from *incoming* branch
-	build the [llvm/clang](https://github.com/KhronosGroup/webcl-validator) webcl-validator
+
+	cd YOUR_ROOT_DIRECTORY
+	git clone https://github.com/kripken/emscripten-fastcomp.git -b incoming
+	cd emscripten-fastcomp/tools/
+	git clone https://github.com/kripken/emscripten-fastcomp-clang.git -b incoming clang
+	build the llvm/clang emscripten-fastcomp
+
+	cd YOUR_ROOT_DIRECTORY
+	git clone https://github.com/KhronosGroup/webcl-validator
+	build the llvm/clang webcl-validator
 
 #### Step 2 :
 
