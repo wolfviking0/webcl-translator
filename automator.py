@@ -192,7 +192,7 @@ def copy(repo_list):
 
   jobs = []
   for repo in repo_list:
-    index = repo_list.index(repo)
+    index = list_repositories.index(repo)
     folder = page_subfolder[index]
     p = multiprocessing.Process(target=worker_copy, args=(folder,repo))
     jobs.append(p)
