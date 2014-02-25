@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_spmv.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_spmv.data';
     var REMOTE_PACKAGE_SIZE = 40949;
-    var PACKAGE_UUID = '0ff8b041-91e4-4020-ac87-7b68f850f429';
+    var PACKAGE_UUID = '138d22f1-0b8c-4466-9eff-f85ac624405e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -22003,7 +22003,7 @@ function _malloc($bytes) {
      $536 = $535 & -8;
      $537 = ($536|0)==($rsize$3$lcssa$i|0);
      
-     L225: do {
+     L224: do {
       if ($537) {
        $T$0$lcssa$i = $529;
       } else {
@@ -22035,7 +22035,7 @@ function _malloc($bytes) {
         
         if ($543) {
          $T$0$lcssa$i = $546;
-         break L225;
+         break L224;
         } else {
          $T$026$i$phi = $546;$K12$027$i = $539;$T$026$i = $T$026$i$phi;
         }
@@ -26971,7 +26971,7 @@ function _dispose_chunk($p,$psize) {
    $162 = $140 >>> 3;
    $163 = ($140>>>0)<(256);
    
-   L101: do {
+   L100: do {
     if ($163) {
      $$sum20 = (($psize) + 8)|0;
      $gep_int206 = $p;
@@ -27238,7 +27238,7 @@ function _dispose_chunk($p,$psize) {
        $expanded56 = $gep251;
        HEAP32[$expanded56>>2] = $236;
        
-       break L101;
+       break L100;
       } else {
        $237 = $194;
        $expanded59 = 4768;
@@ -27271,7 +27271,7 @@ function _dispose_chunk($p,$psize) {
        $244 = ($R7$1|0)==(0);
        
        if ($244) {
-        break L101;
+        break L100;
        }
       }
      } while(0);

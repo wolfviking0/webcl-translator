@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_histogram.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_histogram.data';
     var REMOTE_PACKAGE_SIZE = 7505;
-    var PACKAGE_UUID = 'eb901b86-8cbf-41ef-9629-3696ffc3c6c6';
+    var PACKAGE_UUID = '38663f97-1fb7-43de-803a-4074619bec9f';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

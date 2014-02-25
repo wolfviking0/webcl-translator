@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 5799;
-    var PACKAGE_UUID = 'b0820478-69b8-467c-872c-7fd9484f8dc3';
+    var PACKAGE_UUID = 'bc8d2c7d-1cac-47ca-af9e-0903ab8b8bc4';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15926,15 +15926,39 @@ function __Z11specialFunciii($key,$x,$y) {
  $4 = $1;
  
  switch ($4|0) {
- case 100:  {
-  $expanded6 = 1912;
-  $13 = +HEAPF32[1912>>2];
-  $14 = $13 * 0.02500000037252902984619140625;
-  $expanded7 = 1920;
-  $15 = +HEAPF32[1920>>2];
-  $16 = $15 - $14;
-  $expanded8 = 1920;
-  HEAPF32[1920>>2] = $16;
+ case 101:  {
+  $expanded = 1912;
+  $5 = +HEAPF32[1912>>2];
+  $6 = $5 * 0.02500000037252902984619140625;
+  $expanded1 = 1928;
+  $7 = +HEAPF32[1928>>2];
+  $8 = $7 + $6;
+  $expanded2 = 1928;
+  HEAPF32[1928>>2] = $8;
+  
+  break;
+ }
+ case 103:  {
+  $expanded3 = 1912;
+  $9 = +HEAPF32[1912>>2];
+  $10 = $9 * 0.02500000037252902984619140625;
+  $expanded4 = 1928;
+  $11 = +HEAPF32[1928>>2];
+  $12 = $11 - $10;
+  $expanded5 = 1928;
+  HEAPF32[1928>>2] = $12;
+  
+  break;
+ }
+ case 102:  {
+  $expanded9 = 1912;
+  $17 = +HEAPF32[1912>>2];
+  $18 = $17 * 0.02500000037252902984619140625;
+  $expanded10 = 1920;
+  $19 = +HEAPF32[1920>>2];
+  $20 = $19 + $18;
+  $expanded11 = 1920;
+  HEAPF32[1920>>2] = $20;
   
   break;
  }
@@ -15956,39 +15980,15 @@ function __Z11specialFunciii($key,$x,$y) {
   
   break;
  }
- case 102:  {
-  $expanded9 = 1912;
-  $17 = +HEAPF32[1912>>2];
-  $18 = $17 * 0.02500000037252902984619140625;
-  $expanded10 = 1920;
-  $19 = +HEAPF32[1920>>2];
-  $20 = $19 + $18;
-  $expanded11 = 1920;
-  HEAPF32[1920>>2] = $20;
-  
-  break;
- }
- case 103:  {
-  $expanded3 = 1912;
-  $9 = +HEAPF32[1912>>2];
-  $10 = $9 * 0.02500000037252902984619140625;
-  $expanded4 = 1928;
-  $11 = +HEAPF32[1928>>2];
-  $12 = $11 - $10;
-  $expanded5 = 1928;
-  HEAPF32[1928>>2] = $12;
-  
-  break;
- }
- case 101:  {
-  $expanded = 1912;
-  $5 = +HEAPF32[1912>>2];
-  $6 = $5 * 0.02500000037252902984619140625;
-  $expanded1 = 1928;
-  $7 = +HEAPF32[1928>>2];
-  $8 = $7 + $6;
-  $expanded2 = 1928;
-  HEAPF32[1928>>2] = $8;
+ case 100:  {
+  $expanded6 = 1912;
+  $13 = +HEAPF32[1912>>2];
+  $14 = $13 * 0.02500000037252902984619140625;
+  $expanded7 = 1920;
+  $15 = +HEAPF32[1920>>2];
+  $16 = $15 - $14;
+  $expanded8 = 1920;
+  HEAPF32[1920>>2] = $16;
   
   break;
  }

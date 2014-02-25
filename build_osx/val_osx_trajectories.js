@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_trajectories.data';
     var REMOTE_PACKAGE_SIZE = 33191;
-    var PACKAGE_UUID = '372e6982-ee6e-4220-a73b-7c77652f44ac';
+    var PACKAGE_UUID = '28048172-6bb3-46b9-9678-f8e851ed8187';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11703,11 +11703,11 @@ function __ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_ite
    __ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev($__sp);
    $cleanup$dest = $67;
    
-   if ((($cleanup$dest|0) == 0)) {
+   if ((($cleanup$dest|0) == 1)) {
+    STACKTOP = sp;return;
+   } else if ((($cleanup$dest|0) == 0)) {
     
     break;
-   } else if ((($cleanup$dest|0) == 1)) {
-    STACKTOP = sp;return;
    } else {
     // unreachable
    }
@@ -15226,14 +15226,14 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE7seekoffExNS_8ios_base7
    }
    $95 = $25;
    
-   if ((($95|0) == 1)) {
+   if ((($95|0) == 0)) {
+    $__whence = 0;
+    
+   } else if ((($95|0) == 1)) {
     $__whence = 1;
     
    } else if ((($95|0) == 2)) {
     $__whence = 2;
-    
-   } else if ((($95|0) == 0)) {
-    $__whence = 0;
     
    } else {
     $6 = $agg$result;
@@ -18182,52 +18182,10 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
  $9 = $8 & -3;
  
  switch ($9|0) {
- case 24:  {
-  $gep_int15 = 784;
-  $expanded3 = $gep_int15;
-  $__mdstr = $expanded3;
-  
-  break;
- }
- case 60:  {
-  $gep_int22 = 840;
-  $expanded10 = $gep_int22;
-  $__mdstr = $expanded10;
-  
-  break;
- }
- case 12:  {
-  $gep_int20 = 824;
-  $expanded8 = $gep_int20;
-  $__mdstr = $expanded8;
-  
-  break;
- }
- case 5: case 21:  {
-  $gep_int19 = 816;
-  $expanded7 = $gep_int19;
-  $__mdstr = $expanded7;
-  
-  break;
- }
- case 28:  {
-  $gep_int21 = 832;
-  $expanded9 = $gep_int21;
-  $__mdstr = $expanded9;
-  
-  break;
- }
- case 48: case 16:  {
-  $gep_int12 = 760;
-  $expanded = $gep_int12;
-  $__mdstr = $expanded;
-  
-  break;
- }
- case 13: case 29:  {
-  $gep_int23 = 848;
-  $expanded11 = $gep_int23;
-  $__mdstr = $expanded11;
+ case 1: case 17:  {
+  $gep_int13 = 768;
+  $expanded1 = $gep_int13;
+  $__mdstr = $expanded1;
   
   break;
  }
@@ -18238,17 +18196,10 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
   
   break;
  }
- case 8:  {
-  $gep_int14 = 776;
-  $expanded2 = $gep_int14;
-  $__mdstr = $expanded2;
-  
-  break;
- }
- case 56:  {
-  $gep_int16 = 792;
-  $expanded4 = $gep_int16;
-  $__mdstr = $expanded4;
+ case 5: case 21:  {
+  $gep_int19 = 816;
+  $expanded7 = $gep_int19;
+  $__mdstr = $expanded7;
   
   break;
  }
@@ -18259,10 +18210,59 @@ function __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj($this,$__s,$
   
   break;
  }
- case 1: case 17:  {
-  $gep_int13 = 768;
-  $expanded1 = $gep_int13;
-  $__mdstr = $expanded1;
+ case 28:  {
+  $gep_int21 = 832;
+  $expanded9 = $gep_int21;
+  $__mdstr = $expanded9;
+  
+  break;
+ }
+ case 60:  {
+  $gep_int22 = 840;
+  $expanded10 = $gep_int22;
+  $__mdstr = $expanded10;
+  
+  break;
+ }
+ case 13: case 29:  {
+  $gep_int23 = 848;
+  $expanded11 = $gep_int23;
+  $__mdstr = $expanded11;
+  
+  break;
+ }
+ case 56:  {
+  $gep_int16 = 792;
+  $expanded4 = $gep_int16;
+  $__mdstr = $expanded4;
+  
+  break;
+ }
+ case 8:  {
+  $gep_int14 = 776;
+  $expanded2 = $gep_int14;
+  $__mdstr = $expanded2;
+  
+  break;
+ }
+ case 48: case 16:  {
+  $gep_int12 = 760;
+  $expanded = $gep_int12;
+  $__mdstr = $expanded;
+  
+  break;
+ }
+ case 12:  {
+  $gep_int20 = 824;
+  $expanded8 = $gep_int20;
+  $__mdstr = $expanded8;
+  
+  break;
+ }
+ case 24:  {
+  $gep_int15 = 784;
+  $expanded3 = $gep_int15;
+  $__mdstr = $expanded3;
   
   break;
  }
@@ -44041,11 +44041,11 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE6
   HEAP32[$15>>2] = $30;
   $31 = HEAP32[$__lv>>2]|0;
   
-  if ((($31|0) == 1)) {
-   HEAP8[$__v] = 1;
-   
-  } else if ((($31|0) == 0)) {
+  if ((($31|0) == 0)) {
    HEAP8[$__v] = 0;
+   
+  } else if ((($31|0) == 1)) {
+   HEAP8[$__v] = 1;
    
   } else {
    HEAP8[$__v] = 1;
@@ -45119,7 +45119,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIc
     }
    }
   } while(0);
-  L109: do {
+  L110: do {
    if ((label|0) == 86) {
     
     $203 = ($202|0)==(0);
@@ -45159,7 +45159,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIc
       $215 = $214&1;
       
       if ($215) {
-       break L109;
+       break L110;
       }
       $216 = ($213|0)==(-1);
       
@@ -45192,7 +45192,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIc
      
     }
     
-    L125: do {
+    L126: do {
      if ($24) {
       label = 99;
      } else {
@@ -45218,7 +45218,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIc
        
        if ($224) {
         label = 99;
-        break L125;
+        break L126;
        }
        $221 = HEAP8[$225]|0;
        $222 = ($221<<24>>24)==(2);
@@ -45383,14 +45383,14 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 64)) {
-  $$0$i = 8;
+ if ((($3|0) == 8)) {
+  
+  $$0$i = 16;
  } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
- } else if ((($3|0) == 8)) {
-  
-  $$0$i = 16;
+ } else if ((($3|0) == 64)) {
+  $$0$i = 8;
  } else {
   
   $$0$i = 10;
@@ -46051,14 +46051,14 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 64)) {
-  $$0$i = 8;
- } else if ((($3|0) == 8)) {
+ if ((($3|0) == 8)) {
   
   $$0$i = 16;
  } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
+ } else if ((($3|0) == 64)) {
+  $$0$i = 8;
  } else {
   
   $$0$i = 10;
@@ -47393,14 +47393,14 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 8)) {
-  
-  $$0$i = 16;
+ if ((($3|0) == 64)) {
+  $$0$i = 8;
  } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
- } else if ((($3|0) == 64)) {
-  $$0$i = 8;
+ } else if ((($3|0) == 8)) {
+  
+  $$0$i = 16;
  } else {
   
   $$0$i = 10;
@@ -48061,14 +48061,14 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 0)) {
+ if ((($3|0) == 8)) {
+  
+  $$0$i = 16;
+ } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
  } else if ((($3|0) == 64)) {
   $$0$i = 8;
- } else if ((($3|0) == 8)) {
-  
-  $$0$i = 16;
  } else {
   
   $$0$i = 10;
@@ -48729,14 +48729,14 @@ function __ZNKSt3__17num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 0)) {
+ if ((($3|0) == 8)) {
+  
+  $$0$i = 16;
+ } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
  } else if ((($3|0) == 64)) {
   $$0$i = 8;
- } else if ((($3|0) == 8)) {
-  
-  $$0$i = 16;
  } else {
   
   $$0$i = 10;
@@ -53520,7 +53520,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIw
     }
    }
   } while(0);
-  L114: do {
+  L115: do {
    if ((label|0) == 88) {
     
     $203 = ($$pre$i3$i$i19|0)==(0);
@@ -53552,7 +53552,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIw
        $215 = $214&1;
        
        if ($215) {
-        break L114;
+        break L115;
        } else {
         $$0$i$i1$i$i17 = $213;
        }
@@ -53593,7 +53593,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIw
      
     }
     
-    L130: do {
+    L131: do {
      if ($24) {
       label = 101;
      } else {
@@ -53619,7 +53619,7 @@ function __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIw
        
        if ($225) {
         label = 101;
-        break L130;
+        break L131;
        }
        $222 = HEAP8[$226]|0;
        $223 = ($222<<24>>24)==(2);
@@ -55140,14 +55140,14 @@ function __ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 64)) {
-  $$0$i = 8;
- } else if ((($3|0) == 8)) {
+ if ((($3|0) == 8)) {
   
   $$0$i = 16;
  } else if ((($3|0) == 0)) {
   
   $$0$i = 0;
+ } else if ((($3|0) == 64)) {
+  $$0$i = 8;
  } else {
   
   $$0$i = 10;
@@ -55815,14 +55815,14 @@ function __ZNKSt3__17num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE1
  $2 = HEAP32[$1>>2]|0;
  $3 = $2 & 74;
  
- if ((($3|0) == 8)) {
-  
-  $$0$i = 16;
- } else if ((($3|0) == 0)) {
+ if ((($3|0) == 0)) {
   
   $$0$i = 0;
  } else if ((($3|0) == 64)) {
   $$0$i = 8;
+ } else if ((($3|0) == 8)) {
+  
+  $$0$i = 16;
  } else {
   
   $$0$i = 10;
@@ -62349,7 +62349,10 @@ function __ZNSt3__19__num_getIwE19__stage2_float_loopEwRbRcPcRS4_wwRKNS_12basic_
  $54 = HEAP8[$53]|0;
  
  do {
-  if ((($51|0) == 24) | (($51|0) == 25)) {
+  if ((($51|0) == 23) | (($51|0) == 22)) {
+   HEAP8[$__exp] = 80;
+   
+  } else if ((($51|0) == 24) | (($51|0) == 25)) {
    $55 = HEAP32[$__a_end>>2]|0;
    $56 = ($55|0)==($__a|0);
    
@@ -62384,9 +62387,6 @@ function __ZNSt3__19__num_getIwE19__stage2_float_loopEwRbRcPcRS4_wwRKNS_12basic_
    $$0 = 0;
    
    STACKTOP = sp;return $$0|0;
-  } else if ((($51|0) == 23) | (($51|0) == 22)) {
-   HEAP8[$__exp] = 80;
-   
   } else {
    $66 = $54&255;
    $67 = $66 & 95;
@@ -63492,7 +63492,7 @@ function __ZNSt3__19__num_putIcE21__widen_and_group_intEPcS2_S2_S2_RS2_S3_RKNS_6
    }
    $132 = ($__nf$1>>>0)<($__ne>>>0);
    
-   L42: do {
+   L44: do {
     if ($132) {
      $133 = $__grouping;
      $gep_int91 = $__grouping;
@@ -63599,7 +63599,7 @@ function __ZNSt3__19__num_putIcE21__widen_and_group_intEPcS2_S2_S2_RS2_S3_RKNS_6
       if ($173) {
        $__dc$013 = $171;$__dg$014 = $__dg$1;$__p$015 = $172;
       } else {
-       break L42;
+       break L44;
       }
      }
      $expanded25 = 67;
@@ -63776,10 +63776,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
  $20 = $12 & 74;
  
  do {
-  if ((($20|0) == 64)) {
-   HEAP8[$scevgep] = 111;
-   
-  } else if ((($20|0) == 8)) {
+  if ((($20|0) == 8)) {
    $21 = $12 & 16384;
    $22 = ($21|0)==(0);
    
@@ -63792,6 +63789,9 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
     
     break;
    }
+  } else if ((($20|0) == 64)) {
+   HEAP8[$scevgep] = 111;
+   
   } else {
    HEAP8[$scevgep] = 100;
    
@@ -63860,9 +63860,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
  $41 = $40 & 176;
  
  do {
-  if ((($41|0) == 32)) {
-   $$0$i1 = $39;
-  } else if ((($41|0) == 16)) {
+  if ((($41|0) == 16)) {
    $42 = HEAP8[$23]|0;
    
    if ((($42<<24>>24) == 43) | (($42<<24>>24) == 45)) {
@@ -63895,6 +63893,8 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
    $48 = $gep31;
    
    $$0$i1 = $48;
+  } else if ((($41|0) == 32)) {
+   $$0$i1 = $39;
   } else {
    label = 22;
   }
@@ -64024,10 +64024,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
  $13 = $6 & 74;
  
  do {
-  if ((($13|0) == 64)) {
-   HEAP8[$scevgep] = 111;
-   
-  } else if ((($13|0) == 8)) {
+  if ((($13|0) == 8)) {
    $14 = $6 & 16384;
    $15 = ($14|0)==(0);
    
@@ -64040,6 +64037,9 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
     
     break;
    }
+  } else if ((($13|0) == 64)) {
+   HEAP8[$scevgep] = 111;
+   
   } else {
    HEAP8[$scevgep] = 117;
    
@@ -64698,7 +64698,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
    $47 = HEAP8[$expanded32]|0;
    $48 = ($47<<24>>24)==(0);
    
-   L40: do {
+   L41: do {
     if ($specify_precision$0$off0$ph$i12) {
      
      do {
@@ -64725,7 +64725,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
         ___cxa_guard_abort($expanded38|0);
         
         $eh$lpad$body$index3Z2D = $55;$eh$lpad$body$indexZ2D = $54;
-        break L40;
+        break L41;
        } else {
         $expanded35 = 6608;
         HEAP32[6608>>2] = $51;
@@ -64790,7 +64790,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
         ___cxa_guard_abort($expanded47|0);
         
         $eh$lpad$body$index3Z2D = $70;$eh$lpad$body$indexZ2D = $69;
-        break L40;
+        break L41;
        } else {
         $expanded44 = 6608;
         HEAP32[6608>>2] = $66;
@@ -66390,7 +66390,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
    $47 = HEAP8[$expanded31]|0;
    $48 = ($47<<24>>24)==(0);
    
-   L40: do {
+   L41: do {
     if ($specify_precision$0$off0$ph$i17) {
      
      do {
@@ -66417,7 +66417,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
         ___cxa_guard_abort($expanded37|0);
         
         $eh$lpad$body$index3Z2D = $55;$eh$lpad$body$indexZ2D = $54;
-        break L40;
+        break L41;
        } else {
         $expanded34 = 6608;
         HEAP32[6608>>2] = $51;
@@ -66482,7 +66482,7 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
         ___cxa_guard_abort($expanded46|0);
         
         $eh$lpad$body$index3Z2D = $70;$eh$lpad$body$indexZ2D = $69;
-        break L40;
+        break L41;
        } else {
         $expanded43 = 6608;
         HEAP32[6608>>2] = $66;
@@ -66571,7 +66571,9 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
  $83 = $82 & 176;
  
  do {
-  if ((($83|0) == 16)) {
+  if ((($83|0) == 32)) {
+   $$0$i7 = $81;
+  } else if ((($83|0) == 16)) {
    $84 = HEAP8[$79]|0;
    
    if ((($84<<24>>24) == 43) | (($84<<24>>24) == 45)) {
@@ -66604,8 +66606,6 @@ function __ZNKSt3__17num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE6
    $90 = $gep90;
    
    $$0$i7 = $90;
-  } else if ((($83|0) == 32)) {
-   $$0$i7 = $81;
   } else {
    label = 53;
   }
@@ -67576,9 +67576,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
  $30 = $29 & 176;
  
  do {
-  if ((($30|0) == 32)) {
-   $$0$i1 = $28;
-  } else if ((($30|0) == 16)) {
+  if ((($30|0) == 16)) {
    $31 = HEAP8[$16]|0;
    
    if ((($31<<24>>24) == 43) | (($31<<24>>24) == 45)) {
@@ -67611,6 +67609,8 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $37 = $gep32;
    
    $$0$i1 = $37;
+  } else if ((($30|0) == 32)) {
+   $$0$i1 = $28;
   } else {
    label = 22;
   }
@@ -68522,10 +68522,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
  $20 = $12 & 74;
  
  do {
-  if ((($20|0) == 64)) {
-   HEAP8[$scevgep] = 111;
-   
-  } else if ((($20|0) == 8)) {
+  if ((($20|0) == 8)) {
    $21 = $12 & 16384;
    $22 = ($21|0)==(0);
    
@@ -68538,6 +68535,9 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
     
     break;
    }
+  } else if ((($20|0) == 64)) {
+   HEAP8[$scevgep] = 111;
+   
   } else {
    HEAP8[$scevgep] = 100;
    
@@ -69023,10 +69023,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
  $20 = $12 & 74;
  
  do {
-  if ((($20|0) == 64)) {
-   HEAP8[$scevgep] = 111;
-   
-  } else if ((($20|0) == 8)) {
+  if ((($20|0) == 8)) {
    $21 = $12 & 16384;
    $22 = ($21|0)==(0);
    
@@ -69039,6 +69036,9 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
     
     break;
    }
+  } else if ((($20|0) == 64)) {
+   HEAP8[$scevgep] = 111;
+   
   } else {
    HEAP8[$scevgep] = 117;
    
@@ -69313,22 +69313,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $22 = $gep61;
    HEAP8[$21] = 42;
    
-   if ((($18|0) == 4)) {
-    $23 = $19 & 1;
-    $24 = ($23|0)==(0);
-    
-    if ($24) {
-     HEAP8[$22] = 102;
-     
-     $specify_precision$0$off0$ph$i10 = 1;
-     break;
-    } else {
-     HEAP8[$22] = 70;
-     
-     $specify_precision$0$off0$ph$i10 = 1;
-     break;
-    }
-   } else if ((($18|0) == 256)) {
+   if ((($18|0) == 256)) {
     $25 = $19 & 1;
     $26 = ($25|0)==(0);
     
@@ -69339,6 +69324,21 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
      break;
     } else {
      HEAP8[$22] = 69;
+     
+     $specify_precision$0$off0$ph$i10 = 1;
+     break;
+    }
+   } else if ((($18|0) == 4)) {
+    $23 = $19 & 1;
+    $24 = ($23|0)==(0);
+    
+    if ($24) {
+     HEAP8[$22] = 102;
+     
+     $specify_precision$0$off0$ph$i10 = 1;
+     break;
+    } else {
+     HEAP8[$22] = 70;
      
      $specify_precision$0$off0$ph$i10 = 1;
      break;
@@ -70906,22 +70906,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $gep62 = (($gep_int61) + 3)|0;
    $scevgep = $gep62;
    
-   if ((($18|0) == 256)) {
-    $25 = $19 & 1;
-    $26 = ($25|0)==(0);
-    
-    if ($26) {
-     HEAP8[$scevgep] = 101;
-     
-     $specify_precision$0$off0$ph$i15 = 1;
-     break;
-    } else {
-     HEAP8[$scevgep] = 69;
-     
-     $specify_precision$0$off0$ph$i15 = 1;
-     break;
-    }
-   } else if ((($18|0) == 4)) {
+   if ((($18|0) == 4)) {
     $23 = $19 & 1;
     $24 = ($23|0)==(0);
     
@@ -70932,6 +70917,21 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
      break;
     } else {
      HEAP8[$scevgep] = 70;
+     
+     $specify_precision$0$off0$ph$i15 = 1;
+     break;
+    }
+   } else if ((($18|0) == 256)) {
+    $25 = $19 & 1;
+    $26 = ($25|0)==(0);
+    
+    if ($26) {
+     HEAP8[$scevgep] = 101;
+     
+     $specify_precision$0$off0$ph$i15 = 1;
+     break;
+    } else {
+     HEAP8[$scevgep] = 69;
      
      $specify_precision$0$off0$ph$i15 = 1;
      break;
@@ -71041,7 +71041,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $47 = HEAP8[$expanded31]|0;
    $48 = ($47<<24>>24)==(0);
    
-   L41: do {
+   L40: do {
     if ($specify_precision$0$off0$ph$i15) {
      
      do {
@@ -71068,7 +71068,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
         ___cxa_guard_abort($expanded37|0);
         
         $eh$lpad$body$index3Z2D = $55;$eh$lpad$body$indexZ2D = $54;
-        break L41;
+        break L40;
        } else {
         $expanded34 = 6608;
         HEAP32[6608>>2] = $51;
@@ -71133,7 +71133,7 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
         ___cxa_guard_abort($expanded46|0);
         
         $eh$lpad$body$index3Z2D = $70;$eh$lpad$body$indexZ2D = $69;
-        break L41;
+        break L40;
        } else {
         $expanded43 = 6608;
         HEAP32[6608>>2] = $66;
@@ -71222,7 +71222,9 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
  $83 = $82 & 176;
  
  do {
-  if ((($83|0) == 16)) {
+  if ((($83|0) == 32)) {
+   $$0$i7 = $81;
+  } else if ((($83|0) == 16)) {
    $84 = HEAP8[$79]|0;
    
    if ((($84<<24>>24) == 43) | (($84<<24>>24) == 45)) {
@@ -71255,8 +71257,6 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $90 = $gep90;
    
    $$0$i7 = $90;
-  } else if ((($83|0) == 32)) {
-   $$0$i7 = $81;
   } else {
    label = 53;
   }
@@ -71521,7 +71521,9 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
  $19 = $18 & 176;
  
  do {
-  if ((($19|0) == 16)) {
+  if ((($19|0) == 32)) {
+   $$0$i = $16;
+  } else if ((($19|0) == 16)) {
    $20 = HEAP8[$4]|0;
    
    if ((($20<<24>>24) == 43) | (($20<<24>>24) == 45)) {
@@ -71554,8 +71556,6 @@ function __ZNKSt3__17num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE6
    $26 = $gep34;
    
    $$0$i = $26;
-  } else if ((($19|0) == 32)) {
-   $$0$i = $16;
   } else {
    label = 12;
   }
@@ -73539,6 +73539,46 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
    
    L8: do {
     switch ($71|0) {
+    case 84:  {
+     $gep_int169 = $__b;
+     $346 = $gep_int169;
+     $347 = HEAP32[$346>>2]|0;
+     $gep_int170 = $32;
+     $348 = $gep_int170;
+     HEAP32[$348>>2] = $347;
+     $gep_int171 = $__e;
+     $349 = $gep_int171;
+     $350 = HEAP32[$349>>2]|0;
+     $gep_int172 = $33;
+     $351 = $gep_int172;
+     HEAP32[$351>>2] = $350;
+     $352 = $$byval_copy21;
+     
+     $353 = $$byval_copy21;
+     $354 = $32;
+     ;HEAP32[$353+0>>2]=HEAP32[$354+0>>2]|0;
+     $355 = $$byval_copy22;
+     
+     $356 = $$byval_copy22;
+     $357 = $33;
+     ;HEAP32[$356+0>>2]=HEAP32[$357+0>>2]|0;
+     $gep_int173 = 5672;
+     $expanded49 = $gep_int173;
+     $gep_int174 = 5672;
+     $gep175 = (($gep_int174) + 8)|0;
+     $expanded50 = $gep175;
+     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($31,$this,$$byval_copy21,$$byval_copy22,$__iob,$__err,$__tm,$expanded49,$expanded50);
+     $358 = $$byval_copy22;
+     
+     $359 = $$byval_copy21;
+     
+     $gep_int176 = $31;
+     $360 = $gep_int176;
+     $361 = HEAP32[$360>>2]|0;
+     HEAP32[$346>>2] = $361;
+     
+     break;
+    }
     case 65: case 97:  {
      $gep_int67 = $__e;
      $76 = $gep_int67;
@@ -73583,51 +73623,42 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      
      break;
     }
-    case 104: case 66: case 98:  {
-     $gep_int75 = $__e;
-     $98 = $gep_int75;
-     $99 = HEAP32[$98>>2]|0;
-     $100 = $11;
+    case 72:  {
+     $gep_int124 = $__e;
+     $208 = $gep_int124;
+     $209 = HEAP32[$208>>2]|0;
+     $210 = $9;
      
-     $gep_int76 = $this;
-     $gep77 = (($gep_int76) + 8)|0;
-     $101 = $gep77;
-     $102 = $101;
-     $103 = HEAP32[$101>>2]|0;
-     $gep_int78 = $103;
-     $gep79 = (($gep_int78) + 4)|0;
-     $104 = $gep79;
-     $105 = HEAP32[$104>>2]|0;
-     $106 = FUNCTION_TABLE_ii[$105 & 127]($101)|0;
-     $gep_int80 = $11;
-     $107 = $gep_int80;
-     HEAP32[$107>>2] = $99;
-     $gep_int81 = $106;
-     $gep82 = (($gep_int81) + 288)|0;
-     $108 = $gep82;
-     $109 = $$byval_copy1;
+     $gep_int125 = $9;
+     $211 = $gep_int125;
+     HEAP32[$211>>2] = $209;
+     $212 = $$byval_copy9;
      
-     $110 = $$byval_copy1;
-     $111 = $11;
-     ;HEAP32[$110+0>>2]=HEAP32[$111+0>>2]|0;
-     $112 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEPKNS_12basic_stringIcS3_NS_9allocatorIcEEEENS_5ctypeIcEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy1,$106,$108,$68,$__err,0)|0;
-     $113 = $$byval_copy1;
+     $213 = $$byval_copy9;
+     $214 = $9;
+     ;HEAP32[$213+0>>2]=HEAP32[$214+0>>2]|0;
+     $215 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy9,$__err,$68,2)|0;
+     $216 = $$byval_copy9;
      
-     $114 = $112;
-     $115 = $106;
-     $116 = (($114) - ($115))|0;
-     $117 = ($116|0)<(288);
+     $217 = HEAP32[$__err>>2]|0;
+     $218 = $217 & 4;
+     $219 = ($218|0)==(0);
+     $220 = ($215|0)<(24);
+     $or$cond$i = $219 & $220;
      
-     if (!($117)) {
+     if ($or$cond$i) {
+      $gep_int126 = $__tm;
+      $gep127 = (($gep_int126) + 8)|0;
+      $221 = $gep127;
+      HEAP32[$221>>2] = $215;
+      
+      break L8;
+     } else {
+      $222 = $217 | 4;
+      HEAP32[$__err>>2] = $222;
+      
       break L8;
      }
-     $gep_int83 = $__tm;
-     $gep84 = (($gep_int83) + 16)|0;
-     $118 = $gep84;
-     $119 = (($116|0) / 12)&-1;
-     $120 = (($119|0) % 12)&-1;
-     HEAP32[$118>>2] = $120;
-     
      break;
     }
     case 99:  {
@@ -73711,45 +73742,50 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      
      break;
     }
-    case 101: case 100:  {
-     $gep_int104 = $__tm;
-     $gep105 = (($gep_int104) + 12)|0;
-     $161 = $gep105;
-     $gep_int106 = $__e;
-     $162 = $gep_int106;
-     $163 = HEAP32[$162>>2]|0;
-     $164 = $10;
+    case 121:  {
+     $gep_int206 = $__tm;
+     $gep207 = (($gep_int206) + 20)|0;
+     $435 = $gep207;
+     $gep_int208 = $__e;
+     $436 = $gep_int208;
+     $437 = HEAP32[$436>>2]|0;
+     $438 = $2;
      
-     $gep_int107 = $10;
-     $165 = $gep_int107;
-     HEAP32[$165>>2] = $163;
-     $166 = $$byval_copy4;
+     $gep_int209 = $2;
+     $439 = $gep_int209;
+     HEAP32[$439>>2] = $437;
+     $440 = $$byval_copy28;
      
-     $167 = $$byval_copy4;
-     $168 = $10;
-     ;HEAP32[$167+0>>2]=HEAP32[$168+0>>2]|0;
-     $169 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy4,$__err,$68,2)|0;
-     $170 = $$byval_copy4;
+     $441 = $$byval_copy28;
+     $442 = $2;
+     ;HEAP32[$441+0>>2]=HEAP32[$442+0>>2]|0;
+     $443 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy28,$__err,$68,4)|0;
+     $444 = $$byval_copy28;
      
-     $171 = HEAP32[$__err>>2]|0;
-     $172 = $171 & 4;
-     $173 = ($172|0)==(0);
+     $445 = HEAP32[$__err>>2]|0;
+     $446 = $445 & 4;
+     $447 = ($446|0)==(0);
      
-     do {
-      if ($173) {
-       $$off$i = (($169) + -1)|0;
-       $174 = ($$off$i>>>0)<(31);
-       
-       if (!($174)) {
-        break;
-       }
-       HEAP32[$161>>2] = $169;
-       
-       break L8;
-      }
-     } while(0);
-     $175 = $171 | 4;
-     HEAP32[$__err>>2] = $175;
+     if (!($447)) {
+      break L8;
+     }
+     $448 = ($443|0)<(69);
+     
+     if ($448) {
+      $449 = (($443) + 2000)|0;
+      
+      $__t$0$i = $449;
+     } else {
+      $$off$i33 = (($443) + -69)|0;
+      $450 = ($$off$i33>>>0)<(31);
+      $451 = (($443) + 1900)|0;
+      $$$i = $450 ? $451 : $443;
+      
+      $__t$0$i = $$$i;
+     }
+     
+     $452 = (($__t$0$i) + -1900)|0;
+     HEAP32[$435>>2] = $452;
      
      break;
     }
@@ -73793,123 +73829,45 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      
      break;
     }
-    case 70:  {
-     $gep_int116 = $__b;
-     $192 = $gep_int116;
-     $193 = HEAP32[$192>>2]|0;
-     $gep_int117 = $21;
-     $194 = $gep_int117;
-     HEAP32[$194>>2] = $193;
-     $gep_int118 = $__e;
-     $195 = $gep_int118;
-     $196 = HEAP32[$195>>2]|0;
-     $gep_int119 = $22;
-     $197 = $gep_int119;
-     HEAP32[$197>>2] = $196;
-     $198 = $$byval_copy7;
+    case 101: case 100:  {
+     $gep_int104 = $__tm;
+     $gep105 = (($gep_int104) + 12)|0;
+     $161 = $gep105;
+     $gep_int106 = $__e;
+     $162 = $gep_int106;
+     $163 = HEAP32[$162>>2]|0;
+     $164 = $10;
      
-     $199 = $$byval_copy7;
-     $200 = $21;
-     ;HEAP32[$199+0>>2]=HEAP32[$200+0>>2]|0;
-     $201 = $$byval_copy8;
+     $gep_int107 = $10;
+     $165 = $gep_int107;
+     HEAP32[$165>>2] = $163;
+     $166 = $$byval_copy4;
      
-     $202 = $$byval_copy8;
-     $203 = $22;
-     ;HEAP32[$202+0>>2]=HEAP32[$203+0>>2]|0;
-     $gep_int120 = 5640;
-     $expanded43 = $gep_int120;
-     $gep_int121 = 5640;
-     $gep122 = (($gep_int121) + 8)|0;
-     $expanded44 = $gep122;
-     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($20,$this,$$byval_copy7,$$byval_copy8,$__iob,$__err,$__tm,$expanded43,$expanded44);
-     $204 = $$byval_copy8;
+     $167 = $$byval_copy4;
+     $168 = $10;
+     ;HEAP32[$167+0>>2]=HEAP32[$168+0>>2]|0;
+     $169 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy4,$__err,$68,2)|0;
+     $170 = $$byval_copy4;
      
-     $205 = $$byval_copy7;
-     
-     $gep_int123 = $20;
-     $206 = $gep_int123;
-     $207 = HEAP32[$206>>2]|0;
-     HEAP32[$192>>2] = $207;
-     
-     break;
-    }
-    case 72:  {
-     $gep_int124 = $__e;
-     $208 = $gep_int124;
-     $209 = HEAP32[$208>>2]|0;
-     $210 = $9;
-     
-     $gep_int125 = $9;
-     $211 = $gep_int125;
-     HEAP32[$211>>2] = $209;
-     $212 = $$byval_copy9;
-     
-     $213 = $$byval_copy9;
-     $214 = $9;
-     ;HEAP32[$213+0>>2]=HEAP32[$214+0>>2]|0;
-     $215 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy9,$__err,$68,2)|0;
-     $216 = $$byval_copy9;
-     
-     $217 = HEAP32[$__err>>2]|0;
-     $218 = $217 & 4;
-     $219 = ($218|0)==(0);
-     $220 = ($215|0)<(24);
-     $or$cond$i = $219 & $220;
-     
-     if ($or$cond$i) {
-      $gep_int126 = $__tm;
-      $gep127 = (($gep_int126) + 8)|0;
-      $221 = $gep127;
-      HEAP32[$221>>2] = $215;
-      
-      break L8;
-     } else {
-      $222 = $217 | 4;
-      HEAP32[$__err>>2] = $222;
-      
-      break L8;
-     }
-     break;
-    }
-    case 73:  {
-     $gep_int128 = $__tm;
-     $gep129 = (($gep_int128) + 8)|0;
-     $223 = $gep129;
-     $gep_int130 = $__e;
-     $224 = $gep_int130;
-     $225 = HEAP32[$224>>2]|0;
-     $226 = $8;
-     
-     $gep_int131 = $8;
-     $227 = $gep_int131;
-     HEAP32[$227>>2] = $225;
-     $228 = $$byval_copy10;
-     
-     $229 = $$byval_copy10;
-     $230 = $8;
-     ;HEAP32[$229+0>>2]=HEAP32[$230+0>>2]|0;
-     $231 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy10,$__err,$68,2)|0;
-     $232 = $$byval_copy10;
-     
-     $233 = HEAP32[$__err>>2]|0;
-     $234 = $233 & 4;
-     $235 = ($234|0)==(0);
+     $171 = HEAP32[$__err>>2]|0;
+     $172 = $171 & 4;
+     $173 = ($172|0)==(0);
      
      do {
-      if ($235) {
-       $$off$i12 = (($231) + -1)|0;
-       $236 = ($$off$i12>>>0)<(12);
+      if ($173) {
+       $$off$i = (($169) + -1)|0;
+       $174 = ($$off$i>>>0)<(31);
        
-       if (!($236)) {
+       if (!($174)) {
         break;
        }
-       HEAP32[$223>>2] = $231;
+       HEAP32[$161>>2] = $169;
        
        break L8;
       }
      } while(0);
-     $237 = $233 | 4;
-     HEAP32[$__err>>2] = $237;
+     $175 = $171 | 4;
+     HEAP32[$__err>>2] = $175;
      
      break;
     }
@@ -74043,6 +74001,266 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE17__get_white_spaceERS4_S4_RjRKNS_5ctypeIcEE(0,$__b,$$byval_copy14,$__err,$68);
      $290 = $$byval_copy14;
      
+     
+     break;
+    }
+    case 70:  {
+     $gep_int116 = $__b;
+     $192 = $gep_int116;
+     $193 = HEAP32[$192>>2]|0;
+     $gep_int117 = $21;
+     $194 = $gep_int117;
+     HEAP32[$194>>2] = $193;
+     $gep_int118 = $__e;
+     $195 = $gep_int118;
+     $196 = HEAP32[$195>>2]|0;
+     $gep_int119 = $22;
+     $197 = $gep_int119;
+     HEAP32[$197>>2] = $196;
+     $198 = $$byval_copy7;
+     
+     $199 = $$byval_copy7;
+     $200 = $21;
+     ;HEAP32[$199+0>>2]=HEAP32[$200+0>>2]|0;
+     $201 = $$byval_copy8;
+     
+     $202 = $$byval_copy8;
+     $203 = $22;
+     ;HEAP32[$202+0>>2]=HEAP32[$203+0>>2]|0;
+     $gep_int120 = 5640;
+     $expanded43 = $gep_int120;
+     $gep_int121 = 5640;
+     $gep122 = (($gep_int121) + 8)|0;
+     $expanded44 = $gep122;
+     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($20,$this,$$byval_copy7,$$byval_copy8,$__iob,$__err,$__tm,$expanded43,$expanded44);
+     $204 = $$byval_copy8;
+     
+     $205 = $$byval_copy7;
+     
+     $gep_int123 = $20;
+     $206 = $gep_int123;
+     $207 = HEAP32[$206>>2]|0;
+     HEAP32[$192>>2] = $207;
+     
+     break;
+    }
+    case 89:  {
+     $gep_int210 = $__e;
+     $453 = $gep_int210;
+     $454 = HEAP32[$453>>2]|0;
+     $455 = $1;
+     
+     $gep_int211 = $1;
+     $456 = $gep_int211;
+     HEAP32[$456>>2] = $454;
+     $457 = $$byval_copy29;
+     
+     $458 = $$byval_copy29;
+     $459 = $1;
+     ;HEAP32[$458+0>>2]=HEAP32[$459+0>>2]|0;
+     $460 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy29,$__err,$68,4)|0;
+     $461 = $$byval_copy29;
+     
+     $462 = HEAP32[$__err>>2]|0;
+     $463 = $462 & 4;
+     $464 = ($463|0)==(0);
+     
+     if (!($464)) {
+      break L8;
+     }
+     $gep_int212 = $__tm;
+     $gep213 = (($gep_int212) + 20)|0;
+     $465 = $gep213;
+     $466 = (($460) + -1900)|0;
+     HEAP32[$465>>2] = $466;
+     
+     break;
+    }
+    case 104: case 66: case 98:  {
+     $gep_int75 = $__e;
+     $98 = $gep_int75;
+     $99 = HEAP32[$98>>2]|0;
+     $100 = $11;
+     
+     $gep_int76 = $this;
+     $gep77 = (($gep_int76) + 8)|0;
+     $101 = $gep77;
+     $102 = $101;
+     $103 = HEAP32[$101>>2]|0;
+     $gep_int78 = $103;
+     $gep79 = (($gep_int78) + 4)|0;
+     $104 = $gep79;
+     $105 = HEAP32[$104>>2]|0;
+     $106 = FUNCTION_TABLE_ii[$105 & 127]($101)|0;
+     $gep_int80 = $11;
+     $107 = $gep_int80;
+     HEAP32[$107>>2] = $99;
+     $gep_int81 = $106;
+     $gep82 = (($gep_int81) + 288)|0;
+     $108 = $gep82;
+     $109 = $$byval_copy1;
+     
+     $110 = $$byval_copy1;
+     $111 = $11;
+     ;HEAP32[$110+0>>2]=HEAP32[$111+0>>2]|0;
+     $112 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEPKNS_12basic_stringIcS3_NS_9allocatorIcEEEENS_5ctypeIcEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy1,$106,$108,$68,$__err,0)|0;
+     $113 = $$byval_copy1;
+     
+     $114 = $112;
+     $115 = $106;
+     $116 = (($114) - ($115))|0;
+     $117 = ($116|0)<(288);
+     
+     if (!($117)) {
+      break L8;
+     }
+     $gep_int83 = $__tm;
+     $gep84 = (($gep_int83) + 16)|0;
+     $118 = $gep84;
+     $119 = (($116|0) / 12)&-1;
+     $120 = (($119|0) % 12)&-1;
+     HEAP32[$118>>2] = $120;
+     
+     break;
+    }
+    case 37:  {
+     $gep_int214 = $__e;
+     $467 = $gep_int214;
+     $468 = HEAP32[$467>>2]|0;
+     $gep_int215 = $39;
+     $469 = $gep_int215;
+     HEAP32[$469>>2] = $468;
+     $470 = $$byval_copy30;
+     
+     $471 = $$byval_copy30;
+     $472 = $39;
+     ;HEAP32[$471+0>>2]=HEAP32[$472+0>>2]|0;
+     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE13__get_percentERS4_S4_RjRKNS_5ctypeIcEE(0,$__b,$$byval_copy30,$__err,$68);
+     $473 = $$byval_copy30;
+     
+     
+     break;
+    }
+    case 88:  {
+     $gep_int187 = $this;
+     $gep188 = (($gep_int187) + 8)|0;
+     $395 = $gep188;
+     $396 = $395;
+     $397 = HEAP32[$395>>2]|0;
+     $gep_int189 = $397;
+     $gep190 = (($gep_int189) + 24)|0;
+     $398 = $gep190;
+     $399 = HEAP32[$398>>2]|0;
+     $400 = FUNCTION_TABLE_ii[$399 & 127]($395)|0;
+     $gep_int191 = $__b;
+     $401 = $gep_int191;
+     $402 = HEAP32[$401>>2]|0;
+     $gep_int192 = $37;
+     $403 = $gep_int192;
+     HEAP32[$403>>2] = $402;
+     $gep_int193 = $__e;
+     $404 = $gep_int193;
+     $405 = HEAP32[$404>>2]|0;
+     $gep_int194 = $38;
+     $406 = $gep_int194;
+     HEAP32[$406>>2] = $405;
+     $407 = $400;
+     $408 = HEAP8[$400]|0;
+     $409 = $408 & 1;
+     $410 = ($409<<24>>24)==(0);
+     
+     if ($410) {
+      $415 = $400;
+      $gep_int199 = $400;
+      $gep200 = (($gep_int199) + 1)|0;
+      $416 = $gep200;
+      $417 = $400;
+      $gep_int201 = $400;
+      $gep202 = (($gep_int201) + 1)|0;
+      $418 = $gep202;
+      $419 = $408&255;
+      $420 = $419 >>> 1;
+      
+      $421 = $418;$422 = $416;$423 = $420;
+     } else {
+      $gep_int195 = $400;
+      $gep196 = (($gep_int195) + 8)|0;
+      $411 = $gep196;
+      $412 = HEAP32[$411>>2]|0;
+      $gep_int197 = $400;
+      $gep198 = (($gep_int197) + 4)|0;
+      $413 = $gep198;
+      $414 = HEAP32[$413>>2]|0;
+      
+      $421 = $412;$422 = $412;$423 = $414;
+     }
+     
+     
+     
+     $gep_int203 = $421;
+     $gep204 = (($gep_int203) + ($423))|0;
+     $424 = $gep204;
+     $425 = $$byval_copy26;
+     
+     $426 = $$byval_copy26;
+     $427 = $37;
+     ;HEAP32[$426+0>>2]=HEAP32[$427+0>>2]|0;
+     $428 = $$byval_copy27;
+     
+     $429 = $$byval_copy27;
+     $430 = $38;
+     ;HEAP32[$429+0>>2]=HEAP32[$430+0>>2]|0;
+     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($36,$this,$$byval_copy26,$$byval_copy27,$__iob,$__err,$__tm,$422,$424);
+     $431 = $$byval_copy27;
+     
+     $432 = $$byval_copy26;
+     
+     $gep_int205 = $36;
+     $433 = $gep_int205;
+     $434 = HEAP32[$433>>2]|0;
+     HEAP32[$401>>2] = $434;
+     
+     break;
+    }
+    case 73:  {
+     $gep_int128 = $__tm;
+     $gep129 = (($gep_int128) + 8)|0;
+     $223 = $gep129;
+     $gep_int130 = $__e;
+     $224 = $gep_int130;
+     $225 = HEAP32[$224>>2]|0;
+     $226 = $8;
+     
+     $gep_int131 = $8;
+     $227 = $gep_int131;
+     HEAP32[$227>>2] = $225;
+     $228 = $$byval_copy10;
+     
+     $229 = $$byval_copy10;
+     $230 = $8;
+     ;HEAP32[$229+0>>2]=HEAP32[$230+0>>2]|0;
+     $231 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy10,$__err,$68,2)|0;
+     $232 = $$byval_copy10;
+     
+     $233 = HEAP32[$__err>>2]|0;
+     $234 = $233 & 4;
+     $235 = ($234|0)==(0);
+     
+     do {
+      if ($235) {
+       $$off$i12 = (($231) + -1)|0;
+       $236 = ($$off$i12>>>0)<(12);
+       
+       if (!($236)) {
+        break;
+       }
+       HEAP32[$223>>2] = $231;
+       
+       break L8;
+      }
+     } while(0);
+     $237 = $233 | 4;
+     HEAP32[$__err>>2] = $237;
      
      break;
     }
@@ -74184,46 +74402,6 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      }
      break;
     }
-    case 84:  {
-     $gep_int169 = $__b;
-     $346 = $gep_int169;
-     $347 = HEAP32[$346>>2]|0;
-     $gep_int170 = $32;
-     $348 = $gep_int170;
-     HEAP32[$348>>2] = $347;
-     $gep_int171 = $__e;
-     $349 = $gep_int171;
-     $350 = HEAP32[$349>>2]|0;
-     $gep_int172 = $33;
-     $351 = $gep_int172;
-     HEAP32[$351>>2] = $350;
-     $352 = $$byval_copy21;
-     
-     $353 = $$byval_copy21;
-     $354 = $32;
-     ;HEAP32[$353+0>>2]=HEAP32[$354+0>>2]|0;
-     $355 = $$byval_copy22;
-     
-     $356 = $$byval_copy22;
-     $357 = $33;
-     ;HEAP32[$356+0>>2]=HEAP32[$357+0>>2]|0;
-     $gep_int173 = 5672;
-     $expanded49 = $gep_int173;
-     $gep_int174 = 5672;
-     $gep175 = (($gep_int174) + 8)|0;
-     $expanded50 = $gep175;
-     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($31,$this,$$byval_copy21,$$byval_copy22,$__iob,$__err,$__tm,$expanded49,$expanded50);
-     $358 = $$byval_copy22;
-     
-     $359 = $$byval_copy21;
-     
-     $gep_int176 = $31;
-     $360 = $gep_int176;
-     $361 = HEAP32[$360>>2]|0;
-     HEAP32[$346>>2] = $361;
-     
-     break;
-    }
     case 119:  {
      $gep_int177 = $__e;
      $362 = $gep_int177;
@@ -74298,184 +74476,6 @@ function __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      
      
      STACKTOP = sp;return;
-     break;
-    }
-    case 88:  {
-     $gep_int187 = $this;
-     $gep188 = (($gep_int187) + 8)|0;
-     $395 = $gep188;
-     $396 = $395;
-     $397 = HEAP32[$395>>2]|0;
-     $gep_int189 = $397;
-     $gep190 = (($gep_int189) + 24)|0;
-     $398 = $gep190;
-     $399 = HEAP32[$398>>2]|0;
-     $400 = FUNCTION_TABLE_ii[$399 & 127]($395)|0;
-     $gep_int191 = $__b;
-     $401 = $gep_int191;
-     $402 = HEAP32[$401>>2]|0;
-     $gep_int192 = $37;
-     $403 = $gep_int192;
-     HEAP32[$403>>2] = $402;
-     $gep_int193 = $__e;
-     $404 = $gep_int193;
-     $405 = HEAP32[$404>>2]|0;
-     $gep_int194 = $38;
-     $406 = $gep_int194;
-     HEAP32[$406>>2] = $405;
-     $407 = $400;
-     $408 = HEAP8[$400]|0;
-     $409 = $408 & 1;
-     $410 = ($409<<24>>24)==(0);
-     
-     if ($410) {
-      $415 = $400;
-      $gep_int199 = $400;
-      $gep200 = (($gep_int199) + 1)|0;
-      $416 = $gep200;
-      $417 = $400;
-      $gep_int201 = $400;
-      $gep202 = (($gep_int201) + 1)|0;
-      $418 = $gep202;
-      $419 = $408&255;
-      $420 = $419 >>> 1;
-      
-      $421 = $418;$422 = $416;$423 = $420;
-     } else {
-      $gep_int195 = $400;
-      $gep196 = (($gep_int195) + 8)|0;
-      $411 = $gep196;
-      $412 = HEAP32[$411>>2]|0;
-      $gep_int197 = $400;
-      $gep198 = (($gep_int197) + 4)|0;
-      $413 = $gep198;
-      $414 = HEAP32[$413>>2]|0;
-      
-      $421 = $412;$422 = $412;$423 = $414;
-     }
-     
-     
-     
-     $gep_int203 = $421;
-     $gep204 = (($gep_int203) + ($423))|0;
-     $424 = $gep204;
-     $425 = $$byval_copy26;
-     
-     $426 = $$byval_copy26;
-     $427 = $37;
-     ;HEAP32[$426+0>>2]=HEAP32[$427+0>>2]|0;
-     $428 = $$byval_copy27;
-     
-     $429 = $$byval_copy27;
-     $430 = $38;
-     ;HEAP32[$429+0>>2]=HEAP32[$430+0>>2]|0;
-     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKcSC_($36,$this,$$byval_copy26,$$byval_copy27,$__iob,$__err,$__tm,$422,$424);
-     $431 = $$byval_copy27;
-     
-     $432 = $$byval_copy26;
-     
-     $gep_int205 = $36;
-     $433 = $gep_int205;
-     $434 = HEAP32[$433>>2]|0;
-     HEAP32[$401>>2] = $434;
-     
-     break;
-    }
-    case 121:  {
-     $gep_int206 = $__tm;
-     $gep207 = (($gep_int206) + 20)|0;
-     $435 = $gep207;
-     $gep_int208 = $__e;
-     $436 = $gep_int208;
-     $437 = HEAP32[$436>>2]|0;
-     $438 = $2;
-     
-     $gep_int209 = $2;
-     $439 = $gep_int209;
-     HEAP32[$439>>2] = $437;
-     $440 = $$byval_copy28;
-     
-     $441 = $$byval_copy28;
-     $442 = $2;
-     ;HEAP32[$441+0>>2]=HEAP32[$442+0>>2]|0;
-     $443 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy28,$__err,$68,4)|0;
-     $444 = $$byval_copy28;
-     
-     $445 = HEAP32[$__err>>2]|0;
-     $446 = $445 & 4;
-     $447 = ($446|0)==(0);
-     
-     if (!($447)) {
-      break L8;
-     }
-     $448 = ($443|0)<(69);
-     
-     if ($448) {
-      $449 = (($443) + 2000)|0;
-      
-      $__t$0$i = $449;
-     } else {
-      $$off$i33 = (($443) + -69)|0;
-      $450 = ($$off$i33>>>0)<(31);
-      $451 = (($443) + 1900)|0;
-      $$$i = $450 ? $451 : $443;
-      
-      $__t$0$i = $$$i;
-     }
-     
-     $452 = (($__t$0$i) + -1900)|0;
-     HEAP32[$435>>2] = $452;
-     
-     break;
-    }
-    case 89:  {
-     $gep_int210 = $__e;
-     $453 = $gep_int210;
-     $454 = HEAP32[$453>>2]|0;
-     $455 = $1;
-     
-     $gep_int211 = $1;
-     $456 = $gep_int211;
-     HEAP32[$456>>2] = $454;
-     $457 = $$byval_copy29;
-     
-     $458 = $$byval_copy29;
-     $459 = $1;
-     ;HEAP32[$458+0>>2]=HEAP32[$459+0>>2]|0;
-     $460 = __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy29,$__err,$68,4)|0;
-     $461 = $$byval_copy29;
-     
-     $462 = HEAP32[$__err>>2]|0;
-     $463 = $462 & 4;
-     $464 = ($463|0)==(0);
-     
-     if (!($464)) {
-      break L8;
-     }
-     $gep_int212 = $__tm;
-     $gep213 = (($gep_int212) + 20)|0;
-     $465 = $gep213;
-     $466 = (($460) + -1900)|0;
-     HEAP32[$465>>2] = $466;
-     
-     break;
-    }
-    case 37:  {
-     $gep_int214 = $__e;
-     $467 = $gep_int214;
-     $468 = HEAP32[$467>>2]|0;
-     $gep_int215 = $39;
-     $469 = $gep_int215;
-     HEAP32[$469>>2] = $468;
-     $470 = $$byval_copy30;
-     
-     $471 = $$byval_copy30;
-     $472 = $39;
-     ;HEAP32[$471+0>>2]=HEAP32[$472+0>>2]|0;
-     __ZNKSt3__18time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE13__get_percentERS4_S4_RjRKNS_5ctypeIcEE(0,$__b,$$byval_copy30,$__err,$68);
-     $473 = $$byval_copy30;
-     
-     
      break;
     }
     default: {
@@ -75718,7 +75718,7 @@ function __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_t
     $152 = ($151|0)==(0);
     $153 = ($$pre$i2$i$i21|0)==(0);
     
-    L63: do {
+    L65: do {
      if ($153) {
       label = 50;
      } else {
@@ -75749,7 +75749,7 @@ function __ZNSt3__120__get_up_to_n_digitsIcNS_19istreambuf_iteratorIcNS_11char_t
         HEAP32[$17>>2] = 0;
         
         label = 50;
-        break L63;
+        break L65;
        }
       } while(0);
       
@@ -77591,124 +77591,45 @@ function __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
    
    L8: do {
     switch ($71|0) {
-    case 82:  {
-     $gep_int169 = $__b;
-     $313 = $gep_int169;
-     $314 = HEAP32[$313>>2]|0;
-     $gep_int170 = $29;
-     $315 = $gep_int170;
-     HEAP32[$315>>2] = $314;
-     $gep_int171 = $__e;
-     $316 = $gep_int171;
-     $317 = HEAP32[$316>>2]|0;
-     $gep_int172 = $30;
-     $318 = $gep_int172;
-     HEAP32[$318>>2] = $317;
-     $319 = $$byval_copy18;
+    case 101: case 100:  {
+     $gep_int115 = $__tm;
+     $gep116 = (($gep_int115) + 12)|0;
+     $159 = $gep116;
+     $gep_int117 = $__e;
+     $160 = $gep_int117;
+     $161 = HEAP32[$160>>2]|0;
+     $162 = $10;
      
-     $320 = $$byval_copy18;
-     $321 = $29;
-     ;HEAP32[$320+0>>2]=HEAP32[$321+0>>2]|0;
-     $322 = $$byval_copy19;
+     $gep_int118 = $10;
+     $163 = $gep_int118;
+     HEAP32[$163>>2] = $161;
+     $164 = $$byval_copy4;
      
-     $323 = $$byval_copy19;
-     $324 = $30;
-     ;HEAP32[$323+0>>2]=HEAP32[$324+0>>2]|0;
-     $expanded54 = 5920;
-     $gep_int173 = 5920;
-     $expanded53 = $gep_int173;
-     $expanded56 = 5920;
-     $gep_int174 = 5920;
-     $gep175 = (($gep_int174) + 20)|0;
-     $expanded55 = $gep175;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($28,$this,$$byval_copy18,$$byval_copy19,$__iob,$__err,$__tm,$expanded53,$expanded55);
-     $325 = $$byval_copy19;
+     $165 = $$byval_copy4;
+     $166 = $10;
+     ;HEAP32[$165+0>>2]=HEAP32[$166+0>>2]|0;
+     $167 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy4,$__err,$68,2)|0;
+     $168 = $$byval_copy4;
      
-     $326 = $$byval_copy18;
+     $169 = HEAP32[$__err>>2]|0;
+     $170 = $169 & 4;
+     $171 = ($170|0)==(0);
      
-     $gep_int176 = $28;
-     $327 = $gep_int176;
-     $328 = HEAP32[$327>>2]|0;
-     HEAP32[$313>>2] = $328;
-     
-     break;
-    }
-    case 83:  {
-     $gep_int177 = $__e;
-     $329 = $gep_int177;
-     $330 = HEAP32[$329>>2]|0;
-     $331 = $4;
-     
-     $gep_int178 = $4;
-     $332 = $gep_int178;
-     HEAP32[$332>>2] = $330;
-     $333 = $$byval_copy20;
-     
-     $334 = $$byval_copy20;
-     $335 = $4;
-     ;HEAP32[$334+0>>2]=HEAP32[$335+0>>2]|0;
-     $336 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy20,$__err,$68,2)|0;
-     $337 = $$byval_copy20;
-     
-     $338 = HEAP32[$__err>>2]|0;
-     $339 = $338 & 4;
-     $340 = ($339|0)==(0);
-     $341 = ($336|0)<(61);
-     $or$cond$i24 = $340 & $341;
-     
-     if ($or$cond$i24) {
-      $gep_int179 = $__tm;
-      $342 = $gep_int179;
-      HEAP32[$342>>2] = $336;
-      
-      break L8;
-     } else {
-      $343 = $338 | 4;
-      HEAP32[$__err>>2] = $343;
-      
-      break L8;
-     }
-     break;
-    }
-    case 84:  {
-     $gep_int180 = $__b;
-     $344 = $gep_int180;
-     $345 = HEAP32[$344>>2]|0;
-     $gep_int181 = $32;
-     $346 = $gep_int181;
-     HEAP32[$346>>2] = $345;
-     $gep_int182 = $__e;
-     $347 = $gep_int182;
-     $348 = HEAP32[$347>>2]|0;
-     $gep_int183 = $33;
-     $349 = $gep_int183;
-     HEAP32[$349>>2] = $348;
-     $350 = $$byval_copy21;
-     
-     $351 = $$byval_copy21;
-     $352 = $32;
-     ;HEAP32[$351+0>>2]=HEAP32[$352+0>>2]|0;
-     $353 = $$byval_copy22;
-     
-     $354 = $$byval_copy22;
-     $355 = $33;
-     ;HEAP32[$354+0>>2]=HEAP32[$355+0>>2]|0;
-     $expanded58 = 5944;
-     $gep_int184 = 5944;
-     $expanded57 = $gep_int184;
-     $expanded60 = 5944;
-     $gep_int185 = 5944;
-     $gep186 = (($gep_int185) + 32)|0;
-     $expanded59 = $gep186;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($31,$this,$$byval_copy21,$$byval_copy22,$__iob,$__err,$__tm,$expanded57,$expanded59);
-     $356 = $$byval_copy22;
-     
-     $357 = $$byval_copy21;
-     
-     $gep_int187 = $31;
-     $358 = $gep_int187;
-     $359 = HEAP32[$358>>2]|0;
-     HEAP32[$344>>2] = $359;
+     do {
+      if ($171) {
+       $$off$i = (($167) + -1)|0;
+       $172 = ($$off$i>>>0)<(31);
+       
+       if (!($172)) {
+        break;
+       }
+       HEAP32[$159>>2] = $167;
+       
+       break L8;
+      }
+     } while(0);
+     $173 = $169 | 4;
+     HEAP32[$__err>>2] = $173;
      
      break;
     }
@@ -77868,256 +77789,42 @@ function __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
      
      break;
     }
-    case 65: case 97:  {
-     $gep_int77 = $__e;
-     $76 = $gep_int77;
-     $77 = HEAP32[$76>>2]|0;
-     $78 = $12;
+    case 77:  {
+     $gep_int151 = $__e;
+     $267 = $gep_int151;
+     $268 = HEAP32[$267>>2]|0;
+     $269 = $5;
      
-     $gep_int78 = $this;
-     $gep79 = (($gep_int78) + 8)|0;
-     $79 = $gep79;
-     $80 = $79;
-     $81 = HEAP32[$79>>2]|0;
-     $82 = HEAP32[$81>>2]|0;
-     $83 = FUNCTION_TABLE_ii[$82 & 127]($79)|0;
-     $gep_int80 = $12;
-     $84 = $gep_int80;
-     HEAP32[$84>>2] = $77;
-     $gep_int81 = $83;
-     $gep82 = (($gep_int81) + 168)|0;
-     $85 = $gep82;
-     $86 = $$byval_copy;
+     $gep_int152 = $5;
+     $270 = $gep_int152;
+     HEAP32[$270>>2] = $268;
+     $271 = $$byval_copy13;
      
-     $87 = $$byval_copy;
-     $88 = $12;
-     ;HEAP32[$87+0>>2]=HEAP32[$88+0>>2]|0;
-     $89 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEPKNS_12basic_stringIwS3_NS_9allocatorIwEEEENS_5ctypeIwEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy,$83,$85,$68,$__err,0)|0;
-     $90 = $$byval_copy;
+     $272 = $$byval_copy13;
+     $273 = $5;
+     ;HEAP32[$272+0>>2]=HEAP32[$273+0>>2]|0;
+     $274 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy13,$__err,$68,2)|0;
+     $275 = $$byval_copy13;
      
-     $91 = $89;
-     $92 = $83;
-     $93 = (($91) - ($92))|0;
-     $94 = ($93|0)<(168);
+     $276 = HEAP32[$__err>>2]|0;
+     $277 = $276 & 4;
+     $278 = ($277|0)==(0);
+     $279 = ($274|0)<(60);
+     $or$cond$i21 = $278 & $279;
      
-     if (!($94)) {
-      break L8;
-     }
-     $gep_int83 = $__tm;
-     $gep84 = (($gep_int83) + 24)|0;
-     $95 = $gep84;
-     $96 = (($93|0) / 12)&-1;
-     $97 = (($96|0) % 7)&-1;
-     HEAP32[$95>>2] = $97;
-     
-     break;
-    }
-    case 109:  {
-     $gep_int147 = $__e;
-     $251 = $gep_int147;
-     $252 = HEAP32[$251>>2]|0;
-     $253 = $6;
-     
-     $gep_int148 = $6;
-     $254 = $gep_int148;
-     HEAP32[$254>>2] = $252;
-     $255 = $$byval_copy12;
-     
-     $256 = $$byval_copy12;
-     $257 = $6;
-     ;HEAP32[$256+0>>2]=HEAP32[$257+0>>2]|0;
-     $258 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy12,$__err,$68,2)|0;
-     $259 = $$byval_copy12;
-     
-     $260 = HEAP32[$__err>>2]|0;
-     $261 = $260 & 4;
-     $262 = ($261|0)==(0);
-     $263 = ($258|0)<(13);
-     $or$cond$i18 = $262 & $263;
-     
-     if ($or$cond$i18) {
-      $gep_int149 = $__tm;
-      $gep150 = (($gep_int149) + 16)|0;
-      $264 = $gep150;
-      $265 = (($258) + -1)|0;
-      HEAP32[$264>>2] = $265;
+     if ($or$cond$i21) {
+      $gep_int153 = $__tm;
+      $gep154 = (($gep_int153) + 4)|0;
+      $280 = $gep154;
+      HEAP32[$280>>2] = $274;
       
       break L8;
      } else {
-      $266 = $260 | 4;
-      HEAP32[$__err>>2] = $266;
+      $281 = $276 | 4;
+      HEAP32[$__err>>2] = $281;
       
       break L8;
      }
-     break;
-    }
-    case 104: case 66: case 98:  {
-     $gep_int85 = $__e;
-     $98 = $gep_int85;
-     $99 = HEAP32[$98>>2]|0;
-     $100 = $11;
-     
-     $gep_int86 = $this;
-     $gep87 = (($gep_int86) + 8)|0;
-     $101 = $gep87;
-     $102 = $101;
-     $103 = HEAP32[$101>>2]|0;
-     $gep_int88 = $103;
-     $gep89 = (($gep_int88) + 4)|0;
-     $104 = $gep89;
-     $105 = HEAP32[$104>>2]|0;
-     $106 = FUNCTION_TABLE_ii[$105 & 127]($101)|0;
-     $gep_int90 = $11;
-     $107 = $gep_int90;
-     HEAP32[$107>>2] = $99;
-     $gep_int91 = $106;
-     $gep92 = (($gep_int91) + 288)|0;
-     $108 = $gep92;
-     $109 = $$byval_copy1;
-     
-     $110 = $$byval_copy1;
-     $111 = $11;
-     ;HEAP32[$110+0>>2]=HEAP32[$111+0>>2]|0;
-     $112 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEPKNS_12basic_stringIwS3_NS_9allocatorIwEEEENS_5ctypeIwEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy1,$106,$108,$68,$__err,0)|0;
-     $113 = $$byval_copy1;
-     
-     $114 = $112;
-     $115 = $106;
-     $116 = (($114) - ($115))|0;
-     $117 = ($116|0)<(288);
-     
-     if (!($117)) {
-      break L8;
-     }
-     $gep_int93 = $__tm;
-     $gep94 = (($gep_int93) + 16)|0;
-     $118 = $gep94;
-     $119 = (($116|0) / 12)&-1;
-     $120 = (($119|0) % 12)&-1;
-     HEAP32[$118>>2] = $120;
-     
-     break;
-    }
-    case 99:  {
-     $gep_int95 = $this;
-     $gep96 = (($gep_int95) + 8)|0;
-     $121 = $gep96;
-     $122 = $121;
-     $123 = HEAP32[$121>>2]|0;
-     $gep_int97 = $123;
-     $gep98 = (($gep_int97) + 12)|0;
-     $124 = $gep98;
-     $125 = HEAP32[$124>>2]|0;
-     $126 = FUNCTION_TABLE_ii[$125 & 127]($121)|0;
-     $gep_int99 = $__b;
-     $127 = $gep_int99;
-     $128 = HEAP32[$127>>2]|0;
-     $gep_int100 = $15;
-     $129 = $gep_int100;
-     HEAP32[$129>>2] = $128;
-     $gep_int101 = $__e;
-     $130 = $gep_int101;
-     $131 = HEAP32[$130>>2]|0;
-     $gep_int102 = $16;
-     $132 = $gep_int102;
-     HEAP32[$132>>2] = $131;
-     $133 = $126;
-     $134 = HEAP8[$126]|0;
-     $135 = $134 & 1;
-     $136 = ($135<<24>>24)==(0);
-     
-     if ($136) {
-      $gep_int107 = $126;
-      $gep108 = (($gep_int107) + 4)|0;
-      $141 = $gep108;
-      $gep_int109 = $126;
-      $gep110 = (($gep_int109) + 4)|0;
-      $142 = $gep110;
-      $143 = $134&255;
-      $144 = $143 >>> 1;
-      
-      $145 = $142;$146 = $141;$147 = $144;
-     } else {
-      $gep_int103 = $126;
-      $gep104 = (($gep_int103) + 8)|0;
-      $137 = $gep104;
-      $138 = HEAP32[$137>>2]|0;
-      $gep_int105 = $126;
-      $gep106 = (($gep_int105) + 4)|0;
-      $139 = $gep106;
-      $140 = HEAP32[$139>>2]|0;
-      
-      $145 = $138;$146 = $138;$147 = $140;
-     }
-     
-     
-     
-     $gep_int111 = $145;
-     $gep_array112 = $147<<2;
-     $gep113 = (($gep_int111) + ($gep_array112))|0;
-     $148 = $gep113;
-     $149 = $$byval_copy2;
-     
-     $150 = $$byval_copy2;
-     $151 = $15;
-     ;HEAP32[$150+0>>2]=HEAP32[$151+0>>2]|0;
-     $152 = $$byval_copy3;
-     
-     $153 = $$byval_copy3;
-     $154 = $16;
-     ;HEAP32[$153+0>>2]=HEAP32[$154+0>>2]|0;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($14,$this,$$byval_copy2,$$byval_copy3,$__iob,$__err,$__tm,$146,$148);
-     $155 = $$byval_copy3;
-     
-     $156 = $$byval_copy2;
-     
-     $gep_int114 = $14;
-     $157 = $gep_int114;
-     $158 = HEAP32[$157>>2]|0;
-     HEAP32[$127>>2] = $158;
-     
-     break;
-    }
-    case 101: case 100:  {
-     $gep_int115 = $__tm;
-     $gep116 = (($gep_int115) + 12)|0;
-     $159 = $gep116;
-     $gep_int117 = $__e;
-     $160 = $gep_int117;
-     $161 = HEAP32[$160>>2]|0;
-     $162 = $10;
-     
-     $gep_int118 = $10;
-     $163 = $gep_int118;
-     HEAP32[$163>>2] = $161;
-     $164 = $$byval_copy4;
-     
-     $165 = $$byval_copy4;
-     $166 = $10;
-     ;HEAP32[$165+0>>2]=HEAP32[$166+0>>2]|0;
-     $167 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy4,$__err,$68,2)|0;
-     $168 = $$byval_copy4;
-     
-     $169 = HEAP32[$__err>>2]|0;
-     $170 = $169 & 4;
-     $171 = ($170|0)==(0);
-     
-     do {
-      if ($171) {
-       $$off$i = (($167) + -1)|0;
-       $172 = ($$off$i>>>0)<(31);
-       
-       if (!($172)) {
-        break;
-       }
-       HEAP32[$159>>2] = $167;
-       
-       break L8;
-      }
-     } while(0);
-     $173 = $169 | 4;
-     HEAP32[$__err>>2] = $173;
-     
      break;
     }
     case 68:  {
@@ -78242,6 +77949,379 @@ function __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
      }
      break;
     }
+    case 116: case 110:  {
+     $gep_int155 = $__e;
+     $282 = $gep_int155;
+     $283 = HEAP32[$282>>2]|0;
+     $gep_int156 = $23;
+     $284 = $gep_int156;
+     HEAP32[$284>>2] = $283;
+     $285 = $$byval_copy14;
+     
+     $286 = $$byval_copy14;
+     $287 = $23;
+     ;HEAP32[$286+0>>2]=HEAP32[$287+0>>2]|0;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE17__get_white_spaceERS4_S4_RjRKNS_5ctypeIwEE(0,$__b,$$byval_copy14,$__err,$68);
+     $288 = $$byval_copy14;
+     
+     
+     break;
+    }
+    case 99:  {
+     $gep_int95 = $this;
+     $gep96 = (($gep_int95) + 8)|0;
+     $121 = $gep96;
+     $122 = $121;
+     $123 = HEAP32[$121>>2]|0;
+     $gep_int97 = $123;
+     $gep98 = (($gep_int97) + 12)|0;
+     $124 = $gep98;
+     $125 = HEAP32[$124>>2]|0;
+     $126 = FUNCTION_TABLE_ii[$125 & 127]($121)|0;
+     $gep_int99 = $__b;
+     $127 = $gep_int99;
+     $128 = HEAP32[$127>>2]|0;
+     $gep_int100 = $15;
+     $129 = $gep_int100;
+     HEAP32[$129>>2] = $128;
+     $gep_int101 = $__e;
+     $130 = $gep_int101;
+     $131 = HEAP32[$130>>2]|0;
+     $gep_int102 = $16;
+     $132 = $gep_int102;
+     HEAP32[$132>>2] = $131;
+     $133 = $126;
+     $134 = HEAP8[$126]|0;
+     $135 = $134 & 1;
+     $136 = ($135<<24>>24)==(0);
+     
+     if ($136) {
+      $gep_int107 = $126;
+      $gep108 = (($gep_int107) + 4)|0;
+      $141 = $gep108;
+      $gep_int109 = $126;
+      $gep110 = (($gep_int109) + 4)|0;
+      $142 = $gep110;
+      $143 = $134&255;
+      $144 = $143 >>> 1;
+      
+      $145 = $142;$146 = $141;$147 = $144;
+     } else {
+      $gep_int103 = $126;
+      $gep104 = (($gep_int103) + 8)|0;
+      $137 = $gep104;
+      $138 = HEAP32[$137>>2]|0;
+      $gep_int105 = $126;
+      $gep106 = (($gep_int105) + 4)|0;
+      $139 = $gep106;
+      $140 = HEAP32[$139>>2]|0;
+      
+      $145 = $138;$146 = $138;$147 = $140;
+     }
+     
+     
+     
+     $gep_int111 = $145;
+     $gep_array112 = $147<<2;
+     $gep113 = (($gep_int111) + ($gep_array112))|0;
+     $148 = $gep113;
+     $149 = $$byval_copy2;
+     
+     $150 = $$byval_copy2;
+     $151 = $15;
+     ;HEAP32[$150+0>>2]=HEAP32[$151+0>>2]|0;
+     $152 = $$byval_copy3;
+     
+     $153 = $$byval_copy3;
+     $154 = $16;
+     ;HEAP32[$153+0>>2]=HEAP32[$154+0>>2]|0;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($14,$this,$$byval_copy2,$$byval_copy3,$__iob,$__err,$__tm,$146,$148);
+     $155 = $$byval_copy3;
+     
+     $156 = $$byval_copy2;
+     
+     $gep_int114 = $14;
+     $157 = $gep_int114;
+     $158 = HEAP32[$157>>2]|0;
+     HEAP32[$127>>2] = $158;
+     
+     break;
+    }
+    case 104: case 66: case 98:  {
+     $gep_int85 = $__e;
+     $98 = $gep_int85;
+     $99 = HEAP32[$98>>2]|0;
+     $100 = $11;
+     
+     $gep_int86 = $this;
+     $gep87 = (($gep_int86) + 8)|0;
+     $101 = $gep87;
+     $102 = $101;
+     $103 = HEAP32[$101>>2]|0;
+     $gep_int88 = $103;
+     $gep89 = (($gep_int88) + 4)|0;
+     $104 = $gep89;
+     $105 = HEAP32[$104>>2]|0;
+     $106 = FUNCTION_TABLE_ii[$105 & 127]($101)|0;
+     $gep_int90 = $11;
+     $107 = $gep_int90;
+     HEAP32[$107>>2] = $99;
+     $gep_int91 = $106;
+     $gep92 = (($gep_int91) + 288)|0;
+     $108 = $gep92;
+     $109 = $$byval_copy1;
+     
+     $110 = $$byval_copy1;
+     $111 = $11;
+     ;HEAP32[$110+0>>2]=HEAP32[$111+0>>2]|0;
+     $112 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEPKNS_12basic_stringIwS3_NS_9allocatorIwEEEENS_5ctypeIwEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy1,$106,$108,$68,$__err,0)|0;
+     $113 = $$byval_copy1;
+     
+     $114 = $112;
+     $115 = $106;
+     $116 = (($114) - ($115))|0;
+     $117 = ($116|0)<(288);
+     
+     if (!($117)) {
+      break L8;
+     }
+     $gep_int93 = $__tm;
+     $gep94 = (($gep_int93) + 16)|0;
+     $118 = $gep94;
+     $119 = (($116|0) / 12)&-1;
+     $120 = (($119|0) % 12)&-1;
+     HEAP32[$118>>2] = $120;
+     
+     break;
+    }
+    case 112:  {
+     $gep_int157 = $__tm;
+     $gep158 = (($gep_int157) + 8)|0;
+     $289 = $gep158;
+     $gep_int159 = $__e;
+     $290 = $gep_int159;
+     $291 = HEAP32[$290>>2]|0;
+     $gep_int160 = $24;
+     $292 = $gep_int160;
+     HEAP32[$292>>2] = $291;
+     $293 = $$byval_copy15;
+     
+     $294 = $$byval_copy15;
+     $295 = $24;
+     ;HEAP32[$294+0>>2]=HEAP32[$295+0>>2]|0;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11__get_am_pmERiRS4_S4_RjRKNS_5ctypeIwEE($this,$289,$__b,$$byval_copy15,$__err,$68);
+     $296 = $$byval_copy15;
+     
+     
+     break;
+    }
+    case 114:  {
+     $gep_int161 = $__b;
+     $297 = $gep_int161;
+     $298 = HEAP32[$297>>2]|0;
+     $gep_int162 = $26;
+     $299 = $gep_int162;
+     HEAP32[$299>>2] = $298;
+     $gep_int163 = $__e;
+     $300 = $gep_int163;
+     $301 = HEAP32[$300>>2]|0;
+     $gep_int164 = $27;
+     $302 = $gep_int164;
+     HEAP32[$302>>2] = $301;
+     $303 = $$byval_copy16;
+     
+     $304 = $$byval_copy16;
+     $305 = $26;
+     ;HEAP32[$304+0>>2]=HEAP32[$305+0>>2]|0;
+     $306 = $$byval_copy17;
+     
+     $307 = $$byval_copy17;
+     $308 = $27;
+     ;HEAP32[$307+0>>2]=HEAP32[$308+0>>2]|0;
+     $expanded50 = 5872;
+     $gep_int165 = 5872;
+     $expanded49 = $gep_int165;
+     $expanded52 = 5872;
+     $gep_int166 = 5872;
+     $gep167 = (($gep_int166) + 44)|0;
+     $expanded51 = $gep167;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($25,$this,$$byval_copy16,$$byval_copy17,$__iob,$__err,$__tm,$expanded49,$expanded51);
+     $309 = $$byval_copy17;
+     
+     $310 = $$byval_copy16;
+     
+     $gep_int168 = $25;
+     $311 = $gep_int168;
+     $312 = HEAP32[$311>>2]|0;
+     HEAP32[$297>>2] = $312;
+     
+     break;
+    }
+    case 82:  {
+     $gep_int169 = $__b;
+     $313 = $gep_int169;
+     $314 = HEAP32[$313>>2]|0;
+     $gep_int170 = $29;
+     $315 = $gep_int170;
+     HEAP32[$315>>2] = $314;
+     $gep_int171 = $__e;
+     $316 = $gep_int171;
+     $317 = HEAP32[$316>>2]|0;
+     $gep_int172 = $30;
+     $318 = $gep_int172;
+     HEAP32[$318>>2] = $317;
+     $319 = $$byval_copy18;
+     
+     $320 = $$byval_copy18;
+     $321 = $29;
+     ;HEAP32[$320+0>>2]=HEAP32[$321+0>>2]|0;
+     $322 = $$byval_copy19;
+     
+     $323 = $$byval_copy19;
+     $324 = $30;
+     ;HEAP32[$323+0>>2]=HEAP32[$324+0>>2]|0;
+     $expanded54 = 5920;
+     $gep_int173 = 5920;
+     $expanded53 = $gep_int173;
+     $expanded56 = 5920;
+     $gep_int174 = 5920;
+     $gep175 = (($gep_int174) + 20)|0;
+     $expanded55 = $gep175;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($28,$this,$$byval_copy18,$$byval_copy19,$__iob,$__err,$__tm,$expanded53,$expanded55);
+     $325 = $$byval_copy19;
+     
+     $326 = $$byval_copy18;
+     
+     $gep_int176 = $28;
+     $327 = $gep_int176;
+     $328 = HEAP32[$327>>2]|0;
+     HEAP32[$313>>2] = $328;
+     
+     break;
+    }
+    case 83:  {
+     $gep_int177 = $__e;
+     $329 = $gep_int177;
+     $330 = HEAP32[$329>>2]|0;
+     $331 = $4;
+     
+     $gep_int178 = $4;
+     $332 = $gep_int178;
+     HEAP32[$332>>2] = $330;
+     $333 = $$byval_copy20;
+     
+     $334 = $$byval_copy20;
+     $335 = $4;
+     ;HEAP32[$334+0>>2]=HEAP32[$335+0>>2]|0;
+     $336 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy20,$__err,$68,2)|0;
+     $337 = $$byval_copy20;
+     
+     $338 = HEAP32[$__err>>2]|0;
+     $339 = $338 & 4;
+     $340 = ($339|0)==(0);
+     $341 = ($336|0)<(61);
+     $or$cond$i24 = $340 & $341;
+     
+     if ($or$cond$i24) {
+      $gep_int179 = $__tm;
+      $342 = $gep_int179;
+      HEAP32[$342>>2] = $336;
+      
+      break L8;
+     } else {
+      $343 = $338 | 4;
+      HEAP32[$__err>>2] = $343;
+      
+      break L8;
+     }
+     break;
+    }
+    case 84:  {
+     $gep_int180 = $__b;
+     $344 = $gep_int180;
+     $345 = HEAP32[$344>>2]|0;
+     $gep_int181 = $32;
+     $346 = $gep_int181;
+     HEAP32[$346>>2] = $345;
+     $gep_int182 = $__e;
+     $347 = $gep_int182;
+     $348 = HEAP32[$347>>2]|0;
+     $gep_int183 = $33;
+     $349 = $gep_int183;
+     HEAP32[$349>>2] = $348;
+     $350 = $$byval_copy21;
+     
+     $351 = $$byval_copy21;
+     $352 = $32;
+     ;HEAP32[$351+0>>2]=HEAP32[$352+0>>2]|0;
+     $353 = $$byval_copy22;
+     
+     $354 = $$byval_copy22;
+     $355 = $33;
+     ;HEAP32[$354+0>>2]=HEAP32[$355+0>>2]|0;
+     $expanded58 = 5944;
+     $gep_int184 = 5944;
+     $expanded57 = $gep_int184;
+     $expanded60 = 5944;
+     $gep_int185 = 5944;
+     $gep186 = (($gep_int185) + 32)|0;
+     $expanded59 = $gep186;
+     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($31,$this,$$byval_copy21,$$byval_copy22,$__iob,$__err,$__tm,$expanded57,$expanded59);
+     $356 = $$byval_copy22;
+     
+     $357 = $$byval_copy21;
+     
+     $gep_int187 = $31;
+     $358 = $gep_int187;
+     $359 = HEAP32[$358>>2]|0;
+     HEAP32[$344>>2] = $359;
+     
+     break;
+    }
+    case 65: case 97:  {
+     $gep_int77 = $__e;
+     $76 = $gep_int77;
+     $77 = HEAP32[$76>>2]|0;
+     $78 = $12;
+     
+     $gep_int78 = $this;
+     $gep79 = (($gep_int78) + 8)|0;
+     $79 = $gep79;
+     $80 = $79;
+     $81 = HEAP32[$79>>2]|0;
+     $82 = HEAP32[$81>>2]|0;
+     $83 = FUNCTION_TABLE_ii[$82 & 127]($79)|0;
+     $gep_int80 = $12;
+     $84 = $gep_int80;
+     HEAP32[$84>>2] = $77;
+     $gep_int81 = $83;
+     $gep82 = (($gep_int81) + 168)|0;
+     $85 = $gep82;
+     $86 = $$byval_copy;
+     
+     $87 = $$byval_copy;
+     $88 = $12;
+     ;HEAP32[$87+0>>2]=HEAP32[$88+0>>2]|0;
+     $89 = __ZNSt3__114__scan_keywordINS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEPKNS_12basic_stringIwS3_NS_9allocatorIwEEEENS_5ctypeIwEEEET0_RT_SE_SD_SD_RKT1_Rjb($__b,$$byval_copy,$83,$85,$68,$__err,0)|0;
+     $90 = $$byval_copy;
+     
+     $91 = $89;
+     $92 = $83;
+     $93 = (($91) - ($92))|0;
+     $94 = ($93|0)<(168);
+     
+     if (!($94)) {
+      break L8;
+     }
+     $gep_int83 = $__tm;
+     $gep84 = (($gep_int83) + 24)|0;
+     $95 = $gep84;
+     $96 = (($93|0) / 12)&-1;
+     $97 = (($96|0) % 7)&-1;
+     HEAP32[$95>>2] = $97;
+     
+     break;
+    }
     case 73:  {
      $gep_int139 = $__tm;
      $gep140 = (($gep_int139) + 8)|0;
@@ -78322,123 +78402,43 @@ function __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
      }
      break;
     }
-    case 77:  {
-     $gep_int151 = $__e;
-     $267 = $gep_int151;
-     $268 = HEAP32[$267>>2]|0;
-     $269 = $5;
+    case 109:  {
+     $gep_int147 = $__e;
+     $251 = $gep_int147;
+     $252 = HEAP32[$251>>2]|0;
+     $253 = $6;
      
-     $gep_int152 = $5;
-     $270 = $gep_int152;
-     HEAP32[$270>>2] = $268;
-     $271 = $$byval_copy13;
+     $gep_int148 = $6;
+     $254 = $gep_int148;
+     HEAP32[$254>>2] = $252;
+     $255 = $$byval_copy12;
      
-     $272 = $$byval_copy13;
-     $273 = $5;
-     ;HEAP32[$272+0>>2]=HEAP32[$273+0>>2]|0;
-     $274 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy13,$__err,$68,2)|0;
-     $275 = $$byval_copy13;
+     $256 = $$byval_copy12;
+     $257 = $6;
+     ;HEAP32[$256+0>>2]=HEAP32[$257+0>>2]|0;
+     $258 = __ZNSt3__120__get_up_to_n_digitsIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEEiRT0_S5_RjRKNS_5ctypeIT_EEi($__b,$$byval_copy12,$__err,$68,2)|0;
+     $259 = $$byval_copy12;
      
-     $276 = HEAP32[$__err>>2]|0;
-     $277 = $276 & 4;
-     $278 = ($277|0)==(0);
-     $279 = ($274|0)<(60);
-     $or$cond$i21 = $278 & $279;
+     $260 = HEAP32[$__err>>2]|0;
+     $261 = $260 & 4;
+     $262 = ($261|0)==(0);
+     $263 = ($258|0)<(13);
+     $or$cond$i18 = $262 & $263;
      
-     if ($or$cond$i21) {
-      $gep_int153 = $__tm;
-      $gep154 = (($gep_int153) + 4)|0;
-      $280 = $gep154;
-      HEAP32[$280>>2] = $274;
+     if ($or$cond$i18) {
+      $gep_int149 = $__tm;
+      $gep150 = (($gep_int149) + 16)|0;
+      $264 = $gep150;
+      $265 = (($258) + -1)|0;
+      HEAP32[$264>>2] = $265;
       
       break L8;
      } else {
-      $281 = $276 | 4;
-      HEAP32[$__err>>2] = $281;
+      $266 = $260 | 4;
+      HEAP32[$__err>>2] = $266;
       
       break L8;
      }
-     break;
-    }
-    case 116: case 110:  {
-     $gep_int155 = $__e;
-     $282 = $gep_int155;
-     $283 = HEAP32[$282>>2]|0;
-     $gep_int156 = $23;
-     $284 = $gep_int156;
-     HEAP32[$284>>2] = $283;
-     $285 = $$byval_copy14;
-     
-     $286 = $$byval_copy14;
-     $287 = $23;
-     ;HEAP32[$286+0>>2]=HEAP32[$287+0>>2]|0;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE17__get_white_spaceERS4_S4_RjRKNS_5ctypeIwEE(0,$__b,$$byval_copy14,$__err,$68);
-     $288 = $$byval_copy14;
-     
-     
-     break;
-    }
-    case 112:  {
-     $gep_int157 = $__tm;
-     $gep158 = (($gep_int157) + 8)|0;
-     $289 = $gep158;
-     $gep_int159 = $__e;
-     $290 = $gep_int159;
-     $291 = HEAP32[$290>>2]|0;
-     $gep_int160 = $24;
-     $292 = $gep_int160;
-     HEAP32[$292>>2] = $291;
-     $293 = $$byval_copy15;
-     
-     $294 = $$byval_copy15;
-     $295 = $24;
-     ;HEAP32[$294+0>>2]=HEAP32[$295+0>>2]|0;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE11__get_am_pmERiRS4_S4_RjRKNS_5ctypeIwEE($this,$289,$__b,$$byval_copy15,$__err,$68);
-     $296 = $$byval_copy15;
-     
-     
-     break;
-    }
-    case 114:  {
-     $gep_int161 = $__b;
-     $297 = $gep_int161;
-     $298 = HEAP32[$297>>2]|0;
-     $gep_int162 = $26;
-     $299 = $gep_int162;
-     HEAP32[$299>>2] = $298;
-     $gep_int163 = $__e;
-     $300 = $gep_int163;
-     $301 = HEAP32[$300>>2]|0;
-     $gep_int164 = $27;
-     $302 = $gep_int164;
-     HEAP32[$302>>2] = $301;
-     $303 = $$byval_copy16;
-     
-     $304 = $$byval_copy16;
-     $305 = $26;
-     ;HEAP32[$304+0>>2]=HEAP32[$305+0>>2]|0;
-     $306 = $$byval_copy17;
-     
-     $307 = $$byval_copy17;
-     $308 = $27;
-     ;HEAP32[$307+0>>2]=HEAP32[$308+0>>2]|0;
-     $expanded50 = 5872;
-     $gep_int165 = 5872;
-     $expanded49 = $gep_int165;
-     $expanded52 = 5872;
-     $gep_int166 = 5872;
-     $gep167 = (($gep_int166) + 44)|0;
-     $expanded51 = $gep167;
-     __ZNKSt3__18time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3getES4_S4_RNS_8ios_baseERjP2tmPKwSC_($25,$this,$$byval_copy16,$$byval_copy17,$__iob,$__err,$__tm,$expanded49,$expanded51);
-     $309 = $$byval_copy17;
-     
-     $310 = $$byval_copy16;
-     
-     $gep_int168 = $25;
-     $311 = $gep_int168;
-     $312 = HEAP32[$311>>2]|0;
-     HEAP32[$297>>2] = $312;
-     
      break;
     }
     case 121:  {
@@ -81032,7 +81032,7 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
      label = 4;
     }
    }
-   L5: do {
+   L6: do {
     if ((label|0) == 4) {
      
      $expanded12 = 6720;
@@ -81093,10 +81093,10 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
        
        if ($48) {
         label = 15;
-        break L5;
+        break L6;
        }
        
-       L11: do {
+       L12: do {
         if ($45) {
          $gep_int52 = $__atoms;
          $49 = $gep_int52;
@@ -81118,7 +81118,7 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
          
          if ($55) {
           label = 15;
-          break L5;
+          break L6;
          }
          $gep_int58 = $__nbuf;
          $56 = $gep_int58;
@@ -81257,11 +81257,11 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
             $107 = ($77|0)==(0);
             
             if ($107) {
-             break L11;
+             break L12;
             }
             _free($77);
             
-            break L11;
+            break L12;
            }
            $99 = ___cxa_allocate_exception(8)|0;
            $100 = $99;
@@ -81311,12 +81311,12 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
          
          if ($76) {
           $$0 = $eh$lpad$body$indexZ2D;$$01 = $eh$lpad$body$index2Z2D;
-          break L5;
+          break L6;
          }
          _free($75);
          
          $$0 = $eh$lpad$body$indexZ2D;$$01 = $eh$lpad$body$index2Z2D;
-         break L5;
+         break L6;
         }
        } while(0);
        $gep_int74 = $__b;
@@ -81355,7 +81355,7 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
          
          if ($122) {
           label = 15;
-          break L5;
+          break L6;
          }
          $123 = ($120|0)==(-1);
          
@@ -81409,7 +81409,7 @@ function __ZNKSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEE
          
          if ($139) {
           label = 15;
-          break L5;
+          break L6;
          }
          $140 = ($137|0)==(-1);
          
@@ -81748,7 +81748,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
    $32 = $gep61;
    
    $33 = $5;$34 = $2;$35 = $2;$36 = $__we;$__p$0362 = 0;$__trailing_sign$0364 = 0;$free214358 = 150;
-   L3: while(1) {
+   L4: while(1) {
     
     
     
@@ -81791,7 +81791,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       if ($50) {
        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
        label = 23;
-       break L3;
+       break L4;
       }
       $51 = ($48|0)==(-1);
       
@@ -81835,7 +81835,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        } else {
         $$lcssa302 = $35;$$lcssa318 = $34;$__trailing_sign$0$lcssa = $__trailing_sign$0364;$free214$lcssa = $free214358;
         label = 310;
-        break L3;
+        break L4;
        }
       }
       $61 = $54;
@@ -81852,7 +81852,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       if ($67) {
        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
        label = 23;
-       break L3;
+       break L4;
       }
       $68 = ($65|0)==(-1);
       
@@ -81869,7 +81869,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        } else {
         $$lcssa302 = $35;$$lcssa318 = $34;$__trailing_sign$0$lcssa = $__trailing_sign$0364;$free214$lcssa = $free214358;
         label = 310;
-        break L3;
+        break L4;
        }
       }
      }
@@ -81892,8 +81892,132 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
     $71 = HEAP8[$70]|0;
     $72 = $71 << 24 >> 24;
     
-    L25: do {
+    L26: do {
      switch ($72|0) {
+     case 1:  {
+      $cond = ($__p$0362|0)==(3);
+      
+      if ($cond) {
+       $$lcssa302 = $35;$$lcssa318 = $34;$__trailing_sign$0$lcssa = $__trailing_sign$0364;$free214$lcssa = $free214358;
+       label = 310;
+       break L4;
+      }
+      $93 = HEAP32[$8>>2]|0;
+      $gep_int76 = $93;
+      $gep77 = (($gep_int76) + 12)|0;
+      $94 = $gep77;
+      $95 = HEAP32[$94>>2]|0;
+      $gep_int78 = $93;
+      $gep79 = (($gep_int78) + 16)|0;
+      $96 = $gep79;
+      $97 = HEAP32[$96>>2]|0;
+      $98 = ($95|0)==($97|0);
+      
+      if ($98) {
+       $99 = $93;
+       $100 = HEAP32[$93>>2]|0;
+       $gep_int80 = $100;
+       $gep81 = (($gep_int80) + 36)|0;
+       $101 = $gep81;
+       $102 = HEAP32[$101>>2]|0;
+       __THREW__ = 0;
+       $103 = invoke_ii($102|0,$93|0)|0;
+       $104 = __THREW__; __THREW__ = 0;
+       $105 = $104&1;
+       
+       if ($105) {
+        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
+        label = 23;
+        break L4;
+       }
+       $extract$t$i29 = $103&255;
+       
+       $$0$i$off0$i30 = $extract$t$i29;
+      } else {
+       $106 = HEAP8[$95]|0;
+       
+       $$0$i$off0$i30 = $106;
+      }
+      
+      $isascii1$i = ($$0$i$off0$i30<<24>>24)>(-1);
+      
+      if (!($isascii1$i)) {
+       label = 41;
+       break L4;
+      }
+      $107 = $$0$i$off0$i30 << 24 >> 24;
+      $108 = HEAP32[$11>>2]|0;
+      $gep_int82 = $108;
+      $gep_array = $107<<1;
+      $gep83 = (($gep_int82) + ($gep_array))|0;
+      $109 = $gep83;
+      $110 = HEAP16[$109>>1]|0;
+      $111 = $110 & 8192;
+      $112 = ($111<<16>>16)==(0);
+      
+      if ($112) {
+       label = 41;
+       break L4;
+      }
+      $113 = HEAP32[$8>>2]|0;
+      $gep_int84 = $113;
+      $gep85 = (($gep_int84) + 12)|0;
+      $114 = $gep85;
+      $115 = HEAP32[$114>>2]|0;
+      $gep_int86 = $113;
+      $gep87 = (($gep_int86) + 16)|0;
+      $116 = $gep87;
+      $117 = HEAP32[$116>>2]|0;
+      $118 = ($115|0)==($117|0);
+      
+      if ($118) {
+       $119 = $113;
+       $120 = HEAP32[$113>>2]|0;
+       $gep_int88 = $120;
+       $gep89 = (($gep_int88) + 40)|0;
+       $121 = $gep89;
+       $122 = HEAP32[$121>>2]|0;
+       __THREW__ = 0;
+       $123 = invoke_ii($122|0,$113|0)|0;
+       $124 = __THREW__; __THREW__ = 0;
+       $125 = $124&1;
+       
+       if ($125) {
+        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
+        label = 23;
+        break L4;
+       }
+       $extract$t$i33 = $123&255;
+       
+       $$0$i$off0$i34 = $extract$t$i33;
+      } else {
+       $gep_int90 = $115;
+       $gep91 = (($gep_int90) + 1)|0;
+       $126 = $gep91;
+       HEAP32[$114>>2] = $126;
+       $127 = HEAP8[$115]|0;
+       
+       $$0$i$off0$i34 = $127;
+      }
+      
+      __THREW__ = 0;
+      invoke_vii(55,$__spaces|0,$$0$i$off0$i34|0);
+      $128 = __THREW__; __THREW__ = 0;
+      $129 = $128&1;
+      
+      if ($129) {
+       $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
+       label = 23;
+       break L4;
+      } else {
+       label = 42;
+      }
+      break;
+     }
+     case 0:  {
+      label = 42;
+      break;
+     }
      case 3:  {
       $204 = HEAP8[$__psn]|0;
       $205 = $204 & 1;
@@ -81930,7 +82054,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       
       if ($219) {
        $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-       break L25;
+       break L26;
       }
       
       if ($206) {
@@ -81991,7 +82115,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($323) {
           $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
           label = 23;
-          break L3;
+          break L4;
          }
          $extract$t$i105 = $321&255;
          $$pre437 = HEAP8[$__psn]|0;
@@ -82044,7 +82168,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           if ($341) {
            $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
            label = 23;
-           break L3;
+           break L4;
           }
          } else {
           $gep_int159 = $326;
@@ -82072,7 +82196,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          $__psn$__trailing_sign$05 = $350 ? $__psn : $__trailing_sign$0364;
          
          $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__psn$__trailing_sign$05;$free215 = $free214358;
-         break L25;
+         break L26;
         }
         
         if ($335) {
@@ -82090,7 +82214,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($357) {
           $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
           label = 23;
-          break L3;
+          break L4;
          }
          $extract$t$i124 = $355&255;
          
@@ -82111,7 +82235,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if (!($364)) {
          label = 136;
-         break L3;
+         break L4;
         }
         $365 = HEAP32[$8>>2]|0;
         $gep_int163 = $365;
@@ -82139,7 +82263,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($376) {
           $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
           label = 23;
-          break L3;
+          break L4;
          }
         } else {
          $gep_int169 = $367;
@@ -82168,7 +82292,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         $__nsn$__trailing_sign$06 = $385 ? $__nsn : $__trailing_sign$0364;
         
         $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__nsn$__trailing_sign$06;$free215 = $free214358;
-        break L25;
+        break L26;
        }
       } while(0);
       
@@ -82212,7 +82336,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($282) {
          $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
          label = 23;
-         break L3;
+         break L4;
         }
         $extract$t$i91 = $280&255;
         $$pre = HEAP8[$__nsn]|0;
@@ -82234,7 +82358,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if (!($289)) {
         $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-        break L25;
+        break L26;
        }
        $290 = HEAP32[$8>>2]|0;
        $gep_int137 = $290;
@@ -82262,7 +82386,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($301) {
          $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
          label = 23;
-         break L3;
+         break L4;
         }
        } else {
         $gep_int143 = $292;
@@ -82291,7 +82415,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        $__nsn$__trailing_sign$0 = $310 ? $__nsn : $__trailing_sign$0364;
        
        $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__nsn$__trailing_sign$0;$free215 = $free214358;
-       break L25;
+       break L26;
       }
       
       if ($240) {
@@ -82309,7 +82433,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        if ($247) {
         $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
         label = 23;
-        break L3;
+        break L4;
        }
        $extract$t$i73 = $245&255;
        $$pre436 = HEAP8[$__psn]|0;
@@ -82333,7 +82457,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        HEAP8[$__neg] = 1;
        
        $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-       break L25;
+       break L26;
       }
       $255 = HEAP32[$8>>2]|0;
       $gep_int127 = $255;
@@ -82361,7 +82485,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        if ($266) {
         $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
         label = 23;
-        break L3;
+        break L4;
        }
       } else {
        $gep_int133 = $257;
@@ -82391,10 +82515,6 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__psn$__trailing_sign$0;$free215 = $free214358;
       break;
      }
-     case 0:  {
-      label = 42;
-      break;
-     }
      case 2:  {
       $388 = ($__trailing_sign$0364|0)!=(0);
       $389 = ($__p$0362>>>0)<(2);
@@ -82416,7 +82536,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if (!($brmerge)) {
         $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = 0;$free215 = $free214358;
-        break L25;
+        break L26;
        }
       }
       $394 = HEAP8[$__sym]|0;
@@ -82426,7 +82546,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       $$466 = $396 ? $23 : $397;
       $398 = ($__p$0362|0)==(0);
       
-      L122: do {
+      L137: do {
        if ($398) {
         $$pre$i2$i$i192 = $69;$446 = $69;$447 = $394;$448 = $$466;
        } else {
@@ -82554,7 +82674,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if (!($442)) {
           $$pre$i2$i$i192 = $69;$446 = $69;$447 = $394;$448 = $$466;
-          break L122;
+          break L137;
          }
          $gep_int187 = $439;
          $gep188 = (($gep_int187) + 1)|0;
@@ -82573,7 +82693,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         }
        }
       } while(0);
-      L142: while(1) {
+      L157: while(1) {
        
        
        
@@ -82636,7 +82756,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($472) {
           label = 21;
-          break L3;
+          break L4;
          }
          $473 = ($470|0)==(-1);
          
@@ -82678,7 +82798,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            $$pre$i2$i$i192439 = $$pre$i2$i$i192;$491 = $446;
            break;
           } else {
-           break L142;
+           break L157;
           }
          }
          $482 = $446;
@@ -82694,7 +82814,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($488) {
           label = 21;
-          break L3;
+          break L4;
          }
          $489 = ($486|0)==(-1);
          
@@ -82712,7 +82832,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            $$pre$i2$i$i192439 = $$pre$i2$i$i192;$491 = $$pre$i2$i$i192;
            break;
           } else {
-           break L142;
+           break L157;
           }
          }
         }
@@ -82754,7 +82874,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($504) {
          label = 21;
-         break L3;
+         break L4;
         }
         $extract$t$i183 = $502&255;
         
@@ -82796,7 +82916,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($519) {
          label = 21;
-         break L3;
+         break L4;
         }
        } else {
         $gep_int217 = $510;
@@ -82815,7 +82935,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       
       if (!($21)) {
        $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-       break L25;
+       break L26;
       }
       $522 = HEAP8[$__sym]|0;
       $523 = $522 & 1;
@@ -82843,13 +82963,13 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
       } else {
        label = 189;
-       break L3;
+       break L4;
       }
       break;
      }
      case 4:  {
       $535 = $36;$536 = $35;$537 = $34;$538 = $33;$__ng$0 = 0;$free213 = $free214358;
-      L185: while(1) {
+      L200: while(1) {
        
        
        
@@ -82891,7 +83011,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($552) {
           $$ph$ph = $536;$free218$ph$ph = $free213;
           label = 19;
-          break L3;
+          break L4;
          }
          $553 = ($550|0)==(-1);
          
@@ -82932,7 +83052,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           if ($555) {
            break;
           } else {
-           break L185;
+           break L200;
           }
          }
          $563 = $556;
@@ -82949,7 +83069,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($569) {
           $$ph$ph = $536;$free218$ph$ph = $free213;
           label = 19;
-          break L3;
+          break L4;
          }
          $570 = ($567|0)==(-1);
          
@@ -82963,7 +83083,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           if ($555) {
            break;
           } else {
-           break L185;
+           break L200;
           }
          }
         }
@@ -83001,7 +83121,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($583) {
          $$ph$ph = $536;$free218$ph$ph = $free213;
          label = 19;
-         break L3;
+         break L4;
         }
         $extract$t$i162 = $581&255;
         
@@ -83056,7 +83176,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            if ($605) {
             $$ph$ph = $536;$free218$ph$ph = $free213;
             label = 19;
-            break L3;
+            break L4;
            }
           }
           
@@ -83082,7 +83202,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
             
             if ($609) {
              label = 218;
-             break L3;
+             break L4;
             }
             $$pre$i154 = HEAP32[$6>>2]|0;
             
@@ -83181,7 +83301,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           if ($643) {
            $$ph$ph = $536;$free218$ph$ph = $free213;
            label = 19;
-           break L3;
+           break L4;
           }
          }
          $644 = $$$i139 >>> 2;
@@ -83241,7 +83361,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($666) {
          $$ph$ph = $652;$free218$ph$ph = $free;
          label = 19;
-         break L3;
+         break L4;
         } else {
          $535 = $651;$536 = $652;$537 = $653;$538 = $654;$__ng$0 = $__ng$1;$free213 = $free;
          continue;
@@ -83296,7 +83416,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($683) {
           $$ph$ph244$ph$ph$ph$ph = $536;$free218$ph$ph243$ph$ph$ph$ph = $free213;
           label = 23;
-          break L3;
+          break L4;
          }
         }
         $684 = $$$i129 >>> 2;
@@ -83367,7 +83487,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($709) {
           $$ph$ph244$ph$ph$ph$ph = $691;$free218$ph$ph243$ph$ph$ph$ph = $free216;
           label = 23;
-          break L3;
+          break L4;
          }
          $710 = ($707|0)==(-1);
          
@@ -83410,7 +83530,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            break;
           } else {
            label = 264;
-           break L3;
+           break L4;
           }
          }
          $720 = $713;
@@ -83427,7 +83547,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          if ($726) {
           $$ph$ph244$ph$ph$ph$ph = $691;$free218$ph$ph243$ph$ph$ph$ph = $free216;
           label = 23;
-          break L3;
+          break L4;
          }
          $727 = ($724|0)==(-1);
          
@@ -83443,7 +83563,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            break;
           } else {
            label = 264;
-           break L3;
+           break L4;
           }
          }
         }
@@ -83453,7 +83573,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($712) {
          label = 264;
-         break L3;
+         break L4;
         } else {
          $728 = 0;
         }
@@ -83485,7 +83605,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($741) {
          $$ph$ph244$ph$ph$ph$ph = $691;$free218$ph$ph243$ph$ph$ph$ph = $free216;
          label = 23;
-         break L3;
+         break L4;
         }
         $extract$t$i101 = $739&255;
         
@@ -83501,7 +83621,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if (!($744)) {
         label = 264;
-        break L3;
+        break L4;
        }
        $747 = HEAP32[$8>>2]|0;
        $gep_int292 = $747;
@@ -83529,7 +83649,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         if ($758) {
          $$ph$ph244$ph$ph$ph$ph = $691;$free218$ph$ph243$ph$ph$ph$ph = $free216;
          label = 23;
-         break L3;
+         break L4;
         } else {
          $$pre$i2$i$i82 = $728;$760 = $728;$761 = $535;
         }
@@ -83579,7 +83699,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           
           if ($775) {
            label = 20;
-           break L3;
+           break L4;
           }
           $776 = ($773|0)==(-1);
           
@@ -83622,7 +83742,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
             break;
            } else {
             label = 288;
-            break L3;
+            break L4;
            }
           }
           $785 = $760;
@@ -83638,7 +83758,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           
           if ($791) {
            label = 20;
-           break L3;
+           break L4;
           }
           $792 = ($789|0)==(-1);
           
@@ -83657,7 +83777,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
             break;
            } else {
             label = 288;
-            break L3;
+            break L4;
            }
           }
          }
@@ -83668,7 +83788,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($778) {
           label = 288;
-          break L3;
+          break L4;
          } else {
           $$pre$i2$i$i82444459 = $$pre$i2$i$i82444$ph;$794 = 0;
          }
@@ -83700,7 +83820,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($807) {
           label = 20;
-          break L3;
+          break L4;
          }
          $extract$t$i69 = $805&255;
          
@@ -83715,7 +83835,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if (!($isascii1$i67)) {
          label = 288;
-         break L3;
+         break L4;
         }
         $809 = $$0$i$off0$i70 << 24 >> 24;
         $810 = HEAP32[$11>>2]|0;
@@ -83729,7 +83849,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($814) {
          label = 288;
-         break L3;
+         break L4;
         }
         $817 = HEAP32[$__wn>>2]|0;
         $818 = ($817|0)==($761|0);
@@ -83756,7 +83876,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           
           if ($831) {
            label = 20;
-           break L3;
+           break L4;
           }
          }
          
@@ -83782,7 +83902,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            
            if ($835) {
             label = 297;
-            break L3;
+            break L4;
            }
            $$pre$i = HEAP32[$6>>2]|0;
            
@@ -83831,7 +83951,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($855) {
           label = 20;
-          break L3;
+          break L4;
          }
          $extract$t$i57 = $853&255;
          $$pre442 = HEAP32[$__wn>>2]|0;
@@ -83877,7 +83997,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($872) {
           label = 20;
-          break L3;
+          break L4;
          }
         } else {
          $gep_int339 = $863;
@@ -83905,129 +84025,9 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       
       if ($878) {
        label = 308;
-       break L3;
+       break L4;
       } else {
        $881 = $875;$882 = $691;$883 = $692;$884 = $693;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free216;
-      }
-      break;
-     }
-     case 1:  {
-      $cond = ($__p$0362|0)==(3);
-      
-      if ($cond) {
-       $$lcssa302 = $35;$$lcssa318 = $34;$__trailing_sign$0$lcssa = $__trailing_sign$0364;$free214$lcssa = $free214358;
-       label = 310;
-       break L3;
-      }
-      $93 = HEAP32[$8>>2]|0;
-      $gep_int76 = $93;
-      $gep77 = (($gep_int76) + 12)|0;
-      $94 = $gep77;
-      $95 = HEAP32[$94>>2]|0;
-      $gep_int78 = $93;
-      $gep79 = (($gep_int78) + 16)|0;
-      $96 = $gep79;
-      $97 = HEAP32[$96>>2]|0;
-      $98 = ($95|0)==($97|0);
-      
-      if ($98) {
-       $99 = $93;
-       $100 = HEAP32[$93>>2]|0;
-       $gep_int80 = $100;
-       $gep81 = (($gep_int80) + 36)|0;
-       $101 = $gep81;
-       $102 = HEAP32[$101>>2]|0;
-       __THREW__ = 0;
-       $103 = invoke_ii($102|0,$93|0)|0;
-       $104 = __THREW__; __THREW__ = 0;
-       $105 = $104&1;
-       
-       if ($105) {
-        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
-        label = 23;
-        break L3;
-       }
-       $extract$t$i29 = $103&255;
-       
-       $$0$i$off0$i30 = $extract$t$i29;
-      } else {
-       $106 = HEAP8[$95]|0;
-       
-       $$0$i$off0$i30 = $106;
-      }
-      
-      $isascii1$i = ($$0$i$off0$i30<<24>>24)>(-1);
-      
-      if (!($isascii1$i)) {
-       label = 41;
-       break L3;
-      }
-      $107 = $$0$i$off0$i30 << 24 >> 24;
-      $108 = HEAP32[$11>>2]|0;
-      $gep_int82 = $108;
-      $gep_array = $107<<1;
-      $gep83 = (($gep_int82) + ($gep_array))|0;
-      $109 = $gep83;
-      $110 = HEAP16[$109>>1]|0;
-      $111 = $110 & 8192;
-      $112 = ($111<<16>>16)==(0);
-      
-      if ($112) {
-       label = 41;
-       break L3;
-      }
-      $113 = HEAP32[$8>>2]|0;
-      $gep_int84 = $113;
-      $gep85 = (($gep_int84) + 12)|0;
-      $114 = $gep85;
-      $115 = HEAP32[$114>>2]|0;
-      $gep_int86 = $113;
-      $gep87 = (($gep_int86) + 16)|0;
-      $116 = $gep87;
-      $117 = HEAP32[$116>>2]|0;
-      $118 = ($115|0)==($117|0);
-      
-      if ($118) {
-       $119 = $113;
-       $120 = HEAP32[$113>>2]|0;
-       $gep_int88 = $120;
-       $gep89 = (($gep_int88) + 40)|0;
-       $121 = $gep89;
-       $122 = HEAP32[$121>>2]|0;
-       __THREW__ = 0;
-       $123 = invoke_ii($122|0,$113|0)|0;
-       $124 = __THREW__; __THREW__ = 0;
-       $125 = $124&1;
-       
-       if ($125) {
-        $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
-        label = 23;
-        break L3;
-       }
-       $extract$t$i33 = $123&255;
-       
-       $$0$i$off0$i34 = $extract$t$i33;
-      } else {
-       $gep_int90 = $115;
-       $gep91 = (($gep_int90) + 1)|0;
-       $126 = $gep91;
-       HEAP32[$114>>2] = $126;
-       $127 = HEAP8[$115]|0;
-       
-       $$0$i$off0$i34 = $127;
-      }
-      
-      __THREW__ = 0;
-      invoke_vii(55,$__spaces|0,$$0$i$off0$i34|0);
-      $128 = __THREW__; __THREW__ = 0;
-      $129 = $128&1;
-      
-      if ($129) {
-       $$ph$ph244$ph$ph$ph$ph = $35;$free218$ph$ph243$ph$ph$ph$ph = $free214358;
-       label = 23;
-       break L3;
-      } else {
-       label = 42;
       }
       break;
      }
@@ -84036,7 +84036,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      }
      }
     } while(0);
-    L357: do {
+    L358: do {
      if ((label|0) == 42) {
       label = 0;
       $132 = ($__p$0362|0)==(3);
@@ -84044,7 +84044,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
       if ($132) {
        $$lcssa302 = $35;$$lcssa318 = $34;$__trailing_sign$0$lcssa = $__trailing_sign$0364;$free214$lcssa = $free214358;
        label = 310;
-       break L3;
+       break L4;
       } else {
        $$pre$i2$i$i41 = $69;$133 = $69;
       }
@@ -84085,7 +84085,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($147) {
           label = 22;
-          break L3;
+          break L4;
          }
          $148 = ($145|0)==(-1);
          
@@ -84128,7 +84128,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            break;
           } else {
            $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-           break L357;
+           break L358;
           }
          }
          $157 = $133;
@@ -84144,7 +84144,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
          
          if ($163) {
           label = 22;
-          break L3;
+          break L4;
          }
          $164 = ($161|0)==(-1);
          
@@ -84163,7 +84163,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
            break;
           } else {
            $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-           break L357;
+           break L358;
           }
          }
         }
@@ -84174,7 +84174,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($150) {
          $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-         break L357;
+         break L358;
         } else {
          $$pre$i2$i$i41435 = $$pre$i2$i$i41433;$166 = 0;
         }
@@ -84206,7 +84206,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($179) {
          label = 22;
-         break L3;
+         break L4;
         }
         $extract$t$i47 = $177&255;
         
@@ -84221,7 +84221,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if (!($isascii1$i51)) {
         $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-        break L357;
+        break L358;
        }
        $181 = $$0$i$off0$i48 << 24 >> 24;
        $182 = HEAP32[$11>>2]|0;
@@ -84235,7 +84235,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if ($186) {
         $881 = $36;$882 = $35;$883 = $34;$884 = $33;$__trailing_sign$1 = $__trailing_sign$0364;$free215 = $free214358;
-        break L357;
+        break L358;
        }
        $187 = HEAP32[$8>>2]|0;
        $gep_int113 = $187;
@@ -84262,7 +84262,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         
         if ($199) {
          label = 22;
-         break L3;
+         break L4;
         }
         $extract$t$i53 = $197&255;
         
@@ -84284,7 +84284,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        
        if ($203) {
         label = 22;
-        break L3;
+        break L4;
        } else {
         $$pre$i2$i$i41 = $$pre$i2$i$i41435;$133 = $166;
        }
@@ -84308,7 +84308,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      break;
     }
    }
-   L394: do {
+   L395: do {
     if ((label|0) == 19) {
      
      
@@ -84416,7 +84416,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
      
      $887 = ($__trailing_sign$0$lcssa|0)==(0);
      
-     L404: do {
+     L410: do {
       if (!($887)) {
        $888 = $__trailing_sign$0$lcssa;
        $889 = $__trailing_sign$0$lcssa;
@@ -84431,7 +84431,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
        $892 = $gep346;
        
        $__i$0 = 1;
-       L406: while(1) {
+       L412: while(1) {
         
         $893 = HEAP8[$__trailing_sign$0$lcssa]|0;
         $894 = $893 & 1;
@@ -84451,7 +84451,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         $900 = ($__i$0>>>0)<($899>>>0);
         
         if (!($900)) {
-         break L404;
+         break L410;
         }
         $901 = HEAP32[$8>>2]|0;
         $902 = ($901|0)==(0);
@@ -84487,7 +84487,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           
           if ($914) {
            label = 18;
-           break L406;
+           break L412;
           }
           $915 = ($912|0)==(-1);
           
@@ -84529,7 +84529,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
             break;
            } else {
             label = 337;
-            break L406;
+            break L412;
            }
           }
           $925 = $918;
@@ -84545,7 +84545,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
           
           if ($931) {
            label = 18;
-           break L406;
+           break L412;
           }
           $932 = ($929|0)==(-1);
           
@@ -84560,7 +84560,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
             break;
            } else {
             label = 337;
-            break L406;
+            break L412;
            }
           }
          }
@@ -84686,7 +84686,7 @@ function __ZNSt3__19money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE
         HEAP32[$__err>>2] = $956;
         
         $$0 = 0;$976 = $$lcssa302;$free220 = $free214$lcssa;
-        break L394;
+        break L395;
        }
       }
      } while(0);
@@ -87239,493 +87239,6 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
     
     L27: do {
      switch ($64|0) {
-     case 3:  {
-      $198 = HEAP8[$__psn]|0;
-      $199 = $198 & 1;
-      $200 = ($199<<24>>24)==(0);
-      
-      if ($200) {
-       $202 = $198&255;
-       $203 = $202 >>> 1;
-       
-       $204 = $203;
-      } else {
-       $201 = HEAP32[$15>>2]|0;
-       
-       $204 = $201;
-      }
-      
-      $205 = HEAP8[$__nsn]|0;
-      $206 = $205 & 1;
-      $207 = ($206<<24>>24)==(0);
-      
-      if ($207) {
-       $209 = $205&255;
-       $210 = $209 >>> 1;
-       
-       $211 = $210;
-      } else {
-       $208 = HEAP32[$13>>2]|0;
-       
-       $211 = $208;
-      }
-      
-      $212 = (0 - ($211))|0;
-      $213 = ($204|0)==($212|0);
-      
-      if ($213) {
-       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
-       break L27;
-      }
-      
-      if ($200) {
-       $215 = $198&255;
-       $216 = $215 >>> 1;
-       
-       $217 = $216;
-      } else {
-       $214 = HEAP32[$15>>2]|0;
-       
-       $217 = $214;
-      }
-      
-      $218 = ($217|0)==(0);
-      
-      do {
-       if (!($218)) {
-        
-        if ($207) {
-         $220 = $205&255;
-         $221 = $220 >>> 1;
-         
-         $222 = $221;
-        } else {
-         $219 = HEAP32[$13>>2]|0;
-         
-         $222 = $219;
-        }
-        
-        $223 = ($222|0)==(0);
-        
-        if ($223) {
-         break;
-        }
-        $305 = HEAP32[$9>>2]|0;
-        $gep_int133 = $305;
-        $gep134 = (($gep_int133) + 12)|0;
-        $306 = $gep134;
-        $307 = HEAP32[$306>>2]|0;
-        $gep_int135 = $305;
-        $gep136 = (($gep_int135) + 16)|0;
-        $308 = $gep136;
-        $309 = HEAP32[$308>>2]|0;
-        $310 = ($307|0)==($309|0);
-        
-        if ($310) {
-         $311 = $305;
-         $312 = HEAP32[$305>>2]|0;
-         $gep_int137 = $312;
-         $gep138 = (($gep_int137) + 36)|0;
-         $313 = $gep138;
-         $314 = HEAP32[$313>>2]|0;
-         __THREW__ = 0;
-         $315 = invoke_ii($314|0,$305|0)|0;
-         $316 = __THREW__; __THREW__ = 0;
-         $317 = $316&1;
-         
-         if ($317) {
-          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-          label = 25;
-          break L3;
-         }
-         $$pre412 = HEAP8[$__psn]|0;
-         
-         $$0$i$i108 = $315;$319 = $$pre412;
-        } else {
-         $318 = HEAP32[$307>>2]|0;
-         
-         $$0$i$i108 = $318;$319 = $198;
-        }
-        
-        
-        $320 = $319 & 1;
-        $321 = ($320<<24>>24)==(0);
-        $322 = HEAP32[$16>>2]|0;
-        $$423 = $321 ? $15 : $322;
-        $323 = HEAP32[$$423>>2]|0;
-        $324 = ($$0$i$i108|0)==($323|0);
-        $325 = HEAP32[$9>>2]|0;
-        $gep_int139 = $325;
-        $gep140 = (($gep_int139) + 12)|0;
-        $326 = $gep140;
-        $327 = HEAP32[$326>>2]|0;
-        $gep_int141 = $325;
-        $gep142 = (($gep_int141) + 16)|0;
-        $328 = $gep142;
-        $329 = HEAP32[$328>>2]|0;
-        $330 = ($327|0)==($329|0);
-        
-        if ($324) {
-         
-         if ($330) {
-          $331 = $325;
-          $332 = HEAP32[$325>>2]|0;
-          $gep_int143 = $332;
-          $gep144 = (($gep_int143) + 40)|0;
-          $333 = $gep144;
-          $334 = HEAP32[$333>>2]|0;
-          __THREW__ = 0;
-          u$170 = invoke_ii($334|0,$325|0)|0;
-          $335 = __THREW__; __THREW__ = 0;
-          $336 = $335&1;
-          
-          if ($336) {
-           $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-           label = 25;
-           break L3;
-          }
-         } else {
-          $gep_int145 = $327;
-          $gep146 = (($gep_int145) + 4)|0;
-          $337 = $gep146;
-          HEAP32[$326>>2] = $337;
-          
-         }
-         $338 = HEAP8[$__psn]|0;
-         $339 = $338 & 1;
-         $340 = ($339<<24>>24)==(0);
-         
-         if ($340) {
-          $342 = $338&255;
-          $343 = $342 >>> 1;
-          
-          $344 = $343;
-         } else {
-          $341 = HEAP32[$15>>2]|0;
-          
-          $344 = $341;
-         }
-         
-         $345 = ($344>>>0)>(1);
-         $__psn$__trailing_sign$05 = $345 ? $__psn : $__trailing_sign$0343;
-         
-         $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__psn$__trailing_sign$05;$free215 = $free214336;
-         break L27;
-        }
-        
-        if ($330) {
-         $346 = $325;
-         $347 = HEAP32[$325>>2]|0;
-         $gep_int147 = $347;
-         $gep148 = (($gep_int147) + 36)|0;
-         $348 = $gep148;
-         $349 = HEAP32[$348>>2]|0;
-         __THREW__ = 0;
-         $350 = invoke_ii($349|0,$325|0)|0;
-         $351 = __THREW__; __THREW__ = 0;
-         $352 = $351&1;
-         
-         if ($352) {
-          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-          label = 25;
-          break L3;
-         } else {
-          $$0$i$i130 = $350;
-         }
-        } else {
-         $353 = HEAP32[$327>>2]|0;
-         
-         $$0$i$i130 = $353;
-        }
-        
-        $354 = HEAP8[$__nsn]|0;
-        $355 = $354 & 1;
-        $356 = ($355<<24>>24)==(0);
-        $357 = HEAP32[$14>>2]|0;
-        $$424 = $356 ? $13 : $357;
-        $358 = HEAP32[$$424>>2]|0;
-        $359 = ($$0$i$i130|0)==($358|0);
-        
-        if (!($359)) {
-         label = 134;
-         break L3;
-        }
-        $360 = HEAP32[$9>>2]|0;
-        $gep_int149 = $360;
-        $gep150 = (($gep_int149) + 12)|0;
-        $361 = $gep150;
-        $362 = HEAP32[$361>>2]|0;
-        $gep_int151 = $360;
-        $gep152 = (($gep_int151) + 16)|0;
-        $363 = $gep152;
-        $364 = HEAP32[$363>>2]|0;
-        $365 = ($362|0)==($364|0);
-        
-        if ($365) {
-         $366 = $360;
-         $367 = HEAP32[$360>>2]|0;
-         $gep_int153 = $367;
-         $gep154 = (($gep_int153) + 40)|0;
-         $368 = $gep154;
-         $369 = HEAP32[$368>>2]|0;
-         __THREW__ = 0;
-         u$185 = invoke_ii($369|0,$360|0)|0;
-         $370 = __THREW__; __THREW__ = 0;
-         $371 = $370&1;
-         
-         if ($371) {
-          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-          label = 25;
-          break L3;
-         }
-        } else {
-         $gep_int155 = $362;
-         $gep156 = (($gep_int155) + 4)|0;
-         $372 = $gep156;
-         HEAP32[$361>>2] = $372;
-         
-        }
-        HEAP8[$__neg] = 1;
-        $373 = HEAP8[$__nsn]|0;
-        $374 = $373 & 1;
-        $375 = ($374<<24>>24)==(0);
-        
-        if ($375) {
-         $377 = $373&255;
-         $378 = $377 >>> 1;
-         
-         $379 = $378;
-        } else {
-         $376 = HEAP32[$13>>2]|0;
-         
-         $379 = $376;
-        }
-        
-        $380 = ($379>>>0)>(1);
-        $__nsn$__trailing_sign$06 = $380 ? $__nsn : $__trailing_sign$0343;
-        
-        $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__nsn$__trailing_sign$06;$free215 = $free214336;
-        break L27;
-       }
-      } while(0);
-      
-      if ($200) {
-       $225 = $198&255;
-       $226 = $225 >>> 1;
-       
-       $227 = $226;
-      } else {
-       $224 = HEAP32[$15>>2]|0;
-       
-       $227 = $224;
-      }
-      
-      $228 = ($227|0)==(0);
-      $229 = HEAP32[$9>>2]|0;
-      $gep_int109 = $229;
-      $gep110 = (($gep_int109) + 12)|0;
-      $230 = $gep110;
-      $231 = HEAP32[$230>>2]|0;
-      $gep_int111 = $229;
-      $gep112 = (($gep_int111) + 16)|0;
-      $232 = $gep112;
-      $233 = HEAP32[$232>>2]|0;
-      $234 = ($231|0)==($233|0);
-      
-      if ($228) {
-       
-       if ($234) {
-        $270 = $229;
-        $271 = HEAP32[$229>>2]|0;
-        $gep_int123 = $271;
-        $gep124 = (($gep_int123) + 36)|0;
-        $272 = $gep124;
-        $273 = HEAP32[$272>>2]|0;
-        __THREW__ = 0;
-        $274 = invoke_ii($273|0,$229|0)|0;
-        $275 = __THREW__; __THREW__ = 0;
-        $276 = $275&1;
-        
-        if ($276) {
-         $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-         label = 25;
-         break L3;
-        }
-        $$pre410 = HEAP8[$__nsn]|0;
-        
-        $$0$i$i96 = $274;$278 = $$pre410;
-       } else {
-        $277 = HEAP32[$231>>2]|0;
-        
-        $$0$i$i96 = $277;$278 = $205;
-       }
-       
-       
-       $279 = $278 & 1;
-       $280 = ($279<<24>>24)==(0);
-       $281 = HEAP32[$14>>2]|0;
-       $$422 = $280 ? $13 : $281;
-       $282 = HEAP32[$$422>>2]|0;
-       $283 = ($$0$i$i96|0)==($282|0);
-       
-       if (!($283)) {
-        $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
-        break L27;
-       }
-       $284 = HEAP32[$9>>2]|0;
-       $gep_int125 = $284;
-       $gep126 = (($gep_int125) + 12)|0;
-       $285 = $gep126;
-       $286 = HEAP32[$285>>2]|0;
-       $gep_int127 = $284;
-       $gep128 = (($gep_int127) + 16)|0;
-       $287 = $gep128;
-       $288 = HEAP32[$287>>2]|0;
-       $289 = ($286|0)==($288|0);
-       
-       if ($289) {
-        $290 = $284;
-        $291 = HEAP32[$284>>2]|0;
-        $gep_int129 = $291;
-        $gep130 = (($gep_int129) + 40)|0;
-        $292 = $gep130;
-        $293 = HEAP32[$292>>2]|0;
-        __THREW__ = 0;
-        u$153 = invoke_ii($293|0,$284|0)|0;
-        $294 = __THREW__; __THREW__ = 0;
-        $295 = $294&1;
-        
-        if ($295) {
-         $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-         label = 25;
-         break L3;
-        }
-       } else {
-        $gep_int131 = $286;
-        $gep132 = (($gep_int131) + 4)|0;
-        $296 = $gep132;
-        HEAP32[$285>>2] = $296;
-        
-       }
-       HEAP8[$__neg] = 1;
-       $297 = HEAP8[$__nsn]|0;
-       $298 = $297 & 1;
-       $299 = ($298<<24>>24)==(0);
-       
-       if ($299) {
-        $301 = $297&255;
-        $302 = $301 >>> 1;
-        
-        $303 = $302;
-       } else {
-        $300 = HEAP32[$13>>2]|0;
-        
-        $303 = $300;
-       }
-       
-       $304 = ($303>>>0)>(1);
-       $__nsn$__trailing_sign$0 = $304 ? $__nsn : $__trailing_sign$0343;
-       
-       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__nsn$__trailing_sign$0;$free215 = $free214336;
-       break L27;
-      }
-      
-      if ($234) {
-       $235 = $229;
-       $236 = HEAP32[$229>>2]|0;
-       $gep_int113 = $236;
-       $gep114 = (($gep_int113) + 36)|0;
-       $237 = $gep114;
-       $238 = HEAP32[$237>>2]|0;
-       __THREW__ = 0;
-       $239 = invoke_ii($238|0,$229|0)|0;
-       $240 = __THREW__; __THREW__ = 0;
-       $241 = $240&1;
-       
-       if ($241) {
-        $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-        label = 25;
-        break L3;
-       }
-       $$pre411 = HEAP8[$__psn]|0;
-       
-       $$0$i$i75 = $239;$243 = $$pre411;
-      } else {
-       $242 = HEAP32[$231>>2]|0;
-       
-       $$0$i$i75 = $242;$243 = $198;
-      }
-      
-      
-      $244 = $243 & 1;
-      $245 = ($244<<24>>24)==(0);
-      $246 = HEAP32[$16>>2]|0;
-      $$ = $245 ? $15 : $246;
-      $247 = HEAP32[$$>>2]|0;
-      $248 = ($$0$i$i75|0)==($247|0);
-      
-      if (!($248)) {
-       HEAP8[$__neg] = 1;
-       
-       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
-       break L27;
-      }
-      $249 = HEAP32[$9>>2]|0;
-      $gep_int115 = $249;
-      $gep116 = (($gep_int115) + 12)|0;
-      $250 = $gep116;
-      $251 = HEAP32[$250>>2]|0;
-      $gep_int117 = $249;
-      $gep118 = (($gep_int117) + 16)|0;
-      $252 = $gep118;
-      $253 = HEAP32[$252>>2]|0;
-      $254 = ($251|0)==($253|0);
-      
-      if ($254) {
-       $255 = $249;
-       $256 = HEAP32[$249>>2]|0;
-       $gep_int119 = $256;
-       $gep120 = (($gep_int119) + 40)|0;
-       $257 = $gep120;
-       $258 = HEAP32[$257>>2]|0;
-       __THREW__ = 0;
-       u$135 = invoke_ii($258|0,$249|0)|0;
-       $259 = __THREW__; __THREW__ = 0;
-       $260 = $259&1;
-       
-       if ($260) {
-        $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
-        label = 25;
-        break L3;
-       }
-      } else {
-       $gep_int121 = $251;
-       $gep122 = (($gep_int121) + 4)|0;
-       $261 = $gep122;
-       HEAP32[$250>>2] = $261;
-       
-      }
-      $262 = HEAP8[$__psn]|0;
-      $263 = $262 & 1;
-      $264 = ($263<<24>>24)==(0);
-      
-      if ($264) {
-       $266 = $262&255;
-       $267 = $266 >>> 1;
-       
-       $268 = $267;
-      } else {
-       $265 = HEAP32[$15>>2]|0;
-       
-       $268 = $265;
-      }
-      
-      $269 = ($268>>>0)>(1);
-      $__psn$__trailing_sign$0 = $269 ? $__psn : $__trailing_sign$0343;
-      
-      $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__psn$__trailing_sign$0;$free215 = $free214336;
-      break;
-     }
      case 1:  {
       $cond = ($__p$0341|0)==(3);
       
@@ -87844,10 +87357,6 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
       }
       break;
      }
-     case 0:  {
-      label = 42;
-      break;
-     }
      case 2:  {
       $383 = ($__trailing_sign$0343|0)!=(0);
       $384 = ($__p$0341>>>0)<(2);
@@ -87879,7 +87388,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
       $$425 = $391 ? $19 : $392;
       $393 = ($__p$0341|0)==(0);
       
-      L135: do {
+      L47: do {
        if ($393) {
         $$pre$i3$i$i191 = $61;$456 = $61;$457 = $389;$458 = $$425;
        } else {
@@ -87984,7 +87493,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
         
         $432 = ($424>>>0)>($431>>>0);
         
-        L153: do {
+        L65: do {
          if (!($432)) {
           
           if ($427) {
@@ -88023,7 +87532,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
           
           if ($446) {
            $$pre$i3$i$i191 = $61;$456 = $61;$457 = $417;$458 = $398;
-           break L135;
+           break L47;
           } else {
            $447 = $$427;$448 = $441;
           }
@@ -88035,7 +87544,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
            $451 = ($449|0)==($450|0);
            
            if (!($451)) {
-            break L153;
+            break L65;
            }
            $gep_int174 = $448;
            $gep175 = (($gep_int174) + 4)|0;
@@ -88044,7 +87553,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
            
            if ($453) {
             $$pre$i3$i$i191 = $61;$456 = $61;$457 = $417;$458 = $398;
-            break L135;
+            break L47;
            }
            $gep_int176 = $447;
            $gep177 = (($gep_int176) + 4)|0;
@@ -88060,7 +87569,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
         $$pre$i3$i$i191 = $61;$456 = $61;$457 = $417;$458 = $$428;
        }
       } while(0);
-      L164: while(1) {
+      L76: while(1) {
        
        
        
@@ -88205,7 +87714,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
            $$pre$i3$i$i191399 = $$pre$i3$i$i191;$501 = $$pre$i3$i$i191;
            break;
           } else {
-           break L164;
+           break L76;
           }
          }
         }
@@ -88340,9 +87849,13 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
       }
       break;
      }
+     case 0:  {
+      label = 42;
+      break;
+     }
      case 4:  {
       $545 = $27;$546 = $26;$547 = $25;$__ng$0 = 0;$free213 = $free214336;
-      L208: while(1) {
+      L120: while(1) {
        
        
        
@@ -88461,7 +87974,7 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
           if ($564) {
            break;
           } else {
-           break L208;
+           break L120;
           }
          }
         }
@@ -89295,6 +88808,493 @@ function __ZNSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE
       } else {
        $850 = $682;$851 = $683;$852 = $684;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free216;
       }
+      break;
+     }
+     case 3:  {
+      $198 = HEAP8[$__psn]|0;
+      $199 = $198 & 1;
+      $200 = ($199<<24>>24)==(0);
+      
+      if ($200) {
+       $202 = $198&255;
+       $203 = $202 >>> 1;
+       
+       $204 = $203;
+      } else {
+       $201 = HEAP32[$15>>2]|0;
+       
+       $204 = $201;
+      }
+      
+      $205 = HEAP8[$__nsn]|0;
+      $206 = $205 & 1;
+      $207 = ($206<<24>>24)==(0);
+      
+      if ($207) {
+       $209 = $205&255;
+       $210 = $209 >>> 1;
+       
+       $211 = $210;
+      } else {
+       $208 = HEAP32[$13>>2]|0;
+       
+       $211 = $208;
+      }
+      
+      $212 = (0 - ($211))|0;
+      $213 = ($204|0)==($212|0);
+      
+      if ($213) {
+       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
+       break L27;
+      }
+      
+      if ($200) {
+       $215 = $198&255;
+       $216 = $215 >>> 1;
+       
+       $217 = $216;
+      } else {
+       $214 = HEAP32[$15>>2]|0;
+       
+       $217 = $214;
+      }
+      
+      $218 = ($217|0)==(0);
+      
+      do {
+       if (!($218)) {
+        
+        if ($207) {
+         $220 = $205&255;
+         $221 = $220 >>> 1;
+         
+         $222 = $221;
+        } else {
+         $219 = HEAP32[$13>>2]|0;
+         
+         $222 = $219;
+        }
+        
+        $223 = ($222|0)==(0);
+        
+        if ($223) {
+         break;
+        }
+        $305 = HEAP32[$9>>2]|0;
+        $gep_int133 = $305;
+        $gep134 = (($gep_int133) + 12)|0;
+        $306 = $gep134;
+        $307 = HEAP32[$306>>2]|0;
+        $gep_int135 = $305;
+        $gep136 = (($gep_int135) + 16)|0;
+        $308 = $gep136;
+        $309 = HEAP32[$308>>2]|0;
+        $310 = ($307|0)==($309|0);
+        
+        if ($310) {
+         $311 = $305;
+         $312 = HEAP32[$305>>2]|0;
+         $gep_int137 = $312;
+         $gep138 = (($gep_int137) + 36)|0;
+         $313 = $gep138;
+         $314 = HEAP32[$313>>2]|0;
+         __THREW__ = 0;
+         $315 = invoke_ii($314|0,$305|0)|0;
+         $316 = __THREW__; __THREW__ = 0;
+         $317 = $316&1;
+         
+         if ($317) {
+          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+          label = 25;
+          break L3;
+         }
+         $$pre412 = HEAP8[$__psn]|0;
+         
+         $$0$i$i108 = $315;$319 = $$pre412;
+        } else {
+         $318 = HEAP32[$307>>2]|0;
+         
+         $$0$i$i108 = $318;$319 = $198;
+        }
+        
+        
+        $320 = $319 & 1;
+        $321 = ($320<<24>>24)==(0);
+        $322 = HEAP32[$16>>2]|0;
+        $$423 = $321 ? $15 : $322;
+        $323 = HEAP32[$$423>>2]|0;
+        $324 = ($$0$i$i108|0)==($323|0);
+        $325 = HEAP32[$9>>2]|0;
+        $gep_int139 = $325;
+        $gep140 = (($gep_int139) + 12)|0;
+        $326 = $gep140;
+        $327 = HEAP32[$326>>2]|0;
+        $gep_int141 = $325;
+        $gep142 = (($gep_int141) + 16)|0;
+        $328 = $gep142;
+        $329 = HEAP32[$328>>2]|0;
+        $330 = ($327|0)==($329|0);
+        
+        if ($324) {
+         
+         if ($330) {
+          $331 = $325;
+          $332 = HEAP32[$325>>2]|0;
+          $gep_int143 = $332;
+          $gep144 = (($gep_int143) + 40)|0;
+          $333 = $gep144;
+          $334 = HEAP32[$333>>2]|0;
+          __THREW__ = 0;
+          u$170 = invoke_ii($334|0,$325|0)|0;
+          $335 = __THREW__; __THREW__ = 0;
+          $336 = $335&1;
+          
+          if ($336) {
+           $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+           label = 25;
+           break L3;
+          }
+         } else {
+          $gep_int145 = $327;
+          $gep146 = (($gep_int145) + 4)|0;
+          $337 = $gep146;
+          HEAP32[$326>>2] = $337;
+          
+         }
+         $338 = HEAP8[$__psn]|0;
+         $339 = $338 & 1;
+         $340 = ($339<<24>>24)==(0);
+         
+         if ($340) {
+          $342 = $338&255;
+          $343 = $342 >>> 1;
+          
+          $344 = $343;
+         } else {
+          $341 = HEAP32[$15>>2]|0;
+          
+          $344 = $341;
+         }
+         
+         $345 = ($344>>>0)>(1);
+         $__psn$__trailing_sign$05 = $345 ? $__psn : $__trailing_sign$0343;
+         
+         $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__psn$__trailing_sign$05;$free215 = $free214336;
+         break L27;
+        }
+        
+        if ($330) {
+         $346 = $325;
+         $347 = HEAP32[$325>>2]|0;
+         $gep_int147 = $347;
+         $gep148 = (($gep_int147) + 36)|0;
+         $348 = $gep148;
+         $349 = HEAP32[$348>>2]|0;
+         __THREW__ = 0;
+         $350 = invoke_ii($349|0,$325|0)|0;
+         $351 = __THREW__; __THREW__ = 0;
+         $352 = $351&1;
+         
+         if ($352) {
+          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+          label = 25;
+          break L3;
+         } else {
+          $$0$i$i130 = $350;
+         }
+        } else {
+         $353 = HEAP32[$327>>2]|0;
+         
+         $$0$i$i130 = $353;
+        }
+        
+        $354 = HEAP8[$__nsn]|0;
+        $355 = $354 & 1;
+        $356 = ($355<<24>>24)==(0);
+        $357 = HEAP32[$14>>2]|0;
+        $$424 = $356 ? $13 : $357;
+        $358 = HEAP32[$$424>>2]|0;
+        $359 = ($$0$i$i130|0)==($358|0);
+        
+        if (!($359)) {
+         label = 134;
+         break L3;
+        }
+        $360 = HEAP32[$9>>2]|0;
+        $gep_int149 = $360;
+        $gep150 = (($gep_int149) + 12)|0;
+        $361 = $gep150;
+        $362 = HEAP32[$361>>2]|0;
+        $gep_int151 = $360;
+        $gep152 = (($gep_int151) + 16)|0;
+        $363 = $gep152;
+        $364 = HEAP32[$363>>2]|0;
+        $365 = ($362|0)==($364|0);
+        
+        if ($365) {
+         $366 = $360;
+         $367 = HEAP32[$360>>2]|0;
+         $gep_int153 = $367;
+         $gep154 = (($gep_int153) + 40)|0;
+         $368 = $gep154;
+         $369 = HEAP32[$368>>2]|0;
+         __THREW__ = 0;
+         u$185 = invoke_ii($369|0,$360|0)|0;
+         $370 = __THREW__; __THREW__ = 0;
+         $371 = $370&1;
+         
+         if ($371) {
+          $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+          label = 25;
+          break L3;
+         }
+        } else {
+         $gep_int155 = $362;
+         $gep156 = (($gep_int155) + 4)|0;
+         $372 = $gep156;
+         HEAP32[$361>>2] = $372;
+         
+        }
+        HEAP8[$__neg] = 1;
+        $373 = HEAP8[$__nsn]|0;
+        $374 = $373 & 1;
+        $375 = ($374<<24>>24)==(0);
+        
+        if ($375) {
+         $377 = $373&255;
+         $378 = $377 >>> 1;
+         
+         $379 = $378;
+        } else {
+         $376 = HEAP32[$13>>2]|0;
+         
+         $379 = $376;
+        }
+        
+        $380 = ($379>>>0)>(1);
+        $__nsn$__trailing_sign$06 = $380 ? $__nsn : $__trailing_sign$0343;
+        
+        $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__nsn$__trailing_sign$06;$free215 = $free214336;
+        break L27;
+       }
+      } while(0);
+      
+      if ($200) {
+       $225 = $198&255;
+       $226 = $225 >>> 1;
+       
+       $227 = $226;
+      } else {
+       $224 = HEAP32[$15>>2]|0;
+       
+       $227 = $224;
+      }
+      
+      $228 = ($227|0)==(0);
+      $229 = HEAP32[$9>>2]|0;
+      $gep_int109 = $229;
+      $gep110 = (($gep_int109) + 12)|0;
+      $230 = $gep110;
+      $231 = HEAP32[$230>>2]|0;
+      $gep_int111 = $229;
+      $gep112 = (($gep_int111) + 16)|0;
+      $232 = $gep112;
+      $233 = HEAP32[$232>>2]|0;
+      $234 = ($231|0)==($233|0);
+      
+      if ($228) {
+       
+       if ($234) {
+        $270 = $229;
+        $271 = HEAP32[$229>>2]|0;
+        $gep_int123 = $271;
+        $gep124 = (($gep_int123) + 36)|0;
+        $272 = $gep124;
+        $273 = HEAP32[$272>>2]|0;
+        __THREW__ = 0;
+        $274 = invoke_ii($273|0,$229|0)|0;
+        $275 = __THREW__; __THREW__ = 0;
+        $276 = $275&1;
+        
+        if ($276) {
+         $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+         label = 25;
+         break L3;
+        }
+        $$pre410 = HEAP8[$__nsn]|0;
+        
+        $$0$i$i96 = $274;$278 = $$pre410;
+       } else {
+        $277 = HEAP32[$231>>2]|0;
+        
+        $$0$i$i96 = $277;$278 = $205;
+       }
+       
+       
+       $279 = $278 & 1;
+       $280 = ($279<<24>>24)==(0);
+       $281 = HEAP32[$14>>2]|0;
+       $$422 = $280 ? $13 : $281;
+       $282 = HEAP32[$$422>>2]|0;
+       $283 = ($$0$i$i96|0)==($282|0);
+       
+       if (!($283)) {
+        $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
+        break L27;
+       }
+       $284 = HEAP32[$9>>2]|0;
+       $gep_int125 = $284;
+       $gep126 = (($gep_int125) + 12)|0;
+       $285 = $gep126;
+       $286 = HEAP32[$285>>2]|0;
+       $gep_int127 = $284;
+       $gep128 = (($gep_int127) + 16)|0;
+       $287 = $gep128;
+       $288 = HEAP32[$287>>2]|0;
+       $289 = ($286|0)==($288|0);
+       
+       if ($289) {
+        $290 = $284;
+        $291 = HEAP32[$284>>2]|0;
+        $gep_int129 = $291;
+        $gep130 = (($gep_int129) + 40)|0;
+        $292 = $gep130;
+        $293 = HEAP32[$292>>2]|0;
+        __THREW__ = 0;
+        u$153 = invoke_ii($293|0,$284|0)|0;
+        $294 = __THREW__; __THREW__ = 0;
+        $295 = $294&1;
+        
+        if ($295) {
+         $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+         label = 25;
+         break L3;
+        }
+       } else {
+        $gep_int131 = $286;
+        $gep132 = (($gep_int131) + 4)|0;
+        $296 = $gep132;
+        HEAP32[$285>>2] = $296;
+        
+       }
+       HEAP8[$__neg] = 1;
+       $297 = HEAP8[$__nsn]|0;
+       $298 = $297 & 1;
+       $299 = ($298<<24>>24)==(0);
+       
+       if ($299) {
+        $301 = $297&255;
+        $302 = $301 >>> 1;
+        
+        $303 = $302;
+       } else {
+        $300 = HEAP32[$13>>2]|0;
+        
+        $303 = $300;
+       }
+       
+       $304 = ($303>>>0)>(1);
+       $__nsn$__trailing_sign$0 = $304 ? $__nsn : $__trailing_sign$0343;
+       
+       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__nsn$__trailing_sign$0;$free215 = $free214336;
+       break L27;
+      }
+      
+      if ($234) {
+       $235 = $229;
+       $236 = HEAP32[$229>>2]|0;
+       $gep_int113 = $236;
+       $gep114 = (($gep_int113) + 36)|0;
+       $237 = $gep114;
+       $238 = HEAP32[$237>>2]|0;
+       __THREW__ = 0;
+       $239 = invoke_ii($238|0,$229|0)|0;
+       $240 = __THREW__; __THREW__ = 0;
+       $241 = $240&1;
+       
+       if ($241) {
+        $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+        label = 25;
+        break L3;
+       }
+       $$pre411 = HEAP8[$__psn]|0;
+       
+       $$0$i$i75 = $239;$243 = $$pre411;
+      } else {
+       $242 = HEAP32[$231>>2]|0;
+       
+       $$0$i$i75 = $242;$243 = $198;
+      }
+      
+      
+      $244 = $243 & 1;
+      $245 = ($244<<24>>24)==(0);
+      $246 = HEAP32[$16>>2]|0;
+      $$ = $245 ? $15 : $246;
+      $247 = HEAP32[$$>>2]|0;
+      $248 = ($$0$i$i75|0)==($247|0);
+      
+      if (!($248)) {
+       HEAP8[$__neg] = 1;
+       
+       $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__trailing_sign$0343;$free215 = $free214336;
+       break L27;
+      }
+      $249 = HEAP32[$9>>2]|0;
+      $gep_int115 = $249;
+      $gep116 = (($gep_int115) + 12)|0;
+      $250 = $gep116;
+      $251 = HEAP32[$250>>2]|0;
+      $gep_int117 = $249;
+      $gep118 = (($gep_int117) + 16)|0;
+      $252 = $gep118;
+      $253 = HEAP32[$252>>2]|0;
+      $254 = ($251|0)==($253|0);
+      
+      if ($254) {
+       $255 = $249;
+       $256 = HEAP32[$249>>2]|0;
+       $gep_int119 = $256;
+       $gep120 = (($gep_int119) + 40)|0;
+       $257 = $gep120;
+       $258 = HEAP32[$257>>2]|0;
+       __THREW__ = 0;
+       u$135 = invoke_ii($258|0,$249|0)|0;
+       $259 = __THREW__; __THREW__ = 0;
+       $260 = $259&1;
+       
+       if ($260) {
+        $$ph$ph237$ph$ph$ph$ph$ph = $27;$free218$ph$ph236$ph$ph$ph$ph$ph = $free214336;
+        label = 25;
+        break L3;
+       }
+      } else {
+       $gep_int121 = $251;
+       $gep122 = (($gep_int121) + 4)|0;
+       $261 = $gep122;
+       HEAP32[$250>>2] = $261;
+       
+      }
+      $262 = HEAP8[$__psn]|0;
+      $263 = $262 & 1;
+      $264 = ($263<<24>>24)==(0);
+      
+      if ($264) {
+       $266 = $262&255;
+       $267 = $266 >>> 1;
+       
+       $268 = $267;
+      } else {
+       $265 = HEAP32[$15>>2]|0;
+       
+       $268 = $265;
+      }
+      
+      $269 = ($268>>>0)>(1);
+      $__psn$__trailing_sign$0 = $269 ? $__psn : $__trailing_sign$0343;
+      
+      $850 = $27;$851 = $26;$852 = $25;$__trailing_sign$1 = $__psn$__trailing_sign$0;$free215 = $free214336;
       break;
      }
      default: {
@@ -90136,7 +90136,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
      label = 4;
     }
    }
-   L5: do {
+   L6: do {
     if ((label|0) == 4) {
      
      $expanded7 = 6712;
@@ -90196,7 +90196,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
        $49 = $48&1;
        
        if ($49) {
-        break L5;
+        break L6;
        }
        
        if ($46) {
@@ -90240,7 +90240,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
          $65 = $64&1;
          
          if ($65) {
-          break L5;
+          break L6;
          }
          __THREW__ = 0;
          invoke_vii(57,$__v|0,$63|0);
@@ -90248,7 +90248,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
          $67 = $66&1;
          
          if ($67) {
-          break L5;
+          break L6;
          }
         }
         $70 = HEAP32[$31>>2]|0;
@@ -90262,7 +90262,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
         $75 = $74&1;
         
         if ($75) {
-         break L5;
+         break L6;
         }
         $76 = HEAP32[$4>>2]|0;
         $77 = HEAP32[$__wn>>2]|0;
@@ -90271,7 +90271,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
         $78 = $gep49;
         $79 = ($76>>>0)<($78>>>0);
         
-        L22: do {
+        L23: do {
          if ($79) {
           $__w$09 = $76;
           while(1) {
@@ -90284,7 +90284,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
            
            if (!($82)) {
             $__w$0$lcssa = $__w$09;
-            break L22;
+            break L23;
            }
            $80 = ($83>>>0)<($78>>>0);
            
@@ -90306,7 +90306,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
         $85 = $84&1;
         
         if ($85) {
-         break L5;
+         break L6;
         }
        }
        $gep_int52 = $__b;
@@ -90341,7 +90341,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
           $100 = $99&1;
           
           if ($100) {
-           break L5;
+           break L6;
           } else {
            $$0$i$i$i$i = $98;
           }
@@ -90397,7 +90397,7 @@ function __ZNKSt3__19money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEE
           $116 = $115&1;
           
           if ($116) {
-           break L5;
+           break L6;
           } else {
            $$0$i$i1$i$i = $114;
           }
@@ -93217,6 +93217,48 @@ function __ZNSt3__111__money_putIcE8__formatEPcRS2_S3_jPKcS5_RKNS_5ctypeIcEEbRKN
     }
     break;
    }
+   case 3:  {
+    $33 = HEAP8[$__sn]|0;
+    $34 = $33 & 1;
+    $35 = ($34<<24>>24)==(0);
+    
+    if ($35) {
+     $37 = $33&255;
+     $38 = $37 >>> 1;
+     
+     $39 = $38;
+    } else {
+     $36 = HEAP32[$6>>2]|0;
+     
+     $39 = $36;
+    }
+    
+    $40 = ($39|0)==(0);
+    
+    if ($40) {
+     $$2 = $$050;
+     break L3;
+    }
+    
+    if ($35) {
+     $42 = $4;
+    } else {
+     $41 = HEAP32[$5>>2]|0;
+     
+     $42 = $41;
+    }
+    
+    $43 = HEAP8[$42]|0;
+    $44 = HEAP32[$__me>>2]|0;
+    $gep_int25 = $44;
+    $gep26 = (($gep_int25) + 1)|0;
+    $45 = $gep26;
+    HEAP32[$__me>>2] = $45;
+    HEAP8[$44] = $43;
+    
+    $$2 = $$050;
+    break;
+   }
    case 2:  {
     $46 = HEAP8[$__sym]|0;
     $47 = $46 & 1;
@@ -93292,44 +93334,9 @@ function __ZNSt3__111__money_putIcE8__formatEPcRS2_S3_jPKcS5_RKNS_5ctypeIcEEbRKN
     $$2 = $$050;
     break;
    }
-   case 3:  {
-    $33 = HEAP8[$__sn]|0;
-    $34 = $33 & 1;
-    $35 = ($34<<24>>24)==(0);
-    
-    if ($35) {
-     $37 = $33&255;
-     $38 = $37 >>> 1;
-     
-     $39 = $38;
-    } else {
-     $36 = HEAP32[$6>>2]|0;
-     
-     $39 = $36;
-    }
-    
-    $40 = ($39|0)==(0);
-    
-    if ($40) {
-     $$2 = $$050;
-     break L3;
-    }
-    
-    if ($35) {
-     $42 = $4;
-    } else {
-     $41 = HEAP32[$5>>2]|0;
-     
-     $42 = $41;
-    }
-    
-    $43 = HEAP8[$42]|0;
-    $44 = HEAP32[$__me>>2]|0;
-    $gep_int25 = $44;
-    $gep26 = (($gep_int25) + 1)|0;
-    $45 = $gep26;
-    HEAP32[$__me>>2] = $45;
-    HEAP8[$44] = $43;
+   case 0:  {
+    $25 = HEAP32[$__me>>2]|0;
+    HEAP32[$__mi>>2] = $25;
     
     $$2 = $$050;
     break;
@@ -93349,13 +93356,6 @@ function __ZNSt3__111__money_putIcE8__formatEPcRS2_S3_jPKcS5_RKNS_5ctypeIcEEbRKN
     $32 = $gep24;
     HEAP32[$__me>>2] = $32;
     HEAP8[$31] = $30;
-    
-    $$2 = $$050;
-    break;
-   }
-   case 0:  {
-    $25 = HEAP32[$__me>>2]|0;
-    HEAP32[$__mi>>2] = $25;
     
     $$2 = $$050;
     break;
@@ -95397,48 +95397,6 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
     $$2 = $$059;
     break;
    }
-   case 3:  {
-    $28 = HEAP8[$__sn]|0;
-    $29 = $28 & 1;
-    $30 = ($29<<24>>24)==(0);
-    
-    if ($30) {
-     $32 = $28&255;
-     $33 = $32 >>> 1;
-     
-     $34 = $33;
-    } else {
-     $31 = HEAP32[$3>>2]|0;
-     
-     $34 = $31;
-    }
-    
-    $35 = ($34|0)==(0);
-    
-    if ($35) {
-     $$2 = $$059;
-     break L3;
-    }
-    
-    if ($30) {
-     $37 = $3;
-    } else {
-     $36 = HEAP32[$4>>2]|0;
-     
-     $37 = $36;
-    }
-    
-    $38 = HEAP32[$37>>2]|0;
-    $39 = HEAP32[$__me>>2]|0;
-    $gep_int19 = $39;
-    $gep20 = (($gep_int19) + 4)|0;
-    $40 = $gep20;
-    HEAP32[$__me>>2] = $40;
-    HEAP32[$39>>2] = $38;
-    
-    $$2 = $$059;
-    break;
-   }
    case 1:  {
     $21 = HEAP32[$__me>>2]|0;
     HEAP32[$__mi>>2] = $21;
@@ -95458,102 +95416,6 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
     $$2 = $$059;
     break;
    }
-   case 2:  {
-    $41 = HEAP8[$__sym]|0;
-    $42 = $41 & 1;
-    $43 = ($42<<24>>24)==(0);
-    
-    if ($43) {
-     $45 = $41&255;
-     $46 = $45 >>> 1;
-     
-     $47 = $46;
-    } else {
-     $44 = HEAP32[$8>>2]|0;
-     
-     $47 = $44;
-    }
-    
-    $48 = ($47|0)==(0);
-    $brmerge = $48 | $7;
-    
-    if ($brmerge) {
-     $$2 = $$059;
-     break L3;
-    }
-    
-    if ($43) {
-     $51 = $41&255;
-     $52 = $51 >>> 1;
-     
-     $53 = $8;$54 = $8;$55 = $52;
-    } else {
-     $49 = HEAP32[$9>>2]|0;
-     $50 = HEAP32[$8>>2]|0;
-     
-     $53 = $49;$54 = $49;$55 = $50;
-    }
-    
-    
-    
-    $gep_int21 = $54;
-    $gep_array = $55<<2;
-    $gep22 = (($gep_int21) + ($gep_array))|0;
-    $56 = $gep22;
-    $57 = HEAP32[$__me>>2]|0;
-    $58 = ($53|0)==($56|0);
-    
-    if ($58) {
-     $$0$lcssa$i$i22 = $57;
-    } else {
-     $$promoted4$i$i13 = $53;
-     $$sum33 = (($55) + -1)|0;
-     $gep_int23 = $54;
-     $gep_array24 = $$sum33<<2;
-     $gep25 = (($gep_int23) + ($gep_array24))|0;
-     $scevgep$i$i14 = $gep25;
-     $scevgep3$i$i15 = $scevgep$i$i14;
-     $59 = (0 - ($$promoted4$i$i13))|0;
-     $gep_int26 = $scevgep$i$i14;
-     $gep27 = (($gep_int26) + ($59))|0;
-     $uglygep$i$i16 = $gep27;
-     $uglygep5$i$i17 = $uglygep$i$i16;
-     $60 = $uglygep5$i$i17 >>> 2;
-     
-     $$01$i$i19 = $57;$61 = $53;
-     while(1) {
-      
-      
-      $62 = HEAP32[$61>>2]|0;
-      HEAP32[$$01$i$i19>>2] = $62;
-      $gep_int28 = $61;
-      $gep29 = (($gep_int28) + 4)|0;
-      $63 = $gep29;
-      $64 = ($63|0)==($56|0);
-      
-      if ($64) {
-       break;
-      }
-      $gep_int30 = $$01$i$i19;
-      $gep31 = (($gep_int30) + 4)|0;
-      $65 = $gep31;
-      
-      $61$phi = $63;$$01$i$i19 = $65;$61 = $61$phi;
-     }
-     $66 = (($60) + 1)|0;
-     $gep_int32 = $57;
-     $gep_array33 = $66<<2;
-     $gep34 = (($gep_int32) + ($gep_array33))|0;
-     $scevgep6$i$i20 = $gep34;
-     
-     $$0$lcssa$i$i22 = $scevgep6$i$i20;
-    }
-    
-    HEAP32[$__me>>2] = $$0$lcssa$i$i22;
-    
-    $$2 = $$059;
-    break;
-   }
    case 4:  {
     $67 = HEAP32[$__me>>2]|0;
     $gep_int35 = $$059;
@@ -95562,7 +95424,7 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
     $$$0 = $__neg ? $68 : $$059;
     $69 = ($$$0>>>0)<($__de>>>0);
     
-    L33: do {
+    L7: do {
      if ($69) {
       $__d$034 = $$$0;
       while(1) {
@@ -95580,7 +95442,7 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
        
        if (!($75)) {
         $__d$0$lcssa = $__d$034;
-        break L33;
+        break L7;
        }
        $70 = ($76>>>0)<($__de>>>0);
        
@@ -95905,6 +95767,144 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
     }
     break;
    }
+   case 3:  {
+    $28 = HEAP8[$__sn]|0;
+    $29 = $28 & 1;
+    $30 = ($29<<24>>24)==(0);
+    
+    if ($30) {
+     $32 = $28&255;
+     $33 = $32 >>> 1;
+     
+     $34 = $33;
+    } else {
+     $31 = HEAP32[$3>>2]|0;
+     
+     $34 = $31;
+    }
+    
+    $35 = ($34|0)==(0);
+    
+    if ($35) {
+     $$2 = $$059;
+     break L3;
+    }
+    
+    if ($30) {
+     $37 = $3;
+    } else {
+     $36 = HEAP32[$4>>2]|0;
+     
+     $37 = $36;
+    }
+    
+    $38 = HEAP32[$37>>2]|0;
+    $39 = HEAP32[$__me>>2]|0;
+    $gep_int19 = $39;
+    $gep20 = (($gep_int19) + 4)|0;
+    $40 = $gep20;
+    HEAP32[$__me>>2] = $40;
+    HEAP32[$39>>2] = $38;
+    
+    $$2 = $$059;
+    break;
+   }
+   case 2:  {
+    $41 = HEAP8[$__sym]|0;
+    $42 = $41 & 1;
+    $43 = ($42<<24>>24)==(0);
+    
+    if ($43) {
+     $45 = $41&255;
+     $46 = $45 >>> 1;
+     
+     $47 = $46;
+    } else {
+     $44 = HEAP32[$8>>2]|0;
+     
+     $47 = $44;
+    }
+    
+    $48 = ($47|0)==(0);
+    $brmerge = $48 | $7;
+    
+    if ($brmerge) {
+     $$2 = $$059;
+     break L3;
+    }
+    
+    if ($43) {
+     $51 = $41&255;
+     $52 = $51 >>> 1;
+     
+     $53 = $8;$54 = $8;$55 = $52;
+    } else {
+     $49 = HEAP32[$9>>2]|0;
+     $50 = HEAP32[$8>>2]|0;
+     
+     $53 = $49;$54 = $49;$55 = $50;
+    }
+    
+    
+    
+    $gep_int21 = $54;
+    $gep_array = $55<<2;
+    $gep22 = (($gep_int21) + ($gep_array))|0;
+    $56 = $gep22;
+    $57 = HEAP32[$__me>>2]|0;
+    $58 = ($53|0)==($56|0);
+    
+    if ($58) {
+     $$0$lcssa$i$i22 = $57;
+    } else {
+     $$promoted4$i$i13 = $53;
+     $$sum33 = (($55) + -1)|0;
+     $gep_int23 = $54;
+     $gep_array24 = $$sum33<<2;
+     $gep25 = (($gep_int23) + ($gep_array24))|0;
+     $scevgep$i$i14 = $gep25;
+     $scevgep3$i$i15 = $scevgep$i$i14;
+     $59 = (0 - ($$promoted4$i$i13))|0;
+     $gep_int26 = $scevgep$i$i14;
+     $gep27 = (($gep_int26) + ($59))|0;
+     $uglygep$i$i16 = $gep27;
+     $uglygep5$i$i17 = $uglygep$i$i16;
+     $60 = $uglygep5$i$i17 >>> 2;
+     
+     $$01$i$i19 = $57;$61 = $53;
+     while(1) {
+      
+      
+      $62 = HEAP32[$61>>2]|0;
+      HEAP32[$$01$i$i19>>2] = $62;
+      $gep_int28 = $61;
+      $gep29 = (($gep_int28) + 4)|0;
+      $63 = $gep29;
+      $64 = ($63|0)==($56|0);
+      
+      if ($64) {
+       break;
+      }
+      $gep_int30 = $$01$i$i19;
+      $gep31 = (($gep_int30) + 4)|0;
+      $65 = $gep31;
+      
+      $61$phi = $63;$$01$i$i19 = $65;$61 = $61$phi;
+     }
+     $66 = (($60) + 1)|0;
+     $gep_int32 = $57;
+     $gep_array33 = $66<<2;
+     $gep34 = (($gep_int32) + ($gep_array33))|0;
+     $scevgep6$i$i20 = $gep34;
+     
+     $$0$lcssa$i$i22 = $scevgep6$i$i20;
+    }
+    
+    HEAP32[$__me>>2] = $$0$lcssa$i$i22;
+    
+    $$2 = $$059;
+    break;
+   }
    default: {
     $$2 = $$059;
    }
@@ -96014,12 +96014,12 @@ function __ZNSt3__111__money_putIwE8__formatEPwRS2_S3_jPKwS5_RKNS_5ctypeIwEEbRKN
  }
  $184 = $__flags & 176;
  
- if ((($184|0) == 16)) {
-  STACKTOP = sp;return;
- } else if ((($184|0) == 32)) {
+ if ((($184|0) == 32)) {
   $185 = HEAP32[$__me>>2]|0;
   HEAP32[$__mi>>2] = $185;
   
+  STACKTOP = sp;return;
+ } else if ((($184|0) == 16)) {
   STACKTOP = sp;return;
  } else {
   HEAP32[$__mi>>2] = $__mb;
@@ -97721,7 +97721,7 @@ function __ZNSt3__16locale5__impC2Ej($this,$refs) {
     label = 10;
    }
   }
-  L15: do {
+  L14: do {
    if ((label|0) == 10) {
     
     $expanded27 = 5144;
@@ -98072,7 +98072,7 @@ function __ZNSt3__16locale5__impC2Ej($this,$refs) {
        ___cxa_guard_abort($expanded115|0);
        
        $eh$lpad$body$index4Z2D = $99;$eh$lpad$body$indexZ2D = $98;
-       break L15;
+       break L14;
       } else {
        $expanded112 = 6608;
        HEAP32[6608>>2] = $95;
@@ -99409,7 +99409,7 @@ function __ZNSt3__16locale5__impC2Ej($this,$refs) {
        ___cxa_guard_abort($expanded457|0);
        
        $eh$lpad$body$index4Z2D = $337;$eh$lpad$body$indexZ2D = $336;
-       break L15;
+       break L14;
       } else {
        $expanded454 = 6608;
        HEAP32[6608>>2] = $333;
@@ -99529,7 +99529,7 @@ function __ZNSt3__16locale5__impC2Ej($this,$refs) {
        ___cxa_guard_abort($expanded489|0);
        
        $eh$lpad$body$index4Z2D = $359;$eh$lpad$body$indexZ2D = $358;
-       break L15;
+       break L14;
       } else {
        $expanded486 = 6608;
        HEAP32[6608>>2] = $355;
@@ -101668,7 +101668,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
      }
      $91 = ($73|0)==(0);
      
-     L25: do {
+     L24: do {
       if (!($91)) {
        $92 = $87;$n$011 = $73;$p$012 = $10;
        while(1) {
@@ -101685,7 +101685,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
         $96 = ($95|0)==(0);
         
         if ($96) {
-         break L25;
+         break L24;
         }
         $gep_int20 = $p$012;
         $gep21 = (($gep_int20) + 1)|0;
@@ -101703,7 +101703,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
      HEAP32[$frm_nxt>>2] = $99;
      $100 = ($99|0)==($frm_end|0);
      
-     L30: do {
+     L29: do {
       if ($100) {
        $fend$2$lcssa = $frm_end;
       } else {
@@ -101718,7 +101718,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
         
         if ($103) {
          $fend$2$lcssa = $fend$215;
-         break L30;
+         break L29;
         }
         $101 = ($104|0)==($frm_end|0);
         
@@ -101788,7 +101788,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
     $42 = HEAP32[$frm_nxt>>2]|0;
     $43 = ($$0148|0)==($42|0);
     
-    L46: do {
+    L54: do {
      if ($43) {
       $$1$lcssa = $$0148;
      } else {
@@ -101824,7 +101824,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
        
        if ($61) {
         $$1$lcssa = $$19;
-        break L46;
+        break L54;
        }
        $62 = HEAP32[$to_nxt>>2]|0;
        $gep_int12 = $62;
@@ -101839,7 +101839,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
        
        if ($66) {
         $$1$lcssa = $64;
-        break L46;
+        break L54;
        } else {
         $$19 = $64;$44 = $63;
        }
@@ -102208,7 +102208,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
     $41 = HEAP32[$frm_nxt>>2]|0;
     $42 = ($$0155|0)==($41|0);
     
-    L41: do {
+    L32: do {
      if ($42) {
       $$1$lcssa = $$0155;
      } else {
@@ -102273,7 +102273,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
        
        if ($65) {
         $$1$lcssa = $$2;
-        break L41;
+        break L32;
        } else {
         $$115 = $$2;$storemerge14 = $63;
        }
@@ -103446,20 +103446,20 @@ function __ZNSt3__1L13utf8_to_utf16EPKhS1_RS1_PtS3_RS3_mNS_12codecvt_modeE($frm,
        $52 = $gep14;
        $53 = HEAP8[$52]|0;
        
-       if ((($24|0) == 224)) {
-        $54 = $51 & -32;
-        $55 = ($54<<24>>24)==(-96);
-        
-        if (!($55)) {
-         $$0 = 2;
-         label = 41;
-         break L10;
-        }
-       } else if ((($24|0) == 237)) {
+       if ((($24|0) == 237)) {
         $56 = $51 & -32;
         $57 = ($56<<24>>24)==(-128);
         
         if (!($57)) {
+         $$0 = 2;
+         label = 41;
+         break L10;
+        }
+       } else if ((($24|0) == 224)) {
+        $54 = $51 & -32;
+        $55 = ($54<<24>>24)==(-96);
+        
+        if (!($55)) {
          $$0 = 2;
          label = 41;
          break L10;
@@ -103864,20 +103864,20 @@ function __ZNSt3__1L20utf8_to_utf16_lengthEPKhS1_jmNS_12codecvt_modeE($frm,$frm_
        $46 = $gep14;
        $47 = HEAP8[$46]|0;
        
-       if ((($20|0) == 237)) {
-        $52 = $45 & -32;
-        $53 = ($52<<24>>24)==(-128);
-        
-        if (!($53)) {
-         label = 23;
-         break L9;
-        }
-       } else if ((($20|0) == 224)) {
+       if ((($20|0) == 224)) {
         $48 = $45 & -32;
         $49 = ($48<<24>>24)==(-96);
         
         if (!($49)) {
          label = 21;
+         break L9;
+        }
+       } else if ((($20|0) == 237)) {
+        $52 = $45 & -32;
+        $53 = ($52<<24>>24)==(-128);
+        
+        if (!($53)) {
+         label = 23;
          break L9;
         }
        } else {
@@ -104996,20 +104996,20 @@ function __ZNSt3__1L19utf8_to_ucs4_lengthEPKhS1_jmNS_12codecvt_modeE($frm,$frm_e
        $46 = $gep14;
        $47 = HEAP8[$46]|0;
        
-       if ((($20|0) == 237)) {
-        $52 = $45 & -32;
-        $53 = ($52<<24>>24)==(-128);
-        
-        if (!($53)) {
-         label = 23;
-         break L9;
-        }
-       } else if ((($20|0) == 224)) {
+       if ((($20|0) == 224)) {
         $48 = $45 & -32;
         $49 = ($48<<24>>24)==(-96);
         
         if (!($49)) {
          label = 21;
+         break L9;
+        }
+       } else if ((($20|0) == 237)) {
+        $52 = $45 & -32;
+        $53 = ($52<<24>>24)==(-128);
+        
+        if (!($53)) {
+         label = 23;
          break L9;
         }
        } else {
@@ -109528,7 +109528,7 @@ function _mbrtowc($wc,$src,$n,$st) {
    
    $23 = ($$02|0)==(0);
    
-   L19: do {
+   L17: do {
     if ($23) {
      $c$2 = $c$0;
     } else {
@@ -109568,7 +109568,7 @@ function _mbrtowc($wc,$src,$n,$st) {
       
       if ($41) {
        $c$2 = $37;
-       break L19;
+       break L17;
       }
       $42 = HEAP8[$34]|0;
       $43 = $42&255;
@@ -111844,7 +111844,35 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
  FUNCTION_TABLE_viiiii[$36 & 3]($9,$info,$6,1,0);
  $37 = HEAP32[$32>>2]|0;
  
- if ((($37|0) == 1)) {
+ if ((($37|0) == 0)) {
+  $38 = HEAP32[$20>>2]|0;
+  $39 = ($38|0)==(1);
+  
+  if (!($39)) {
+   $dst_ptr$0 = 0;
+   
+   
+   STACKTOP = sp;return $dst_ptr$0|0;
+  }
+  $40 = HEAP32[$18>>2]|0;
+  $41 = ($40|0)==(1);
+  
+  if (!($41)) {
+   $dst_ptr$0 = 0;
+   
+   
+   STACKTOP = sp;return $dst_ptr$0|0;
+  }
+  $42 = HEAP32[$19>>2]|0;
+  $43 = ($42|0)==(1);
+  $44 = HEAP32[$16>>2]|0;
+  $$1 = $43 ? $44 : 0;
+  
+  $dst_ptr$0 = $$1;
+  
+  
+  STACKTOP = sp;return $dst_ptr$0|0;
+ } else if ((($37|0) == 1)) {
   $45 = HEAP32[$17>>2]|0;
   $46 = ($45|0)==(1);
   
@@ -111884,34 +111912,6 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
   $53 = HEAP32[$15>>2]|0;
   
   $dst_ptr$0 = $53;
-  
-  
-  STACKTOP = sp;return $dst_ptr$0|0;
- } else if ((($37|0) == 0)) {
-  $38 = HEAP32[$20>>2]|0;
-  $39 = ($38|0)==(1);
-  
-  if (!($39)) {
-   $dst_ptr$0 = 0;
-   
-   
-   STACKTOP = sp;return $dst_ptr$0|0;
-  }
-  $40 = HEAP32[$18>>2]|0;
-  $41 = ($40|0)==(1);
-  
-  if (!($41)) {
-   $dst_ptr$0 = 0;
-   
-   
-   STACKTOP = sp;return $dst_ptr$0|0;
-  }
-  $42 = HEAP32[$19>>2]|0;
-  $43 = ($42|0)==(1);
-  $44 = HEAP32[$16>>2]|0;
-  $$1 = $43 ? $44 : 0;
-  
-  $dst_ptr$0 = $$1;
   
   
   STACKTOP = sp;return $dst_ptr$0|0;
@@ -119105,7 +119105,7 @@ function _free($mem) {
    $350 = $349 & -8;
    $351 = ($350|0)==($psize$1|0);
    
-   L204: do {
+   L205: do {
     if ($351) {
      $T$0$lcssa = $343;
     } else {
@@ -119137,7 +119137,7 @@ function _free($mem) {
       
       if ($357) {
        $T$0$lcssa = $360;
-       break L204;
+       break L205;
       } else {
        $T$071$phi = $360;$K19$072 = $353;$T$071 = $T$071$phi;
       }
@@ -120738,7 +120738,7 @@ function _dispose_chunk($p,$psize) {
    $162 = $140 >>> 3;
    $163 = ($140>>>0)<(256);
    
-   L101: do {
+   L100: do {
     if ($163) {
      $$sum20 = (($psize) + 8)|0;
      $gep_int206 = $p;
@@ -121005,7 +121005,7 @@ function _dispose_chunk($p,$psize) {
        $expanded56 = $gep251;
        HEAP32[$expanded56>>2] = $236;
        
-       break L101;
+       break L100;
       } else {
        $237 = $194;
        $expanded59 = 15040;
@@ -121038,7 +121038,7 @@ function _dispose_chunk($p,$psize) {
        $244 = ($R7$1|0)==(0);
        
        if ($244) {
-        break L101;
+        break L100;
        }
       }
      } while(0);
@@ -121720,14 +121720,14 @@ function ___floatscan($f,$prec,$pok) {
  STACKTOP = STACKTOP + 512|0;
  $x$i = sp;
  
- if ((($prec|0) == 0)) {
-  $bits$0$ph = 24;$emin$0$ph = -149;
- } else if ((($prec|0) == 1)) {
+ if ((($prec|0) == 1)) {
   
   $bits$0$ph = 53;$emin$0$ph = -1074;
  } else if ((($prec|0) == 2)) {
   
   $bits$0$ph = 53;$emin$0$ph = -1074;
+ } else if ((($prec|0) == 0)) {
+  $bits$0$ph = 24;$emin$0$ph = -149;
  } else {
   $$0 = 0.000000e+00;
   
@@ -121945,148 +121945,7 @@ function ___floatscan($f,$prec,$pok) {
    
    
    
-   if ((($i$3|0) == 3)) {
-    $69 = HEAP32[$1>>2]|0;
-    $70 = HEAP32[$2>>2]|0;
-    $71 = ($69>>>0)<($70>>>0);
-    
-    if ($71) {
-     $gep_int22 = $69;
-     $gep23 = (($gep_int22) + 1)|0;
-     $72 = $gep23;
-     HEAP32[$1>>2] = $72;
-     $73 = HEAP8[$69]|0;
-     $74 = $73&255;
-     
-     $76 = $74;
-    } else {
-     $75 = ___shgetc($f)|0;
-     
-     $76 = $75;
-    }
-    
-    $77 = ($76|0)==(40);
-    
-    if ($77) {
-     $i$4 = 1;
-    } else {
-     $78 = HEAP32[$2>>2]|0;
-     $79 = ($78|0)==(0);
-     
-     if ($79) {
-      $$0 = +nan;
-      
-      STACKTOP = sp;return +$$0;
-     }
-     $80 = HEAP32[$1>>2]|0;
-     $gep_int24 = $80;
-     $gep25 = (($gep_int24) + -1)|0;
-     $81 = $gep25;
-     HEAP32[$1>>2] = $81;
-     
-     $$0 = +nan;
-     
-     STACKTOP = sp;return +$$0;
-    }
-    while(1) {
-     
-     $82 = HEAP32[$1>>2]|0;
-     $83 = HEAP32[$2>>2]|0;
-     $84 = ($82>>>0)<($83>>>0);
-     
-     if ($84) {
-      $gep_int26 = $82;
-      $gep27 = (($gep_int26) + 1)|0;
-      $85 = $gep27;
-      HEAP32[$1>>2] = $85;
-      $86 = HEAP8[$82]|0;
-      $87 = $86&255;
-      
-      $89 = $87;
-     } else {
-      $88 = ___shgetc($f)|0;
-      
-      $89 = $88;
-     }
-     
-     $90 = (($89) + -48)|0;
-     $91 = ($90>>>0)<(10);
-     $92 = (($89) + -65)|0;
-     $93 = ($92>>>0)<(26);
-     $or$cond8 = $91 | $93;
-     
-     if (!($or$cond8)) {
-      $94 = (($89) + -97)|0;
-      $95 = ($94>>>0)<(26);
-      $96 = ($89|0)==(95);
-      $or$cond5 = $95 | $96;
-      
-      if (!($or$cond5)) {
-       break;
-      }
-     }
-     $108 = (($i$4) + 1)|0;
-     
-     $i$4 = $108;
-    }
-    $97 = ($89|0)==(41);
-    
-    if ($97) {
-     $$0 = +nan;
-     
-     STACKTOP = sp;return +$$0;
-    }
-    $98 = HEAP32[$2>>2]|0;
-    $99 = ($98|0)==(0);
-    
-    if (!($99)) {
-     $100 = HEAP32[$1>>2]|0;
-     $gep_int28 = $100;
-     $gep29 = (($gep_int28) + -1)|0;
-     $101 = $gep29;
-     HEAP32[$1>>2] = $101;
-     
-    }
-    
-    if ($40) {
-     $103 = ___errno_location()|0;
-     HEAP32[$103>>2] = 22;
-     ___shlim($f,0);
-     
-     $$0 = 0.000000e+00;
-     
-     STACKTOP = sp;return +$$0;
-    }
-    $102 = ($i$4|0)==(0);
-    $brmerge107 = $102 | $99;
-    
-    if ($brmerge107) {
-     $$0 = +nan;
-     
-     STACKTOP = sp;return +$$0;
-    } else {
-     $$in = $i$4;
-    }
-    while(1) {
-     
-     $104 = (($$in) + -1)|0;
-     $105 = HEAP32[$1>>2]|0;
-     $gep_int30 = $105;
-     $gep31 = (($gep_int30) + -1)|0;
-     $106 = $gep31;
-     HEAP32[$1>>2] = $106;
-     $107 = ($104|0)==(0);
-     
-     if ($107) {
-      $$0 = +nan;
-      break;
-     } else {
-      $$in$phi = $104;$$in = $$in$phi;
-     }
-    }
-    
-    STACKTOP = sp;return +$$0;
-   } else if ((($i$3|0) == 0)) {
+   if ((($i$3|0) == 0)) {
     $114 = ($c$5|0)==(48);
     
     do {
@@ -122180,7 +122039,7 @@ function ___floatscan($f,$prec,$pok) {
         continue;
        }
       }
-      L107: do {
+      L66: do {
        if ((label|0) == 70) {
         $139 = HEAP32[$1>>2]|0;
         $140 = HEAP32[$2>>2]|0;
@@ -122235,7 +122094,7 @@ function ___floatscan($f,$prec,$pok) {
          
          if (!($157)) {
           $160 = $147;$161 = $148;$162 = 0;$163 = 0;$c$2$i = $156;$gotdig$2$i = 1;$gotrad$0$i = 1;$gottail$0$i = 0;$scale$0$i = 1.000000e+00;$x$0$i = 0;$y$0$i = 0.000000e+00;
-          break L107;
+          break L66;
          }
          $158 = _i64Add($147|0,$148|0,-1,-1)|0;
          $159 = tempRet0;
@@ -122244,7 +122103,7 @@ function ___floatscan($f,$prec,$pok) {
         }
        }
       } while(0);
-      L120: while(1) {
+      L79: while(1) {
        
        
        
@@ -122272,7 +122131,7 @@ function ___floatscan($f,$prec,$pok) {
          
          if (!($or$cond$i)) {
           $c$2$lcssa$i = $c$2$i;
-          break L120;
+          break L79;
          }
          
          if ($169) {
@@ -122283,7 +122142,7 @@ function ___floatscan($f,$prec,$pok) {
            break;
           } else {
            $c$2$lcssa$i = 46;
-           break L120;
+           break L79;
           }
          } else {
           $171 = ($c$2$i|0)>(57);
@@ -122733,7 +122592,7 @@ function ___floatscan($f,$prec,$pok) {
       continue;
      }
     }
-    L209: do {
+    L168: do {
      if ((label|0) == 139) {
       $339 = HEAP32[$1>>2]|0;
       $340 = HEAP32[$2>>2]|0;
@@ -122788,7 +122647,7 @@ function ___floatscan($f,$prec,$pok) {
        
        if (!($356)) {
         $$2$i = $$1$be$i;$359 = $347;$360 = $348;$gotdig$2$i11 = 1;$gotrad$0$i12 = 1;
-        break L209;
+        break L168;
        }
        $357 = _i64Add($347|0,$348|0,-1,-1)|0;
        $358 = tempRet0;
@@ -122810,7 +122669,7 @@ function ___floatscan($f,$prec,$pok) {
     $364 = ($$2$i|0)==(46);
     $or$cond789$i = $363 | $364;
     
-    L223: do {
+    L182: do {
      if ($or$cond789$i) {
       $gep_int65 = $x$i;
       $gep66 = (($gep_int65) + 496)|0;
@@ -122839,7 +122698,7 @@ function ___floatscan($f,$prec,$pok) {
           $387 = $368;$388 = $369;$389 = $368;$390 = $369;$gotdig$4$i = $gotdig$393$i;$gotrad$2$i = 1;$j$2$i = $j$096$i;$k$2$i = $k$095$i;$lnz$2$i = $lnz$092$i;
          } else {
           $$388$i = $$397$i;$408 = $368;$409 = $369;$410 = $370;$411 = $371;$gotdig$381$i = $gotdig$393$i;$j$086$i = $j$096$i;$k$084$i = $k$095$i;$lnz$079$i = $lnz$092$i;
-          break L223;
+          break L182;
          }
         } else {
          $372 = ($k$095$i|0)<(125);
@@ -123334,7 +123193,7 @@ function ___floatscan($f,$prec,$pok) {
      
      $a$2$ph40$i = $a$0$lcssa161$i;$e2$0$ph$i = 0;$rp$2$ph38$i = $543;$z$1$ph39$i = $z$0$i;
     }
-    L321: while(1) {
+    L280: while(1) {
      
      
      
@@ -123436,7 +123295,7 @@ function ___floatscan($f,$prec,$pok) {
        
        if (!($570)) {
         $a$3$ph$i = $a$2$ph40$i;$e2$1$ph$i = $e2$0$us44$i;$rp$3$ph33$i = 18;$z$5$ph$i = $z$1$us45$i;
-        break L321;
+        break L280;
        }
        $571 = (($z$1$us45$i) + 127)|0;
        
@@ -123547,7 +123406,7 @@ function ___floatscan($f,$prec,$pok) {
      
      $a$2$ph40$i = $595;$e2$0$ph$i = $$lcssa43$i;$rp$2$ph38$i = $593;$z$1$ph39$i = $z$4$i;
     }
-    L352: while(1) {
+    L311: while(1) {
      
      
      
@@ -123624,7 +123483,7 @@ function ___floatscan($f,$prec,$pok) {
        $or$cond13$i = $618 & $646;
        
        if ($or$cond13$i) {
-        break L352;
+        break L311;
        }
        $621 = (($$14$i) + ($e2$1$i))|0;
        $622 = ($a$3$i|0)==($z$5$ph$i|0);
@@ -123915,6 +123774,147 @@ function ___floatscan($f,$prec,$pok) {
     $711 = +_scalbnl($y$3$i,$e2$3$i);
     
     $$0 = $711;
+    
+    STACKTOP = sp;return +$$0;
+   } else if ((($i$3|0) == 3)) {
+    $69 = HEAP32[$1>>2]|0;
+    $70 = HEAP32[$2>>2]|0;
+    $71 = ($69>>>0)<($70>>>0);
+    
+    if ($71) {
+     $gep_int22 = $69;
+     $gep23 = (($gep_int22) + 1)|0;
+     $72 = $gep23;
+     HEAP32[$1>>2] = $72;
+     $73 = HEAP8[$69]|0;
+     $74 = $73&255;
+     
+     $76 = $74;
+    } else {
+     $75 = ___shgetc($f)|0;
+     
+     $76 = $75;
+    }
+    
+    $77 = ($76|0)==(40);
+    
+    if ($77) {
+     $i$4 = 1;
+    } else {
+     $78 = HEAP32[$2>>2]|0;
+     $79 = ($78|0)==(0);
+     
+     if ($79) {
+      $$0 = +nan;
+      
+      STACKTOP = sp;return +$$0;
+     }
+     $80 = HEAP32[$1>>2]|0;
+     $gep_int24 = $80;
+     $gep25 = (($gep_int24) + -1)|0;
+     $81 = $gep25;
+     HEAP32[$1>>2] = $81;
+     
+     $$0 = +nan;
+     
+     STACKTOP = sp;return +$$0;
+    }
+    while(1) {
+     
+     $82 = HEAP32[$1>>2]|0;
+     $83 = HEAP32[$2>>2]|0;
+     $84 = ($82>>>0)<($83>>>0);
+     
+     if ($84) {
+      $gep_int26 = $82;
+      $gep27 = (($gep_int26) + 1)|0;
+      $85 = $gep27;
+      HEAP32[$1>>2] = $85;
+      $86 = HEAP8[$82]|0;
+      $87 = $86&255;
+      
+      $89 = $87;
+     } else {
+      $88 = ___shgetc($f)|0;
+      
+      $89 = $88;
+     }
+     
+     $90 = (($89) + -48)|0;
+     $91 = ($90>>>0)<(10);
+     $92 = (($89) + -65)|0;
+     $93 = ($92>>>0)<(26);
+     $or$cond8 = $91 | $93;
+     
+     if (!($or$cond8)) {
+      $94 = (($89) + -97)|0;
+      $95 = ($94>>>0)<(26);
+      $96 = ($89|0)==(95);
+      $or$cond5 = $95 | $96;
+      
+      if (!($or$cond5)) {
+       break;
+      }
+     }
+     $108 = (($i$4) + 1)|0;
+     
+     $i$4 = $108;
+    }
+    $97 = ($89|0)==(41);
+    
+    if ($97) {
+     $$0 = +nan;
+     
+     STACKTOP = sp;return +$$0;
+    }
+    $98 = HEAP32[$2>>2]|0;
+    $99 = ($98|0)==(0);
+    
+    if (!($99)) {
+     $100 = HEAP32[$1>>2]|0;
+     $gep_int28 = $100;
+     $gep29 = (($gep_int28) + -1)|0;
+     $101 = $gep29;
+     HEAP32[$1>>2] = $101;
+     
+    }
+    
+    if ($40) {
+     $103 = ___errno_location()|0;
+     HEAP32[$103>>2] = 22;
+     ___shlim($f,0);
+     
+     $$0 = 0.000000e+00;
+     
+     STACKTOP = sp;return +$$0;
+    }
+    $102 = ($i$4|0)==(0);
+    $brmerge107 = $102 | $99;
+    
+    if ($brmerge107) {
+     $$0 = +nan;
+     
+     STACKTOP = sp;return +$$0;
+    } else {
+     $$in = $i$4;
+    }
+    while(1) {
+     
+     $104 = (($$in) + -1)|0;
+     $105 = HEAP32[$1>>2]|0;
+     $gep_int30 = $105;
+     $gep31 = (($gep_int30) + -1)|0;
+     $106 = $gep31;
+     HEAP32[$1>>2] = $106;
+     $107 = ($104|0)==(0);
+     
+     if ($107) {
+      $$0 = +nan;
+      break;
+     } else {
+      $$in$phi = $104;$$in = $$in$phi;
+     }
+    }
     
     STACKTOP = sp;return +$$0;
    } else {

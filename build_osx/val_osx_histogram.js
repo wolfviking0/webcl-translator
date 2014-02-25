@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_histogram.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_histogram.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = 'e1ccfd09-19ea-460f-8d08-28326fd1ce2f';
+    var PACKAGE_UUID = 'f13198aa-abc8-49cb-ae11-3dbe346e42b3';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

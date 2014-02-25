@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_spmv.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_spmv.data';
     var REMOTE_PACKAGE_SIZE = 62165;
-    var PACKAGE_UUID = 'b017b335-3b99-455c-89a9-d2996f61cb8a';
+    var PACKAGE_UUID = '79816c6f-0ee2-4095-b818-7f5b24b03906';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -19474,12 +19474,12 @@ function _getopt($argc,$argv,$optstring) {
  $12 = $gep26;
  $13 = HEAP8[$12]|0;
  
- if ((($13<<24>>24) == 0)) {
+ if ((($13<<24>>24) == 45)) {
+  label = 7;
+ } else if ((($13<<24>>24) == 0)) {
   $$0 = -1;
   
   STACKTOP = sp;return $$0|0;
- } else if ((($13<<24>>24) == 45)) {
-  label = 7;
  }
  do {
   if ((label|0) == 7) {
@@ -20866,7 +20866,7 @@ function _malloc($bytes) {
    
    $199 = ($171|0)==(0);
    
-   L202: do {
+   L78: do {
     if (!($199)) {
      $gep_int448 = $v$0$i;
      $gep449 = (($gep_int448) + 28)|0;
@@ -20903,7 +20903,7 @@ function _malloc($bytes) {
        $expanded41 = $gep457;
        HEAP32[$expanded41>>2] = $208;
        
-       break L202;
+       break L78;
       } else {
        $209 = $171;
        $expanded44 = 4768;
@@ -20936,7 +20936,7 @@ function _malloc($bytes) {
        $216 = ($R$1$i|0)==(0);
        
        if ($216) {
-        break L202;
+        break L78;
        }
       }
      } while(0);
@@ -21238,7 +21238,7 @@ function _malloc($bytes) {
    $306 = HEAP32[$305>>2]|0;
    $307 = ($306|0)==(0);
    
-   L9: do {
+   L126: do {
     if ($307) {
      $rsize$2$i = $279;$t$1$i = 0;$v$2$i = 0;
     } else {
@@ -21275,7 +21275,7 @@ function _malloc($bytes) {
        
        if ($318) {
         $rsize$2$i = $316;$t$1$i = $t$0$i16;$v$2$i = $t$0$i16;
-        break L9;
+        break L126;
        } else {
         $rsize$1$i = $316;$v$1$i = $t$0$i16;
        }
@@ -21564,7 +21564,7 @@ function _malloc($bytes) {
    
    $411 = ($383|0)==(0);
    
-   L59: do {
+   L176: do {
     if (!($411)) {
      $gep_int574 = $v$3$lcssa$i;
      $gep575 = (($gep_int574) + 28)|0;
@@ -21601,7 +21601,7 @@ function _malloc($bytes) {
        $expanded79 = $gep583;
        HEAP32[$expanded79>>2] = $420;
        
-       break L59;
+       break L176;
       } else {
        $421 = $383;
        $expanded82 = 4768;
@@ -21634,7 +21634,7 @@ function _malloc($bytes) {
        $428 = ($R$1$i22|0)==(0);
        
        if ($428) {
-        break L59;
+        break L176;
        }
       }
      } while(0);
@@ -21723,7 +21723,7 @@ function _malloc($bytes) {
    } while(0);
    $449 = ($rsize$3$lcssa$i>>>0)<(16);
    
-   L87: do {
+   L204: do {
     if ($449) {
      $450 = (($rsize$3$lcssa$i) + ($276))|0;
      $451 = $450 | 3;
@@ -21965,7 +21965,7 @@ function _malloc($bytes) {
      $536 = $535 & -8;
      $537 = ($536|0)==($rsize$3$lcssa$i|0);
      
-     L108: do {
+     L225: do {
       if ($537) {
        $T$0$lcssa$i = $529;
       } else {
@@ -21997,7 +21997,7 @@ function _malloc($bytes) {
         
         if ($543) {
          $T$0$lcssa$i = $546;
-         break L108;
+         break L225;
         } else {
          $T$026$i$phi = $546;$K12$027$i = $539;$T$026$i = $T$026$i$phi;
         }
@@ -22034,7 +22034,7 @@ function _malloc($bytes) {
         $556 = $555;
         HEAP32[$555>>2] = $484;
         
-        break L87;
+        break L204;
        }
       }
      } while(0);
@@ -23065,7 +23065,7 @@ function _malloc($bytes) {
        $818 = HEAP32[$expanded233>>2]|0;
        $819 = ($808|0)==($818|0);
        
-       L338: do {
+       L348: do {
         if ($819) {
          $expanded236 = 4768;
          $gep_int894 = 4768;
@@ -23147,7 +23147,7 @@ function _malloc($bytes) {
           $840 = $836 >>> 3;
           $841 = ($836>>>0)<(256);
           
-          L346: do {
+          L356: do {
            if ($841) {
             $$sum3940$i$i = $806 | 8;
             $$sum119$i = (($$sum3940$i$i) + ($tsize$246$i))|0;
@@ -23441,7 +23441,7 @@ function _malloc($bytes) {
               $expanded265 = $gep969;
               HEAP32[$expanded265>>2] = $918;
               
-              break L346;
+              break L356;
              } else {
               $919 = $874;
               $expanded268 = 4768;
@@ -23474,7 +23474,7 @@ function _malloc($bytes) {
               $926 = ($R$1$i$i|0)==(0);
               
               if ($926) {
-               break L346;
+               break L356;
               }
              }
             } while(0);
@@ -23805,7 +23805,7 @@ function _malloc($bytes) {
          $1032 = $1031 & -8;
          $1033 = ($1032|0)==($qsize$0$i$i|0);
          
-         L435: do {
+         L445: do {
           if ($1033) {
            $T$0$lcssa$i28$i = $1025;
           } else {
@@ -23837,7 +23837,7 @@ function _malloc($bytes) {
             
             if ($1039) {
              $T$0$lcssa$i28$i = $1042;
-             break L435;
+             break L445;
             } else {
              $T$055$i$i$phi = $1042;$K8$056$i$i = $1035;$T$055$i$i = $T$055$i$i$phi;
             }
@@ -23874,7 +23874,7 @@ function _malloc($bytes) {
             $1052 = $1051;
             HEAP32[$1051>>2] = $980;
             
-            break L338;
+            break L348;
            }
           }
          } while(0);
@@ -24341,7 +24341,7 @@ function _malloc($bytes) {
      $1195 = $1194 & -8;
      $1196 = ($1195|0)==($1123|0);
      
-     L489: do {
+     L499: do {
       if ($1196) {
        $T$0$lcssa$i$i = $1188;
       } else {
@@ -24373,7 +24373,7 @@ function _malloc($bytes) {
         
         if ($1202) {
          $T$0$lcssa$i$i = $1205;
-         break L489;
+         break L499;
         } else {
          $T$014$i$i$phi = $1205;$K2$015$i$i = $1198;$T$014$i$i = $T$014$i$i$phi;
         }
