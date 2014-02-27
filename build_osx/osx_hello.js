@@ -6009,7 +6009,9 @@ function copyTempDouble(ptr) {
   function _fileno(stream) {
       // int fileno(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
-      return FS.getStreamFromPtr(stream).fd;
+      stream = FS.getStreamFromPtr(stream);
+      if (!stream) return -1;
+      return stream.fd;
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
@@ -7655,8 +7657,7 @@ function _main($argc,$argv) {
  var $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $buffer = 0, $commands = 0, $context = 0, $correct = 0, $count = 0, $data = 0, $device_id = 0, $err = 0, $global = 0, $i = 0, $input = 0, $kernel = 0, $len = 0, $local = 0;
  var $output = 0, $program = 0, $results = 0, $use_gpu = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer14 = 0, $vararg_buffer16 = 0, $vararg_buffer18 = 0, $vararg_buffer20 = 0, $vararg_buffer23 = 0, $vararg_buffer26 = 0, $vararg_buffer28 = 0, $vararg_buffer3 = 0, $vararg_buffer31 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_lifetime_bitcast = 0;
  var $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast12 = 0, $vararg_lifetime_bitcast15 = 0, $vararg_lifetime_bitcast17 = 0, $vararg_lifetime_bitcast19 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast21 = 0, $vararg_lifetime_bitcast24 = 0, $vararg_lifetime_bitcast27 = 0, $vararg_lifetime_bitcast29 = 0, $vararg_lifetime_bitcast32 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr13 = 0, $vararg_ptr22 = 0, $vararg_ptr25 = 0, $vararg_ptr30 = 0, $vararg_ptr33 = 0;
- var $vararg_ptr34 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0, u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0, u$2 = 0, u$20 = 0, u$21 = 0, u$22 = 0, u$3 = 0;
- var u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vararg_ptr34 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer31 = sp;
@@ -7760,7 +7761,7 @@ function _main($argc,$argv) {
  $32 = ($31);
  $vararg_ptr = ($vararg_buffer);
  HEAP32[$vararg_ptr>>2] = $32;
- u$0 = (_printf(((688)|0),($vararg_buffer|0))|0);
+ (_printf(((688)|0),($vararg_buffer|0))|0);
  HEAP32[$count>>2] = 1024;
  $i = 0;
  while(1) {
@@ -7790,7 +7791,7 @@ function _main($argc,$argv) {
  $49 = HEAP32[$err>>2]|0;
  $50 = ($49|0)!=(0);
  if ($50) {
-  u$1 = (_printf(((736)|0),($vararg_buffer1|0))|0);
+  (_printf(((736)|0),($vararg_buffer1|0))|0);
   $1 = 1;
   $166 = $1;
   STACKTOP = sp;return ($166|0);
@@ -7800,7 +7801,7 @@ function _main($argc,$argv) {
  $52 = $context;
  $53 = ($52|0)!=(0|0);
  if (!($53)) {
-  u$2 = (_printf(((784)|0),($vararg_buffer3|0))|0);
+  (_printf(((784)|0),($vararg_buffer3|0))|0);
   $1 = 1;
   $166 = $1;
   STACKTOP = sp;return ($166|0);
@@ -7812,7 +7813,7 @@ function _main($argc,$argv) {
  $57 = $commands;
  $58 = ($57|0)!=(0|0);
  if (!($58)) {
-  u$3 = (_printf(((832)|0),($vararg_buffer5|0))|0);
+  (_printf(((832)|0),($vararg_buffer5|0))|0);
   $1 = 1;
   $166 = $1;
   STACKTOP = sp;return ($166|0);
@@ -7823,7 +7824,7 @@ function _main($argc,$argv) {
  $61 = $program;
  $62 = ($61|0)!=(0|0);
  if (!($62)) {
-  u$4 = (_printf(((880)|0),($vararg_buffer7|0))|0);
+  (_printf(((880)|0),($vararg_buffer7|0))|0);
   $1 = 1;
   $166 = $1;
   STACKTOP = sp;return ($166|0);
@@ -7834,15 +7835,15 @@ function _main($argc,$argv) {
  $65 = HEAP32[$err>>2]|0;
  $66 = ($65|0)!=(0);
  if ($66) {
-  u$5 = (_printf(((928)|0),($vararg_buffer9|0))|0);
+  (_printf(((928)|0),($vararg_buffer9|0))|0);
   $67 = $program;
   $68 = HEAP32[$device_id>>2]|0;
   $69 = ($buffer);
-  u$6 = (_clGetProgramBuildInfo(($67|0),($68|0),4483,2048,($69|0),($len|0))|0);
+  (_clGetProgramBuildInfo(($67|0),($68|0),4483,2048,($69|0),($len|0))|0);
   $70 = ($buffer);
   $vararg_ptr13 = ($vararg_buffer11);
   HEAP32[$vararg_ptr13>>2] = $70;
-  u$7 = (_printf(((976)|0),($vararg_buffer11|0))|0);
+  (_printf(((976)|0),($vararg_buffer11|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7852,14 +7853,14 @@ function _main($argc,$argv) {
  $73 = $kernel;
  $74 = ($73|0)!=(0|0);
  if (!($74)) {
-  u$8 = (_printf(((992)|0),($vararg_buffer14|0))|0);
+  (_printf(((992)|0),($vararg_buffer14|0))|0);
   _exit(1);
   // unreachable;
  }
  $75 = HEAP32[$err>>2]|0;
  $76 = ($75|0)!=(0);
  if ($76) {
-  u$8 = (_printf(((992)|0),($vararg_buffer14|0))|0);
+  (_printf(((992)|0),($vararg_buffer14|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7876,14 +7877,14 @@ function _main($argc,$argv) {
  $85 = HEAP32[$input>>2]|0;
  $86 = ($85|0)!=(0|0);
  if (!($86)) {
-  u$9 = (_printf(((1040)|0),($vararg_buffer16|0))|0);
+  (_printf(((1040)|0),($vararg_buffer16|0))|0);
   _exit(1);
   // unreachable;
  }
  $87 = HEAP32[$output>>2]|0;
  $88 = ($87|0)!=(0|0);
  if (!($88)) {
-  u$9 = (_printf(((1040)|0),($vararg_buffer16|0))|0);
+  (_printf(((1040)|0),($vararg_buffer16|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7898,7 +7899,7 @@ function _main($argc,$argv) {
  $96 = HEAP32[$err>>2]|0;
  $97 = ($96|0)!=(0);
  if ($97) {
-  u$10 = (_printf(((1088)|0),($vararg_buffer18|0))|0);
+  (_printf(((1088)|0),($vararg_buffer18|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7925,7 +7926,7 @@ function _main($argc,$argv) {
   $113 = HEAP32[$err>>2]|0;
   $vararg_ptr22 = ($vararg_buffer20);
   HEAP32[$vararg_ptr22>>2] = $113;
-  u$11 = (_printf(((1136)|0),($vararg_buffer20|0))|0);
+  (_printf(((1136)|0),($vararg_buffer20|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7940,7 +7941,7 @@ function _main($argc,$argv) {
   $120 = HEAP32[$err>>2]|0;
   $vararg_ptr25 = ($vararg_buffer23);
   HEAP32[$vararg_ptr25>>2] = $120;
-  u$12 = (_printf(((1184)|0),($vararg_buffer23|0))|0);
+  (_printf(((1184)|0),($vararg_buffer23|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -7953,13 +7954,13 @@ function _main($argc,$argv) {
  $125 = HEAP32[$err>>2]|0;
  $126 = ($125|0)!=(0);
  if ($126) {
-  u$13 = (_printf(((1240)|0),($vararg_buffer26|0))|0);
+  (_printf(((1240)|0),($vararg_buffer26|0))|0);
   $1 = 1;
   $166 = $1;
   STACKTOP = sp;return ($166|0);
  }
  $127 = $commands;
- u$14 = (_clFinish(($127|0))|0);
+ (_clFinish(($127|0))|0);
  $128 = $commands;
  $129 = HEAP32[$output>>2]|0;
  $130 = HEAP32[$count>>2]|0;
@@ -7974,7 +7975,7 @@ function _main($argc,$argv) {
   $137 = HEAP32[$err>>2]|0;
   $vararg_ptr30 = ($vararg_buffer28);
   HEAP32[$vararg_ptr30>>2] = $137;
-  u$15 = (_printf(((1280)|0),($vararg_buffer28|0))|0);
+  (_printf(((1280)|0),($vararg_buffer28|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -8015,19 +8016,19 @@ function _main($argc,$argv) {
  HEAP32[$vararg_ptr33>>2] = $158;
  $vararg_ptr34 = (($vararg_buffer31) + 4|0);
  HEAP32[$vararg_ptr34>>2] = $159;
- u$16 = (_printf(((1320)|0),($vararg_buffer31|0))|0);
+ (_printf(((1320)|0),($vararg_buffer31|0))|0);
  $160 = HEAP32[$input>>2]|0;
- u$17 = (_clReleaseMemObject(($160|0))|0);
+ (_clReleaseMemObject(($160|0))|0);
  $161 = HEAP32[$output>>2]|0;
- u$18 = (_clReleaseMemObject(($161|0))|0);
+ (_clReleaseMemObject(($161|0))|0);
  $162 = $program;
- u$19 = (_clReleaseProgram(($162|0))|0);
+ (_clReleaseProgram(($162|0))|0);
  $163 = $kernel;
- u$20 = (_clReleaseKernel(($163|0))|0);
+ (_clReleaseKernel(($163|0))|0);
  $164 = $commands;
- u$21 = (_clReleaseCommandQueue(($164|0))|0);
+ (_clReleaseCommandQueue(($164|0))|0);
  $165 = $context;
- u$22 = (_clReleaseContext(($165|0))|0);
+ (_clReleaseContext(($165|0))|0);
  $1 = 0;
  $166 = $1;
  STACKTOP = sp;return ($166|0);
@@ -8340,4 +8341,4 @@ run();
 
 
 
-//@ sourceMappingURL=osx_hello.js.map
+//# sourceMappingURL=osx_hello.js.map

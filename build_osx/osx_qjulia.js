@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_qjulia.data';
     var REMOTE_PACKAGE_SIZE = 10531;
-    var PACKAGE_UUID = '4e11ab9b-fd59-46da-ada3-06532a1ef39d';
+    var PACKAGE_UUID = '3de434fe-c7c9-467e-95ea-a6834c2e875d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11076,7 +11076,9 @@ function copyTempDouble(ptr) {
   function _fileno(stream) {
       // int fileno(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
-      return FS.getStreamFromPtr(stream).fd;
+      stream = FS.getStreamFromPtr(stream);
+      if (!stream) return -1;
+      return stream.fd;
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
@@ -13661,8 +13663,7 @@ function _Keyboard($key,$x,$y) {
  $y = $y|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0.0, $2 = 0, $20 = 0, $21 = 0.0, $22 = 0.0, $23 = 0.0, $24 = 0.0, $25 = 0.0, $26 = 0, $27 = 0.0;
  var $28 = 0.0, $29 = 0.0, $3 = 0, $30 = 0.0, $31 = 0.0, $32 = 0.0, $33 = 0.0, $34 = 0.0, $35 = 0.0, $36 = 0.0, $37 = 0.0, $38 = 0.0, $39 = 0.0, $4 = 0, $40 = 0.0, $41 = 0.0, $42 = 0.0, $43 = 0.0, $44 = 0.0, $45 = 0.0;
- var $46 = 0.0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fStepSize = 0.0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast5 = 0, $vararg_ptr = 0, $vararg_ptr3 = 0, $vararg_ptr6 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0;
- var u$2 = 0;
+ var $46 = 0.0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fStepSize = 0.0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast5 = 0, $vararg_ptr = 0, $vararg_ptr3 = 0, $vararg_ptr6 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer4 = sp;
@@ -13694,7 +13695,7 @@ function _Keyboard($key,$x,$y) {
   $12 = $11 ? (32) : (40);
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $12;
-  u$0 = (_printf(((16)|0),($vararg_buffer|0))|0);
+  (_printf(((16)|0),($vararg_buffer|0))|0);
   HEAP32[(48)>>2] = 1;
   break;
  }
@@ -13724,7 +13725,7 @@ function _Keyboard($key,$x,$y) {
   $24 = $23;
   $vararg_ptr3 = ($vararg_buffer1);
   HEAPF64[tempDoublePtr>>3]=$24;HEAP32[$vararg_ptr3>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr3+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  u$1 = (_printf(((72)|0),($vararg_buffer1|0))|0);
+  (_printf(((72)|0),($vararg_buffer1|0))|0);
   HEAP32[(48)>>2] = 1;
   break;
  }
@@ -13740,7 +13741,7 @@ function _Keyboard($key,$x,$y) {
   $30 = $29;
   $vararg_ptr6 = ($vararg_buffer4);
   HEAPF64[tempDoublePtr>>3]=$30;HEAP32[$vararg_ptr6>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr6+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  u$2 = (_printf(((72)|0),($vararg_buffer4|0))|0);
+  (_printf(((72)|0),($vararg_buffer4|0))|0);
   HEAP32[(48)>>2] = 1;
   break;
  }
@@ -13814,7 +13815,7 @@ function _main($argc,$argv) {
  $argv = $argv|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0;
- var $46 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, $use_gpu = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_ptr = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0;
+ var $46 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, $use_gpu = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_ptr = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer1 = sp;
@@ -13887,7 +13888,7 @@ function _main($argc,$argv) {
  $37 = $36 ? (176) : (184);
  $vararg_ptr = ($vararg_buffer);
  HEAP32[$vararg_ptr>>2] = $37;
- u$0 = (_printf(((144)|0),($vararg_buffer|0))|0);
+ (_printf(((144)|0),($vararg_buffer|0))|0);
  $38 = $3;
  _glutInit(($2|0),($38|0));
  _glutInitDisplayMode(18);
@@ -13898,7 +13899,7 @@ function _main($argc,$argv) {
  $41 = $3;
  $42 = ($41);
  $43 = HEAP32[$42>>2]|0;
- u$1 = (_glutCreateWindow(($43|0))|0);
+ (_glutCreateWindow(($43|0))|0);
  $44 = $use_gpu;
  $45 = (_Initialize($44)|0);
  $46 = ($45|0)==(0);
@@ -13909,8 +13910,8 @@ function _main($argc,$argv) {
  _glutIdleFunc((2|0));
  _glutReshapeFunc((1|0));
  _glutKeyboardFunc((1|0));
- u$2 = (_atexit((3|0))|0);
- u$3 = (_printf(((208)|0),($vararg_buffer1|0))|0);
+ (_atexit((3|0))|0);
+ (_printf(((208)|0),($vararg_buffer1|0))|0);
  _glutMainLoop();
  STACKTOP = sp;return 0;
 }
@@ -13918,7 +13919,7 @@ function _Initialize($gpu) {
  $gpu = $gpu|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $err = 0, $image_support = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_lifetime_bitcast = 0;
- var $vararg_lifetime_bitcast11 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr12 = 0, $vararg_ptr9 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0;
+ var $vararg_lifetime_bitcast11 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr12 = 0, $vararg_ptr9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer10 = sp;
@@ -13940,7 +13941,7 @@ function _Initialize($gpu) {
  $4 = $err;
  $5 = ($4|0)!=(0);
  if ($5) {
-  u$0 = (_printf(((1904)|0),($vararg_buffer|0))|0);
+  (_printf(((1904)|0),($vararg_buffer|0))|0);
   $6 = $err;
   _exit(($6|0));
   // unreachable;
@@ -13954,7 +13955,7 @@ function _Initialize($gpu) {
   $11 = $err;
   $vararg_ptr = ($vararg_buffer1);
   HEAP32[$vararg_ptr>>2] = $11;
-  u$1 = (_printf(((1936)|0),($vararg_buffer1|0))|0);
+  (_printf(((1936)|0),($vararg_buffer1|0))|0);
   $12 = $err;
   _exit(($12|0));
   // unreachable;
@@ -13966,7 +13967,7 @@ function _Initialize($gpu) {
  $16 = $err;
  $17 = ($16|0)!=(0);
  if ($17) {
-  u$2 = (_printf(((1992)|0),($vararg_buffer3|0))|0);
+  (_printf(((1992)|0),($vararg_buffer3|0))|0);
   $18 = $err;
   _exit(($18|0));
   // unreachable;
@@ -13974,7 +13975,7 @@ function _Initialize($gpu) {
  $19 = HEAP32[$image_support>>2]|0;
  $20 = ($19|0)==(0);
  if ($20) {
-  u$3 = (_printf(((2040)|0),($vararg_buffer5|0))|0);
+  (_printf(((2040)|0),($vararg_buffer5|0))|0);
   $1 = -10;
   $31 = $1;
   STACKTOP = sp;return ($31|0);
@@ -13987,7 +13988,7 @@ function _Initialize($gpu) {
   $24 = $err;
   $vararg_ptr9 = ($vararg_buffer7);
   HEAP32[$vararg_ptr9>>2] = $24;
-  u$4 = (_printf(((2104)|0),($vararg_buffer7|0))|0);
+  (_printf(((2104)|0),($vararg_buffer7|0))|0);
   $25 = $err;
   _exit(($25|0));
   // unreachable;
@@ -14000,7 +14001,7 @@ function _Initialize($gpu) {
   $29 = $err;
   $vararg_ptr12 = ($vararg_buffer10);
   HEAP32[$vararg_ptr12>>2] = $29;
-  u$5 = (_printf(((2152)|0),($vararg_buffer10|0))|0);
+  (_printf(((2152)|0),($vararg_buffer10|0))|0);
   $30 = $err;
   _exit(($30|0));
   // unreachable;
@@ -14014,7 +14015,7 @@ function _Initialize($gpu) {
 }
 function _Display() {
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0.0, $14 = 0.0, $15 = 0.0, $2 = 0, $3 = 0.0, $4 = 0, $5 = 0, $6 = 0.0, $7 = 0.0, $8 = 0, $9 = 0, $err = 0, $uiEndTime = 0.0, $uiStartTime = 0.0, $vararg_buffer = 0, $vararg_lifetime_bitcast = 0;
- var $vararg_ptr = 0, label = 0, sp = 0, u$0 = 0;
+ var $vararg_ptr = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer = sp;
@@ -14044,7 +14045,7 @@ function _Display() {
   $11 = $err;
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $11;
-  u$0 = (_printf(((488)|0),($vararg_buffer|0))|0);
+  (_printf(((488)|0),($vararg_buffer|0))|0);
   _exit(1);
   // unreachable;
  } else {
@@ -14126,40 +14127,40 @@ function _Reshape($w,$h) {
  STACKTOP = sp;return;
 }
 function _Shutdown() {
- var $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0;
+ var $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer1 = sp;
  $vararg_lifetime_bitcast2 = $vararg_buffer1;
  $vararg_buffer = STACKTOP; STACKTOP = STACKTOP + 8|0;
  $vararg_lifetime_bitcast = $vararg_buffer;
- u$0 = (_printf(((232)|0),($vararg_buffer|0))|0);
- u$1 = (_printf(((304)|0),($vararg_buffer1|0))|0);
+ (_printf(((232)|0),($vararg_buffer|0))|0);
+ (_printf(((304)|0),($vararg_buffer1|0))|0);
  _Cleanup();
  _exit(0);
  // unreachable;
 }
 function _Cleanup() {
- var $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0;
+ var $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  $1 = HEAP32[(328)>>2]|0;
- u$0 = (_clFinish(($1|0))|0);
+ (_clFinish(($1|0))|0);
  $2 = HEAP32[(336)>>2]|0;
- u$1 = (_clReleaseKernel(($2|0))|0);
+ (_clReleaseKernel(($2|0))|0);
  $3 = HEAP32[(344)>>2]|0;
- u$2 = (_clReleaseProgram(($3|0))|0);
+ (_clReleaseProgram(($3|0))|0);
  $4 = HEAP32[(328)>>2]|0;
- u$3 = (_clReleaseCommandQueue(($4|0))|0);
+ (_clReleaseCommandQueue(($4|0))|0);
  $5 = HEAP32[(352)>>2]|0;
- u$4 = (_clReleaseMemObject(($5|0))|0);
+ (_clReleaseMemObject(($5|0))|0);
  $6 = HEAP32[(136)>>2]|0;
  $7 = ($6|0)!=(0);
  if ($7) {
   $8 = HEAP32[(360)>>2]|0;
-  u$5 = (_clReleaseMemObject(($8|0))|0);
+  (_clReleaseMemObject(($8|0))|0);
  }
  $9 = HEAP32[(368)>>2]|0;
- u$6 = (_clReleaseContext(($9|0))|0);
+ (_clReleaseContext(($9|0))|0);
  HEAP32[(328)>>2] = 0;
  HEAP32[(336)>>2] = 0;
  HEAP32[(344)>>2] = 0;
@@ -14358,7 +14359,7 @@ function _Recompute() {
  var $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0;
  var $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $a = 0;
  var $err = 0, $global = 0, $local = 0, $origin = 0, $region = 0, $s = 0, $size_x = 0, $size_y = 0, $sizes = 0, $v = 0, $values = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast11 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast5 = 0;
- var $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr12 = 0, $vararg_ptr3 = 0, $vararg_ptr6 = 0, $vararg_ptr9 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0;
+ var $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr12 = 0, $vararg_ptr3 = 0, $vararg_ptr6 = 0, $vararg_ptr9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer10 = sp;
@@ -14515,7 +14516,7 @@ function _Recompute() {
     $77 = $err;
     $vararg_ptr = ($vararg_buffer);
     HEAP32[$vararg_ptr>>2] = $77;
-    u$0 = (_printf(((1712)|0),($vararg_buffer|0))|0);
+    (_printf(((1712)|0),($vararg_buffer|0))|0);
     $78 = $err;
     $1 = $78;
     $119 = $1;
@@ -14534,7 +14535,7 @@ function _Recompute() {
       $85 = $err;
       $vararg_ptr3 = ($vararg_buffer1);
       HEAP32[$vararg_ptr3>>2] = $85;
-      u$1 = (_printf(((1744)|0),($vararg_buffer1|0))|0);
+      (_printf(((1744)|0),($vararg_buffer1|0))|0);
       $1 = 1;
       $119 = $1;
       STACKTOP = sp;return ($119|0);
@@ -14562,7 +14563,7 @@ function _Recompute() {
       $100 = $err;
       $vararg_ptr6 = ($vararg_buffer4);
       HEAP32[$vararg_ptr6>>2] = $100;
-      u$2 = (_printf(((1784)|0),($vararg_buffer4|0))|0);
+      (_printf(((1784)|0),($vararg_buffer4|0))|0);
       $1 = 1;
       $119 = $1;
       STACKTOP = sp;return ($119|0);
@@ -14578,7 +14579,7 @@ function _Recompute() {
      $105 = $err;
      $vararg_ptr9 = ($vararg_buffer7);
      HEAP32[$vararg_ptr9>>2] = $105;
-     u$3 = (_printf(((1824)|0),($vararg_buffer7|0))|0);
+     (_printf(((1824)|0),($vararg_buffer7|0))|0);
      $1 = 1;
      $119 = $1;
      STACKTOP = sp;return ($119|0);
@@ -14602,7 +14603,7 @@ function _Recompute() {
      $118 = $err;
      $vararg_ptr12 = ($vararg_buffer10);
      HEAP32[$vararg_ptr12>>2] = $118;
-     u$4 = (_printf(((1872)|0),($vararg_buffer10|0))|0);
+     (_printf(((1872)|0),($vararg_buffer10|0))|0);
      $1 = 1;
      $119 = $1;
      STACKTOP = sp;return ($119|0);
@@ -14791,7 +14792,7 @@ function _ReportStats($uiStartTime,$uiEndTime) {
  $uiEndTime = +$uiEndTime;
  var $1 = 0.0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0.0, $17 = 0.0, $18 = 0, $19 = 0.0, $2 = 0.0, $20 = 0.0, $21 = 0.0, $22 = 0.0, $23 = 0.0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0.0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0.0, $35 = 0.0, $36 = 0, $37 = 0, $38 = 0, $4 = 0.0, $5 = 0.0, $6 = 0.0, $7 = 0.0, $8 = 0.0, $9 = 0.0, $fFps = 0.0, $fMs = 0.0;
- var $vararg_buffer = 0, $vararg_lifetime_bitcast = 0, $vararg_ptr = 0, $vararg_ptr1 = 0, $vararg_ptr2 = 0, $vararg_ptr3 = 0, label = 0, sp = 0, u$0 = 0;
+ var $vararg_buffer = 0, $vararg_lifetime_bitcast = 0, $vararg_ptr = 0, $vararg_ptr1 = 0, $vararg_ptr2 = 0, $vararg_ptr3 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 24|0;
  $vararg_buffer = sp;
@@ -14854,7 +14855,7 @@ function _ReportStats($uiStartTime,$uiEndTime) {
  HEAPF64[tempDoublePtr>>3]=$35;HEAP32[$vararg_ptr2>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr2+4>>2]=HEAP32[tempDoublePtr+4>>2];
  $vararg_ptr3 = (($vararg_buffer) + 20|0);
  HEAP32[$vararg_ptr3>>2] = $38;
- u$0 = (_printf(((544)|0),($vararg_buffer|0))|0);
+ (_printf(((544)|0),($vararg_buffer|0))|0);
  HEAP32[(384)>>2] = 0;
  HEAPF64[(528)>>3] = 0.0;
  STACKTOP = sp;return;
@@ -15010,7 +15011,7 @@ function _SetupComputeDevices($gpu) {
  var $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0;
  var $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $9 = 0, $device_count = 0, $device_found = 0, $device_ids = 0, $device_name = 0, $device_type = 0, $err = 0, $i = 0, $properties = 0, $returned_size = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer13 = 0;
  var $vararg_buffer15 = 0, $vararg_buffer17 = 0, $vararg_buffer19 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast12 = 0, $vararg_lifetime_bitcast14 = 0, $vararg_lifetime_bitcast16 = 0, $vararg_lifetime_bitcast18 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast20 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr21 = 0;
- var $vendor_name = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vendor_name = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer19 = sp;
@@ -15058,8 +15059,8 @@ function _SetupComputeDevices($gpu) {
  $13 = ($12|0)!=(0);
  do {
   if ($13) {
-   u$0 = (_printf(((232)|0),($vararg_buffer|0))|0);
-   u$1 = (_printf(((2968)|0),($vararg_buffer1|0))|0);
+   (_printf(((232)|0),($vararg_buffer|0))|0);
+   (_printf(((2968)|0),($vararg_buffer1|0))|0);
    $14 = $properties;
    ;HEAP32[$14+0>>2]=HEAP32[(3000)+0>>2]|0;HEAP32[$14+4>>2]=HEAP32[(3000)+4>>2]|0;HEAP32[$14+8>>2]=HEAP32[(3000)+8>>2]|0;
    $15 = ($properties);
@@ -15070,7 +15071,7 @@ function _SetupComputeDevices($gpu) {
    if ($18) {
     break;
    }
-   u$2 = (_printf(((3016)|0),($vararg_buffer3|0))|0);
+   (_printf(((3016)|0),($vararg_buffer3|0))|0);
    $1 = 1;
    $87 = $1;
    STACKTOP = sp;return ($87|0);
@@ -15086,7 +15087,7 @@ function _SetupComputeDevices($gpu) {
    $26 = HEAP32[$err>>2]|0;
    $27 = ($26|0)!=(0);
    if ($27) {
-    u$3 = (_printf(((3064)|0),($vararg_buffer5|0))|0);
+    (_printf(((3064)|0),($vararg_buffer5|0))|0);
     $1 = 1;
     $87 = $1;
     STACKTOP = sp;return ($87|0);
@@ -15098,7 +15099,7 @@ function _SetupComputeDevices($gpu) {
    if ($30) {
     break;
    }
-   u$4 = (_printf(((3016)|0),($vararg_buffer7|0))|0);
+   (_printf(((3016)|0),($vararg_buffer7|0))|0);
    $1 = 1;
    $87 = $1;
    STACKTOP = sp;return ($87|0);
@@ -15112,7 +15113,7 @@ function _SetupComputeDevices($gpu) {
  $35 = HEAP32[$err>>2]|0;
  $36 = ($35|0)!=(0);
  if ($36) {
-  u$5 = (_printf(((3112)|0),($vararg_buffer9|0))|0);
+  (_printf(((3112)|0),($vararg_buffer9|0))|0);
   $1 = 1;
   $87 = $1;
   STACKTOP = sp;return ($87|0);
@@ -15134,7 +15135,7 @@ function _SetupComputeDevices($gpu) {
   $43 = (($device_ids) + ($42<<2)|0);
   $44 = HEAP32[$43>>2]|0;
   $45 = $device_type;
-  u$6 = (_clGetDeviceInfo(($44|0),4096,8,($45|0),(0|0))|0);
+  (_clGetDeviceInfo(($44|0),4096,8,($45|0),(0|0))|0);
   $46 = $device_type;
   $47 = $46;
   $48 = HEAP32[$47>>2]|0;
@@ -15168,7 +15169,7 @@ function _SetupComputeDevices($gpu) {
  $66 = $device_found;
  $67 = ($66|0)!=(0);
  if (!($67)) {
-  u$7 = (_printf(((3064)|0),($vararg_buffer11|0))|0);
+  (_printf(((3064)|0),($vararg_buffer11|0))|0);
   $1 = 1;
   $87 = $1;
   STACKTOP = sp;return ($87|0);
@@ -15180,7 +15181,7 @@ function _SetupComputeDevices($gpu) {
  $71 = HEAP32[(328)>>2]|0;
  $72 = ($71|0)!=(0|0);
  if (!($72)) {
-  u$8 = (_printf(((3168)|0),($vararg_buffer13|0))|0);
+  (_printf(((3168)|0),($vararg_buffer13|0))|0);
   $1 = 1;
   $87 = $1;
   STACKTOP = sp;return ($87|0);
@@ -15202,16 +15203,16 @@ function _SetupComputeDevices($gpu) {
  $83 = HEAP32[$err>>2]|0;
  $84 = ($83|0)!=(0);
  if ($84) {
-  u$9 = (_printf(((3216)|0),($vararg_buffer15|0))|0);
+  (_printf(((3216)|0),($vararg_buffer15|0))|0);
  }
- u$10 = (_printf(((232)|0),($vararg_buffer17|0))|0);
+ (_printf(((232)|0),($vararg_buffer17|0))|0);
  $85 = ($vendor_name);
  $86 = ($device_name);
  $vararg_ptr = ($vararg_buffer19);
  HEAP32[$vararg_ptr>>2] = $85;
  $vararg_ptr21 = (($vararg_buffer19) + 4|0);
  HEAP32[$vararg_ptr21>>2] = $86;
- u$11 = (_printf(((3256)|0),($vararg_buffer19|0))|0);
+ (_printf(((3256)|0),($vararg_buffer19|0))|0);
  $1 = 0;
  $87 = $1;
  STACKTOP = sp;return ($87|0);
@@ -15222,7 +15223,7 @@ function _SetupComputeKernel() {
  var $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $7 = 0, $8 = 0;
  var $9 = 0, $buffer = 0, $err = 0, $height_macro = 0, $len = 0, $length = 0, $preprocess = 0, $source = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer12 = 0, $vararg_buffer14 = 0, $vararg_buffer16 = 0, $vararg_buffer19 = 0, $vararg_buffer22 = 0, $vararg_buffer24 = 0, $vararg_buffer27 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_lifetime_bitcast = 0;
  var $vararg_lifetime_bitcast13 = 0, $vararg_lifetime_bitcast15 = 0, $vararg_lifetime_bitcast17 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast20 = 0, $vararg_lifetime_bitcast23 = 0, $vararg_lifetime_bitcast25 = 0, $vararg_lifetime_bitcast28 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_ptr = 0, $vararg_ptr10 = 0, $vararg_ptr11 = 0, $vararg_ptr18 = 0, $vararg_ptr21 = 0, $vararg_ptr26 = 0, $vararg_ptr7 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $width_macro = 0;
- var label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer27 = sp;
@@ -15260,20 +15261,20 @@ function _SetupComputeKernel() {
  $3 = ($2|0)!=(0|0);
  if ($3) {
   $4 = HEAP32[(336)>>2]|0;
-  u$0 = (_clReleaseKernel(($4|0))|0);
+  (_clReleaseKernel(($4|0))|0);
  }
  HEAP32[(336)>>2] = 0;
  $5 = HEAP32[(344)>>2]|0;
  $6 = ($5|0)!=(0|0);
  if ($6) {
   $7 = HEAP32[(344)>>2]|0;
-  u$1 = (_clReleaseProgram(($7|0))|0);
+  (_clReleaseProgram(($7|0))|0);
  }
  HEAP32[(344)>>2] = 0;
- u$2 = (_printf(((232)|0),($vararg_buffer|0))|0);
+ (_printf(((232)|0),($vararg_buffer|0))|0);
  $vararg_ptr = ($vararg_buffer1);
  HEAP32[$vararg_ptr>>2] = (2480);
- u$3 = (_printf(((2432)|0),($vararg_buffer1|0))|0);
+ (_printf(((2432)|0),($vararg_buffer1|0))|0);
  $8 = (_LoadTextFromFile((2480),$source,$length)|0);
  HEAP32[$err>>2] = $8;
  $9 = HEAP32[$source>>2]|0;
@@ -15308,7 +15309,7 @@ function _SetupComputeKernel() {
    HEAP32[$vararg_ptr10>>2] = $21;
    $vararg_ptr11 = (($vararg_buffer5) + 16|0);
    HEAP32[$vararg_ptr11>>2] = $22;
-   u$5 = (_sprintf(($17|0),((2576)|0),($vararg_buffer5|0))|0);
+   (_sprintf(($17|0),((2576)|0),($vararg_buffer5|0))|0);
    $23 = HEAP32[(368)>>2]|0;
    $24 = (_clCreateProgramWithSource(($23|0),1,($preprocess|0),(0|0),($err|0))|0);
    HEAP32[(344)>>2] = $24;
@@ -15331,22 +15332,22 @@ function _SetupComputeKernel() {
      $33 = HEAP32[$err>>2]|0;
      $34 = ($33|0)!=(0);
      if ($34) {
-      u$7 = (_printf(((2648)|0),($vararg_buffer14|0))|0);
+      (_printf(((2648)|0),($vararg_buffer14|0))|0);
       $35 = HEAP32[(344)>>2]|0;
       $36 = HEAP32[(1984)>>2]|0;
       $37 = ($buffer);
-      u$8 = (_clGetProgramBuildInfo(($35|0),($36|0),4483,2048,($37|0),($len|0))|0);
+      (_clGetProgramBuildInfo(($35|0),($36|0),4483,2048,($37|0),($len|0))|0);
       $38 = ($buffer);
       $vararg_ptr18 = ($vararg_buffer16);
       HEAP32[$vararg_ptr18>>2] = $38;
-      u$9 = (_printf(((2696)|0),($vararg_buffer16|0))|0);
+      (_printf(((2696)|0),($vararg_buffer16|0))|0);
       $1 = 1;
       $61 = $1;
       STACKTOP = sp;return ($61|0);
      }
      $vararg_ptr21 = ($vararg_buffer19);
      HEAP32[$vararg_ptr21>>2] = (2736);
-     u$10 = (_printf(((2704)|0),($vararg_buffer19|0))|0);
+     (_printf(((2704)|0),($vararg_buffer19|0))|0);
      $39 = HEAP32[(344)>>2]|0;
      $40 = (_clCreateKernel(($39|0),((2736)|0),($err|0))|0);
      HEAP32[(336)>>2] = $40;
@@ -15369,7 +15370,7 @@ function _SetupComputeKernel() {
         $50 = HEAP32[$err>>2]|0;
         $vararg_ptr26 = ($vararg_buffer24);
         HEAP32[$vararg_ptr26>>2] = $50;
-        u$12 = (_printf(((2808)|0),($vararg_buffer24|0))|0);
+        (_printf(((2808)|0),($vararg_buffer24|0))|0);
         _exit(1);
         // unreachable;
        }
@@ -15389,25 +15390,25 @@ function _SetupComputeKernel() {
        $59 = HEAP32[((1704))>>2]|0;
        $60 = (($58>>>0) / ($59>>>0))&-1;
        HEAP32[(((1704) + 4|0))>>2] = $60;
-       u$13 = (_printf(((232)|0),($vararg_buffer27|0))|0);
+       (_printf(((232)|0),($vararg_buffer27|0))|0);
        $1 = 0;
        $61 = $1;
        STACKTOP = sp;return ($61|0);
       }
      } while(0);
-     u$11 = (_printf(((2752)|0),($vararg_buffer22|0))|0);
+     (_printf(((2752)|0),($vararg_buffer22|0))|0);
      $1 = 1;
      $61 = $1;
      STACKTOP = sp;return ($61|0);
     }
    } while(0);
-   u$6 = (_printf(((2600)|0),($vararg_buffer12|0))|0);
+   (_printf(((2600)|0),($vararg_buffer12|0))|0);
    $1 = 1;
    $61 = $1;
    STACKTOP = sp;return ($61|0);
   }
  } while(0);
- u$4 = (_printf(((2504)|0),($vararg_buffer3|0))|0);
+ (_printf(((2504)|0),($vararg_buffer3|0))|0);
  $1 = 1;
  $61 = $1;
  STACKTOP = sp;return ($61|0);
@@ -15416,7 +15417,7 @@ function _CreateComputeResult() {
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0;
  var $46 = 0, $47 = 0, $48 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $err = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0;
- var label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0;
+ var label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer7 = sp;
@@ -15439,10 +15440,10 @@ function _CreateComputeResult() {
    $5 = ($4|0)!=(0|0);
    if ($5) {
     $6 = HEAP32[(360)>>2]|0;
-    u$0 = (_clReleaseMemObject(($6|0))|0);
+    (_clReleaseMemObject(($6|0))|0);
    }
    HEAP32[(360)>>2] = 0;
-   u$1 = (_printf(((2200)|0),($vararg_buffer|0))|0);
+   (_printf(((2200)|0),($vararg_buffer|0))|0);
    $7 = HEAP32[(368)>>2]|0;
    $8 = HEAP32[(1656)>>2]|0;
    $9 = HEAP32[(1664)>>2]|0;
@@ -15463,7 +15464,7 @@ function _CreateComputeResult() {
    $15 = HEAP32[$err>>2]|0;
    $vararg_ptr = ($vararg_buffer1);
    HEAP32[$vararg_ptr>>2] = $15;
-   u$2 = (_printf(((2256)|0),($vararg_buffer1|0))|0);
+   (_printf(((2256)|0),($vararg_buffer1|0))|0);
    $1 = -1;
    $48 = $1;
    STACKTOP = sp;return ($48|0);
@@ -15474,7 +15475,7 @@ function _CreateComputeResult() {
     $18 = HEAP32[(520)>>2]|0;
     _free($18);
    }
-   u$3 = (_printf(((2304)|0),($vararg_buffer3|0))|0);
+   (_printf(((2304)|0),($vararg_buffer3|0))|0);
    $19 = HEAP32[(1672)>>2]|0;
    $20 = HEAP32[(1680)>>2]|0;
    $21 = Math_imul($19, $20)|0;
@@ -15496,7 +15497,7 @@ function _CreateComputeResult() {
     _memset(($28|0),0,($34|0))|0;
     break;
    }
-   u$4 = (_printf(((2360)|0),($vararg_buffer5|0))|0);
+   (_printf(((2360)|0),($vararg_buffer5|0))|0);
    $1 = -1;
    $48 = $1;
    STACKTOP = sp;return ($48|0);
@@ -15506,7 +15507,7 @@ function _CreateComputeResult() {
  $36 = ($35|0)!=(0|0);
  if ($36) {
   $37 = HEAP32[(352)>>2]|0;
-  u$5 = (_clReleaseMemObject(($37|0))|0);
+  (_clReleaseMemObject(($37|0))|0);
  }
  HEAP32[(352)>>2] = 0;
  $38 = HEAP32[(368)>>2]|0;
@@ -15525,7 +15526,7 @@ function _CreateComputeResult() {
   $48 = $1;
   STACKTOP = sp;return ($48|0);
  } else {
-  u$6 = (_printf(((2400)|0),($vararg_buffer7|0))|0);
+  (_printf(((2400)|0),($vararg_buffer7|0))|0);
   $1 = -1;
   $48 = $1;
   STACKTOP = sp;return ($48|0);
@@ -15538,7 +15539,7 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
  $string_len = $string_len|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fd = 0, $file_len = 0, $file_status = 0, $ret = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer3 = 0;
- var $vararg_buffer6 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast7 = 0, $vararg_ptr = 0, $vararg_ptr5 = 0, $vararg_ptr8 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0;
+ var $vararg_buffer6 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast7 = 0, $vararg_ptr = 0, $vararg_ptr5 = 0, $vararg_ptr8 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer6 = sp;
@@ -15564,7 +15565,7 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
   $10 = $2;
   $vararg_ptr = ($vararg_buffer1);
   HEAP32[$vararg_ptr>>2] = $10;
-  u$0 = (_printf(((2872)|0),($vararg_buffer1|0))|0);
+  (_printf(((2872)|0),($vararg_buffer1|0))|0);
   $1 = -1;
   $33 = $1;
   STACKTOP = sp;return ($33|0);
@@ -15578,7 +15579,7 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
   $15 = $2;
   $vararg_ptr5 = ($vararg_buffer3);
   HEAP32[$vararg_ptr5>>2] = $15;
-  u$1 = (_printf(((2896)|0),($vararg_buffer3|0))|0);
+  (_printf(((2896)|0),($vararg_buffer3|0))|0);
   $1 = -1;
   $33 = $1;
   STACKTOP = sp;return ($33|0);
@@ -15601,7 +15602,7 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
  $28 = ($27|0)!=(0);
  if ($28) {
   $30 = $fd;
-  u$3 = (_close(($30|0))|0);
+  (_close(($30|0))|0);
   $31 = $file_len;
   $32 = $4;
   HEAP32[$32>>2] = $31;
@@ -15612,7 +15613,7 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
   $29 = $2;
   $vararg_ptr8 = ($vararg_buffer6);
   HEAP32[$vararg_ptr8>>2] = $29;
-  u$2 = (_printf(((2936)|0),($vararg_buffer6|0))|0);
+  (_printf(((2936)|0),($vararg_buffer6|0))|0);
   $1 = -1;
   $33 = $1;
   STACKTOP = sp;return ($33|0);
@@ -15623,7 +15624,7 @@ function _CreateTexture($width,$height) {
  $width = $width|0;
  $height = $height|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0;
- var $vararg_buffer = 0, $vararg_lifetime_bitcast = 0, $vararg_ptr = 0, $vararg_ptr1 = 0, label = 0, sp = 0, u$0 = 0;
+ var $vararg_buffer = 0, $vararg_lifetime_bitcast = 0, $vararg_ptr = 0, $vararg_ptr1 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer = sp;
@@ -15642,7 +15643,7 @@ function _CreateTexture($width,$height) {
  HEAP32[$vararg_ptr>>2] = $5;
  $vararg_ptr1 = (($vararg_buffer) + 4|0);
  HEAP32[$vararg_ptr1>>2] = $6;
- u$0 = (_printf(((3344)|0),($vararg_buffer|0))|0);
+ (_printf(((3344)|0),($vararg_buffer|0))|0);
  $7 = $1;
  HEAP32[(1672)>>2] = $7;
  $8 = $2;
@@ -15742,7 +15743,7 @@ function _malloc($bytes) {
  var $RP$0$i17 = 0, $RP$0$i17$phi = 0, $T$0$c$i$i = 0, $T$0$c7$i$i = 0, $T$0$lcssa$i = 0, $T$0$lcssa$i$i = 0, $T$0$lcssa$i28$i = 0, $T$013$i$i = 0, $T$013$i$i$phi = 0, $T$024$i = 0, $T$024$i$phi = 0, $T$051$i$i = 0, $T$051$i$i$phi = 0, $br$0$i = 0, $cond$i = 0, $cond$i$i = 0, $cond$i21 = 0, $exitcond$i$i = 0, $i$02$i$i = 0, $i$02$i$i$phi = 0;
  var $idx$0$i = 0, $mem$0 = 0, $nb$0 = 0, $notlhs$i = 0, $notrhs$i = 0, $oldfirst$0$i$i = 0, $or$cond$i = 0, $or$cond$i29 = 0, $or$cond1$i = 0, $or$cond10$i = 0, $or$cond19$i = 0, $or$cond2$i = 0, $or$cond49$i = 0, $or$cond5$i = 0, $or$cond6$i = 0, $or$cond8$not$i = 0, $or$cond9$i = 0, $qsize$0$i$i = 0, $rsize$0$i = 0, $rsize$0$i15 = 0;
  var $rsize$1$i = 0, $rsize$2$i = 0, $rsize$3$lcssa$i = 0, $rsize$329$i = 0, $rsize$329$i$phi = 0, $rst$0$i = 0, $rst$1$i = 0, $sizebits$0$i = 0, $sp$0$i$i = 0, $sp$0$i$i$i = 0, $sp$075$i = 0, $sp$168$i = 0, $ssize$0$$i = 0, $ssize$0$i = 0, $ssize$1$i = 0, $ssize$2$i = 0, $t$0$i = 0, $t$0$i14 = 0, $t$1$i = 0, $t$2$ph$i = 0;
- var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0, u$0 = 0;
+ var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0;
  sp = STACKTOP;
  $1 = ($bytes>>>0)<(245);
  do {
@@ -17158,7 +17159,7 @@ function _malloc($bytes) {
        $692 = (_sbrk(($690|0))|0);
        $693 = ($692|0)==((-1)|0);
        if ($693) {
-        u$0 = (_sbrk(($681|0))|0);
+        (_sbrk(($681|0))|0);
         $tsize$0323841$i = $tsize$0$i;
         break L291;
        } else {
@@ -19635,4 +19636,4 @@ run();
 
 
 
-//@ sourceMappingURL=osx_qjulia.js.map
+//# sourceMappingURL=osx_qjulia.js.map

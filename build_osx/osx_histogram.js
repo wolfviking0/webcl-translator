@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_histogram.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_histogram.data';
     var REMOTE_PACKAGE_SIZE = 22183;
-    var PACKAGE_UUID = 'b10def88-0ede-4243-ae79-dcc1718cb88b';
+    var PACKAGE_UUID = '9d1e8350-70d2-4584-8948-8d5d8a6f165d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -6146,7 +6146,9 @@ function copyTempDouble(ptr) {
   function _fileno(stream) {
       // int fileno(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
-      return FS.getStreamFromPtr(stream).fd;
+      stream = FS.getStreamFromPtr(stream);
+      if (!stream) return -1;
+      return stream.fd;
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
@@ -8463,10 +8465,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
  var $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast11 = 0, $vararg_lifetime_bitcast13 = 0, $vararg_lifetime_bitcast16 = 0, $vararg_lifetime_bitcast19 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast22 = 0, $vararg_lifetime_bitcast25 = 0, $vararg_lifetime_bitcast28 = 0, $vararg_lifetime_bitcast31 = 0, $vararg_lifetime_bitcast34 = 0, $vararg_lifetime_bitcast37 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast40 = 0, $vararg_lifetime_bitcast43 = 0, $vararg_lifetime_bitcast46 = 0, $vararg_lifetime_bitcast49 = 0, $vararg_lifetime_bitcast52 = 0, $vararg_lifetime_bitcast55 = 0, $vararg_lifetime_bitcast58 = 0;
  var $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast61 = 0, $vararg_lifetime_bitcast66 = 0, $vararg_lifetime_bitcast69 = 0, $vararg_lifetime_bitcast72 = 0, $vararg_lifetime_bitcast75 = 0, $vararg_lifetime_bitcast78 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_lifetime_bitcast81 = 0, $vararg_lifetime_bitcast84 = 0, $vararg_lifetime_bitcast87 = 0, $vararg_ptr = 0, $vararg_ptr14 = 0, $vararg_ptr17 = 0, $vararg_ptr20 = 0, $vararg_ptr23 = 0, $vararg_ptr26 = 0, $vararg_ptr29 = 0, $vararg_ptr32 = 0, $vararg_ptr35 = 0;
  var $vararg_ptr38 = 0, $vararg_ptr41 = 0, $vararg_ptr44 = 0, $vararg_ptr47 = 0, $vararg_ptr50 = 0, $vararg_ptr53 = 0, $vararg_ptr56 = 0, $vararg_ptr59 = 0, $vararg_ptr62 = 0, $vararg_ptr63 = 0, $vararg_ptr64 = 0, $vararg_ptr67 = 0, $vararg_ptr70 = 0, $vararg_ptr73 = 0, $vararg_ptr76 = 0, $vararg_ptr79 = 0, $vararg_ptr82 = 0, $vararg_ptr85 = 0, $vararg_ptr88 = 0, $vararg_ptr89 = 0;
- var $vararg_ptr9 = 0, $vararg_ptr90 = 0, $workgroup_size = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0, u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0, u$2 = 0, u$20 = 0, u$21 = 0;
- var u$22 = 0, u$23 = 0, u$24 = 0, u$25 = 0, u$26 = 0, u$27 = 0, u$28 = 0, u$29 = 0, u$3 = 0, u$30 = 0, u$31 = 0, u$32 = 0, u$33 = 0, u$34 = 0, u$35 = 0, u$36 = 0, u$37 = 0, u$38 = 0, u$39 = 0, u$4 = 0;
- var u$40 = 0, u$41 = 0, u$42 = 0, u$43 = 0, u$44 = 0, u$45 = 0, u$46 = 0, u$47 = 0, u$48 = 0, u$49 = 0, u$5 = 0, u$50 = 0, u$51 = 0, u$52 = 0, u$53 = 0, u$54 = 0, u$55 = 0, u$56 = 0, u$57 = 0, u$58 = 0;
- var u$59 = 0, u$6 = 0, u$60 = 0, u$61 = 0, u$62 = 0, u$63 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vararg_ptr9 = 0, $vararg_ptr90 = 0, $workgroup_size = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 16|0;
  $vararg_buffer86 = sp;
@@ -8553,9 +8552,9 @@ function _test_histogram_with_buffers($context,$queue,$device) {
  HEAP32[$4>>2] = $device;
  HEAP32[$image_width>>2] = 1920;
  HEAP32[$image_height>>2] = 1080;
- u$0 = (_printf(((56)|0),($vararg_buffer|0))|0);
- u$1 = (_printf(((88)|0),($vararg_buffer1|0))|0);
- u$2 = (_printf(((56)|0),($vararg_buffer3|0))|0);
+ (_printf(((56)|0),($vararg_buffer|0))|0);
+ (_printf(((88)|0),($vararg_buffer1|0))|0);
+ (_printf(((56)|0),($vararg_buffer3|0))|0);
  $5 = (_time(0)|0);
  _srand(($5|0));
  $6 = ($source);
@@ -8567,7 +8566,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
  if ($10) {
   $vararg_ptr = ($vararg_buffer5);
   HEAP32[$vararg_ptr>>2] = (8);
-  u$3 = (_printf(((120)|0),($vararg_buffer5|0))|0);
+  (_printf(((120)|0),($vararg_buffer5|0))|0);
   $1 = 1;
   $359 = $1;
   STACKTOP = sp;return ($359|0);
@@ -8597,15 +8596,15 @@ function _test_histogram_with_buffers($context,$queue,$device) {
    if ($25) {
     $26 = $buffer;
     _memset(($26|0),0,2048)|0;
-    u$5 = (_printf(((224)|0),($vararg_buffer10|0))|0);
+    (_printf(((224)|0),($vararg_buffer10|0))|0);
     $27 = $program;
     $28 = HEAP32[$4>>2]|0;
     $29 = ($buffer);
-    u$6 = (_clGetProgramBuildInfo(($27|0),($28|0),4483,2048,($29|0),(0|0))|0);
+    (_clGetProgramBuildInfo(($27|0),($28|0),4483,2048,($29|0),(0|0))|0);
     $30 = ($buffer);
     $vararg_ptr14 = ($vararg_buffer12);
     HEAP32[$vararg_ptr14>>2] = $30;
-    u$7 = (_printf(((256)|0),($vararg_buffer12|0))|0);
+    (_printf(((256)|0),($vararg_buffer12|0))|0);
     $1 = 1;
     $359 = $1;
     STACKTOP = sp;return ($359|0);
@@ -8729,7 +8728,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                    $105 = $histogram_rgba_unorm8;
                    $106 = HEAP32[$4>>2]|0;
                    $107 = $workgroup_size;
-                   u$16 = (_clGetKernelWorkGroupInfo(($105|0),($106|0),4528,4,($107|0),(0|0))|0);
+                   (_clGetKernelWorkGroupInfo(($105|0),($106|0),4528,4,($107|0),(0|0))|0);
                    $108 = HEAP32[$image_width>>2]|0;
                    $109 = HEAP32[$image_height>>2]|0;
                    $110 = Math_imul($108, $109)|0;
@@ -8765,25 +8764,25 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                      }
                      $133 = $histogram_rgba_unorm8;
                      $134 = $input_image_unorm8;
-                     u$18 = (_clSetKernelArg(($133|0),0,4,($134|0))|0);
+                     (_clSetKernelArg(($133|0),0,4,($134|0))|0);
                      $135 = $histogram_rgba_unorm8;
                      $136 = $image_width;
-                     u$19 = (_clSetKernelArg(($135|0),1,4,($136|0))|0);
+                     (_clSetKernelArg(($135|0),1,4,($136|0))|0);
                      $137 = $histogram_rgba_unorm8;
                      $138 = $image_height;
-                     u$20 = (_clSetKernelArg(($137|0),2,4,($138|0))|0);
+                     (_clSetKernelArg(($137|0),2,4,($138|0))|0);
                      $139 = $histogram_rgba_unorm8;
                      $140 = $partial_histogram_buffer;
-                     u$21 = (_clSetKernelArg(($139|0),3,4,($140|0))|0);
+                     (_clSetKernelArg(($139|0),3,4,($140|0))|0);
                      $141 = $histogram_sum_partial_results_unorm8;
                      $142 = $partial_histogram_buffer;
-                     u$22 = (_clSetKernelArg(($141|0),0,4,($142|0))|0);
+                     (_clSetKernelArg(($141|0),0,4,($142|0))|0);
                      $143 = $histogram_sum_partial_results_unorm8;
                      $144 = $num_groups;
-                     u$23 = (_clSetKernelArg(($143|0),1,4,($144|0))|0);
+                     (_clSetKernelArg(($143|0),1,4,($144|0))|0);
                      $145 = $histogram_sum_partial_results_unorm8;
                      $146 = $histogram_buffer;
-                     u$24 = (_clSetKernelArg(($145|0),2,4,($146|0))|0);
+                     (_clSetKernelArg(($145|0),2,4,($146|0))|0);
                      $147 = $3;
                      $148 = $histogram_rgba_unorm8;
                      $149 = ($global_work_size);
@@ -8796,7 +8795,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $154 = HEAP32[$err>>2]|0;
                       $vararg_ptr44 = ($vararg_buffer42);
                       HEAP32[$vararg_ptr44>>2] = $154;
-                      u$25 = (_printf(((880)|0),($vararg_buffer42|0))|0);
+                      (_printf(((880)|0),($vararg_buffer42|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
@@ -8804,14 +8803,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                      $155 = $histogram_sum_partial_results_unorm8;
                      $156 = HEAP32[$4>>2]|0;
                      $157 = $workgroup_size;
-                     u$26 = (_clGetKernelWorkGroupInfo(($155|0),($156|0),4528,4,($157|0),(0|0))|0);
+                     (_clGetKernelWorkGroupInfo(($155|0),($156|0),4528,4,($157|0),(0|0))|0);
                      $158 = HEAP32[$workgroup_size>>2]|0;
                      $159 = ($158>>>0)<(256);
                      if ($159) {
                       $160 = HEAP32[$workgroup_size>>2]|0;
                       $vararg_ptr47 = ($vararg_buffer45);
                       HEAP32[$vararg_ptr47>>2] = $160;
-                      u$27 = (_printf(((952)|0),($vararg_buffer45|0))|0);
+                      (_printf(((952)|0),($vararg_buffer45|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
@@ -8840,7 +8839,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $174 = HEAP32[$err>>2]|0;
                       $vararg_ptr50 = ($vararg_buffer48);
                       HEAP32[$vararg_ptr50>>2] = $174;
-                      u$28 = (_printf(((1056)|0),($vararg_buffer48|0))|0);
+                      (_printf(((1056)|0),($vararg_buffer48|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
@@ -8866,14 +8865,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $189 = HEAP32[$err>>2]|0;
                       $vararg_ptr53 = ($vararg_buffer51);
                       HEAP32[$vararg_ptr53>>2] = $189;
-                      u$29 = (_printf(((1144)|0),($vararg_buffer51|0))|0);
+                      (_printf(((1144)|0),($vararg_buffer51|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
                      }
                      $190 = $gpu_histogram_results;
                      $191 = $ref_histogram_results;
-                     u$30 = (_verify_histogram_results((1184),$190,$191,768)|0);
+                     (_verify_histogram_results((1184),$190,$191,768)|0);
                      $192 = (_emscripten_get_now()|0);
                      $193 = (+($192|0));
                      $t1 = $193;
@@ -8918,7 +8917,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $204 = HEAP32[$err>>2]|0;
                       $vararg_ptr56 = ($vararg_buffer54);
                       HEAP32[$vararg_ptr56>>2] = $204;
-                      u$31 = (_printf(((880)|0),($vararg_buffer54|0))|0);
+                      (_printf(((880)|0),($vararg_buffer54|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
@@ -8927,14 +8926,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $212 = HEAP32[$err>>2]|0;
                       $vararg_ptr59 = ($vararg_buffer57);
                       HEAP32[$vararg_ptr59>>2] = $212;
-                      u$32 = (_printf(((1056)|0),($vararg_buffer57|0))|0);
+                      (_printf(((1056)|0),($vararg_buffer57|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
                      }
                      else if ((label|0) == 54) {
                       $215 = $3;
-                      u$33 = (_clFinish(($215|0))|0);
+                      (_clFinish(($215|0))|0);
                       $216 = (_emscripten_get_now()|0);
                       $217 = (+($216|0));
                       $t2 = $217;
@@ -8952,11 +8951,11 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       HEAP32[$vararg_ptr63>>2] = (1296);
                       $vararg_ptr64 = (($vararg_buffer60) + 8|0);
                       HEAPF64[tempDoublePtr>>3]=$224;HEAP32[$vararg_ptr64>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr64+4>>2]=HEAP32[tempDoublePtr+4>>2];
-                      u$34 = (_printf(((1208)|0),($vararg_buffer60|0))|0);
+                      (_printf(((1208)|0),($vararg_buffer60|0))|0);
                       $225 = $histogram_rgba_fp32;
                       $226 = HEAP32[$4>>2]|0;
                       $227 = $workgroup_size;
-                      u$35 = (_clGetKernelWorkGroupInfo(($225|0),($226|0),4528,4,($227|0),(0|0))|0);
+                      (_clGetKernelWorkGroupInfo(($225|0),($226|0),4528,4,($227|0),(0|0))|0);
                       $228 = HEAP32[$image_width>>2]|0;
                       $229 = HEAP32[$image_height>>2]|0;
                       $230 = Math_imul($228, $229)|0;
@@ -8992,25 +8991,25 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                         }
                         $253 = $histogram_rgba_fp32;
                         $254 = $input_image_fp32;
-                        u$37 = (_clSetKernelArg(($253|0),0,4,($254|0))|0);
+                        (_clSetKernelArg(($253|0),0,4,($254|0))|0);
                         $255 = $histogram_rgba_fp32;
                         $256 = $image_width;
-                        u$38 = (_clSetKernelArg(($255|0),1,4,($256|0))|0);
+                        (_clSetKernelArg(($255|0),1,4,($256|0))|0);
                         $257 = $histogram_rgba_fp32;
                         $258 = $image_height;
-                        u$39 = (_clSetKernelArg(($257|0),2,4,($258|0))|0);
+                        (_clSetKernelArg(($257|0),2,4,($258|0))|0);
                         $259 = $histogram_rgba_fp32;
                         $260 = $partial_histogram_buffer;
-                        u$40 = (_clSetKernelArg(($259|0),3,4,($260|0))|0);
+                        (_clSetKernelArg(($259|0),3,4,($260|0))|0);
                         $261 = $histogram_sum_partial_results_fp;
                         $262 = $partial_histogram_buffer;
-                        u$41 = (_clSetKernelArg(($261|0),0,4,($262|0))|0);
+                        (_clSetKernelArg(($261|0),0,4,($262|0))|0);
                         $263 = $histogram_sum_partial_results_fp;
                         $264 = $num_groups;
-                        u$42 = (_clSetKernelArg(($263|0),1,4,($264|0))|0);
+                        (_clSetKernelArg(($263|0),1,4,($264|0))|0);
                         $265 = $histogram_sum_partial_results_fp;
                         $266 = $histogram_buffer;
-                        u$43 = (_clSetKernelArg(($265|0),2,4,($266|0))|0);
+                        (_clSetKernelArg(($265|0),2,4,($266|0))|0);
                         $267 = $3;
                         $268 = $histogram_rgba_fp32;
                         $269 = ($global_work_size);
@@ -9023,7 +9022,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $274 = HEAP32[$err>>2]|0;
                          $vararg_ptr70 = ($vararg_buffer68);
                          HEAP32[$vararg_ptr70>>2] = $274;
-                         u$44 = (_printf(((1312)|0),($vararg_buffer68|0))|0);
+                         (_printf(((1312)|0),($vararg_buffer68|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
@@ -9031,14 +9030,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                         $275 = $histogram_sum_partial_results_fp;
                         $276 = HEAP32[$4>>2]|0;
                         $277 = $workgroup_size;
-                        u$45 = (_clGetKernelWorkGroupInfo(($275|0),($276|0),4528,4,($277|0),(0|0))|0);
+                        (_clGetKernelWorkGroupInfo(($275|0),($276|0),4528,4,($277|0),(0|0))|0);
                         $278 = HEAP32[$workgroup_size>>2]|0;
                         $279 = ($278>>>0)<(256);
                         if ($279) {
                          $280 = HEAP32[$workgroup_size>>2]|0;
                          $vararg_ptr73 = ($vararg_buffer71);
                          HEAP32[$vararg_ptr73>>2] = $280;
-                         u$46 = (_printf(((1384)|0),($vararg_buffer71|0))|0);
+                         (_printf(((1384)|0),($vararg_buffer71|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
@@ -9067,7 +9066,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $294 = HEAP32[$err>>2]|0;
                          $vararg_ptr76 = ($vararg_buffer74);
                          HEAP32[$vararg_ptr76>>2] = $294;
-                         u$47 = (_printf(((1488)|0),($vararg_buffer74|0))|0);
+                         (_printf(((1488)|0),($vararg_buffer74|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
@@ -9090,14 +9089,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $307 = HEAP32[$err>>2]|0;
                          $vararg_ptr79 = ($vararg_buffer77);
                          HEAP32[$vararg_ptr79>>2] = $307;
-                         u$48 = (_printf(((1144)|0),($vararg_buffer77|0))|0);
+                         (_printf(((1144)|0),($vararg_buffer77|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
                         }
                         $308 = $gpu_histogram_results;
                         $309 = $ref_histogram_results;
-                        u$49 = (_verify_histogram_results((1576),$308,$309,771)|0);
+                        (_verify_histogram_results((1576),$308,$309,771)|0);
                         $310 = (_emscripten_get_now()|0);
                         $311 = (+($310|0));
                         $t1 = $311;
@@ -9142,7 +9141,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $322 = HEAP32[$err>>2]|0;
                          $vararg_ptr82 = ($vararg_buffer80);
                          HEAP32[$vararg_ptr82>>2] = $322;
-                         u$50 = (_printf(((1312)|0),($vararg_buffer80|0))|0);
+                         (_printf(((1312)|0),($vararg_buffer80|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
@@ -9151,14 +9150,14 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $330 = HEAP32[$err>>2]|0;
                          $vararg_ptr85 = ($vararg_buffer83);
                          HEAP32[$vararg_ptr85>>2] = $330;
-                         u$51 = (_printf(((1488)|0),($vararg_buffer83|0))|0);
+                         (_printf(((1488)|0),($vararg_buffer83|0))|0);
                          $1 = 1;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
                         }
                         else if ((label|0) == 76) {
                          $333 = $3;
-                         u$52 = (_clFinish(($333|0))|0);
+                         (_clFinish(($333|0))|0);
                          $334 = (_emscripten_get_now()|0);
                          $335 = (+($334|0));
                          $t2 = $335;
@@ -9176,7 +9175,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          HEAP32[$vararg_ptr89>>2] = (1296);
                          $vararg_ptr90 = (($vararg_buffer86) + 8|0);
                          HEAPF64[tempDoublePtr>>3]=$342;HEAP32[$vararg_ptr90>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr90+4>>2]=HEAP32[tempDoublePtr+4>>2];
-                         u$53 = (_printf(((1592)|0),($vararg_buffer86|0))|0);
+                         (_printf(((1592)|0),($vararg_buffer86|0))|0);
                          $343 = $ref_histogram_results;
                          $344 = $343;
                          _free($344);
@@ -9188,25 +9187,25 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                          $348 = $image_data_fp32;
                          _free($348);
                          $349 = $histogram_rgba_unorm8;
-                         u$54 = (_clReleaseKernel(($349|0))|0);
+                         (_clReleaseKernel(($349|0))|0);
                          $350 = $histogram_rgba_fp16;
-                         u$55 = (_clReleaseKernel(($350|0))|0);
+                         (_clReleaseKernel(($350|0))|0);
                          $351 = $histogram_rgba_fp32;
-                         u$56 = (_clReleaseKernel(($351|0))|0);
+                         (_clReleaseKernel(($351|0))|0);
                          $352 = $histogram_sum_partial_results_unorm8;
-                         u$57 = (_clReleaseKernel(($352|0))|0);
+                         (_clReleaseKernel(($352|0))|0);
                          $353 = $histogram_sum_partial_results_fp;
-                         u$58 = (_clReleaseKernel(($353|0))|0);
+                         (_clReleaseKernel(($353|0))|0);
                          $354 = $program;
-                         u$59 = (_clReleaseProgram(($354|0))|0);
+                         (_clReleaseProgram(($354|0))|0);
                          $355 = HEAP32[$partial_histogram_buffer>>2]|0;
-                         u$60 = (_clReleaseMemObject(($355|0))|0);
+                         (_clReleaseMemObject(($355|0))|0);
                          $356 = HEAP32[$histogram_buffer>>2]|0;
-                         u$61 = (_clReleaseMemObject(($356|0))|0);
+                         (_clReleaseMemObject(($356|0))|0);
                          $357 = HEAP32[$input_image_unorm8>>2]|0;
-                         u$62 = (_clReleaseMemObject(($357|0))|0);
+                         (_clReleaseMemObject(($357|0))|0);
                          $358 = HEAP32[$input_image_fp32>>2]|0;
-                         u$63 = (_clReleaseMemObject(($358|0))|0);
+                         (_clReleaseMemObject(($358|0))|0);
                          $1 = 0;
                          $359 = $1;
                          STACKTOP = sp;return ($359|0);
@@ -9216,7 +9215,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                       $252 = HEAP32[$err>>2]|0;
                       $vararg_ptr67 = ($vararg_buffer65);
                       HEAP32[$vararg_ptr67>>2] = $252;
-                      u$36 = (_printf(((848)|0),($vararg_buffer65|0))|0);
+                      (_printf(((848)|0),($vararg_buffer65|0))|0);
                       $1 = 1;
                       $359 = $1;
                       STACKTOP = sp;return ($359|0);
@@ -9226,7 +9225,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                    $132 = HEAP32[$err>>2]|0;
                    $vararg_ptr41 = ($vararg_buffer39);
                    HEAP32[$vararg_ptr41>>2] = $132;
-                   u$17 = (_printf(((848)|0),($vararg_buffer39|0))|0);
+                   (_printf(((848)|0),($vararg_buffer39|0))|0);
                    $1 = 1;
                    $359 = $1;
                    STACKTOP = sp;return ($359|0);
@@ -9235,7 +9234,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                  $104 = HEAP32[$err>>2]|0;
                  $vararg_ptr38 = ($vararg_buffer36);
                  HEAP32[$vararg_ptr38>>2] = $104;
-                 u$15 = (_printf(((848)|0),($vararg_buffer36|0))|0);
+                 (_printf(((848)|0),($vararg_buffer36|0))|0);
                  $1 = 1;
                  $359 = $1;
                  STACKTOP = sp;return ($359|0);
@@ -9244,7 +9243,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
                $88 = HEAP32[$err>>2]|0;
                $vararg_ptr35 = ($vararg_buffer33);
                HEAP32[$vararg_ptr35>>2] = $88;
-               u$14 = (_printf(((848)|0),($vararg_buffer33|0))|0);
+               (_printf(((848)|0),($vararg_buffer33|0))|0);
                $1 = 1;
                $359 = $1;
                STACKTOP = sp;return ($359|0);
@@ -9253,7 +9252,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
              $72 = HEAP32[$err>>2]|0;
              $vararg_ptr32 = ($vararg_buffer30);
              HEAP32[$vararg_ptr32>>2] = $72;
-             u$13 = (_printf(((848)|0),($vararg_buffer30|0))|0);
+             (_printf(((848)|0),($vararg_buffer30|0))|0);
              $1 = 1;
              $359 = $1;
              STACKTOP = sp;return ($359|0);
@@ -9262,7 +9261,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
            $65 = HEAP32[$err>>2]|0;
            $vararg_ptr29 = ($vararg_buffer27);
            HEAP32[$vararg_ptr29>>2] = $65;
-           u$12 = (_printf(((760)|0),($vararg_buffer27|0))|0);
+           (_printf(((760)|0),($vararg_buffer27|0))|0);
            $1 = 1;
            $359 = $1;
            STACKTOP = sp;return ($359|0);
@@ -9271,7 +9270,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
          $58 = HEAP32[$err>>2]|0;
          $vararg_ptr26 = ($vararg_buffer24);
          HEAP32[$vararg_ptr26>>2] = $58;
-         u$11 = (_printf(((624)|0),($vararg_buffer24|0))|0);
+         (_printf(((624)|0),($vararg_buffer24|0))|0);
          $1 = 1;
          $359 = $1;
          STACKTOP = sp;return ($359|0);
@@ -9280,7 +9279,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
        $51 = HEAP32[$err>>2]|0;
        $vararg_ptr23 = ($vararg_buffer21);
        HEAP32[$vararg_ptr23>>2] = $51;
-       u$10 = (_printf(((504)|0),($vararg_buffer21|0))|0);
+       (_printf(((504)|0),($vararg_buffer21|0))|0);
        $1 = 1;
        $359 = $1;
        STACKTOP = sp;return ($359|0);
@@ -9289,7 +9288,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
      $44 = HEAP32[$err>>2]|0;
      $vararg_ptr20 = ($vararg_buffer18);
      HEAP32[$vararg_ptr20>>2] = $44;
-     u$9 = (_printf(((400)|0),($vararg_buffer18|0))|0);
+     (_printf(((400)|0),($vararg_buffer18|0))|0);
      $1 = 1;
      $359 = $1;
      STACKTOP = sp;return ($359|0);
@@ -9298,7 +9297,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
    $37 = HEAP32[$err>>2]|0;
    $vararg_ptr17 = ($vararg_buffer15);
    HEAP32[$vararg_ptr17>>2] = $37;
-   u$8 = (_printf(((296)|0),($vararg_buffer15|0))|0);
+   (_printf(((296)|0),($vararg_buffer15|0))|0);
    $1 = 1;
    $359 = $1;
    STACKTOP = sp;return ($359|0);
@@ -9307,7 +9306,7 @@ function _test_histogram_with_buffers($context,$queue,$device) {
  $19 = HEAP32[$err>>2]|0;
  $vararg_ptr9 = ($vararg_buffer7);
  HEAP32[$vararg_ptr9>>2] = $19;
- u$4 = (_printf(((176)|0),($vararg_buffer7|0))|0);
+ (_printf(((176)|0),($vararg_buffer7|0))|0);
  $1 = 1;
  $359 = $1;
  STACKTOP = sp;return ($359|0);
@@ -9317,7 +9316,7 @@ function _read_kernel_from_file($filename,$source,$len) {
  $source = $source|0;
  $len = $len|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
- var $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fh = 0, $file_len = 0, $statbuf = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0;
+ var $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fh = 0, $file_len = 0, $statbuf = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 128|0;
  $statbuf = sp + 32|0;
@@ -9335,7 +9334,7 @@ function _read_kernel_from_file($filename,$source,$len) {
   STACKTOP = sp;return ($27|0);
  } else {
   $9 = $2;
-  u$0 = (_stat(($9|0),($statbuf|0))|0);
+  (_stat(($9|0),($statbuf|0))|0);
   $10 = (($statbuf) + 36|0);
   $11 = HEAP32[$10>>2]|0;
   $file_len = $11;
@@ -9351,14 +9350,14 @@ function _read_kernel_from_file($filename,$source,$len) {
   $19 = HEAP32[$18>>2]|0;
   $20 = $file_len;
   $21 = $fh;
-  u$1 = (_fread(($19|0),($20|0),1,($21|0))|0);
+  (_fread(($19|0),($20|0),1,($21|0))|0);
   $22 = $file_len;
   $23 = $3;
   $24 = HEAP32[$23>>2]|0;
   $25 = (($24) + ($22)|0);
   HEAP8[$25] = 0;
   $26 = $fh;
-  u$2 = (_fclose(($26|0))|0);
+  (_fclose(($26|0))|0);
   $1 = 0;
   $27 = $1;
   STACKTOP = sp;return ($27|0);
@@ -9569,7 +9568,7 @@ function _verify_histogram_results($str,$gpu_histogram_results,$ref_histogram_re
  $num_entries = $num_entries|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, $vararg_buffer = 0, $vararg_buffer4 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast5 = 0, $vararg_ptr = 0, $vararg_ptr1 = 0, $vararg_ptr2 = 0, $vararg_ptr3 = 0;
- var $vararg_ptr6 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0;
+ var $vararg_ptr6 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer4 = sp;
@@ -9625,7 +9624,7 @@ function _verify_histogram_results($str,$gpu_histogram_results,$ref_histogram_re
   HEAP32[$vararg_ptr2>>2] = $23;
   $vararg_ptr3 = (($vararg_buffer) + 12|0);
   HEAP32[$vararg_ptr3>>2] = $27;
-  u$0 = (_printf(((2240)|0),($vararg_buffer|0))|0);
+  (_printf(((2240)|0),($vararg_buffer|0))|0);
   $1 = -1;
   $31 = $1;
   STACKTOP = sp;return ($31|0);
@@ -9634,7 +9633,7 @@ function _verify_histogram_results($str,$gpu_histogram_results,$ref_histogram_re
   $30 = $2;
   $vararg_ptr6 = ($vararg_buffer4);
   HEAP32[$vararg_ptr6>>2] = $30;
-  u$1 = (_printf(((2336)|0),($vararg_buffer4|0))|0);
+  (_printf(((2336)|0),($vararg_buffer4|0))|0);
   $1 = 0;
   $31 = $1;
   STACKTOP = sp;return ($31|0);
@@ -9818,10 +9817,7 @@ function _test_histogram_with_images($context,$queue,$device) {
  var $vararg_buffer71 = 0, $vararg_buffer74 = 0, $vararg_buffer77 = 0, $vararg_buffer80 = 0, $vararg_buffer83 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast11 = 0, $vararg_lifetime_bitcast13 = 0, $vararg_lifetime_bitcast16 = 0, $vararg_lifetime_bitcast19 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast22 = 0, $vararg_lifetime_bitcast25 = 0, $vararg_lifetime_bitcast28 = 0, $vararg_lifetime_bitcast31 = 0, $vararg_lifetime_bitcast34 = 0, $vararg_lifetime_bitcast37 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast40 = 0, $vararg_lifetime_bitcast43 = 0;
  var $vararg_lifetime_bitcast46 = 0, $vararg_lifetime_bitcast49 = 0, $vararg_lifetime_bitcast52 = 0, $vararg_lifetime_bitcast55 = 0, $vararg_lifetime_bitcast58 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast63 = 0, $vararg_lifetime_bitcast66 = 0, $vararg_lifetime_bitcast69 = 0, $vararg_lifetime_bitcast72 = 0, $vararg_lifetime_bitcast75 = 0, $vararg_lifetime_bitcast78 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_lifetime_bitcast81 = 0, $vararg_lifetime_bitcast84 = 0, $vararg_ptr = 0, $vararg_ptr14 = 0, $vararg_ptr17 = 0, $vararg_ptr20 = 0, $vararg_ptr23 = 0;
  var $vararg_ptr26 = 0, $vararg_ptr29 = 0, $vararg_ptr32 = 0, $vararg_ptr35 = 0, $vararg_ptr38 = 0, $vararg_ptr41 = 0, $vararg_ptr44 = 0, $vararg_ptr47 = 0, $vararg_ptr50 = 0, $vararg_ptr53 = 0, $vararg_ptr56 = 0, $vararg_ptr59 = 0, $vararg_ptr60 = 0, $vararg_ptr61 = 0, $vararg_ptr64 = 0, $vararg_ptr67 = 0, $vararg_ptr70 = 0, $vararg_ptr73 = 0, $vararg_ptr76 = 0, $vararg_ptr79 = 0;
- var $vararg_ptr82 = 0, $vararg_ptr85 = 0, $vararg_ptr86 = 0, $vararg_ptr87 = 0, $vararg_ptr9 = 0, $workgroup_size = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0, u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0;
- var u$2 = 0, u$20 = 0, u$21 = 0, u$22 = 0, u$23 = 0, u$24 = 0, u$25 = 0, u$26 = 0, u$27 = 0, u$28 = 0, u$29 = 0, u$3 = 0, u$30 = 0, u$31 = 0, u$32 = 0, u$33 = 0, u$34 = 0, u$35 = 0, u$36 = 0, u$37 = 0;
- var u$38 = 0, u$39 = 0, u$4 = 0, u$40 = 0, u$41 = 0, u$42 = 0, u$43 = 0, u$44 = 0, u$45 = 0, u$46 = 0, u$47 = 0, u$48 = 0, u$49 = 0, u$5 = 0, u$50 = 0, u$51 = 0, u$52 = 0, u$53 = 0, u$54 = 0, u$55 = 0;
- var u$56 = 0, u$57 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vararg_ptr82 = 0, $vararg_ptr85 = 0, $vararg_ptr86 = 0, $vararg_ptr87 = 0, $vararg_ptr9 = 0, $workgroup_size = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 16|0;
  $vararg_buffer83 = sp;
@@ -9907,9 +9903,9 @@ function _test_histogram_with_images($context,$queue,$device) {
  HEAP32[$4>>2] = $device;
  $image_width = 1920;
  $image_height = 1080;
- u$0 = (_printf(((1672)|0),($vararg_buffer|0))|0);
- u$1 = (_printf(((1704)|0),($vararg_buffer1|0))|0);
- u$2 = (_printf(((1672)|0),($vararg_buffer3|0))|0);
+ (_printf(((1672)|0),($vararg_buffer|0))|0);
+ (_printf(((1704)|0),($vararg_buffer1|0))|0);
+ (_printf(((1672)|0),($vararg_buffer3|0))|0);
  $5 = (_time(0)|0);
  _srand(($5|0));
  $6 = ($source);
@@ -9921,7 +9917,7 @@ function _test_histogram_with_images($context,$queue,$device) {
  if ($10) {
   $vararg_ptr = ($vararg_buffer5);
   HEAP32[$vararg_ptr>>2] = (32);
-  u$3 = (_printf(((120)|0),($vararg_buffer5|0))|0);
+  (_printf(((120)|0),($vararg_buffer5|0))|0);
   $1 = 1;
   $423 = $1;
   STACKTOP = sp;return ($423|0);
@@ -9951,15 +9947,15 @@ function _test_histogram_with_images($context,$queue,$device) {
    if ($25) {
     $26 = $buffer;
     _memset(($26|0),0,2048)|0;
-    u$5 = (_printf(((224)|0),($vararg_buffer10|0))|0);
+    (_printf(((224)|0),($vararg_buffer10|0))|0);
     $27 = $program;
     $28 = HEAP32[$4>>2]|0;
     $29 = ($buffer);
-    u$6 = (_clGetProgramBuildInfo(($27|0),($28|0),4483,2048,($29|0),(0|0))|0);
+    (_clGetProgramBuildInfo(($27|0),($28|0),4483,2048,($29|0),(0|0))|0);
     $30 = ($buffer);
     $vararg_ptr14 = ($vararg_buffer12);
     HEAP32[$vararg_ptr14>>2] = $30;
-    u$7 = (_printf(((256)|0),($vararg_buffer12|0))|0);
+    (_printf(((256)|0),($vararg_buffer12|0))|0);
     $1 = 1;
     $423 = $1;
     STACKTOP = sp;return ($423|0);
@@ -10073,7 +10069,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                  $96 = $histogram_rgba_unorm8;
                  $97 = HEAP32[$4>>2]|0;
                  $98 = $workgroup_size;
-                 u$15 = (_clGetKernelWorkGroupInfo(($96|0),($97|0),4528,4,($98|0),(0|0))|0);
+                 (_clGetKernelWorkGroupInfo(($96|0),($97|0),4528,4,($98|0),(0|0))|0);
                  $99 = HEAP32[$workgroup_size>>2]|0;
                  $100 = ($99>>>0)<=(256);
                  if ($100) {
@@ -10166,19 +10162,19 @@ function _test_histogram_with_images($context,$queue,$device) {
                    }
                    $165 = $histogram_rgba_unorm8;
                    $166 = $input_image_unorm8;
-                   u$17 = (_clSetKernelArg(($165|0),0,4,($166|0))|0);
+                   (_clSetKernelArg(($165|0),0,4,($166|0))|0);
                    $167 = $histogram_rgba_unorm8;
                    $168 = $partial_histogram_buffer;
-                   u$18 = (_clSetKernelArg(($167|0),1,4,($168|0))|0);
+                   (_clSetKernelArg(($167|0),1,4,($168|0))|0);
                    $169 = $histogram_sum_partial_results_unorm8;
                    $170 = $partial_histogram_buffer;
-                   u$19 = (_clSetKernelArg(($169|0),0,4,($170|0))|0);
+                   (_clSetKernelArg(($169|0),0,4,($170|0))|0);
                    $171 = $histogram_sum_partial_results_unorm8;
                    $172 = $num_groups;
-                   u$20 = (_clSetKernelArg(($171|0),1,4,($172|0))|0);
+                   (_clSetKernelArg(($171|0),1,4,($172|0))|0);
                    $173 = $histogram_sum_partial_results_unorm8;
                    $174 = $histogram_buffer;
-                   u$21 = (_clSetKernelArg(($173|0),2,4,($174|0))|0);
+                   (_clSetKernelArg(($173|0),2,4,($174|0))|0);
                    $175 = $3;
                    $176 = $histogram_rgba_unorm8;
                    $177 = ($global_work_size);
@@ -10191,7 +10187,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $182 = HEAP32[$err>>2]|0;
                     $vararg_ptr41 = ($vararg_buffer39);
                     HEAP32[$vararg_ptr41>>2] = $182;
-                    u$22 = (_printf(((880)|0),($vararg_buffer39|0))|0);
+                    (_printf(((880)|0),($vararg_buffer39|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
@@ -10199,14 +10195,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                    $183 = $histogram_sum_partial_results_unorm8;
                    $184 = HEAP32[$4>>2]|0;
                    $185 = $workgroup_size;
-                   u$23 = (_clGetKernelWorkGroupInfo(($183|0),($184|0),4528,4,($185|0),(0|0))|0);
+                   (_clGetKernelWorkGroupInfo(($183|0),($184|0),4528,4,($185|0),(0|0))|0);
                    $186 = HEAP32[$workgroup_size>>2]|0;
                    $187 = ($186>>>0)<(256);
                    if ($187) {
                     $188 = HEAP32[$workgroup_size>>2]|0;
                     $vararg_ptr44 = ($vararg_buffer42);
                     HEAP32[$vararg_ptr44>>2] = $188;
-                    u$24 = (_printf(((952)|0),($vararg_buffer42|0))|0);
+                    (_printf(((952)|0),($vararg_buffer42|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
@@ -10235,7 +10231,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $202 = HEAP32[$err>>2]|0;
                     $vararg_ptr47 = ($vararg_buffer45);
                     HEAP32[$vararg_ptr47>>2] = $202;
-                    u$25 = (_printf(((1488)|0),($vararg_buffer45|0))|0);
+                    (_printf(((1488)|0),($vararg_buffer45|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
@@ -10261,14 +10257,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $217 = HEAP32[$err>>2]|0;
                     $vararg_ptr50 = ($vararg_buffer48);
                     HEAP32[$vararg_ptr50>>2] = $217;
-                    u$26 = (_printf(((1144)|0),($vararg_buffer48|0))|0);
+                    (_printf(((1144)|0),($vararg_buffer48|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
                    }
                    $218 = $gpu_histogram_results;
                    $219 = $ref_histogram_results;
-                   u$27 = (_verify_histogram_results((1184),$218,$219,768)|0);
+                   (_verify_histogram_results((1184),$218,$219,768)|0);
                    $220 = (_emscripten_get_now()|0);
                    $221 = (+($220|0));
                    $t1 = $221;
@@ -10313,7 +10309,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $232 = HEAP32[$err>>2]|0;
                     $vararg_ptr53 = ($vararg_buffer51);
                     HEAP32[$vararg_ptr53>>2] = $232;
-                    u$28 = (_printf(((880)|0),($vararg_buffer51|0))|0);
+                    (_printf(((880)|0),($vararg_buffer51|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
@@ -10322,14 +10318,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $240 = HEAP32[$err>>2]|0;
                     $vararg_ptr56 = ($vararg_buffer54);
                     HEAP32[$vararg_ptr56>>2] = $240;
-                    u$29 = (_printf(((1488)|0),($vararg_buffer54|0))|0);
+                    (_printf(((1488)|0),($vararg_buffer54|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
                    }
                    else if ((label|0) == 57) {
                     $243 = $3;
-                    u$30 = (_clFinish(($243|0))|0);
+                    (_clFinish(($243|0))|0);
                     $244 = (_emscripten_get_now()|0);
                     $245 = (+($244|0));
                     $t2 = $245;
@@ -10347,11 +10343,11 @@ function _test_histogram_with_images($context,$queue,$device) {
                     HEAP32[$vararg_ptr60>>2] = (1296);
                     $vararg_ptr61 = (($vararg_buffer57) + 8|0);
                     HEAPF64[tempDoublePtr>>3]=$252;HEAP32[$vararg_ptr61>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr61+4>>2]=HEAP32[tempDoublePtr+4>>2];
-                    u$31 = (_printf(((1208)|0),($vararg_buffer57|0))|0);
+                    (_printf(((1208)|0),($vararg_buffer57|0))|0);
                     $253 = $histogram_rgba_fp;
                     $254 = HEAP32[$4>>2]|0;
                     $255 = $workgroup_size;
-                    u$32 = (_clGetKernelWorkGroupInfo(($253|0),($254|0),4528,4,($255|0),(0|0))|0);
+                    (_clGetKernelWorkGroupInfo(($253|0),($254|0),4528,4,($255|0),(0|0))|0);
                     $256 = HEAP32[$workgroup_size>>2]|0;
                     $257 = ($256>>>0)<=(256);
                     if ($257) {
@@ -10444,19 +10440,19 @@ function _test_histogram_with_images($context,$queue,$device) {
                       }
                       $322 = $histogram_rgba_fp;
                       $323 = $input_image_fp32;
-                      u$34 = (_clSetKernelArg(($322|0),0,4,($323|0))|0);
+                      (_clSetKernelArg(($322|0),0,4,($323|0))|0);
                       $324 = $histogram_rgba_fp;
                       $325 = $partial_histogram_buffer;
-                      u$35 = (_clSetKernelArg(($324|0),1,4,($325|0))|0);
+                      (_clSetKernelArg(($324|0),1,4,($325|0))|0);
                       $326 = $histogram_sum_partial_results_fp;
                       $327 = $partial_histogram_buffer;
-                      u$36 = (_clSetKernelArg(($326|0),0,4,($327|0))|0);
+                      (_clSetKernelArg(($326|0),0,4,($327|0))|0);
                       $328 = $histogram_sum_partial_results_fp;
                       $329 = $num_groups;
-                      u$37 = (_clSetKernelArg(($328|0),1,4,($329|0))|0);
+                      (_clSetKernelArg(($328|0),1,4,($329|0))|0);
                       $330 = $histogram_sum_partial_results_fp;
                       $331 = $histogram_buffer;
-                      u$38 = (_clSetKernelArg(($330|0),2,4,($331|0))|0);
+                      (_clSetKernelArg(($330|0),2,4,($331|0))|0);
                       $332 = $3;
                       $333 = $histogram_rgba_fp;
                       $334 = ($global_work_size);
@@ -10469,7 +10465,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $339 = HEAP32[$err>>2]|0;
                        $vararg_ptr67 = ($vararg_buffer65);
                        HEAP32[$vararg_ptr67>>2] = $339;
-                       u$39 = (_printf(((1904)|0),($vararg_buffer65|0))|0);
+                       (_printf(((1904)|0),($vararg_buffer65|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
@@ -10477,14 +10473,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                       $340 = $histogram_sum_partial_results_fp;
                       $341 = HEAP32[$4>>2]|0;
                       $342 = $workgroup_size;
-                      u$40 = (_clGetKernelWorkGroupInfo(($340|0),($341|0),4528,4,($342|0),(0|0))|0);
+                      (_clGetKernelWorkGroupInfo(($340|0),($341|0),4528,4,($342|0),(0|0))|0);
                       $343 = HEAP32[$workgroup_size>>2]|0;
                       $344 = ($343>>>0)<(256);
                       if ($344) {
                        $345 = HEAP32[$workgroup_size>>2]|0;
                        $vararg_ptr70 = ($vararg_buffer68);
                        HEAP32[$vararg_ptr70>>2] = $345;
-                       u$41 = (_printf(((1384)|0),($vararg_buffer68|0))|0);
+                       (_printf(((1384)|0),($vararg_buffer68|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
@@ -10513,7 +10509,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $359 = HEAP32[$err>>2]|0;
                        $vararg_ptr73 = ($vararg_buffer71);
                        HEAP32[$vararg_ptr73>>2] = $359;
-                       u$42 = (_printf(((1488)|0),($vararg_buffer71|0))|0);
+                       (_printf(((1488)|0),($vararg_buffer71|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
@@ -10536,14 +10532,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $372 = HEAP32[$err>>2]|0;
                        $vararg_ptr76 = ($vararg_buffer74);
                        HEAP32[$vararg_ptr76>>2] = $372;
-                       u$43 = (_printf(((1144)|0),($vararg_buffer74|0))|0);
+                       (_printf(((1144)|0),($vararg_buffer74|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
                       }
                       $373 = $gpu_histogram_results;
                       $374 = $ref_histogram_results;
-                      u$44 = (_verify_histogram_results((1576),$373,$374,771)|0);
+                      (_verify_histogram_results((1576),$373,$374,771)|0);
                       $375 = (_emscripten_get_now()|0);
                       $376 = (+($375|0));
                       $t1 = $376;
@@ -10588,7 +10584,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $387 = HEAP32[$err>>2]|0;
                        $vararg_ptr79 = ($vararg_buffer77);
                        HEAP32[$vararg_ptr79>>2] = $387;
-                       u$45 = (_printf(((1904)|0),($vararg_buffer77|0))|0);
+                       (_printf(((1904)|0),($vararg_buffer77|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
@@ -10597,14 +10593,14 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $395 = HEAP32[$err>>2]|0;
                        $vararg_ptr82 = ($vararg_buffer80);
                        HEAP32[$vararg_ptr82>>2] = $395;
-                       u$46 = (_printf(((1488)|0),($vararg_buffer80|0))|0);
+                       (_printf(((1488)|0),($vararg_buffer80|0))|0);
                        $1 = 1;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
                       }
                       else if ((label|0) == 85) {
                        $398 = $3;
-                       u$47 = (_clFinish(($398|0))|0);
+                       (_clFinish(($398|0))|0);
                        $399 = (_emscripten_get_now()|0);
                        $400 = (+($399|0));
                        $t2 = $400;
@@ -10622,7 +10618,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                        HEAP32[$vararg_ptr86>>2] = (1296);
                        $vararg_ptr87 = (($vararg_buffer83) + 8|0);
                        HEAPF64[tempDoublePtr>>3]=$407;HEAP32[$vararg_ptr87>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr87+4>>2]=HEAP32[tempDoublePtr+4>>2];
-                       u$48 = (_printf(((1592)|0),($vararg_buffer83|0))|0);
+                       (_printf(((1592)|0),($vararg_buffer83|0))|0);
                        $408 = $ref_histogram_results;
                        $409 = $408;
                        _free($409);
@@ -10634,23 +10630,23 @@ function _test_histogram_with_images($context,$queue,$device) {
                        $413 = $image_data_fp32;
                        _free($413);
                        $414 = $histogram_rgba_unorm8;
-                       u$49 = (_clReleaseKernel(($414|0))|0);
+                       (_clReleaseKernel(($414|0))|0);
                        $415 = $histogram_rgba_fp;
-                       u$50 = (_clReleaseKernel(($415|0))|0);
+                       (_clReleaseKernel(($415|0))|0);
                        $416 = $histogram_sum_partial_results_unorm8;
-                       u$51 = (_clReleaseKernel(($416|0))|0);
+                       (_clReleaseKernel(($416|0))|0);
                        $417 = $histogram_sum_partial_results_fp;
-                       u$52 = (_clReleaseKernel(($417|0))|0);
+                       (_clReleaseKernel(($417|0))|0);
                        $418 = $program;
-                       u$53 = (_clReleaseProgram(($418|0))|0);
+                       (_clReleaseProgram(($418|0))|0);
                        $419 = HEAP32[$partial_histogram_buffer>>2]|0;
-                       u$54 = (_clReleaseMemObject(($419|0))|0);
+                       (_clReleaseMemObject(($419|0))|0);
                        $420 = HEAP32[$histogram_buffer>>2]|0;
-                       u$55 = (_clReleaseMemObject(($420|0))|0);
+                       (_clReleaseMemObject(($420|0))|0);
                        $421 = HEAP32[$input_image_unorm8>>2]|0;
-                       u$56 = (_clReleaseMemObject(($421|0))|0);
+                       (_clReleaseMemObject(($421|0))|0);
                        $422 = HEAP32[$input_image_fp32>>2]|0;
-                       u$57 = (_clReleaseMemObject(($422|0))|0);
+                       (_clReleaseMemObject(($422|0))|0);
                        $1 = 0;
                        $423 = $1;
                        STACKTOP = sp;return ($423|0);
@@ -10660,7 +10656,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                     $321 = HEAP32[$err>>2]|0;
                     $vararg_ptr64 = ($vararg_buffer62);
                     HEAP32[$vararg_ptr64>>2] = $321;
-                    u$33 = (_printf(((848)|0),($vararg_buffer62|0))|0);
+                    (_printf(((848)|0),($vararg_buffer62|0))|0);
                     $1 = 1;
                     $423 = $1;
                     STACKTOP = sp;return ($423|0);
@@ -10670,7 +10666,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                  $164 = HEAP32[$err>>2]|0;
                  $vararg_ptr38 = ($vararg_buffer36);
                  HEAP32[$vararg_ptr38>>2] = $164;
-                 u$16 = (_printf(((848)|0),($vararg_buffer36|0))|0);
+                 (_printf(((848)|0),($vararg_buffer36|0))|0);
                  $1 = 1;
                  $423 = $1;
                  STACKTOP = sp;return ($423|0);
@@ -10679,7 +10675,7 @@ function _test_histogram_with_images($context,$queue,$device) {
                $95 = HEAP32[$err>>2]|0;
                $vararg_ptr35 = ($vararg_buffer33);
                HEAP32[$vararg_ptr35>>2] = $95;
-               u$14 = (_printf(((1872)|0),($vararg_buffer33|0))|0);
+               (_printf(((1872)|0),($vararg_buffer33|0))|0);
                $1 = 1;
                $423 = $1;
                STACKTOP = sp;return ($423|0);
@@ -10688,7 +10684,7 @@ function _test_histogram_with_images($context,$queue,$device) {
              $80 = HEAP32[$err>>2]|0;
              $vararg_ptr32 = ($vararg_buffer30);
              HEAP32[$vararg_ptr32>>2] = $80;
-             u$13 = (_printf(((1872)|0),($vararg_buffer30|0))|0);
+             (_printf(((1872)|0),($vararg_buffer30|0))|0);
              $1 = 1;
              $423 = $1;
              STACKTOP = sp;return ($423|0);
@@ -10697,7 +10693,7 @@ function _test_histogram_with_images($context,$queue,$device) {
            $65 = HEAP32[$err>>2]|0;
            $vararg_ptr29 = ($vararg_buffer27);
            HEAP32[$vararg_ptr29>>2] = $65;
-           u$12 = (_printf(((848)|0),($vararg_buffer27|0))|0);
+           (_printf(((848)|0),($vararg_buffer27|0))|0);
            $1 = 1;
            $423 = $1;
            STACKTOP = sp;return ($423|0);
@@ -10706,7 +10702,7 @@ function _test_histogram_with_images($context,$queue,$device) {
          $58 = HEAP32[$err>>2]|0;
          $vararg_ptr26 = ($vararg_buffer24);
          HEAP32[$vararg_ptr26>>2] = $58;
-         u$11 = (_printf(((760)|0),($vararg_buffer24|0))|0);
+         (_printf(((760)|0),($vararg_buffer24|0))|0);
          $1 = 1;
          $423 = $1;
          STACKTOP = sp;return ($423|0);
@@ -10715,7 +10711,7 @@ function _test_histogram_with_images($context,$queue,$device) {
        $51 = HEAP32[$err>>2]|0;
        $vararg_ptr23 = ($vararg_buffer21);
        HEAP32[$vararg_ptr23>>2] = $51;
-       u$10 = (_printf(((624)|0),($vararg_buffer21|0))|0);
+       (_printf(((624)|0),($vararg_buffer21|0))|0);
        $1 = 1;
        $423 = $1;
        STACKTOP = sp;return ($423|0);
@@ -10724,7 +10720,7 @@ function _test_histogram_with_images($context,$queue,$device) {
      $44 = HEAP32[$err>>2]|0;
      $vararg_ptr20 = ($vararg_buffer18);
      HEAP32[$vararg_ptr20>>2] = $44;
-     u$9 = (_printf(((1792)|0),($vararg_buffer18|0))|0);
+     (_printf(((1792)|0),($vararg_buffer18|0))|0);
      $1 = 1;
      $423 = $1;
      STACKTOP = sp;return ($423|0);
@@ -10733,7 +10729,7 @@ function _test_histogram_with_images($context,$queue,$device) {
    $37 = HEAP32[$err>>2]|0;
    $vararg_ptr17 = ($vararg_buffer15);
    HEAP32[$vararg_ptr17>>2] = $37;
-   u$8 = (_printf(((296)|0),($vararg_buffer15|0))|0);
+   (_printf(((296)|0),($vararg_buffer15|0))|0);
    $1 = 1;
    $423 = $1;
    STACKTOP = sp;return ($423|0);
@@ -10742,7 +10738,7 @@ function _test_histogram_with_images($context,$queue,$device) {
  $19 = HEAP32[$err>>2]|0;
  $vararg_ptr9 = ($vararg_buffer7);
  HEAP32[$vararg_ptr9>>2] = $19;
- u$4 = (_printf(((176)|0),($vararg_buffer7|0))|0);
+ (_printf(((176)|0),($vararg_buffer7|0))|0);
  $1 = 1;
  $423 = $1;
  STACKTOP = sp;return ($423|0);
@@ -10753,7 +10749,7 @@ function _main($argc,$argv) {
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0;
  var $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0;
  var $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $context = 0, $device = 0, $err = 0, $extensions_string = 0, $param_value_size_ret = 0, $queue = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, $vararg_buffer6 = 0, $vararg_buffer9 = 0;
- var $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast5 = 0, $vararg_lifetime_bitcast7 = 0, $vararg_ptr = 0, $vararg_ptr11 = 0, $vararg_ptr3 = 0, $vararg_ptr8 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0;
+ var $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast5 = 0, $vararg_lifetime_bitcast7 = 0, $vararg_ptr = 0, $vararg_ptr11 = 0, $vararg_ptr3 = 0, $vararg_ptr8 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer9 = sp;
@@ -10780,7 +10776,7 @@ function _main($argc,$argv) {
   $7 = HEAP32[$err>>2]|0;
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $7;
-  u$0 = (_printf(((1976)|0),($vararg_buffer|0))|0);
+  (_printf(((1976)|0),($vararg_buffer|0))|0);
   $1 = 1;
   $49 = $1;
   STACKTOP = sp;return ($49|0);
@@ -10794,7 +10790,7 @@ function _main($argc,$argv) {
   $12 = HEAP32[$err>>2]|0;
   $vararg_ptr3 = ($vararg_buffer1);
   HEAP32[$vararg_ptr3>>2] = $12;
-  u$1 = (_printf(((2008)|0),($vararg_buffer1|0))|0);
+  (_printf(((2008)|0),($vararg_buffer1|0))|0);
   $1 = 1;
   $49 = $1;
   STACKTOP = sp;return ($49|0);
@@ -10805,14 +10801,14 @@ function _main($argc,$argv) {
  $15 = HEAP32[$device>>2]|0;
  $16 = HEAP32[$param_value_size_ret>>2]|0;
  $17 = $extensions_string;
- u$2 = (_clGetDeviceInfo(($15|0),4144,($16|0),($17|0),(0|0))|0);
+ (_clGetDeviceInfo(($15|0),4144,($16|0),($17|0),(0|0))|0);
  $18 = $extensions_string;
  $19 = (_strstr(($18|0),((2040)|0))|0);
  $20 = ($19|0)!=(0|0);
  if (!($20)) {
   $21 = $extensions_string;
   _free($21);
-  u$3 = (_printf(((2072)|0),($vararg_buffer4|0))|0);
+  (_printf(((2072)|0),($vararg_buffer4|0))|0);
   $1 = 1;
   $49 = $1;
   STACKTOP = sp;return ($49|0);
@@ -10864,9 +10860,9 @@ function _main($argc,$argv) {
       STACKTOP = sp;return ($49|0);
      } else {
       $47 = $queue;
-      u$6 = (_clReleaseCommandQueue(($47|0))|0);
+      (_clReleaseCommandQueue(($47|0))|0);
       $48 = $context;
-      u$7 = (_clReleaseContext(($48|0))|0);
+      (_clReleaseContext(($48|0))|0);
       $1 = 0;
       $49 = $1;
       STACKTOP = sp;return ($49|0);
@@ -10876,7 +10872,7 @@ function _main($argc,$argv) {
    $36 = HEAP32[$err>>2]|0;
    $vararg_ptr11 = ($vararg_buffer9);
    HEAP32[$vararg_ptr11>>2] = $36;
-   u$5 = (_printf(((2200)|0),($vararg_buffer9|0))|0);
+   (_printf(((2200)|0),($vararg_buffer9|0))|0);
    $1 = 1;
    $49 = $1;
    STACKTOP = sp;return ($49|0);
@@ -10885,7 +10881,7 @@ function _main($argc,$argv) {
  $28 = HEAP32[$err>>2]|0;
  $vararg_ptr8 = ($vararg_buffer6);
  HEAP32[$vararg_ptr8>>2] = $28;
- u$4 = (_printf(((2168)|0),($vararg_buffer6|0))|0);
+ (_printf(((2168)|0),($vararg_buffer6|0))|0);
  $1 = 1;
  $49 = $1;
  STACKTOP = sp;return ($49|0);
@@ -10964,7 +10960,7 @@ function _malloc($bytes) {
  var $RP$0$i17 = 0, $RP$0$i17$phi = 0, $T$0$c$i$i = 0, $T$0$c7$i$i = 0, $T$0$lcssa$i = 0, $T$0$lcssa$i$i = 0, $T$0$lcssa$i28$i = 0, $T$013$i$i = 0, $T$013$i$i$phi = 0, $T$024$i = 0, $T$024$i$phi = 0, $T$051$i$i = 0, $T$051$i$i$phi = 0, $br$0$i = 0, $cond$i = 0, $cond$i$i = 0, $cond$i21 = 0, $exitcond$i$i = 0, $i$02$i$i = 0, $i$02$i$i$phi = 0;
  var $idx$0$i = 0, $mem$0 = 0, $nb$0 = 0, $notlhs$i = 0, $notrhs$i = 0, $oldfirst$0$i$i = 0, $or$cond$i = 0, $or$cond$i29 = 0, $or$cond1$i = 0, $or$cond10$i = 0, $or$cond19$i = 0, $or$cond2$i = 0, $or$cond49$i = 0, $or$cond5$i = 0, $or$cond6$i = 0, $or$cond8$not$i = 0, $or$cond9$i = 0, $qsize$0$i$i = 0, $rsize$0$i = 0, $rsize$0$i15 = 0;
  var $rsize$1$i = 0, $rsize$2$i = 0, $rsize$3$lcssa$i = 0, $rsize$329$i = 0, $rsize$329$i$phi = 0, $rst$0$i = 0, $rst$1$i = 0, $sizebits$0$i = 0, $sp$0$i$i = 0, $sp$0$i$i$i = 0, $sp$075$i = 0, $sp$168$i = 0, $ssize$0$$i = 0, $ssize$0$i = 0, $ssize$1$i = 0, $ssize$2$i = 0, $t$0$i = 0, $t$0$i14 = 0, $t$1$i = 0, $t$2$ph$i = 0;
- var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0, u$0 = 0;
+ var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0;
  sp = STACKTOP;
  $1 = ($bytes>>>0)<(245);
  do {
@@ -12380,7 +12376,7 @@ function _malloc($bytes) {
        $692 = (_sbrk(($690|0))|0);
        $693 = ($692|0)==((-1)|0);
        if ($693) {
-        u$0 = (_sbrk(($681|0))|0);
+        (_sbrk(($681|0))|0);
         $tsize$0323841$i = $tsize$0$i;
         break L291;
        } else {
@@ -14387,7 +14383,7 @@ function _free($mem) {
    $350 = HEAP32[$349>>2]|0;
    $351 = $350 & -8;
    $352 = ($351|0)==($psize$1|0);
-   L204: do {
+   L205: do {
     if ($352) {
      $T$0$lcssa = $344;
     } else {
@@ -14408,7 +14404,7 @@ function _free($mem) {
       $358 = ($357|0)==($psize$1|0);
       if ($358) {
        $T$0$lcssa = $361;
-       break L204;
+       break L205;
       } else {
        $T$056$phi = $361;$K19$057 = $354;$T$056 = $T$056$phi;
       }
@@ -14794,4 +14790,4 @@ run();
 
 
 
-//@ sourceMappingURL=osx_histogram.js.map
+//# sourceMappingURL=osx_histogram.js.map

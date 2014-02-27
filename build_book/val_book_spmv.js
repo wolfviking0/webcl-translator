@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_spmv.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_spmv.data';
     var REMOTE_PACKAGE_SIZE = 40949;
-    var PACKAGE_UUID = 'a57bed4b-e1e4-45c2-8ac8-bd493e5e108c';
+    var PACKAGE_UUID = '587cf756-2e8e-4650-98d7-e186268e79ad';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -6138,7 +6138,9 @@ function copyTempDouble(ptr) {
   function _fileno(stream) {
       // int fileno(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
-      return FS.getStreamFromPtr(stream).fd;
+      stream = FS.getStreamFromPtr(stream);
+      if (!stream) return -1;
+      return stream.fd;
     }function _fwrite(ptr, size, nitems, stream) {
       // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
@@ -9047,9 +9049,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  var $vararg_lifetime_bitcast85 = 0, $vararg_lifetime_bitcast88 = 0, $vararg_lifetime_bitcast9 = 0, $vararg_lifetime_bitcast90 = 0, $vararg_lifetime_bitcast93 = 0, $vararg_lifetime_bitcast96 = 0, $vararg_ptr = 0, $vararg_ptr101 = 0, $vararg_ptr102 = 0, $vararg_ptr105 = 0, $vararg_ptr106 = 0, $vararg_ptr109 = 0, $vararg_ptr110 = 0, $vararg_ptr113 = 0, $vararg_ptr114 = 0, $vararg_ptr12 = 0, $vararg_ptr13 = 0, $vararg_ptr14 = 0, $vararg_ptr17 = 0, $vararg_ptr18 = 0;
  var $vararg_ptr21 = 0, $vararg_ptr22 = 0, $vararg_ptr25 = 0, $vararg_ptr26 = 0, $vararg_ptr29 = 0, $vararg_ptr3 = 0, $vararg_ptr30 = 0, $vararg_ptr33 = 0, $vararg_ptr34 = 0, $vararg_ptr37 = 0, $vararg_ptr38 = 0, $vararg_ptr4 = 0, $vararg_ptr41 = 0, $vararg_ptr42 = 0, $vararg_ptr45 = 0, $vararg_ptr48 = 0, $vararg_ptr49 = 0, $vararg_ptr5 = 0, $vararg_ptr50 = 0, $vararg_ptr53 = 0;
  var $vararg_ptr56 = 0, $vararg_ptr57 = 0, $vararg_ptr6 = 0, $vararg_ptr60 = 0, $vararg_ptr61 = 0, $vararg_ptr64 = 0, $vararg_ptr65 = 0, $vararg_ptr66 = 0, $vararg_ptr67 = 0, $vararg_ptr7 = 0, $vararg_ptr70 = 0, $vararg_ptr71 = 0, $vararg_ptr74 = 0, $vararg_ptr75 = 0, $vararg_ptr78 = 0, $vararg_ptr79 = 0, $vararg_ptr82 = 0, $vararg_ptr83 = 0, $vararg_ptr86 = 0, $vararg_ptr91 = 0;
- var $vararg_ptr94 = 0, $vararg_ptr97 = 0, $vararg_ptr98 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0, u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0, u$2 = 0, u$20 = 0, u$21 = 0;
- var u$22 = 0, u$23 = 0, u$24 = 0, u$25 = 0, u$26 = 0, u$27 = 0, u$28 = 0, u$29 = 0, u$3 = 0, u$30 = 0, u$31 = 0, u$32 = 0, u$33 = 0, u$34 = 0, u$35 = 0, u$36 = 0, u$37 = 0, u$38 = 0, u$39 = 0, u$4 = 0;
- var u$40 = 0, u$41 = 0, u$42 = 0, u$43 = 0, u$44 = 0, u$45 = 0, u$46 = 0, u$5 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vararg_ptr94 = 0, $vararg_ptr97 = 0, $vararg_ptr98 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer115 = sp;
@@ -9156,7 +9156,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $18 = HEAP32[$17>>2]|0;
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $18;
-  u$0 = (_printf(((16)|0),($vararg_buffer|0))|0);
+  (_printf(((16)|0),($vararg_buffer|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9180,7 +9180,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $26 = (5)!=($25|0);
  if ($26) {
   $27 = HEAP32[(_stderr)>>2]|0;
-  u$1 = (_fprintf(($27|0),((80)|0),($vararg_buffer8|0))|0);
+  (_fprintf(($27|0),((80)|0),($vararg_buffer8|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9206,7 +9206,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  HEAP32[$vararg_ptr13>>2] = $38;
  $vararg_ptr14 = (($vararg_buffer10) + 8|0);
  HEAP32[$vararg_ptr14>>2] = $41;
- u$2 = (_fscanf(($32|0),((144)|0),($vararg_buffer10|0))|0);
+ (_fscanf(($32|0),((144)|0),($vararg_buffer10|0))|0);
  $42 = $raw_ix;
  $43 = $preferred_alignment;
  $44 = $2;
@@ -9214,7 +9214,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $46 = HEAP32[$45>>2]|0;
  $47 = HEAP32[$46>>2]|0;
  $48 = $47<<2;
- u$3 = (_posix_memalign($42,$43,$48)|0);
+ (_posix_memalign($42,$43,$48)|0);
  $49 = HEAP32[$raw_ix>>2]|0;
  $50 = ($49|0)==(0|0);
  if ($50) {
@@ -9232,7 +9232,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$59>>2] = 0;
   $vararg_ptr18 = (($vararg_buffer15) + 8|0);
   HEAP32[$vararg_ptr18>>2] = (200);
-  u$4 = (_printf(((160)|0),($vararg_buffer15|0))|0);
+  (_printf(((160)|0),($vararg_buffer15|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9243,7 +9243,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $64 = HEAP32[$63>>2]|0;
  $65 = HEAP32[$64>>2]|0;
  $66 = $65<<2;
- u$5 = (_posix_memalign($60,$61,$66)|0);
+ (_posix_memalign($60,$61,$66)|0);
  $67 = HEAP32[$raw_iy>>2]|0;
  $68 = ($67|0)==(0|0);
  if ($68) {
@@ -9261,7 +9261,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$77>>2] = 0;
   $vararg_ptr22 = (($vararg_buffer19) + 8|0);
   HEAP32[$vararg_ptr22>>2] = (208);
-  u$6 = (_printf(((160)|0),($vararg_buffer19|0))|0);
+  (_printf(((160)|0),($vararg_buffer19|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9272,7 +9272,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $82 = HEAP32[$81>>2]|0;
  $83 = HEAP32[$82>>2]|0;
  $84 = $83<<2;
- u$7 = (_posix_memalign($78,$79,$84)|0);
+ (_posix_memalign($78,$79,$84)|0);
  $85 = HEAP32[$raw_data>>2]|0;
  $86 = ($85|0)==(0|0);
  if ($86) {
@@ -9290,7 +9290,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$95>>2] = 0;
   $vararg_ptr26 = (($vararg_buffer23) + 8|0);
   HEAP32[$vararg_ptr26>>2] = (216);
-  u$8 = (_printf(((160)|0),($vararg_buffer23|0))|0);
+  (_printf(((160)|0),($vararg_buffer23|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9301,7 +9301,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $100 = HEAP32[$99>>2]|0;
  $101 = HEAP32[$100>>2]|0;
  $102 = $101<<2;
- u$9 = (_posix_memalign($96,$97,$102)|0);
+ (_posix_memalign($96,$97,$102)|0);
  $103 = HEAP32[$line_data_array>>2]|0;
  $104 = ($103|0)==(0|0);
  if ($104) {
@@ -9319,7 +9319,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$113>>2] = 0;
   $vararg_ptr30 = (($vararg_buffer27) + 8|0);
   HEAP32[$vararg_ptr30>>2] = (232);
-  u$10 = (_printf(((160)|0),($vararg_buffer27|0))|0);
+  (_printf(((160)|0),($vararg_buffer27|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9330,7 +9330,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $118 = HEAP32[$117>>2]|0;
  $119 = HEAP32[$118>>2]|0;
  $120 = $119<<2;
- u$11 = (_posix_memalign($114,$115,$120)|0);
+ (_posix_memalign($114,$115,$120)|0);
  $121 = HEAP32[$line_x_index_array>>2]|0;
  $122 = ($121|0)==(0|0);
  if ($122) {
@@ -9348,7 +9348,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$131>>2] = 0;
   $vararg_ptr34 = (($vararg_buffer31) + 8|0);
   HEAP32[$vararg_ptr34>>2] = (248);
-  u$12 = (_printf(((160)|0),($vararg_buffer31|0))|0);
+  (_printf(((160)|0),($vararg_buffer31|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9359,7 +9359,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
  $136 = HEAP32[$135>>2]|0;
  $137 = HEAP32[$136>>2]|0;
  $138 = $137<<2;
- u$13 = (_posix_memalign($132,$133,$138)|0);
+ (_posix_memalign($132,$133,$138)|0);
  $139 = HEAP32[$count_array>>2]|0;
  $140 = ($139|0)==(0|0);
  if ($140) {
@@ -9377,7 +9377,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$149>>2] = 0;
   $vararg_ptr38 = (($vararg_buffer35) + 8|0);
   HEAP32[$vararg_ptr38>>2] = (272);
-  u$14 = (_printf(((160)|0),($vararg_buffer35|0))|0);
+  (_printf(((160)|0),($vararg_buffer35|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9419,7 +9419,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$vararg_ptr41>>2] = $ix;
   $vararg_ptr42 = (($vararg_buffer39) + 4|0);
   HEAP32[$vararg_ptr42>>2] = $iy;
-  u$15 = (_fscanf(($167|0),((288)|0),($vararg_buffer39|0))|0);
+  (_fscanf(($167|0),((288)|0),($vararg_buffer39|0))|0);
   $168 = $i;
   $169 = ($168|0)==(0);
   if ($169) {
@@ -9433,7 +9433,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    $174 = $inputMTX;
    $vararg_ptr45 = ($vararg_buffer43);
    HEAP32[$vararg_ptr45>>2] = $double_data;
-   u$16 = (_fscanf(($174|0),((296)|0),($vararg_buffer43|0))|0);
+   (_fscanf(($174|0),((296)|0),($vararg_buffer43|0))|0);
    $175 = +HEAPF64[$double_data>>3];
    $176 = $175;
    $data = $176;
@@ -9531,7 +9531,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
      HEAP32[$vararg_ptr49>>2] = $230;
      $vararg_ptr50 = (($vararg_buffer46) + 8|0);
      HEAP32[$vararg_ptr50>>2] = $231;
-     u$17 = (_printf(((304)|0),($vararg_buffer46|0))|0);
+     (_printf(((304)|0),($vararg_buffer46|0))|0);
     }
     $232 = HEAP32[$iy>>2]|0;
     $curry = $232;
@@ -9547,7 +9547,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $237 = $explicit_zero_count;
   $vararg_ptr53 = ($vararg_buffer51);
   HEAP32[$vararg_ptr53>>2] = $237;
-  u$18 = (_printf(((376)|0),($vararg_buffer51|0))|0);
+  (_printf(((376)|0),($vararg_buffer51|0))|0);
  }
  $238 = $actual_non_zero;
  $239 = $2;
@@ -9576,7 +9576,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $255 = (($254) + ($253<<2)|0);
   $256 = HEAP32[$255>>2]|0;
   $257 = $256<<2;
-  u$19 = (_posix_memalign($251,$252,$257)|0);
+  (_posix_memalign($251,$252,$257)|0);
   $258 = $i;
   $259 = HEAP32[$line_data_array>>2]|0;
   $260 = (($259) + ($258<<2)|0);
@@ -9596,7 +9596,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $279 = (($278) + ($277<<2)|0);
   $280 = HEAP32[$279>>2]|0;
   $281 = $280<<2;
-  u$21 = (_posix_memalign($275,$276,$281)|0);
+  (_posix_memalign($275,$276,$281)|0);
   $282 = $i;
   $283 = HEAP32[$line_x_index_array>>2]|0;
   $284 = (($283) + ($282<<2)|0);
@@ -9629,7 +9629,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$271>>2] = 0;
   $vararg_ptr57 = (($vararg_buffer54) + 8|0);
   HEAP32[$vararg_ptr57>>2] = (408);
-  u$20 = (_printf(((160)|0),($vararg_buffer54|0))|0);
+  (_printf(((160)|0),($vararg_buffer54|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9648,7 +9648,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$295>>2] = 0;
   $vararg_ptr61 = (($vararg_buffer58) + 8|0);
   HEAP32[$vararg_ptr61>>2] = (432);
-  u$22 = (_printf(((160)|0),($vararg_buffer58|0))|0);
+  (_printf(((160)|0),($vararg_buffer58|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -9852,7 +9852,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   HEAP32[$vararg_ptr66>>2] = $460;
   $vararg_ptr67 = (($vararg_buffer62) + 12|0);
   HEAPF64[tempDoublePtr>>3]=$461;HEAP32[$vararg_ptr67>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr67+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  u$23 = (_printf(((456)|0),($vararg_buffer62|0))|0);
+  (_printf(((456)|0),($vararg_buffer62|0))|0);
   $462 = $2;
   $463 = (($462) + 40|0);
   $464 = HEAP32[$463>>2]|0;
@@ -9923,7 +9923,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $518 = HEAP32[$517>>2]|0;
   $519 = HEAP32[$518>>2]|0;
   $520 = $519<<2;
-  u$24 = (_posix_memalign($514,$515,$520)|0);
+  (_posix_memalign($514,$515,$520)|0);
   $521 = $2;
   $522 = (($521) + 20|0);
   $523 = HEAP32[$522>>2]|0;
@@ -9944,7 +9944,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$534>>2] = 0;
    $vararg_ptr71 = (($vararg_buffer68) + 8|0);
    HEAP32[$vararg_ptr71>>2] = (504);
-   u$25 = (_printf(((160)|0),($vararg_buffer68|0))|0);
+   (_printf(((160)|0),($vararg_buffer68|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -9959,7 +9959,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $543 = HEAP32[$542>>2]|0;
   $544 = (($543) + 1)|0;
   $545 = $544<<2;
-  u$26 = (_posix_memalign($538,$539,$545)|0);
+  (_posix_memalign($538,$539,$545)|0);
   $546 = $2;
   $547 = (($546) + 16|0);
   $548 = HEAP32[$547>>2]|0;
@@ -9981,7 +9981,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$560>>2] = 0;
    $vararg_ptr75 = (($vararg_buffer72) + 8|0);
    HEAP32[$vararg_ptr75>>2] = (520);
-   u$27 = (_printf(((160)|0),($vararg_buffer72|0))|0);
+   (_printf(((160)|0),($vararg_buffer72|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -9996,7 +9996,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $569 = HEAP32[$568>>2]|0;
   $570 = (($569) + 1)|0;
   $571 = $570<<2;
-  u$28 = (_posix_memalign($564,$565,$571)|0);
+  (_posix_memalign($564,$565,$571)|0);
   $572 = $2;
   $573 = (($572) + 12|0);
   $574 = HEAP32[$573>>2]|0;
@@ -10018,7 +10018,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$586>>2] = 0;
    $vararg_ptr79 = (($vararg_buffer76) + 8|0);
    HEAP32[$vararg_ptr79>>2] = (536);
-   u$29 = (_printf(((160)|0),($vararg_buffer76|0))|0);
+   (_printf(((160)|0),($vararg_buffer76|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -10419,7 +10419,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    $876 = $nslabs;
    $877 = (($876) + 1)|0;
    $878 = $877<<2;
-   u$30 = (_posix_memalign($874,$875,$878)|0);
+   (_posix_memalign($874,$875,$878)|0);
    $879 = $2;
    $880 = (($879) + 32|0);
    $881 = HEAP32[$880>>2]|0;
@@ -10438,7 +10438,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
     HEAP32[$890>>2] = 0;
     $vararg_ptr83 = (($vararg_buffer80) + 8|0);
     HEAP32[$vararg_ptr83>>2] = (552);
-    u$31 = (_printf(((160)|0),($vararg_buffer80|0))|0);
+    (_printf(((160)|0),($vararg_buffer80|0))|0);
     _exit(1);
     // unreachable;
    }
@@ -10619,7 +10619,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
     if ($1019) {
      $vararg_ptr86 = ($vararg_buffer84);
      HEAP32[$vararg_ptr86>>2] = 1024;
-     u$32 = (_printf(((568)|0),($vararg_buffer84|0))|0);
+     (_printf(((568)|0),($vararg_buffer84|0))|0);
      $1020 = $2;
      $1021 = (($1020) + 88|0);
      $1022 = HEAP32[$1021>>2]|0;
@@ -10631,7 +10631,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
     $1026 = HEAP32[$1025>>2]|0;
     $1027 = ($1026|0)<(16);
     if ($1027) {
-     u$33 = (_printf(((640)|0),($vararg_buffer87|0))|0);
+     (_printf(((640)|0),($vararg_buffer87|0))|0);
      $1028 = $2;
      $1029 = (($1028) + 88|0);
      $1030 = HEAP32[$1029>>2]|0;
@@ -10677,7 +10677,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
      $1061 = HEAP32[$1060>>2]|0;
      $vararg_ptr91 = ($vararg_buffer89);
      HEAP32[$vararg_ptr91>>2] = $1061;
-     u$34 = (_printf(((712)|0),($vararg_buffer89|0))|0);
+     (_printf(((712)|0),($vararg_buffer89|0))|0);
     }
     $1062 = $2;
     $1063 = (($1062) + 88|0);
@@ -10713,7 +10713,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
      $1086 = HEAP32[$1085>>2]|0;
      $vararg_ptr94 = ($vararg_buffer92);
      HEAP32[$vararg_ptr94>>2] = $1086;
-     u$35 = (_printf(((784)|0),($vararg_buffer92|0))|0);
+     (_printf(((784)|0),($vararg_buffer92|0))|0);
     }
     $1087 = $2;
     $1088 = (($1087) + 28|0);
@@ -10772,7 +10772,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
     $1133 = $nslabs;
     $1134 = (($1133) + 1)|0;
     $1135 = $1134<<2;
-    u$36 = (_posix_memalign($1131,$1132,$1135)|0);
+    (_posix_memalign($1131,$1132,$1135)|0);
     $1136 = $2;
     $1137 = (($1136) + 32|0);
     $1138 = HEAP32[$1137>>2]|0;
@@ -10791,7 +10791,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
      HEAP32[$1147>>2] = 0;
      $vararg_ptr98 = (($vararg_buffer95) + 8|0);
      HEAP32[$vararg_ptr98>>2] = (864);
-     u$37 = (_printf(((160)|0),($vararg_buffer95|0))|0);
+     (_printf(((160)|0),($vararg_buffer95|0))|0);
      _exit(1);
      // unreachable;
     }
@@ -10872,7 +10872,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
     $1204 = $nslabs;
     $1205 = (($1204) + 1)|0;
     $1206 = $1205<<2;
-    u$38 = (_posix_memalign($1202,$1203,$1206)|0);
+    (_posix_memalign($1202,$1203,$1206)|0);
     $1207 = $2;
     $1208 = (($1207) + 32|0);
     $1209 = HEAP32[$1208>>2]|0;
@@ -10891,7 +10891,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
      HEAP32[$1218>>2] = 0;
      $vararg_ptr102 = (($vararg_buffer99) + 8|0);
      HEAP32[$vararg_ptr102>>2] = (864);
-     u$39 = (_printf(((160)|0),($vararg_buffer99|0))|0);
+     (_printf(((160)|0),($vararg_buffer99|0))|0);
      _exit(1);
      // unreachable;
     }
@@ -10986,7 +10986,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $1281 = HEAP32[$1280>>2]|0;
   $1282 = (($1281) + 1)|0;
   $1283 = $1282<<2;
-  u$40 = (_posix_memalign($1276,$1277,$1283)|0);
+  (_posix_memalign($1276,$1277,$1283)|0);
   $1284 = HEAP32[$row_start>>2]|0;
   $1285 = ($1284|0)==(0|0);
   if ($1285) {
@@ -11005,7 +11005,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$1295>>2] = 0;
    $vararg_ptr106 = (($vararg_buffer103) + 8|0);
    HEAP32[$vararg_ptr106>>2] = (888);
-   u$41 = (_printf(((160)|0),($vararg_buffer103|0))|0);
+   (_printf(((160)|0),($vararg_buffer103|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -11016,7 +11016,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $1300 = HEAP32[$1299>>2]|0;
   $1301 = HEAP32[$1300>>2]|0;
   $1302 = $1301<<2;
-  u$42 = (_posix_memalign($1296,$1297,$1302)|0);
+  (_posix_memalign($1296,$1297,$1302)|0);
   $1303 = HEAP32[$row_curr>>2]|0;
   $1304 = ($1303|0)==(0|0);
   if ($1304) {
@@ -11034,7 +11034,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$1313>>2] = 0;
    $vararg_ptr110 = (($vararg_buffer107) + 8|0);
    HEAP32[$vararg_ptr110>>2] = (904);
-   u$43 = (_printf(((160)|0),($vararg_buffer107|0))|0);
+   (_printf(((160)|0),($vararg_buffer107|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -11089,7 +11089,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
   $1349 = $temp_count;
   $1350 = (($1349>>>0) / 2)&-1;
   $1351 = $1350<<7;
-  u$44 = (_posix_memalign($1347,$1348,$1351)|0);
+  (_posix_memalign($1347,$1348,$1351)|0);
   $1352 = $2;
   $1353 = (($1352) + 4|0);
   $1354 = HEAP32[$1353>>2]|0;
@@ -11108,7 +11108,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    HEAP32[$1363>>2] = 0;
    $vararg_ptr114 = (($vararg_buffer111) + 8|0);
    HEAP32[$vararg_ptr114>>2] = (920);
-   u$45 = (_printf(((160)|0),($vararg_buffer111|0))|0);
+   (_printf(((160)|0),($vararg_buffer111|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -12217,7 +12217,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
    $i = $2163;
   }
   if ((label|0) == 306) {
-   u$46 = (_printf(((936)|0),($vararg_buffer115|0))|0);
+   (_printf(((936)|0),($vararg_buffer115|0))|0);
    $1 = -1;
    $2352 = $1;
    STACKTOP = sp;return ($2352|0);
@@ -12465,8 +12465,7 @@ function __Z10matrix_genP18_matrix_gen_struct($mgs) {
 function __Z5usagev() {
  var $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer13 = 0, $vararg_buffer15 = 0, $vararg_buffer17 = 0, $vararg_buffer19 = 0, $vararg_buffer21 = 0, $vararg_buffer23 = 0, $vararg_buffer25 = 0, $vararg_buffer27 = 0, $vararg_buffer29 = 0, $vararg_buffer3 = 0, $vararg_buffer31 = 0, $vararg_buffer33 = 0, $vararg_buffer35 = 0, $vararg_buffer37 = 0, $vararg_buffer39 = 0, $vararg_buffer41 = 0, $vararg_buffer5 = 0;
  var $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast12 = 0, $vararg_lifetime_bitcast14 = 0, $vararg_lifetime_bitcast16 = 0, $vararg_lifetime_bitcast18 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast20 = 0, $vararg_lifetime_bitcast22 = 0, $vararg_lifetime_bitcast24 = 0, $vararg_lifetime_bitcast26 = 0, $vararg_lifetime_bitcast28 = 0, $vararg_lifetime_bitcast30 = 0, $vararg_lifetime_bitcast32 = 0, $vararg_lifetime_bitcast34 = 0, $vararg_lifetime_bitcast36 = 0, $vararg_lifetime_bitcast38 = 0, $vararg_lifetime_bitcast4 = 0;
- var $vararg_lifetime_bitcast40 = 0, $vararg_lifetime_bitcast42 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0, u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0, u$2 = 0, u$20 = 0;
- var u$21 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0, u$8 = 0, u$9 = 0;
+ var $vararg_lifetime_bitcast40 = 0, $vararg_lifetime_bitcast42 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer41 = sp;
@@ -12513,28 +12512,28 @@ function __Z5usagev() {
  $vararg_lifetime_bitcast2 = $vararg_buffer1;
  $vararg_buffer = STACKTOP; STACKTOP = STACKTOP + 8|0;
  $vararg_lifetime_bitcast = $vararg_buffer;
- u$0 = (_printf(((944)|0),($vararg_buffer|0))|0);
- u$1 = (_printf(((952)|0),($vararg_buffer1|0))|0);
- u$2 = (_printf(((944)|0),($vararg_buffer3|0))|0);
- u$3 = (_printf(((1024)|0),($vararg_buffer5|0))|0);
- u$4 = (_printf(((944)|0),($vararg_buffer7|0))|0);
- u$5 = (_printf(((1104)|0),($vararg_buffer9|0))|0);
- u$6 = (_printf(((944)|0),($vararg_buffer11|0))|0);
- u$7 = (_printf(((1120)|0),($vararg_buffer13|0))|0);
- u$8 = (_printf(((1184)|0),($vararg_buffer15|0))|0);
- u$9 = (_printf(((1248)|0),($vararg_buffer17|0))|0);
- u$10 = (_printf(((944)|0),($vararg_buffer19|0))|0);
- u$11 = (_printf(((1320)|0),($vararg_buffer21|0))|0);
- u$12 = (_printf(((944)|0),($vararg_buffer23|0))|0);
- u$13 = (_printf(((1392)|0),($vararg_buffer25|0))|0);
- u$14 = (_printf(((1456)|0),($vararg_buffer27|0))|0);
- u$15 = (_printf(((944)|0),($vararg_buffer29|0))|0);
- u$16 = (_printf(((1536)|0),($vararg_buffer31|0))|0);
- u$17 = (_printf(((944)|0),($vararg_buffer33|0))|0);
- u$18 = (_printf(((1592)|0),($vararg_buffer35|0))|0);
- u$19 = (_printf(((944)|0),($vararg_buffer37|0))|0);
- u$20 = (_printf(((1688)|0),($vararg_buffer39|0))|0);
- u$21 = (_printf(((944)|0),($vararg_buffer41|0))|0);
+ (_printf(((944)|0),($vararg_buffer|0))|0);
+ (_printf(((952)|0),($vararg_buffer1|0))|0);
+ (_printf(((944)|0),($vararg_buffer3|0))|0);
+ (_printf(((1024)|0),($vararg_buffer5|0))|0);
+ (_printf(((944)|0),($vararg_buffer7|0))|0);
+ (_printf(((1104)|0),($vararg_buffer9|0))|0);
+ (_printf(((944)|0),($vararg_buffer11|0))|0);
+ (_printf(((1120)|0),($vararg_buffer13|0))|0);
+ (_printf(((1184)|0),($vararg_buffer15|0))|0);
+ (_printf(((1248)|0),($vararg_buffer17|0))|0);
+ (_printf(((944)|0),($vararg_buffer19|0))|0);
+ (_printf(((1320)|0),($vararg_buffer21|0))|0);
+ (_printf(((944)|0),($vararg_buffer23|0))|0);
+ (_printf(((1392)|0),($vararg_buffer25|0))|0);
+ (_printf(((1456)|0),($vararg_buffer27|0))|0);
+ (_printf(((944)|0),($vararg_buffer29|0))|0);
+ (_printf(((1536)|0),($vararg_buffer31|0))|0);
+ (_printf(((944)|0),($vararg_buffer33|0))|0);
+ (_printf(((1592)|0),($vararg_buffer35|0))|0);
+ (_printf(((944)|0),($vararg_buffer37|0))|0);
+ (_printf(((1688)|0),($vararg_buffer39|0))|0);
+ (_printf(((944)|0),($vararg_buffer41|0))|0);
  STACKTOP = sp;return;
 }
 function _main($argc,$argv) {
@@ -12634,12 +12633,7 @@ function _main($argc,$argv) {
  var $vararg_ptr23 = 0, $vararg_ptr230 = 0, $vararg_ptr231 = 0, $vararg_ptr234 = 0, $vararg_ptr235 = 0, $vararg_ptr238 = 0, $vararg_ptr241 = 0, $vararg_ptr244 = 0, $vararg_ptr245 = 0, $vararg_ptr248 = 0, $vararg_ptr249 = 0, $vararg_ptr252 = 0, $vararg_ptr253 = 0, $vararg_ptr256 = 0, $vararg_ptr257 = 0, $vararg_ptr26 = 0, $vararg_ptr260 = 0, $vararg_ptr261 = 0, $vararg_ptr264 = 0, $vararg_ptr265 = 0;
  var $vararg_ptr268 = 0, $vararg_ptr269 = 0, $vararg_ptr27 = 0, $vararg_ptr272 = 0, $vararg_ptr273 = 0, $vararg_ptr276 = 0, $vararg_ptr277 = 0, $vararg_ptr280 = 0, $vararg_ptr281 = 0, $vararg_ptr284 = 0, $vararg_ptr285 = 0, $vararg_ptr288 = 0, $vararg_ptr289 = 0, $vararg_ptr3 = 0, $vararg_ptr34 = 0, $vararg_ptr39 = 0, $vararg_ptr4 = 0, $vararg_ptr40 = 0, $vararg_ptr43 = 0, $vararg_ptr44 = 0;
  var $vararg_ptr47 = 0, $vararg_ptr48 = 0, $vararg_ptr51 = 0, $vararg_ptr52 = 0, $vararg_ptr55 = 0, $vararg_ptr56 = 0, $vararg_ptr59 = 0, $vararg_ptr60 = 0, $vararg_ptr63 = 0, $vararg_ptr64 = 0, $vararg_ptr67 = 0, $vararg_ptr68 = 0, $vararg_ptr7 = 0, $vararg_ptr75 = 0, $vararg_ptr76 = 0, $vararg_ptr81 = 0, $vararg_ptr82 = 0, $vararg_ptr85 = 0, $vararg_ptr86 = 0, $vararg_ptr89 = 0;
- var $vararg_ptr90 = 0, $vararg_ptr93 = 0, $vararg_ptr94 = 0, $vararg_ptr97 = 0, $vararg_ptr98 = 0, $x_index_array = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0, u$0 = 0, u$1 = 0, u$10 = 0, u$100 = 0, u$11 = 0, u$12 = 0, u$13 = 0, u$14 = 0, u$15 = 0;
- var u$16 = 0, u$17 = 0, u$18 = 0, u$19 = 0, u$2 = 0, u$20 = 0, u$21 = 0, u$22 = 0, u$23 = 0, u$24 = 0, u$25 = 0, u$26 = 0, u$27 = 0, u$28 = 0, u$29 = 0, u$3 = 0, u$30 = 0, u$31 = 0, u$32 = 0, u$33 = 0;
- var u$34 = 0, u$35 = 0, u$36 = 0, u$37 = 0, u$38 = 0, u$39 = 0, u$4 = 0, u$40 = 0, u$41 = 0, u$42 = 0, u$43 = 0, u$44 = 0, u$45 = 0, u$46 = 0, u$47 = 0, u$48 = 0, u$49 = 0, u$5 = 0, u$50 = 0, u$51 = 0;
- var u$52 = 0, u$53 = 0, u$54 = 0, u$55 = 0, u$56 = 0, u$57 = 0, u$58 = 0, u$59 = 0, u$6 = 0, u$60 = 0, u$61 = 0, u$62 = 0, u$63 = 0, u$64 = 0, u$65 = 0, u$66 = 0, u$67 = 0, u$68 = 0, u$69 = 0, u$7 = 0;
- var u$70 = 0, u$71 = 0, u$72 = 0, u$73 = 0, u$74 = 0, u$75 = 0, u$76 = 0, u$77 = 0, u$78 = 0, u$79 = 0, u$8 = 0, u$80 = 0, u$81 = 0, u$82 = 0, u$83 = 0, u$84 = 0, u$85 = 0, u$86 = 0, u$87 = 0, u$88 = 0;
- var u$89 = 0, u$9 = 0, u$90 = 0, u$91 = 0, u$92 = 0, u$93 = 0, u$94 = 0, u$95 = 0, u$96 = 0, u$97 = 0, u$98 = 0, u$99 = 0;
+ var $vararg_ptr90 = 0, $vararg_ptr93 = 0, $vararg_ptr94 = 0, $vararg_ptr97 = 0, $vararg_ptr98 = 0, $x_index_array = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0, u$0 = 0, u$1 = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer286 = sp;
@@ -12871,7 +12865,7 @@ function _main($argc,$argv) {
  $13 = ($12);
  $14 = HEAP32[$13>>2]|0;
  $15 = (_dirname(($14|0))|0);
- u$0 = (_chdir(($15|0))|0);
+ (_chdir(($15|0))|0);
  L1: while(1) {
   $16 = $2;
   $17 = $3;
@@ -12936,10 +12930,10 @@ function _main($argc,$argv) {
    $37 = HEAP32[(4552)>>2]|0;
    $38 = (_strlen(($37|0))|0);
    $39 = (1 + ($38))|0;
-   u$1 = (_posix_memalign((1760),128,$39)|0);
+   (_posix_memalign((1760),128,$39)|0);
    $40 = HEAP32[(1760)>>2]|0;
    $41 = HEAP32[(4552)>>2]|0;
-   u$2 = (_strcpy(($40|0),($41|0))|0);
+   (_strcpy(($40|0),($41|0))|0);
    break;
   }
   case 63:  {
@@ -12965,11 +12959,11 @@ function _main($argc,$argv) {
    HEAP32[$vararg_ptr3>>2] = $46;
    $vararg_ptr4 = (($vararg_buffer1) + 4|0);
    HEAP32[$vararg_ptr4>>2] = $50;
-   u$4 = (_printf(((2128)|0),($vararg_buffer1|0))|0);
+   (_printf(((2128)|0),($vararg_buffer1|0))|0);
    $51 = $name;
    $vararg_ptr7 = ($vararg_buffer5);
    HEAP32[$vararg_ptr7>>2] = $51;
-   u$5 = (_printf(((2088)|0),($vararg_buffer5|0))|0);
+   (_printf(((2088)|0),($vararg_buffer5|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -12984,13 +12978,13 @@ function _main($argc,$argv) {
    HEAP32[$vararg_ptr10>>2] = (2184);
    $vararg_ptr11 = (($vararg_buffer8) + 4|0);
    HEAP32[$vararg_ptr11>>2] = $55;
-   u$6 = (_printf(((2160)|0),($vararg_buffer8|0))|0);
+   (_printf(((2160)|0),($vararg_buffer8|0))|0);
   }
   $56 = $platform;
   $57 = HEAP32[$preferred_alignment>>2]|0;
   $58 = HEAP32[$num_platforms>>2]|0;
   $59 = ($58*28)|0;
-  u$7 = (_posix_memalign($56,$57,$59)|0);
+  (_posix_memalign($56,$57,$59)|0);
   $60 = HEAP32[$platform>>2]|0;
   $61 = ($60|0)==(0|0);
   if ($61) {
@@ -13005,7 +12999,7 @@ function _main($argc,$argv) {
    HEAP32[$67>>2] = 0;
    $vararg_ptr15 = (($vararg_buffer12) + 8|0);
    HEAP32[$vararg_ptr15>>2] = (2256);
-   u$8 = (_printf(((2216)|0),($vararg_buffer12|0))|0);
+   (_printf(((2216)|0),($vararg_buffer12|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13013,7 +13007,7 @@ function _main($argc,$argv) {
   $69 = HEAP32[$preferred_alignment>>2]|0;
   $70 = HEAP32[$num_platforms>>2]|0;
   $71 = $70<<2;
-  u$9 = (_posix_memalign($68,$69,$71)|0);
+  (_posix_memalign($68,$69,$71)|0);
   $72 = HEAP32[$buffer>>2]|0;
   $73 = ($72|0)==(0|0);
   if ($73) {
@@ -13028,7 +13022,7 @@ function _main($argc,$argv) {
    HEAP32[$79>>2] = 0;
    $vararg_ptr19 = (($vararg_buffer16) + 8|0);
    HEAP32[$vararg_ptr19>>2] = (2272);
-   u$10 = (_printf(((2216)|0),($vararg_buffer16|0))|0);
+   (_printf(((2216)|0),($vararg_buffer16|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13036,7 +13030,7 @@ function _main($argc,$argv) {
   $81 = HEAP32[$preferred_alignment>>2]|0;
   $82 = HEAP32[$num_platforms>>2]|0;
   $83 = $82<<2;
-  u$11 = (_posix_memalign($80,$81,$83)|0);
+  (_posix_memalign($80,$81,$83)|0);
   $84 = HEAP32[$temp_platform_id_array>>2]|0;
   $85 = ($84|0)==(0|0);
   if ($85) {
@@ -13051,7 +13045,7 @@ function _main($argc,$argv) {
    HEAP32[$91>>2] = 0;
    $vararg_ptr23 = (($vararg_buffer20) + 8|0);
    HEAP32[$vararg_ptr23>>2] = (2280);
-   u$12 = (_printf(((2216)|0),($vararg_buffer20|0))|0);
+   (_printf(((2216)|0),($vararg_buffer20|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13067,7 +13061,7 @@ function _main($argc,$argv) {
    HEAP32[$vararg_ptr26>>2] = (2304);
    $vararg_ptr27 = (($vararg_buffer24) + 4|0);
    HEAP32[$vararg_ptr27>>2] = $97;
-   u$13 = (_printf(((2160)|0),($vararg_buffer24|0))|0);
+   (_printf(((2160)|0),($vararg_buffer24|0))|0);
   }
   $i = 0;
   while(1) {
@@ -13093,8 +13087,8 @@ function _main($argc,$argv) {
   $111 = HEAP32[$temp_platform_id_array>>2]|0;
   $112 = $111;
   _free($112);
-  u$14 = (_printf(((2336)|0),($vararg_buffer28|0))|0);
-  u$15 = (_printf(((2352)|0),($vararg_buffer30|0))|0);
+  (_printf(((2336)|0),($vararg_buffer28|0))|0);
+  (_printf(((2352)|0),($vararg_buffer30|0))|0);
   $i = 0;
   while(1) {
    $113 = $i;
@@ -13109,12 +13103,12 @@ function _main($argc,$argv) {
    $119 = HEAP32[$118>>2]|0;
    $vararg_ptr34 = ($vararg_buffer32);
    HEAP32[$vararg_ptr34>>2] = $119;
-   u$16 = (_printf(((2368)|0),($vararg_buffer32|0))|0);
+   (_printf(((2368)|0),($vararg_buffer32|0))|0);
    $120 = $i;
    $121 = (($120) + 1)|0;
    $i = $121;
   }
-  u$17 = (_printf(((944)|0),($vararg_buffer35|0))|0);
+  (_printf(((944)|0),($vararg_buffer35|0))|0);
   $i = 0;
   while(1) {
    $122 = $i;
@@ -13139,7 +13133,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr39>>2] = (2376);
     $vararg_ptr40 = (($vararg_buffer37) + 4|0);
     HEAP32[$vararg_ptr40>>2] = $133;
-    u$18 = (_printf(((2160)|0),($vararg_buffer37|0))|0);
+    (_printf(((2160)|0),($vararg_buffer37|0))|0);
    }
    $134 = $i;
    $135 = HEAP32[$platform>>2]|0;
@@ -13147,7 +13141,7 @@ function _main($argc,$argv) {
    $137 = ($136);
    $138 = HEAP32[$preferred_alignment>>2]|0;
    $139 = HEAP32[$param_value_size_ret>>2]|0;
-   u$19 = (_posix_memalign($137,$138,$139)|0);
+   (_posix_memalign($137,$138,$139)|0);
    $140 = $i;
    $141 = HEAP32[$platform>>2]|0;
    $142 = (($141) + (($140*28)|0)|0);
@@ -13179,7 +13173,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr47>>2] = (2440);
     $vararg_ptr48 = (($vararg_buffer45) + 4|0);
     HEAP32[$vararg_ptr48>>2] = $165;
-    u$21 = (_printf(((2160)|0),($vararg_buffer45|0))|0);
+    (_printf(((2160)|0),($vararg_buffer45|0))|0);
    }
    $166 = $i;
    $167 = HEAP32[$platform>>2]|0;
@@ -13200,7 +13194,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr51>>2] = (2480);
     $vararg_ptr52 = (($vararg_buffer49) + 4|0);
     HEAP32[$vararg_ptr52>>2] = $178;
-    u$22 = (_printf(((2160)|0),($vararg_buffer49|0))|0);
+    (_printf(((2160)|0),($vararg_buffer49|0))|0);
    }
    $179 = $i;
    $180 = HEAP32[$platform>>2]|0;
@@ -13214,7 +13208,7 @@ function _main($argc,$argv) {
    $188 = (($187) + 8|0);
    $189 = HEAP32[$188>>2]|0;
    $190 = ($189*24)|0;
-   u$23 = (_posix_memalign($183,$184,$190)|0);
+   (_posix_memalign($183,$184,$190)|0);
    $191 = $i;
    $192 = HEAP32[$platform>>2]|0;
    $193 = (($192) + (($191*28)|0)|0);
@@ -13233,7 +13227,7 @@ function _main($argc,$argv) {
    $212 = (($211) + 8|0);
    $213 = HEAP32[$212>>2]|0;
    $214 = $213<<2;
-   u$25 = (_posix_memalign($207,$208,$214)|0);
+   (_posix_memalign($207,$208,$214)|0);
    $215 = HEAP32[$tmpdevices>>2]|0;
    $216 = ($215|0)==(0|0);
    if ($216) {
@@ -13261,7 +13255,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr63>>2] = (2560);
     $vararg_ptr64 = (($vararg_buffer61) + 4|0);
     HEAP32[$vararg_ptr64>>2] = $241;
-    u$27 = (_printf(((2160)|0),($vararg_buffer61|0))|0);
+    (_printf(((2160)|0),($vararg_buffer61|0))|0);
    }
    $j = 0;
    while(1) {
@@ -13316,7 +13310,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr67>>2] = (2600);
      $vararg_ptr68 = (($vararg_buffer65) + 4|0);
      HEAP32[$vararg_ptr68>>2] = $282;
-     u$28 = (_printf(((2160)|0),($vararg_buffer65|0))|0);
+     (_printf(((2160)|0),($vararg_buffer65|0))|0);
     }
     $283 = $j;
     $284 = (($283) + 1)|0;
@@ -13340,7 +13334,7 @@ function _main($argc,$argv) {
    HEAP32[$150>>2] = 0;
    $vararg_ptr44 = (($vararg_buffer41) + 8|0);
    HEAP32[$vararg_ptr44>>2] = (2424);
-   u$20 = (_printf(((2216)|0),($vararg_buffer41|0))|0);
+   (_printf(((2216)|0),($vararg_buffer41|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13360,7 +13354,7 @@ function _main($argc,$argv) {
    HEAP32[$206>>2] = 0;
    $vararg_ptr56 = (($vararg_buffer53) + 8|0);
    HEAP32[$vararg_ptr56>>2] = (2520);
-   u$24 = (_printf(((2216)|0),($vararg_buffer53|0))|0);
+   (_printf(((2216)|0),($vararg_buffer53|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13380,7 +13374,7 @@ function _main($argc,$argv) {
    HEAP32[$226>>2] = 0;
    $vararg_ptr60 = (($vararg_buffer57) + 8|0);
    HEAP32[$vararg_ptr60>>2] = (2544);
-   u$26 = (_printf(((2216)|0),($vararg_buffer57|0))|0);
+   (_printf(((2216)|0),($vararg_buffer57|0))|0);
    _exit(1);
    // unreachable;
   }
@@ -13575,9 +13569,9 @@ function _main($argc,$argv) {
          break;
         } else {
          $405 = HEAP32[(_stderr)>>2]|0;
-         u$29 = (_fprintf(($405|0),((2632)|0),($vararg_buffer69|0))|0);
+         (_fprintf(($405|0),((2632)|0),($vararg_buffer69|0))|0);
          $406 = HEAP32[(_stderr)>>2]|0;
-         u$30 = (_fflush(($406|0))|0);
+         (_fflush(($406|0))|0);
          _exit(1);
          // unreachable;
         }
@@ -13648,9 +13642,9 @@ function _main($argc,$argv) {
      $447 = ($446|0)==(0);
      if ($447) {
       $448 = HEAP32[(_stderr)>>2]|0;
-      u$31 = (_fprintf(($448|0),((2696)|0),($vararg_buffer71|0))|0);
+      (_fprintf(($448|0),((2696)|0),($vararg_buffer71|0))|0);
       $449 = HEAP32[(_stderr)>>2]|0;
-      u$32 = (_fflush(($449|0))|0);
+      (_fflush(($449|0))|0);
       _exit(1);
       // unreachable;
      } else {
@@ -13716,17 +13710,17 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr75>>2] = (2776);
     $vararg_ptr76 = (($vararg_buffer73) + 4|0);
     HEAP32[$vararg_ptr76>>2] = $495;
-    u$33 = (_printf(((2160)|0),($vararg_buffer73|0))|0);
+    (_printf(((2160)|0),($vararg_buffer73|0))|0);
    }
    $496 = HEAP32[(1744)>>2]|0;
    if ((($496|0) == 1)) {
     $497 = ($kernel_name);
     $498 = ($kernel_name_LS);
-    u$34 = (_strcpy(($497|0),($498|0))|0);
+    (_strcpy(($497|0),($498|0))|0);
    } else if ((($496|0) == 2)) {
     $499 = ($kernel_name);
     $500 = ($kernel_name_AWGC);
-    u$35 = (_strcpy(($499|0),($500|0))|0);
+    (_strcpy(($499|0),($500|0))|0);
    }
    $501 = ($kernel_source_file);
    $502 = (__ZL19load_program_sourcePKc($501)|0);
@@ -13735,7 +13729,7 @@ function _main($argc,$argv) {
    $504 = ($503|0)==(0|0);
    if ($504) {
     $505 = HEAP32[(_stderr)>>2]|0;
-    u$36 = (_fprintf(($505|0),((2792)|0),($vararg_buffer77|0))|0);
+    (_fprintf(($505|0),((2792)|0),($vararg_buffer77|0))|0);
     _exit(1);
     // unreachable;
    }
@@ -13758,7 +13752,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr81>>2] = (2848);
     $vararg_ptr82 = (($vararg_buffer79) + 4|0);
     HEAP32[$vararg_ptr82>>2] = $518;
-    u$37 = (_printf(((2160)|0),($vararg_buffer79|0))|0);
+    (_printf(((2160)|0),($vararg_buffer79|0))|0);
    }
    $519 = HEAP32[$kernel_source>>2]|0;
    _free($519);
@@ -13785,7 +13779,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr85>>2] = (2888);
     $vararg_ptr86 = (($vararg_buffer83) + 4|0);
     HEAP32[$vararg_ptr86>>2] = $536;
-    u$38 = (_printf(((2160)|0),($vararg_buffer83|0))|0);
+    (_printf(((2160)|0),($vararg_buffer83|0))|0);
    }
    $537 = $pdex;
    $538 = HEAP32[$platform>>2]|0;
@@ -13807,7 +13801,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr89>>2] = (2904);
     $vararg_ptr90 = (($vararg_buffer87) + 4|0);
     HEAP32[$vararg_ptr90>>2] = $550;
-    u$39 = (_printf(((2160)|0),($vararg_buffer87|0))|0);
+    (_printf(((2160)|0),($vararg_buffer87|0))|0);
    }
    $551 = $pdex;
    $552 = HEAP32[$platform>>2]|0;
@@ -13841,7 +13835,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr93>>2] = (2920);
     $vararg_ptr94 = (($vararg_buffer91) + 4|0);
     HEAP32[$vararg_ptr94>>2] = $576;
-    u$40 = (_printf(((2160)|0),($vararg_buffer91|0))|0);
+    (_printf(((2160)|0),($vararg_buffer91|0))|0);
    }
    $577 = $ddex;
    $578 = $pdex;
@@ -13862,7 +13856,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr97>>2] = (2944);
     $vararg_ptr98 = (($vararg_buffer95) + 4|0);
     HEAP32[$vararg_ptr98>>2] = $589;
-    u$41 = (_printf(((2160)|0),($vararg_buffer95|0))|0);
+    (_printf(((2160)|0),($vararg_buffer95|0))|0);
    }
    $590 = $ddex;
    $591 = $pdex;
@@ -13874,7 +13868,7 @@ function _main($argc,$argv) {
    $597 = (($596) + 20|0);
    $598 = HEAP32[$preferred_alignment>>2]|0;
    $599 = HEAP32[$param_value_size_ret>>2]|0;
-   u$42 = (_posix_memalign($597,$598,$599)|0);
+   (_posix_memalign($597,$598,$599)|0);
    $600 = $ddex;
    $601 = $pdex;
    $602 = HEAP32[$platform>>2]|0;
@@ -13896,7 +13890,7 @@ function _main($argc,$argv) {
     HEAP32[$614>>2] = 0;
     $vararg_ptr102 = (($vararg_buffer99) + 8|0);
     HEAP32[$vararg_ptr102>>2] = (2984);
-    u$43 = (_printf(((2216)|0),($vararg_buffer99|0))|0);
+    (_printf(((2216)|0),($vararg_buffer99|0))|0);
     _exit(1);
     // unreachable;
    }
@@ -13929,7 +13923,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr105>>2] = (3000);
     $vararg_ptr106 = (($vararg_buffer103) + 4|0);
     HEAP32[$vararg_ptr106>>2] = $637;
-    u$44 = (_printf(((2160)|0),($vararg_buffer103|0))|0);
+    (_printf(((2160)|0),($vararg_buffer103|0))|0);
    }
    $638 = HEAP32[(1744)>>2]|0;
    $639 = ($638|0)==(1);
@@ -13947,7 +13941,7 @@ function _main($argc,$argv) {
    HEAP32[$vararg_ptr109>>2] = $640;
    $vararg_ptr110 = (($vararg_buffer107) + 4|0);
    HEAP32[$vararg_ptr110>>2] = $649;
-   u$45 = (_printf(((3032)|0),($vararg_buffer107|0))|0);
+   (_printf(((3032)|0),($vararg_buffer107|0))|0);
    $650 = $ddex;
    $651 = $pdex;
    $652 = HEAP32[$platform>>2]|0;
@@ -13968,7 +13962,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr113>>2] = (3104);
     $vararg_ptr114 = (($vararg_buffer111) + 4|0);
     HEAP32[$vararg_ptr114>>2] = $663;
-    u$46 = (_printf(((2160)|0),($vararg_buffer111|0))|0);
+    (_printf(((2160)|0),($vararg_buffer111|0))|0);
    }
    $664 = HEAP32[$preferred_alignment>>2]|0;
    $665 = ($664>>>0)>(1024);
@@ -13988,13 +13982,13 @@ function _main($argc,$argv) {
    $675 = ($674);
    $676 = HEAP32[$675>>2]|0;
    $677 = $command_queue_properties;
-   u$47 = (_clGetDeviceInfo(($676|0),4138,8,($677|0),(0|0))|0);
+   (_clGetDeviceInfo(($676|0),4138,8,($677|0),(0|0))|0);
    $678 = $command_queue_properties;
    $679 = $678;
    $680 = HEAP32[$679>>2]|0;
    $681 = (($678) + 4)|0;
    $682 = $681;
-   u$48 = HEAP32[$682>>2]|0;
+   u$0 = HEAP32[$682>>2]|0;
    $683 = $680 & 1;
    $684 = $command_queue_properties;
    $685 = $684;
@@ -14028,7 +14022,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr117>>2] = (3152);
     $vararg_ptr118 = (($vararg_buffer115) + 4|0);
     HEAP32[$vararg_ptr118>>2] = $707;
-    u$49 = (_printf(((2160)|0),($vararg_buffer115|0))|0);
+    (_printf(((2160)|0),($vararg_buffer115|0))|0);
    }
    $708 = $ddex;
    $709 = $pdex;
@@ -14050,7 +14044,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr121>>2] = (3208);
     $vararg_ptr122 = (($vararg_buffer119) + 4|0);
     HEAP32[$vararg_ptr122>>2] = $721;
-    u$50 = (_printf(((2160)|0),($vararg_buffer119|0))|0);
+    (_printf(((2160)|0),($vararg_buffer119|0))|0);
    }
    $722 = $pdex;
    $723 = HEAP32[$platform>>2]|0;
@@ -14077,7 +14071,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr125>>2] = (3256);
     $vararg_ptr126 = (($vararg_buffer123) + 4|0);
     HEAP32[$vararg_ptr126>>2] = $740;
-    u$51 = (_printf(((2160)|0),($vararg_buffer123|0))|0);
+    (_printf(((2160)|0),($vararg_buffer123|0))|0);
    }
    $741 = $total_local_mem;
    $742 = $741;
@@ -14109,7 +14103,7 @@ function _main($argc,$argv) {
    $766 = ($765);
    $767 = HEAP32[$766>>2]|0;
    $768 = $max_compute_units;
-   u$52 = (_clGetDeviceInfo(($767|0),4098,4,($768|0),(0|0))|0);
+   (_clGetDeviceInfo(($767|0),4098,4,($768|0),(0|0))|0);
    HEAP32[$row_index_array>>2] = 0;
    HEAP32[$x_index_array>>2] = 0;
    HEAP32[$data_array>>2] = 0;
@@ -14155,7 +14149,7 @@ function _main($argc,$argv) {
    $791 = HEAP32[$790>>2]|0;
    $792 = (($789) + 4)|0;
    $793 = $792;
-   u$53 = HEAP32[$793>>2]|0;
+   u$1 = HEAP32[$793>>2]|0;
    $794 = (($mgs) + 68|0);
    HEAP32[$794>>2] = $791;
    $795 = (($mgs) + 72|0);
@@ -14303,14 +14297,14 @@ function _main($argc,$argv) {
      $893 = HEAP32[(1752)>>2]|0;
      $vararg_ptr129 = ($vararg_buffer127);
      HEAP32[$vararg_ptr129>>2] = $893;
-     u$54 = (_printf(((3312)|0),($vararg_buffer127|0))|0);
+     (_printf(((3312)|0),($vararg_buffer127|0))|0);
     }
    }
    $894 = $output_array_verify;
    $895 = HEAP32[$preferred_alignment>>2]|0;
    $896 = HEAP32[$nyround>>2]|0;
    $897 = $896<<2;
-   u$55 = (_posix_memalign($894,$895,$897)|0);
+   (_posix_memalign($894,$895,$897)|0);
    $898 = HEAP32[$output_array_verify>>2]|0;
    $899 = ($898|0)==(0|0);
    if ($899) {
@@ -14325,7 +14319,7 @@ function _main($argc,$argv) {
     HEAP32[$905>>2] = 0;
     $vararg_ptr133 = (($vararg_buffer130) + 8|0);
     HEAP32[$vararg_ptr133>>2] = (3392);
-    u$56 = (_printf(((2216)|0),($vararg_buffer130|0))|0);
+    (_printf(((2216)|0),($vararg_buffer130|0))|0);
     _exit(1);
     // unreachable;
    }
@@ -14333,9 +14327,9 @@ function _main($argc,$argv) {
    $907 = ($906|0)==(0|0);
    if ($907) {
     $908 = HEAP32[(_stderr)>>2]|0;
-    u$57 = (_fprintf(($908|0),((3416)|0),($vararg_buffer134|0))|0);
+    (_fprintf(($908|0),((3416)|0),($vararg_buffer134|0))|0);
     $909 = HEAP32[(_stderr)>>2]|0;
-    u$58 = (_fflush(($909|0))|0);
+    (_fflush(($909|0))|0);
     _exit(1);
     // unreachable;
    }
@@ -14358,7 +14352,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr138>>2] = (3464);
     $vararg_ptr139 = (($vararg_buffer136) + 4|0);
     HEAP32[$vararg_ptr139>>2] = $921;
-    u$59 = (_printf(((2160)|0),($vararg_buffer136|0))|0);
+    (_printf(((2160)|0),($vararg_buffer136|0))|0);
    }
    $922 = HEAP32[$memsize>>2]|0;
    $matrix_buffer_size = $922;
@@ -14378,7 +14372,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr142>>2] = (3496);
     $vararg_ptr143 = (($vararg_buffer140) + 4|0);
     HEAP32[$vararg_ptr143>>2] = $932;
-    u$60 = (_printf(((2160)|0),($vararg_buffer140|0))|0);
+    (_printf(((2160)|0),($vararg_buffer140|0))|0);
    }
    $933 = HEAP32[$nslabs_round>>2]|0;
    $934 = HEAP32[$slab_startrow>>2]|0;
@@ -14406,7 +14400,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr146>>2] = (3528);
     $vararg_ptr147 = (($vararg_buffer144) + 4|0);
     HEAP32[$vararg_ptr147>>2] = $951;
-    u$61 = (_printf(((2160)|0),($vararg_buffer144|0))|0);
+    (_printf(((2160)|0),($vararg_buffer144|0))|0);
    }
    $952 = $ddex;
    $953 = $pdex;
@@ -14430,7 +14424,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr150>>2] = (3560);
     $vararg_ptr151 = (($vararg_buffer148) + 4|0);
     HEAP32[$vararg_ptr151>>2] = $967;
-    u$62 = (_printf(((2160)|0),($vararg_buffer148|0))|0);
+    (_printf(((2160)|0),($vararg_buffer148|0))|0);
    }
    $968 = $ddex;
    $969 = $pdex;
@@ -14454,7 +14448,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr154>>2] = (3592);
     $vararg_ptr155 = (($vararg_buffer152) + 4|0);
     HEAP32[$vararg_ptr155>>2] = $983;
-    u$63 = (_printf(((2160)|0),($vararg_buffer152|0))|0);
+    (_printf(((2160)|0),($vararg_buffer152|0))|0);
    }
    $984 = $ddex;
    $985 = $pdex;
@@ -14478,7 +14472,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr158>>2] = (3624);
     $vararg_ptr159 = (($vararg_buffer156) + 4|0);
     HEAP32[$vararg_ptr159>>2] = $999;
-    u$64 = (_printf(((2160)|0),($vararg_buffer156|0))|0);
+    (_printf(((2160)|0),($vararg_buffer156|0))|0);
    }
    $1000 = $tilebuffer;
    $1001 = $1000;
@@ -14514,10 +14508,10 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr162>>2] = (3664);
     $vararg_ptr163 = (($vararg_buffer160) + 4|0);
     HEAP32[$vararg_ptr163>>2] = $1026;
-    u$65 = (_printf(((2160)|0),($vararg_buffer160|0))|0);
+    (_printf(((2160)|0),($vararg_buffer160|0))|0);
    }
    $1027 = ($events);
-   u$66 = (_clWaitForEvents(1,($1027|0))|0);
+   (_clWaitForEvents(1,($1027|0))|0);
    $i = 0;
    while(1) {
     $1028 = $i;
@@ -14568,7 +14562,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr166>>2] = (3704);
     $vararg_ptr167 = (($vararg_buffer164) + 4|0);
     HEAP32[$vararg_ptr167>>2] = $1061;
-    u$67 = (_printf(((2160)|0),($vararg_buffer164|0))|0);
+    (_printf(((2160)|0),($vararg_buffer164|0))|0);
    }
    $1062 = $ddex;
    $1063 = $pdex;
@@ -14593,10 +14587,10 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr170>>2] = (3744);
     $vararg_ptr171 = (($vararg_buffer168) + 4|0);
     HEAP32[$vararg_ptr171>>2] = $1078;
-    u$68 = (_printf(((2160)|0),($vararg_buffer168|0))|0);
+    (_printf(((2160)|0),($vararg_buffer168|0))|0);
    }
    $1079 = ($events);
-   u$69 = (_clWaitForEvents(2,($1079|0))|0);
+   (_clWaitForEvents(2,($1079|0))|0);
    $1080 = $pdex;
    $1081 = HEAP32[$platform>>2]|0;
    $1082 = (($1081) + (($1080*28)|0)|0);
@@ -14613,7 +14607,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr174>>2] = (3784);
     $vararg_ptr175 = (($vararg_buffer172) + 4|0);
     HEAP32[$vararg_ptr175>>2] = $1089;
-    u$70 = (_printf(((2160)|0),($vararg_buffer172|0))|0);
+    (_printf(((2160)|0),($vararg_buffer172|0))|0);
    }
    $1090 = $pdex;
    $1091 = HEAP32[$platform>>2]|0;
@@ -14631,7 +14625,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr178>>2] = (3808);
     $vararg_ptr179 = (($vararg_buffer176) + 4|0);
     HEAP32[$vararg_ptr179>>2] = $1099;
-    u$71 = (_printf(((2160)|0),($vararg_buffer176|0))|0);
+    (_printf(((2160)|0),($vararg_buffer176|0))|0);
    }
    $1100 = $pdex;
    $1101 = HEAP32[$platform>>2]|0;
@@ -14649,7 +14643,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr182>>2] = (3832);
     $vararg_ptr183 = (($vararg_buffer180) + 4|0);
     HEAP32[$vararg_ptr183>>2] = $1109;
-    u$72 = (_printf(((2160)|0),($vararg_buffer180|0))|0);
+    (_printf(((2160)|0),($vararg_buffer180|0))|0);
    }
    $1110 = $pdex;
    $1111 = HEAP32[$platform>>2]|0;
@@ -14667,7 +14661,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr186>>2] = (3856);
     $vararg_ptr187 = (($vararg_buffer184) + 4|0);
     HEAP32[$vararg_ptr187>>2] = $1119;
-    u$73 = (_printf(((2160)|0),($vararg_buffer184|0))|0);
+    (_printf(((2160)|0),($vararg_buffer184|0))|0);
    }
    $1120 = $pdex;
    $1121 = HEAP32[$platform>>2]|0;
@@ -14685,7 +14679,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr190>>2] = (3880);
     $vararg_ptr191 = (($vararg_buffer188) + 4|0);
     HEAP32[$vararg_ptr191>>2] = $1129;
-    u$74 = (_printf(((2160)|0),($vararg_buffer188|0))|0);
+    (_printf(((2160)|0),($vararg_buffer188|0))|0);
    }
    $1130 = HEAP32[(1744)>>2]|0;
    $1131 = ($1130|0)==(1);
@@ -14706,7 +14700,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr194>>2] = (3904);
      $vararg_ptr195 = (($vararg_buffer192) + 4|0);
      HEAP32[$vararg_ptr195>>2] = $1141;
-     u$75 = (_printf(((2160)|0),($vararg_buffer192|0))|0);
+     (_printf(((2160)|0),($vararg_buffer192|0))|0);
     }
     $1142 = $pdex;
     $1143 = HEAP32[$platform>>2]|0;
@@ -14724,7 +14718,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr198>>2] = (3928);
      $vararg_ptr199 = (($vararg_buffer196) + 4|0);
      HEAP32[$vararg_ptr199>>2] = $1151;
-     u$76 = (_printf(((2160)|0),($vararg_buffer196|0))|0);
+     (_printf(((2160)|0),($vararg_buffer196|0))|0);
     }
     $1152 = $pdex;
     $1153 = HEAP32[$platform>>2]|0;
@@ -14743,7 +14737,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr202>>2] = (3952);
      $vararg_ptr203 = (($vararg_buffer200) + 4|0);
      HEAP32[$vararg_ptr203>>2] = $1162;
-     u$77 = (_printf(((2160)|0),($vararg_buffer200|0))|0);
+     (_printf(((2160)|0),($vararg_buffer200|0))|0);
     }
    } else {
     $1163 = $pdex;
@@ -14762,7 +14756,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr206>>2] = (3904);
      $vararg_ptr207 = (($vararg_buffer204) + 4|0);
      HEAP32[$vararg_ptr207>>2] = $1172;
-     u$78 = (_printf(((2160)|0),($vararg_buffer204|0))|0);
+     (_printf(((2160)|0),($vararg_buffer204|0))|0);
     }
     $1173 = $pdex;
     $1174 = HEAP32[$platform>>2]|0;
@@ -14780,7 +14774,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr210>>2] = (3928);
      $vararg_ptr211 = (($vararg_buffer208) + 4|0);
      HEAP32[$vararg_ptr211>>2] = $1182;
-     u$79 = (_printf(((2160)|0),($vararg_buffer208|0))|0);
+     (_printf(((2160)|0),($vararg_buffer208|0))|0);
     }
     $1183 = $pdex;
     $1184 = HEAP32[$platform>>2]|0;
@@ -14800,7 +14794,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr214>>2] = (3952);
      $vararg_ptr215 = (($vararg_buffer212) + 4|0);
      HEAP32[$vararg_ptr215>>2] = $1194;
-     u$80 = (_printf(((2160)|0),($vararg_buffer212|0))|0);
+     (_printf(((2160)|0),($vararg_buffer212|0))|0);
     }
     $1195 = $pdex;
     $1196 = HEAP32[$platform>>2]|0;
@@ -14819,7 +14813,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr218>>2] = (3976);
      $vararg_ptr219 = (($vararg_buffer216) + 4|0);
      HEAP32[$vararg_ptr219>>2] = $1205;
-     u$81 = (_printf(((2160)|0),($vararg_buffer216|0))|0);
+     (_printf(((2160)|0),($vararg_buffer216|0))|0);
     }
     $1206 = $pdex;
     $1207 = HEAP32[$platform>>2]|0;
@@ -14838,7 +14832,7 @@ function _main($argc,$argv) {
      HEAP32[$vararg_ptr222>>2] = (4000);
      $vararg_ptr223 = (($vararg_buffer220) + 4|0);
      HEAP32[$vararg_ptr223>>2] = $1216;
-     u$82 = (_printf(((2160)|0),($vararg_buffer220|0))|0);
+     (_printf(((2160)|0),($vararg_buffer220|0))|0);
     }
    }
    $1217 = $ddex;
@@ -14869,10 +14863,10 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr226>>2] = (4024);
     $vararg_ptr227 = (($vararg_buffer224) + 4|0);
     HEAP32[$vararg_ptr227>>2] = $1238;
-    u$83 = (_printf(((2160)|0),($vararg_buffer224|0))|0);
+    (_printf(((2160)|0),($vararg_buffer224|0))|0);
    }
    $1239 = ($events);
-   u$84 = (_clWaitForEvents(1,($1239|0))|0);
+   (_clWaitForEvents(1,($1239|0))|0);
    $1240 = $ddex;
    $1241 = $pdex;
    $1242 = HEAP32[$platform>>2]|0;
@@ -14895,7 +14889,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr230>>2] = (3624);
     $vararg_ptr231 = (($vararg_buffer228) + 4|0);
     HEAP32[$vararg_ptr231>>2] = $1255;
-    u$85 = (_printf(((2160)|0),($vararg_buffer228|0))|0);
+    (_printf(((2160)|0),($vararg_buffer228|0))|0);
    }
    $1256 = $ddex;
    $1257 = $pdex;
@@ -14919,7 +14913,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr234>>2] = (3560);
     $vararg_ptr235 = (($vararg_buffer232) + 4|0);
     HEAP32[$vararg_ptr235>>2] = $1271;
-    u$86 = (_printf(((2160)|0),($vararg_buffer232|0))|0);
+    (_printf(((2160)|0),($vararg_buffer232|0))|0);
    }
    HEAP32[$rc>>2] = 0;
    $i = 0;
@@ -15047,7 +15041,7 @@ function _main($argc,$argv) {
    $1350 = $1348 / $1349;
    $vararg_ptr238 = ($vararg_buffer236);
    HEAPF64[tempDoublePtr>>3]=$1350;HEAP32[$vararg_ptr238>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr238+4>>2]=HEAP32[tempDoublePtr+4>>2];
-   u$87 = (_printf(((4048)|0),($vararg_buffer236|0))|0);
+   (_printf(((4048)|0),($vararg_buffer236|0))|0);
    $1351 = $diffsum;
    $1352 = $sum;
    $1353 = $1351 / $1352;
@@ -15058,7 +15052,7 @@ function _main($argc,$argv) {
    $1355 = HEAP32[(1760)>>2]|0;
    $vararg_ptr241 = ($vararg_buffer239);
    HEAP32[$vararg_ptr241>>2] = $1355;
-   u$88 = (_printf(((4072)|0),($vararg_buffer239|0))|0);
+   (_printf(((4072)|0),($vararg_buffer239|0))|0);
    $1356 = HEAP32[$rc>>2]|0;
    $retval = $1356;
    $1357 = $ddex;
@@ -15083,7 +15077,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr244>>2] = (4088);
     $vararg_ptr245 = (($vararg_buffer242) + 4|0);
     HEAP32[$vararg_ptr245>>2] = $1372;
-    u$89 = (_printf(((2160)|0),($vararg_buffer242|0))|0);
+    (_printf(((2160)|0),($vararg_buffer242|0))|0);
    }
    $1373 = $ddex;
    $1374 = $pdex;
@@ -15107,7 +15101,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr248>>2] = (4120);
     $vararg_ptr249 = (($vararg_buffer246) + 4|0);
     HEAP32[$vararg_ptr249>>2] = $1388;
-    u$90 = (_printf(((2160)|0),($vararg_buffer246|0))|0);
+    (_printf(((2160)|0),($vararg_buffer246|0))|0);
    }
    $1389 = $ddex;
    $1390 = $pdex;
@@ -15128,7 +15122,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr252>>2] = (4152);
     $vararg_ptr253 = (($vararg_buffer250) + 4|0);
     HEAP32[$vararg_ptr253>>2] = $1401;
-    u$91 = (_printf(((2160)|0),($vararg_buffer250|0))|0);
+    (_printf(((2160)|0),($vararg_buffer250|0))|0);
    }
    $1402 = ($events);
    $1403 = HEAP32[$1402>>2]|0;
@@ -15142,7 +15136,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr256>>2] = (4168);
     $vararg_ptr257 = (($vararg_buffer254) + 4|0);
     HEAP32[$vararg_ptr257>>2] = $1407;
-    u$92 = (_printf(((2160)|0),($vararg_buffer254|0))|0);
+    (_printf(((2160)|0),($vararg_buffer254|0))|0);
    }
    $1408 = (($events) + 4|0);
    $1409 = HEAP32[$1408>>2]|0;
@@ -15156,7 +15150,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr260>>2] = (4192);
     $vararg_ptr261 = (($vararg_buffer258) + 4|0);
     HEAP32[$vararg_ptr261>>2] = $1413;
-    u$93 = (_printf(((2160)|0),($vararg_buffer258|0))|0);
+    (_printf(((2160)|0),($vararg_buffer258|0))|0);
    }
    $1414 = HEAP32[$input_buffer>>2]|0;
    $1415 = (_clReleaseMemObject(($1414|0))|0);
@@ -15169,7 +15163,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr264>>2] = (4216);
     $vararg_ptr265 = (($vararg_buffer262) + 4|0);
     HEAP32[$vararg_ptr265>>2] = $1418;
-    u$94 = (_printf(((2160)|0),($vararg_buffer262|0))|0);
+    (_printf(((2160)|0),($vararg_buffer262|0))|0);
    }
    $1419 = HEAP32[$matrix_buffer>>2]|0;
    $1420 = (_clReleaseMemObject(($1419|0))|0);
@@ -15182,7 +15176,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr268>>2] = (4248);
     $vararg_ptr269 = (($vararg_buffer266) + 4|0);
     HEAP32[$vararg_ptr269>>2] = $1423;
-    u$95 = (_printf(((2160)|0),($vararg_buffer266|0))|0);
+    (_printf(((2160)|0),($vararg_buffer266|0))|0);
    }
    $1424 = HEAP32[$output_buffer>>2]|0;
    $1425 = (_clReleaseMemObject(($1424|0))|0);
@@ -15195,7 +15189,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr272>>2] = (4280);
     $vararg_ptr273 = (($vararg_buffer270) + 4|0);
     HEAP32[$vararg_ptr273>>2] = $1428;
-    u$96 = (_printf(((2160)|0),($vararg_buffer270|0))|0);
+    (_printf(((2160)|0),($vararg_buffer270|0))|0);
    }
    $1429 = $ddex;
    $1430 = $pdex;
@@ -15216,7 +15210,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr276>>2] = (4312);
     $vararg_ptr277 = (($vararg_buffer274) + 4|0);
     HEAP32[$vararg_ptr277>>2] = $1441;
-    u$97 = (_printf(((2160)|0),($vararg_buffer274|0))|0);
+    (_printf(((2160)|0),($vararg_buffer274|0))|0);
    }
    $1442 = $pdex;
    $1443 = HEAP32[$platform>>2]|0;
@@ -15233,7 +15227,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr280>>2] = (4336);
     $vararg_ptr281 = (($vararg_buffer278) + 4|0);
     HEAP32[$vararg_ptr281>>2] = $1450;
-    u$98 = (_printf(((2160)|0),($vararg_buffer278|0))|0);
+    (_printf(((2160)|0),($vararg_buffer278|0))|0);
    }
    $1451 = $pdex;
    $1452 = HEAP32[$platform>>2]|0;
@@ -15250,7 +15244,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr284>>2] = (4352);
     $vararg_ptr285 = (($vararg_buffer282) + 4|0);
     HEAP32[$vararg_ptr285>>2] = $1459;
-    u$99 = (_printf(((2160)|0),($vararg_buffer282|0))|0);
+    (_printf(((2160)|0),($vararg_buffer282|0))|0);
    }
    $1460 = $pdex;
    $1461 = HEAP32[$platform>>2]|0;
@@ -15267,7 +15261,7 @@ function _main($argc,$argv) {
     HEAP32[$vararg_ptr288>>2] = (4376);
     $vararg_ptr289 = (($vararg_buffer286) + 4|0);
     HEAP32[$vararg_ptr289>>2] = $1468;
-    u$100 = (_printf(((2160)|0),($vararg_buffer286|0))|0);
+    (_printf(((2160)|0),($vararg_buffer286|0))|0);
    }
    $1469 = HEAP32[$data_array>>2]|0;
    $1470 = $1469;
@@ -15353,7 +15347,7 @@ function _main($argc,$argv) {
   $42 = $name;
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $42;
-  u$3 = (_printf(((2088)|0),($vararg_buffer|0))|0);
+  (_printf(((2088)|0),($vararg_buffer|0))|0);
   _exit(1);
   // unreachable;
  }
@@ -15362,7 +15356,7 @@ function _main($argc,$argv) {
 function __ZL19load_program_sourcePKc($filename) {
  $filename = $filename|0;
  var $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $3 = 0;
- var $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fh = 0, $source = 0, $statbuf = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_ptr = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0;
+ var $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fh = 0, $source = 0, $statbuf = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_lifetime_bitcast = 0, $vararg_lifetime_bitcast2 = 0, $vararg_ptr = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 8|0;
  $vararg_buffer1 = sp;
@@ -15381,13 +15375,13 @@ function __ZL19load_program_sourcePKc($filename) {
   $8 = $2;
   $vararg_ptr = ($vararg_buffer);
   HEAP32[$vararg_ptr>>2] = $8;
-  u$0 = (_fprintf(($7|0),((4408)|0),($vararg_buffer|0))|0);
+  (_fprintf(($7|0),((4408)|0),($vararg_buffer|0))|0);
   $1 = 0;
   $26 = $1;
   STACKTOP = sp;return ($26|0);
  }
  $9 = $2;
- u$1 = (_stat(($9|0),($statbuf|0))|0);
+ (_stat(($9|0),($statbuf|0))|0);
  $10 = (($statbuf) + 36|0);
  $11 = HEAP32[$10>>2]|0;
  $12 = (($11) + 1)|0;
@@ -15397,7 +15391,7 @@ function __ZL19load_program_sourcePKc($filename) {
  $15 = ($14|0)==(0|0);
  if ($15) {
   $16 = HEAP32[(_stderr)>>2]|0;
-  u$2 = (_fprintf(($16|0),((4432)|0),($vararg_buffer1|0))|0);
+  (_fprintf(($16|0),((4432)|0),($vararg_buffer1|0))|0);
   $1 = 0;
   $26 = $1;
   STACKTOP = sp;return ($26|0);
@@ -15406,7 +15400,7 @@ function __ZL19load_program_sourcePKc($filename) {
   $18 = (($statbuf) + 36|0);
   $19 = HEAP32[$18>>2]|0;
   $20 = $fh;
-  u$3 = (_fread(($17|0),($19|0),1,($20|0))|0);
+  (_fread(($17|0),($19|0),1,($20|0))|0);
   $21 = (($statbuf) + 36|0);
   $22 = HEAP32[$21>>2]|0;
   $23 = $source;
@@ -15427,7 +15421,7 @@ function _getopt($argc,$argv,$optstring) {
  var $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0;
  var $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0;
  var $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $8 = 0, $9 = 0, $c = 0, $d = 0, $i$0$lcssa = 0, $i$04 = 0, $k$0 = 0, $or$cond = 0;
- var $or$cond3 = 0, label = 0, sp = 0, u$0 = 0, u$1 = 0, u$2 = 0, u$3 = 0, u$4 = 0, u$5 = 0, u$6 = 0, u$7 = 0;
+ var $or$cond3 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 16|0;
  $c = sp;
@@ -15465,11 +15459,11 @@ function _getopt($argc,$argv,$optstring) {
  }
  $12 = (($8) + 1|0);
  $13 = HEAP8[$12]|0;
- if ((($13<<24>>24) == 0)) {
+ if ((($13<<24>>24) == 45)) {
+  label = 7;
+ } else if ((($13<<24>>24) == 0)) {
   $$0 = -1;
   STACKTOP = sp;return ($$0|0);
- } else if ((($13<<24>>24) == 45)) {
-  label = 7;
  }
  do {
   if ((label|0) == 7) {
@@ -15564,10 +15558,10 @@ function _getopt($argc,$argv,$optstring) {
   }
   $54 = HEAP32[$argv>>2]|0;
   $55 = (_strlen(($54|0))|0);
-  u$0 = (_write(2,($54|0),($55|0))|0);
-  u$1 = (_write(2,((4488)|0),18)|0);
-  u$2 = (_write(2,($29|0),($k$0|0))|0);
-  u$3 = (_write(2,((4512)|0),1)|0);
+  (_write(2,($54|0),($55|0))|0);
+  (_write(2,((4488)|0),18)|0);
+  (_write(2,($29|0),($k$0|0))|0);
+  (_write(2,((4512)|0),1)|0);
   $$0 = 63;
   STACKTOP = sp;return ($$0|0);
  }
@@ -15607,10 +15601,10 @@ function _getopt($argc,$argv,$optstring) {
  }
  $66 = HEAP32[$argv>>2]|0;
  $67 = (_strlen(($66|0))|0);
- u$4 = (_write(2,($66|0),($67|0))|0);
- u$5 = (_write(2,((4520)|0),31)|0);
- u$6 = (_write(2,($29|0),($k$0|0))|0);
- u$7 = (_write(2,((4512)|0),1)|0);
+ (_write(2,($66|0),($67|0))|0);
+ (_write(2,((4520)|0),31)|0);
+ (_write(2,($29|0),($k$0|0))|0);
+ (_write(2,((4512)|0),1)|0);
  $$0 = 63;
  STACKTOP = sp;return ($$0|0);
 }
@@ -16016,7 +16010,7 @@ function _malloc($bytes) {
  var $RP$0$i17 = 0, $RP$0$i17$phi = 0, $T$0$c$i$i = 0, $T$0$c7$i$i = 0, $T$0$lcssa$i = 0, $T$0$lcssa$i$i = 0, $T$0$lcssa$i28$i = 0, $T$013$i$i = 0, $T$013$i$i$phi = 0, $T$024$i = 0, $T$024$i$phi = 0, $T$051$i$i = 0, $T$051$i$i$phi = 0, $br$0$i = 0, $cond$i = 0, $cond$i$i = 0, $cond$i21 = 0, $exitcond$i$i = 0, $i$02$i$i = 0, $i$02$i$i$phi = 0;
  var $idx$0$i = 0, $mem$0 = 0, $nb$0 = 0, $notlhs$i = 0, $notrhs$i = 0, $oldfirst$0$i$i = 0, $or$cond$i = 0, $or$cond$i29 = 0, $or$cond1$i = 0, $or$cond10$i = 0, $or$cond19$i = 0, $or$cond2$i = 0, $or$cond49$i = 0, $or$cond5$i = 0, $or$cond6$i = 0, $or$cond8$not$i = 0, $or$cond9$i = 0, $qsize$0$i$i = 0, $rsize$0$i = 0, $rsize$0$i15 = 0;
  var $rsize$1$i = 0, $rsize$2$i = 0, $rsize$3$lcssa$i = 0, $rsize$329$i = 0, $rsize$329$i$phi = 0, $rst$0$i = 0, $rst$1$i = 0, $sizebits$0$i = 0, $sp$0$i$i = 0, $sp$0$i$i$i = 0, $sp$075$i = 0, $sp$168$i = 0, $ssize$0$$i = 0, $ssize$0$i = 0, $ssize$1$i = 0, $ssize$2$i = 0, $t$0$i = 0, $t$0$i14 = 0, $t$1$i = 0, $t$2$ph$i = 0;
- var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0, u$0 = 0;
+ var $t$2$v$3$i = 0, $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0;
  sp = STACKTOP;
  $1 = ($bytes>>>0)<(245);
  do {
@@ -16381,7 +16375,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $199 = ($171|0)==(0|0);
-   L202: do {
+   L78: do {
     if (!($199)) {
      $200 = (($v$0$i) + 28|0);
      $201 = HEAP32[$200>>2]|0;
@@ -16400,7 +16394,7 @@ function _malloc($bytes) {
        $207 = HEAP32[(((4768) + 4|0))>>2]|0;
        $208 = $207 & $206;
        HEAP32[(((4768) + 4|0))>>2] = $208;
-       break L202;
+       break L78;
       } else {
        $209 = $171;
        $210 = HEAP32[(((4768) + 16|0))>>2]|0;
@@ -16420,7 +16414,7 @@ function _malloc($bytes) {
        }
        $216 = ($R$1$i|0)==(0|0);
        if ($216) {
-        break L202;
+        break L78;
        }
       }
      } while(0);
@@ -16602,7 +16596,7 @@ function _malloc($bytes) {
    $305 = (((4768) + ($idx$0$i<<2)|0) + 304|0);
    $306 = HEAP32[$305>>2]|0;
    $307 = ($306|0)==(0|0);
-   L9: do {
+   L126: do {
     if ($307) {
      $rsize$2$i = $279;$t$1$i = 0;$v$2$i = 0;
     } else {
@@ -16626,7 +16620,7 @@ function _malloc($bytes) {
        $318 = ($315|0)==($276|0);
        if ($318) {
         $rsize$2$i = $316;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-        break L9;
+        break L126;
        } else {
         $rsize$1$i = $316;$v$1$i = $t$0$i14;
        }
@@ -16833,7 +16827,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $411 = ($383|0)==(0|0);
-   L59: do {
+   L176: do {
     if (!($411)) {
      $412 = (($v$3$lcssa$i) + 28|0);
      $413 = HEAP32[$412>>2]|0;
@@ -16852,7 +16846,7 @@ function _malloc($bytes) {
        $419 = HEAP32[(((4768) + 4|0))>>2]|0;
        $420 = $419 & $418;
        HEAP32[(((4768) + 4|0))>>2] = $420;
-       break L59;
+       break L176;
       } else {
        $421 = $383;
        $422 = HEAP32[(((4768) + 16|0))>>2]|0;
@@ -16872,7 +16866,7 @@ function _malloc($bytes) {
        }
        $428 = ($R$1$i20|0)==(0|0);
        if ($428) {
-        break L59;
+        break L176;
        }
       }
      } while(0);
@@ -16927,7 +16921,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $449 = ($rsize$3$lcssa$i>>>0)<(16);
-   L87: do {
+   L204: do {
     if ($449) {
      $450 = (($rsize$3$lcssa$i) + ($276))|0;
      $451 = $450 | 3;
@@ -17083,7 +17077,7 @@ function _malloc($bytes) {
      $535 = HEAP32[$534>>2]|0;
      $536 = $535 & -8;
      $537 = ($536|0)==($rsize$3$lcssa$i|0);
-     L108: do {
+     L225: do {
       if ($537) {
        $T$0$lcssa$i = $529;
       } else {
@@ -17104,7 +17098,7 @@ function _malloc($bytes) {
         $543 = ($542|0)==($rsize$3$lcssa$i|0);
         if ($543) {
          $T$0$lcssa$i = $546;
-         break L108;
+         break L225;
         } else {
          $T$024$i$phi = $546;$K12$025$i = $539;$T$024$i = $T$024$i$phi;
         }
@@ -17129,7 +17123,7 @@ function _malloc($bytes) {
         $555 = (($376) + ($$sum13$i)|0);
         $556 = $555;
         HEAP32[$556>>2] = $484;
-        break L87;
+        break L204;
        }
       }
      } while(0);
@@ -17432,7 +17426,7 @@ function _malloc($bytes) {
        $692 = (_sbrk(($690|0))|0);
        $693 = ($692|0)==((-1)|0);
        if ($693) {
-        u$0 = (_sbrk(($681|0))|0);
+        (_sbrk(($681|0))|0);
         $tsize$0323841$i = $tsize$0$i;
         break L291;
        } else {
@@ -20165,7 +20159,7 @@ function _dispose_chunk($p,$psize) {
    $161 = (($160) + ($$02))|0;
    $162 = $140 >>> 3;
    $163 = ($140>>>0)<(256);
-   L100: do {
+   L101: do {
     if ($163) {
      $$sum18 = (($psize) + 8)|0;
      $164 = (($1) + ($$sum18)|0);
@@ -20347,7 +20341,7 @@ function _dispose_chunk($p,$psize) {
        $235 = HEAP32[(((4768) + 4|0))>>2]|0;
        $236 = $235 & $234;
        HEAP32[(((4768) + 4|0))>>2] = $236;
-       break L100;
+       break L101;
       } else {
        $237 = $194;
        $238 = HEAP32[(((4768) + 16|0))>>2]|0;
@@ -20367,7 +20361,7 @@ function _dispose_chunk($p,$psize) {
        }
        $244 = ($R7$1|0)==(0|0);
        if ($244) {
-        break L100;
+        break L101;
        }
       }
      } while(0);
@@ -22991,4 +22985,4 @@ run();
 
 
 
-//@ sourceMappingURL=val_book_spmv.js.map
+//# sourceMappingURL=val_book_spmv.js.map

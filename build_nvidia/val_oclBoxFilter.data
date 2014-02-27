@@ -65,8 +65,8 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
-    float4 _wcl_rgba;
     float4 _wcl_f4Sum;
+    float4 _wcl_rgba;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
