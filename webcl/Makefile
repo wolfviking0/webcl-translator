@@ -39,6 +39,7 @@ endef
 
 DEB=0
 VAL=0
+FAST=0
 
 ifeq ($(VAL),1)
 PREFIX = val_
@@ -56,11 +57,11 @@ NO_DEBUG = -03 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s WARN_ON_UN
 
 ifeq ($(DEB),1)
 MODE=$(DEBUG)
-EMCCDEBUG = EMCC_DEBUG
+EMCCDEBUG = EMCC_FAST_COMPILER=$(FAST) EMCC_DEBUG
 $(info ************  Mode DEBUG : Enabled ************)
 else
 MODE=$(NO_DEBUG)
-EMCCDEBUG = EMCCDEBUG
+EMCCDEBUG = EMCC_FAST_COMPILER=$(FAST) EMCCDEBUG
 $(info ************  Mode DEBUG : Disabled ************)
 endif
 
