@@ -233,7 +233,8 @@ def launch(parser,options):
     num_opt_enabled-=1
 
   # Paramater for makefile
-  param = " "
+  # param = " FAST=O "
+  param = ""
   if options.debug:
     param += " DEB=1 "
   

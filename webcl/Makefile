@@ -39,7 +39,7 @@ endef
 
 DEB=0
 VAL=0
-FAST=0
+FAST=1
 
 ifeq ($(VAL),1)
 PREFIX = val_
