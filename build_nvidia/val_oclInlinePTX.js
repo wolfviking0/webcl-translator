@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclInlinePTX.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclInlinePTX.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = 'b3747be5-1f9b-434e-930c-f440c95d9bcc';
+    var PACKAGE_UUID = '625d8728-5a95-48d1-966d-d83be13efb83';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

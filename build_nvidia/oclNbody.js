@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclNbody.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclNbody.data';
     var REMOTE_PACKAGE_SIZE = 12716;
-    var PACKAGE_UUID = '2cf518a5-19ee-4dac-839d-cc247b18444a';
+    var PACKAGE_UUID = '5aab667e-62f5-4c2b-ab1f-44d6cd387d42';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

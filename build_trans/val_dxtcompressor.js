@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dxtcompressor.data';
     var REMOTE_PACKAGE_SIZE = 1040453;
-    var PACKAGE_UUID = 'f91c4d0b-6cf7-4996-8bf4-16bc276b3c7c';
+    var PACKAGE_UUID = '92a298d9-4a0e-4e5b-9814-ba9da5d2f1bc';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

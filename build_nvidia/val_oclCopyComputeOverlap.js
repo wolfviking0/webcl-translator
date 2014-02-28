@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclCopyComputeOverlap.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclCopyComputeOverlap.data';
     var REMOTE_PACKAGE_SIZE = 10228;
-    var PACKAGE_UUID = 'b7d2df22-ba99-4340-8106-84c2f262c317';
+    var PACKAGE_UUID = '96ddfe5b-7216-4087-9d65-dc6ac7576428';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

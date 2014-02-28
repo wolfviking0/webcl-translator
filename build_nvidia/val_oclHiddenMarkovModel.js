@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclHiddenMarkovModel.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclHiddenMarkovModel.data';
     var REMOTE_PACKAGE_SIZE = 56145;
-    var PACKAGE_UUID = '1523ea64-e56d-483f-8f55-72cdfbb7c3e1';
+    var PACKAGE_UUID = 'f9e3296e-edec-4dc3-b9c4-aef6ea4e84af';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

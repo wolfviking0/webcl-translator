@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 35601;
-    var PACKAGE_UUID = '66d76905-3272-46fa-9819-4181a49f162e';
+    var PACKAGE_UUID = 'b780ad73-45e1-4e6e-bfa9-fefc96cc2df5';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

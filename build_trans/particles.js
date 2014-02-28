@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/particles.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'particles.data';
     var REMOTE_PACKAGE_SIZE = 1603;
-    var PACKAGE_UUID = '31ca9c68-b6b5-44ce-8a4a-7b811579bb4e';
+    var PACKAGE_UUID = '39aca202-1df2-41d1-aa86-ae81ccb881a3';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclVolumeRender.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclVolumeRender.data';
     var REMOTE_PACKAGE_SIZE = 49445;
-    var PACKAGE_UUID = '1c180525-9ef7-4adc-976b-b487558096fb';
+    var PACKAGE_UUID = '76b2650b-cc96-4471-977c-a5dd8f6b8d53';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

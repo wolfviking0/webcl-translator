@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclRadixSort.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclRadixSort.data';
     var REMOTE_PACKAGE_SIZE = 169544;
-    var PACKAGE_UUID = 'bca2f4ff-7971-4613-8369-374ef51aae41';
+    var PACKAGE_UUID = '001934a0-7abc-4103-a929-7d009759bc61';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

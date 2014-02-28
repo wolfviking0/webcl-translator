@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_spmv.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_spmv.data';
     var REMOTE_PACKAGE_SIZE = 40949;
-    var PACKAGE_UUID = '716e3fec-0bba-4ada-afbe-daabb12b284a';
+    var PACKAGE_UUID = 'a7cd16d5-0d40-4031-8fc9-e320677fd17c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

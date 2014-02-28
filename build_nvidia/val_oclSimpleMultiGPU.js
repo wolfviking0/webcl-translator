@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclSimpleMultiGPU.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclSimpleMultiGPU.data';
     var REMOTE_PACKAGE_SIZE = 7652;
-    var PACKAGE_UUID = 'f274b80d-9d28-4651-8cfa-386c89bbd879';
+    var PACKAGE_UUID = 'c519fc4c-194a-4938-9f78-e6d060e765dc';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclHistogram.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclHistogram.data';
     var REMOTE_PACKAGE_SIZE = 10074;
-    var PACKAGE_UUID = 'f2194e07-6d77-43eb-ab3b-b2115d0cc942';
+    var PACKAGE_UUID = 'ac4f07a1-84a1-42cd-892d-83cfb444960f';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

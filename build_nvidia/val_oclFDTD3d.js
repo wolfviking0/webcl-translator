@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclFDTD3d.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclFDTD3d.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '54116235-f626-4a19-b4be-e8097768740c';
+    var PACKAGE_UUID = 'c128d5ff-163e-484c-8c03-ac61f7a0ebbb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

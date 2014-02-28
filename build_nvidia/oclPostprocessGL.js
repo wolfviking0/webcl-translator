@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclPostprocessGL.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclPostprocessGL.data';
     var REMOTE_PACKAGE_SIZE = 4487;
-    var PACKAGE_UUID = '89bbfaaa-813d-43a3-9bfa-f0d83bf559c9';
+    var PACKAGE_UUID = 'dd6a440c-2be8-4dd1-b2a7-acf872330cf3';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

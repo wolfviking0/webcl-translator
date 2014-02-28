@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/eventprofiling.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'eventprofiling.data';
     var REMOTE_PACKAGE_SIZE = 338;
-    var PACKAGE_UUID = '6f348135-59cb-4735-9fc8-286934be8a9c';
+    var PACKAGE_UUID = '2e1a64ab-8fe6-42e4-ac1e-bc68576d7014';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

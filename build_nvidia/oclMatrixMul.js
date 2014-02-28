@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclMatrixMul.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclMatrixMul.data';
     var REMOTE_PACKAGE_SIZE = 3944;
-    var PACKAGE_UUID = '4b75c690-8448-47cd-97f5-572921a38832';
+    var PACKAGE_UUID = 'b6ac1c44-4245-49c9-9f09-1a2a481e7e7c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_hello_world.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_hello_world.data';
     var REMOTE_PACKAGE_SIZE = 9431;
-    var PACKAGE_UUID = 'fa927bcb-0884-418c-9bff-653499970c38';
+    var PACKAGE_UUID = '3d7d585d-c806-4b0b-8ebf-d3ddcec2c473';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

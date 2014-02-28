@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 12318;
-    var PACKAGE_UUID = '19fb9058-c02c-4452-a584-884473c9ab79';
+    var PACKAGE_UUID = 'c98b1c22-1c35-420d-8073-52d89cf0d1f2';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
