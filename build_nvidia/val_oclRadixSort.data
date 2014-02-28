@@ -281,8 +281,8 @@ typedef struct {
     uint4 _wcl_rank;
     uint4 _wcl_lsb;
     uint4 _wcl_r;
-    uint4 _wcl_key;
     uint2 _wcl_radix2;
+    uint4 _wcl_key;
     __local uint *_wcl_sKeys1;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
