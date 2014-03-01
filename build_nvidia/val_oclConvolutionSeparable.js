@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclConvolutionSeparable.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclConvolutionSeparable.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '016b75d4-8c12-47ef-a604-b60541c8717e';
+    var PACKAGE_UUID = '3ad41c5c-9243-4f19-8809-7c96d60fae95';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -7617,24 +7617,33 @@ function copyTempDouble(ptr) {
         // Canvas event setup
   
         var canvas = Module['canvas'];
+        
+        // forced aspect ratio can be enabled by defining 'forcedAspectRatio' on Module
+        // Module['forcedAspectRatio'] = 4 / 3;
+        
         canvas.requestPointerLock = canvas['requestPointerLock'] ||
                                     canvas['mozRequestPointerLock'] ||
-                                    canvas['webkitRequestPointerLock'];
+                                    canvas['webkitRequestPointerLock'] ||
+                                    canvas['msRequestPointerLock'] ||
+                                    function(){};
         canvas.exitPointerLock = document['exitPointerLock'] ||
                                  document['mozExitPointerLock'] ||
                                  document['webkitExitPointerLock'] ||
+                                 document['msExitPointerLock'] ||
                                  function(){}; // no-op if function does not exist
         canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
   
         function pointerLockChange() {
           Browser.pointerLock = document['pointerLockElement'] === canvas ||
                                 document['mozPointerLockElement'] === canvas ||
-                                document['webkitPointerLockElement'] === canvas;
+                                document['webkitPointerLockElement'] === canvas ||
+                                document['msPointerLockElement'] === canvas;
         }
   
         document.addEventListener('pointerlockchange', pointerLockChange, false);
         document.addEventListener('mozpointerlockchange', pointerLockChange, false);
         document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+        document.addEventListener('mspointerlockchange', pointerLockChange, false);
   
         if (Module['elementPointerLock']) {
           canvas.addEventListener("click", function(ev) {
@@ -7703,22 +7712,35 @@ function copyTempDouble(ptr) {
         if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
   
         var canvas = Module['canvas'];
+        var canvasContainer = canvas.parentNode;
         function fullScreenChange() {
           Browser.isFullScreen = false;
           if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
                document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
-               document['fullScreenElement'] || document['fullscreenElement']) === canvas) {
+               document['fullScreenElement'] || document['fullscreenElement'] ||
+               document['msFullScreenElement'] || document['msFullscreenElement'] ||
+               document['webkitCurrentFullScreenElement']) === canvasContainer) {
             canvas.cancelFullScreen = document['cancelFullScreen'] ||
                                       document['mozCancelFullScreen'] ||
-                                      document['webkitCancelFullScreen'];
+                                      document['webkitCancelFullScreen'] ||
+                                      document['msExitFullscreen'] ||
+                                      document['exitFullscreen'] ||
+                                      function() {};
             canvas.cancelFullScreen = canvas.cancelFullScreen.bind(document);
             if (Browser.lockPointer) canvas.requestPointerLock();
             Browser.isFullScreen = true;
             if (Browser.resizeCanvas) Browser.setFullScreenCanvasSize();
-          } else if (Browser.resizeCanvas){
-            Browser.setWindowedCanvasSize();
+          } else {
+            
+            // remove the full screen specific parent of the canvas again to restore the HTML structure from before going full screen
+            var canvasContainer = canvas.parentNode;
+            canvasContainer.parentNode.insertBefore(canvas, canvasContainer);
+            canvasContainer.parentNode.removeChild(canvasContainer);
+            
+            if (Browser.resizeCanvas) Browser.setWindowedCanvasSize();
           }
           if (Module['onFullScreen']) Module['onFullScreen'](Browser.isFullScreen);
+          Browser.updateCanvasDimensions(canvas);
         }
   
         if (!Browser.fullScreenHandlersInstalled) {
@@ -7726,12 +7748,20 @@ function copyTempDouble(ptr) {
           document.addEventListener('fullscreenchange', fullScreenChange, false);
           document.addEventListener('mozfullscreenchange', fullScreenChange, false);
           document.addEventListener('webkitfullscreenchange', fullScreenChange, false);
+          document.addEventListener('MSFullscreenChange', fullScreenChange, false);
         }
   
-        canvas.requestFullScreen = canvas['requestFullScreen'] ||
-                                   canvas['mozRequestFullScreen'] ||
-                                   (canvas['webkitRequestFullScreen'] ? function() { canvas['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
-        canvas.requestFullScreen();
+        // create a new parent to ensure the canvas has no siblings. this allows browsers to optimize full screen performance when its parent is the full screen root
+        var canvasContainer = document.createElement("div");
+        canvas.parentNode.insertBefore(canvasContainer, canvas);
+        canvasContainer.appendChild(canvas);
+        
+        // use parent of canvas as full screen root to allow aspect ratio correction (Firefox stretches the root to screen size)
+        canvasContainer.requestFullScreen = canvasContainer['requestFullScreen'] ||
+                                            canvasContainer['mozRequestFullScreen'] ||
+                                            canvasContainer['msRequestFullscreen'] ||
+                                           (canvasContainer['webkitRequestFullScreen'] ? function() { canvasContainer['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
+        canvasContainer.requestFullScreen();
       },requestAnimationFrame:function requestAnimationFrame(func) {
         if (typeof window === 'undefined') { // Provide fallback to setTimeout if window is undefined (e.g. in Node.js)
           setTimeout(func, 1000/60);
@@ -7888,15 +7918,9 @@ function copyTempDouble(ptr) {
         });
       },setCanvasSize:function (width, height, noUpdates) {
         var canvas = Module['canvas'];
-        canvas.width = width;
-        canvas.height = height;
+        Browser.updateCanvasDimensions(canvas, width, height);
         if (!noUpdates) Browser.updateResizeListeners();
       },windowedWidth:0,windowedHeight:0,setFullScreenCanvasSize:function () {
-        var canvas = Module['canvas'];
-        this.windowedWidth = canvas.width;
-        this.windowedHeight = canvas.height;
-        canvas.width = screen.width;
-        canvas.height = screen.height;
         // check if SDL is available   
         if (typeof SDL != "undefined") {
         	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
@@ -7905,9 +7929,6 @@ function copyTempDouble(ptr) {
         }
         Browser.updateResizeListeners();
       },setWindowedCanvasSize:function () {
-        var canvas = Module['canvas'];
-        canvas.width = this.windowedWidth;
-        canvas.height = this.windowedHeight;
         // check if SDL is available       
         if (typeof SDL != "undefined") {
         	var flags = HEAPU32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)];
@@ -7915,6 +7936,52 @@ function copyTempDouble(ptr) {
         	HEAP32[((SDL.screen+Runtime.QUANTUM_SIZE*0)>>2)]=flags
         }
         Browser.updateResizeListeners();
+      },updateCanvasDimensions:function (canvas, wNative, hNative) {
+        if (wNative && hNative) {
+          canvas.widthNative = wNative;
+          canvas.heightNative = hNative;
+        } else {
+          wNative = canvas.widthNative;
+          hNative = canvas.heightNative;
+        }
+        var w = wNative;
+        var h = hNative;
+        if (Module['forcedAspectRatio'] && Module['forcedAspectRatio'] > 0) {
+          if (w/h < Module['forcedAspectRatio']) {
+            w = Math.round(h * Module['forcedAspectRatio']);
+          } else {
+            h = Math.round(w / Module['forcedAspectRatio']);
+          }
+        }
+        if (((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
+             document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
+             document['fullScreenElement'] || document['fullscreenElement'] ||
+             document['msFullScreenElement'] || document['msFullscreenElement'] ||
+             document['webkitCurrentFullScreenElement']) === canvas.parentNode) && (typeof screen != 'undefined')) {
+           var factor = Math.min(screen.width / w, screen.height / h);
+           w = Math.round(w * factor);
+           h = Math.round(h * factor);
+        }
+        if (Browser.resizeCanvas) {
+          if (canvas.width  != w) canvas.width  = w;
+          if (canvas.height != h) canvas.height = h;
+          if (typeof canvas.style != 'undefined') {
+            canvas.style.removeProperty( "width");
+            canvas.style.removeProperty("height");
+          }
+        } else {
+          if (canvas.width  != wNative) canvas.width  = wNative;
+          if (canvas.height != hNative) canvas.height = hNative;
+          if (typeof canvas.style != 'undefined') {
+            if (w != wNative || h != hNative) {
+              canvas.style.setProperty( "width", w + "px", "important");
+              canvas.style.setProperty("height", h + "px", "important");
+            } else {
+              canvas.style.removeProperty( "width");
+              canvas.style.removeProperty("height");
+            }
+          }
+        }
       }};
 
   function _srand(seed) {
@@ -87230,7 +87297,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
       break;
      }
      $91 = ($73|0)==(0);
-     L25: do {
+     L24: do {
       if (!($91)) {
        $92 = $87;$n$011 = $73;$p$012 = $10;
        while(1) {
@@ -87241,7 +87308,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
         $95 = (($n$011) + -1)|0;
         $96 = ($95|0)==(0);
         if ($96) {
-         break L25;
+         break L24;
         }
         $97 = (($p$012) + 1|0);
         $$pre99 = HEAP32[$to_nxt>>2]|0;
@@ -87253,7 +87320,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
      $99 = (($98) + 4|0);
      HEAP32[$frm_nxt>>2] = $99;
      $100 = ($99|0)==($frm_end|0);
-     L30: do {
+     L29: do {
       if ($100) {
        $fend$2$lcssa = $frm_end;
       } else {
@@ -87264,7 +87331,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
         $104 = (($fend$215) + 4|0);
         if ($103) {
          $fend$2$lcssa = $fend$215;
-         break L30;
+         break L29;
         }
         $101 = ($104|0)==($frm_end|0);
         if ($101) {
@@ -87321,7 +87388,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
     HEAP32[$to_nxt>>2] = $$0247;
     $42 = HEAP32[$frm_nxt>>2]|0;
     $43 = ($$0148|0)==($42|0);
-    L46: do {
+    L39: do {
      if ($43) {
       $$1$lcssa = $$0148;
      } else {
@@ -87351,7 +87418,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
        $61 = ($48|0)==(-1);
        if ($61) {
         $$1$lcssa = $$19;
-        break L46;
+        break L39;
        }
        $62 = HEAP32[$to_nxt>>2]|0;
        $63 = (($62) + ($48)|0);
@@ -87361,7 +87428,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE6do_outERS1_PKwS5_RS5_PcS7_RS7_($th
        $66 = ($64|0)==($65|0);
        if ($66) {
         $$1$lcssa = $64;
-        break L46;
+        break L39;
        } else {
         $$19 = $64;$44 = $63;
        }
@@ -87537,12 +87604,12 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
       break;
      }
     }
-    if ((($28|0) == -1)) {
-     label = 16;
-     break;
-    } else if ((($28|0) == 0)) {
+    if ((($28|0) == 0)) {
      $$0 = 2;
      label = 50;
+     break;
+    } else if ((($28|0) == -1)) {
+     label = 16;
      break;
     }
     $67 = HEAP32[$to_nxt>>2]|0;
@@ -87592,7 +87659,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
      $90 = (($89) + 1|0);
      HEAP32[$frm_nxt>>2] = $90;
      $91 = ($90|0)==($frm_end|0);
-     L22: do {
+     L23: do {
       if ($91) {
        $fend$2$lcssa = $frm_end;
       } else {
@@ -87603,7 +87670,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
         $95 = (($fend$216) + 1|0);
         if ($94) {
          $fend$2$lcssa = $fend$216;
-         break L22;
+         break L23;
         }
         $92 = ($95|0)==($frm_end|0);
         if ($92) {
@@ -87660,7 +87727,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
     HEAP32[$to_nxt>>2] = $$0254;
     $41 = HEAP32[$frm_nxt>>2]|0;
     $42 = ($$0155|0)==($41|0);
-    L30: do {
+    L50: do {
      if ($42) {
       $$1$lcssa = $$0155;
      } else {
@@ -87689,15 +87756,15 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
          break;
         }
        }
-       if ((($47|0) == 0)) {
-        $60 = (($$115) + 1|0);
-        $$2 = $60;
+       if ((($47|0) == -2)) {
+        label = 28;
+        break;
        } else if ((($47|0) == -1)) {
         label = 27;
         break;
-       } else if ((($47|0) == -2)) {
-        label = 28;
-        break;
+       } else if ((($47|0) == 0)) {
+        $60 = (($$115) + 1|0);
+        $$2 = $60;
        } else {
         $61 = (($$115) + ($47)|0);
         $$2 = $61;
@@ -87709,7 +87776,7 @@ function __ZNKSt3__17codecvtIwc11__mbstate_tE5do_inERS1_PKcS5_RS5_PwS7_RS7_($thi
        $65 = ($$2|0)==($64|0);
        if ($65) {
         $$1$lcssa = $$2;
-        break L30;
+        break L50;
        } else {
         $$115 = $$2;$storemerge14 = $63;
        }
@@ -89581,17 +89648,17 @@ function __ZNSt3__1L12utf8_to_ucs4EPKhS1_RS1_PjS3_RS3_mNS_12codecvt_modeE($frm,$
        $48 = HEAP8[$47]|0;
        $49 = (($19) + 2|0);
        $50 = HEAP8[$49]|0;
-       if ((($23|0) == 224)) {
-        $51 = $48 & -32;
-        $52 = ($51<<24>>24)==(-96);
-        if (!($52)) {
-         $$0 = 2;
-         break L8;
-        }
-       } else if ((($23|0) == 237)) {
+       if ((($23|0) == 237)) {
         $53 = $48 & -32;
         $54 = ($53<<24>>24)==(-128);
         if (!($54)) {
+         $$0 = 2;
+         break L8;
+        }
+       } else if ((($23|0) == 224)) {
+        $51 = $48 & -32;
+        $52 = ($51<<24>>24)==(-96);
+        if (!($52)) {
          $$0 = 2;
          break L8;
         }
@@ -92603,12 +92670,12 @@ function _mbsnrtowcs($wcs,$src,$n,$wn,$st) {
      $$214 = $31;$$311 = $33;$24 = $30;$cnt$212 = $34;$ws$213 = $32;
     }
    }
-   if ((($25|0) == 0)) {
+   if ((($25|0) == -1)) {
+    $cnt$3 = -1;
+    break;
+   } else if ((($25|0) == 0)) {
     HEAP32[$s>>2] = 0;
     $cnt$3 = $cnt$212;
-    break;
-   } else if ((($25|0) == -1)) {
-    $cnt$3 = -1;
     break;
    } else {
     $28 = ($st);
@@ -94123,7 +94190,26 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
  $36 = HEAP32[$35>>2]|0;
  FUNCTION_TABLE_viiiii[$36 & 7]($9,$info,$6,1,0);
  $37 = HEAP32[$32>>2]|0;
- if ((($37|0) == 1)) {
+ if ((($37|0) == 0)) {
+  $38 = HEAP32[$20>>2]|0;
+  $39 = ($38|0)==(1);
+  if (!($39)) {
+   $dst_ptr$0 = 0;
+   STACKTOP = sp;return ($dst_ptr$0|0);
+  }
+  $40 = HEAP32[$18>>2]|0;
+  $41 = ($40|0)==(1);
+  if (!($41)) {
+   $dst_ptr$0 = 0;
+   STACKTOP = sp;return ($dst_ptr$0|0);
+  }
+  $42 = HEAP32[$19>>2]|0;
+  $43 = ($42|0)==(1);
+  $44 = HEAP32[$16>>2]|0;
+  $$1 = $43 ? $44 : 0;
+  $dst_ptr$0 = $$1;
+  STACKTOP = sp;return ($dst_ptr$0|0);
+ } else if ((($37|0) == 1)) {
   $45 = HEAP32[$17>>2]|0;
   $46 = ($45|0)==(1);
   do {
@@ -94152,25 +94238,6 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
   } while(0);
   $53 = HEAP32[$15>>2]|0;
   $dst_ptr$0 = $53;
-  STACKTOP = sp;return ($dst_ptr$0|0);
- } else if ((($37|0) == 0)) {
-  $38 = HEAP32[$20>>2]|0;
-  $39 = ($38|0)==(1);
-  if (!($39)) {
-   $dst_ptr$0 = 0;
-   STACKTOP = sp;return ($dst_ptr$0|0);
-  }
-  $40 = HEAP32[$18>>2]|0;
-  $41 = ($40|0)==(1);
-  if (!($41)) {
-   $dst_ptr$0 = 0;
-   STACKTOP = sp;return ($dst_ptr$0|0);
-  }
-  $42 = HEAP32[$19>>2]|0;
-  $43 = ($42|0)==(1);
-  $44 = HEAP32[$16>>2]|0;
-  $$1 = $43 ? $44 : 0;
-  $dst_ptr$0 = $$1;
   STACKTOP = sp;return ($dst_ptr$0|0);
  } else {
   $dst_ptr$0 = 0;
@@ -95639,7 +95706,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $199 = ($171|0)==(0|0);
-   L78: do {
+   L202: do {
     if (!($199)) {
      $200 = (($v$0$i) + 28|0);
      $201 = HEAP32[$200>>2]|0;
@@ -95658,7 +95725,7 @@ function _malloc($bytes) {
        $207 = HEAP32[(((19872) + 4|0))>>2]|0;
        $208 = $207 & $206;
        HEAP32[(((19872) + 4|0))>>2] = $208;
-       break L78;
+       break L202;
       } else {
        $209 = $171;
        $210 = HEAP32[(((19872) + 16|0))>>2]|0;
@@ -95678,7 +95745,7 @@ function _malloc($bytes) {
        }
        $216 = ($R$1$i|0)==(0|0);
        if ($216) {
-        break L78;
+        break L202;
        }
       }
      } while(0);
@@ -95860,7 +95927,7 @@ function _malloc($bytes) {
    $305 = (((19872) + ($idx$0$i<<2)|0) + 304|0);
    $306 = HEAP32[$305>>2]|0;
    $307 = ($306|0)==(0|0);
-   L126: do {
+   L9: do {
     if ($307) {
      $rsize$2$i = $279;$t$1$i = 0;$v$2$i = 0;
     } else {
@@ -95884,7 +95951,7 @@ function _malloc($bytes) {
        $318 = ($315|0)==($276|0);
        if ($318) {
         $rsize$2$i = $316;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-        break L126;
+        break L9;
        } else {
         $rsize$1$i = $316;$v$1$i = $t$0$i14;
        }
@@ -96091,7 +96158,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $411 = ($383|0)==(0|0);
-   L176: do {
+   L59: do {
     if (!($411)) {
      $412 = (($v$3$lcssa$i) + 28|0);
      $413 = HEAP32[$412>>2]|0;
@@ -96110,7 +96177,7 @@ function _malloc($bytes) {
        $419 = HEAP32[(((19872) + 4|0))>>2]|0;
        $420 = $419 & $418;
        HEAP32[(((19872) + 4|0))>>2] = $420;
-       break L176;
+       break L59;
       } else {
        $421 = $383;
        $422 = HEAP32[(((19872) + 16|0))>>2]|0;
@@ -96130,7 +96197,7 @@ function _malloc($bytes) {
        }
        $428 = ($R$1$i20|0)==(0|0);
        if ($428) {
-        break L176;
+        break L59;
        }
       }
      } while(0);
@@ -96185,7 +96252,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $449 = ($rsize$3$lcssa$i>>>0)<(16);
-   L204: do {
+   L87: do {
     if ($449) {
      $450 = (($rsize$3$lcssa$i) + ($276))|0;
      $451 = $450 | 3;
@@ -96341,7 +96408,7 @@ function _malloc($bytes) {
      $535 = HEAP32[$534>>2]|0;
      $536 = $535 & -8;
      $537 = ($536|0)==($rsize$3$lcssa$i|0);
-     L225: do {
+     L108: do {
       if ($537) {
        $T$0$lcssa$i = $529;
       } else {
@@ -96362,7 +96429,7 @@ function _malloc($bytes) {
         $543 = ($542|0)==($rsize$3$lcssa$i|0);
         if ($543) {
          $T$0$lcssa$i = $546;
-         break L225;
+         break L108;
         } else {
          $T$024$i$phi = $546;$K12$025$i = $539;$T$024$i = $T$024$i$phi;
         }
@@ -96387,7 +96454,7 @@ function _malloc($bytes) {
         $555 = (($376) + ($$sum13$i)|0);
         $556 = $555;
         HEAP32[$556>>2] = $484;
-        break L204;
+        break L87;
        }
       }
      } while(0);
@@ -99748,7 +99815,7 @@ function _dispose_chunk($p,$psize) {
    $161 = (($160) + ($$02))|0;
    $162 = $140 >>> 3;
    $163 = ($140>>>0)<(256);
-   L101: do {
+   L100: do {
     if ($163) {
      $$sum18 = (($psize) + 8)|0;
      $164 = (($1) + ($$sum18)|0);
@@ -99930,7 +99997,7 @@ function _dispose_chunk($p,$psize) {
        $235 = HEAP32[(((19872) + 4|0))>>2]|0;
        $236 = $235 & $234;
        HEAP32[(((19872) + 4|0))>>2] = $236;
-       break L101;
+       break L100;
       } else {
        $237 = $194;
        $238 = HEAP32[(((19872) + 16|0))>>2]|0;
@@ -99950,7 +100017,7 @@ function _dispose_chunk($p,$psize) {
        }
        $244 = ($R7$1|0)==(0|0);
        if ($244) {
-        break L101;
+        break L100;
        }
       }
      } while(0);
@@ -100582,109 +100649,7 @@ function ___floatscan($f,$prec,$pok) {
      $c$5 = $c$1$lcssa;$i$3 = $i$0$lcssa;
     }
    } while(0);
-   if ((($i$3|0) == 3)) {
-    $69 = HEAP32[$1>>2]|0;
-    $70 = HEAP32[$2>>2]|0;
-    $71 = ($69>>>0)<($70>>>0);
-    if ($71) {
-     $72 = (($69) + 1|0);
-     HEAP32[$1>>2] = $72;
-     $73 = HEAP8[$69]|0;
-     $74 = $73&255;
-     $76 = $74;
-    } else {
-     $75 = (___shgetc($f)|0);
-     $76 = $75;
-    }
-    $77 = ($76|0)==(40);
-    if ($77) {
-     $i$4 = 1;
-    } else {
-     $78 = HEAP32[$2>>2]|0;
-     $79 = ($78|0)==(0|0);
-     if ($79) {
-      $$0 = nan;
-      STACKTOP = sp;return (+$$0);
-     }
-     $80 = HEAP32[$1>>2]|0;
-     $81 = (($80) + -1|0);
-     HEAP32[$1>>2] = $81;
-     $$0 = nan;
-     STACKTOP = sp;return (+$$0);
-    }
-    while(1) {
-     $82 = HEAP32[$1>>2]|0;
-     $83 = HEAP32[$2>>2]|0;
-     $84 = ($82>>>0)<($83>>>0);
-     if ($84) {
-      $85 = (($82) + 1|0);
-      HEAP32[$1>>2] = $85;
-      $86 = HEAP8[$82]|0;
-      $87 = $86&255;
-      $89 = $87;
-     } else {
-      $88 = (___shgetc($f)|0);
-      $89 = $88;
-     }
-     $90 = (($89) + -48)|0;
-     $91 = ($90>>>0)<(10);
-     $92 = (($89) + -65)|0;
-     $93 = ($92>>>0)<(26);
-     $or$cond8 = $91 | $93;
-     if (!($or$cond8)) {
-      $94 = (($89) + -97)|0;
-      $95 = ($94>>>0)<(26);
-      $96 = ($89|0)==(95);
-      $or$cond5 = $95 | $96;
-      if (!($or$cond5)) {
-       break;
-      }
-     }
-     $108 = (($i$4) + 1)|0;
-     $i$4 = $108;
-    }
-    $97 = ($89|0)==(41);
-    if ($97) {
-     $$0 = nan;
-     STACKTOP = sp;return (+$$0);
-    }
-    $98 = HEAP32[$2>>2]|0;
-    $99 = ($98|0)==(0|0);
-    if (!($99)) {
-     $100 = HEAP32[$1>>2]|0;
-     $101 = (($100) + -1|0);
-     HEAP32[$1>>2] = $101;
-    }
-    if ($40) {
-     $103 = (___errno_location()|0);
-     HEAP32[$103>>2] = 22;
-     ___shlim($f,0);
-     $$0 = 0.0;
-     STACKTOP = sp;return (+$$0);
-    }
-    $102 = ($i$4|0)==(0);
-    $brmerge107 = $102 | $99;
-    if ($brmerge107) {
-     $$0 = nan;
-     STACKTOP = sp;return (+$$0);
-    } else {
-     $$in = $i$4;
-    }
-    while(1) {
-     $104 = (($$in) + -1)|0;
-     $105 = HEAP32[$1>>2]|0;
-     $106 = (($105) + -1|0);
-     HEAP32[$1>>2] = $106;
-     $107 = ($104|0)==(0);
-     if ($107) {
-      $$0 = nan;
-      break;
-     } else {
-      $$in$phi = $104;$$in = $$in$phi;
-     }
-    }
-    STACKTOP = sp;return (+$$0);
-   } else if ((($i$3|0) == 0)) {
+   if ((($i$3|0) == 0)) {
     $114 = ($c$5|0)==(48);
     do {
      if ($114) {
@@ -100753,7 +100718,7 @@ function ___floatscan($f,$prec,$pok) {
         continue;
        }
       }
-      L107: do {
+      L71: do {
        if ((label|0) == 70) {
         $139 = HEAP32[$1>>2]|0;
         $140 = HEAP32[$2>>2]|0;
@@ -100792,7 +100757,7 @@ function ___floatscan($f,$prec,$pok) {
          $157 = ($156|0)==(48);
          if (!($157)) {
           $160 = $147;$161 = $148;$162 = 0;$163 = 0;$c$2$i = $156;$gotdig$2$i = 1;$gotrad$0$i = 1;$gottail$0$i = 0;$scale$0$i = 1.0;$x$0$i = 0;$y$0$i = 0.0;
-          break L107;
+          break L71;
          }
          $158 = (_i64Add(($147|0),($148|0),-1,-1)|0);
          $159 = tempRet0;
@@ -100800,7 +100765,7 @@ function ___floatscan($f,$prec,$pok) {
         }
        }
       } while(0);
-      L120: while(1) {
+      L84: while(1) {
        $164 = (($c$2$i) + -48)|0;
        $165 = ($164>>>0)<(10);
        do {
@@ -100815,7 +100780,7 @@ function ___floatscan($f,$prec,$pok) {
          $or$cond$i = $168 | $169;
          if (!($or$cond$i)) {
           $c$2$lcssa$i = $c$2$i;
-          break L120;
+          break L84;
          }
          if ($169) {
           $170 = ($gotrad$0$i|0)==(0);
@@ -100824,7 +100789,7 @@ function ___floatscan($f,$prec,$pok) {
            break;
           } else {
            $c$2$lcssa$i = 46;
-           break L120;
+           break L84;
           }
          } else {
           $171 = ($c$2$i|0)>(57);
@@ -101159,7 +101124,7 @@ function ___floatscan($f,$prec,$pok) {
       continue;
      }
     }
-    L209: do {
+    L173: do {
      if ((label|0) == 139) {
       $339 = HEAP32[$1>>2]|0;
       $340 = HEAP32[$2>>2]|0;
@@ -101198,7 +101163,7 @@ function ___floatscan($f,$prec,$pok) {
        $356 = ($$1$be$i|0)==(48);
        if (!($356)) {
         $$2$i = $$1$be$i;$359 = $347;$360 = $348;$gotdig$2$i11 = 1;$gotrad$0$i12 = 1;
-        break L209;
+        break L173;
        }
        $357 = (_i64Add(($347|0),($348|0),-1,-1)|0);
        $358 = tempRet0;
@@ -101212,7 +101177,7 @@ function ___floatscan($f,$prec,$pok) {
     $363 = ($362>>>0)<(10);
     $364 = ($$2$i|0)==(46);
     $or$cond789$i = $363 | $364;
-    L223: do {
+    L187: do {
      if ($or$cond789$i) {
       $365 = (($x$i) + 496|0);
       $$397$i = $$2$i;$366 = $364;$367 = $362;$368 = 0;$369 = 0;$370 = $359;$371 = $360;$gotdig$393$i = $gotdig$2$i11;$gotrad$194$i = $gotrad$0$i12;$j$096$i = 0;$k$095$i = 0;$lnz$092$i = 0;
@@ -101224,7 +101189,7 @@ function ___floatscan($f,$prec,$pok) {
           $387 = $368;$388 = $369;$389 = $368;$390 = $369;$gotdig$4$i = $gotdig$393$i;$gotrad$2$i = 1;$j$2$i = $j$096$i;$k$2$i = $k$095$i;$lnz$2$i = $lnz$092$i;
          } else {
           $$388$i = $$397$i;$408 = $368;$409 = $369;$410 = $370;$411 = $371;$gotdig$381$i = $gotdig$393$i;$j$086$i = $j$096$i;$k$084$i = $k$095$i;$lnz$079$i = $lnz$092$i;
-          break L223;
+          break L187;
          }
         } else {
          $372 = ($k$095$i|0)<(125);
@@ -101576,7 +101541,7 @@ function ___floatscan($f,$prec,$pok) {
      $542 = (($541) + ($rp$0$lcssa162$i))|0;
      $a$2$ph40$i = $a$0$lcssa161$i;$e2$0$ph$i = 0;$rp$2$ph38$i = $542;$z$1$ph39$i = $z$0$i;
     }
-    L321: while(1) {
+    L285: while(1) {
      $543 = ($rp$2$ph38$i|0)<(18);
      $544 = (($x$i) + ($a$2$ph40$i<<2)|0);
      if ($543) {
@@ -101648,7 +101613,7 @@ function ___floatscan($f,$prec,$pok) {
        $569 = ($568>>>0)<(9007199);
        if (!($569)) {
         $a$3$ph$i = $a$2$ph40$i;$e2$1$ph$i = $e2$0$us44$i;$rp$3$ph33$i = 18;$z$5$ph$i = $z$1$us45$i;
-        break L321;
+        break L285;
        }
        $570 = (($z$1$us45$i) + 127)|0;
        $carry1$0$us49$i = 0;$k$5$in$us48$i = $570;$z$2$us47$i = $z$1$us45$i;
@@ -101727,7 +101692,7 @@ function ___floatscan($f,$prec,$pok) {
      HEAP32[$605>>2] = $carry1$1$lcssa$lcssa$i;
      $a$2$ph40$i = $594;$e2$0$ph$i = $$lcssa43$i;$rp$2$ph38$i = $592;$z$1$ph39$i = $z$4$i;
     }
-    L352: while(1) {
+    L316: while(1) {
      $640 = (($z$5$ph$i) + 1)|0;
      $641 = $640 & 127;
      $642 = (($z$5$ph$i) + 127)|0;
@@ -101775,7 +101740,7 @@ function ___floatscan($f,$prec,$pok) {
        $617 = ($i$1$i|0)==(2);
        $or$cond13$i = $617 & $645;
        if ($or$cond13$i) {
-        break L352;
+        break L316;
        }
        $620 = (($$14$i) + ($e2$1$i))|0;
        $621 = ($a$3$i|0)==($z$5$ph$i|0);
@@ -101992,6 +101957,108 @@ function ___floatscan($f,$prec,$pok) {
     } while(0);
     $710 = (+_scalbnl($y$3$i,$e2$3$i));
     $$0 = $710;
+    STACKTOP = sp;return (+$$0);
+   } else if ((($i$3|0) == 3)) {
+    $69 = HEAP32[$1>>2]|0;
+    $70 = HEAP32[$2>>2]|0;
+    $71 = ($69>>>0)<($70>>>0);
+    if ($71) {
+     $72 = (($69) + 1|0);
+     HEAP32[$1>>2] = $72;
+     $73 = HEAP8[$69]|0;
+     $74 = $73&255;
+     $76 = $74;
+    } else {
+     $75 = (___shgetc($f)|0);
+     $76 = $75;
+    }
+    $77 = ($76|0)==(40);
+    if ($77) {
+     $i$4 = 1;
+    } else {
+     $78 = HEAP32[$2>>2]|0;
+     $79 = ($78|0)==(0|0);
+     if ($79) {
+      $$0 = nan;
+      STACKTOP = sp;return (+$$0);
+     }
+     $80 = HEAP32[$1>>2]|0;
+     $81 = (($80) + -1|0);
+     HEAP32[$1>>2] = $81;
+     $$0 = nan;
+     STACKTOP = sp;return (+$$0);
+    }
+    while(1) {
+     $82 = HEAP32[$1>>2]|0;
+     $83 = HEAP32[$2>>2]|0;
+     $84 = ($82>>>0)<($83>>>0);
+     if ($84) {
+      $85 = (($82) + 1|0);
+      HEAP32[$1>>2] = $85;
+      $86 = HEAP8[$82]|0;
+      $87 = $86&255;
+      $89 = $87;
+     } else {
+      $88 = (___shgetc($f)|0);
+      $89 = $88;
+     }
+     $90 = (($89) + -48)|0;
+     $91 = ($90>>>0)<(10);
+     $92 = (($89) + -65)|0;
+     $93 = ($92>>>0)<(26);
+     $or$cond8 = $91 | $93;
+     if (!($or$cond8)) {
+      $94 = (($89) + -97)|0;
+      $95 = ($94>>>0)<(26);
+      $96 = ($89|0)==(95);
+      $or$cond5 = $95 | $96;
+      if (!($or$cond5)) {
+       break;
+      }
+     }
+     $108 = (($i$4) + 1)|0;
+     $i$4 = $108;
+    }
+    $97 = ($89|0)==(41);
+    if ($97) {
+     $$0 = nan;
+     STACKTOP = sp;return (+$$0);
+    }
+    $98 = HEAP32[$2>>2]|0;
+    $99 = ($98|0)==(0|0);
+    if (!($99)) {
+     $100 = HEAP32[$1>>2]|0;
+     $101 = (($100) + -1|0);
+     HEAP32[$1>>2] = $101;
+    }
+    if ($40) {
+     $103 = (___errno_location()|0);
+     HEAP32[$103>>2] = 22;
+     ___shlim($f,0);
+     $$0 = 0.0;
+     STACKTOP = sp;return (+$$0);
+    }
+    $102 = ($i$4|0)==(0);
+    $brmerge107 = $102 | $99;
+    if ($brmerge107) {
+     $$0 = nan;
+     STACKTOP = sp;return (+$$0);
+    } else {
+     $$in = $i$4;
+    }
+    while(1) {
+     $104 = (($$in) + -1)|0;
+     $105 = HEAP32[$1>>2]|0;
+     $106 = (($105) + -1|0);
+     HEAP32[$1>>2] = $106;
+     $107 = ($104|0)==(0);
+     if ($107) {
+      $$0 = nan;
+      break;
+     } else {
+      $$in$phi = $104;$$in = $$in$phi;
+     }
+    }
     STACKTOP = sp;return (+$$0);
    } else {
     $109 = HEAP32[$2>>2]|0;
