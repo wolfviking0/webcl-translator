@@ -133,6 +133,15 @@ def clean(repo_list,param):
     jobs.append(p)
     p.start()
 
+  # Clean folder website
+  for folder in page_subfolder:
+    directory = page_repositories + folder
+    if os.path.isdir(directory):
+      pr = subprocess.Popen( "rm "+directory+"/*" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+      (out, error) = pr.communicate()  
+    else:
+      print "/!\ Website repo %s doesn't exist ..." % (folder)
+
   for j in jobs:
     j.join() 
 
