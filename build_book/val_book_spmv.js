@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_spmv.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_spmv.data';
     var REMOTE_PACKAGE_SIZE = 40949;
-    var PACKAGE_UUID = '7d163408-e2d1-4374-a4cc-033d3bcaccc8';
+    var PACKAGE_UUID = 'ccc06b90-3a3f-4841-b0bb-a226c9ccba94';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15526,11 +15526,11 @@ function _getopt($argc,$argv,$optstring) {
  }
  $12 = (($8) + 1|0);
  $13 = HEAP8[$12]|0;
- if ((($13<<24>>24) == 45)) {
-  label = 7;
- } else if ((($13<<24>>24) == 0)) {
+ if ((($13<<24>>24) == 0)) {
   $$0 = -1;
   STACKTOP = sp;return ($$0|0);
+ } else if ((($13<<24>>24) == 45)) {
+  label = 7;
  }
  do {
   if ((label|0) == 7) {
@@ -20226,7 +20226,7 @@ function _dispose_chunk($p,$psize) {
    $161 = (($160) + ($$02))|0;
    $162 = $140 >>> 3;
    $163 = ($140>>>0)<(256);
-   L100: do {
+   L101: do {
     if ($163) {
      $$sum18 = (($psize) + 8)|0;
      $164 = (($1) + ($$sum18)|0);
@@ -20408,7 +20408,7 @@ function _dispose_chunk($p,$psize) {
        $235 = HEAP32[(((4768) + 4|0))>>2]|0;
        $236 = $235 & $234;
        HEAP32[(((4768) + 4|0))>>2] = $236;
-       break L100;
+       break L101;
       } else {
        $237 = $194;
        $238 = HEAP32[(((4768) + 16|0))>>2]|0;
@@ -20428,7 +20428,7 @@ function _dispose_chunk($p,$psize) {
        }
        $244 = ($R7$1|0)==(0|0);
        if ($244) {
-        break L100;
+        break L101;
        }
       }
      } while(0);
