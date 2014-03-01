@@ -102,12 +102,12 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
-    float _wcl_D[8];
     __local float *_wcl_l_V;
     __local float *_wcl_l_H;
-    float _wcl_2_D[8];
+    float _wcl_D[8];
     __local float *_wcl_2_l_V;
     __local float *_wcl_2_l_H;
+    float _wcl_2_D[8];
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -366,17 +366,17 @@ void DCT8x8(
         (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn)));
 
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
-    DCT8(_wcl_allocs, _wcl_allocs->pa._wcl_2_D);
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
+    DCT8(_wcl_allocs, _wcl_allocs->pa._wcl_D);
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
 
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
-    DCT8(_wcl_allocs, _wcl_allocs->pa._wcl_2_D);
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
+    DCT8(_wcl_allocs, _wcl_allocs->pa._wcl_D);
 
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
 }
 
 __kernel __attribute__((reqd_work_group_size(32, 16 / 8, 1)))
@@ -433,14 +433,14 @@ void IDCT8x8(
         (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn)));
 
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
-    IDCT8(_wcl_allocs, _wcl_allocs->pa._wcl_D);
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
+    IDCT8(_wcl_allocs, _wcl_allocs->pa._wcl_2_D);
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_H)+(i), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
 
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
-    IDCT8(_wcl_allocs, _wcl_allocs->pa._wcl_D);
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((_wcl_allocs->pa._wcl_2_l_V)+(i * (32 + 1)), 1, (__local float *)_wcl_allocs->ll._wcl_locals_min, (__local float *)_wcl_allocs->ll._wcl_locals_max, (__local float *)_wcl_allocs->ln)));
+    IDCT8(_wcl_allocs, _wcl_allocs->pa._wcl_2_D);
     for(uint i = 0; i < 8; i++)
-        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * stride), 1, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.DCT8x8__d_Src_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Dst_max, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_min, (__global float *)_wcl_allocs->gl.IDCT8x8__d_Src_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_2_D)+(i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
 }

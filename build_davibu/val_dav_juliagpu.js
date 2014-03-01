@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 34964;
-    var PACKAGE_UUID = '768c07d9-7fd8-4bb1-85e7-dd4ec95d797c';
+    var PACKAGE_UUID = 'a6c349fe-f259-4c68-9d3d-f476ef15b21a';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16609,10 +16609,6 @@ function __Z11specialFunciii($key,$x,$y) {
  $3 = $y;
  $4 = $1;
  switch ($4|0) {
- case 102:  {
-  __ZL13rotateCameraYf(0.0349065847694873809814);
-  break;
- }
  case 101:  {
   __ZL13rotateCameraXf(-0.0349065847694873809814);
   break;
@@ -16621,8 +16617,10 @@ function __Z11specialFunciii($key,$x,$y) {
   __ZL13rotateCameraXf(0.0349065847694873809814);
   break;
  }
- case 100:  {
-  __ZL13rotateCameraYf(-0.0349065847694873809814);
+ case 105:  {
+  $7 = +HEAPF32[(((2488) + 72|0))>>2];
+  $8 = $7 - 0.5;
+  HEAPF32[(((2488) + 72|0))>>2] = $8;
   break;
  }
  case 104:  {
@@ -16631,10 +16629,12 @@ function __Z11specialFunciii($key,$x,$y) {
   HEAPF32[(((2488) + 72|0))>>2] = $6;
   break;
  }
- case 105:  {
-  $7 = +HEAPF32[(((2488) + 72|0))>>2];
-  $8 = $7 - 0.5;
-  HEAPF32[(((2488) + 72|0))>>2] = $8;
+ case 102:  {
+  __ZL13rotateCameraYf(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  __ZL13rotateCameraYf(-0.0349065847694873809814);
   break;
  }
  default: {
@@ -20701,7 +20701,7 @@ function _free($mem) {
    $167 = (($166) + ($psize$0))|0;
    $168 = $145 >>> 3;
    $169 = ($145>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($169) {
      $170 = (($mem) + ($11)|0);
      $171 = $170;
@@ -20885,7 +20885,7 @@ function _free($mem) {
        $245 = HEAP32[(((3704) + 4|0))>>2]|0;
        $246 = $245 & $244;
        HEAP32[(((3704) + 4|0))>>2] = $246;
-       break L113;
+       break L112;
       } else {
        $247 = $202;
        $248 = HEAP32[(((3704) + 16|0))>>2]|0;
@@ -20905,7 +20905,7 @@ function _free($mem) {
        }
        $254 = ($R7$1|0)==(0|0);
        if ($254) {
-        break L113;
+        break L112;
        }
       }
      } while(0);

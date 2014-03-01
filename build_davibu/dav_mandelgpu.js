@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 5799;
-    var PACKAGE_UUID = 'd34523f2-4ba9-40c0-9134-5aba50a44228';
+    var PACKAGE_UUID = 'eb70245c-9131-4cf3-8459-7016d1754f95';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15109,12 +15109,12 @@ function __Z11specialFunciii($key,$x,$y) {
  $needRedisplay = 1;
  $4 = $1;
  switch ($4|0) {
- case 100:  {
-  $13 = +HEAPF32[(1912)>>2];
-  $14 = $13 * 0.0250000003725290298462;
-  $15 = +HEAPF32[(1920)>>2];
-  $16 = $15 - $14;
-  HEAPF32[(1920)>>2] = $16;
+ case 103:  {
+  $9 = +HEAPF32[(1912)>>2];
+  $10 = $9 * 0.0250000003725290298462;
+  $11 = +HEAPF32[(1928)>>2];
+  $12 = $11 - $10;
+  HEAPF32[(1928)>>2] = $12;
   break;
  }
  case 102:  {
@@ -15125,20 +15125,20 @@ function __Z11specialFunciii($key,$x,$y) {
   HEAPF32[(1920)>>2] = $20;
   break;
  }
+ case 100:  {
+  $13 = +HEAPF32[(1912)>>2];
+  $14 = $13 * 0.0250000003725290298462;
+  $15 = +HEAPF32[(1920)>>2];
+  $16 = $15 - $14;
+  HEAPF32[(1920)>>2] = $16;
+  break;
+ }
  case 101:  {
   $5 = +HEAPF32[(1912)>>2];
   $6 = $5 * 0.0250000003725290298462;
   $7 = +HEAPF32[(1928)>>2];
   $8 = $7 + $6;
   HEAPF32[(1928)>>2] = $8;
-  break;
- }
- case 103:  {
-  $9 = +HEAPF32[(1912)>>2];
-  $10 = $9 * 0.0250000003725290298462;
-  $11 = +HEAPF32[(1928)>>2];
-  $12 = $11 - $10;
-  HEAPF32[(1928)>>2] = $12;
   break;
  }
  case 104:  {

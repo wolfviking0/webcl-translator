@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = '1cd2ce53-5005-46e8-9bb2-d11f5cf05c35';
+    var PACKAGE_UUID = 'fe7168cd-8bd5-4af9-9174-1316b5cf7a32';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -12297,7 +12297,7 @@ function _malloc($bytes) {
           $838 = $835 & -8;
           $839 = $835 >>> 3;
           $840 = ($835>>>0)<(256);
-          L356: do {
+          L355: do {
            if ($840) {
             $$sum3738$i$i = $805 | 8;
             $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -12490,7 +12490,7 @@ function _malloc($bytes) {
               $916 = HEAP32[(((1560) + 4|0))>>2]|0;
               $917 = $916 & $915;
               HEAP32[(((1560) + 4|0))>>2] = $917;
-              break L356;
+              break L355;
              } else {
               $918 = $873;
               $919 = HEAP32[(((1560) + 16|0))>>2]|0;
@@ -12510,7 +12510,7 @@ function _malloc($bytes) {
               }
               $925 = ($R$1$i$i|0)==(0|0);
               if ($925) {
-               break L356;
+               break L355;
               }
              }
             } while(0);
@@ -12722,7 +12722,7 @@ function _malloc($bytes) {
          $1030 = HEAP32[$1029>>2]|0;
          $1031 = $1030 & -8;
          $1032 = ($1031|0)==($qsize$0$i$i|0);
-         L445: do {
+         L444: do {
           if ($1032) {
            $T$0$lcssa$i28$i = $1024;
           } else {
@@ -12743,7 +12743,7 @@ function _malloc($bytes) {
             $1038 = ($1037|0)==($qsize$0$i$i|0);
             if ($1038) {
              $T$0$lcssa$i28$i = $1041;
-             break L445;
+             break L444;
             } else {
              $T$051$i$i$phi = $1041;$K8$052$i$i = $1034;$T$051$i$i = $T$051$i$i$phi;
             }
@@ -13574,7 +13574,7 @@ function _free($mem) {
    $167 = (($166) + ($psize$0))|0;
    $168 = $145 >>> 3;
    $169 = ($145>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($169) {
      $170 = (($mem) + ($11)|0);
      $171 = $170;
@@ -13758,7 +13758,7 @@ function _free($mem) {
        $245 = HEAP32[(((1560) + 4|0))>>2]|0;
        $246 = $245 & $244;
        HEAP32[(((1560) + 4|0))>>2] = $246;
-       break L113;
+       break L112;
       } else {
        $247 = $202;
        $248 = HEAP32[(((1560) + 16|0))>>2]|0;
@@ -13778,7 +13778,7 @@ function _free($mem) {
        }
        $254 = ($R7$1|0)==(0|0);
        if ($254) {
-        break L113;
+        break L112;
        }
       }
      } while(0);

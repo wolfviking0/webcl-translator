@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = '0a8e8084-44eb-461c-888a-98a95325068d';
+    var PACKAGE_UUID = 'e03b42c4-1803-436e-9d48-644eb3e8615b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16571,6 +16571,22 @@ function __Z11specialFunciii($key,$x,$y) {
  $3 = $y;
  $4 = $1;
  switch ($4|0) {
+ case 105:  {
+  $7 = +HEAPF32[(((2488) + 72|0))>>2];
+  $8 = $7 - 0.5;
+  HEAPF32[(((2488) + 72|0))>>2] = $8;
+  break;
+ }
+ case 104:  {
+  $5 = +HEAPF32[(((2488) + 72|0))>>2];
+  $6 = $5 + 0.5;
+  HEAPF32[(((2488) + 72|0))>>2] = $6;
+  break;
+ }
+ case 100:  {
+  __ZL13rotateCameraYf(-0.0349065847694873809814);
+  break;
+ }
  case 102:  {
   __ZL13rotateCameraYf(0.0349065847694873809814);
   break;
@@ -16581,22 +16597,6 @@ function __Z11specialFunciii($key,$x,$y) {
  }
  case 103:  {
   __ZL13rotateCameraXf(0.0349065847694873809814);
-  break;
- }
- case 100:  {
-  __ZL13rotateCameraYf(-0.0349065847694873809814);
-  break;
- }
- case 104:  {
-  $5 = +HEAPF32[(((2488) + 72|0))>>2];
-  $6 = $5 + 0.5;
-  HEAPF32[(((2488) + 72|0))>>2] = $6;
-  break;
- }
- case 105:  {
-  $7 = +HEAPF32[(((2488) + 72|0))>>2];
-  $8 = $7 - 0.5;
-  HEAPF32[(((2488) + 72|0))>>2] = $8;
   break;
  }
  default: {

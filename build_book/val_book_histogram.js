@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/val_book_histogram.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_histogram.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = 'b5ad2eb1-70d5-4c34-be1f-34ade7f2dbd3';
+    var PACKAGE_UUID = '16b3f709-2b5f-4c00-acf9-3220f7ffc8aa';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11635,7 +11635,7 @@ function _malloc($bytes) {
      $535 = HEAP32[$534>>2]|0;
      $536 = $535 & -8;
      $537 = ($536|0)==($rsize$3$lcssa$i|0);
-     L224: do {
+     L225: do {
       if ($537) {
        $T$0$lcssa$i = $529;
       } else {
@@ -11656,7 +11656,7 @@ function _malloc($bytes) {
         $543 = ($542|0)==($rsize$3$lcssa$i|0);
         if ($543) {
          $T$0$lcssa$i = $546;
-         break L224;
+         break L225;
         } else {
          $T$024$i$phi = $546;$K12$025$i = $539;$T$024$i = $T$024$i$phi;
         }

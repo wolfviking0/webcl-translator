@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = 'edf195a3-b0de-48cf-847f-3f11e000d9c1';
+    var PACKAGE_UUID = 'f173eb71-107c-4354-ad4f-e85de910b820';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16577,12 +16577,8 @@ function __Z11specialFunciii($key,$x,$y) {
  $3 = $y;
  $4 = $1;
  switch ($4|0) {
- case 100:  {
-  __ZL13rotateCameraYf(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  __ZL13rotateCameraYf(0.0349065847694873809814);
+ case 101:  {
+  __ZL13rotateCameraXf(-0.0349065847694873809814);
   break;
  }
  case 104:  {
@@ -16591,12 +16587,16 @@ function __Z11specialFunciii($key,$x,$y) {
   HEAPF32[(((2496) + 72|0))>>2] = $6;
   break;
  }
- case 101:  {
-  __ZL13rotateCameraXf(-0.0349065847694873809814);
-  break;
- }
  case 103:  {
   __ZL13rotateCameraXf(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  __ZL13rotateCameraYf(-0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  __ZL13rotateCameraYf(0.0349065847694873809814);
   break;
  }
  case 105:  {
@@ -20669,7 +20669,7 @@ function _free($mem) {
    $167 = (($166) + ($psize$0))|0;
    $168 = $145 >>> 3;
    $169 = ($145>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($169) {
      $170 = (($mem) + ($11)|0);
      $171 = $170;
@@ -20853,7 +20853,7 @@ function _free($mem) {
        $245 = HEAP32[(((3720) + 4|0))>>2]|0;
        $246 = $245 & $244;
        HEAP32[(((3720) + 4|0))>>2] = $246;
-       break L113;
+       break L112;
       } else {
        $247 = $202;
        $248 = HEAP32[(((3720) + 16|0))>>2]|0;
@@ -20873,7 +20873,7 @@ function _free($mem) {
        }
        $254 = ($R7$1|0)==(0|0);
        if ($254) {
-        break L113;
+        break L112;
        }
       }
      } while(0);
