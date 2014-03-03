@@ -1,5 +1,12 @@
 #!/usr/bin/python
-# Python 2:50 vs Shell 6:18
+#
+#  automator.py
+#  Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
+#
+#  Created by Anthony Liot.
+#  Copyright (c) 2013 Anthony Liot. All rights reserved.
+#
+
 import commands
 import subprocess
 import os
