@@ -392,7 +392,7 @@ var configuration_pages = {
   // ************ //
   // DEMO NVIDIA  //
   // ************ //         
-  "Demos NVIDIA" : [
+  "Demos OpenCL NVIDIA" : [
     { 
       "title"         : "BoxFilter",
       "compatibility" : "[Webkit]",
@@ -459,5 +459,32 @@ var configuration_pages = {
       "valcpu"        : "",
       "valgpu"        : "",           
     }, 
+  ],
+  // ************ //
+  // DEMO NVIDIA  //
+  // ************ //         
+  "Demos CUDA NVIDIA" : [
+    { 
+      "title"         : "VectorAdd",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_cuda/cuda",
+      "id"            : 0,
+      "gl"            : "off",
+      "cpu"           : "",
+      "gpu"           : "&gpu",     
+      "valcpu"        : "",
+      "valgpu"        : "",           
+    },  
+    { 
+      "title"         : "MatrixMul",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_cuda/oclnvidia",
+      "id"            : 1,
+      "gl"            : "off",
+      "cpu"           : "",
+      "gpu"           : "&gpu",     
+      "valcpu"        : "",
+      "valgpu"        : "",             
+    },       
   ],
 }
