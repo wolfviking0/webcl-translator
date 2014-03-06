@@ -79,7 +79,7 @@ all: all_1 all_2 all_3
 
 all_1: \
 	imagecopy_sample			\
-	marching_cubes_sample		\
+	dxt_sample					\
 
 all_2: \
 	eventprofiling_sample		\
@@ -87,7 +87,7 @@ all_2: \
 
 all_3: \
 	attractor_sample			\
-	dxt_sample					\
+	
 	
 
 imagecopy_sample:
