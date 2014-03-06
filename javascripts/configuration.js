@@ -140,72 +140,17 @@ var configuration_pages = {
       "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",              
     },
-    /*{ 
-      "title"         : "SinWave",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
-      "id"            : 6,
-      "gl"            : "on",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",            
-    },*/
     { 
       "title"         : "Vector Add",
       "compatibility" : "[Webkit]",
       "pages"         : "build_book/book",
-      "id"            : 7,
+      "id"            : 6,
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
       "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",               
-    },
-    /*{ 
-      "title"         : "Histogram",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
-      "id"            : 8,
-      "gl"            : "off",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",            
-    },*/
-    /*{ 
-      "title"         : "Dijsktra",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
-      "id"            : 9,
-      "gl"            : "on",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
-    },*/
-    /*{ 
-      "title"         : "Flow",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
-      "id"            : 10,
-      "gl"            : "on",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
-    },*/
-    /*{ 
-      "title"         : "SPMV",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
-      "id"            : 11,
-      "gl"            : "on",
-      "cpu"           : "&cpu",
-      "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
-    },*/        
+    },           
   ],  
   // ******** //
   // DEMO OSX //
@@ -233,7 +178,6 @@ var configuration_pages = {
       "valcpu"        : "",
       "valgpu"        : "&validator=on",               
     },
-    /*
     { 
       "title"         : "Trajectory",
       "compatibility" : "[Webkit]",
@@ -245,7 +189,6 @@ var configuration_pages = {
       "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",               
     },
-    */
     { 
       "title"         : "Scan",
       "compatibility" : "[Webkit]",
