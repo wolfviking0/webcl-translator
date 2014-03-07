@@ -152,6 +152,12 @@ a.button span {
   height: 23px;
 }
 
+#download-webkit span {
+  background: transparent url(../images/webkit-icon.png) 12px 50% no-repeat;
+}
+#download-firefox span {
+  background: transparent url(../images/firefox-icon.png) 12px 50% no-repeat;
+}
 #download-zip span {
   background: transparent url(../images/zip-icon.png) 12px 50% no-repeat;
 }
