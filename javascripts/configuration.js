@@ -478,7 +478,7 @@ var configuration_pages = {
     { 
       "title"         : "MatrixMul",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_cuda/oclnvidia",
+      "pages"         : "build_cuda/cuda",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "",
