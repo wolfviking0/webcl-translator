@@ -124,7 +124,7 @@ else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   }
 
   if (ENVIRONMENT_IS_WEB) {
-    this['Module'] = Module;
+    window['Module'] = Module;
   } else {
     Module['load'] = importScripts;
   }
@@ -492,6 +492,11 @@ var Runtime = {
       return ret;
     }
     this.processJSString = function processJSString(string) {
+      /* TODO: use TextEncoder when present,
+        var encoder = new TextEncoder();
+        encoder['encoding'] = "utf-8";
+        var utf8Array = encoder['encode'](aMsg.data);
+      */
       string = unescape(encodeURIComponent(string));
       var ret = [];
       for (var i = 0; i < string.length; i++) {
@@ -1423,8 +1428,6 @@ function copyTempDouble(ptr) {
 }
 
 
-  function _llvm_lifetime_end() {}
-
   
    
   Module["_rand_r"] = _rand_r;
@@ -1779,7 +1782,7 @@ function copyTempDouble(ptr) {
                             GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
   
         GL.floatExt = GLctx.getExtension('OES_texture_float');
-        
+  
         // Extension available from Firefox 26 and Google Chrome 30
         GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
         
@@ -1796,7 +1799,8 @@ function copyTempDouble(ptr) {
                                                "OES_element_index_uint", "EXT_texture_filter_anisotropic", "ANGLE_instanced_arrays",
                                                "OES_texture_float_linear", "OES_texture_half_float_linear", "WEBGL_compressed_texture_atc",
                                                "WEBGL_compressed_texture_pvrtc", "EXT_color_buffer_half_float", "WEBGL_color_buffer_float",
-                                               "EXT_frag_depth", "EXT_sRGB", "WEBGL_draw_buffers", "WEBGL_shared_resources" ];
+                                               "EXT_frag_depth", "EXT_sRGB", "WEBGL_draw_buffers", "WEBGL_shared_resources",
+                                               "EXT_shader_texture_lod" ];
   
         function shouldEnableAutomatically(extension) {
           for(var i in automaticallyEnabledExtensions) {
@@ -2973,18 +2977,13 @@ function copyTempDouble(ptr) {
   
         if (num_devices > 0) {
           if (_glclSharedContext) {       
-            if (_devices.length == 1) {
-              _context = webcl.createContext(Module.ctx,_devices[0]); 
-            } else {
-              _context = webcl.createContext(Module.ctx,_devices); 
-            }
+  
+            _context = webcl.createContext(Module.ctx,_devices); 
+            
           } else {
           
-            if (_devices.length == 1) {
-              _context = webcl.createContext(_devices[0]); 
-            } else {
-              _context = webcl.createContext(_devices);  
-            }
+            _context = webcl.createContext(_devices);  
+  
           }
         } else if (_platform != null) {
           
@@ -5246,78 +5245,77 @@ function copyTempDouble(ptr) {
         if (!success) ___setErrNo(ERRNO_CODES.EIO);
         return success;
       },createLazyFile:function (parent, name, url, canRead, canWrite) {
-        if (typeof XMLHttpRequest !== 'undefined') {
-          if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
-          // Lazy chunked Uint8Array (implements get and length from Uint8Array). Actual getting is abstracted away for eventual reuse.
-          function LazyUint8Array() {
-            this.lengthKnown = false;
-            this.chunks = []; // Loaded chunks. Index is the chunk number
+        // Lazy chunked Uint8Array (implements get and length from Uint8Array). Actual getting is abstracted away for eventual reuse.
+        function LazyUint8Array() {
+          this.lengthKnown = false;
+          this.chunks = []; // Loaded chunks. Index is the chunk number
+        }
+        LazyUint8Array.prototype.get = function LazyUint8Array_get(idx) {
+          if (idx > this.length-1 || idx < 0) {
+            return undefined;
           }
-          LazyUint8Array.prototype.get = function LazyUint8Array_get(idx) {
-            if (idx > this.length-1 || idx < 0) {
-              return undefined;
-            }
-            var chunkOffset = idx % this.chunkSize;
-            var chunkNum = Math.floor(idx / this.chunkSize);
-            return this.getter(chunkNum)[chunkOffset];
-          }
-          LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
-            this.getter = getter;
-          }
-          LazyUint8Array.prototype.cacheLength = function LazyUint8Array_cacheLength() {
-              // Find length
+          var chunkOffset = idx % this.chunkSize;
+          var chunkNum = Math.floor(idx / this.chunkSize);
+          return this.getter(chunkNum)[chunkOffset];
+        }
+        LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
+          this.getter = getter;
+        }
+        LazyUint8Array.prototype.cacheLength = function LazyUint8Array_cacheLength() {
+            // Find length
+            var xhr = new XMLHttpRequest();
+            xhr.open('HEAD', url, false);
+            xhr.send(null);
+            if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
+            var datalength = Number(xhr.getResponseHeader("Content-length"));
+            var header;
+            var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
+            var chunkSize = 1024*1024; // Chunk size in bytes
+  
+            if (!hasByteServing) chunkSize = datalength;
+  
+            // Function to get a range from the remote URL.
+            var doXHR = (function(from, to) {
+              if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
+              if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
+  
+              // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
               var xhr = new XMLHttpRequest();
-              xhr.open('HEAD', url, false);
+              xhr.open('GET', url, false);
+              if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
+  
+              // Some hints to the browser that we want binary data.
+              if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
+              if (xhr.overrideMimeType) {
+                xhr.overrideMimeType('text/plain; charset=x-user-defined');
+              }
+  
               xhr.send(null);
               if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-              var datalength = Number(xhr.getResponseHeader("Content-length"));
-              var header;
-              var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
-              var chunkSize = 1024*1024; // Chunk size in bytes
+              if (xhr.response !== undefined) {
+                return new Uint8Array(xhr.response || []);
+              } else {
+                return intArrayFromString(xhr.responseText || '', true);
+              }
+            });
+            var lazyArray = this;
+            lazyArray.setDataGetter(function(chunkNum) {
+              var start = chunkNum * chunkSize;
+              var end = (chunkNum+1) * chunkSize - 1; // including this byte
+              end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
+              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
+                lazyArray.chunks[chunkNum] = doXHR(start, end);
+              }
+              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
+              return lazyArray.chunks[chunkNum];
+            });
   
-              if (!hasByteServing) chunkSize = datalength;
-  
-              // Function to get a range from the remote URL.
-              var doXHR = (function(from, to) {
-                if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
-                if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-  
-                // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url, false);
-                if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-  
-                // Some hints to the browser that we want binary data.
-                if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
-                if (xhr.overrideMimeType) {
-                  xhr.overrideMimeType('text/plain; charset=x-user-defined');
-                }
-  
-                xhr.send(null);
-                if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-                if (xhr.response !== undefined) {
-                  return new Uint8Array(xhr.response || []);
-                } else {
-                  return intArrayFromString(xhr.responseText || '', true);
-                }
-              });
-              var lazyArray = this;
-              lazyArray.setDataGetter(function(chunkNum) {
-                var start = chunkNum * chunkSize;
-                var end = (chunkNum+1) * chunkSize - 1; // including this byte
-                end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
-                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
-                  lazyArray.chunks[chunkNum] = doXHR(start, end);
-                }
-                if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
-                return lazyArray.chunks[chunkNum];
-              });
-  
-              this._length = datalength;
-              this._chunkSize = chunkSize;
-              this.lengthKnown = true;
-          }
-  
+            this._length = datalength;
+            this._chunkSize = chunkSize;
+            this.lengthKnown = true;
+        }
+        if (typeof XMLHttpRequest !== 'undefined') {
+          if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
           var lazyArray = new LazyUint8Array();
           Object.defineProperty(lazyArray, "length", {
               get: function() {
@@ -7247,9 +7245,9 @@ function copyTempDouble(ptr) {
         if (typeof Browser.resizeCanvas === 'undefined') Browser.resizeCanvas = false;
   
         var canvas = Module['canvas'];
-        var canvasContainer = canvas.parentNode;
         function fullScreenChange() {
           Browser.isFullScreen = false;
+          var canvasContainer = canvas.parentNode;
           if ((document['webkitFullScreenElement'] || document['webkitFullscreenElement'] ||
                document['mozFullScreenElement'] || document['mozFullscreenElement'] ||
                document['fullScreenElement'] || document['fullscreenElement'] ||
@@ -7268,7 +7266,6 @@ function copyTempDouble(ptr) {
           } else {
             
             // remove the full screen specific parent of the canvas again to restore the HTML structure from before going full screen
-            var canvasContainer = canvas.parentNode;
             canvasContainer.parentNode.insertBefore(canvas, canvasContainer);
             canvasContainer.parentNode.removeChild(canvasContainer);
             
@@ -7527,8 +7524,6 @@ function copyTempDouble(ptr) {
     }function _exit(status) {
       __exit(status);
     }
-
-  function _llvm_lifetime_start() {}
 var GLctx; GL.init()
 FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
@@ -7614,7 +7609,6 @@ var asm = (function(global, env, buffer) {
   var asmPrintInt=env.asmPrintInt;
   var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
-  var _llvm_lifetime_start=env._llvm_lifetime_start;
   var _clReleaseProgram=env._clReleaseProgram;
   var _send=env._send;
   var _clReleaseKernel=env._clReleaseKernel;
@@ -7631,7 +7625,6 @@ var asm = (function(global, env, buffer) {
   var _emscripten_memcpy_big=env._emscripten_memcpy_big;
   var _fileno=env._fileno;
   var __exit=env.__exit;
-  var __formatString=env.__formatString;
   var _clFinish=env._clFinish;
   var _clCreateCommandQueue=env._clCreateCommandQueue;
   var _printf=env._printf;
@@ -7650,7 +7643,7 @@ var asm = (function(global, env, buffer) {
   var _malloc=env._malloc;
   var _clBuildProgram=env._clBuildProgram;
   var _fprintf=env._fprintf;
-  var _llvm_lifetime_end=env._llvm_lifetime_end;
+  var __formatString=env.__formatString;
   var _exit=env._exit;
   var _strstr=env._strstr;
   var tempFloat = 0.0;
@@ -7751,392 +7744,358 @@ function setTempRet9(value) {
 function _main($argc,$argv) {
  $argc = $argc|0;
  $argv = $argv|0;
- var $1 = 0, $10 = 0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0, $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0, $115 = 0, $116 = 0;
- var $117 = 0, $118 = 0, $119 = 0, $12 = 0, $120 = 0, $121 = 0, $122 = 0, $123 = 0, $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0, $131 = 0, $132 = 0, $133 = 0, $134 = 0;
- var $135 = 0, $136 = 0, $137 = 0, $138 = 0, $139 = 0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0.0, $144 = 0, $145 = 0, $146 = 0.0, $147 = 0, $148 = 0, $149 = 0.0, $15 = 0, $150 = 0.0, $151 = 0.0, $152 = 0.0;
- var $153 = 0, $154 = 0, $155 = 0, $156 = 0, $157 = 0, $158 = 0, $159 = 0, $16 = 0, $160 = 0, $161 = 0, $162 = 0, $163 = 0, $164 = 0, $165 = 0, $166 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0;
- var $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0.0, $38 = 0.0, $39 = 0;
- var $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0;
- var $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0;
- var $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0;
- var $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $buffer = 0, $commands = 0, $context = 0, $correct = 0, $count = 0, $data = 0, $device_id = 0, $err = 0, $global = 0, $i = 0, $input = 0, $kernel = 0, $len = 0, $local = 0;
- var $output = 0, $program = 0, $results = 0, $use_gpu = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer14 = 0, $vararg_buffer16 = 0, $vararg_buffer18 = 0, $vararg_buffer20 = 0, $vararg_buffer23 = 0, $vararg_buffer26 = 0, $vararg_buffer28 = 0, $vararg_buffer3 = 0, $vararg_buffer31 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_lifetime_bitcast = 0;
- var $vararg_lifetime_bitcast10 = 0, $vararg_lifetime_bitcast12 = 0, $vararg_lifetime_bitcast15 = 0, $vararg_lifetime_bitcast17 = 0, $vararg_lifetime_bitcast19 = 0, $vararg_lifetime_bitcast2 = 0, $vararg_lifetime_bitcast21 = 0, $vararg_lifetime_bitcast24 = 0, $vararg_lifetime_bitcast27 = 0, $vararg_lifetime_bitcast29 = 0, $vararg_lifetime_bitcast32 = 0, $vararg_lifetime_bitcast4 = 0, $vararg_lifetime_bitcast6 = 0, $vararg_lifetime_bitcast8 = 0, $vararg_ptr = 0, $vararg_ptr13 = 0, $vararg_ptr22 = 0, $vararg_ptr25 = 0, $vararg_ptr30 = 0, $vararg_ptr33 = 0;
- var $vararg_ptr34 = 0, label = 0, sp = 0;
+ var $0 = 0, $1 = 0, $10 = 0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0, $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0, $115 = 0;
+ var $116 = 0, $117 = 0, $118 = 0, $119 = 0, $12 = 0, $120 = 0, $121 = 0, $122 = 0, $123 = 0, $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0.0, $131 = 0, $132 = 0, $133 = 0.0;
+ var $134 = 0, $135 = 0, $136 = 0.0, $137 = 0.0, $138 = 0.0, $139 = 0.0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0, $144 = 0, $145 = 0, $146 = 0, $147 = 0, $148 = 0, $149 = 0, $15 = 0, $150 = 0, $151 = 0;
+ var $152 = 0, $153 = 0, $154 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0;
+ var $31 = 0, $32 = 0, $33 = 0, $34 = 0.0, $35 = 0.0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0;
+ var $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0;
+ var $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0;
+ var $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $buffer = 0, $commands = 0, $context = 0, $correct = 0, $count = 0;
+ var $data = 0, $device_id = 0, $err = 0, $global = 0, $i = 0, $input = 0, $kernel = 0, $len = 0, $local = 0, $output = 0, $program = 0, $results = 0, $use_gpu = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer14 = 0, $vararg_buffer16 = 0, $vararg_buffer18 = 0, $vararg_buffer20 = 0;
+ var $vararg_buffer23 = 0, $vararg_buffer26 = 0, $vararg_buffer28 = 0, $vararg_buffer3 = 0, $vararg_buffer31 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_ptr34 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 8|0;
- $vararg_buffer31 = sp;
- $vararg_lifetime_bitcast32 = $vararg_buffer31;
- $vararg_buffer28 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast29 = $vararg_buffer28;
- $vararg_buffer26 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast27 = $vararg_buffer26;
- $vararg_buffer23 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast24 = $vararg_buffer23;
- $vararg_buffer20 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast21 = $vararg_buffer20;
- $vararg_buffer18 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast19 = $vararg_buffer18;
- $vararg_buffer16 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast17 = $vararg_buffer16;
- $vararg_buffer14 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast15 = $vararg_buffer14;
- $vararg_buffer11 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast12 = $vararg_buffer11;
- $vararg_buffer9 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast10 = $vararg_buffer9;
- $vararg_buffer7 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast8 = $vararg_buffer7;
- $vararg_buffer5 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast6 = $vararg_buffer5;
- $vararg_buffer3 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast4 = $vararg_buffer3;
- $vararg_buffer1 = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast2 = $vararg_buffer1;
- $vararg_buffer = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $vararg_lifetime_bitcast = $vararg_buffer;
- $err = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $data = STACKTOP; STACKTOP = STACKTOP + 4096|0;
- $results = STACKTOP; STACKTOP = STACKTOP + 4096|0;
- $global = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $local = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $device_id = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $input = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $output = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $count = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $len = STACKTOP; STACKTOP = STACKTOP + 8|0;
- $buffer = STACKTOP; STACKTOP = STACKTOP + 2048|0;
- $1 = 0;
- $2 = $argc;
- $3 = $argv;
+ STACKTOP = STACKTOP + 10432|0;
+ $vararg_buffer31 = sp + 32|0;
+ $vararg_buffer28 = sp + 112|0;
+ $vararg_buffer26 = sp + 88|0;
+ $vararg_buffer23 = sp + 24|0;
+ $vararg_buffer20 = sp + 80|0;
+ $vararg_buffer18 = sp + 40|0;
+ $vararg_buffer16 = sp + 96|0;
+ $vararg_buffer14 = sp + 104|0;
+ $vararg_buffer11 = sp + 56|0;
+ $vararg_buffer9 = sp + 64|0;
+ $vararg_buffer7 = sp + 72|0;
+ $vararg_buffer5 = sp + 16|0;
+ $vararg_buffer3 = sp;
+ $vararg_buffer1 = sp + 8|0;
+ $vararg_buffer = sp + 48|0;
+ $err = sp + 8376|0;
+ $data = sp + 128|0;
+ $results = sp + 4224|0;
+ $global = sp + 8352|0;
+ $local = sp + 8328|0;
+ $device_id = sp + 8332|0;
+ $input = sp + 8356|0;
+ $output = sp + 8360|0;
+ $count = sp + 8372|0;
+ $len = sp + 8340|0;
+ $buffer = sp + 8384|0;
+ $0 = 0;
+ $1 = $argc;
+ $2 = $argv;
  $use_gpu = 1;
  $i = 0;
  while(1) {
-  $4 = $i;
-  $5 = $2;
-  $6 = ($4|0)<($5|0);
-  if ($6) {
-   $7 = $3;
-   $8 = ($7|0)!=(0|0);
-   $9 = $8;
+  $3 = $i;
+  $4 = $1;
+  $5 = ($3|0)<($4|0);
+  if ($5) {
+   $6 = $2;
+   $7 = ($6|0)!=(0|0);
+   $154 = $7;
   } else {
-   $9 = 0;
+   $154 = 0;
   }
-  if (!($9)) {
+  if (!($154)) {
    break;
   }
-  $10 = $i;
-  $11 = $3;
-  $12 = (($11) + ($10<<2)|0);
-  $13 = HEAP32[$12>>2]|0;
-  $14 = ($13|0)!=(0|0);
-  if ($14) {
-   $15 = $i;
-   $16 = $3;
-   $17 = (($16) + ($15<<2)|0);
-   $18 = HEAP32[$17>>2]|0;
-   $19 = (_strstr(($18|0),((672)|0))|0);
-   $20 = ($19|0)!=(0|0);
-   if ($20) {
+  $8 = $i;
+  $9 = $2;
+  $10 = (($9) + ($8<<2)|0);
+  $11 = HEAP32[$10>>2]|0;
+  $12 = ($11|0)!=(0|0);
+  if ($12) {
+   $13 = $i;
+   $14 = $2;
+   $15 = (($14) + ($13<<2)|0);
+   $16 = HEAP32[$15>>2]|0;
+   $17 = (_strstr(($16|0),(672|0))|0);
+   $18 = ($17|0)!=(0|0);
+   if ($18) {
     $use_gpu = 0;
    } else {
-    $21 = $i;
-    $22 = $3;
-    $23 = (($22) + ($21<<2)|0);
-    $24 = HEAP32[$23>>2]|0;
-    $25 = (_strstr(($24|0),((680)|0))|0);
-    $26 = ($25|0)!=(0|0);
-    if ($26) {
+    $19 = $i;
+    $20 = $2;
+    $21 = (($20) + ($19<<2)|0);
+    $22 = HEAP32[$21>>2]|0;
+    $23 = (_strstr(($22|0),(680|0))|0);
+    $24 = ($23|0)!=(0|0);
+    if ($24) {
      $use_gpu = 1;
     }
    }
   } else {
   }
-  $27 = $i;
-  $28 = (($27) + 1)|0;
-  $i = $28;
+  $25 = $i;
+  $26 = (($25) + 1)|0;
+  $i = $26;
  }
- $29 = $use_gpu;
- $30 = ($29|0)==(1);
- if ($30) {
-  $31 = 720;
+ $27 = $use_gpu;
+ $28 = ($27|0)==(1);
+ if ($28) {
+  $29 = 720;
  } else {
-  $31 = 728;
+  $29 = 728;
  }
- $32 = ($31);
- $vararg_ptr = ($vararg_buffer);
- HEAP32[$vararg_ptr>>2] = $32;
- (_printf(((688)|0),($vararg_buffer|0))|0);
+ HEAP32[$vararg_buffer>>2] = $29;
+ (_printf((688|0),($vararg_buffer|0))|0);
  HEAP32[$count>>2] = 1024;
  $i = 0;
  while(1) {
-  $33 = $i;
-  $34 = HEAP32[$count>>2]|0;
-  $35 = ($33>>>0)<($34>>>0);
-  if (!($35)) {
+  $30 = $i;
+  $31 = HEAP32[$count>>2]|0;
+  $32 = ($30>>>0)<($31>>>0);
+  if (!($32)) {
    break;
   }
-  $36 = (_rand()|0);
-  $37 = (+($36|0));
-  $38 = $37 / 2147483648.0;
-  $39 = $i;
-  $40 = (($data) + ($39<<2)|0);
-  HEAPF32[$40>>2] = $38;
-  $41 = $i;
-  $42 = (($41) + 1)|0;
-  $i = $42;
+  $33 = (_rand()|0);
+  $34 = (+($33|0));
+  $35 = $34 / 2147483648.0;
+  $36 = $i;
+  $37 = (($data) + ($36<<2)|0);
+  HEAPF32[$37>>2] = $35;
+  $38 = $i;
+  $39 = (($38) + 1)|0;
+  $i = $39;
  }
- $43 = $use_gpu;
- $44 = ($43|0)!=(0);
- $45 = $44 ? 4 : 2;
- $46 = ($45|0)<(0);
- $47 = $46 << 31 >> 31;
- $48 = (_clGetDeviceIDs((0|0),($45|0),($47|0),1,($device_id|0),(0|0))|0);
- HEAP32[$err>>2] = $48;
- $49 = HEAP32[$err>>2]|0;
- $50 = ($49|0)!=(0);
- if ($50) {
-  (_printf(((736)|0),($vararg_buffer1|0))|0);
-  $1 = 1;
-  $166 = $1;
-  STACKTOP = sp;return ($166|0);
+ $40 = $use_gpu;
+ $41 = ($40|0)!=(0);
+ $42 = $41 ? 4 : 2;
+ $43 = ($42|0)<(0);
+ $44 = $43 << 31 >> 31;
+ $45 = (_clGetDeviceIDs((0|0),($42|0),($44|0),1,($device_id|0),(0|0))|0);
+ HEAP32[$err>>2] = $45;
+ $46 = HEAP32[$err>>2]|0;
+ $47 = ($46|0)!=(0);
+ if ($47) {
+  (_printf((736|0),($vararg_buffer1|0))|0);
+  $0 = 1;
+  $153 = $0;
+  STACKTOP = sp;return ($153|0);
  }
- $51 = (_clCreateContext((0|0),1,($device_id|0),(0|0),(0|0),($err|0))|0);
- $context = $51;
- $52 = $context;
- $53 = ($52|0)!=(0|0);
- if (!($53)) {
-  (_printf(((784)|0),($vararg_buffer3|0))|0);
-  $1 = 1;
-  $166 = $1;
-  STACKTOP = sp;return ($166|0);
+ $48 = (_clCreateContext((0|0),1,($device_id|0),(0|0),(0|0),($err|0))|0);
+ $context = $48;
+ $49 = $context;
+ $50 = ($49|0)!=(0|0);
+ if (!($50)) {
+  (_printf((784|0),($vararg_buffer3|0))|0);
+  $0 = 1;
+  $153 = $0;
+  STACKTOP = sp;return ($153|0);
  }
- $54 = $context;
- $55 = HEAP32[$device_id>>2]|0;
- $56 = (_clCreateCommandQueue(($54|0),($55|0),0,0,($err|0))|0);
- $commands = $56;
- $57 = $commands;
- $58 = ($57|0)!=(0|0);
- if (!($58)) {
-  (_printf(((832)|0),($vararg_buffer5|0))|0);
-  $1 = 1;
-  $166 = $1;
-  STACKTOP = sp;return ($166|0);
+ $51 = $context;
+ $52 = HEAP32[$device_id>>2]|0;
+ $53 = (_clCreateCommandQueue(($51|0),($52|0),0,0,($err|0))|0);
+ $commands = $53;
+ $54 = $commands;
+ $55 = ($54|0)!=(0|0);
+ if (!($55)) {
+  (_printf((832|0),($vararg_buffer5|0))|0);
+  $0 = 1;
+  $153 = $0;
+  STACKTOP = sp;return ($153|0);
  }
- $59 = $context;
- $60 = (_clCreateProgramWithSource(($59|0),1,((664)|0),(0|0),($err|0))|0);
- $program = $60;
- $61 = $program;
- $62 = ($61|0)!=(0|0);
- if (!($62)) {
-  (_printf(((880)|0),($vararg_buffer7|0))|0);
-  $1 = 1;
-  $166 = $1;
-  STACKTOP = sp;return ($166|0);
+ $56 = $context;
+ $57 = (_clCreateProgramWithSource(($56|0),1,(664|0),(0|0),($err|0))|0);
+ $program = $57;
+ $58 = $program;
+ $59 = ($58|0)!=(0|0);
+ if (!($59)) {
+  (_printf((880|0),($vararg_buffer7|0))|0);
+  $0 = 1;
+  $153 = $0;
+  STACKTOP = sp;return ($153|0);
  }
- $63 = $program;
- $64 = (_clBuildProgram(($63|0),0,(0|0),(0|0),(0|0),(0|0))|0);
- HEAP32[$err>>2] = $64;
- $65 = HEAP32[$err>>2]|0;
- $66 = ($65|0)!=(0);
- if ($66) {
-  (_printf(((928)|0),($vararg_buffer9|0))|0);
-  $67 = $program;
-  $68 = HEAP32[$device_id>>2]|0;
-  $69 = ($buffer);
-  (_clGetProgramBuildInfo(($67|0),($68|0),4483,2048,($69|0),($len|0))|0);
-  $70 = ($buffer);
-  $vararg_ptr13 = ($vararg_buffer11);
-  HEAP32[$vararg_ptr13>>2] = $70;
-  (_printf(((976)|0),($vararg_buffer11|0))|0);
+ $60 = $program;
+ $61 = (_clBuildProgram(($60|0),0,(0|0),(0|0),(0|0),(0|0))|0);
+ HEAP32[$err>>2] = $61;
+ $62 = HEAP32[$err>>2]|0;
+ $63 = ($62|0)!=(0);
+ if ($63) {
+  (_printf((928|0),($vararg_buffer9|0))|0);
+  $64 = $program;
+  $65 = HEAP32[$device_id>>2]|0;
+  (_clGetProgramBuildInfo(($64|0),($65|0),4483,2048,($buffer|0),($len|0))|0);
+  HEAP32[$vararg_buffer11>>2] = $buffer;
+  (_printf((976|0),($vararg_buffer11|0))|0);
   _exit(1);
   // unreachable;
  }
- $71 = $program;
- $72 = (_clCreateKernel(($71|0),((984)|0),($err|0))|0);
- $kernel = $72;
- $73 = $kernel;
- $74 = ($73|0)!=(0|0);
- if (!($74)) {
-  (_printf(((992)|0),($vararg_buffer14|0))|0);
+ $66 = $program;
+ $67 = (_clCreateKernel(($66|0),(984|0),($err|0))|0);
+ $kernel = $67;
+ $68 = $kernel;
+ $69 = ($68|0)!=(0|0);
+ if (!($69)) {
+  (_printf((992|0),($vararg_buffer14|0))|0);
   _exit(1);
   // unreachable;
  }
- $75 = HEAP32[$err>>2]|0;
- $76 = ($75|0)!=(0);
- if ($76) {
-  (_printf(((992)|0),($vararg_buffer14|0))|0);
+ $70 = HEAP32[$err>>2]|0;
+ $71 = ($70|0)!=(0);
+ if ($71) {
+  (_printf((992|0),($vararg_buffer14|0))|0);
   _exit(1);
   // unreachable;
  }
- $77 = $context;
- $78 = HEAP32[$count>>2]|0;
- $79 = $78<<2;
- $80 = (_clCreateBuffer(($77|0),4,0,($79|0),(0|0),(0|0))|0);
- HEAP32[$input>>2] = $80;
- $81 = $context;
- $82 = HEAP32[$count>>2]|0;
- $83 = $82<<2;
- $84 = (_clCreateBuffer(($81|0),2,0,($83|0),(0|0),(0|0))|0);
- HEAP32[$output>>2] = $84;
+ $72 = $context;
+ $73 = HEAP32[$count>>2]|0;
+ $74 = $73<<2;
+ $75 = (_clCreateBuffer(($72|0),4,0,($74|0),(0|0),(0|0))|0);
+ HEAP32[$input>>2] = $75;
+ $76 = $context;
+ $77 = HEAP32[$count>>2]|0;
+ $78 = $77<<2;
+ $79 = (_clCreateBuffer(($76|0),2,0,($78|0),(0|0),(0|0))|0);
+ HEAP32[$output>>2] = $79;
+ $80 = HEAP32[$input>>2]|0;
+ $81 = ($80|0)!=(0|0);
+ if (!($81)) {
+  (_printf((1040|0),($vararg_buffer16|0))|0);
+  _exit(1);
+  // unreachable;
+ }
+ $82 = HEAP32[$output>>2]|0;
+ $83 = ($82|0)!=(0|0);
+ if (!($83)) {
+  (_printf((1040|0),($vararg_buffer16|0))|0);
+  _exit(1);
+  // unreachable;
+ }
+ $84 = $commands;
  $85 = HEAP32[$input>>2]|0;
- $86 = ($85|0)!=(0|0);
- if (!($86)) {
-  (_printf(((1040)|0),($vararg_buffer16|0))|0);
-  _exit(1);
-  // unreachable;
- }
- $87 = HEAP32[$output>>2]|0;
- $88 = ($87|0)!=(0|0);
- if (!($88)) {
-  (_printf(((1040)|0),($vararg_buffer16|0))|0);
-  _exit(1);
-  // unreachable;
- }
- $89 = $commands;
- $90 = HEAP32[$input>>2]|0;
- $91 = HEAP32[$count>>2]|0;
- $92 = $91<<2;
- $93 = ($data);
- $94 = $93;
- $95 = (_clEnqueueWriteBuffer(($89|0),($90|0),1,0,($92|0),($94|0),0,(0|0),(0|0))|0);
- HEAP32[$err>>2] = $95;
- $96 = HEAP32[$err>>2]|0;
- $97 = ($96|0)!=(0);
- if ($97) {
-  (_printf(((1088)|0),($vararg_buffer18|0))|0);
+ $86 = HEAP32[$count>>2]|0;
+ $87 = $86<<2;
+ $88 = (_clEnqueueWriteBuffer(($84|0),($85|0),1,0,($87|0),($data|0),0,(0|0),(0|0))|0);
+ HEAP32[$err>>2] = $88;
+ $89 = HEAP32[$err>>2]|0;
+ $90 = ($89|0)!=(0);
+ if ($90) {
+  (_printf((1088|0),($vararg_buffer18|0))|0);
   _exit(1);
   // unreachable;
  }
  HEAP32[$err>>2] = 0;
- $98 = $kernel;
- $99 = $input;
- $100 = (_clSetKernelArg(($98|0),0,4,($99|0))|0);
+ $91 = $kernel;
+ $92 = (_clSetKernelArg(($91|0),0,4,($input|0))|0);
+ HEAP32[$err>>2] = $92;
+ $93 = $kernel;
+ $94 = (_clSetKernelArg(($93|0),1,4,($output|0))|0);
+ $95 = HEAP32[$err>>2]|0;
+ $96 = $95 | $94;
+ HEAP32[$err>>2] = $96;
+ $97 = $kernel;
+ $98 = (_clSetKernelArg(($97|0),2,4,($count|0))|0);
+ $99 = HEAP32[$err>>2]|0;
+ $100 = $99 | $98;
  HEAP32[$err>>2] = $100;
- $101 = $kernel;
- $102 = $output;
- $103 = (_clSetKernelArg(($101|0),1,4,($102|0))|0);
- $104 = HEAP32[$err>>2]|0;
- $105 = $104 | $103;
- HEAP32[$err>>2] = $105;
- $106 = $kernel;
- $107 = $count;
- $108 = (_clSetKernelArg(($106|0),2,4,($107|0))|0);
- $109 = HEAP32[$err>>2]|0;
- $110 = $109 | $108;
- HEAP32[$err>>2] = $110;
- $111 = HEAP32[$err>>2]|0;
- $112 = ($111|0)!=(0);
- if ($112) {
-  $113 = HEAP32[$err>>2]|0;
-  $vararg_ptr22 = ($vararg_buffer20);
-  HEAP32[$vararg_ptr22>>2] = $113;
-  (_printf(((1136)|0),($vararg_buffer20|0))|0);
+ $101 = HEAP32[$err>>2]|0;
+ $102 = ($101|0)!=(0);
+ if ($102) {
+  $103 = HEAP32[$err>>2]|0;
+  HEAP32[$vararg_buffer20>>2] = $103;
+  (_printf((1136|0),($vararg_buffer20|0))|0);
   _exit(1);
   // unreachable;
  }
- $114 = $kernel;
- $115 = HEAP32[$device_id>>2]|0;
- $116 = $local;
- $117 = (_clGetKernelWorkGroupInfo(($114|0),($115|0),4528,4,($116|0),(0|0))|0);
- HEAP32[$err>>2] = $117;
- $118 = HEAP32[$err>>2]|0;
- $119 = ($118|0)!=(0);
- if ($119) {
-  $120 = HEAP32[$err>>2]|0;
-  $vararg_ptr25 = ($vararg_buffer23);
-  HEAP32[$vararg_ptr25>>2] = $120;
-  (_printf(((1184)|0),($vararg_buffer23|0))|0);
+ $104 = $kernel;
+ $105 = HEAP32[$device_id>>2]|0;
+ $106 = (_clGetKernelWorkGroupInfo(($104|0),($105|0),4528,4,($local|0),(0|0))|0);
+ HEAP32[$err>>2] = $106;
+ $107 = HEAP32[$err>>2]|0;
+ $108 = ($107|0)!=(0);
+ if ($108) {
+  $109 = HEAP32[$err>>2]|0;
+  HEAP32[$vararg_buffer23>>2] = $109;
+  (_printf((1184|0),($vararg_buffer23|0))|0);
   _exit(1);
   // unreachable;
  }
- $121 = HEAP32[$count>>2]|0;
- HEAP32[$global>>2] = $121;
- $122 = $commands;
- $123 = $kernel;
- $124 = (_clEnqueueNDRangeKernel(($122|0),($123|0),1,(0|0),($global|0),($local|0),0,(0|0),(0|0))|0);
- HEAP32[$err>>2] = $124;
- $125 = HEAP32[$err>>2]|0;
- $126 = ($125|0)!=(0);
- if ($126) {
-  (_printf(((1240)|0),($vararg_buffer26|0))|0);
-  $1 = 1;
-  $166 = $1;
-  STACKTOP = sp;return ($166|0);
+ $110 = HEAP32[$count>>2]|0;
+ HEAP32[$global>>2] = $110;
+ $111 = $commands;
+ $112 = $kernel;
+ $113 = (_clEnqueueNDRangeKernel(($111|0),($112|0),1,(0|0),($global|0),($local|0),0,(0|0),(0|0))|0);
+ HEAP32[$err>>2] = $113;
+ $114 = HEAP32[$err>>2]|0;
+ $115 = ($114|0)!=(0);
+ if ($115) {
+  (_printf((1240|0),($vararg_buffer26|0))|0);
+  $0 = 1;
+  $153 = $0;
+  STACKTOP = sp;return ($153|0);
  }
- $127 = $commands;
- (_clFinish(($127|0))|0);
- $128 = $commands;
- $129 = HEAP32[$output>>2]|0;
- $130 = HEAP32[$count>>2]|0;
- $131 = $130<<2;
- $132 = ($results);
- $133 = $132;
- $134 = (_clEnqueueReadBuffer(($128|0),($129|0),1,0,($131|0),($133|0),0,(0|0),(0|0))|0);
- HEAP32[$err>>2] = $134;
- $135 = HEAP32[$err>>2]|0;
- $136 = ($135|0)!=(0);
- if ($136) {
-  $137 = HEAP32[$err>>2]|0;
-  $vararg_ptr30 = ($vararg_buffer28);
-  HEAP32[$vararg_ptr30>>2] = $137;
-  (_printf(((1280)|0),($vararg_buffer28|0))|0);
+ $116 = $commands;
+ (_clFinish(($116|0))|0);
+ $117 = $commands;
+ $118 = HEAP32[$output>>2]|0;
+ $119 = HEAP32[$count>>2]|0;
+ $120 = $119<<2;
+ $121 = (_clEnqueueReadBuffer(($117|0),($118|0),1,0,($120|0),($results|0),0,(0|0),(0|0))|0);
+ HEAP32[$err>>2] = $121;
+ $122 = HEAP32[$err>>2]|0;
+ $123 = ($122|0)!=(0);
+ if ($123) {
+  $124 = HEAP32[$err>>2]|0;
+  HEAP32[$vararg_buffer28>>2] = $124;
+  (_printf((1280|0),($vararg_buffer28|0))|0);
   _exit(1);
   // unreachable;
  }
  $correct = 0;
  $i = 0;
  while(1) {
-  $138 = $i;
-  $139 = HEAP32[$count>>2]|0;
-  $140 = ($138>>>0)<($139>>>0);
-  if (!($140)) {
+  $125 = $i;
+  $126 = HEAP32[$count>>2]|0;
+  $127 = ($125>>>0)<($126>>>0);
+  if (!($127)) {
    break;
   }
-  $141 = $i;
-  $142 = (($results) + ($141<<2)|0);
-  $143 = +HEAPF32[$142>>2];
-  $144 = $i;
-  $145 = (($data) + ($144<<2)|0);
-  $146 = +HEAPF32[$145>>2];
-  $147 = $i;
-  $148 = (($data) + ($147<<2)|0);
-  $149 = +HEAPF32[$148>>2];
-  $150 = $146 * $149;
-  $151 = $143 - $150;
-  $152 = $151;
-  $153 = $152 < 9.99999999999999954748E-8;
-  if ($153) {
-   $154 = $correct;
-   $155 = (($154) + 1)|0;
-   $correct = $155;
+  $128 = $i;
+  $129 = (($results) + ($128<<2)|0);
+  $130 = +HEAPF32[$129>>2];
+  $131 = $i;
+  $132 = (($data) + ($131<<2)|0);
+  $133 = +HEAPF32[$132>>2];
+  $134 = $i;
+  $135 = (($data) + ($134<<2)|0);
+  $136 = +HEAPF32[$135>>2];
+  $137 = $133 * $136;
+  $138 = $130 - $137;
+  $139 = $138;
+  $140 = $139 < 9.99999999999999954748E-8;
+  if ($140) {
+   $141 = $correct;
+   $142 = (($141) + 1)|0;
+   $correct = $142;
   }
-  $156 = $i;
-  $157 = (($156) + 1)|0;
-  $i = $157;
+  $143 = $i;
+  $144 = (($143) + 1)|0;
+  $i = $144;
  }
- $158 = $correct;
- $159 = HEAP32[$count>>2]|0;
- $vararg_ptr33 = ($vararg_buffer31);
- HEAP32[$vararg_ptr33>>2] = $158;
+ $145 = $correct;
+ $146 = HEAP32[$count>>2]|0;
+ HEAP32[$vararg_buffer31>>2] = $145;
  $vararg_ptr34 = (($vararg_buffer31) + 4|0);
- HEAP32[$vararg_ptr34>>2] = $159;
- (_printf(((1320)|0),($vararg_buffer31|0))|0);
- $160 = HEAP32[$input>>2]|0;
- (_clReleaseMemObject(($160|0))|0);
- $161 = HEAP32[$output>>2]|0;
- (_clReleaseMemObject(($161|0))|0);
- $162 = $program;
- (_clReleaseProgram(($162|0))|0);
- $163 = $kernel;
- (_clReleaseKernel(($163|0))|0);
- $164 = $commands;
- (_clReleaseCommandQueue(($164|0))|0);
- $165 = $context;
- (_clReleaseContext(($165|0))|0);
- $1 = 0;
- $166 = $1;
- STACKTOP = sp;return ($166|0);
+ HEAP32[$vararg_ptr34>>2] = $146;
+ (_printf((1320|0),($vararg_buffer31|0))|0);
+ $147 = HEAP32[$input>>2]|0;
+ (_clReleaseMemObject(($147|0))|0);
+ $148 = HEAP32[$output>>2]|0;
+ (_clReleaseMemObject(($148|0))|0);
+ $149 = $program;
+ (_clReleaseProgram(($149|0))|0);
+ $150 = $kernel;
+ (_clReleaseKernel(($150|0))|0);
+ $151 = $commands;
+ (_clReleaseCommandQueue(($151|0))|0);
+ $152 = $context;
+ (_clReleaseContext(($152|0))|0);
+ $0 = 0;
+ $153 = $0;
+ STACKTOP = sp;return ($153|0);
 }
 function runPostSets() {
  
@@ -8227,7 +8186,7 @@ function _memcpy(dest, src, num) {
   return { _strlen: _strlen, _main: _main, _rand_r: _rand_r, _memset: _memset, _memcpy: _memcpy, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, setTempRet1: setTempRet1, setTempRet2: setTempRet2, setTempRet3: setTempRet3, setTempRet4: setTempRet4, setTempRet5: setTempRet5, setTempRet6: setTempRet6, setTempRet7: setTempRet7, setTempRet8: setTempRet8, setTempRet9: setTempRet9 };
 })
 // EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_llvm_lifetime_start": _llvm_lifetime_start, "_clReleaseProgram": _clReleaseProgram, "_send": _send, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "__reallyNegative": __reallyNegative, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fflush": _fflush, "_pwrite": _pwrite, "___setErrNo": ___setErrNo, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "__exit": __exit, "__formatString": __formatString, "_clFinish": _clFinish, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_write": _write, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_free": _free, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_clCreateKernel": _clCreateKernel, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_malloc": _malloc, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_llvm_lifetime_end": _llvm_lifetime_end, "_exit": _exit, "_strstr": _strstr, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_clReleaseProgram": _clReleaseProgram, "_send": _send, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "__reallyNegative": __reallyNegative, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fflush": _fflush, "_pwrite": _pwrite, "___setErrNo": ___setErrNo, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "__exit": __exit, "_clFinish": _clFinish, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_write": _write, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_free": _free, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_clCreateKernel": _clCreateKernel, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_malloc": _malloc, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "__formatString": __formatString, "_exit": _exit, "_strstr": _strstr, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _main = Module["_main"] = asm["_main"];
 var _rand_r = Module["_rand_r"] = asm["_rand_r"];
@@ -8284,10 +8243,6 @@ Module['callMain'] = Module.callMain = function callMain(args) {
   assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
   args = args || [];
-
-  if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) {
-    Module.printErr('preload time: ' + (Date.now() - preloadStartTime) + ' ms');
-  }
 
   ensureInitRuntime();
 
@@ -8362,6 +8317,10 @@ function run(args) {
 
     preMain();
 
+    if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) {
+      Module.printErr('pre-main prep time: ' + (Date.now() - preloadStartTime) + ' ms');
+    }
+
     if (Module['_main'] && shouldRunNow) {
       Module['callMain'](args);
     }
@@ -8413,7 +8372,9 @@ function abort(text) {
   ABORT = true;
   EXITSTATUS = 1;
 
-  throw 'abort() at ' + stackTrace();
+  var extra = '';
+
+  throw 'abort() at ' + stackTrace() + extra;
 }
 Module['abort'] = Module.abort = abort;
 
