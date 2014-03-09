@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>library_cuda.js</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title=""></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: </em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/LibraryOpenCL.html">LibraryOpenCL</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: library_cuda.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+var LibraryCUDA = {  
+  $CU: {
+    cuda_init: 0,
+    cuda_from_type: 4/*DEVICE_TYPE_GPU*/,
+    cuda_context: 0,
+    cuda_device: 0,
+    cuda_command_queue: 0,
+    cuda_digits: [1,2,3,4,5,6,7,8,9,0],
+    cuda_objects: {},
+    // Errors
+    cuda_errors: [],
+
+    /**
+     * Description
+     * @method cudaInit
+     * @return cudaSuccess(0)
+     */
+    init: function() {
+      if (CU.cuda_init == 0) {
+        
+        console.log(&#x27;%c CU2WebCL-Translator V1.0 ! &#x27;, &#x27;background: #222; color: #bada55&#x27;);
+
+        if (webcl == undefined) {
+        
+          alert(&quot;Unfortunately your system does not support WebCL. &quot; +
+          &quot;Make sure that you have WebKit Samsung or Firefox Nokia plugin&quot;);
+
+          console.error(&quot;Unfortunately your system does not support WebCL.\n&quot;);
+          console.error(&quot;Make sure that you have WebKit Samsung or Firefox Nokia plugin\n&quot;);  
+        } else {
+#if CU_GRAB_TRACE
+          CU.cudaBeginStackTrace(&quot;CU.init&quot;,[]);
+#endif
+          // Just for call cuda 
+          cuda = webcl;
+
+          // Get the first GPU device and create a context
+#if CU_GRAB_TRACE
+          CU.cudaCallStackTrace( cuda+&quot;.getPlatforms&quot;,[]);
+#endif
+          var _platforms  = cuda.getPlatforms();
+#if CU_GRAB_TRACE
+          CU.cudaCallStackTrace( _platforms[0]+&quot;.getDevices&quot;,[CU.cuda_from_type]);
+#endif          
+          var _devices    = _platforms[0].getDevices(CU.cuda_from_type);
+#if CU_GRAB_TRACE
+          CU.cudaCallStackTrace( cuda+&quot;.createContext&quot;,[_devices[0]]);
+#endif          
+          var _context    = cuda.createContext(_devices[0]);  
+#if CU_GRAB_TRACE
+          CU.cudaCallStackTrace( _context+&quot;.createCommandQueue&quot;,[_devices[0],0]);
+#endif              
+          var _command    = _context.createCommandQueue(_devices[0],0);  
+
+          // Grab Id
+          CU.cuda_context       = CU.udid(_context);
+          CU.cuda_device        = CU.udid(_devices[0]);
+          CU.cuda_command_queue = CU.udid(_command);
+
+          // Init
+          CU.cuda_init = 1;
+
+#if CU_GRAB_TRACE
+          CU.cudaEndStackTrace([1],&quot;&quot;,&quot;&quot;);
+#endif          
+        }
+
+      }
+
+      return CU.cuda_init;
+    },
+
+    /**
+     * Description
+     * @method udid
+     * @param {} obj
+     * @return _id
+     */
+    udid: function (obj) {    
+      var _id;
+
+      if (obj !== undefined) {
+
+        if ( obj.hasOwnProperty(&#x27;udid&#x27;) ) {
+         _id = obj.udid;
+
+         if (_id !== undefined) {
+           return _id;
+         }
+        }
+      }
+
+      var _uuid = [];
+
+      _uuid[0] = CU.cuda_digits[0 | Math.random()*CU.cuda_digits.length-1]; // First digit of udid can&#x27;t be 0
+      for (var i = 1; i &lt; 6; i++) _uuid[i] = CU.cuda_digits[0 | Math.random()*CU.cuda_digits.length];
+
+      _id = _uuid.join(&#x27;&#x27;);
+
+#if CU_DEBUG
+      if (_id in CU.cuda_objects) {
+        console.error(&quot;/!\\ **********************&quot;);
+        console.error(&quot;/!\\ UDID not unique !!!!!!&quot;);
+        console.error(&quot;/!\\ **********************&quot;);        
+      }
+#endif
+    
+      // /!\ Call udid when you add inside cl_objects if you pass object in parameter
+      if (obj !== undefined) {
+        Object.defineProperty(obj, &quot;udid&quot;, { value : _id,writable : false });
+        CU.cuda_objects[_id]=obj;
+      }
+
+      return _id;      
+    },
+
+    /**
+     * Description
+     * @method catchError
+     * @param {} e
+     * @return _error
+     */
+    catchError: function(e) {
+      console.error(e);
+      var _error = -1;
+
+      if (e instanceof WebCLException) {
+        var _str=e.message;
+        var _n=_str.lastIndexOf(&quot; &quot;);
+        _error = _str.substr(_n+1,_str.length-_n-1);
+      }
+      
+      return _error;
+    },
+
+    /**
+     * Description
+     * @method convertCudaKernelToOpenCL
+     * @param {} kernel
+     * @return _kernelConverted
+     */
+    convertCudaKernelToOpenCL: function(kernel, name) {
+
+      // Remove all comments ...
+      var _kernelConverted  = kernel.replace(/(?:(([&quot;&#x27;])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(&lt;!--(?:(?!--&gt;).)*--&gt;))/g, &quot;&quot;);
+      
+      // Remove all char \n \r \t ...
+      _kernelConverted = _kernelConverted.replace(/\n/g, &quot; &quot;);
+      _kernelConverted = _kernelConverted.replace(/\r/g, &quot; &quot;);
+
+      // Remove all the multispace
+      _kernelConverted = _kernelConverted.replace(/\s{2,}/g, &quot; &quot;);
+      _kernelConverted = _kernelConverted.replace(/template[A-Za-z0-9_\s]+\&lt;([^)]+)\&gt;/g, &quot;&quot;);
+
+      // Convert common CUDA equivalent to OpenCL
+      _kernelConverted = _kernelConverted.replace(&quot;__global__&quot;,&quot;__kernel&quot;);
+      _kernelConverted = _kernelConverted.replace(/__shared__/g,&quot;__local&quot;);
+      _kernelConverted = _kernelConverted.replace(/__constant__/g,&quot;__constant&quot;);
+
+      _kernelConverted = _kernelConverted.replace(/__syncthreads\(\)/g,&quot;barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE)&quot;);
+
+      _kernelConverted = _kernelConverted.replace(/blockDim.x/g,&quot;get_local_size(0)&quot;);
+      _kernelConverted = _kernelConverted.replace(/blockDim.y/g,&quot;get_local_size(1)&quot;);
+      _kernelConverted = _kernelConverted.replace(/blockDim.z/g,&quot;get_local_size(2)&quot;);
+
+      _kernelConverted = _kernelConverted.replace(/blockIdx.x/g,&quot;get_group_id(0)&quot;);
+      _kernelConverted = _kernelConverted.replace(/blockIdx.y/g,&quot;get_group_id(1)&quot;);
+      _kernelConverted = _kernelConverted.replace(/blockIdx.z/g,&quot;get_group_id(2)&quot;);
+
+      _kernelConverted = _kernelConverted.replace(/threadIdx.x/g,&quot;get_local_id(0)&quot;);
+      _kernelConverted = _kernelConverted.replace(/threadIdx.y/g,&quot;get_local_id(1)&quot;);
+      _kernelConverted = _kernelConverted.replace(/threadIdx.z/g,&quot;get_local_id(2)&quot;);
+
+      // Add space qualifier : kernel pointer arguments must have a global, local, or constant address 
+      var _matches = _kernelConverted.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+      
+      for (var i = 0; i &lt; _matches.length; i++) {
+
+        var _braceOpen  = _matches[i].indexOf(&quot;(&quot;);
+        var _braceClose = _matches[i].indexOf(&quot;)&quot;);
+        var _parameter  = _matches[i].substr(_braceOpen + 1,_braceClose - _braceOpen - 1);
+
+        var _paramList = _parameter.split(&quot;,&quot;);
+        for (var j = 0; j &lt; _paramList.length; j++) {
+          if ( (_paramList[j].indexOf(&quot;*&quot;) != -1) &amp;&amp; (_paramList[j].indexOf(&quot;__local&quot;) == -1) &amp;&amp; (_paramList[j].indexOf(&quot;__constant&quot;) == -1)) {
+            // Pointer 
+            _kernelConverted = _kernelConverted.replace(_paramList[j],&quot;__global &quot;+_paramList[j]);
+          }
+        }
+      }
+
+      return _kernelConverted;
+    },
+
+#if CU_GRAB_TRACE     
+    stack_trace_offset: -1,
+    stack_trace_complete: &quot;// Javascript cuda Stack Trace\n\n&quot;,
+    stack_trace: &quot;&quot;,
+
+    /**
+     * Description
+     * @method cudaBeginStackTrace
+     * @param {} name
+     * @param {} parameter
+     * @return 
+     */
+    cudaBeginStackTrace: function(name,parameter) {
+      if (CU.stack_trace_offset == -1) {
+        CU.stack_trace_offset = &quot;&quot;;
+      } else {
+        CU.stack_trace_offset += &quot;\t&quot;;
+      }
+
+      CU.stack_trace += &quot;\n&quot; + CU.stack_trace_offset + name + &quot;(&quot;
+
+      CU.cudaCallParameterStackTrace(parameter);
+
+      CU.stack_trace += &quot;)\n&quot;;
+    },
+                                                              
+    /**
+     * Description
+     * @method cudaCallStackTrace
+     * @param {} name
+     * @param {} parameter
+     * @return 
+     */
+    cudaCallStackTrace: function(name,parameter) {
+      CU.stack_trace += CU.stack_trace_offset + &quot;\t-&gt;&quot; + name + &quot;(&quot;
+
+      CU.cudaCallParameterStackTrace(parameter);
+
+      CU.stack_trace += &quot;)\n&quot;;
+    },
+
+    /**
+     * Description
+     * @method cudaCallParameterStackTrace
+     * @param {} parameter
+     * @return 
+     */
+    cudaCallParameterStackTrace: function(parameter) {
+      
+      for (var i = 0; i &lt; parameter.length - 1 ; i++) {
+        if ( 
+          (parameter[i] instanceof Uint8Array)    ||
+          (parameter[i] instanceof Uint16Array)   ||
+          (parameter[i] instanceof Uint32Array)   ||
+          (parameter[i] instanceof Int8Array)     ||
+          (parameter[i] instanceof Int16Array)    ||
+          (parameter[i] instanceof Int32Array)    ||
+          (parameter[i] instanceof Float32Array)  ||          
+          (parameter[i] instanceof ArrayBuffer)   ||            
+          (parameter[i] instanceof Array)){ 
+
+          CU.stack_trace += &quot;[&quot;;  
+          for (var j = 0; j &lt; Math.min(25,parameter[i].length - 1) ; j++) {
+            CU.stack_trace += parameter[i][j] + &quot;,&quot;;
+          }
+          if (parameter[i].length &gt; 25) {
+            CU.stack_trace += &quot; ... ,&quot;;
+          }
+          if (parameter[i].length &gt;= 1) {
+            CU.stack_trace += parameter[i][parameter[i].length - 1];
+          }
+          CU.stack_trace += &quot;],&quot;;
+        } else {
+          CU.stack_trace += parameter[i] + &quot;,&quot;;  
+        }
+      }
+
+      if (parameter.length &gt;= 1) {
+        if ( 
+          (parameter[parameter.length - 1] instanceof Uint8Array)    ||
+          (parameter[parameter.length - 1] instanceof Uint16Array)   ||
+          (parameter[parameter.length - 1] instanceof Uint32Array)   ||
+          (parameter[parameter.length - 1] instanceof Int8Array)     ||
+          (parameter[parameter.length - 1] instanceof Int16Array)    ||
+          (parameter[parameter.length - 1] instanceof Int32Array)    ||
+          (parameter[parameter.length - 1] instanceof Float32Array)  ||          
+          (parameter[parameter.length - 1] instanceof ArrayBuffer)   ||  
+          (parameter[parameter.length - 1] instanceof Array)){ 
+
+          CU.stack_trace += &quot;[&quot;;  
+          for (var j = 0; j &lt; Math.min(25,parameter[parameter.length - 1].length - 1) ; j++) {
+            CU.stack_trace += parameter[parameter.length - 1][j] + &quot;,&quot;;
+          }
+          if (parameter[parameter.length - 1].length &gt; 25) {
+            CU.stack_trace += &quot; ... ,&quot;;
+          }
+          if (parameter[parameter.length - 1].length &gt;= 1) {
+            CU.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
+          }
+          CU.stack_trace += &quot;]&quot;;
+        } else {
+          CU.stack_trace += parameter[parameter.length - 1]; 
+        }
+      }
+    },
+
+    /**
+     * Description
+     * @method cudaEndStackTrace
+     * @param {} result
+     * @param {} message
+     * @param {} exception
+     * @return 
+     */
+    cudaEndStackTrace: function(result,message,exception) {
+      CU.stack_trace += CU.stack_trace_offset + &quot;\t\t=&gt;Result (&quot; + result[0];
+      if (result.length &gt;= 2) {
+        CU.stack_trace += &quot; : &quot;;
+      }
+
+      for (var i = 1; i &lt; result.length - 1 ; i++) {
+        CU.stack_trace += ( result[i] == 0 ? &#x27;0&#x27; : {{{ makeGetValue(&#x27;result[i]&#x27;, &#x27;0&#x27;, &#x27;i32&#x27;) }}} ) + &quot; - &quot;;
+      }
+
+      if (result.length &gt;= 2) {
+        CU.stack_trace +=  ( result[result.length - 1] == 0 ? &#x27;0&#x27; : {{{ makeGetValue(&#x27;result[result.length - 1]&#x27;, &#x27;0&#x27;, &#x27;i32&#x27;) }}} );
+      }
+
+      CU.stack_trace += &quot;) - Message (&quot; + message + &quot;) - Exception (&quot; + exception + &quot;)\n&quot;;
+
+#if CU_PRINT_TRACE
+      console.info(CU.stack_trace);
+      //alert(CU.stack_trace); // Useful for step by step debugging
+#endif   
+      CU.stack_trace_complete += CU.stack_trace;
+      CU.stack_trace = &quot;&quot;;
+
+      if (CU.stack_trace_offset == &quot;&quot;) {
+        CU.stack_trace_offset = -1;
+      } else {
+        CU.stack_trace_offset = CU.stack_trace_offset.substr(0,CU.stack_trace_offset.length-1);
+      }
+    },
+#endif
+  },
+
+  /**
+   * Description
+   * @method cudaPrintStackTrace
+   * @param {} param_value
+   * @param {} param_value_size
+   * @return MemberExpression
+   */
+  cudaPrintStackTrace: function(param_value,param_value_size) {
+#if CU_GRAB_TRACE
+    var _size = {{{ makeGetValue(&#x27;param_value_size&#x27;, &#x27;0&#x27;, &#x27;i32&#x27;) }}} ;
+    
+    if (_size == 0) {
+      {{{ makeSetValue(&#x27;param_value_size&#x27;, &#x27;0&#x27;, &#x27;CU.stack_trace_complete.length + 1&#x27;, &#x27;i32&#x27;) }}} /* Size of char stack */;
+    } else {
+      writeStringToMemory(CU.stack_trace_complete, param_value);
+    }
+#else
+    {{{ makeSetValue(&#x27;param_value_size&#x27;, &#x27;0&#x27;, &#x27;0&#x27;, &#x27;i32&#x27;) }}}
+#endif    
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaEventCreate
+   * @return cudaSuccess(0)
+   */
+  cudaEventCreate: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaEventCreate&quot;,[]);
+#endif
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 22; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaEventRecord
+   * @return cudaSuccess(0)
+   */
+  cudaEventRecord: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaEventRecord&quot;,[]);
+#endif
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+  
+    return 22; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaEventSynchronize
+   * @return cudaSuccess(0)
+   */
+  cudaEventSynchronize: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaEventSynchronize&quot;,[]);
+#endif
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 22; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaEventElapsedTime
+   * @return cudaSuccess(0)
+   */
+  cudaEventElapsedTime: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaEventElapsedTime&quot;,[]);
+#endif
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 22; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaSetDevice
+   * @param {} device  - Device on which the active host thread should execute the device code.
+   * @return cudaSuccess(0), cudaErrorInvalidDevice(9), cudaErrorDeviceAlreadyInUse()
+   */
+  cudaSetDevice: function(device_type) {
+
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaSetDevice&quot;,[device_type]);
+#endif
+
+    // 0  : DEVICE_TYPE_GPU
+    // 1  : DEVICE_TYPE_CPU
+    // 2  : DEVICE_TYPE_ACCELERATOR
+    // 3  : DEVICE_TYPE_ALL
+    // ...: DEVICE_TYPE_DEFAULT
+#if CU_DEBUG
+    var _device = device_type==0?&quot;DEVICE_TYPE_GPU&quot;:device_type==1?&quot;DEVICE_TYPE_CPU&quot;:device_type==2?&quot;DEVICE_TYPE_ACCELERATOR&quot;:device_type==3?&quot;DEVICE_TYPE_ALL&quot;:&quot;DEVICE_TYPE_DEFAULT&quot;;
+    console.info(&quot;cudaSetDevice convert Cuda Device(&quot;+device_type+&quot;) to WebCL Device(&quot;+ _device +&quot;)&quot;)
+#endif
+    switch (device_type) {
+      case 0:
+        CU.cuda_from_type = 0x4;
+        break;
+      case 1:
+        CU.cuda_from_type = 0x2;
+        break;
+      case 2:
+        CU.cuda_from_type = 0x8;
+        break;
+      case 3:
+        CU.cuda_from_type = 0xFFFFFFFF;
+        break;
+      default:
+        CU.cuda_from_type = 0x1;
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaGetDevice
+   * @param {} device - Returns the device on which the active host thread executes the device code.
+   * @return cudaSuccess(0), cudaErrorUnknown(30)
+   */
+  cudaGetDevice: function(device) {
+    var _initialize = CU.init();
+
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaGetDevice&quot;,[device]);
+#endif
+
+    // Init webcl variable if necessary
+    if (_initialize == 0) {
+#if CU_GRAB_TRACE
+      CU.webclEndStackTrace([2],&quot;webcl is not found !!!!&quot;,&quot;&quot;);
+#endif
+      return 30; /* cudaErrorUnknown */
+    }
+
+    {{{ makeSetValue(&#x27;device&#x27;, &#x27;0&#x27;, &#x27;CU.cuda_from_type&#x27;, &#x27;i32&#x27;) }}};
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0,device],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaGetDeviceProperties
+   * @param {} prop  - Properties for the specified device
+   * @param {} device  - Device number to get properties for
+   * @return cudaSuccess(0), cudaErrorInvalidDevice(10)
+   */
+  cudaGetDeviceProperties: function(prop, device) {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaGetDeviceProperties&quot;,[prop, device]);
+#endif
+  
+    var _device = CU.cuda_objects[CU.cuda_device];
+
+    if (CU.cuda_from_type != device) {
+      return 10; /* cudaErrorInvalidDevice */
+    }
+
+    var _info = &quot;&quot;;
+    var _type = _device.getInfo(cuda.DEVICE_TYPE);
+    switch (_type) {
+      case cuda.DEVICE_TYPE_CPU:
+        _info = &quot;WEBCL_DEVICE_CPU&quot;;
+      break;
+      case cuda.DEVICE_TYPE_GPU:
+        _info = &quot;WEBCL_DEVICE_GPU&quot;;
+      break;
+      case cuda.DEVICE_TYPE_ACCELERATOR:
+        _info = &quot;WEBCL_DEVICE_ACCELERATOR&quot;;
+      break;
+      case cuda.DEVICE_TYPE_DEFAULT:
+        _info = &quot;WEBCL_DEVICE_DEFAULT&quot;;
+      break;
+    }
+    
+    //char name[256];
+    writeAsciiToMemory(_info,prop);
+
+    // int major;
+    {{{ makeSetValue(&#x27;prop&#x27;, &#x27;312&#x27;, &#x27;1&#x27;, &#x27;i32&#x27;) }}};
+
+    // int minor;
+    {{{ makeSetValue(&#x27;prop&#x27;, &#x27;316&#x27;, &#x27;0&#x27;, &#x27;i32&#x27;) }}};
+
+    /*
+    struct cudaDeviceProp {
+        char name[256]; 
+        size_t totalGlobalMem; 264
+        size_t sharedMemPerBlock; 272
+        int regsPerBlock; 276
+        int warpSize; 280
+        size_t memPitch; 288
+        int maxThreadsPerBlock; 292
+        int maxThreadsDim[3]; 304
+        int maxGridSize[3]; 316
+        int clockRate; 320
+        size_t totalConstMem; 328
+        int major; 332
+        int minor; 336
+        size_t textureAlignment;
+        size_t texturePitchAlignment;
+        int deviceOverlap;
+        int multiProcessorCount;
+        int kernelExecTimeoutEnabled;
+        int integrated;
+        int canMapHostMemory;
+        int computeMode;
+        int maxTexture1D;
+        int maxTexture1DLinear;
+        int maxTexture2D[2];
+        int maxTexture2DLinear[3];
+        int maxTexture2DGather[2];
+        int maxTexture3D[3];
+        int maxTextureCubemap;
+        int maxTexture1DLayered[2];
+        int maxTexture2DLayered[3];
+        int maxTextureCubemapLayered[2];
+        int maxSurface1D;
+        int maxSurface2D[2];
+        int maxSurface3D[3];
+        int maxSurface1DLayered[2];
+        int maxSurface2DLayered[3];
+        int maxSurfaceCubemap;
+        int maxSurfaceCubemapLayered[2];
+        size_t surfaceAlignment;
+        int concurrentKernels;
+        int ECCEnabled;
+        int pciBusID;
+        int pciDeviceID;
+        int pciDomainID;
+        int tccDriver;
+        int asyncEngineCount;
+        int unifiedAddressing;
+        int memoryClockRate;
+        int memoryBusWidth;
+        int l2CacheSize;
+        int maxThreadsPerMultiProcessor;
+    }
+    */
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0,prop],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaDeviceSynchronize (clFinish)
+   * @return cudaSuccess(0), cudaErrorUnknown(30)
+   */
+  cudaDeviceSynchronize: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaDeviceSynchronize&quot;,[]);
+#endif
+
+    try {
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(&quot;&quot;+CU.cuda_objects[CU.cuda_command_queue]+&quot;.finish&quot;,[]);
+#endif      
+      CU.cuda_objects[CU.cuda_command_queue].finish();
+
+    } catch (e) {
+
+      var _error = CU.catchError(e);
+
+#if CU_GRAB_TRACE
+      CU.cudaEndStackTrace([30],&quot;&quot;,e.message);
+#endif
+
+      return 30; /* cudaErrorUnknown */
+
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaMalloc (clCreateBuffer)
+   * @param {} devPtr - Pointer to allocated device memory
+   * @param {} size   - Requested allocation size in bytes
+   * @return cudaSuccess(0), cudaErrorMemoryAllocation(2)
+   */
+  cudaMalloc: function(devPtr, size) {
+    var _initialize = CU.init();
+
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaMalloc&quot;,[devPtr, size]);
+#endif
+
+    // Init webcl variable if necessary
+    if (_initialize == 0) {
+#if CU_GRAB_TRACE
+      CU.webclEndStackTrace([2],&quot;webcl is not found !!!!&quot;,&quot;&quot;);
+#endif
+      return 2; /* cudaErrorMemoryAllocation */
+    }
+    
+    var _id = null;
+    var _buffer = null;
+    var _flags = cuda.MEM_READ_WRITE
+
+    try {
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace( CU.cuda_objects[CU.cuda_context]+&quot;.createBuffer&quot;,[_flags,size]);
+#endif   
+
+      _buffer = CU.cuda_objects[CU.cuda_context].createBuffer(_flags,size);
+
+      _id = CU.udid(_buffer);
+
+      {{{ makeSetValue(&#x27;devPtr&#x27;, &#x27;0&#x27;, &#x27;_id&#x27;, &#x27;i32&#x27;) }}};
+
+    } catch (e) {
+
+      var _error = CU.catchError(e);
+    
+#if CL_GRAB_TRACE
+      CU.cudaEndStackTrace([2],&quot;&quot;,e.message);
+#endif
+      return 2; /* cudaErrorMemoryAllocation */
+    }
+    
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0,devPtr],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaMemcpy (clEnqueueWriteBuffer or clEnqueueReadBuffer)
+   * @param {} dst   - Destination memory address
+   * @param {} src   - Source memory address
+   * @param {} count - Size in bytes to copy
+   * @param {} kind  - Type of transfer
+   * @return cudaSuccess(0), cudaErrorInvalidValue(11), cudaErrorInvalidDevicePointer(17), cudaErrorInvalidMemcpyDirection(21)
+   */
+  cudaMemcpy: function(dst,src,count,kind) {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaMemcpy&quot;,[dst,src,count,kind]);
+#endif
+
+    try {
+
+      if (kind == 1 /*cudaMemcpyHostToDevice &lt;-&gt; clEnqueueWriteBuffer*/) {
+
+        var _host_ptr = {{{ makeHEAPView(&#x27;F32&#x27;,&#x27;src&#x27;,&#x27;src+count&#x27;) }}};
+
+#if CU_GRAB_TRACE
+        CU.cudaCallStackTrace(&quot;&quot;+CU.cuda_objects[CU.cuda_command_queue]+&quot;.enqueueWriteBuffer&quot;,[CU.cuda_objects[dst],1,0,count,_host_ptr,[]]);
+#endif          
+        
+        CU.cuda_objects[CU.cuda_command_queue].enqueueWriteBuffer(CU.cuda_objects[dst],1,0,count,_host_ptr,[]);    
+
+      } else /*cudaMemcpyDeviceToHost &lt;-&gt; clEnqueueReadBuffer*/ {
+
+        var _host_ptr = {{{ makeHEAPView(&#x27;F32&#x27;,&#x27;dst&#x27;,&#x27;dst+count&#x27;) }}};
+        
+        CU.cuda_objects[CU.cuda_command_queue].enqueueReadBuffer(CU.cuda_objects[src],1,0,count,_host_ptr,[]);    
+
+#if CU_GRAB_TRACE
+        CU.cudaCallStackTrace(&quot;&quot;+CU.cuda_objects[CU.cuda_command_queue]+&quot;.enqueueReadBuffer&quot;,[CU.cuda_objects[src],1,0,count,_host_ptr,[]]);
+#endif          
+
+      }
+
+    } catch (e) {
+
+      var _error = CU.catchError(e);
+
+#if CU_GRAB_TRACE
+      CU.cudaEndStackTrace([17],&quot;&quot;,e.message);
+#endif
+
+      return 17; /* cudaErrorInvalidDevicePointer */
+
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaFree (clReleaseMemObject)
+   * @param {} devPtr   - Device pointer to memory to free
+   * @return cudaSuccess(0), cudaErrorInitializationError(3), cudaErrorInvalidDevicePointer(17)
+   */
+  cudaFree: function(devPtr) {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaFree&quot;,[devPtr]);
+#endif
+
+    try {
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(CU.cuda_objects[devPtr]+&quot;.release&quot;,[]);
+#endif        
+      CU.cuda_objects[devPtr].release();
+      delete CU.cuda_objects[devPtr];  
+
+    } catch (e) {
+
+      var _error = CU.catchError(e);
+
+#if CU_GRAB_TRACE
+      CU.cudaEndStackTrace([17],&quot;&quot;,e.message);
+#endif
+
+      return 17; /* cudaErrorInvalidDevicePointer */
+
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+    return 0; /* cudaSuccess */
+  },
+
+  /**
+   * Description
+   * @method cudaDeviceReset (no direct equivalent)
+   * @return cudaSuccess(0)
+   */
+  cudaDeviceReset: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaDeviceReset&quot;,[]);
+#endif
+
+#if CU_GRAB_TRACE
+    CU.cudaCallStackTrace(CU.cuda_objects[CU.cuda_context]+&quot;.release&quot;,[]);
+#endif        
+    
+    //CU.cuda_objects[CU.cuda_context].releaseAll();
+    //delete CU.cuda_objects[CU.cuda_context];  
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+    return 0; /* cudaSuccess */
+  },
+
+ /**
+   * Description
+   * @method cudaGetLastError (no direct equivalent)
+   * @return cudaSuccess(0), ...
+   */
+  cudaGetLastError: function() {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaGetLastError&quot;,[]);
+#endif
+    
+    var _last_error = CU.cuda_errors.length &gt; 0 ? CU.cuda_errors.pop() : 0;
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([_last_error],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return _last_error;
+
+  },
+
+  /**
+   * Description
+   * @method cudaGetErrorString (no direct equivalent)
+   * @param {} err   - Enumerator error
+   * @return string
+   */
+  cudaGetErrorString: function(err) {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaGetErrorString&quot;,[err]);
+#endif
+    
+    var _string = &quot;&quot;;
+
+    switch(err) {
+      case 0  : _string = &quot;cudaSuccess&quot;;                          break;  // 0
+      case 1  : _string = &quot;cudaErrorMissingConfiguration&quot;;        break;  // 1
+      case 2  : _string = &quot;cudaErrorMemoryAllocation&quot;;            break;  // 2
+      case 3  : _string = &quot;cudaErrorInitializationError&quot;;         break;  // 3
+      case 4  : _string = &quot;cudaErrorLaunchFailure&quot;;               break;  // 4
+      case 5  : _string = &quot;cudaErrorPriorLaunchFailure&quot;;          break;  // 5
+      case 6  : _string = &quot;cudaErrorLaunchTimeout&quot;;               break;  // 6
+      case 7  : _string = &quot;cudaErrorLaunchOutOfResources&quot;;        break;  // 7
+      case 8  : _string = &quot;cudaErrorInvalidDeviceFunction&quot;;       break;  // 8
+      case 9  : _string = &quot;cudaErrorInvalidConfiguration&quot;;        break;  // 9
+      case 10 : _string = &quot;cudaErrorInvalidDevice&quot;;               break; // 10
+      case 11 : _string = &quot;cudaErrorInvalidValue&quot;;                break; // 11
+      case 12 : _string = &quot;cudaErrorInvalidPitchValue&quot;;           break; // 12
+      case 13 : _string = &quot;cudaErrorInvalidSymbol&quot;;               break; // 13
+      case 14 : _string = &quot;cudaErrorMapBufferObjectFailed&quot;;       break; // 14
+      case 15 : _string = &quot;cudaErrorUnmapBufferObjectFailed&quot;;     break; // 15
+      case 16 : _string = &quot;cudaErrorInvalidHostPointer&quot;;          break; // 16
+      case 17 : _string = &quot;cudaErrorInvalidDevicePointer&quot;;        break; // 17
+      case 18 : _string = &quot;cudaErrorInvalidTexture&quot;;              break; // 18
+      case 19 : _string = &quot;cudaErrorInvalidTextureBinding&quot;;       break; // 19
+      case 20 : _string = &quot;cudaErrorInvalidChannelDescriptor&quot;;    break; // 20
+      case 21 : _string = &quot;cudaErrorInvalidMemcpyDirection&quot;;      break; // 21
+      case 22 : _string = &quot;cudaErrorAddressOfConstant&quot;;           break; // 22
+      case 23 : _string = &quot;cudaErrorTextureFetchFailed&quot;;          break; // 23
+      case 24 : _string = &quot;cudaErrorTextureNotBound&quot;;             break; // 24
+      case 25 : _string = &quot;cudaErrorSynchronizationError&quot;;        break; // 25
+      case 26 : _string = &quot;cudaErrorInvalidFilterSetting&quot;;        break; // 26
+      case 27 : _string = &quot;cudaErrorInvalidNormSetting&quot;;          break; // 27
+      case 28 : _string = &quot;cudaErrorMixedDeviceExecution&quot;;        break; // 28
+      case 29 : _string = &quot;cudaErrorCudartUnloading&quot;;             break; // 29
+      case 30 : _string = &quot;cudaErrorUnknown&quot;;                     break; // 30
+      case 31 : _string = &quot;cudaErrorNotYetImplemented&quot;;           break; // 31
+      case 32 : _string = &quot;cudaErrorMemoryValueTooLarge&quot;;         break; // 32
+      case 33 : _string = &quot;cudaErrorInvalidResourceHandle&quot;;       break; // 33
+      case 34 : _string = &quot;cudaErrorNotReady&quot;;                    break; // 34
+      case 35 : _string = &quot;cudaErrorInsufficientDriver&quot;;          break; // 35
+      case 36 : _string = &quot;cudaErrorSetOnActiveProcess&quot;;          break; // 36
+      case 37 : _string = &quot;cudaErrorInvalidSurface&quot;;              break; // 37
+      case 38 : _string = &quot;cudaErrorNoDevice&quot;;                    break; // 38
+      case 39 : _string = &quot;cudaErrorECCUncorrectable&quot;;            break; // 39
+      case 40 : _string = &quot;cudaErrorSharedObjectSymbolNotFound&quot;;  break; // 40
+      case 41 : _string = &quot;cudaErrorSharedObjectInitFailed&quot;;      break; // 41
+      case 42 : _string = &quot;cudaErrorUnsupportedLimit&quot;;            break; // 42
+      case 43 : _string = &quot;cudaErrorDuplicateVariableName&quot;;       break; // 43
+      case 44 : _string = &quot;cudaErrorDuplicateTextureName&quot;;        break; // 44
+      case 45 : _string = &quot;cudaErrorDuplicateSurfaceName&quot;;        break; // 45
+      case 46 : _string = &quot;cudaErrorDevicesUnavailable&quot;;          break; // 46
+      case 47 : _string = &quot;cudaErrorInvalidKernelImage&quot;;          break; // 47
+      case 48 : _string = &quot;cudaErrorNoKernelImageForDevice&quot;;      break; // 48
+      case 49 : _string = &quot;cudaErrorIncompatibleDriverContext&quot;;   break; // 49
+      case 50 : _string = &quot;cudaErrorPeerAccessAlreadyEnabled&quot;;    break; // 50
+      case 51 : _string = &quot;cudaErrorPeerAccessNotEnabled&quot;;        break; // 51
+      case 52 : _string = &quot;cudaErrorDeviceAlreadyInUse&quot;;          break; // 52
+      case 53 : _string = &quot;cudaErrorProfilerDisabled&quot;;            break; // 53
+      case 54 : _string = &quot;cudaErrorProfilerNotInitialized&quot;;      break; // 54
+      case 55 : _string = &quot;cudaErrorProfilerAlreadyStarted&quot;;      break; // 55
+      case 56 : _string = &quot;cudaErrorProfilerAlreadyStopped&quot;;      break; // 56
+      case 57 : _string = &quot;cudaErrorAssert&quot;;                      break; // 57
+      case 58 : _string = &quot;cudaErrorTooManyPeers&quot;;                break; // 58
+      case 59 : _string = &quot;cudaErrorHostMemoryAlreadyRegistered&quot;; break; // 59
+      case 60 : _string = &quot;cudaErrorHostMemoryNotRegistered&quot;;     break; // 60
+      case 61 : _string = &quot;cudaErrorOperatingSystem&quot;;             break; // 61
+      case 62 : _string = &quot;cudaErrorStartupFailure&quot;;              break; // 62
+      case 63 : _string = &quot;cudaErrorApiFailureBase&quot;;              break; // 63
+      default: _string = &quot;Unknown error&quot;;
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([_string],&quot;&quot;,&quot;&quot;);
+#endif
+    
+    var _buffer = _malloc(_string.length);
+
+    writeAsciiToMemory(_string, _buffer);
+
+    return _buffer;
+  },
+
+  /**
+   * Description
+   * @method cudaKernelCall (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))
+   * @param {} kernel_name      - Kernel name
+   * @param {} kernel_source    - Kernel Source
+   * @param {} blocksPerGrid    - Blocks per grid
+   * @param {} threadsPerBlock  - Threads per grid
+   * @param {} ... variable parameter
+   * @return cudaSuccess(0)
+   */
+  cudaRunKernel: function(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
+#if CU_GRAB_TRACE
+    CU.cudaBeginStackTrace(&quot;cudaKernelCall&quot;,[kernel_name, kernel_source,  options, work_dim, global_work_size, local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10]);
+#endif
+    var _param = [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10];
+
+    var _kernel_options = options != 0 ? Pointer_stringify(options) : &quot;&quot;; 
+
+    var _kernel_name = Pointer_stringify(kernel_name); 
+
+    var _kernel_source = Pointer_stringify(kernel_source); 
+
+    var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
+
+    try {
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(CU.cuda_objects[CU.cuda_context]+&quot;.createProgram&quot;,[_kernel_converted]);
+#endif       
+
+      var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
+      
+      CU.udid(_program);
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(_program+&quot;.build&quot;,[CU.cuda_objects[CU.cuda_device],_kernel_options,null]);
+#endif        
+      
+      _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
+
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(_program+&quot;.createKernel&quot;,[_kernel_name]);
+#endif        
+      
+      var _kernel = _program.createKernel(_kernel_name);
+
+      CU.udid(_kernel);
+
+      for (var i = 0; i &lt; num_args; i++) {
+        
+        var webCLKernelArgInfo = _kernel.getArgInfo(i);
+
+        if (webCLKernelArgInfo.addressQualifier == &quot;local&quot;) {
+          console.error(&quot;cudaRunKernel (local paramater) not yet implemented ...\n&quot;);
+        } else {
+
+          if (_param[i] in CU.cuda_objects) {
+            // WEBCL OBJECT ARG
+#if CU_GRAB_TRACE
+            CU.cudaCallStackTrace(_kernel+&quot;.setArg&quot;,[i,CU.cuda_objects[_param[i]]]);
+#endif   
+            _kernel.setArg(i,CU.cuda_objects[_param[i]]);
+
+          } else {
+
+            if (webCLKernelArgInfo.typeName == &quot;int&quot;) {
+#if CU_GRAB_TRACE
+              CU.cudaCallStackTrace(_kernel+&quot;.setArg&quot;,[i,_param[i]]);
+#endif   
+              _kernel.setArg(i,new Int32Array([_param[i]]));
+
+            } else if (webCLKernelArgInfo.typeName == &quot;float&quot;) {
+#if CU_GRAB_TRACE
+              CU.cudaCallStackTrace(_kernel+&quot;.setArg&quot;,[i,_param[i]]);
+#endif   
+              _kernel.setArg(i,new Float32Array([_param[i]]));
+
+            } else {
+              console.error(&quot;cudaRunKernel (&quot;+webCLKernelArgInfo.typeName+&quot; paramater) not yet implemented ...\n&quot;);
+            }
+          }
+        }
+      }
+    
+#if CU_GRAB_TRACE
+      CU.cudaCallStackTrace(&quot;&quot;+CU.cuda_objects[CU.cuda_command_queue]+&quot;.enqueueNDRangeKernel&quot;,[_kernel,work_dim,[],global_work_size,local_work_size,[]]);
+#endif          
+      CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[]);  
+   
+    } catch (e) {
+
+      if (_program) {
+        var _buildError = _program.getBuildInfo(CU.cuda_objects[CU.cuda_device],cuda.PROGRAM_BUILD_LOG);
+        console.error(_buildError);
+      }
+
+      var _error = CU.catchError(e);
+
+      CU.cuda_errors.push(30 /* cudaErrorUnknown */);
+
+#if CU_GRAB_TRACE
+      CU.cudaEndStackTrace([0],&quot;&quot;,e.message);
+#endif
+
+      return 0; /* cudaSuccess */
+
+    }
+
+#if CU_GRAB_TRACE
+    CU.cudaEndStackTrace([0],&quot;&quot;,&quot;&quot;);
+#endif
+
+    return 0; /* cudaSuccess */
+  },
+  /**
+   * Description
+   * @method cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))
+   * @param {} kernel_name      - Kernel name
+   * @param {} kernel_source    - Kernel Source
+   * @param {} blocksPerGrid    - Blocks per grid (int)
+   * @param {} threadsPerBlock  - Threads per grid (int)
+   * @param {} ... variable parameter
+   * @return cudaSuccess(0)
+   */
+  cudaRunKernelNoDim__deps: [&#x27;cudaRunKernel&#x27;],
+  cudaRunKernelNoDim: function(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
+    
+    var _local_work_size = [];
+    var _global_work_size = [];
+
+    _local_work_size[0] = threadsPerBlock;
+    _global_work_size[0] = _local_work_size[0] * blocksPerGrid;
+
+    _cudaRunKernel(kernel_name, kernel_source, options, 1, _global_work_size, _local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10);
+  },
+  cudaRunKernel1: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel2: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel3: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel4: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel5: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel6: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel7: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel8: &#x27;cudaRunKernelNoDim&#x27;,
+  cudaRunKernel9: &#x27;cudaRunKernelNoDim&#x27;,
+  /**
+   * Description
+   * @method cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))
+   * @param {} kernel_name      - Kernel name
+   * @param {} kernel_source    - Kernel Source
+   * @param {} blocksPerGrid    - Blocks per grid (dim3)
+   * @param {} threadsPerBlock  - Threads per grid (dim3)
+   * @param {} ... variable parameter
+   * @return cudaSuccess(0)
+   */
+  cudaRunKernelDim__deps: [&#x27;cudaRunKernel&#x27;],
+  cudaRunKernelDim: function(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
+      
+    var _local_work_size = [];
+    var _global_work_size = [];
+
+    for (var i = 0; i &lt; 3; i ++) {
+      _threadsPerBlock = {{{ makeGetValue(&#x27;threadsPerBlock&#x27;, &#x27;i*4&#x27;, &#x27;i32&#x27;) }}};
+      _blocksPerGrid = {{{ makeGetValue(&#x27;blocksPerGrid&#x27;, &#x27;i*4&#x27;, &#x27;i32&#x27;) }}};
+
+      _local_work_size[i] = _threadsPerBlock;
+      _global_work_size[i] = _local_work_size[i] * _blocksPerGrid;
+    }
+    
+    _cudaRunKernel(kernel_name, kernel_source, options, 3, _global_work_size, _local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10);
+  },
+  cudaRunKernelDim1: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim2: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim3: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim4: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim5: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim6: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim7: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim8: &#x27;cudaRunKernelDim&#x27;,
+  cudaRunKernelDim9: &#x27;cudaRunKernelDim&#x27;,  
+};
+
+autoAddDeps(LibraryCUDA, &#x27;$CU&#x27;);
+mergeInto(LibraryManager.library, LibraryCUDA);
+
+
+
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>

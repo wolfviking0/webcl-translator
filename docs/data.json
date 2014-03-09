@@ -1,0 +1,3704 @@
+{
+    "project": {},
+    "files": {
+        "library_cuda.js": {
+            "name": "library_cuda.js",
+            "modules": {},
+            "classes": {},
+            "fors": {},
+            "namespaces": {}
+        },
+        "library_opencl.js": {
+            "name": "library_opencl.js",
+            "modules": {},
+            "classes": {
+                "LibraryOpenCL": 1
+            },
+            "fors": {},
+            "namespaces": {}
+        }
+    },
+    "modules": {},
+    "classes": {
+        "LibraryOpenCL": {
+            "name": "LibraryOpenCL",
+            "shortname": "LibraryOpenCL",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "file": "library_opencl.js",
+            "line": 1,
+            "description": "library_opencl.js\nLicence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE\n\nCreated by Anthony Liot.\nCopyright (c) 2013 Anthony Liot. All rights reserved."
+        }
+    },
+    "classitems": [
+        {
+            "file": "library_cuda.js",
+            "line": 13,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaInit",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 73,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "udid",
+            "params": [
+                {
+                    "name": "obj",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 117,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "catchError",
+            "params": [
+                {
+                    "name": "e",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_error"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 136,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "convertCudaKernelToOpenCL",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_kernelConverted"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 200,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaBeginStackTrace",
+            "params": [
+                {
+                    "name": "name",
+                    "description": ""
+                },
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 221,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaCallStackTrace",
+            "params": [
+                {
+                    "name": "name",
+                    "description": ""
+                },
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 236,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaCallParameterStackTrace",
+            "params": [
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 301,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaEndStackTrace",
+            "params": [
+                {
+                    "name": "result",
+                    "description": ""
+                },
+                {
+                    "name": "message",
+                    "description": ""
+                },
+                {
+                    "name": "exception",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 341,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaPrintStackTrace",
+            "params": [
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 363,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaEventCreate",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 380,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaEventRecord",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 397,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaEventSynchronize",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 414,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaEventElapsedTime",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 431,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaSetDevice",
+            "params": [
+                {
+                    "name": "device",
+                    "description": "- Device on which the active host thread should execute the device code."
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorInvalidDevice(9), cudaErrorDeviceAlreadyInUse()"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 476,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaGetDevice",
+            "params": [
+                {
+                    "name": "device",
+                    "description": "- Returns the device on which the active host thread executes the device code."
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorUnknown(30)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 506,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaGetDeviceProperties",
+            "params": [
+                {
+                    "name": "prop",
+                    "description": "- Properties for the specified device"
+                },
+                {
+                    "name": "device",
+                    "description": "- Device number to get properties for"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorInvalidDevice(10)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 613,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaDeviceSynchronize (clFinish)",
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorUnknown(30)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 649,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaMalloc (clCreateBuffer)",
+            "params": [
+                {
+                    "name": "devPtr",
+                    "description": "- Pointer to allocated device memory"
+                },
+                {
+                    "name": "size",
+                    "description": "- Requested allocation size in bytes"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorMemoryAllocation(2)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 705,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaMemcpy (clEnqueueWriteBuffer or clEnqueueReadBuffer)",
+            "params": [
+                {
+                    "name": "dst",
+                    "description": "- Destination memory address"
+                },
+                {
+                    "name": "src",
+                    "description": "- Source memory address"
+                },
+                {
+                    "name": "count",
+                    "description": "- Size in bytes to copy"
+                },
+                {
+                    "name": "kind",
+                    "description": "- Type of transfer"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorInvalidValue(11), cudaErrorInvalidDevicePointer(17), cudaErrorInvalidMemcpyDirection(21)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 761,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaFree (clReleaseMemObject)",
+            "params": [
+                {
+                    "name": "devPtr",
+                    "description": "- Device pointer to memory to free"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0), cudaErrorInitializationError(3), cudaErrorInvalidDevicePointer(17)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 798,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaDeviceReset (no direct equivalent)",
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 821,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaGetLastError (no direct equivalent)",
+            "return": {
+                "description": "cudaSuccess(0), ..."
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 841,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaGetErrorString (no direct equivalent)",
+            "params": [
+                {
+                    "name": "err",
+                    "description": "- Enumerator error"
+                }
+            ],
+            "return": {
+                "description": "string"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 933,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaKernelCall (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
+            "params": [
+                {
+                    "name": "kernel_name",
+                    "description": "- Kernel name"
+                },
+                {
+                    "name": "kernel_source",
+                    "description": "- Kernel Source"
+                },
+                {
+                    "name": "blocksPerGrid",
+                    "description": "- Blocks per grid"
+                },
+                {
+                    "name": "threadsPerBlock",
+                    "description": "- Threads per grid"
+                },
+                {
+                    "name": "...",
+                    "description": "variable parameter"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 1047,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
+            "params": [
+                {
+                    "name": "kernel_name",
+                    "description": "- Kernel name"
+                },
+                {
+                    "name": "kernel_source",
+                    "description": "- Kernel Source"
+                },
+                {
+                    "name": "blocksPerGrid",
+                    "description": "- Blocks per grid (int)"
+                },
+                {
+                    "name": "threadsPerBlock",
+                    "description": "- Threads per grid (int)"
+                },
+                {
+                    "name": "...",
+                    "description": "variable parameter"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_cuda.js",
+            "line": 1077,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
+            "params": [
+                {
+                    "name": "kernel_name",
+                    "description": "- Kernel name"
+                },
+                {
+                    "name": "kernel_source",
+                    "description": "- Kernel Source"
+                },
+                {
+                    "name": "blocksPerGrid",
+                    "description": "- Blocks per grid (dim3)"
+                },
+                {
+                    "name": "threadsPerBlock",
+                    "description": "- Threads per grid (dim3)"
+                },
+                {
+                    "name": "...",
+                    "description": "variable parameter"
+                }
+            ],
+            "return": {
+                "description": "cudaSuccess(0)"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 36,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "init",
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 88,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "udid",
+            "params": [
+                {
+                    "name": "obj",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 132,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "cast_long",
+            "params": [
+                {
+                    "name": "arg_size",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 146,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "stringType",
+            "params": [
+                {
+                    "name": "pn_type",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 186,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "parseType",
+            "params": [
+                {
+                    "name": "string",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_value"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 226,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "parseStruct",
+            "params": [
+                {
+                    "name": "kernel_string",
+                    "description": ""
+                },
+                {
+                    "name": "struct_name",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 362,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "parseKernel",
+            "params": [
+                {
+                    "name": "kernel_string",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_mini_kernel_string"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 624,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getImageSizeType",
+            "params": [
+                {
+                    "name": "image",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_sizeType"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 666,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getImageFormatType",
+            "params": [
+                {
+                    "name": "image",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_type"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 713,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getImageSizeOrder",
+            "params": [
+                {
+                    "name": "image",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_sizeOrder"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 753,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getHostPtrArray",
+            "params": [
+                {
+                    "name": "size",
+                    "description": ""
+                },
+                {
+                    "name": "type",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_host_ptr"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 801,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getCopyPointerToArray",
+            "params": [
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "size",
+                    "description": ""
+                },
+                {
+                    "name": "type",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_host_ptr"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 896,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "getReferencePointerToArray",
+            "params": [
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "size",
+                    "description": ""
+                },
+                {
+                    "name": "type",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_host_ptr"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 990,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "catchError",
+            "params": [
+                {
+                    "name": "e",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_error"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1014,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "webclBeginStackTrace",
+            "params": [
+                {
+                    "name": "name",
+                    "description": ""
+                },
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1035,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "webclCallStackTrace",
+            "params": [
+                {
+                    "name": "name",
+                    "description": ""
+                },
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1050,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "webclCallParameterStackTrace",
+            "params": [
+                {
+                    "name": "parameter",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1115,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "webclEndStackTrace",
+            "params": [
+                {
+                    "name": "result",
+                    "description": ""
+                },
+                {
+                    "name": "message",
+                    "description": ""
+                },
+                {
+                    "name": "exception",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1155,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "webclPrintStackTrace",
+            "params": [
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1177,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clSetTypePointer",
+            "params": [
+                {
+                    "name": "pn_type",
+                    "description": ""
+                },
+                {
+                    "name": "num_pn_type",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1230,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetPlatformIDs",
+            "params": [
+                {
+                    "name": "num_entries",
+                    "description": ""
+                },
+                {
+                    "name": "platforms",
+                    "description": ""
+                },
+                {
+                    "name": "num_platforms",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1301,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetPlatformInfo",
+            "params": [
+                {
+                    "name": "platform",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1383,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetDeviceIDs",
+            "params": [
+                {
+                    "name": "platform",
+                    "description": ""
+                },
+                {
+                    "name": "device_type_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "device_type_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "num_entries",
+                    "description": ""
+                },
+                {
+                    "name": "devices",
+                    "description": ""
+                },
+                {
+                    "name": "num_devices",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1488,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetDeviceInfo",
+            "params": [
+                {
+                    "name": "device",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1634,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateContext",
+            "params": [
+                {
+                    "name": "properties",
+                    "description": ""
+                },
+                {
+                    "name": "num_devices",
+                    "description": ""
+                },
+                {
+                    "name": "devices",
+                    "description": ""
+                },
+                {
+                    "name": "pfn_notify",
+                    "description": ""
+                },
+                {
+                    "name": "user_data",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1823,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateContextFromType",
+            "params": [
+                {
+                    "name": "properties",
+                    "description": ""
+                },
+                {
+                    "name": "device_type_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "device_type_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "pfn_notify",
+                    "description": ""
+                },
+                {
+                    "name": "user_data",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 1988,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainContext",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2020,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseContext",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2079,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetContextInfo",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2219,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateCommandQueue",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "device",
+                    "description": ""
+                },
+                {
+                    "name": "properties_1",
+                    "description": ""
+                },
+                {
+                    "name": "properties_2",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2302,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainCommandQueue",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2335,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseCommandQueue",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2393,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetCommandQueueInfo",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2498,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateBuffer",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "size",
+                    "description": ""
+                },
+                {
+                    "name": "host_ptr",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2594,
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2623,
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2635,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateSubBuffer",
+            "params": [
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_create_type",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_create_info",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2740,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateImage2D",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "image_format",
+                    "description": ""
+                },
+                {
+                    "name": "image_width",
+                    "description": ""
+                },
+                {
+                    "name": "image_height",
+                    "description": ""
+                },
+                {
+                    "name": "image_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_ptr",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2928,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateImage3D",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "image_format",
+                    "description": ""
+                },
+                {
+                    "name": "image_width",
+                    "description": ""
+                },
+                {
+                    "name": "image_height",
+                    "description": ""
+                },
+                {
+                    "name": "image_depth",
+                    "description": ""
+                },
+                {
+                    "name": "image_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "image_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_ptr",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "Literal"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2957,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainMemObject",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 2990,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseMemObject",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3061,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetSupportedImageFormats",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "image_type",
+                    "description": ""
+                },
+                {
+                    "name": "num_entries",
+                    "description": ""
+                },
+                {
+                    "name": "image_formats",
+                    "description": ""
+                },
+                {
+                    "name": "num_image_formats",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3160,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetMemObjectInfo",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3277,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetImageInfo",
+            "params": [
+                {
+                    "name": "image",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3367,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clSetMemObjectDestructorCallback",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                },
+                {
+                    "name": "pfn_notify",
+                    "description": ""
+                },
+                {
+                    "name": "user_data",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3410,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateSampler",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "normalized_coords",
+                    "description": ""
+                },
+                {
+                    "name": "addressing_mode",
+                    "description": ""
+                },
+                {
+                    "name": "filter_mode",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3477,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainSampler",
+            "params": [
+                {
+                    "name": "sampler",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3509,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseSampler",
+            "params": [
+                {
+                    "name": "sampler",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3569,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetSamplerInfo",
+            "params": [
+                {
+                    "name": "sampler",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3677,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateProgramWithSource",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "count",
+                    "description": ""
+                },
+                {
+                    "name": "strings",
+                    "description": ""
+                },
+                {
+                    "name": "lengths",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3761,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateProgramWithBinary",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "num_devices",
+                    "description": ""
+                },
+                {
+                    "name": "device_list",
+                    "description": ""
+                },
+                {
+                    "name": "lengths",
+                    "description": ""
+                },
+                {
+                    "name": "binaries",
+                    "description": ""
+                },
+                {
+                    "name": "cl_binary_status",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "Literal"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3784,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainProgram",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3816,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseProgram",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3877,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clBuildProgram",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                },
+                {
+                    "name": "num_devices",
+                    "description": ""
+                },
+                {
+                    "name": "device_list",
+                    "description": ""
+                },
+                {
+                    "name": "options",
+                    "description": ""
+                },
+                {
+                    "name": "pfn_notify",
+                    "description": ""
+                },
+                {
+                    "name": "user_data",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3932,
+            "description": "Description",
+            "return": {
+                "description": ""
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3966,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clUnloadCompiler",
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 3977,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetProgramInfo",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4094,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetProgramBuildInfo",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                },
+                {
+                    "name": "device",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4183,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateKernel",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                },
+                {
+                    "name": "kernel_name",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4265,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateKernelsInProgram",
+            "params": [
+                {
+                    "name": "program",
+                    "description": ""
+                },
+                {
+                    "name": "num_kernels",
+                    "description": ""
+                },
+                {
+                    "name": "kernels",
+                    "description": ""
+                },
+                {
+                    "name": "num_kernels_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4342,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainKernel",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4373,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseKernel",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4434,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clSetKernelArg",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                },
+                {
+                    "name": "arg_index",
+                    "description": ""
+                },
+                {
+                    "name": "arg_size",
+                    "description": ""
+                },
+                {
+                    "name": "arg_value",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4565,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetKernelInfo",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4665,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetKernelWorkGroupInfo",
+            "params": [
+                {
+                    "name": "kernel",
+                    "description": ""
+                },
+                {
+                    "name": "device",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4746,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clWaitForEvents",
+            "params": [
+                {
+                    "name": "num_events",
+                    "description": ""
+                },
+                {
+                    "name": "event_list",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4796,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetEventInfo",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4873,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateUserEvent",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4928,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clRetainEvent",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 4959,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clReleaseEvent",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5020,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clSetUserEventStatus",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "execution_status",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5066,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clSetEventCallback",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "command_exec_callback_type",
+                    "description": ""
+                },
+                {
+                    "name": "pfn_notify",
+                    "description": ""
+                },
+                {
+                    "name": "user_data",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5122,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetEventProfilingInfo",
+            "params": [
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5178,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clFlush",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5220,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clFinish",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5263,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueReadBuffer",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_read",
+                    "description": ""
+                },
+                {
+                    "name": "offset",
+                    "description": ""
+                },
+                {
+                    "name": "cb",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5360,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueReadBufferRect",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_read",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_origin",
+                    "description": ""
+                },
+                {
+                    "name": "host_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5477,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueWriteBuffer",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_write",
+                    "description": ""
+                },
+                {
+                    "name": "offset",
+                    "description": ""
+                },
+                {
+                    "name": "cb",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5574,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueWriteBufferRect",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_write",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_origin",
+                    "description": ""
+                },
+                {
+                    "name": "host_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "buffer_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "host_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5690,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueCopyBuffer",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "src_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "dst_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "src_offset",
+                    "description": ""
+                },
+                {
+                    "name": "dst_offset",
+                    "description": ""
+                },
+                {
+                    "name": "cb",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5782,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueCopyBufferRect",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "src_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "dst_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "src_origin",
+                    "description": ""
+                },
+                {
+                    "name": "dst_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "src_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "src_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "dst_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "dst_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5887,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueReadImage",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "image",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_read",
+                    "description": ""
+                },
+                {
+                    "name": "origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 5991,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueWriteImage",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "image",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_write",
+                    "description": ""
+                },
+                {
+                    "name": "origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "input_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "input_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6092,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueCopyImage",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "src_image",
+                    "description": ""
+                },
+                {
+                    "name": "dst_image",
+                    "description": ""
+                },
+                {
+                    "name": "src_origin",
+                    "description": ""
+                },
+                {
+                    "name": "dst_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6193,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueCopyImageToBuffer",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "src_image",
+                    "description": ""
+                },
+                {
+                    "name": "dst_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "src_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "dst_offset",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6293,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueCopyBufferToImage",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "src_buffer",
+                    "description": ""
+                },
+                {
+                    "name": "dst_image",
+                    "description": ""
+                },
+                {
+                    "name": "src_offset",
+                    "description": ""
+                },
+                {
+                    "name": "dst_origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6393,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueMapBuffer",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "buffer",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_map",
+                    "description": ""
+                },
+                {
+                    "name": "map_flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "map_flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "offset",
+                    "description": ""
+                },
+                {
+                    "name": "cb",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6476,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueMapImage",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "image",
+                    "description": ""
+                },
+                {
+                    "name": "blocking_map",
+                    "description": ""
+                },
+                {
+                    "name": "map_flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "map_flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "origin",
+                    "description": ""
+                },
+                {
+                    "name": "region",
+                    "description": ""
+                },
+                {
+                    "name": "image_row_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "image_slice_pitch",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6505,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueUnmapMemObject",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "memobj",
+                    "description": ""
+                },
+                {
+                    "name": "mapped_ptr",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6582,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueNDRangeKernel",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "kernel",
+                    "description": ""
+                },
+                {
+                    "name": "work_dim",
+                    "description": ""
+                },
+                {
+                    "name": "global_work_offset",
+                    "description": ""
+                },
+                {
+                    "name": "global_work_size",
+                    "description": ""
+                },
+                {
+                    "name": "local_work_size",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6621,
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6693,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueTask",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "kernel",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6743,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueNativeKernel",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "user_func",
+                    "description": ""
+                },
+                {
+                    "name": "args",
+                    "description": ""
+                },
+                {
+                    "name": "cb_args",
+                    "description": ""
+                },
+                {
+                    "name": "num_mem_objects",
+                    "description": ""
+                },
+                {
+                    "name": "mem_list",
+                    "description": ""
+                },
+                {
+                    "name": "args_mem_loc",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6764,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueMarker",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6817,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueWaitForEvents",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "num_events",
+                    "description": ""
+                },
+                {
+                    "name": "event_list",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6880,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueBarrier",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6924,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetExtensionFunctionAddress",
+            "params": [
+                {
+                    "name": "func_name",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 6935,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateFromGLBuffer",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "bufobj",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7010,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateFromGLTexture",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "target",
+                    "description": ""
+                },
+                {
+                    "name": "miplevel",
+                    "description": ""
+                },
+                {
+                    "name": "texture",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7087,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateFromGLTexture2D",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "target",
+                    "description": ""
+                },
+                {
+                    "name": "miplevel",
+                    "description": ""
+                },
+                {
+                    "name": "texture",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7165,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateFromGLTexture3D",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "target",
+                    "description": ""
+                },
+                {
+                    "name": "miplevel",
+                    "description": ""
+                },
+                {
+                    "name": "texture",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "Literal"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7193,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clCreateFromGLRenderbuffer",
+            "params": [
+                {
+                    "name": "context",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_1",
+                    "description": ""
+                },
+                {
+                    "name": "flags_i64_2",
+                    "description": ""
+                },
+                {
+                    "name": "renderbuffer",
+                    "description": ""
+                },
+                {
+                    "name": "cl_errcode_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "_id"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7267,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetGLObjectInfo",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                },
+                {
+                    "name": "gl_object_type",
+                    "description": ""
+                },
+                {
+                    "name": "gl_object_name",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7319,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clGetGLTextureInfo",
+            "params": [
+                {
+                    "name": "memobj",
+                    "description": ""
+                },
+                {
+                    "name": "param_name",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size",
+                    "description": ""
+                },
+                {
+                    "name": "param_value",
+                    "description": ""
+                },
+                {
+                    "name": "param_value_size_ret",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7371,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueAcquireGLObjects",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "num_objects",
+                    "description": ""
+                },
+                {
+                    "name": "mem_objects",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        },
+        {
+            "file": "library_opencl.js",
+            "line": 7461,
+            "description": "Description",
+            "itemtype": "method",
+            "name": "clEnqueueReleaseGLObjects",
+            "params": [
+                {
+                    "name": "command_queue",
+                    "description": ""
+                },
+                {
+                    "name": "num_objects",
+                    "description": ""
+                },
+                {
+                    "name": "mem_objects",
+                    "description": ""
+                },
+                {
+                    "name": "num_events_in_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event_wait_list",
+                    "description": ""
+                },
+                {
+                    "name": "event",
+                    "description": ""
+                }
+            ],
+            "return": {
+                "description": "MemberExpression"
+            },
+            "class": "LibraryOpenCL"
+        }
+    ],
+    "warnings": [
+        {
+            "message": "Missing item type",
+            "line": " library_opencl.js:2594"
+        },
+        {
+            "message": "Missing item type",
+            "line": " library_opencl.js:2623"
+        },
+        {
+            "message": "Missing item type\nDescription",
+            "line": " library_opencl.js:3932"
+        },
+        {
+            "message": "Missing item type",
+            "line": " library_opencl.js:6621"
+        }
+    ]
+}
