@@ -4,7 +4,9 @@
         "library_cuda.js": {
             "name": "library_cuda.js",
             "modules": {},
-            "classes": {},
+            "classes": {
+                "LibraryCUDA": 1
+            },
             "fors": {},
             "namespaces": {}
         },
@@ -20,6 +22,18 @@
     },
     "modules": {},
     "classes": {
+        "LibraryCUDA": {
+            "name": "LibraryCUDA",
+            "shortname": "LibraryCUDA",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "file": "library_cuda.js",
+            "line": 1,
+            "description": "library_cuda.js\nLicence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE\n\nCreated by Anthony Liot.\nCopyright (c) 2013 Anthony Liot. All rights reserved."
+        },
         "LibraryOpenCL": {
             "name": "LibraryOpenCL",
             "shortname": "LibraryOpenCL",
@@ -36,18 +50,18 @@
     "classitems": [
         {
             "file": "library_cuda.js",
-            "line": 13,
+            "line": 22,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaInit",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 73,
+            "line": 82,
             "description": "Description",
             "itemtype": "method",
             "name": "udid",
@@ -60,11 +74,11 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 117,
+            "line": 126,
             "description": "Description",
             "itemtype": "method",
             "name": "catchError",
@@ -77,11 +91,11 @@
             "return": {
                 "description": "_error"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 136,
+            "line": 145,
             "description": "Description",
             "itemtype": "method",
             "name": "convertCudaKernelToOpenCL",
@@ -94,11 +108,11 @@
             "return": {
                 "description": "_kernelConverted"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 200,
+            "line": 209,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaBeginStackTrace",
@@ -115,11 +129,11 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 221,
+            "line": 230,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaCallStackTrace",
@@ -136,11 +150,11 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 236,
+            "line": 245,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaCallParameterStackTrace",
@@ -153,11 +167,11 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 301,
+            "line": 310,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEndStackTrace",
@@ -178,11 +192,11 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 341,
+            "line": 350,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaPrintStackTrace",
@@ -199,55 +213,55 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 363,
+            "line": 372,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventCreate",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 380,
+            "line": 389,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventRecord",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 397,
+            "line": 406,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventSynchronize",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 414,
+            "line": 423,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventElapsedTime",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 431,
+            "line": 440,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaSetDevice",
@@ -260,11 +274,11 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidDevice(9), cudaErrorDeviceAlreadyInUse()"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 476,
+            "line": 485,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetDevice",
@@ -277,11 +291,11 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorUnknown(30)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 506,
+            "line": 515,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetDeviceProperties",
@@ -298,22 +312,22 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidDevice(10)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 613,
+            "line": 622,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaDeviceSynchronize (clFinish)",
             "return": {
                 "description": "cudaSuccess(0), cudaErrorUnknown(30)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 649,
+            "line": 658,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaMalloc (clCreateBuffer)",
@@ -330,11 +344,11 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorMemoryAllocation(2)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 705,
+            "line": 714,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaMemcpy (clEnqueueWriteBuffer or clEnqueueReadBuffer)",
@@ -359,11 +373,11 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidValue(11), cudaErrorInvalidDevicePointer(17), cudaErrorInvalidMemcpyDirection(21)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 761,
+            "line": 770,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaFree (clReleaseMemObject)",
@@ -376,33 +390,33 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInitializationError(3), cudaErrorInvalidDevicePointer(17)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 798,
+            "line": 807,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaDeviceReset (no direct equivalent)",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 821,
+            "line": 830,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetLastError (no direct equivalent)",
             "return": {
                 "description": "cudaSuccess(0), ..."
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 841,
+            "line": 850,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetErrorString (no direct equivalent)",
@@ -415,11 +429,11 @@
             "return": {
                 "description": "string"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 933,
+            "line": 942,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCall (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -448,11 +462,11 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 1047,
+            "line": 1056,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -481,11 +495,11 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 1077,
+            "line": 1086,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -514,7 +528,7 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryOpenCL"
+            "class": "LibraryCUDA"
         },
         {
             "file": "library_opencl.js",
