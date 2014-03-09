@@ -256,17 +256,17 @@ def launch(parser,options):
 
   if options.fastcomp:
     param += " FAST=1 " # Default value inside makefile
-  else
+  else:
     param += " FAST=0 "
 
   if options.debug:
     param += " DEB=1 "
-  else
+  else:
     param += " DEB=0 " # Default value inside makefile
 
   if options.original:
     param += " ORIG=1 "
-  else
+  else:
     param += " ORIG=0 " # Default value inside makefile
 
   if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 6 ) for repo in options.repo) ) ) :
