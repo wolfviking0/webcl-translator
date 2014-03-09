@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclQuasirandomGenerator.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclQuasirandomGenerator.data';
     var REMOTE_PACKAGE_SIZE = 4569;
-    var PACKAGE_UUID = 'c896c856-6edb-4a44-a625-2cb528599eca';
+    var PACKAGE_UUID = '34c885c8-eefc-4de8-8d8c-76c8ec90357b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

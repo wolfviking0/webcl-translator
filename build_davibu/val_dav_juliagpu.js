@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 34964;
-    var PACKAGE_UUID = '386fe930-09fa-430b-b133-538dff879c12';
+    var PACKAGE_UUID = 'ec3afcaf-e5ea-430d-9cfd-3ea5b583d7a7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

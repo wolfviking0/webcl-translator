@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 47297;
-    var PACKAGE_UUID = 'a6420765-1682-42fa-8309-a7cd1db80a66';
+    var PACKAGE_UUID = '2c21aed8-48b5-41c1-a226-50cd4bd387ab';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
