@@ -62,9 +62,9 @@ def clear_prof_data():
     global PROF_DATA
     PROF_DATA = {}
 
-list_repositories=["webcl-translator/webcl","webcl-ocl-nvidia","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples","boost","freeimage"]
+list_repositories=["webcl-translator/webcl","webcl-cuda-nvidia","webcl-ocl-nvidia","webcl-osx-sample","webcl-ocltoys","webcl-davibu","webcl-book-samples","boost","freeimage"]
 
-page_subfolder=["build_trans","build_nvidia","build_osx","build_toys","build_davibu","build_book"]
+page_subfolder=["build_trans","build_cuda","build_nvidia","build_osx","build_toys","build_davibu","build_book"]
 
 # Go Up folder
 os.chdir("../");
@@ -241,24 +241,36 @@ def launch(parser,options):
 
   if (options.original):
     num_opt_enabled-=1
-
+  
   if (options.debug):
+    num_opt_enabled-=1
+
+  if (options.fastcomp):
     num_opt_enabled-=1
 
   if (len(options.repo) > 0):
     num_opt_enabled-=1
 
   # Paramater for makefile
-  # param = " FAST=O "
   param = ""
+
+  if options.fastcomp:
+    param += " FAST=1 " # Default value inside makefile
+  else
+    param += " FAST=0 "
+
   if options.debug:
     param += " DEB=1 "
-  
+  else
+    param += " DEB=0 " # Default value inside makefile
+
   if options.original:
     param += " ORIG=1 "
+  else
+    param += " ORIG=0 " # Default value inside makefile
 
-  if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 4 ) for repo in options.repo) ) ) :
-    print "/!\ You must use --repo with integer between 0 & 4"
+  if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 6 ) for repo in options.repo) ) ) :
+    print "/!\ You must use --repo with integer between 0 & 6"
     parser.print_help()
     exit(-1)
 
@@ -351,17 +363,22 @@ def main():
   parser.add_option("-t", "--thread",
                     action="store_true", dest="thread", default=False,
                     help="use thread build", metavar="TREAD")
+  
+  parser.add_option("-f", "--fastcomp",
+                    action="store_true", dest="thread", default=True,
+                    help="use fastcomp build", metavar="FAST")
 
   parser.add_option('-r', '--repo',
                     action='callback', dest="repo", type='string', default='',
                     callback=list_repo_callback,
                     help="work only on the repository list :\t\t\t\
                     0 : webcl-translator/webcl\t\t\t\
-                    1 : webcl-nvidia-sample\t\t\t\
-                    2 : webcl-osx-sample\t\t\t\
-                    3 : webcl-ocltoys\t\t\t\
-                    4 : webcl-davibu\t\t\t\
-                    5 : webcl-book-samples", metavar="0,2,...")
+                    1 : webcl-cuda-sample\t\t\t\
+                    2 : webcl-nvidia-sample\t\t\t\
+                    3 : webcl-osx-sample\t\t\t\
+                    4 : webcl-ocltoys\t\t\t\
+                    5 : webcl-davibu\t\t\t\
+                    6 : webcl-book-samples", metavar="0,2,...")
 
   '''
   parser.add_option("-U", "--only-update",
