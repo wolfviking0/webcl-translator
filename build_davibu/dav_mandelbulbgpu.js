@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = 'cf5ca641-5b05-4e0f-8b22-283d305cfb4f';
+    var PACKAGE_UUID = '5439b842-d18a-4740-990f-0cc395cf30d5';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15714,14 +15714,14 @@ function __Z7keyFunchii($key,$x,$y) {
  var $k3 = 0.0, $k6 = 0.0, $k7 = 0.0, $k9 = 0.0, $l = 0.0, $l5 = 0.0, $offset = 0, $r = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer5 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 176|0;
- $vararg_buffer10 = sp + 40|0;
+ $vararg_buffer10 = sp + 16|0;
  $vararg_buffer5 = sp + 24|0;
  $vararg_buffer1 = sp;
- $vararg_buffer = sp + 16|0;
- $dir = sp + 88|0;
+ $vararg_buffer = sp + 40|0;
+ $dir = sp + 76|0;
  $dir4 = sp + 116|0;
  $dir8 = sp + 140|0;
- $dir10 = sp + 72|0;
+ $dir10 = sp + 60|0;
  $0 = $key;
  $1 = $x;
  $2 = $y;
@@ -20233,7 +20233,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -20403,7 +20403,7 @@ function _free($mem) {
        $199 = HEAP32[((3720 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((3720 + 4|0))>>2] = $200;
-       break L113;
+       break L112;
       } else {
        $201 = HEAP32[((3720 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -20422,7 +20422,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L113;
+        break L112;
        }
       }
      } while(0);

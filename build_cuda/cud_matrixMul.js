@@ -492,6 +492,11 @@ var Runtime = {
       return ret;
     }
     this.processJSString = function processJSString(string) {
+      /* TODO: use TextEncoder when present,
+        var encoder = new TextEncoder();
+        encoder['encoding'] = "utf-8";
+        var utf8Array = encoder['encode'](aMsg.data);
+      */
       string = unescape(encodeURIComponent(string));
       var ret = [];
       for (var i = 0; i < string.length; i++) {
@@ -1437,18 +1442,13 @@ function copyTempDouble(ptr) {
             console.error("Unfortunately your system does not support WebCL.\n");
             console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
           } else {
-            CU.cudaBeginStackTrace("CU.init",[]);
             // Just for call cuda 
             cuda = webcl;
   
             // Get the first GPU device and create a context
-            CU.cudaCallStackTrace( cuda+".getPlatforms",[]);
             var _platforms  = cuda.getPlatforms();
-            CU.cudaCallStackTrace( _platforms[0]+".getDevices",[CU.cuda_from_type]);
             var _devices    = _platforms[0].getDevices(CU.cuda_from_type);
-            CU.cudaCallStackTrace( cuda+".createContext",[_devices[0]]);
             var _context    = cuda.createContext(_devices[0]);  
-            CU.cudaCallStackTrace( _context+".createCommandQueue",[_devices[0],0]);
             var _command    = _context.createCommandQueue(_devices[0],0);  
   
             // Grab Id
@@ -1459,7 +1459,6 @@ function copyTempDouble(ptr) {
             // Init
             CU.cuda_init = 1;
   
-            CU.cudaEndStackTrace([1],"","");
           }
   
         }
@@ -1486,11 +1485,6 @@ function copyTempDouble(ptr) {
   
         _id = _uuid.join('');
   
-        if (_id in CU.cuda_objects) {
-          console.error("/!\\ **********************");
-          console.error("/!\\ UDID not unique !!!!!!");
-          console.error("/!\\ **********************");        
-        }
       
         // /!\ Call udid when you add inside cl_objects if you pass object in parameter
         if (obj !== undefined) {
@@ -1561,116 +1555,12 @@ function copyTempDouble(ptr) {
         }
   
         return _kernelConverted;
-      },stack_trace_offset:-1,stack_trace_complete:"// Javascript cuda Stack Trace\n\n",stack_trace:"",cudaBeginStackTrace:function (name,parameter) {
-        if (CU.stack_trace_offset == -1) {
-          CU.stack_trace_offset = "";
-        } else {
-          CU.stack_trace_offset += "\t";
-        }
-  
-        CU.stack_trace += "\n" + CU.stack_trace_offset + name + "("
-  
-        CU.cudaCallParameterStackTrace(parameter);
-  
-        CU.stack_trace += ")\n";
-      },cudaCallStackTrace:function (name,parameter) {
-        CU.stack_trace += CU.stack_trace_offset + "\t->" + name + "("
-  
-        CU.cudaCallParameterStackTrace(parameter);
-  
-        CU.stack_trace += ")\n";
-      },cudaCallParameterStackTrace:function (parameter) {
-        
-        for (var i = 0; i < parameter.length - 1 ; i++) {
-          if ( 
-            (parameter[i] instanceof Uint8Array)    ||
-            (parameter[i] instanceof Uint16Array)   ||
-            (parameter[i] instanceof Uint32Array)   ||
-            (parameter[i] instanceof Int8Array)     ||
-            (parameter[i] instanceof Int16Array)    ||
-            (parameter[i] instanceof Int32Array)    ||
-            (parameter[i] instanceof Float32Array)  ||          
-            (parameter[i] instanceof ArrayBuffer)   ||            
-            (parameter[i] instanceof Array)){ 
-  
-            CU.stack_trace += "[";  
-            for (var j = 0; j < Math.min(25,parameter[i].length - 1) ; j++) {
-              CU.stack_trace += parameter[i][j] + ",";
-            }
-            if (parameter[i].length > 25) {
-              CU.stack_trace += " ... ,";
-            }
-            if (parameter[i].length >= 1) {
-              CU.stack_trace += parameter[i][parameter[i].length - 1];
-            }
-            CU.stack_trace += "],";
-          } else {
-            CU.stack_trace += parameter[i] + ",";  
-          }
-        }
-  
-        if (parameter.length >= 1) {
-          if ( 
-            (parameter[parameter.length - 1] instanceof Uint8Array)    ||
-            (parameter[parameter.length - 1] instanceof Uint16Array)   ||
-            (parameter[parameter.length - 1] instanceof Uint32Array)   ||
-            (parameter[parameter.length - 1] instanceof Int8Array)     ||
-            (parameter[parameter.length - 1] instanceof Int16Array)    ||
-            (parameter[parameter.length - 1] instanceof Int32Array)    ||
-            (parameter[parameter.length - 1] instanceof Float32Array)  ||          
-            (parameter[parameter.length - 1] instanceof ArrayBuffer)   ||  
-            (parameter[parameter.length - 1] instanceof Array)){ 
-  
-            CU.stack_trace += "[";  
-            for (var j = 0; j < Math.min(25,parameter[parameter.length - 1].length - 1) ; j++) {
-              CU.stack_trace += parameter[parameter.length - 1][j] + ",";
-            }
-            if (parameter[parameter.length - 1].length > 25) {
-              CU.stack_trace += " ... ,";
-            }
-            if (parameter[parameter.length - 1].length >= 1) {
-              CU.stack_trace += parameter[parameter.length - 1][parameter[parameter.length - 1].length - 1];
-            }
-            CU.stack_trace += "]";
-          } else {
-            CU.stack_trace += parameter[parameter.length - 1]; 
-          }
-        }
-      },cudaEndStackTrace:function (result,message,exception) {
-        CU.stack_trace += CU.stack_trace_offset + "\t\t=>Result (" + result[0];
-        if (result.length >= 2) {
-          CU.stack_trace += " : ";
-        }
-  
-        for (var i = 1; i < result.length - 1 ; i++) {
-          CU.stack_trace += ( result[i] == 0 ? '0' : HEAP32[((result[i])>>2)] ) + " - ";
-        }
-  
-        if (result.length >= 2) {
-          CU.stack_trace +=  ( result[result.length - 1] == 0 ? '0' : HEAP32[((result[result.length - 1])>>2)] );
-        }
-  
-        CU.stack_trace += ") - Message (" + message + ") - Exception (" + exception + ")\n";
-  
-        console.info(CU.stack_trace);
-        //alert(CU.stack_trace); // Useful for step by step debugging
-        CU.stack_trace_complete += CU.stack_trace;
-        CU.stack_trace = "";
-  
-        if (CU.stack_trace_offset == "") {
-          CU.stack_trace_offset = -1;
-        } else {
-          CU.stack_trace_offset = CU.stack_trace_offset.substr(0,CU.stack_trace_offset.length-1);
-        }
       }};function _cudaDeviceReset() {
-      CU.cudaBeginStackTrace("cudaDeviceReset",[]);
   
-      CU.cudaCallStackTrace(CU.cuda_objects[CU.cuda_context]+".release",[]);
       
       //CU.cuda_objects[CU.cuda_context].releaseAll();
       //delete CU.cuda_objects[CU.cuda_context];  
   
-      CU.cudaEndStackTrace([0],"","");
       return 0; /* cudaSuccess */
     }
 
@@ -5267,7 +5157,6 @@ function copyTempDouble(ptr) {
 
 
   function _cudaGetErrorString(err) {
-      CU.cudaBeginStackTrace("cudaGetErrorString",[err]);
       
       var _string = "";
   
@@ -5339,7 +5228,6 @@ function copyTempDouble(ptr) {
         default: _string = "Unknown error";
       }
   
-      CU.cudaEndStackTrace([_string],"","");
       
       var _buffer = _malloc(_string.length);
   
@@ -5359,7 +5247,6 @@ function copyTempDouble(ptr) {
     }
 
   function _cudaGetDeviceProperties(prop, device) {
-      CU.cudaBeginStackTrace("cudaGetDeviceProperties",[prop, device]);
     
       var _device = CU.cuda_objects[CU.cuda_device];
   
@@ -5449,15 +5336,12 @@ function copyTempDouble(ptr) {
       }
       */
   
-      CU.cudaEndStackTrace([0,prop],"","");
   
       return 0; /* cudaSuccess */
     }
 
   function _cudaEventCreate() {
-      CU.cudaBeginStackTrace("cudaEventCreate",[]);
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 22; /* cudaSuccess */
     }
@@ -5465,7 +5349,6 @@ function copyTempDouble(ptr) {
   var _fabs=Math_abs;
 
   function _cudaMemcpy(dst,src,count,kind) {
-      CU.cudaBeginStackTrace("cudaMemcpy",[dst,src,count,kind]);
   
       try {
   
@@ -5473,7 +5356,6 @@ function copyTempDouble(ptr) {
   
           var _host_ptr = HEAPF32.subarray((src)>>2,(src+count)>>2);
   
-          CU.cudaCallStackTrace(""+CU.cuda_objects[CU.cuda_command_queue]+".enqueueWriteBuffer",[CU.cuda_objects[dst],1,0,count,_host_ptr,[]]);
           
           CU.cuda_objects[CU.cuda_command_queue].enqueueWriteBuffer(CU.cuda_objects[dst],1,0,count,_host_ptr,[]);    
   
@@ -5483,7 +5365,6 @@ function copyTempDouble(ptr) {
           
           CU.cuda_objects[CU.cuda_command_queue].enqueueReadBuffer(CU.cuda_objects[src],1,0,count,_host_ptr,[]);    
   
-          CU.cudaCallStackTrace(""+CU.cuda_objects[CU.cuda_command_queue]+".enqueueReadBuffer",[CU.cuda_objects[src],1,0,count,_host_ptr,[]]);
   
         }
   
@@ -5491,22 +5372,18 @@ function copyTempDouble(ptr) {
   
         var _error = CU.catchError(e);
   
-        CU.cudaEndStackTrace([17],"",e.message);
   
         return 17; /* cudaErrorInvalidDevicePointer */
   
       }
   
-      CU.cudaEndStackTrace([0],"","");
       return 0; /* cudaSuccess */
     }
 
   function _cudaFree(devPtr) {
-      CU.cudaBeginStackTrace("cudaFree",[devPtr]);
   
       try {
   
-        CU.cudaCallStackTrace(CU.cuda_objects[devPtr]+".release",[]);
         CU.cuda_objects[devPtr].release();
         delete CU.cuda_objects[devPtr];  
   
@@ -5514,24 +5391,20 @@ function copyTempDouble(ptr) {
   
         var _error = CU.catchError(e);
   
-        CU.cudaEndStackTrace([17],"",e.message);
   
         return 17; /* cudaErrorInvalidDevicePointer */
   
       }
   
-      CU.cudaEndStackTrace([0],"","");
       return 0; /* cudaSuccess */
     }
 
   function _cudaMalloc(devPtr, size) {
       var _initialize = CU.init();
   
-      CU.cudaBeginStackTrace("cudaMalloc",[devPtr, size]);
   
       // Init webcl variable if necessary
       if (_initialize == 0) {
-        CU.webclEndStackTrace([2],"webcl is not found !!!!","");
         return 2; /* cudaErrorMemoryAllocation */
       }
       
@@ -5541,7 +5414,6 @@ function copyTempDouble(ptr) {
   
       try {
   
-        CU.cudaCallStackTrace( CU.cuda_objects[CU.cuda_context]+".createBuffer",[_flags,size]);
   
         _buffer = CU.cuda_objects[CU.cuda_context].createBuffer(_flags,size);
   
@@ -5557,7 +5429,6 @@ function copyTempDouble(ptr) {
       }
       
   
-      CU.cudaEndStackTrace([0,devPtr],"","");
   
       return 0; /* cudaSuccess */
     }
@@ -6109,15 +5980,12 @@ function copyTempDouble(ptr) {
 
   function _cudaSetDevice(device_type) {
   
-      CU.cudaBeginStackTrace("cudaSetDevice",[device_type]);
   
       // 0  : DEVICE_TYPE_GPU
       // 1  : DEVICE_TYPE_CPU
       // 2  : DEVICE_TYPE_ACCELERATOR
       // 3  : DEVICE_TYPE_ALL
       // ...: DEVICE_TYPE_DEFAULT
-      var _device = device_type==0?"DEVICE_TYPE_GPU":device_type==1?"DEVICE_TYPE_CPU":device_type==2?"DEVICE_TYPE_ACCELERATOR":device_type==3?"DEVICE_TYPE_ALL":"DEVICE_TYPE_DEFAULT";
-      console.info("cudaSetDevice convert Cuda Device("+device_type+") to WebCL Device("+ _device +")")
       switch (device_type) {
         case 0:
           CU.cuda_from_type = 0x4;
@@ -6135,7 +6003,6 @@ function copyTempDouble(ptr) {
           CU.cuda_from_type = 0x1;
       }
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 0; /* cudaSuccess */
     }
@@ -6232,17 +6099,14 @@ function copyTempDouble(ptr) {
   function _cudaGetDevice(device) {
       var _initialize = CU.init();
   
-      CU.cudaBeginStackTrace("cudaGetDevice",[device]);
   
       // Init webcl variable if necessary
       if (_initialize == 0) {
-        CU.webclEndStackTrace([2],"webcl is not found !!!!","");
         return 30; /* cudaErrorUnknown */
       }
   
       HEAP32[((device)>>2)]=CU.cuda_from_type;
   
-      CU.cudaEndStackTrace([0,device],"","");
   
       return 0; /* cudaSuccess */
     }
@@ -6255,9 +6119,7 @@ function copyTempDouble(ptr) {
   Module["_memcpy"] = _memcpy;
 
   function _cudaEventElapsedTime() {
-      CU.cudaBeginStackTrace("cudaEventElapsedTime",[]);
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 22; /* cudaSuccess */
     }
@@ -6265,7 +6127,6 @@ function copyTempDouble(ptr) {
   
   
   function _cudaRunKernel(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
-      CU.cudaBeginStackTrace("cudaKernelCall",[kernel_name, kernel_source,  options, work_dim, global_work_size, local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10]);
       var _param = [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10];
   
       var _kernel_options = options != 0 ? Pointer_stringify(options) : ""; 
@@ -6278,17 +6139,14 @@ function copyTempDouble(ptr) {
   
       try {
   
-        CU.cudaCallStackTrace(CU.cuda_objects[CU.cuda_context]+".createProgram",[_kernel_converted]);
   
         var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
         
         CU.udid(_program);
   
-        CU.cudaCallStackTrace(_program+".build",[CU.cuda_objects[CU.cuda_device],_kernel_options,null]);
         
         _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
   
-        CU.cudaCallStackTrace(_program+".createKernel",[_kernel_name]);
         
         var _kernel = _program.createKernel(_kernel_name);
   
@@ -6304,17 +6162,14 @@ function copyTempDouble(ptr) {
   
             if (_param[i] in CU.cuda_objects) {
               // WEBCL OBJECT ARG
-              CU.cudaCallStackTrace(_kernel+".setArg",[i,CU.cuda_objects[_param[i]]]);
               _kernel.setArg(i,CU.cuda_objects[_param[i]]);
   
             } else {
   
               if (webCLKernelArgInfo.typeName == "int") {
-                CU.cudaCallStackTrace(_kernel+".setArg",[i,_param[i]]);
                 _kernel.setArg(i,new Int32Array([_param[i]]));
   
               } else if (webCLKernelArgInfo.typeName == "float") {
-                CU.cudaCallStackTrace(_kernel+".setArg",[i,_param[i]]);
                 _kernel.setArg(i,new Float32Array([_param[i]]));
   
               } else {
@@ -6324,7 +6179,6 @@ function copyTempDouble(ptr) {
           }
         }
       
-        CU.cudaCallStackTrace(""+CU.cuda_objects[CU.cuda_command_queue]+".enqueueNDRangeKernel",[_kernel,work_dim,[],global_work_size,local_work_size,[]]);
         CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[]);  
      
       } catch (e) {
@@ -6338,13 +6192,11 @@ function copyTempDouble(ptr) {
   
         CU.cuda_errors.push(30 /* cudaErrorUnknown */);
   
-        CU.cudaEndStackTrace([0],"",e.message);
   
         return 0; /* cudaSuccess */
   
       }
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 0; /* cudaSuccess */
     }function _cudaRunKernelDim(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
@@ -6364,24 +6216,20 @@ function copyTempDouble(ptr) {
     }var _cudaRunKernelDim5=_cudaRunKernelDim;
 
   function _cudaDeviceSynchronize() {
-      CU.cudaBeginStackTrace("cudaDeviceSynchronize",[]);
   
       try {
   
-        CU.cudaCallStackTrace(""+CU.cuda_objects[CU.cuda_command_queue]+".finish",[]);
         CU.cuda_objects[CU.cuda_command_queue].finish();
   
       } catch (e) {
   
         var _error = CU.catchError(e);
   
-        CU.cudaEndStackTrace([30],"",e.message);
   
         return 30; /* cudaErrorUnknown */
   
       }
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 0; /* cudaSuccess */
     }
@@ -6417,17 +6265,13 @@ function copyTempDouble(ptr) {
     }
 
   function _cudaEventSynchronize() {
-      CU.cudaBeginStackTrace("cudaEventSynchronize",[]);
   
-      CU.cudaEndStackTrace([0],"","");
   
       return 22; /* cudaSuccess */
     }
 
   function _cudaEventRecord() {
-      CU.cudaBeginStackTrace("cudaEventRecord",[]);
   
-      CU.cudaEndStackTrace([0],"","");
     
       return 22; /* cudaSuccess */
     }
@@ -8124,7 +7968,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $180 = ($154|0)==(0|0);
-   L78: do {
+   L202: do {
     if (!($180)) {
      $181 = (($v$0$i) + 28|0);
      $182 = HEAP32[$181>>2]|0;
@@ -8143,7 +7987,7 @@ function _malloc($bytes) {
        $188 = HEAP32[((2600 + 4|0))>>2]|0;
        $189 = $188 & $187;
        HEAP32[((2600 + 4|0))>>2] = $189;
-       break L78;
+       break L202;
       } else {
        $190 = HEAP32[((2600 + 16|0))>>2]|0;
        $191 = ($154>>>0)<($190>>>0);
@@ -8162,7 +8006,7 @@ function _malloc($bytes) {
        }
        $196 = ($R$1$i|0)==(0|0);
        if ($196) {
-        break L78;
+        break L202;
        }
       }
      } while(0);
@@ -8335,7 +8179,7 @@ function _malloc($bytes) {
    $276 = ((2600 + ($idx$0$i<<2)|0) + 304|0);
    $277 = HEAP32[$276>>2]|0;
    $278 = ($277|0)==(0|0);
-   L126: do {
+   L9: do {
     if ($278) {
      $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
     } else {
@@ -8359,7 +8203,7 @@ function _malloc($bytes) {
        $289 = ($286|0)==($247|0);
        if ($289) {
         $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-        break L126;
+        break L9;
        } else {
         $rsize$1$i = $287;$v$1$i = $t$0$i14;
        }
@@ -8562,7 +8406,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $378 = ($352|0)==(0|0);
-   L176: do {
+   L59: do {
     if (!($378)) {
      $379 = (($v$3$lcssa$i) + 28|0);
      $380 = HEAP32[$379>>2]|0;
@@ -8581,7 +8425,7 @@ function _malloc($bytes) {
        $386 = HEAP32[((2600 + 4|0))>>2]|0;
        $387 = $386 & $385;
        HEAP32[((2600 + 4|0))>>2] = $387;
-       break L176;
+       break L59;
       } else {
        $388 = HEAP32[((2600 + 16|0))>>2]|0;
        $389 = ($352>>>0)<($388>>>0);
@@ -8600,7 +8444,7 @@ function _malloc($bytes) {
        }
        $394 = ($R$1$i20|0)==(0|0);
        if ($394) {
-        break L176;
+        break L59;
        }
       }
      } while(0);
@@ -8652,7 +8496,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $412 = ($rsize$3$lcssa$i>>>0)<(16);
-   L204: do {
+   L87: do {
     if ($412) {
      $413 = (($rsize$3$lcssa$i) + ($247))|0;
      $414 = $413 | 3;
@@ -8793,7 +8637,7 @@ function _malloc($bytes) {
      $482 = HEAP32[$481>>2]|0;
      $483 = $482 & -8;
      $484 = ($483|0)==($rsize$3$lcssa$i|0);
-     L225: do {
+     L108: do {
       if ($484) {
        $T$0$lcssa$i = $477;
       } else {
@@ -8814,7 +8658,7 @@ function _malloc($bytes) {
         $492 = ($491|0)==($rsize$3$lcssa$i|0);
         if ($492) {
          $T$0$lcssa$i = $489;
-         break L225;
+         break L108;
         } else {
          $T$024$i$phi = $489;$K12$025$i = $487;$T$024$i = $T$024$i$phi;
         }
@@ -8835,7 +8679,7 @@ function _malloc($bytes) {
         $$sum13$i = (($247) + 8)|0;
         $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
         HEAP32[$500>>2] = $349;
-        break L204;
+        break L87;
        }
       }
      } while(0);
@@ -10601,7 +10445,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -10771,7 +10615,7 @@ function _free($mem) {
        $199 = HEAP32[((2600 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((2600 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((2600 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -10790,7 +10634,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);

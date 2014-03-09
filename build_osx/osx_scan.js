@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = 'afafc41c-2134-455c-8e5e-f396150729e1';
+    var PACKAGE_UUID = '4d7e139a-5232-4faa-9888-b303fccf9da9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -10742,7 +10742,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $180 = ($154|0)==(0|0);
-   L202: do {
+   L78: do {
     if (!($180)) {
      $181 = (($v$0$i) + 28|0);
      $182 = HEAP32[$181>>2]|0;
@@ -10761,7 +10761,7 @@ function _malloc($bytes) {
        $188 = HEAP32[((1560 + 4|0))>>2]|0;
        $189 = $188 & $187;
        HEAP32[((1560 + 4|0))>>2] = $189;
-       break L202;
+       break L78;
       } else {
        $190 = HEAP32[((1560 + 16|0))>>2]|0;
        $191 = ($154>>>0)<($190>>>0);
@@ -10780,7 +10780,7 @@ function _malloc($bytes) {
        }
        $196 = ($R$1$i|0)==(0|0);
        if ($196) {
-        break L202;
+        break L78;
        }
       }
      } while(0);
@@ -10953,7 +10953,7 @@ function _malloc($bytes) {
    $276 = ((1560 + ($idx$0$i<<2)|0) + 304|0);
    $277 = HEAP32[$276>>2]|0;
    $278 = ($277|0)==(0|0);
-   L9: do {
+   L126: do {
     if ($278) {
      $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
     } else {
@@ -10977,7 +10977,7 @@ function _malloc($bytes) {
        $289 = ($286|0)==($247|0);
        if ($289) {
         $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-        break L9;
+        break L126;
        } else {
         $rsize$1$i = $287;$v$1$i = $t$0$i14;
        }
@@ -11180,7 +11180,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $378 = ($352|0)==(0|0);
-   L59: do {
+   L176: do {
     if (!($378)) {
      $379 = (($v$3$lcssa$i) + 28|0);
      $380 = HEAP32[$379>>2]|0;
@@ -11199,7 +11199,7 @@ function _malloc($bytes) {
        $386 = HEAP32[((1560 + 4|0))>>2]|0;
        $387 = $386 & $385;
        HEAP32[((1560 + 4|0))>>2] = $387;
-       break L59;
+       break L176;
       } else {
        $388 = HEAP32[((1560 + 16|0))>>2]|0;
        $389 = ($352>>>0)<($388>>>0);
@@ -11218,7 +11218,7 @@ function _malloc($bytes) {
        }
        $394 = ($R$1$i20|0)==(0|0);
        if ($394) {
-        break L59;
+        break L176;
        }
       }
      } while(0);
@@ -11270,7 +11270,7 @@ function _malloc($bytes) {
     }
    } while(0);
    $412 = ($rsize$3$lcssa$i>>>0)<(16);
-   L87: do {
+   L204: do {
     if ($412) {
      $413 = (($rsize$3$lcssa$i) + ($247))|0;
      $414 = $413 | 3;
@@ -11411,7 +11411,7 @@ function _malloc($bytes) {
      $482 = HEAP32[$481>>2]|0;
      $483 = $482 & -8;
      $484 = ($483|0)==($rsize$3$lcssa$i|0);
-     L108: do {
+     L225: do {
       if ($484) {
        $T$0$lcssa$i = $477;
       } else {
@@ -11432,7 +11432,7 @@ function _malloc($bytes) {
         $492 = ($491|0)==($rsize$3$lcssa$i|0);
         if ($492) {
          $T$0$lcssa$i = $489;
-         break L108;
+         break L225;
         } else {
          $T$024$i$phi = $489;$K12$025$i = $487;$T$024$i = $T$024$i$phi;
         }
@@ -11453,7 +11453,7 @@ function _malloc($bytes) {
         $$sum13$i = (($247) + 8)|0;
         $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
         HEAP32[$500>>2] = $349;
-        break L87;
+        break L204;
        }
       }
      } while(0);
@@ -13219,7 +13219,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -13389,7 +13389,7 @@ function _free($mem) {
        $199 = HEAP32[((1560 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((1560 + 4|0))>>2] = $200;
-       break L113;
+       break L112;
       } else {
        $201 = HEAP32[((1560 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -13408,7 +13408,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L113;
+        break L112;
        }
       }
      } while(0);
