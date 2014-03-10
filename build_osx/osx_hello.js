@@ -2973,12 +2973,28 @@ function copyTempDouble(ptr) {
           }
   
         } else {
+          // If no device and no platfomr peek the first one
+          
+          // Search platform
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLPlatform) {
+              _platform = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (_platform == null) {
+            var _platforms = webcl.getPlatforms();
   
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+            _platform = _platforms[0];
+          
+            CL.udid(_platforms[i]);         
           }
   
-          return 0; // NULL Pointer      
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }    
         }
   
       } catch (e) {

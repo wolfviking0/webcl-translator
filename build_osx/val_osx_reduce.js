@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_reduce.data';
     var REMOTE_PACKAGE_SIZE = 199065;
-    var PACKAGE_UUID = 'dcb92a7a-8691-4c67-a354-dbf240d580ca';
+    var PACKAGE_UUID = '9b14c25d-b47f-4db2-a073-2450808e4413';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -3170,12 +3170,28 @@ function copyTempDouble(ptr) {
           }
   
         } else {
+          // If no device and no platfomr peek the first one
+          
+          // Search platform
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLPlatform) {
+              _platform = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (_platform == null) {
+            var _platforms = webcl.getPlatforms();
   
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+            _platform = _platforms[0];
+          
+            CL.udid(_platforms[i]);         
           }
   
-          return 0; // NULL Pointer      
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }    
         }
   
       } catch (e) {
@@ -13446,7 +13462,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -13616,7 +13632,7 @@ function _free($mem) {
        $199 = HEAP32[((1680 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((1680 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((1680 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -13635,7 +13651,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);

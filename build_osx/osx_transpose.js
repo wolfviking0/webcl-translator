@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_transpose.data';
     var REMOTE_PACKAGE_SIZE = 9421;
-    var PACKAGE_UUID = '72c4850d-dc02-4754-a481-6abdf24dbdef';
+    var PACKAGE_UUID = '65091846-bf47-44ee-a1c5-a6add9a6c0db';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -3141,12 +3141,28 @@ function copyTempDouble(ptr) {
           }
   
         } else {
+          // If no device and no platfomr peek the first one
+          
+          // Search platform
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLPlatform) {
+              _platform = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (_platform == null) {
+            var _platforms = webcl.getPlatforms();
   
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+            _platform = _platforms[0];
+          
+            CL.udid(_platforms[i]);         
           }
   
-          return 0; // NULL Pointer      
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }    
         }
   
       } catch (e) {

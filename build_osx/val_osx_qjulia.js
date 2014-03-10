@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_qjulia.data';
     var REMOTE_PACKAGE_SIZE = 16870;
-    var PACKAGE_UUID = '57954058-0f48-489a-ad66-515e00ca599b';
+    var PACKAGE_UUID = 'ef12ed17-54ff-4fb4-8983-48cf6fea8d9d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -12863,12 +12863,28 @@ function copyTempDouble(ptr) {
           }
   
         } else {
+          // If no device and no platfomr peek the first one
+          
+          // Search platform
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLPlatform) {
+              _platform = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (_platform == null) {
+            var _platforms = webcl.getPlatforms();
   
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+            _platform = _platforms[0];
+          
+            CL.udid(_platforms[i]);         
           }
   
-          return 0; // NULL Pointer      
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }    
         }
   
       } catch (e) {
