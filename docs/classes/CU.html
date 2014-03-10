@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>LibraryCUDA</title>
+    <title>CU</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -41,13 +41,17 @@
         <div id="api-tabview-panel">
             <ul id="api-classes" class="apis classes">
             
-                <li><a href="../classes/LibraryCUDA.html">LibraryCUDA</a></li>
+                <li><a href="../classes/CL.html">CL</a></li>
             
-                <li><a href="../classes/LibraryOpenCL.html">LibraryOpenCL</a></li>
+                <li><a href="../classes/CU.html">CU</a></li>
             
             </ul>
 
             <ul id="api-modules" class="apis modules">
+            
+                <li><a href="../modules/LibraryCUDA.html">LibraryCUDA</a></li>
+            
+                <li><a href="../modules/LibraryOpenCL.html">LibraryOpenCL</a></li>
             
             </ul>
         </div>
@@ -84,7 +88,7 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1>LibraryCUDA Class</h1>
+                        <h1>CU Class</h1>
 <div class="box meta">
     
 
@@ -92,10 +96,14 @@
 
     
         <div class="foundat">
-            Defined in: <a href="../files/library_cuda.js.html#l1"><code>library_cuda.js:1</code></a>
+            Defined in: <a href="../files/library_cuda.js.html#l11"><code>library_cuda.js:11</code></a>
         </div>
     
 
+    
+        
+            Module: <a href="../modules/LibraryCUDA.html">LibraryCUDA</a>
+        
     
 
     
@@ -104,10 +112,7 @@
 
 
 <div class="box intro">
-    <p>library_cuda.js
-Licence : <a href="https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE">https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE</a></p>
-<p>Created by Anthony Liot.
-Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
+    <p>Contains some method for the LibraryCUDA Module</p>
 
 </div>
 
@@ -255,13 +260,6 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_cudaInit">cudaInit</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
                                 <a href="#method_cudaKernelCall (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))">cudaKernelCall (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))</a>
 
                                 
@@ -305,6 +303,13 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                         
                             <li class="index-item method">
                                 <a href="#method_cudaSetDevice">cudaSetDevice</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_init">init</a>
 
                                 
                                 
@@ -379,7 +384,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l126"><code>library_cuda.js:126</code></a>
+        <a href="../files/library_cuda.js.html#l147"><code>library_cuda.js:147</code></a>
         
         </p>
 
@@ -483,7 +488,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l145"><code>library_cuda.js:145</code></a>
+        <a href="../files/library_cuda.js.html#l166"><code>library_cuda.js:166</code></a>
         
         </p>
 
@@ -543,231 +548,6 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                 
                     <div id="method_cudaBeginStackTrace" class="method item">
     <h3 class="name"><code>cudaBeginStackTrace</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>name</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>parameter</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type"></span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/library_cuda.js.html#l209"><code>library_cuda.js:209</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Description</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">name</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                         
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">parameter</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                         
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_cudaCallParameterStackTrace" class="method item">
-    <h3 class="name"><code>cudaCallParameterStackTrace</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>parameter</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type"></span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/library_cuda.js.html#l245"><code>library_cuda.js:245</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Description</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">parameter</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                         
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_cudaCallStackTrace" class="method item">
-    <h3 class="name"><code>cudaCallStackTrace</code></h3>
 
     
         <div class="args">
@@ -889,6 +669,231 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
 </div>
 
                 
+                    <div id="method_cudaCallParameterStackTrace" class="method item">
+    <h3 class="name"><code>cudaCallParameterStackTrace</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>parameter</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type"></span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/library_cuda.js.html#l266"><code>library_cuda.js:266</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Description</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">parameter</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                         
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_cudaCallStackTrace" class="method item">
+    <h3 class="name"><code>cudaCallStackTrace</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>name</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>parameter</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type"></span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/library_cuda.js.html#l251"><code>library_cuda.js:251</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Description</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">name</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                         
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">parameter</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                         
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_cudaDeviceReset (no direct equivalent)" class="method item">
     <h3 class="name"><code>cudaDeviceReset (no direct equivalent)</code></h3>
 
@@ -925,7 +930,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l807"><code>library_cuda.js:807</code></a>
+        <a href="../files/library_cuda.js.html#l829"><code>library_cuda.js:829</code></a>
         
         </p>
 
@@ -996,7 +1001,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l622"><code>library_cuda.js:622</code></a>
+        <a href="../files/library_cuda.js.html#l644"><code>library_cuda.js:644</code></a>
         
         </p>
 
@@ -1089,7 +1094,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l310"><code>library_cuda.js:310</code></a>
+        <a href="../files/library_cuda.js.html#l331"><code>library_cuda.js:331</code></a>
         
         </p>
 
@@ -1211,7 +1216,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l372"><code>library_cuda.js:372</code></a>
+        <a href="../files/library_cuda.js.html#l394"><code>library_cuda.js:394</code></a>
         
         </p>
 
@@ -1282,7 +1287,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l423"><code>library_cuda.js:423</code></a>
+        <a href="../files/library_cuda.js.html#l445"><code>library_cuda.js:445</code></a>
         
         </p>
 
@@ -1353,7 +1358,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l389"><code>library_cuda.js:389</code></a>
+        <a href="../files/library_cuda.js.html#l411"><code>library_cuda.js:411</code></a>
         
         </p>
 
@@ -1424,7 +1429,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l406"><code>library_cuda.js:406</code></a>
+        <a href="../files/library_cuda.js.html#l428"><code>library_cuda.js:428</code></a>
         
         </p>
 
@@ -1505,7 +1510,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l770"><code>library_cuda.js:770</code></a>
+        <a href="../files/library_cuda.js.html#l792"><code>library_cuda.js:792</code></a>
         
         </p>
 
@@ -1612,7 +1617,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l485"><code>library_cuda.js:485</code></a>
+        <a href="../files/library_cuda.js.html#l507"><code>library_cuda.js:507</code></a>
         
         </p>
 
@@ -1725,7 +1730,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l515"><code>library_cuda.js:515</code></a>
+        <a href="../files/library_cuda.js.html#l537"><code>library_cuda.js:537</code></a>
         
         </p>
 
@@ -1850,7 +1855,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l850"><code>library_cuda.js:850</code></a>
+        <a href="../files/library_cuda.js.html#l872"><code>library_cuda.js:872</code></a>
         
         </p>
 
@@ -1947,7 +1952,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l830"><code>library_cuda.js:830</code></a>
+        <a href="../files/library_cuda.js.html#l852"><code>library_cuda.js:852</code></a>
         
         </p>
 
@@ -1972,77 +1977,6 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                 
                     
                     <p>cudaSuccess(0), ...</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_cudaInit" class="method item">
-    <h3 class="name"><code>cudaInit</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type"></span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/library_cuda.js.html#l22"><code>library_cuda.js:22</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Description</p>
-
-    </div>
-
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                    <p>cudaSuccess(0)</p>
 
                 
             </div>
@@ -2123,7 +2057,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l942"><code>library_cuda.js:942</code></a>
+        <a href="../files/library_cuda.js.html#l964"><code>library_cuda.js:964</code></a>
         
         </p>
 
@@ -2324,208 +2258,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l1086"><code>library_cuda.js:1086</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Description</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">kernel_name</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <ul>
-<li>Kernel name</li>
-</ul>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">kernel_source</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <ul>
-<li>Kernel Source</li>
-</ul>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">blocksPerGrid</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <ul>
-<li>Blocks per grid (dim3)</li>
-</ul>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">threadsPerBlock</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <ul>
-<li>Threads per grid (dim3)</li>
-</ul>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">...</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>variable parameter</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                    <p>cudaSuccess(0)</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))" class="method item">
-    <h3 class="name"><code>cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>kernel_name</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>kernel_source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>blocksPerGrid</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>threadsPerBlock</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>...</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type"></span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/library_cuda.js.html#l1056"><code>library_cuda.js:1056</code></a>
+        <a href="../files/library_cuda.js.html#l1078"><code>library_cuda.js:1078</code></a>
         
         </p>
 
@@ -2656,6 +2389,207 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
 </div>
 
                 
+                    <div id="method_cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))" class="method item">
+    <h3 class="name"><code>cudaKernelCallNoDim (kernelname&lt;&lt;&lt;blocksPerGrid, threadsPerBlock&gt;&gt;&gt;(...))</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>kernel_name</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>kernel_source</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>blocksPerGrid</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>threadsPerBlock</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>...</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type"></span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/library_cuda.js.html#l1108"><code>library_cuda.js:1108</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Description</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">kernel_name</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <ul>
+<li>Kernel name</li>
+</ul>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">kernel_source</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <ul>
+<li>Kernel Source</li>
+</ul>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">blocksPerGrid</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <ul>
+<li>Blocks per grid (dim3)</li>
+</ul>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">threadsPerBlock</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <ul>
+<li>Threads per grid (dim3)</li>
+</ul>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">...</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>variable parameter</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                    <p>cudaSuccess(0)</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_cudaMalloc (clCreateBuffer)" class="method item">
     <h3 class="name"><code>cudaMalloc (clCreateBuffer)</code></h3>
 
@@ -2708,7 +2642,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l658"><code>library_cuda.js:658</code></a>
+        <a href="../files/library_cuda.js.html#l680"><code>library_cuda.js:680</code></a>
         
         </p>
 
@@ -2851,7 +2785,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l714"><code>library_cuda.js:714</code></a>
+        <a href="../files/library_cuda.js.html#l736"><code>library_cuda.js:736</code></a>
         
         </p>
 
@@ -2991,7 +2925,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
 
     
         <span class="returns-inline">
-            <span class="type"></span>
+            <span class="type">Int</span>
         </span>
     
 
@@ -3018,7 +2952,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l350"><code>library_cuda.js:350</code></a>
+        <a href="../files/library_cuda.js.html#l371"><code>library_cuda.js:371</code></a>
         
         </p>
 
@@ -3029,7 +2963,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
     </div>
 
     <div class="description">
-        <p>Description</p>
+        <p>Method for acces to the stack trace debugger</p>
 
     </div>
 
@@ -3042,13 +2976,14 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                 <li class="param">
                     
                         <code class="param-name">param_value</code>
-                        <span class="type">Object</span>
+                        <span class="type">String</span>
                     
 
                     
 
                     <div class="param-description">
-                         
+                        <p>Receive the stack trace String</p>
+
                     </div>
 
                     
@@ -3057,13 +2992,14 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
                 <li class="param">
                     
                         <code class="param-name">param_value_size</code>
-                        <span class="type">Object</span>
+                        <span class="type">Int</span>
                     
 
                     
 
                     <div class="param-description">
-                         
+                        <p>Size of the stack trace</p>
+
                     </div>
 
                     
@@ -3080,7 +3016,9 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             <div class="returns-description">
                 
                     
-                    <p>MemberExpression</p>
+                        <span class="type">Int</span>:
+                    
+                    <p>cudaSuccess(0)</p>
 
                 
             </div>
@@ -3137,7 +3075,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l440"><code>library_cuda.js:440</code></a>
+        <a href="../files/library_cuda.js.html#l462"><code>library_cuda.js:462</code></a>
         
         </p>
 
@@ -3198,6 +3136,79 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
 </div>
 
                 
+                    <div id="method_init" class="method item">
+    <h3 class="name"><code>init</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Int</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/library_cuda.js.html#l42"><code>library_cuda.js:42</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Initialize all the attribute of the CU Class</p>
+
+    </div>
+
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Int</span>:
+                    
+                    <p>CU.cuda_init(0 / 1)</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_udid" class="method item">
     <h3 class="name"><code>udid</code></h3>
 
@@ -3244,7 +3255,7 @@ Copyright (c) 2013 Anthony Liot. All rights reserved.</p>
             
         
         
-        <a href="../files/library_cuda.js.html#l82"><code>library_cuda.js:82</code></a>
+        <a href="../files/library_cuda.js.html#l103"><code>library_cuda.js:103</code></a>
         
         </p>
 

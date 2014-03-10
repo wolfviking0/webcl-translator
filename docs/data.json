@@ -3,65 +3,104 @@
     "files": {
         "library_cuda.js": {
             "name": "library_cuda.js",
-            "modules": {},
-            "classes": {
+            "modules": {
                 "LibraryCUDA": 1
+            },
+            "classes": {
+                "CU": 1
             },
             "fors": {},
             "namespaces": {}
         },
         "library_opencl.js": {
             "name": "library_opencl.js",
-            "modules": {},
-            "classes": {
+            "modules": {
                 "LibraryOpenCL": 1
+            },
+            "classes": {
+                "CL": 1
             },
             "fors": {},
             "namespaces": {}
         }
     },
-    "modules": {},
-    "classes": {
+    "modules": {
         "LibraryCUDA": {
             "name": "LibraryCUDA",
-            "shortname": "LibraryCUDA",
-            "classitems": [],
-            "plugins": [],
-            "extensions": [],
-            "plugin_for": [],
-            "extension_for": [],
+            "submodules": {},
+            "classes": {
+                "CU": 1
+            },
+            "fors": {},
+            "namespaces": {},
+            "tag": "module",
             "file": "library_cuda.js",
-            "line": 1,
+            "line": 11,
             "description": "library_cuda.js\nLicence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE\n\nCreated by Anthony Liot.\nCopyright (c) 2013 Anthony Liot. All rights reserved."
         },
         "LibraryOpenCL": {
             "name": "LibraryOpenCL",
-            "shortname": "LibraryOpenCL",
+            "submodules": {},
+            "classes": {
+                "CL": 1
+            },
+            "fors": {},
+            "namespaces": {},
+            "tag": "module",
+            "file": "library_opencl.js",
+            "line": 12,
+            "description": "library_opencl.js\nLicence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE\n\nCreated by Anthony Liot.\nCopyright (c) 2013 Anthony Liot. All rights reserved."
+        }
+    },
+    "classes": {
+        "CU": {
+            "name": "CU",
+            "shortname": "CU",
             "classitems": [],
             "plugins": [],
             "extensions": [],
             "plugin_for": [],
             "extension_for": [],
+            "module": "LibraryCUDA",
+            "namespace": "",
+            "file": "library_cuda.js",
+            "line": 11,
+            "description": "Contains some method for the LibraryCUDA Module",
+            "static": 1
+        },
+        "CL": {
+            "name": "CL",
+            "shortname": "CL",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "LibraryOpenCL",
+            "namespace": "",
             "file": "library_opencl.js",
-            "line": 1,
-            "description": "library_opencl.js\nLicence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE\n\nCreated by Anthony Liot.\nCopyright (c) 2013 Anthony Liot. All rights reserved."
+            "line": 12,
+            "description": "Contains some method for the LibraryOpenCL Module",
+            "static": 1
         }
     },
     "classitems": [
         {
             "file": "library_cuda.js",
-            "line": 22,
-            "description": "Description",
+            "line": 42,
+            "description": "Initialize all the attribute of the CU Class",
             "itemtype": "method",
-            "name": "cudaInit",
+            "name": "init",
             "return": {
-                "description": "cudaSuccess(0)"
+                "description": "CU.cuda_init(0 / 1)",
+                "type": "Int"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 82,
+            "line": 103,
             "description": "Description",
             "itemtype": "method",
             "name": "udid",
@@ -74,11 +113,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 126,
+            "line": 147,
             "description": "Description",
             "itemtype": "method",
             "name": "catchError",
@@ -91,11 +131,12 @@
             "return": {
                 "description": "_error"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 145,
+            "line": 166,
             "description": "Description",
             "itemtype": "method",
             "name": "convertCudaKernelToOpenCL",
@@ -108,11 +149,12 @@
             "return": {
                 "description": "_kernelConverted"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 209,
+            "line": 230,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaBeginStackTrace",
@@ -129,11 +171,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 230,
+            "line": 251,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaCallStackTrace",
@@ -150,11 +193,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 245,
+            "line": 266,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaCallParameterStackTrace",
@@ -167,11 +211,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 310,
+            "line": 331,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEndStackTrace",
@@ -192,76 +237,85 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 350,
-            "description": "Description",
+            "line": 371,
+            "description": "Method for acces to the stack trace debugger",
             "itemtype": "method",
             "name": "cudaPrintStackTrace",
             "params": [
                 {
                     "name": "param_value",
-                    "description": ""
+                    "description": "Receive the stack trace String",
+                    "type": "String"
                 },
                 {
                     "name": "param_value_size",
-                    "description": ""
+                    "description": "Size of the stack trace",
+                    "type": "Int"
                 }
             ],
             "return": {
-                "description": "MemberExpression"
+                "description": "cudaSuccess(0)",
+                "type": "Int"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 372,
+            "line": 394,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventCreate",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 389,
+            "line": 411,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventRecord",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 406,
+            "line": 428,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventSynchronize",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 423,
+            "line": 445,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaEventElapsedTime",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 440,
+            "line": 462,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaSetDevice",
@@ -274,11 +328,12 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidDevice(9), cudaErrorDeviceAlreadyInUse()"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 485,
+            "line": 507,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetDevice",
@@ -291,11 +346,12 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorUnknown(30)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 515,
+            "line": 537,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetDeviceProperties",
@@ -312,22 +368,24 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidDevice(10)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 622,
+            "line": 644,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaDeviceSynchronize (clFinish)",
             "return": {
                 "description": "cudaSuccess(0), cudaErrorUnknown(30)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 658,
+            "line": 680,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaMalloc (clCreateBuffer)",
@@ -344,11 +402,12 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorMemoryAllocation(2)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 714,
+            "line": 736,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaMemcpy (clEnqueueWriteBuffer or clEnqueueReadBuffer)",
@@ -373,11 +432,12 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInvalidValue(11), cudaErrorInvalidDevicePointer(17), cudaErrorInvalidMemcpyDirection(21)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 770,
+            "line": 792,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaFree (clReleaseMemObject)",
@@ -390,33 +450,36 @@
             "return": {
                 "description": "cudaSuccess(0), cudaErrorInitializationError(3), cudaErrorInvalidDevicePointer(17)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 807,
+            "line": 829,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaDeviceReset (no direct equivalent)",
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 830,
+            "line": 852,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetLastError (no direct equivalent)",
             "return": {
                 "description": "cudaSuccess(0), ..."
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 850,
+            "line": 872,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaGetErrorString (no direct equivalent)",
@@ -429,11 +492,12 @@
             "return": {
                 "description": "string"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 942,
+            "line": 964,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCall (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -462,11 +526,12 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 1056,
+            "line": 1078,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -495,11 +560,12 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_cuda.js",
-            "line": 1086,
+            "line": 1108,
             "description": "Description",
             "itemtype": "method",
             "name": "cudaKernelCallNoDim (kernelname<<<blocksPerGrid, threadsPerBlock>>>(...))",
@@ -528,22 +594,24 @@
             "return": {
                 "description": "cudaSuccess(0)"
             },
-            "class": "LibraryCUDA"
+            "class": "CU",
+            "module": "LibraryCUDA"
         },
         {
             "file": "library_opencl.js",
-            "line": 36,
+            "line": 42,
             "description": "Description",
             "itemtype": "method",
             "name": "init",
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 88,
+            "line": 94,
             "description": "Description",
             "itemtype": "method",
             "name": "udid",
@@ -556,11 +624,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 132,
+            "line": 138,
             "description": "Description",
             "itemtype": "method",
             "name": "cast_long",
@@ -573,11 +642,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 146,
+            "line": 152,
             "description": "Description",
             "itemtype": "method",
             "name": "stringType",
@@ -590,11 +660,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 186,
+            "line": 192,
             "description": "Description",
             "itemtype": "method",
             "name": "parseType",
@@ -607,11 +678,12 @@
             "return": {
                 "description": "_value"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 226,
+            "line": 232,
             "description": "Description",
             "itemtype": "method",
             "name": "parseStruct",
@@ -628,11 +700,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 362,
+            "line": 368,
             "description": "Description",
             "itemtype": "method",
             "name": "parseKernel",
@@ -645,11 +718,12 @@
             "return": {
                 "description": "_mini_kernel_string"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 624,
+            "line": 630,
             "description": "Description",
             "itemtype": "method",
             "name": "getImageSizeType",
@@ -662,11 +736,12 @@
             "return": {
                 "description": "_sizeType"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 666,
+            "line": 672,
             "description": "Description",
             "itemtype": "method",
             "name": "getImageFormatType",
@@ -679,11 +754,12 @@
             "return": {
                 "description": "_type"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 713,
+            "line": 719,
             "description": "Description",
             "itemtype": "method",
             "name": "getImageSizeOrder",
@@ -696,11 +772,12 @@
             "return": {
                 "description": "_sizeOrder"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 753,
+            "line": 759,
             "description": "Description",
             "itemtype": "method",
             "name": "getHostPtrArray",
@@ -717,11 +794,12 @@
             "return": {
                 "description": "_host_ptr"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 801,
+            "line": 807,
             "description": "Description",
             "itemtype": "method",
             "name": "getCopyPointerToArray",
@@ -742,11 +820,12 @@
             "return": {
                 "description": "_host_ptr"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 896,
+            "line": 902,
             "description": "Description",
             "itemtype": "method",
             "name": "getReferencePointerToArray",
@@ -767,11 +846,12 @@
             "return": {
                 "description": "_host_ptr"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 990,
+            "line": 996,
             "description": "Description",
             "itemtype": "method",
             "name": "catchError",
@@ -784,11 +864,12 @@
             "return": {
                 "description": "_error"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1014,
+            "line": 1020,
             "description": "Description",
             "itemtype": "method",
             "name": "webclBeginStackTrace",
@@ -805,11 +886,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1035,
+            "line": 1041,
             "description": "Description",
             "itemtype": "method",
             "name": "webclCallStackTrace",
@@ -826,11 +908,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1050,
+            "line": 1056,
             "description": "Description",
             "itemtype": "method",
             "name": "webclCallParameterStackTrace",
@@ -843,11 +926,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1115,
+            "line": 1121,
             "description": "Description",
             "itemtype": "method",
             "name": "webclEndStackTrace",
@@ -868,11 +952,12 @@
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1155,
+            "line": 1161,
             "description": "Description",
             "itemtype": "method",
             "name": "webclPrintStackTrace",
@@ -889,11 +974,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1177,
+            "line": 1183,
             "description": "Description",
             "itemtype": "method",
             "name": "clSetTypePointer",
@@ -910,11 +996,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1230,
+            "line": 1236,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetPlatformIDs",
@@ -935,11 +1022,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1301,
+            "line": 1307,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetPlatformInfo",
@@ -968,11 +1056,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1383,
+            "line": 1389,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetDeviceIDs",
@@ -1005,11 +1094,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1488,
+            "line": 1494,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetDeviceInfo",
@@ -1038,11 +1128,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1634,
+            "line": 1640,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateContext",
@@ -1075,11 +1166,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1823,
+            "line": 1829,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateContextFromType",
@@ -1112,11 +1204,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 1988,
+            "line": 1994,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainContext",
@@ -1129,11 +1222,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2020,
+            "line": 2026,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseContext",
@@ -1146,11 +1240,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2079,
+            "line": 2085,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetContextInfo",
@@ -1179,11 +1274,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2219,
+            "line": 2225,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateCommandQueue",
@@ -1212,11 +1308,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2302,
+            "line": 2308,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainCommandQueue",
@@ -1229,11 +1326,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2335,
+            "line": 2341,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseCommandQueue",
@@ -1246,11 +1344,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2393,
+            "line": 2399,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetCommandQueueInfo",
@@ -1279,11 +1378,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2498,
+            "line": 2504,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateBuffer",
@@ -1316,21 +1416,24 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2594,
-            "class": "LibraryOpenCL"
+            "line": 2600,
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2623,
-            "class": "LibraryOpenCL"
+            "line": 2629,
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2635,
+            "line": 2641,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateSubBuffer",
@@ -1363,11 +1466,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2740,
+            "line": 2746,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateImage2D",
@@ -1412,11 +1516,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2928,
+            "line": 2934,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateImage3D",
@@ -1469,11 +1574,12 @@
             "return": {
                 "description": "Literal"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2957,
+            "line": 2963,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainMemObject",
@@ -1486,11 +1592,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 2990,
+            "line": 2996,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseMemObject",
@@ -1503,11 +1610,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3061,
+            "line": 3067,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetSupportedImageFormats",
@@ -1544,11 +1652,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3160,
+            "line": 3166,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetMemObjectInfo",
@@ -1577,11 +1686,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3277,
+            "line": 3283,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetImageInfo",
@@ -1610,11 +1720,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3367,
+            "line": 3373,
             "description": "Description",
             "itemtype": "method",
             "name": "clSetMemObjectDestructorCallback",
@@ -1635,11 +1746,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3410,
+            "line": 3416,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateSampler",
@@ -1668,11 +1780,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3477,
+            "line": 3483,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainSampler",
@@ -1685,11 +1798,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3509,
+            "line": 3515,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseSampler",
@@ -1702,11 +1816,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3569,
+            "line": 3575,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetSamplerInfo",
@@ -1735,11 +1850,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3677,
+            "line": 3683,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateProgramWithSource",
@@ -1768,11 +1884,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3761,
+            "line": 3767,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateProgramWithBinary",
@@ -1809,11 +1926,12 @@
             "return": {
                 "description": "Literal"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3784,
+            "line": 3790,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainProgram",
@@ -1826,11 +1944,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3816,
+            "line": 3822,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseProgram",
@@ -1843,11 +1962,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3877,
+            "line": 3883,
             "description": "Description",
             "itemtype": "method",
             "name": "clBuildProgram",
@@ -1880,31 +2000,34 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3932,
+            "line": 3938,
             "description": "Description",
             "return": {
                 "description": ""
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3966,
+            "line": 3972,
             "description": "Description",
             "itemtype": "method",
             "name": "clUnloadCompiler",
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 3977,
+            "line": 3983,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetProgramInfo",
@@ -1933,11 +2056,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4094,
+            "line": 4100,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetProgramBuildInfo",
@@ -1970,11 +2094,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4183,
+            "line": 4189,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateKernel",
@@ -1995,11 +2120,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4265,
+            "line": 4271,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateKernelsInProgram",
@@ -2024,11 +2150,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4342,
+            "line": 4348,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainKernel",
@@ -2041,11 +2168,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4373,
+            "line": 4379,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseKernel",
@@ -2058,11 +2186,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4434,
+            "line": 4440,
             "description": "Description",
             "itemtype": "method",
             "name": "clSetKernelArg",
@@ -2087,11 +2216,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4565,
+            "line": 4571,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetKernelInfo",
@@ -2120,11 +2250,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4665,
+            "line": 4671,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetKernelWorkGroupInfo",
@@ -2157,11 +2288,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4746,
+            "line": 4752,
             "description": "Description",
             "itemtype": "method",
             "name": "clWaitForEvents",
@@ -2178,11 +2310,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4796,
+            "line": 4802,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetEventInfo",
@@ -2211,11 +2344,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4873,
+            "line": 4879,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateUserEvent",
@@ -2232,11 +2366,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4928,
+            "line": 4934,
             "description": "Description",
             "itemtype": "method",
             "name": "clRetainEvent",
@@ -2249,11 +2384,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 4959,
+            "line": 4965,
             "description": "Description",
             "itemtype": "method",
             "name": "clReleaseEvent",
@@ -2266,11 +2402,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5020,
+            "line": 5026,
             "description": "Description",
             "itemtype": "method",
             "name": "clSetUserEventStatus",
@@ -2287,11 +2424,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5066,
+            "line": 5072,
             "description": "Description",
             "itemtype": "method",
             "name": "clSetEventCallback",
@@ -2316,11 +2454,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5122,
+            "line": 5128,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetEventProfilingInfo",
@@ -2349,11 +2488,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5178,
+            "line": 5184,
             "description": "Description",
             "itemtype": "method",
             "name": "clFlush",
@@ -2366,11 +2506,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5220,
+            "line": 5226,
             "description": "Description",
             "itemtype": "method",
             "name": "clFinish",
@@ -2383,11 +2524,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5263,
+            "line": 5269,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueReadBuffer",
@@ -2432,11 +2574,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5360,
+            "line": 5366,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueReadBufferRect",
@@ -2501,11 +2644,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5477,
+            "line": 5483,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueWriteBuffer",
@@ -2550,11 +2694,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5574,
+            "line": 5580,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueWriteBufferRect",
@@ -2619,11 +2764,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5690,
+            "line": 5696,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueCopyBuffer",
@@ -2668,11 +2814,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5782,
+            "line": 5788,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueCopyBufferRect",
@@ -2733,11 +2880,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5887,
+            "line": 5893,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueReadImage",
@@ -2790,11 +2938,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 5991,
+            "line": 5997,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueWriteImage",
@@ -2847,11 +2996,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6092,
+            "line": 6098,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueCopyImage",
@@ -2896,11 +3046,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6193,
+            "line": 6199,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueCopyImageToBuffer",
@@ -2945,11 +3096,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6293,
+            "line": 6299,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueCopyBufferToImage",
@@ -2994,11 +3146,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6393,
+            "line": 6399,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueMapBuffer",
@@ -3051,11 +3204,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6476,
+            "line": 6482,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueMapImage",
@@ -3116,11 +3270,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6505,
+            "line": 6511,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueUnmapMemObject",
@@ -3153,11 +3308,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6582,
+            "line": 6588,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueNDRangeKernel",
@@ -3202,16 +3358,18 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6621,
-            "class": "LibraryOpenCL"
+            "line": 6627,
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6693,
+            "line": 6699,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueTask",
@@ -3240,11 +3398,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6743,
+            "line": 6749,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueNativeKernel",
@@ -3293,11 +3452,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6764,
+            "line": 6770,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueMarker",
@@ -3314,11 +3474,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6817,
+            "line": 6823,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueWaitForEvents",
@@ -3339,11 +3500,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6880,
+            "line": 6886,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueBarrier",
@@ -3356,11 +3518,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6924,
+            "line": 6930,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetExtensionFunctionAddress",
@@ -3373,11 +3536,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 6935,
+            "line": 6941,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateFromGLBuffer",
@@ -3406,11 +3570,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7010,
+            "line": 7016,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateFromGLTexture",
@@ -3447,11 +3612,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7087,
+            "line": 7093,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateFromGLTexture2D",
@@ -3488,11 +3654,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7165,
+            "line": 7171,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateFromGLTexture3D",
@@ -3529,11 +3696,12 @@
             "return": {
                 "description": "Literal"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7193,
+            "line": 7199,
             "description": "Description",
             "itemtype": "method",
             "name": "clCreateFromGLRenderbuffer",
@@ -3562,11 +3730,12 @@
             "return": {
                 "description": "_id"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7267,
+            "line": 7273,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetGLObjectInfo",
@@ -3587,11 +3756,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7319,
+            "line": 7325,
             "description": "Description",
             "itemtype": "method",
             "name": "clGetGLTextureInfo",
@@ -3620,11 +3790,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7371,
+            "line": 7377,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueAcquireGLObjects",
@@ -3657,11 +3828,12 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         },
         {
             "file": "library_opencl.js",
-            "line": 7461,
+            "line": 7467,
             "description": "Description",
             "itemtype": "method",
             "name": "clEnqueueReleaseGLObjects",
@@ -3694,25 +3866,26 @@
             "return": {
                 "description": "MemberExpression"
             },
-            "class": "LibraryOpenCL"
+            "class": "CL",
+            "module": "LibraryOpenCL"
         }
     ],
     "warnings": [
         {
             "message": "Missing item type",
-            "line": " library_opencl.js:2594"
+            "line": " library_opencl.js:2600"
         },
         {
             "message": "Missing item type",
-            "line": " library_opencl.js:2623"
+            "line": " library_opencl.js:2629"
         },
         {
             "message": "Missing item type\nDescription",
-            "line": " library_opencl.js:3932"
+            "line": " library_opencl.js:3938"
         },
         {
             "message": "Missing item type",
-            "line": " library_opencl.js:6621"
+            "line": " library_opencl.js:6627"
         }
     ]
 }

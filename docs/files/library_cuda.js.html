@@ -41,13 +41,17 @@
         <div id="api-tabview-panel">
             <ul id="api-classes" class="apis classes">
             
-                <li><a href="../classes/LibraryCUDA.html">LibraryCUDA</a></li>
+                <li><a href="../classes/CL.html">CL</a></li>
             
-                <li><a href="../classes/LibraryOpenCL.html">LibraryOpenCL</a></li>
+                <li><a href="../classes/CU.html">CU</a></li>
             
             </ul>
 
             <ul id="api-modules" class="apis modules">
+            
+                <li><a href="../modules/LibraryCUDA.html">LibraryCUDA</a></li>
+            
+                <li><a href="../modules/LibraryOpenCL.html">LibraryOpenCL</a></li>
             
             </ul>
         </div>
@@ -95,11 +99,31 @@
 * Created by Anthony Liot.
 * Copyright (c) 2013 Anthony Liot. All rights reserved.
 *
-* @class LibraryCUDA
+* @module LibraryCUDA
 */
 var LibraryCUDA = {  
+  /**
+  * Contains some method for the LibraryCUDA Module
+  *
+  * @class CU
+  * @static
+  */
   $CU: {
+    /*
+    * Class CU is iniitalized
+    *
+    * @attribute cuda_init
+    * @default 0
+    * @type int
+    */
     cuda_init: 0,
+    /*
+    * Type of device used
+    *
+    * @attribute cuda_init
+    * @default 4
+    * @type int    
+    */    
     cuda_from_type: 4/*DEVICE_TYPE_GPU*/,
     cuda_context: 0,
     cuda_device: 0,
@@ -110,9 +134,10 @@ var LibraryCUDA = {
     cuda_errors: [],
 
     /**
-     * Description
-     * @method cudaInit
-     * @return cudaSuccess(0)
+     * Initialize all the attribute of the CU Class
+     * 
+     * @method init
+     * @return {int} CU.cuda_init(0 / 1)
      */
     init: function() {
       if (CU.cuda_init == 0) {
@@ -438,11 +463,12 @@ var LibraryCUDA = {
   },
 
   /**
-   * Description
+   * Method for acces to the stack trace debugger
+   *
    * @method cudaPrintStackTrace
-   * @param {} param_value
-   * @param {} param_value_size
-   * @return MemberExpression
+   * @param {string} param_value Receive the stack trace String
+   * @param {int} param_value_size Size of the stack trace
+   * @return {int} cudaSuccess(0)
    */
   cudaPrintStackTrace: function(param_value,param_value_size) {
 #if CU_GRAB_TRACE
