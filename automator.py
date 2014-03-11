@@ -193,10 +193,30 @@ def worker_copy(folder,repo):
     directory = page_repositories + folder
 
     print "\tFunction worker 'copy' ... "+str(directory)
+    if not os.path.exists(directory):
+      os.mkdir(directory)
+
 
     if os.path.isdir(directory):
       pr = subprocess.Popen( "cp -rf "+root_repositories + repo + "/build/ "+directory+"/" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
-      (out, error) = pr.communicate()  
+      (out, error) = pr.communicate()
+
+      # Update index.html file  
+      f = open(directory+'/index.html','r')
+      string = ""
+      while 1:
+        line = f.readline()
+        if not line:break
+        string += line
+
+      f.close()
+
+      string = string.replace('</center></footer>', '<br/>Last update : 10/03/2014 - 11:37 p.m.</center></footer>')
+
+      f = open(directory+'/index.html','w')
+      f.write(string)
+      f.close()
+
     else:
       print "/!\ Website repo %s doesn't exist ..." % (folder)
 
