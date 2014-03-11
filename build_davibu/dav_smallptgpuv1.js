@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_SIZE = 89407;
-    var PACKAGE_UUID = '4f32adca-aac7-4af2-ae7a-b5008abdf96a';
+    var PACKAGE_UUID = '8866d86f-05b0-4c39-bd65-1ec79ab0264d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -13096,12 +13096,28 @@ function copyTempDouble(ptr) {
           }
   
         } else {
+          // If no device and no platfomr peek the first one
+          
+          // Search platform
+          for (var obj in CL.cl_objects) {
+            if (CL.cl_objects[obj] instanceof WebCLPlatform) {
+              _platform = CL.cl_objects[obj];
+              break;
+            }
+          }
+          if (_platform == null) {
+            var _platforms = webcl.getPlatforms();
   
-          if (cl_errcode_ret != 0) {
-            HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_CONTEXT;
+            _platform = _platforms[0];
+          
+            CL.udid(_platforms[i]);         
           }
   
-          return 0; // NULL Pointer      
+          if (_glclSharedContext) {
+            _context = webcl.createContext(Module.ctx,_platform);  
+          } else {
+            _context = webcl.createContext(_platform);  
+          }    
         }
   
       } catch (e) {
@@ -15702,7 +15718,11 @@ function __Z9ReadScenePc($fileName) {
   $58 = (_fscanf(($32|0),(3872|0),($vararg_buffer24|0))|0);
   $c1 = $58;
   $59 = HEAP32[$mat>>2]|0;
-  if ((($59|0) == 0)) {
+  if ((($59|0) == 2)) {
+   $64 = $s;
+   $65 = (($64) + 40|0);
+   HEAP32[$65>>2] = 2;
+  } else if ((($59|0) == 0)) {
    $60 = $s;
    $61 = (($60) + 40|0);
    HEAP32[$61>>2] = 0;
@@ -15710,10 +15730,6 @@ function __Z9ReadScenePc($fileName) {
    $62 = $s;
    $63 = (($62) + 40|0);
    HEAP32[$63>>2] = 1;
-  } else if ((($59|0) == 2)) {
-   $64 = $s;
-   $65 = (($64) + 40|0);
-   HEAP32[$65>>2] = 2;
   } else {
    label = 13;
    break;
@@ -16723,74 +16739,6 @@ function __Z11specialFunciii($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 101:  {
-  ;HEAP32[$t+0>>2]=HEAP32[((8 + 12|0))+0>>2]|0;HEAP32[$t+4>>2]=HEAP32[((8 + 12|0))+4>>2]|0;HEAP32[$t+8>>2]=HEAP32[((8 + 12|0))+8>>2]|0;
-  $4 = +HEAPF32[$t>>2];
-  $5 = +HEAPF32[8>>2];
-  $6 = $4 - $5;
-  HEAPF32[$t>>2] = $6;
-  $7 = (($t) + 4|0);
-  $8 = +HEAPF32[$7>>2];
-  $9 = +HEAPF32[((8 + 4|0))>>2];
-  $10 = $8 - $9;
-  $11 = (($t) + 4|0);
-  HEAPF32[$11>>2] = $10;
-  $12 = (($t) + 8|0);
-  $13 = +HEAPF32[$12>>2];
-  $14 = +HEAPF32[((8 + 8|0))>>2];
-  $15 = $13 - $14;
-  $16 = (($t) + 8|0);
-  HEAPF32[$16>>2] = $15;
-  $17 = (($t) + 4|0);
-  $18 = +HEAPF32[$17>>2];
-  $19 = $18;
-  $20 = (+Math_cos(-0.0349065850398865909487));
-  $21 = $19 * $20;
-  $22 = (($t) + 8|0);
-  $23 = +HEAPF32[$22>>2];
-  $24 = $23;
-  $25 = (+Math_sin(-0.0349065850398865909487));
-  $26 = $24 * $25;
-  $27 = $21 + $26;
-  $28 = $27;
-  $29 = (($t) + 4|0);
-  HEAPF32[$29>>2] = $28;
-  $30 = (($t) + 4|0);
-  $31 = +HEAPF32[$30>>2];
-  $32 = -$31;
-  $33 = $32;
-  $34 = (+Math_sin(-0.0349065850398865909487));
-  $35 = $33 * $34;
-  $36 = (($t) + 8|0);
-  $37 = +HEAPF32[$36>>2];
-  $38 = $37;
-  $39 = (+Math_cos(-0.0349065850398865909487));
-  $40 = $38 * $39;
-  $41 = $35 + $40;
-  $42 = $41;
-  $43 = (($t) + 8|0);
-  HEAPF32[$43>>2] = $42;
-  $44 = +HEAPF32[$t>>2];
-  $45 = +HEAPF32[8>>2];
-  $46 = $44 + $45;
-  HEAPF32[$t>>2] = $46;
-  $47 = (($t) + 4|0);
-  $48 = +HEAPF32[$47>>2];
-  $49 = +HEAPF32[((8 + 4|0))>>2];
-  $50 = $48 + $49;
-  $51 = (($t) + 4|0);
-  HEAPF32[$51>>2] = $50;
-  $52 = (($t) + 8|0);
-  $53 = +HEAPF32[$52>>2];
-  $54 = +HEAPF32[((8 + 8|0))>>2];
-  $55 = $53 + $54;
-  $56 = (($t) + 8|0);
-  HEAPF32[$56>>2] = $55;
-  ;HEAP32[((8 + 12|0))+0>>2]=HEAP32[$t+0>>2]|0;HEAP32[((8 + 12|0))+4>>2]=HEAP32[$t+4>>2]|0;HEAP32[((8 + 12|0))+8>>2]=HEAP32[$t+8>>2]|0;
-  __Z6ReIniti(0);
-  STACKTOP = sp;return;
-  break;
- }
  case 103:  {
   ;HEAP32[$t1+0>>2]=HEAP32[((8 + 12|0))+0>>2]|0;HEAP32[$t1+4>>2]=HEAP32[((8 + 12|0))+4>>2]|0;HEAP32[$t1+8>>2]=HEAP32[((8 + 12|0))+8>>2]|0;
   $57 = +HEAPF32[$t1>>2];
@@ -16855,6 +16803,74 @@ function __Z11specialFunciii($key,$x,$y) {
   $109 = (($t1) + 8|0);
   HEAPF32[$109>>2] = $108;
   ;HEAP32[((8 + 12|0))+0>>2]=HEAP32[$t1+0>>2]|0;HEAP32[((8 + 12|0))+4>>2]=HEAP32[$t1+4>>2]|0;HEAP32[((8 + 12|0))+8>>2]=HEAP32[$t1+8>>2]|0;
+  __Z6ReIniti(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 101:  {
+  ;HEAP32[$t+0>>2]=HEAP32[((8 + 12|0))+0>>2]|0;HEAP32[$t+4>>2]=HEAP32[((8 + 12|0))+4>>2]|0;HEAP32[$t+8>>2]=HEAP32[((8 + 12|0))+8>>2]|0;
+  $4 = +HEAPF32[$t>>2];
+  $5 = +HEAPF32[8>>2];
+  $6 = $4 - $5;
+  HEAPF32[$t>>2] = $6;
+  $7 = (($t) + 4|0);
+  $8 = +HEAPF32[$7>>2];
+  $9 = +HEAPF32[((8 + 4|0))>>2];
+  $10 = $8 - $9;
+  $11 = (($t) + 4|0);
+  HEAPF32[$11>>2] = $10;
+  $12 = (($t) + 8|0);
+  $13 = +HEAPF32[$12>>2];
+  $14 = +HEAPF32[((8 + 8|0))>>2];
+  $15 = $13 - $14;
+  $16 = (($t) + 8|0);
+  HEAPF32[$16>>2] = $15;
+  $17 = (($t) + 4|0);
+  $18 = +HEAPF32[$17>>2];
+  $19 = $18;
+  $20 = (+Math_cos(-0.0349065850398865909487));
+  $21 = $19 * $20;
+  $22 = (($t) + 8|0);
+  $23 = +HEAPF32[$22>>2];
+  $24 = $23;
+  $25 = (+Math_sin(-0.0349065850398865909487));
+  $26 = $24 * $25;
+  $27 = $21 + $26;
+  $28 = $27;
+  $29 = (($t) + 4|0);
+  HEAPF32[$29>>2] = $28;
+  $30 = (($t) + 4|0);
+  $31 = +HEAPF32[$30>>2];
+  $32 = -$31;
+  $33 = $32;
+  $34 = (+Math_sin(-0.0349065850398865909487));
+  $35 = $33 * $34;
+  $36 = (($t) + 8|0);
+  $37 = +HEAPF32[$36>>2];
+  $38 = $37;
+  $39 = (+Math_cos(-0.0349065850398865909487));
+  $40 = $38 * $39;
+  $41 = $35 + $40;
+  $42 = $41;
+  $43 = (($t) + 8|0);
+  HEAPF32[$43>>2] = $42;
+  $44 = +HEAPF32[$t>>2];
+  $45 = +HEAPF32[8>>2];
+  $46 = $44 + $45;
+  HEAPF32[$t>>2] = $46;
+  $47 = (($t) + 4|0);
+  $48 = +HEAPF32[$47>>2];
+  $49 = +HEAPF32[((8 + 4|0))>>2];
+  $50 = $48 + $49;
+  $51 = (($t) + 4|0);
+  HEAPF32[$51>>2] = $50;
+  $52 = (($t) + 8|0);
+  $53 = +HEAPF32[$52>>2];
+  $54 = +HEAPF32[((8 + 8|0))>>2];
+  $55 = $53 + $54;
+  $56 = (($t) + 8|0);
+  HEAPF32[$56>>2] = $55;
+  ;HEAP32[((8 + 12|0))+0>>2]=HEAP32[$t+0>>2]|0;HEAP32[((8 + 12|0))+4>>2]=HEAP32[$t+4>>2]|0;HEAP32[((8 + 12|0))+8>>2]=HEAP32[$t+8>>2]|0;
   __Z6ReIniti(0);
   STACKTOP = sp;return;
   break;
@@ -20022,7 +20038,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -20192,7 +20208,7 @@ function _free($mem) {
        $199 = HEAP32[((4768 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((4768 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((4768 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -20211,7 +20227,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);

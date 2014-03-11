@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 35601;
-    var PACKAGE_UUID = '9588f47f-1774-41d6-a6bd-0f9da1043ba7';
+    var PACKAGE_UUID = 'f9ed61f1-d1cf-43a7-80b3-33c0a7ae8922';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16408,16 +16408,10 @@ function __Z11specialFunciii($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 103:  {
-  __ZL13rotateCameraXf(0.0349065847694873809814);
-  break;
- }
- case 101:  {
-  __ZL13rotateCameraXf(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  __ZL13rotateCameraYf(0.0349065847694873809814);
+ case 105:  {
+  $6 = +HEAPF32[((2496 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2496 + 72|0))>>2] = $7;
   break;
  }
  case 104:  {
@@ -16430,10 +16424,16 @@ function __Z11specialFunciii($key,$x,$y) {
   __ZL13rotateCameraYf(-0.0349065847694873809814);
   break;
  }
- case 105:  {
-  $6 = +HEAPF32[((2496 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2496 + 72|0))>>2] = $7;
+ case 103:  {
+  __ZL13rotateCameraXf(0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  __ZL13rotateCameraYf(0.0349065847694873809814);
+  break;
+ }
+ case 101:  {
+  __ZL13rotateCameraXf(-0.0349065847694873809814);
   break;
  }
  default: {
@@ -20271,7 +20271,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -20441,7 +20441,7 @@ function _free($mem) {
        $199 = HEAP32[((3720 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((3720 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((3720 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -20460,7 +20460,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);

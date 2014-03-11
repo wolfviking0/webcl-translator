@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = '4d2f97ea-a80f-4452-baac-f118d0055dee';
+    var PACKAGE_UUID = '83bed81c-5ac4-4a5c-a8aa-ecf609cb1002';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16376,16 +16376,16 @@ function __Z11specialFunciii($key,$x,$y) {
   HEAPF32[((2488 + 72|0))>>2] = $5;
   break;
  }
- case 102:  {
-  __ZL13rotateCameraYf(0.0349065847694873809814);
+ case 100:  {
+  __ZL13rotateCameraYf(-0.0349065847694873809814);
   break;
  }
  case 103:  {
   __ZL13rotateCameraXf(0.0349065847694873809814);
   break;
  }
- case 100:  {
-  __ZL13rotateCameraYf(-0.0349065847694873809814);
+ case 102:  {
+  __ZL13rotateCameraYf(0.0349065847694873809814);
   break;
  }
  case 101:  {
