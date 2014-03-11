@@ -15,6 +15,7 @@ import multiprocessing
 import time
 from optparse import OptionParser
 from functools import wraps
+from time import gmtime, strftime
 
 THREAD = False;
 
@@ -211,7 +212,11 @@ def worker_copy(folder,repo):
 
       f.close()
 
-      string = string.replace('</center></footer>', '<br/>Last update : 10/03/2014 - 11:37 p.m.</center></footer>')
+      start = string.find('<footer><center>')
+      end = string.find('</center></footer>')
+  
+      footer = '<footer><center>webcl-translator is maintained by Anthony Liot <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
+      string = string[:start] + footer + string[end:]
 
       f = open(directory+'/index.html','w')
       f.write(string)
@@ -237,6 +242,25 @@ def copy(repo_list):
   for j in jobs:
     j.join()
 
+  # Update index.html file  
+  f = open(page_repositories+'/index.html','r')
+  string = ""
+  while 1:
+    line = f.readline()
+    if not line:break
+    string += line
+
+  f.close()
+
+  start = string.find('<footer><center>')
+  end = string.find('</center></footer>')
+
+  footer = '<footer><center>webcl-translator is maintained by Anthony Liot <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
+  string = string[:start] + footer + string[end:]
+
+  f = open(page_repositories+'/index.html','w')
+  f.write(string)
+  f.close()
   #pr = subprocess.Popen( "ln -Fs "+page_repositories+"index.html "+root_repositories+"webcl-samples.html", cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
   #(out, error) = pr.communicate()  
 
