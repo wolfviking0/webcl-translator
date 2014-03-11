@@ -6,7 +6,7 @@ var configuration_pages = {
     { 
       "title"         : "Image Copy",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 0,
       "gl"            : "off",
       "cpu"           : "",
@@ -17,7 +17,7 @@ var configuration_pages = {
     { 
       "title"         : "Event Profiling",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -28,7 +28,7 @@ var configuration_pages = {
     { 
       "title"         : "Attractor Copying",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -39,7 +39,7 @@ var configuration_pages = {
     { 
       "title"         : "Attractor Attached",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&cpu&interop",
@@ -50,7 +50,7 @@ var configuration_pages = {
     { 
       "title"         : "DXT Compressor",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 3,
       "gl"            : "on",
       "cpu"           : "",
@@ -61,7 +61,7 @@ var configuration_pages = {
     { 
       "title"         : "Particles",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_trans/translator",
+      "pages"         : "build_trans/",
       "id"            : 4,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -77,7 +77,7 @@ var configuration_pages = {
     { 
       "title"         : "Hello World",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 0,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -88,7 +88,7 @@ var configuration_pages = {
     { 
       "title"         : "Convolution",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -99,7 +99,7 @@ var configuration_pages = {
     { 
       "title"         : "Info",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 2,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -110,7 +110,7 @@ var configuration_pages = {
     { 
       "title"         : "Buffer and Sub-buffer",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 3,
       "gl"            : "off",
       "cpu"           : " ",
@@ -121,7 +121,7 @@ var configuration_pages = {
     { 
       "title"         : "Image Gaussian Blur",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 4,
       "gl"            : "on",
       "cpu"           : "",
@@ -132,7 +132,7 @@ var configuration_pages = {
     { 
       "title"         : "OpenGL Interop",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 5,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -143,7 +143,7 @@ var configuration_pages = {
     { 
       "title"         : "Vector Add",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_book/book",
+      "pages"         : "build_book/",
       "id"            : 6,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -159,7 +159,7 @@ var configuration_pages = {
     { 
       "title"         : "Hello World",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 0,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -170,7 +170,7 @@ var configuration_pages = {
     { 
       "title"         : "Transpose",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "",
@@ -181,7 +181,7 @@ var configuration_pages = {
     { 
       "title"         : "Trajectory",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 2,
       "gl"            : "off",
       "cpu"           : "",
@@ -192,7 +192,7 @@ var configuration_pages = {
     { 
       "title"         : "Scan",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 3,
       "gl"            : "off",
       "cpu"           : "&cpu",
@@ -203,7 +203,7 @@ var configuration_pages = {
     { 
       "title"         : "Reduce Int",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
       "cpu"           : "",
@@ -214,7 +214,7 @@ var configuration_pages = {
     { 
       "title"         : "Reduce Float",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
       "cpu"           : "",
@@ -225,7 +225,7 @@ var configuration_pages = {
     { 
       "title"         : "Noise Copying",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 5,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -236,7 +236,7 @@ var configuration_pages = {
     { 
       "title"         : "Noise Attached",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 5,
       "gl"            : "on",
       "cpu"           : "",
@@ -247,7 +247,7 @@ var configuration_pages = {
     { 
       "title"         : "QJulia Copying",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 6,
       "gl"            : "on",
       "cpu"           : "",
@@ -258,7 +258,7 @@ var configuration_pages = {
     { 
       "title"         : "QJulia Attached",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/osxsample",
+      "pages"         : "build_osx/",
       "id"            : 6,
       "gl"            : "on",
       "cpu"           : "",
@@ -274,7 +274,7 @@ var configuration_pages = {
     { 
       "title"         : "Mandelbulb",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_davibu/davibu",
+      "pages"         : "build_davibu/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&1&0&preprocessed_rendering_kernel.cl&512&512",
@@ -285,7 +285,7 @@ var configuration_pages = {
     { 
       "title"         : "QJulia",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_davibu/davibu",
+      "pages"         : "build_davibu/",
       "id"            : 1,
       "gl"            : "on",
       "cpu"           : "&1&0&preprocessed_rendering_kernel.cl&512&512",
@@ -297,7 +297,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT V1 Caustic",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_davibu/davibu",
+      "pages"         : "build_davibu/",
       "id"            : 3,
       "gl"            : "on",
       "cpu"           : "&0&0&preprocessed_rendering_kernel.cl&512&512&scenes/caustic.scn",
@@ -308,7 +308,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT V1 Complex",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_davibu/davibu",
+      "pages"         : "build_davibu/",
       "id"            : 3,
       "gl"            : "on",
       "cpu"           : "&0&0&preprocessed_rendering_kernel.cl&512&512&scenes/complex.scn",
@@ -319,7 +319,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT V2 Cornell Large",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_davibu/davibu",
+      "pages"         : "build_davibu/",
       "id"            : 4,
       "gl"            : "on",
       "cpu"           : "&1&0&0&512&512&scenes/cornell_large.scn",
@@ -335,7 +335,7 @@ var configuration_pages = {
     { 
       "title"         : "Mandel",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_toys/ocltoys",
+      "pages"         : "build_toys/",
       "id"            : 1,
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS",
@@ -346,7 +346,7 @@ var configuration_pages = {
     { 
       "title"         : "JugCLer",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_toys/ocltoys",
+      "pages"         : "build_toys/",
       "id"            : 0,
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS",
@@ -358,7 +358,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT Caustic 3",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_toys/ocltoys",
+      "pages"         : "build_toys/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS&-n&scenes/caustic3.scn",
@@ -369,7 +369,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT Cornell Fog",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_toys/ocltoys",
+      "pages"         : "build_toys/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS&-n&scenes/cornell_fog.scn",
@@ -380,7 +380,7 @@ var configuration_pages = {
     { 
       "title"         : "SmallPT Cornell sss",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_toys/ocltoys",
+      "pages"         : "build_toys/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS&-n&scenes/cornell_sss.scn",
@@ -396,7 +396,7 @@ var configuration_pages = {
     { 
       "title"         : "BoxFilter",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 2,
       "gl"            : "on",
       "cpu"           : "&cpu",
@@ -407,7 +407,7 @@ var configuration_pages = {
     { 
       "title"         : "NBody",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 18,
       "gl"            : "on",
       "cpu"           : "",
@@ -418,7 +418,7 @@ var configuration_pages = {
     { 
       "title"         : "Particles",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 19,
       "gl"            : "on",
       "cpu"           : "",
@@ -429,7 +429,7 @@ var configuration_pages = {
     { 
       "title"         : "Recursive Gaussian",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 23,
       "gl"            : "on",
       "cpu"           : "",
@@ -440,7 +440,7 @@ var configuration_pages = {
     { 
       "title"         : "SinWave",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 26,
       "gl"            : "on",
       "cpu"           : "",
@@ -451,7 +451,7 @@ var configuration_pages = {
     { 
       "title"         : "Sobel Filter",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_nvidia/oclnvidia",
+      "pages"         : "build_nvidia/",
       "id"            : 29,
       "gl"            : "on",
       "cpu"           : "",
@@ -467,7 +467,7 @@ var configuration_pages = {
     { 
       "title"         : "VectorAdd",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_cuda/cuda",
+      "pages"         : "build_cuda/",
       "id"            : 0,
       "gl"            : "off",
       "cpu"           : "",
@@ -478,7 +478,7 @@ var configuration_pages = {
     { 
       "title"         : "MatrixMul",
       "compatibility" : "[Webkit]",
-      "pages"         : "build_cuda/cuda",
+      "pages"         : "build_cuda/",
       "id"            : 1,
       "gl"            : "off",
       "cpu"           : "",
