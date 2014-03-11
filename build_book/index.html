@@ -1,6 +1,5 @@
 <!--
-  translator.html
-  Licence : https://github.com/wolfviking0/webcl-translator/blob/master/LICENSE
+  ocltoys.html
 
   Created by Anthony Liot.
   Copyright (c) 2013 Anthony Liot. All rights reserved.
@@ -48,7 +47,8 @@
         <header>
           <h1><i>WebCL-Translator V2.0</i></h1>
           <h1><i><script>if(USE_VAL.length > 0) {document.write(" + WebCL-Validator")};</script></i></h1>
-          <h2><script>document.write(TITLE);</script></h2>  
+          <h3><a href="https://code.google.com/p/opencl-book-samples/">(OpenCL Book Sample)</a></h3>
+          <h2><script>document.write(TITLE);</script></h2>
         </header>
         
         <section id="main_content">
@@ -89,41 +89,13 @@
             loadModule(PARAM);
 
             var samples = [
-              "oclBandwidthTest.js",          // 0
-              "oclBlackScholes.js",
-              "oclBoxFilter.js",  
-              "oclConvolutionSeparable.js",
-              "oclCopyComputeOverlap.js",
-              "oclDCT8x8.js",                 // 5
-              "oclDeviceQuery.js",
-              "oclDotProduct.js",
-              "oclDXTCompression.js",
-              "oclFDTD3d.js",
-              "oclHiddenMarkovModel.js",      // 10
-              "oclHistogram.js",
-              "oclInlinePTX.js",
-              "oclMarchingCubes.js",
-              "oclMatrixMul.js",
-              "oclMatVecMul.js",              // 15
-              "oclMersenneTwister.js",
-              "oclMultiThreads.js",
-              "oclNbody.js",
-              "oclParticles.js",
-              "oclPostprocessGL.js",          // 20
-              "oclQuasirandomGenerator.js",
-              "oclRadixSort.js",
-              "oclRecursiveGaussian.js",
-              "oclReduction.js",
-              "oclScan.js",                   // 25
-              "oclSimpleGL.js",
-              "oclSimpleMultiGPU.js",
-              "oclSimpleTexture3D.js",
-              "oclSobelFilter.js",
-              "oclSortingNetworks.js",        // 30
-              "oclTranspose.js",
-              "oclTridiagonal.js",
-              "oclVectorAdd.js",
-              "oclVolumeRender.js",
+              "book_hello_world.js",
+              "book_convolution.js",
+              "book_info.js",
+              "book_buffer.js",
+              "book_image_filter.js",
+              "book_gl_interop.js",
+              "book_vecadd.js",         
             ];
 
             if (SAMPLE >= samples.length) {
@@ -131,14 +103,16 @@
             }
             
             includeJS(samples[SAMPLE]);
-        
+       
         	</script>
         </section>
 
         <footer>
           webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>.
-        </footer>
+        <br/>Last update : 10/03/2014 - 11:37 p.m.</footer>
       </div>
     </div>
   </body>
 </html>
+
+

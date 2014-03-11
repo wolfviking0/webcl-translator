@@ -1,5 +1,5 @@
 <!--
-  ocltoys.html
+  davibu.html
 
   Created by Anthony Liot.
   Copyright (c) 2013 Anthony Liot. All rights reserved.
@@ -15,7 +15,7 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <title>webcl-translator by Anthony Liot</title>
+    <title>cu2webcl-translator by Anthony Liot</title>
     <style>
       .translator {
         padding-right: 0;
@@ -45,9 +45,7 @@
       <div class="inner">
 
         <header>
-          <h1><i>WebCL-Translator V2.0</i></h1>
-          <h1><i><script>if(USE_VAL.length > 0) {document.write(" + WebCL-Validator")};</script></i></h1>
-          <h3><a href="http://code.google.com/p/ocltoys/">(OCLToys)</a></h3>
+          <h1><i>CU2WebCL-Translator V1.0</i></h1>
           <h2><script>document.write(TITLE);</script></h2>
         </header>
         
@@ -89,10 +87,8 @@
             loadModule(PARAM);
 
             var samples = [
-              "toys_jugCLer.js",
-              "toys_mandelgpu.js",
-              "toys_smallptgpu.js",
-              "toys_juliagpu.js",
+              "cud_vectorAdd.js",
+              "cud_matrixMul.js",
             ];
 
             if (SAMPLE >= samples.length) {
@@ -105,8 +101,8 @@
         </section>
 
         <footer>
-          webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>.
-        </footer>
+          webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>
+        <br/>Last update : 10/03/2014 - 11:37 p.m.</footer>
       </div>
     </div>
   </body>

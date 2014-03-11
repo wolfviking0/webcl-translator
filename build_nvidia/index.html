@@ -89,12 +89,41 @@
             loadModule(PARAM);
 
             var samples = [
-              "imagecopy.js",
-              "eventprofiling.js",              
-              "attractor.js",
-              "dxtcompressor.js",
-              "particles.js",
-              "marching_cubes.js"
+              "oclBandwidthTest.js",          // 0
+              "oclBlackScholes.js",
+              "oclBoxFilter.js",  
+              "oclConvolutionSeparable.js",
+              "oclCopyComputeOverlap.js",
+              "oclDCT8x8.js",                 // 5
+              "oclDeviceQuery.js",
+              "oclDotProduct.js",
+              "oclDXTCompression.js",
+              "oclFDTD3d.js",
+              "oclHiddenMarkovModel.js",      // 10
+              "oclHistogram.js",
+              "oclInlinePTX.js",
+              "oclMarchingCubes.js",
+              "oclMatrixMul.js",
+              "oclMatVecMul.js",              // 15
+              "oclMersenneTwister.js",
+              "oclMultiThreads.js",
+              "oclNbody.js",
+              "oclParticles.js",
+              "oclPostprocessGL.js",          // 20
+              "oclQuasirandomGenerator.js",
+              "oclRadixSort.js",
+              "oclRecursiveGaussian.js",
+              "oclReduction.js",
+              "oclScan.js",                   // 25
+              "oclSimpleGL.js",
+              "oclSimpleMultiGPU.js",
+              "oclSimpleTexture3D.js",
+              "oclSobelFilter.js",
+              "oclSortingNetworks.js",        // 30
+              "oclTranspose.js",
+              "oclTridiagonal.js",
+              "oclVectorAdd.js",
+              "oclVolumeRender.js",
             ];
 
             if (SAMPLE >= samples.length) {
@@ -108,7 +137,7 @@
 
         <footer>
           webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>.
-        </footer>
+        <br/>Last update : 10/03/2014 - 11:37 p.m.</footer>
       </div>
     </div>
   </body>
