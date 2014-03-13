@@ -14,7 +14,7 @@
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
 var Module;
-if (!Module) Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module) Module = (typeof Module !== 'undefined' ? Module : null) || {};
 
 // Sometimes an existing Module object exists with properties
 // meant to overwrite the default module functionality. Here
@@ -1008,7 +1008,14 @@ function demangle(func) {
       }
     }
     if (!allowVoid && list.length === 1 && list[0] === 'void') list = []; // avoid (void)
-    return rawList ? list : ret + flushList();
+    if (rawList) {
+      if (ret) {
+        list.push(ret + '?');
+      }
+      return list;
+    } else {
+      return ret + flushList();
+    }
   }
   try {
     // Special-case the entry point, since its name differs from other name mangling.
@@ -1436,7 +1443,7 @@ function copyTempDouble(ptr) {
   Module["_rand"] = _rand;
 
   
-  var CU={cuda_init:0,cuda_from_type:4,cuda_context:0,cuda_device:0,cuda_command_queue:0,cuda_digits:[1,2,3,4,5,6,7,8,9,0],cuda_objects:{},cuda_errors:[],init:function () {
+  var CU={cuda_types:{0:"i32",1:"float",2:"i32"},cuda_init:0,cuda_from_type:4,cuda_context:0,cuda_device:0,cuda_command_queue:0,cuda_user_event:0,cuda_digits:[1,2,3,4,5,6,7,8,9,0],cuda_objects:{},cuda_profile_event:false,cuda_events:[],cuda_errors:[],init:function () {
         if (CU.cuda_init == 0) {
           
           console.log('%c CU2WebCL-Translator V1.0 ! ', 'background: #222; color: #bada55');
@@ -1456,7 +1463,7 @@ function copyTempDouble(ptr) {
             var _platforms  = cuda.getPlatforms();
             var _devices    = _platforms[0].getDevices(CU.cuda_from_type);
             var _context    = cuda.createContext(_devices[0]);  
-            var _command    = _context.createCommandQueue(_devices[0],0);  
+            var _command    = _context.createCommandQueue(_devices[0],cuda.QUEUE_PROFILING_ENABLE);  
   
             // Grab Id
             CU.cuda_context       = CU.udid(_context);
@@ -5259,92 +5266,6 @@ function copyTempDouble(ptr) {
       return _buffer;
     }
 
-  
-  
-  function _cudaRunKernel(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
-      var _param = [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10];
-  
-      var _kernel_options = options != 0 ? Pointer_stringify(options) : ""; 
-  
-      var _kernel_name = Pointer_stringify(kernel_name); 
-  
-      var _kernel_source = Pointer_stringify(kernel_source); 
-  
-      var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
-  
-      try {
-  
-  
-        var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
-        
-        CU.udid(_program);
-  
-        
-        _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
-  
-        
-        var _kernel = _program.createKernel(_kernel_name);
-  
-        CU.udid(_kernel);
-  
-        for (var i = 0; i < num_args; i++) {
-          
-          var webCLKernelArgInfo = _kernel.getArgInfo(i);
-  
-          if (webCLKernelArgInfo.addressQualifier == "local") {
-            console.error("cudaRunKernel (local paramater) not yet implemented ...\n");
-          } else {
-  
-            if (_param[i] in CU.cuda_objects) {
-              // WEBCL OBJECT ARG
-              _kernel.setArg(i,CU.cuda_objects[_param[i]]);
-  
-            } else {
-  
-              if (webCLKernelArgInfo.typeName == "int") {
-                _kernel.setArg(i,new Int32Array([_param[i]]));
-  
-              } else if (webCLKernelArgInfo.typeName == "float") {
-                _kernel.setArg(i,new Float32Array([_param[i]]));
-  
-              } else {
-                console.error("cudaRunKernel ("+webCLKernelArgInfo.typeName+" paramater) not yet implemented ...\n");
-              }
-            }
-          }
-        }
-      
-        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[]);  
-     
-      } catch (e) {
-  
-        if (_program) {
-          var _buildError = _program.getBuildInfo(CU.cuda_objects[CU.cuda_device],cuda.PROGRAM_BUILD_LOG);
-          console.error(_buildError);
-        }
-  
-        var _error = CU.catchError(e);
-  
-        CU.cuda_errors.push(30 /* cudaErrorUnknown */);
-  
-  
-        return 0; /* cudaSuccess */
-  
-      }
-  
-  
-      return 0; /* cudaSuccess */
-    }function _cudaRunKernelNoDim(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) {
-      
-      var _local_work_size = [];
-      var _global_work_size = [];
-  
-      _local_work_size[0] = threadsPerBlock;
-      _global_work_size[0] = _local_work_size[0] * blocksPerGrid;
-  
-      _cudaRunKernel(kernel_name, kernel_source, options, 1, _global_work_size, _local_work_size, num_args, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10);
-    }var _cudaRunKernel4=_cudaRunKernelNoDim;
-
   function _sbrk(bytes) {
       // Implement a Linux-like 'memory area' for our 'process'.
       // Changes the size of the memory area by |bytes|; returns the
@@ -5418,6 +5339,118 @@ function copyTempDouble(ptr) {
 
   function ___errno_location() {
       return ___errno_state;
+    }
+
+  
+  function _cudaRunKernel(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, param) {
+      var _kernel_options = options != 0 ? Pointer_stringify(options) : ""; 
+  
+      var _kernel_name = Pointer_stringify(kernel_name); 
+  
+      var _kernel_source = Pointer_stringify(kernel_source); 
+  
+      var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
+  
+      try {
+  
+  
+        var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
+  
+        
+        _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
+  
+        
+        var _kernel = _program.createKernel(_kernel_name);
+  
+        for (var i = 0; i < num_args; i++) {
+          
+          var webCLKernelArgInfo = _kernel.getArgInfo(i);
+  
+          if (webCLKernelArgInfo.addressQualifier == "local") {
+            console.error("cudaRunKernel (local paramater) not yet implemented ...\n");
+          } else {
+  
+            if (param[i] in CU.cuda_objects) {
+              // WEBCL OBJECT ARG
+              _kernel.setArg(i,CU.cuda_objects[param[i]]);
+  
+            } else {
+  
+              if (webCLKernelArgInfo.typeName == "int") {
+                _kernel.setArg(i,new Int32Array([param[i]]));
+  
+              } else if (webCLKernelArgInfo.typeName == "float") {
+                _kernel.setArg(i,new Float32Array([param[i]]));
+  
+              } else {
+                console.error("cudaRunKernel ("+webCLKernelArgInfo.typeName+" paramater) not yet implemented ...\n");
+              }
+            }
+          }
+        }
+  
+        
+        var _event = null;
+        if (CU.cuda_profile_event) {
+          _event = new WebCLEvent();
+          CU.cuda_events.push(_event);
+        }
+        
+        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[],_event);  
+  
+        _program.release();
+  
+        _kernel.release();
+  
+      } catch (e) {
+  
+        if (_program) {
+          var _buildError = _program.getBuildInfo(CU.cuda_objects[CU.cuda_device],cuda.PROGRAM_BUILD_LOG);
+          console.error(_buildError);
+        }
+  
+        var _error = CU.catchError(e);
+  
+        CU.cuda_errors.push(30 /* cudaErrorUnknown */);
+  
+  
+        return 0; /* cudaSuccess */
+  
+      }
+  
+  
+      return 0; /* cudaSuccess */
+    }function _cudaRunKernelFunc(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, params) {
+        
+      var _local_work_size = [];
+      var _global_work_size = [];
+      var _param = [];
+  
+      _local_work_size[0] = threadsPerBlock;
+      _global_work_size[0] = _local_work_size[0] * blocksPerGrid;
+  
+      var num_args = HEAP32[((params)>>2)];
+      
+      for (var i = 1 + num_args; i < 2 * num_args + 1; i ++) {
+        var _typeoffset = i - num_args;
+        var _type = CU.cuda_types[HEAP32[(((params)+(_typeoffset*4))>>2)]];
+  
+        switch(_type){
+          case 'i32':
+            _param.push(HEAP32[(((params)+(i*4))>>2)]);
+            
+            break;
+          case 'float':
+            _param.push(HEAPF32[(((params)+(i*4))>>2)]);
+            
+            break;
+          default:
+            console.error("cudaRunKernelFunc : unknow type"); 
+        }
+      }
+  
+      _cudaRunKernel(kernel_name, kernel_source, options, 1, _global_work_size, _local_work_size, num_args, _param);
+  
     }
 
   function _cudaMalloc(devPtr, size) {
@@ -6103,6 +6136,7 @@ var asm = (function(global, env, buffer) {
   var _fileno=env._fileno;
   var _sysconf=env._sysconf;
   var ___setErrNo=env.___setErrNo;
+  var _cudaRunKernelFunc=env._cudaRunKernelFunc;
   var _printf=env._printf;
   var _cudaRunKernel=env._cudaRunKernel;
   var _cudaDeviceReset=env._cudaDeviceReset;
@@ -6110,7 +6144,6 @@ var asm = (function(global, env, buffer) {
   var _cudaFree=env._cudaFree;
   var ___errno_location=env.___errno_location;
   var _mkport=env._mkport;
-  var _cudaRunKernelNoDim=env._cudaRunKernelNoDim;
   var __exit=env.__exit;
   var _abort=env._abort;
   var _fwrite=env._fwrite;
@@ -6214,339 +6247,364 @@ function setTempRet9(value) {
 }
 
 function _main() {
- var $0 = 0, $1 = 0, $10 = 0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0, $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0.0, $111 = 0, $112 = 0, $113 = 0, $114 = 0.0, $115 = 0.0;
- var $116 = 0, $117 = 0, $118 = 0, $119 = 0.0, $12 = 0, $120 = 0.0, $121 = 0.0, $122 = 0.0, $123 = 0, $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0, $131 = 0, $132 = 0, $133 = 0;
- var $134 = 0, $135 = 0, $136 = 0, $137 = 0, $138 = 0, $139 = 0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0, $144 = 0, $145 = 0, $146 = 0, $147 = 0, $148 = 0, $149 = 0, $15 = 0, $150 = 0, $151 = 0;
- var $152 = 0, $153 = 0, $154 = 0, $155 = 0, $156 = 0, $157 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0.0, $22 = 0.0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0.0, $28 = 0.0;
- var $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0;
- var $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0;
- var $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0;
- var $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $blocksPerGrid = 0, $d_A = 0;
- var $d_B = 0, $d_C = 0, $err = 0, $h_A = 0, $h_B = 0, $h_C = 0, $i = 0, $i1 = 0, $numElements = 0, $size = 0, $threadsPerBlock = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer12 = 0, $vararg_buffer14 = 0, $vararg_buffer17 = 0, $vararg_buffer20 = 0, $vararg_buffer24 = 0, $vararg_buffer27 = 0, $vararg_buffer29 = 0;
- var $vararg_buffer3 = 0, $vararg_buffer32 = 0, $vararg_buffer35 = 0, $vararg_buffer37 = 0, $vararg_buffer40 = 0, $vararg_buffer43 = 0, $vararg_buffer46 = 0, $vararg_buffer49 = 0, $vararg_buffer6 = 0, $vararg_buffer9 = 0, $vararg_ptr23 = 0, label = 0, sp = 0;
+ var $$byval_copy = 0, $0 = 0, $1 = 0, $10 = 0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0, $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0;
+ var $115 = 0, $116 = 0, $117 = 0, $118 = 0, $119 = 0, $12 = 0, $120 = 0, $121 = 0.0, $122 = 0, $123 = 0, $124 = 0, $125 = 0.0, $126 = 0.0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0.0, $131 = 0.0, $132 = 0.0;
+ var $133 = 0.0, $134 = 0, $135 = 0, $136 = 0, $137 = 0, $138 = 0, $139 = 0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0, $144 = 0, $145 = 0, $146 = 0, $147 = 0, $148 = 0, $149 = 0, $15 = 0, $150 = 0;
+ var $151 = 0, $152 = 0, $153 = 0, $154 = 0, $155 = 0, $156 = 0, $157 = 0, $158 = 0, $159 = 0, $16 = 0, $160 = 0, $161 = 0, $162 = 0, $163 = 0, $164 = 0, $165 = 0, $166 = 0, $167 = 0, $168 = 0, $17 = 0;
+ var $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0.0, $23 = 0.0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0.0, $29 = 0.0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0;
+ var $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0;
+ var $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0;
+ var $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0;
+ var $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $blocksPerGrid = 0, $d_A = 0, $d_B = 0, $d_C = 0, $err = 0, $funcParams = 0, $h_A = 0, $h_B = 0, $h_C = 0, $i = 0;
+ var $i1 = 0, $numElements = 0, $size = 0, $threadsPerBlock = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer12 = 0, $vararg_buffer14 = 0, $vararg_buffer17 = 0, $vararg_buffer20 = 0, $vararg_buffer24 = 0, $vararg_buffer27 = 0, $vararg_buffer29 = 0, $vararg_buffer3 = 0, $vararg_buffer32 = 0, $vararg_buffer35 = 0, $vararg_buffer37 = 0, $vararg_buffer40 = 0, $vararg_buffer43 = 0, $vararg_buffer46 = 0;
+ var $vararg_buffer49 = 0, $vararg_buffer6 = 0, $vararg_buffer9 = 0, $vararg_ptr23 = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 208|0;
- $vararg_buffer49 = sp + 144|0;
- $vararg_buffer46 = sp + 120|0;
- $vararg_buffer43 = sp + 88|0;
- $vararg_buffer40 = sp + 48|0;
- $vararg_buffer37 = sp + 16|0;
- $vararg_buffer35 = sp + 80|0;
- $vararg_buffer32 = sp + 96|0;
- $vararg_buffer29 = sp + 112|0;
- $vararg_buffer27 = sp + 128|0;
- $vararg_buffer24 = sp + 136|0;
+ STACKTOP = STACKTOP + 320|0;
+ $$byval_copy = sp + 156|0;
+ $vararg_buffer49 = sp + 120|0;
+ $vararg_buffer46 = sp + 88|0;
+ $vararg_buffer43 = sp + 48|0;
+ $vararg_buffer40 = sp + 144|0;
+ $vararg_buffer37 = sp + 24|0;
+ $vararg_buffer35 = sp + 96|0;
+ $vararg_buffer32 = sp + 112|0;
+ $vararg_buffer29 = sp + 128|0;
+ $vararg_buffer27 = sp + 136|0;
+ $vararg_buffer24 = sp + 16|0;
  $vararg_buffer20 = sp + 8|0;
- $vararg_buffer17 = sp + 64|0;
- $vararg_buffer14 = sp;
+ $vararg_buffer17 = sp;
+ $vararg_buffer14 = sp + 72|0;
  $vararg_buffer12 = sp + 32|0;
- $vararg_buffer9 = sp + 72|0;
- $vararg_buffer6 = sp + 40|0;
- $vararg_buffer3 = sp + 104|0;
- $vararg_buffer1 = sp + 56|0;
- $vararg_buffer = sp + 24|0;
- $d_A = sp + 168|0;
- $d_B = sp + 156|0;
- $d_C = sp + 152|0;
+ $vararg_buffer9 = sp + 40|0;
+ $vararg_buffer6 = sp + 104|0;
+ $vararg_buffer3 = sp + 56|0;
+ $vararg_buffer1 = sp + 64|0;
+ $vararg_buffer = sp + 80|0;
+ $d_A = sp + 152|0;
+ $d_B = sp + 240|0;
+ $d_C = sp + 192|0;
+ $funcParams = sp + 248|0;
+ $1 = sp + 200|0;
  $0 = 0;
  $err = 0;
  $numElements = 50000;
- $1 = $numElements;
- $2 = $1<<2;
- $size = $2;
- $3 = $numElements;
- HEAP32[$vararg_buffer>>2] = $3;
+ $2 = $numElements;
+ $3 = $2<<2;
+ $size = $3;
+ $4 = $numElements;
+ HEAP32[$vararg_buffer>>2] = $4;
  (_printf((200|0),($vararg_buffer|0))|0);
- $4 = $size;
- $5 = (_malloc($4)|0);
- $h_A = $5;
- $6 = $size;
- $7 = (_malloc($6)|0);
- $h_B = $7;
- $8 = $size;
- $9 = (_malloc($8)|0);
- $h_C = $9;
- $10 = $h_A;
- $11 = ($10|0)==(0|0);
- if ($11) {
-  $16 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($16|0),(240|0),($vararg_buffer1|0))|0);
+ $5 = $size;
+ $6 = (_malloc($5)|0);
+ $h_A = $6;
+ $7 = $size;
+ $8 = (_malloc($7)|0);
+ $h_B = $8;
+ $9 = $size;
+ $10 = (_malloc($9)|0);
+ $h_C = $10;
+ $11 = $h_A;
+ $12 = ($11|0)==(0|0);
+ if ($12) {
+  $17 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($17|0),(240|0),($vararg_buffer1|0))|0);
   _exit(1);
   // unreachable;
  }
- $12 = $h_B;
- $13 = ($12|0)==(0|0);
- if ($13) {
-  $16 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($16|0),(240|0),($vararg_buffer1|0))|0);
+ $13 = $h_B;
+ $14 = ($13|0)==(0|0);
+ if ($14) {
+  $17 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($17|0),(240|0),($vararg_buffer1|0))|0);
   _exit(1);
   // unreachable;
  }
- $14 = $h_C;
- $15 = ($14|0)==(0|0);
- if ($15) {
-  $16 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($16|0),(240|0),($vararg_buffer1|0))|0);
+ $15 = $h_C;
+ $16 = ($15|0)==(0|0);
+ if ($16) {
+  $17 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($17|0),(240|0),($vararg_buffer1|0))|0);
   _exit(1);
   // unreachable;
  }
  $i = 0;
  while(1) {
-  $17 = $i;
-  $18 = $numElements;
-  $19 = ($17|0)<($18|0);
-  if (!($19)) {
+  $18 = $i;
+  $19 = $numElements;
+  $20 = ($18|0)<($19|0);
+  if (!($20)) {
    break;
   }
-  $20 = (_rand()|0);
-  $21 = (+($20|0));
-  $22 = $21 / 2147483648.0;
-  $23 = $i;
-  $24 = $h_A;
-  $25 = (($24) + ($23<<2)|0);
-  HEAPF32[$25>>2] = $22;
-  $26 = (_rand()|0);
-  $27 = (+($26|0));
-  $28 = $27 / 2147483648.0;
-  $29 = $i;
-  $30 = $h_B;
-  $31 = (($30) + ($29<<2)|0);
-  HEAPF32[$31>>2] = $28;
-  $32 = $i;
-  $33 = (($32) + 1)|0;
-  $i = $33;
+  $21 = (_rand()|0);
+  $22 = (+($21|0));
+  $23 = $22 / 2147483648.0;
+  $24 = $i;
+  $25 = $h_A;
+  $26 = (($25) + ($24<<2)|0);
+  HEAPF32[$26>>2] = $23;
+  $27 = (_rand()|0);
+  $28 = (+($27|0));
+  $29 = $28 / 2147483648.0;
+  $30 = $i;
+  $31 = $h_B;
+  $32 = (($31) + ($30<<2)|0);
+  HEAPF32[$32>>2] = $29;
+  $33 = $i;
+  $34 = (($33) + 1)|0;
+  $i = $34;
  }
  HEAP32[$d_A>>2] = 0;
- $34 = $size;
- $35 = (_cudaMalloc(($d_A|0),($34|0))|0);
- $err = $35;
- $36 = $err;
- $37 = ($36|0)!=(0);
- if ($37) {
-  $38 = HEAP32[_stderr>>2]|0;
-  $39 = $err;
-  $40 = (_cudaGetErrorString(($39|0))|0);
-  HEAP32[$vararg_buffer3>>2] = $40;
-  (_fprintf(($38|0),(280|0),($vararg_buffer3|0))|0);
+ $35 = $size;
+ $36 = (_cudaMalloc(($d_A|0),($35|0))|0);
+ $err = $36;
+ $37 = $err;
+ $38 = ($37|0)!=(0);
+ if ($38) {
+  $39 = HEAP32[_stderr>>2]|0;
+  $40 = $err;
+  $41 = (_cudaGetErrorString(($40|0))|0);
+  HEAP32[$vararg_buffer3>>2] = $41;
+  (_fprintf(($39|0),(280|0),($vararg_buffer3|0))|0);
   _exit(1);
   // unreachable;
  }
  HEAP32[$d_B>>2] = 0;
- $41 = $size;
- $42 = (_cudaMalloc(($d_B|0),($41|0))|0);
- $err = $42;
- $43 = $err;
- $44 = ($43|0)!=(0);
- if ($44) {
-  $45 = HEAP32[_stderr>>2]|0;
-  $46 = $err;
-  $47 = (_cudaGetErrorString(($46|0))|0);
-  HEAP32[$vararg_buffer6>>2] = $47;
-  (_fprintf(($45|0),(336|0),($vararg_buffer6|0))|0);
+ $42 = $size;
+ $43 = (_cudaMalloc(($d_B|0),($42|0))|0);
+ $err = $43;
+ $44 = $err;
+ $45 = ($44|0)!=(0);
+ if ($45) {
+  $46 = HEAP32[_stderr>>2]|0;
+  $47 = $err;
+  $48 = (_cudaGetErrorString(($47|0))|0);
+  HEAP32[$vararg_buffer6>>2] = $48;
+  (_fprintf(($46|0),(336|0),($vararg_buffer6|0))|0);
   _exit(1);
   // unreachable;
  }
  HEAP32[$d_C>>2] = 0;
- $48 = $size;
- $49 = (_cudaMalloc(($d_C|0),($48|0))|0);
- $err = $49;
- $50 = $err;
- $51 = ($50|0)!=(0);
- if ($51) {
-  $52 = HEAP32[_stderr>>2]|0;
-  $53 = $err;
-  $54 = (_cudaGetErrorString(($53|0))|0);
-  HEAP32[$vararg_buffer9>>2] = $54;
-  (_fprintf(($52|0),(392|0),($vararg_buffer9|0))|0);
+ $49 = $size;
+ $50 = (_cudaMalloc(($d_C|0),($49|0))|0);
+ $err = $50;
+ $51 = $err;
+ $52 = ($51|0)!=(0);
+ if ($52) {
+  $53 = HEAP32[_stderr>>2]|0;
+  $54 = $err;
+  $55 = (_cudaGetErrorString(($54|0))|0);
+  HEAP32[$vararg_buffer9>>2] = $55;
+  (_fprintf(($53|0),(392|0),($vararg_buffer9|0))|0);
   _exit(1);
   // unreachable;
  }
  (_printf((448|0),($vararg_buffer12|0))|0);
- $55 = HEAP32[$d_A>>2]|0;
- $56 = $h_A;
- $57 = $size;
- $58 = (_cudaMemcpy(($55|0),($56|0),($57|0),1)|0);
- $err = $58;
- $59 = $err;
- $60 = ($59|0)!=(0);
- if ($60) {
-  $61 = HEAP32[_stderr>>2]|0;
-  $62 = $err;
-  $63 = (_cudaGetErrorString(($62|0))|0);
-  HEAP32[$vararg_buffer14>>2] = $63;
-  (_fprintf(($61|0),(512|0),($vararg_buffer14|0))|0);
+ $56 = HEAP32[$d_A>>2]|0;
+ $57 = $h_A;
+ $58 = $size;
+ $59 = (_cudaMemcpy(($56|0),($57|0),($58|0),1)|0);
+ $err = $59;
+ $60 = $err;
+ $61 = ($60|0)!=(0);
+ if ($61) {
+  $62 = HEAP32[_stderr>>2]|0;
+  $63 = $err;
+  $64 = (_cudaGetErrorString(($63|0))|0);
+  HEAP32[$vararg_buffer14>>2] = $64;
+  (_fprintf(($62|0),(512|0),($vararg_buffer14|0))|0);
   _exit(1);
   // unreachable;
  }
- $64 = HEAP32[$d_B>>2]|0;
- $65 = $h_B;
- $66 = $size;
- $67 = (_cudaMemcpy(($64|0),($65|0),($66|0),1)|0);
- $err = $67;
- $68 = $err;
- $69 = ($68|0)!=(0);
- if ($69) {
-  $70 = HEAP32[_stderr>>2]|0;
-  $71 = $err;
-  $72 = (_cudaGetErrorString(($71|0))|0);
-  HEAP32[$vararg_buffer17>>2] = $72;
-  (_fprintf(($70|0),(576|0),($vararg_buffer17|0))|0);
+ $65 = HEAP32[$d_B>>2]|0;
+ $66 = $h_B;
+ $67 = $size;
+ $68 = (_cudaMemcpy(($65|0),($66|0),($67|0),1)|0);
+ $err = $68;
+ $69 = $err;
+ $70 = ($69|0)!=(0);
+ if ($70) {
+  $71 = HEAP32[_stderr>>2]|0;
+  $72 = $err;
+  $73 = (_cudaGetErrorString(($72|0))|0);
+  HEAP32[$vararg_buffer17>>2] = $73;
+  (_fprintf(($71|0),(576|0),($vararg_buffer17|0))|0);
   _exit(1);
   // unreachable;
  }
  $threadsPerBlock = 256;
- $73 = $numElements;
- $74 = $threadsPerBlock;
- $75 = (($73) + ($74))|0;
- $76 = (($75) - 1)|0;
- $77 = $threadsPerBlock;
- $78 = (($76|0) / ($77|0))&-1;
- $blocksPerGrid = $78;
- $79 = $blocksPerGrid;
- $80 = $threadsPerBlock;
- HEAP32[$vararg_buffer20>>2] = $79;
+ $74 = $numElements;
+ $75 = $threadsPerBlock;
+ $76 = (($74) + ($75))|0;
+ $77 = (($76) - 1)|0;
+ $78 = $threadsPerBlock;
+ $79 = (($77|0) / ($78|0))&-1;
+ $blocksPerGrid = $79;
+ $80 = $blocksPerGrid;
+ $81 = $threadsPerBlock;
+ HEAP32[$vararg_buffer20>>2] = $80;
  $vararg_ptr23 = (($vararg_buffer20) + 4|0);
- HEAP32[$vararg_ptr23>>2] = $80;
+ HEAP32[$vararg_ptr23>>2] = $81;
  (_printf((640|0),($vararg_buffer20|0))|0);
- $81 = HEAP32[192>>2]|0;
- $82 = $blocksPerGrid;
- $83 = $threadsPerBlock;
- $84 = HEAP32[$d_A>>2]|0;
- $85 = HEAP32[$d_B>>2]|0;
- $86 = HEAP32[$d_C>>2]|0;
- $87 = $numElements;
- $88 = $87;
- (_cudaRunKernel4((696|0),($81|0),(712|0),($82|0),($83|0),4,($84|0),($85|0),($86|0),($88|0))|0);
- $89 = (_cudaGetLastError()|0);
- $err = $89;
- $90 = $err;
- $91 = ($90|0)!=(0);
- if ($91) {
-  $92 = HEAP32[_stderr>>2]|0;
-  $93 = $err;
-  $94 = (_cudaGetErrorString(($93|0))|0);
-  HEAP32[$vararg_buffer24>>2] = $94;
-  (_fprintf(($92|0),(720|0),($vararg_buffer24|0))|0);
+ HEAP32[$funcParams>>2] = 4;
+ $82 = (($funcParams) + 4|0);
+ HEAP32[$82>>2] = 2;
+ $83 = (($funcParams) + 4|0);
+ $84 = (($83) + 4|0);
+ HEAP32[$84>>2] = 2;
+ $85 = (($funcParams) + 4|0);
+ $86 = (($85) + 8|0);
+ HEAP32[$86>>2] = 2;
+ $87 = (($funcParams) + 4|0);
+ $88 = (($87) + 12|0);
+ HEAP32[$88>>2] = 0;
+ $89 = HEAP32[$d_A>>2]|0;
+ $90 = (($funcParams) + 20|0);
+ HEAP32[$90>>2] = $89;
+ $91 = HEAP32[$d_B>>2]|0;
+ $92 = (($funcParams) + 24|0);
+ HEAP32[$92>>2] = $91;
+ $93 = HEAP32[$d_C>>2]|0;
+ $94 = (($funcParams) + 28|0);
+ HEAP32[$94>>2] = $93;
+ $95 = $numElements;
+ $96 = (($funcParams) + 32|0);
+ HEAP32[$96>>2] = $95;
+ $97 = HEAP32[192>>2]|0;
+ $98 = $blocksPerGrid;
+ $99 = $threadsPerBlock;
+ dest=$1+0|0; src=$funcParams+0|0; stop=dest+36|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
+ dest=$$byval_copy+0|0; src=$1+0|0; stop=dest+36|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
+ (_cudaRunKernelFunc((696|0),($97|0),(712|0),($98|0),($99|0),($$byval_copy|0))|0);
+ $100 = (_cudaGetLastError()|0);
+ $err = $100;
+ $101 = $err;
+ $102 = ($101|0)!=(0);
+ if ($102) {
+  $103 = HEAP32[_stderr>>2]|0;
+  $104 = $err;
+  $105 = (_cudaGetErrorString(($104|0))|0);
+  HEAP32[$vararg_buffer24>>2] = $105;
+  (_fprintf(($103|0),(720|0),($vararg_buffer24|0))|0);
   _exit(1);
   // unreachable;
  }
  (_printf((776|0),($vararg_buffer27|0))|0);
- $95 = $h_C;
- $96 = HEAP32[$d_C>>2]|0;
- $97 = $size;
- $98 = (_cudaMemcpy(($95|0),($96|0),($97|0),2)|0);
- $err = $98;
- $99 = $err;
- $100 = ($99|0)!=(0);
- if ($100) {
-  $101 = HEAP32[_stderr>>2]|0;
-  $102 = $err;
-  $103 = (_cudaGetErrorString(($102|0))|0);
-  HEAP32[$vararg_buffer29>>2] = $103;
-  (_fprintf(($101|0),(840|0),($vararg_buffer29|0))|0);
+ $106 = $h_C;
+ $107 = HEAP32[$d_C>>2]|0;
+ $108 = $size;
+ $109 = (_cudaMemcpy(($106|0),($107|0),($108|0),2)|0);
+ $err = $109;
+ $110 = $err;
+ $111 = ($110|0)!=(0);
+ if ($111) {
+  $112 = HEAP32[_stderr>>2]|0;
+  $113 = $err;
+  $114 = (_cudaGetErrorString(($113|0))|0);
+  HEAP32[$vararg_buffer29>>2] = $114;
+  (_fprintf(($112|0),(840|0),($vararg_buffer29|0))|0);
   _exit(1);
   // unreachable;
  }
  $i1 = 0;
  while(1) {
-  $104 = $i1;
-  $105 = $numElements;
-  $106 = ($104|0)<($105|0);
-  if (!($106)) {
+  $115 = $i1;
+  $116 = $numElements;
+  $117 = ($115|0)<($116|0);
+  if (!($117)) {
    break;
   }
-  $107 = $i1;
-  $108 = $h_A;
-  $109 = (($108) + ($107<<2)|0);
-  $110 = +HEAPF32[$109>>2];
-  $111 = $i1;
-  $112 = $h_B;
-  $113 = (($112) + ($111<<2)|0);
-  $114 = +HEAPF32[$113>>2];
-  $115 = $110 + $114;
-  $116 = $i1;
-  $117 = $h_C;
-  $118 = (($117) + ($116<<2)|0);
-  $119 = +HEAPF32[$118>>2];
-  $120 = $115 - $119;
-  $121 = $120;
-  $122 = (+Math_abs((+$121)));
-  $123 = $122 > 1.0000000000000000818E-5;
-  if ($123) {
+  $118 = $i1;
+  $119 = $h_A;
+  $120 = (($119) + ($118<<2)|0);
+  $121 = +HEAPF32[$120>>2];
+  $122 = $i1;
+  $123 = $h_B;
+  $124 = (($123) + ($122<<2)|0);
+  $125 = +HEAPF32[$124>>2];
+  $126 = $121 + $125;
+  $127 = $i1;
+  $128 = $h_C;
+  $129 = (($128) + ($127<<2)|0);
+  $130 = +HEAPF32[$129>>2];
+  $131 = $126 - $130;
+  $132 = $131;
+  $133 = (+Math_abs((+$132)));
+  $134 = $133 > 1.0000000000000000818E-5;
+  if ($134) {
    label = 26;
    break;
   }
-  $126 = $i1;
-  $127 = (($126) + 1)|0;
-  $i1 = $127;
+  $137 = $i1;
+  $138 = (($137) + 1)|0;
+  $i1 = $138;
  }
  if ((label|0) == 26) {
-  $124 = HEAP32[_stderr>>2]|0;
-  $125 = $i1;
-  HEAP32[$vararg_buffer32>>2] = $125;
-  (_fprintf(($124|0),(904|0),($vararg_buffer32|0))|0);
+  $135 = HEAP32[_stderr>>2]|0;
+  $136 = $i1;
+  HEAP32[$vararg_buffer32>>2] = $136;
+  (_fprintf(($135|0),(904|0),($vararg_buffer32|0))|0);
   _exit(1);
   // unreachable;
  }
  (_printf((952|0),($vararg_buffer35|0))|0);
- $128 = HEAP32[$d_A>>2]|0;
- $129 = (_cudaFree(($128|0))|0);
- $err = $129;
- $130 = $err;
- $131 = ($130|0)!=(0);
- if ($131) {
-  $132 = HEAP32[_stderr>>2]|0;
-  $133 = $err;
-  $134 = (_cudaGetErrorString(($133|0))|0);
-  HEAP32[$vararg_buffer37>>2] = $134;
-  (_fprintf(($132|0),(968|0),($vararg_buffer37|0))|0);
+ $139 = HEAP32[$d_A>>2]|0;
+ $140 = (_cudaFree(($139|0))|0);
+ $err = $140;
+ $141 = $err;
+ $142 = ($141|0)!=(0);
+ if ($142) {
+  $143 = HEAP32[_stderr>>2]|0;
+  $144 = $err;
+  $145 = (_cudaGetErrorString(($144|0))|0);
+  HEAP32[$vararg_buffer37>>2] = $145;
+  (_fprintf(($143|0),(968|0),($vararg_buffer37|0))|0);
   _exit(1);
   // unreachable;
  }
- $135 = HEAP32[$d_B>>2]|0;
- $136 = (_cudaFree(($135|0))|0);
- $err = $136;
- $137 = $err;
- $138 = ($137|0)!=(0);
- if ($138) {
-  $139 = HEAP32[_stderr>>2]|0;
-  $140 = $err;
-  $141 = (_cudaGetErrorString(($140|0))|0);
-  HEAP32[$vararg_buffer40>>2] = $141;
-  (_fprintf(($139|0),(1024|0),($vararg_buffer40|0))|0);
+ $146 = HEAP32[$d_B>>2]|0;
+ $147 = (_cudaFree(($146|0))|0);
+ $err = $147;
+ $148 = $err;
+ $149 = ($148|0)!=(0);
+ if ($149) {
+  $150 = HEAP32[_stderr>>2]|0;
+  $151 = $err;
+  $152 = (_cudaGetErrorString(($151|0))|0);
+  HEAP32[$vararg_buffer40>>2] = $152;
+  (_fprintf(($150|0),(1024|0),($vararg_buffer40|0))|0);
   _exit(1);
   // unreachable;
  }
- $142 = HEAP32[$d_C>>2]|0;
- $143 = (_cudaFree(($142|0))|0);
- $err = $143;
- $144 = $err;
- $145 = ($144|0)!=(0);
- if ($145) {
-  $146 = HEAP32[_stderr>>2]|0;
-  $147 = $err;
-  $148 = (_cudaGetErrorString(($147|0))|0);
-  HEAP32[$vararg_buffer43>>2] = $148;
-  (_fprintf(($146|0),(1080|0),($vararg_buffer43|0))|0);
+ $153 = HEAP32[$d_C>>2]|0;
+ $154 = (_cudaFree(($153|0))|0);
+ $err = $154;
+ $155 = $err;
+ $156 = ($155|0)!=(0);
+ if ($156) {
+  $157 = HEAP32[_stderr>>2]|0;
+  $158 = $err;
+  $159 = (_cudaGetErrorString(($158|0))|0);
+  HEAP32[$vararg_buffer43>>2] = $159;
+  (_fprintf(($157|0),(1080|0),($vararg_buffer43|0))|0);
   _exit(1);
   // unreachable;
  }
- $149 = $h_A;
- _free($149);
- $150 = $h_B;
- _free($150);
- $151 = $h_C;
- _free($151);
- $152 = (_cudaDeviceReset()|0);
- $err = $152;
- $153 = $err;
- $154 = ($153|0)!=(0);
- if ($154) {
-  $155 = HEAP32[_stderr>>2]|0;
-  $156 = $err;
-  $157 = (_cudaGetErrorString(($156|0))|0);
-  HEAP32[$vararg_buffer46>>2] = $157;
-  (_fprintf(($155|0),(1136|0),($vararg_buffer46|0))|0);
+ $160 = $h_A;
+ _free($160);
+ $161 = $h_B;
+ _free($161);
+ $162 = $h_C;
+ _free($162);
+ $163 = (_cudaDeviceReset()|0);
+ $err = $163;
+ $164 = $err;
+ $165 = ($164|0)!=(0);
+ if ($165) {
+  $166 = HEAP32[_stderr>>2]|0;
+  $167 = $err;
+  $168 = (_cudaGetErrorString(($167|0))|0);
+  HEAP32[$vararg_buffer46>>2] = $168;
+  (_fprintf(($166|0),(1136|0),($vararg_buffer46|0))|0);
   _exit(1);
   // unreachable;
  } else {
@@ -10003,7 +10061,7 @@ function _memcpy(dest, src, num) {
   return { _strlen: _strlen, _free: _free, _main: _main, _rand_r: _rand_r, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, setTempRet1: setTempRet1, setTempRet2: setTempRet2, setTempRet3: setTempRet3, setTempRet4: setTempRet4, setTempRet5: setTempRet5, setTempRet6: setTempRet6, setTempRet7: setTempRet7, setTempRet8: setTempRet8, setTempRet9: setTempRet9 };
 })
 // EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaMalloc": _cudaMalloc, "_cudaGetLastError": _cudaGetLastError, "_cudaMemcpy": _cudaMemcpy, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "__reallyNegative": __reallyNegative, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "___setErrNo": ___setErrNo, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_mkport": _mkport, "_cudaRunKernelNoDim": _cudaRunKernelNoDim, "__exit": __exit, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "__formatString": __formatString, "_exit": _exit, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaMalloc": _cudaMalloc, "_cudaGetLastError": _cudaGetLastError, "_cudaMemcpy": _cudaMemcpy, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "__reallyNegative": __reallyNegative, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "___setErrNo": ___setErrNo, "_cudaRunKernelFunc": _cudaRunKernelFunc, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_mkport": _mkport, "__exit": __exit, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "__formatString": __formatString, "_exit": _exit, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];

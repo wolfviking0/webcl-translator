@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = 'a22284b9-47e0-4d8c-aa18-f78738cfba29';
+    var PACKAGE_UUID = '67eee913-0150-40d4-baa3-ea5d938fd5f1';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -169,7 +169,7 @@ function assert(check, msg) {
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
 var Module;
-if (!Module) Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module) Module = (typeof Module !== 'undefined' ? Module : null) || {};
 
 // Sometimes an existing Module object exists with properties
 // meant to overwrite the default module functionality. Here
@@ -1163,7 +1163,14 @@ function demangle(func) {
       }
     }
     if (!allowVoid && list.length === 1 && list[0] === 'void') list = []; // avoid (void)
-    return rawList ? list : ret + flushList();
+    if (rawList) {
+      if (ret) {
+        list.push(ret + '?');
+      }
+      return list;
+    } else {
+      return ret + flushList();
+    }
   }
   try {
     // Special-case the entry point, since its name differs from other name mangling.
@@ -16386,16 +16393,16 @@ function __Z11specialFunciii($key,$x,$y) {
   __ZL13rotateCameraYf(-0.0349065847694873809814);
   break;
  }
+ case 103:  {
+  __ZL13rotateCameraXf(0.0349065847694873809814);
+  break;
+ }
  case 102:  {
   __ZL13rotateCameraYf(0.0349065847694873809814);
   break;
  }
  case 101:  {
   __ZL13rotateCameraXf(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  __ZL13rotateCameraXf(0.0349065847694873809814);
   break;
  }
  default: {

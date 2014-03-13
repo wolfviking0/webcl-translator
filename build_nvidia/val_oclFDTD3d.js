@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclFDTD3d.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclFDTD3d.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '3e347cd3-0a9f-4f83-8d0e-6b0605ba9cdf';
+    var PACKAGE_UUID = 'bbccbfa7-90e6-46dc-9333-0c521064e053';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -169,7 +169,7 @@ function assert(check, msg) {
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
 var Module;
-if (!Module) Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module) Module = (typeof Module !== 'undefined' ? Module : null) || {};
 
 // Sometimes an existing Module object exists with properties
 // meant to overwrite the default module functionality. Here
@@ -1163,7 +1163,14 @@ function demangle(func) {
       }
     }
     if (!allowVoid && list.length === 1 && list[0] === 'void') list = []; // avoid (void)
-    return rawList ? list : ret + flushList();
+    if (rawList) {
+      if (ret) {
+        list.push(ret + '?');
+      }
+      return list;
+    } else {
+      return ret + flushList();
+    }
   }
   try {
     // Special-case the entry point, since its name differs from other name mangling.
@@ -90160,7 +90167,7 @@ function _mbrtowc($wc,$src,$n,$st) {
     }
    } while(0);
    $20 = ($$02|0)==(0);
-   L19: do {
+   L17: do {
     if ($20) {
      $c$2 = $c$0;
     } else {
@@ -90191,7 +90198,7 @@ function _mbrtowc($wc,$src,$n,$st) {
       $38 = ($35|0)==(0);
       if ($38) {
        $c$2 = $34;
-       break L19;
+       break L17;
       }
       $39 = HEAP8[$30]|0;
       $40 = $39&255;
@@ -94511,7 +94518,7 @@ function _malloc($bytes) {
        HEAP32[$728>>2] = $727;
        $729 = HEAP32[((23568 + 24|0))>>2]|0;
        $730 = ($721|0)==($729|0);
-       L348: do {
+       L338: do {
         if ($730) {
          $731 = HEAP32[((23568 + 12|0))>>2]|0;
          $732 = (($731) + ($726))|0;
@@ -94548,7 +94555,7 @@ function _malloc($bytes) {
           $746 = $743 & -8;
           $747 = $743 >>> 3;
           $748 = ($743>>>0)<(256);
-          L356: do {
+          L346: do {
            if ($748) {
             $$sum3738$i$i = $720 | 8;
             $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -94727,7 +94734,7 @@ function _malloc($bytes) {
               $810 = HEAP32[((23568 + 4|0))>>2]|0;
               $811 = $810 & $809;
               HEAP32[((23568 + 4|0))>>2] = $811;
-              break L356;
+              break L346;
              } else {
               $812 = HEAP32[((23568 + 16|0))>>2]|0;
               $813 = ($774>>>0)<($812>>>0);
@@ -94746,7 +94753,7 @@ function _malloc($bytes) {
               }
               $818 = ($R$1$i$i|0)==(0|0);
               if ($818) {
-               break L356;
+               break L346;
               }
              }
             } while(0);
@@ -94938,7 +94945,7 @@ function _malloc($bytes) {
          $902 = HEAP32[$901>>2]|0;
          $903 = $902 & -8;
          $904 = ($903|0)==($qsize$0$i$i|0);
-         L445: do {
+         L435: do {
           if ($904) {
            $T$0$lcssa$i28$i = $897;
           } else {
@@ -94959,7 +94966,7 @@ function _malloc($bytes) {
             $912 = ($911|0)==($qsize$0$i$i|0);
             if ($912) {
              $T$0$lcssa$i28$i = $909;
-             break L445;
+             break L435;
             } else {
              $T$051$i$i$phi = $909;$K8$052$i$i = $907;$T$051$i$i = $T$051$i$i$phi;
             }
@@ -94980,7 +94987,7 @@ function _malloc($bytes) {
             $$sum25$i$i = (($$sum$i21$i) + 8)|0;
             $920 = (($tbase$247$i) + ($$sum25$i$i)|0);
             HEAP32[$920>>2] = $725;
-            break L348;
+            break L338;
            }
           }
          } while(0);
@@ -95234,7 +95241,7 @@ function _malloc($bytes) {
      $1041 = HEAP32[$1040>>2]|0;
      $1042 = $1041 & -8;
      $1043 = ($1042|0)==($976|0);
-     L499: do {
+     L489: do {
       if ($1043) {
        $T$0$lcssa$i$i = $1036;
       } else {
@@ -95255,7 +95262,7 @@ function _malloc($bytes) {
         $1051 = ($1050|0)==($976|0);
         if ($1051) {
          $T$0$lcssa$i$i = $1048;
-         break L499;
+         break L489;
         } else {
          $T$013$i$i$phi = $1048;$K2$014$i$i = $1046;$T$013$i$i = $T$013$i$i$phi;
         }
@@ -95721,7 +95728,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L113: do {
+   L112: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -95891,7 +95898,7 @@ function _free($mem) {
        $199 = HEAP32[((23568 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((23568 + 4|0))>>2] = $200;
-       break L113;
+       break L112;
       } else {
        $201 = HEAP32[((23568 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -95910,7 +95917,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L113;
+        break L112;
        }
       }
      } while(0);
@@ -97741,12 +97748,12 @@ function ___floatscan($f,$prec,$pok) {
  sp = STACKTOP;
  STACKTOP = STACKTOP + 512|0;
  $x$i = sp;
- if ((($prec|0) == 1)) {
+ if ((($prec|0) == 0)) {
+  $bits$0$ph = 24;$emin$0$ph = -149;
+ } else if ((($prec|0) == 1)) {
   $bits$0$ph = 53;$emin$0$ph = -1074;
  } else if ((($prec|0) == 2)) {
   $bits$0$ph = 53;$emin$0$ph = -1074;
- } else if ((($prec|0) == 0)) {
-  $bits$0$ph = 24;$emin$0$ph = -149;
  } else {
   $$0 = 0.0;
   STACKTOP = sp;return (+$$0);
