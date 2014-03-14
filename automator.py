@@ -215,7 +215,7 @@ def worker_copy(folder,repo):
       start = string.find('<footer><center>')
       end = string.find('</center></footer>')
   
-      footer = '<footer><center>webcl-translator is maintained by Anthony Liot <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
+      footer = '<footer><center>webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
       string = string[:start] + footer + string[end:]
 
       f = open(directory+'/index.html','w')
@@ -255,7 +255,7 @@ def copy(repo_list):
   start = string.find('<footer><center>')
   end = string.find('</center></footer>')
 
-  footer = '<footer><center>webcl-translator is maintained by Anthony Liot <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
+  footer = '<footer><center>webcl-translator is maintained by <a href="https://github.com/wolfviking0">Anthony Liot</a>.<br/>Last update : '+strftime("%Y-%m-%d %H:%M:%S", gmtime())
   string = string[:start] + footer + string[end:]
 
   f = open(page_repositories+'/index.html','w')
