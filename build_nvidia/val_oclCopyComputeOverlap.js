@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//val_oclCopyComputeOverlap.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclCopyComputeOverlap.data';
-    var REMOTE_PACKAGE_SIZE = 10228;
-    var PACKAGE_UUID = '0b32533a-1c5d-424f-94d8-0991c357c3eb';
+    var REMOTE_PACKAGE_SIZE = 10443;
+    var PACKAGE_UUID = '6a9f6026-2cdc-4a9d-af33-22386b3eed79';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 10228, 0, 0).open('GET', '/VectorHypot.cl');
+      new DataRequest(0, 10443, 0, 0).open('GET', '/VectorHypot.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -7041,13 +7041,13 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
-          CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));
           break;
           case 0x102B /*CL_DEVICE_NAME*/ :
+            CL.webclCallStackTrace(""+_object+".getInfo",[webcl.DEVICE_TYPE]);
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
               case webcl.DEVICE_TYPE_CPU:
@@ -7071,12 +7071,15 @@ function copyTempDouble(ptr) {
             _info = 0;
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
+            CL.webclCallStackTrace(""+webcl+".getSupportedExtensions",[]);
             _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
+            CL.webclCallStackTrace(""+_object+".getInfo",[webcl.DEVICE_MEM_BASE_ADDR_ALIGN]);
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
           break;
           default:
+            CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
             _info = _object.getInfo(param_name);
         }  
       } catch (e) {

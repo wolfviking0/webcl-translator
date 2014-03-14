@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 5799;
-    var PACKAGE_UUID = 'a3590134-337a-4ae6-9349-cfe6e56b6338';
+    var PACKAGE_UUID = '239360b7-1907-43d8-8bc6-2cf63545a4bf';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11708,7 +11708,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

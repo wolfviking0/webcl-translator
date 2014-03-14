@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_SIZE = 89407;
-    var PACKAGE_UUID = '625c8419-c76b-43e9-9937-2e6817899bb6';
+    var PACKAGE_UUID = 'a4187b15-fdac-4a8c-a601-3fc4bc231b35';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11732,7 +11732,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

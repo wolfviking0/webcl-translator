@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_scan.data';
-    var REMOTE_PACKAGE_SIZE = 101964;
-    var PACKAGE_UUID = '1b33e972-f49b-4848-b89e-caed4a5ab0e1';
+    var REMOTE_PACKAGE_SIZE = 102179;
+    var PACKAGE_UUID = 'dfa268e8-5cd4-4dc6-8073-ad83b9a0398d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 101964, 0, 0).open('GET', '/scan_kernel.cl');
+      new DataRequest(0, 102179, 0, 0).open('GET', '/scan_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6847,7 +6847,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

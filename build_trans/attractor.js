@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/attractor.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'attractor.data';
     var REMOTE_PACKAGE_SIZE = 7681;
-    var PACKAGE_UUID = '1ef4707b-1e35-4dd4-b7f1-a9e0f628c076';
+    var PACKAGE_UUID = 'a627102f-be72-4114-8596-1d36e38f4b81';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

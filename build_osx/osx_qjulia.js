@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_qjulia.data';
     var REMOTE_PACKAGE_SIZE = 10531;
-    var PACKAGE_UUID = '2e9fe2c8-63ad-4375-b7be-3410de929dbb';
+    var PACKAGE_UUID = '77bc7ade-1888-48f3-9a06-3858f1b2d585';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11692,7 +11692,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

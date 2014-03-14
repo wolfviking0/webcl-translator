@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = '9bb9c447-ec31-4651-b18f-146ca7bff8c4';
+    var PACKAGE_UUID = 'b9f0bde4-2fff-4aad-86b3-fab5fde98722';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -6828,7 +6828,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

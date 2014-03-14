@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_reduce.data';
     var REMOTE_PACKAGE_SIZE = 43642;
-    var PACKAGE_UUID = '1e91b0c4-3d96-4548-9d07-534edf50dd68';
+    var PACKAGE_UUID = '2792231e-7a12-41d3-b3cc-56ed1fc8e75c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -6782,7 +6782,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

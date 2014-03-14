@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_noise.data';
-    var REMOTE_PACKAGE_SIZE = 47297;
-    var PACKAGE_UUID = '1656980f-8838-417c-b0ed-252b9dd23052';
+    var REMOTE_PACKAGE_SIZE = 47512;
+    var PACKAGE_UUID = 'bd6d65ca-3ccc-4b5b-bac3-e36c06666af7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 47297, 0, 0).open('GET', '/noise_kernel.cl');
+      new DataRequest(0, 47512, 0, 0).open('GET', '/noise_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -11750,7 +11750,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));
@@ -18429,7 +18429,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -18599,7 +18599,7 @@ function _free($mem) {
        $199 = HEAP32[((3216 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((3216 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((3216 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -18618,7 +18618,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);

@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dxtcompressor.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dxtcompressor.data';
-    var REMOTE_PACKAGE_SIZE = 1040453;
-    var PACKAGE_UUID = '218e19d2-d7bf-4f5d-ab6b-fa744b30349f';
+    var REMOTE_PACKAGE_SIZE = 1040668;
+    var PACKAGE_UUID = '15c01982-7c80-4430-9b27-b46eda08ad76';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -118,7 +118,7 @@ Module['FS_createPath']('/', 'data', true, true);
     };
       new DataRequest(0, 131200, 0, 0).open('GET', '/data/lena_ref.dds');
     new DataRequest(131200, 917647, 0, 0).open('GET', '/data/lena.ppm');
-    new DataRequest(917647, 1040453, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
+    new DataRequest(917647, 1040668, 0, 0).open('GET', '/DXTCompressor_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -13462,7 +13462,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

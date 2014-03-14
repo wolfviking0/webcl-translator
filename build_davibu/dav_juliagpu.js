@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = '7880a9fa-f8d2-484d-8fd4-0cfdf8e8183d';
+    var PACKAGE_UUID = 'f5e6784c-ab5a-42fb-96c3-433a6214cae0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11722,7 +11722,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

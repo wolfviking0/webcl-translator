@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//val_oclTridiagonal.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclTridiagonal.data';
-    var REMOTE_PACKAGE_SIZE = 185418;
-    var PACKAGE_UUID = '4c6bfab0-bbc5-4e2b-8599-186795b4d885';
+    var REMOTE_PACKAGE_SIZE = 185848;
+    var PACKAGE_UUID = 'a11f5fb8-b463-4fdc-a649-feb91c974f7c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,9 +115,9 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 107958, 0, 0).open('GET', '/cyclic_kernels.cl');
-    new DataRequest(107958, 185418, 0, 0).open('GET', '/pcr_kernels.cl');
-    new DataRequest(185418, 185418, 0, 0).open('GET', '/sweep_kernels.cl');
+      new DataRequest(0, 108173, 0, 0).open('GET', '/cyclic_kernels.cl');
+    new DataRequest(108173, 185848, 0, 0).open('GET', '/pcr_kernels.cl');
+    new DataRequest(185848, 185848, 0, 0).open('GET', '/sweep_kernels.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6960,13 +6960,13 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
-          CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));
           break;
           case 0x102B /*CL_DEVICE_NAME*/ :
+            CL.webclCallStackTrace(""+_object+".getInfo",[webcl.DEVICE_TYPE]);
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
               case webcl.DEVICE_TYPE_CPU:
@@ -6990,12 +6990,15 @@ function copyTempDouble(ptr) {
             _info = 0;
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
+            CL.webclCallStackTrace(""+webcl+".getSupportedExtensions",[]);
             _info = webcl.getSupportedExtensions().join(' ') ; 
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
+            CL.webclCallStackTrace(""+_object+".getInfo",[webcl.DEVICE_MEM_BASE_ADDR_ALIGN]);
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
           break;
           default:
+            CL.webclCallStackTrace(""+_object+".getInfo",[param_name]);
             _info = _object.getInfo(param_name);
         }  
       } catch (e) {
@@ -86899,18 +86902,18 @@ function __ZNSt3__1L20utf8_to_utf16_lengthEPKhS1_jmNS_12codecvt_modeE($frm,$frm_
       $81 = HEAP8[$80]|0;
       $82 = (($frm_nxt$115) + 3|0);
       $83 = HEAP8[$82]|0;
-      if ((($19|0) == 244)) {
-       $87 = $79 & -16;
-       $88 = ($87<<24>>24)==(-128);
-       if (!($88)) {
-        label = 36;
-        break L9;
-       }
-      } else if ((($19|0) == 240)) {
+      if ((($19|0) == 240)) {
        $$off = (($79) + 112)<<24>>24;
        $84 = ($$off&255)<(48);
        if (!($84)) {
         label = 34;
+        break L9;
+       }
+      } else if ((($19|0) == 244)) {
+       $87 = $79 & -16;
+       $88 = ($87<<24>>24)==(-128);
+       if (!($88)) {
+        label = 36;
         break L9;
        }
       } else {
@@ -91873,7 +91876,26 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
  $26 = HEAP32[$25>>2]|0;
  FUNCTION_TABLE_viiiii[$26 & 7]($6,$info,$4,1,0);
  $27 = HEAP32[$23>>2]|0;
- if ((($27|0) == 1)) {
+ if ((($27|0) == 0)) {
+  $28 = HEAP32[$15>>2]|0;
+  $29 = ($28|0)==(1);
+  if (!($29)) {
+   $dst_ptr$0 = 0;
+   STACKTOP = sp;return ($dst_ptr$0|0);
+  }
+  $30 = HEAP32[$13>>2]|0;
+  $31 = ($30|0)==(1);
+  if (!($31)) {
+   $dst_ptr$0 = 0;
+   STACKTOP = sp;return ($dst_ptr$0|0);
+  }
+  $32 = HEAP32[$14>>2]|0;
+  $33 = ($32|0)==(1);
+  $34 = HEAP32[$11>>2]|0;
+  $$1 = $33 ? $34 : 0;
+  $dst_ptr$0 = $$1;
+  STACKTOP = sp;return ($dst_ptr$0|0);
+ } else if ((($27|0) == 1)) {
   $35 = HEAP32[$12>>2]|0;
   $36 = ($35|0)==(1);
   do {
@@ -91902,25 +91924,6 @@ function ___dynamic_cast($static_ptr,$static_type,$dst_type,$src2dst_offset) {
   } while(0);
   $43 = HEAP32[$10>>2]|0;
   $dst_ptr$0 = $43;
-  STACKTOP = sp;return ($dst_ptr$0|0);
- } else if ((($27|0) == 0)) {
-  $28 = HEAP32[$15>>2]|0;
-  $29 = ($28|0)==(1);
-  if (!($29)) {
-   $dst_ptr$0 = 0;
-   STACKTOP = sp;return ($dst_ptr$0|0);
-  }
-  $30 = HEAP32[$13>>2]|0;
-  $31 = ($30|0)==(1);
-  if (!($31)) {
-   $dst_ptr$0 = 0;
-   STACKTOP = sp;return ($dst_ptr$0|0);
-  }
-  $32 = HEAP32[$14>>2]|0;
-  $33 = ($32|0)==(1);
-  $34 = HEAP32[$11>>2]|0;
-  $$1 = $33 ? $34 : 0;
-  $dst_ptr$0 = $$1;
   STACKTOP = sp;return ($dst_ptr$0|0);
  } else {
   $dst_ptr$0 = 0;
@@ -95796,7 +95799,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -95966,7 +95969,7 @@ function _free($mem) {
        $199 = HEAP32[((20744 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((20744 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((20744 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -95985,7 +95988,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);
@@ -97147,7 +97150,7 @@ function _dispose_chunk($p,$psize) {
    $130 = (($129) + ($$02))|0;
    $131 = $111 >>> 3;
    $132 = ($111>>>0)<(256);
-   L101: do {
+   L100: do {
     if ($132) {
      $$sum18 = (($psize) + 8)|0;
      $133 = (($p) + ($$sum18)|0);
@@ -97315,7 +97318,7 @@ function _dispose_chunk($p,$psize) {
        $190 = HEAP32[((20744 + 4|0))>>2]|0;
        $191 = $190 & $189;
        HEAP32[((20744 + 4|0))>>2] = $191;
-       break L101;
+       break L100;
       } else {
        $192 = HEAP32[((20744 + 16|0))>>2]|0;
        $193 = ($156>>>0)<($192>>>0);
@@ -97334,7 +97337,7 @@ function _dispose_chunk($p,$psize) {
        }
        $198 = ($R7$1|0)==(0|0);
        if ($198) {
-        break L101;
+        break L100;
        }
       }
      } while(0);
@@ -97780,9 +97783,9 @@ function ___floatscan($f,$prec,$pok) {
  $x$i = sp;
  if ((($prec|0) == 0)) {
   $bits$0$ph = 24;$emin$0$ph = -149;
- } else if ((($prec|0) == 1)) {
-  $bits$0$ph = 53;$emin$0$ph = -1074;
  } else if ((($prec|0) == 2)) {
+  $bits$0$ph = 53;$emin$0$ph = -1074;
+ } else if ((($prec|0) == 1)) {
   $bits$0$ph = 53;$emin$0$ph = -1074;
  } else {
   $$0 = 0.0;

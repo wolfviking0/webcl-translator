@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelgpu.data';
-    var REMOTE_PACKAGE_SIZE = 12318;
-    var PACKAGE_UUID = 'f8353433-3aa2-4afa-95e2-93365d8916bd';
+    var REMOTE_PACKAGE_SIZE = 12533;
+    var PACKAGE_UUID = 'a2afbaad-5359-42a8-a922-adb7211e7c56';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -116,7 +116,7 @@ function assert(check, msg) {
       },
     };
       new DataRequest(0, 0, 0, 0).open('GET', '/rendering_kernel_float4.cl');
-    new DataRequest(0, 12318, 0, 0).open('GET', '/rendering_kernel.cl');
+    new DataRequest(0, 12533, 0, 0).open('GET', '/rendering_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -11727,7 +11727,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));
@@ -17036,7 +17036,7 @@ function _malloc($bytes) {
           $746 = $743 & -8;
           $747 = $743 >>> 3;
           $748 = ($743>>>0)<(256);
-          L356: do {
+          L355: do {
            if ($748) {
             $$sum3738$i$i = $720 | 8;
             $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -17215,7 +17215,7 @@ function _malloc($bytes) {
               $810 = HEAP32[((2880 + 4|0))>>2]|0;
               $811 = $810 & $809;
               HEAP32[((2880 + 4|0))>>2] = $811;
-              break L356;
+              break L355;
              } else {
               $812 = HEAP32[((2880 + 16|0))>>2]|0;
               $813 = ($774>>>0)<($812>>>0);
@@ -17234,7 +17234,7 @@ function _malloc($bytes) {
               }
               $818 = ($R$1$i$i|0)==(0|0);
               if ($818) {
-               break L356;
+               break L355;
               }
              }
             } while(0);
@@ -17426,7 +17426,7 @@ function _malloc($bytes) {
          $902 = HEAP32[$901>>2]|0;
          $903 = $902 & -8;
          $904 = ($903|0)==($qsize$0$i$i|0);
-         L445: do {
+         L444: do {
           if ($904) {
            $T$0$lcssa$i28$i = $897;
           } else {
@@ -17447,7 +17447,7 @@ function _malloc($bytes) {
             $912 = ($911|0)==($qsize$0$i$i|0);
             if ($912) {
              $T$0$lcssa$i28$i = $909;
-             break L445;
+             break L444;
             } else {
              $T$051$i$i$phi = $909;$K8$052$i$i = $907;$T$051$i$i = $T$051$i$i$phi;
             }

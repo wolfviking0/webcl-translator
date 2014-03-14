@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../build/val_book_hello_world.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_book_hello_world.data';
-    var REMOTE_PACKAGE_SIZE = 9431;
-    var PACKAGE_UUID = 'deac1880-bac1-4c47-8584-39d49c2f1697';
+    var REMOTE_PACKAGE_SIZE = 9646;
+    var PACKAGE_UUID = '8b315b98-31fb-48f7-b5dc-348c15bf7c5d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 9431, 0, 0).open('GET', '/HelloWorld.cl');
+      new DataRequest(0, 9646, 0, 0).open('GET', '/HelloWorld.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -63400,18 +63400,18 @@ function __ZNSt3__1L13utf8_to_utf16EPKhS1_RS1_PtS3_RS3_mNS_12codecvt_modeE($frm,
        $50 = HEAP8[$49]|0;
        $51 = (($22) + 2|0);
        $52 = HEAP8[$51]|0;
-       if ((($23|0) == 237)) {
-        $55 = $50 & -32;
-        $56 = ($55<<24>>24)==(-128);
-        if (!($56)) {
+       if ((($23|0) == 224)) {
+        $53 = $50 & -32;
+        $54 = ($53<<24>>24)==(-96);
+        if (!($54)) {
          $$0 = 2;
          label = 41;
          break L10;
         }
-       } else if ((($23|0) == 224)) {
-        $53 = $50 & -32;
-        $54 = ($53<<24>>24)==(-96);
-        if (!($54)) {
+       } else if ((($23|0) == 237)) {
+        $55 = $50 & -32;
+        $56 = ($55<<24>>24)==(-128);
+        if (!($56)) {
          $$0 = 2;
          label = 41;
          break L10;
@@ -63473,18 +63473,18 @@ function __ZNSt3__1L13utf8_to_utf16EPKhS1_RS1_PtS3_RS3_mNS_12codecvt_modeE($frm,
       $80 = HEAP8[$79]|0;
       $81 = (($22) + 3|0);
       $82 = HEAP8[$81]|0;
-      if ((($23|0) == 240)) {
-       $$off = (($78) + 112)<<24>>24;
-       $83 = ($$off&255)<(48);
-       if (!($83)) {
+      if ((($23|0) == 244)) {
+       $84 = $78 & -16;
+       $85 = ($84<<24>>24)==(-128);
+       if (!($85)) {
         $$0 = 2;
         label = 41;
         break L10;
        }
-      } else if ((($23|0) == 244)) {
-       $84 = $78 & -16;
-       $85 = ($84<<24>>24)==(-128);
-       if (!($85)) {
+      } else if ((($23|0) == 240)) {
+       $$off = (($78) + 112)<<24>>24;
+       $83 = ($$off&255)<(48);
+       if (!($83)) {
         $$0 = 2;
         label = 41;
         break L10;
@@ -63743,18 +63743,18 @@ function __ZNSt3__1L20utf8_to_utf16_lengthEPKhS1_jmNS_12codecvt_modeE($frm,$frm_
        $44 = HEAP8[$43]|0;
        $45 = (($frm_nxt$115) + 2|0);
        $46 = HEAP8[$45]|0;
-       if ((($19|0) == 237)) {
-        $51 = $44 & -32;
-        $52 = ($51<<24>>24)==(-128);
-        if (!($52)) {
-         label = 23;
-         break L9;
-        }
-       } else if ((($19|0) == 224)) {
+       if ((($19|0) == 224)) {
         $47 = $44 & -32;
         $48 = ($47<<24>>24)==(-96);
         if (!($48)) {
          label = 21;
+         break L9;
+        }
+       } else if ((($19|0) == 237)) {
+        $51 = $44 & -32;
+        $52 = ($51<<24>>24)==(-128);
+        if (!($52)) {
+         label = 23;
          break L9;
         }
        } else {
@@ -64699,18 +64699,18 @@ function __ZNSt3__1L19utf8_to_ucs4_lengthEPKhS1_jmNS_12codecvt_modeE($frm,$frm_e
       $79 = HEAP8[$78]|0;
       $80 = (($frm_nxt$115) + 3|0);
       $81 = HEAP8[$80]|0;
-      if ((($19|0) == 244)) {
-       $85 = $77 & -16;
-       $86 = ($85<<24>>24)==(-128);
-       if (!($86)) {
-        label = 35;
-        break L9;
-       }
-      } else if ((($19|0) == 240)) {
+      if ((($19|0) == 240)) {
        $$off = (($77) + 112)<<24>>24;
        $82 = ($$off&255)<(48);
        if (!($82)) {
         label = 33;
+        break L9;
+       }
+      } else if ((($19|0) == 244)) {
+       $85 = $77 & -16;
+       $86 = ($85<<24>>24)==(-128);
+       if (!($86)) {
+        label = 35;
         break L9;
        }
       } else {
@@ -67331,12 +67331,12 @@ function _mbsnrtowcs($wcs,$src,$n,$wn,$st) {
      $$214 = $27;$$311 = $29;$21 = $26;$cnt$212 = $30;$ws$213 = $28;
     }
    }
-   if ((($22|0) == -1)) {
-    $cnt$3 = -1;
-    break;
-   } else if ((($22|0) == 0)) {
+   if ((($22|0) == 0)) {
     HEAP32[$s>>2] = 0;
     $cnt$3 = $cnt$212;
+    break;
+   } else if ((($22|0) == -1)) {
+    $cnt$3 = -1;
     break;
    } else {
     HEAP32[$st>>2] = 0;
@@ -72710,7 +72710,7 @@ function _free($mem) {
    $135 = (($134) + ($psize$0))|0;
    $136 = $114 >>> 3;
    $137 = ($114>>>0)<(256);
-   L112: do {
+   L113: do {
     if ($137) {
      $138 = (($mem) + ($8)|0);
      $139 = HEAP32[$138>>2]|0;
@@ -72880,7 +72880,7 @@ function _free($mem) {
        $199 = HEAP32[((14536 + 4|0))>>2]|0;
        $200 = $199 & $198;
        HEAP32[((14536 + 4|0))>>2] = $200;
-       break L112;
+       break L113;
       } else {
        $201 = HEAP32[((14536 + 16|0))>>2]|0;
        $202 = ($163>>>0)<($201>>>0);
@@ -72899,7 +72899,7 @@ function _free($mem) {
        }
        $207 = ($R7$1|0)==(0|0);
        if ($207) {
-        break L112;
+        break L113;
        }
       }
      } while(0);
@@ -73088,7 +73088,7 @@ function _free($mem) {
    $292 = HEAP32[$291>>2]|0;
    $293 = $292 & -8;
    $294 = ($293|0)==($psize$1|0);
-   L205: do {
+   L204: do {
     if ($294) {
      $T$0$lcssa = $287;
     } else {
@@ -73109,7 +73109,7 @@ function _free($mem) {
       $302 = ($301|0)==($psize$1|0);
       if ($302) {
        $T$0$lcssa = $299;
-       break L205;
+       break L204;
       } else {
        $T$056$phi = $299;$K19$057 = $297;$T$056 = $T$056$phi;
       }

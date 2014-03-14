@@ -100,6 +100,9 @@ typedef uint _WclInitType;
 #define _WCL_LOCAL_RANGE_INIT(begin, end)
 #else
 
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
 #define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
     __local uchar *start = (__local uchar *)begin;           \
     __local uchar *stop = (__local uchar *)end;              \
@@ -118,7 +121,7 @@ typedef uint _WclInitType;
         start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
     }                                                                   \
     for (size_t i = 0; i < items_per_kernel; i++) {                     \
-        start[items_offset+i] = _WCL_FILLCHAR;                          \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
     }                                                                   \
 } while (0)                                                             \
 

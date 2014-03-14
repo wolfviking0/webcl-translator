@@ -277,13 +277,13 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
-    uint _wcl_sum[3];
     uint4 _wcl_rank;
     uint4 _wcl_lsb;
     uint4 _wcl_r;
     uint4 _wcl_key;
     uint2 _wcl_radix2;
     __local uint *_wcl_sKeys1;
+    uint _wcl_sum[3];
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -363,6 +363,9 @@ typedef uint _WclInitType;
 #define _WCL_LOCAL_RANGE_INIT(begin, end)
 #else
 
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
 #define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
     __local uchar *start = (__local uchar *)begin;           \
     __local uchar *stop = (__local uchar *)end;              \
@@ -381,7 +384,7 @@ typedef uint _WclInitType;
         start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
     }                                                                   \
     for (size_t i = 0; i < items_per_kernel; i++) {                     \
-        start[items_offset+i] = _WCL_FILLCHAR;                          \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
     }                                                                   \
 } while (0)                                                             \
 
@@ -1192,6 +1195,9 @@ typedef uint _WclInitType;
 #define _WCL_LOCAL_RANGE_INIT(begin, end)
 #else
 
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
 #define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
     __local uchar *start = (__local uchar *)begin;           \
     __local uchar *stop = (__local uchar *)end;              \
@@ -1210,7 +1216,7 @@ typedef uint _WclInitType;
         start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
     }                                                                   \
     for (size_t i = 0; i < items_per_kernel; i++) {                     \
-        start[items_offset+i] = _WCL_FILLCHAR;                          \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
     }                                                                   \
 } while (0)                                                             \
 

@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_osx_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_reduce.data';
-    var REMOTE_PACKAGE_SIZE = 199065;
-    var PACKAGE_UUID = '9c889058-7d1a-47b6-9329-14dfb9b247ef';
+    var REMOTE_PACKAGE_SIZE = 200355;
+    var PACKAGE_UUID = '239cf044-bf83-4923-b30a-6a412662ba06';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,12 +115,12 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 20338, 0, 0).open('GET', '/reduce_float_kernel.cl');
-    new DataRequest(20338, 52940, 0, 0).open('GET', '/reduce_float2_kernel.cl');
-    new DataRequest(52940, 100941, 0, 0).open('GET', '/reduce_float4_kernel.cl');
-    new DataRequest(100941, 120862, 0, 0).open('GET', '/reduce_int_kernel.cl');
-    new DataRequest(120862, 152548, 0, 0).open('GET', '/reduce_int2_kernel.cl');
-    new DataRequest(152548, 199065, 0, 0).open('GET', '/reduce_int4_kernel.cl');
+      new DataRequest(0, 20553, 0, 0).open('GET', '/reduce_float_kernel.cl');
+    new DataRequest(20553, 53370, 0, 0).open('GET', '/reduce_float2_kernel.cl');
+    new DataRequest(53370, 101586, 0, 0).open('GET', '/reduce_float4_kernel.cl');
+    new DataRequest(101586, 121722, 0, 0).open('GET', '/reduce_int_kernel.cl');
+    new DataRequest(121722, 153623, 0, 0).open('GET', '/reduce_int2_kernel.cl');
+    new DataRequest(153623, 200355, 0, 0).open('GET', '/reduce_int4_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -6801,7 +6801,7 @@ function copyTempDouble(ptr) {
       try { 
   
           var _object = CL.cl_objects[device];
-  
+     
         switch (param_name) {
           case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
             _info = parseInt(CL.udid(_object));

@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_osx_transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_transpose.data';
-    var REMOTE_PACKAGE_SIZE = 33188;
-    var PACKAGE_UUID = '247ac8c9-b263-4f79-aaef-3383d99bc36a';
+    var REMOTE_PACKAGE_SIZE = 33403;
+    var PACKAGE_UUID = '55ee3227-e681-470e-97df-234010951e60';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 33188, 0, 0).open('GET', '/transpose_kernel.cl');
+      new DataRequest(0, 33403, 0, 0).open('GET', '/transpose_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
