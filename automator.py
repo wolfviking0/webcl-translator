@@ -409,7 +409,7 @@ def main():
                     help="use thread build", metavar="TREAD")
   
   parser.add_option("-f", "--fastcomp",
-                    action="store_true", dest="fastcomp", default=True,
+                    action="store_true", dest="fastcomp", default=False,
                     help="use fastcomp build", metavar="FAST")
 
   parser.add_option('-r', '--repo',
