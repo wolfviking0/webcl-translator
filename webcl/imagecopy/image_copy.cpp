@@ -57,10 +57,10 @@ int main(int argc, char** argv)
  
     cl_int err;
  
-    float input[IMG_SIZE * 3], output[IMG_SIZE * 3];
+    float input[IMG_SIZE * 4], output[IMG_SIZE * 4];
  
     // Create Input data
-    for(int i=0;i<3;i++){
+    for(int i=0;i<4;i++){
         for(int j = 0; j<IMG_SIZE; ++j){
  
             input[(i*IMG_SIZE)+j] = (float)(j+1);
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     //  Create Image data formate
     cl_image_format img_fmt;
  
-    img_fmt.image_channel_order = CL_RGB;
+    img_fmt.image_channel_order = CL_RGBA;
     img_fmt.image_channel_data_type = CL_FLOAT;
  
     // Step 6 : Create Image Memory Object
