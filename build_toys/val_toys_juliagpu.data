@@ -89,6 +89,8 @@ typedef struct _Wcl3Struct {
 } RenderingConfig;
 
 typedef struct {
+    float4 _wcl_r;
+    float4 _wcl_2_r;
     float _wcl_dist;
     float4 _wcl_z;
     float4 _wcl_zp;
@@ -104,8 +106,6 @@ typedef struct {
     float4 _wcl_color;
     float4 _wcl_shadowHitPoint;
     uint _wcl_2_steps;
-    float4 _wcl_r;
-    float4 _wcl_2_r;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
