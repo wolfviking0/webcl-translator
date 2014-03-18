@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclDXTCompression.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclDXTCompression.data';
     var REMOTE_PACKAGE_SIZE = 932003;
-    var PACKAGE_UUID = 'a732668b-0cb1-4af2-9dcd-27d21c3db63b';
+    var PACKAGE_UUID = '3e9798de-40f0-49a6-87fe-0644816fb3f5';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

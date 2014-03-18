@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//val_oclQuasirandomGenerator.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclQuasirandomGenerator.data';
-    var REMOTE_PACKAGE_SIZE = 16019;
-    var PACKAGE_UUID = '4cbd208f-4a42-44fb-b09f-a0db4f745763';
+    var REMOTE_PACKAGE_SIZE = 16013;
+    var PACKAGE_UUID = '3ad06f8c-3e45-420c-9c5e-86b75ed2e58c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 16019, 0, 0).open('GET', '/QuasirandomGenerator.cl');
+      new DataRequest(0, 16013, 0, 0).open('GET', '/QuasirandomGenerator.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

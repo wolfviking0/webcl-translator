@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//oclBoxFilter.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclBoxFilter.data';
-    var REMOTE_PACKAGE_SIZE = 3153293;
-    var PACKAGE_UUID = 'd16a048a-946d-4547-b3a9-6e489fbeda1f';
+    var REMOTE_PACKAGE_SIZE = 3153321;
+    var PACKAGE_UUID = '84cff7bc-f68d-4632-bb61-067d5fdd1fd5';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -116,8 +116,8 @@ Module['FS_createPath']('/', 'data', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 7525, 0, 0).open('GET', '/BoxFilter.cl');
-    new DataRequest(7525, 3153293, 0, 0).open('GET', '/data/lenaRGB.ppm');
+      new DataRequest(0, 7553, 0, 0).open('GET', '/BoxFilter.cl');
+    new DataRequest(7553, 3153321, 0, 0).open('GET', '/data/lenaRGB.ppm');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

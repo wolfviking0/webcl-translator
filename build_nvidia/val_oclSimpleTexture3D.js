@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclSimpleTexture3D.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclSimpleTexture3D.data';
     var REMOTE_PACKAGE_SIZE = 1867791;
-    var PACKAGE_UUID = '38870f22-8692-4356-b45d-ebb293d23847';
+    var PACKAGE_UUID = '9de2a6c3-762d-4634-a702-07b8bd89ebcb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

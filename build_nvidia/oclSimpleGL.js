@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclSimpleGL.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclSimpleGL.data';
     var REMOTE_PACKAGE_SIZE = 1304;
-    var PACKAGE_UUID = '7af7b6f1-7721-4641-ab07-0d41c1fc538c';
+    var PACKAGE_UUID = '641366ba-cae6-4829-91d4-f038c5105b4f';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -9,6 +9,9 @@
  *
  */
 
+ 
+#define MUL_24(x,y) x*y
+
 // Inline device function to convert 32-bit unsigned integer to floating point rgba color 
 //*****************************************************************
 float4 rgbaUintToFloat4(const unsigned int uiPackedRGBA)
@@ -52,8 +55,8 @@ __kernel void Transpose(__global const unsigned int* uiDataIn, __global unsigned
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // write the transposed matrix tile to global memory
-    xIndex = mul24(get_group_id(1), get_local_size(1)) + get_local_id(0);
-    yIndex = mul24(get_group_id(0), get_local_size(0)) + get_local_id(1);
+    xIndex = MUL_24(get_group_id(1), get_local_size(1)) + get_local_id(0);
+    yIndex = MUL_24(get_group_id(0), get_local_size(0)) + get_local_id(1);
     if((xIndex < iHeight) && (yIndex < iWidth))
     {
         uiDataOut[(yIndex * iHeight) + xIndex] = uiLocalBuff[get_local_id(0) * (get_local_size(1) + 1) + get_local_id(1)];
@@ -74,7 +77,7 @@ __kernel void SimpleRecursiveRGBA(__global const unsigned int* uiDataIn, __globa
                                   int iWidth, int iHeight, float a)
 {
     // compute X pixel location and check in-bounds
-    unsigned int X = mul24(get_group_id(0), get_local_size(0)) + get_local_id(0);
+    unsigned int X = MUL_24(get_group_id(0), get_local_size(0)) + get_local_id(0);
 	if (X >= iWidth) return;
     
     // advance global pointers to correct column for this work item and x position
@@ -129,7 +132,7 @@ __kernel void RecursiveGaussianRGBA(__global const unsigned int* uiDataIn, __glo
                                     float coefp, float coefn)
 {
     // compute X pixel location and check in-bounds
-    unsigned int X = mul24(get_group_id(0), get_local_size(0)) + get_local_id(0);
+    unsigned int X = MUL_24(get_group_id(0), get_local_size(0)) + get_local_id(0);
 	if (X >= iWidth) return;
 
     // advance global pointers to correct column for this work item and x position

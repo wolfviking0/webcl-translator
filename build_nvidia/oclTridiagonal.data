@@ -459,6 +459,8 @@ __kernel void pcr_branch_free_kernel(__global float *a_d, __global float *b_d, _
 
 #define NATIVE_DIVIDE
 
+#define MUL_24(x,y) x*y
+
 // system_size is defined during program building
 
 // solves a bunch of tridiagonal linear systems
@@ -752,18 +754,18 @@ __kernel void transpose(__global float *odata, __global float *idata, int width,
 	int threadIdxy = get_local_id(1);
 
 	// evaluate coordinates and check bounds
-	int i0 = mul24(blockIdxx, BLOCK_DIM) + threadIdxx;
-	int j0 = mul24(blockIdxy, BLOCK_DIM) + threadIdxy;
+	int i0 = MUL_24(blockIdxx, BLOCK_DIM) + threadIdxx;
+	int j0 = MUL_24(blockIdxy, BLOCK_DIM) + threadIdxy;
 	
 	if (i0 >= width || j0 >= height) return;
 
-	int i1 = mul24(blockIdxy, BLOCK_DIM) + threadIdxx;
-    int j1 = mul24(blockIdxx, BLOCK_DIM) + threadIdxy;
+	int i1 = MUL_24(blockIdxy, BLOCK_DIM) + threadIdxx;
+    int j1 = MUL_24(blockIdxx, BLOCK_DIM) + threadIdxy;
     
 	if (i1 >= height || j1 >= width) return;
 
-	int idx_a = i0 + mul24(j0, width);
-    int idx_b = i1 + mul24(j1, height);
+	int idx_a = i0 + MUL_24(j0, width);
+    int idx_b = i1 + MUL_24(j1, height);
 
 	// read the tile from global memory into shared memory
 	block[threadIdxy * (BLOCK_DIM+1) + threadIdxx] = idata[idx_a];

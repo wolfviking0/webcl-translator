@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclMatVecMul.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclMatVecMul.data';
     var REMOTE_PACKAGE_SIZE = 138874;
-    var PACKAGE_UUID = '3f48fdec-8b96-4f2d-8021-7cc417e50a9e';
+    var PACKAGE_UUID = 'db4af75f-c9ad-489e-81c4-933b55c07b40';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

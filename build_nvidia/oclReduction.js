@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclReduction.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclReduction.data';
     var REMOTE_PACKAGE_SIZE = 9589;
-    var PACKAGE_UUID = '402dc5c4-813b-4f76-b95d-18e7c21c249b';
+    var PACKAGE_UUID = '4c10ec87-a108-4dd6-af23-68f639100129';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

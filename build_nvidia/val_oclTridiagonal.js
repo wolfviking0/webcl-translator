@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclTridiagonal.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclTridiagonal.data';
     var REMOTE_PACKAGE_SIZE = 185848;
-    var PACKAGE_UUID = '431149c8-6b01-4de4-af13-efea348f4820';
+    var PACKAGE_UUID = '98a97da9-0050-4d23-bb02-d16eac8b1e41';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

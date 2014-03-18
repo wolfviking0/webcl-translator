@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//oclSobelFilter.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclSobelFilter.data';
-    var REMOTE_PACKAGE_SIZE = 3156850;
-    var PACKAGE_UUID = '4bf3bb58-5e7f-4817-bdfd-b397c5515235';
+    var REMOTE_PACKAGE_SIZE = 3156899;
+    var PACKAGE_UUID = '063c6639-4a61-4053-8b7b-0fe2169850ef';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -116,8 +116,8 @@ Module['FS_createPath']('/', 'data', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 11105, 0, 0).open('GET', '/SobelFilter.cl');
-    new DataRequest(11105, 3156850, 0, 0).open('GET', '/data/StoneRGB.ppm');
+      new DataRequest(0, 11154, 0, 0).open('GET', '/SobelFilter.cl');
+    new DataRequest(11154, 3156899, 0, 0).open('GET', '/data/StoneRGB.ppm');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

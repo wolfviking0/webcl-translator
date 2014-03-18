@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//oclTridiagonal.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclTridiagonal.data';
-    var REMOTE_PACKAGE_SIZE = 20905;
-    var PACKAGE_UUID = '455153bf-fe74-47e3-a8ed-404264b9b06b';
+    var REMOTE_PACKAGE_SIZE = 20938;
+    var PACKAGE_UUID = 'b7772a62-d128-4c55-87f1-97428b93579e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -117,7 +117,7 @@ function assert(check, msg) {
     };
       new DataRequest(0, 7228, 0, 0).open('GET', '/cyclic_kernels.cl');
     new DataRequest(7228, 12577, 0, 0).open('GET', '/pcr_kernels.cl');
-    new DataRequest(12577, 20905, 0, 0).open('GET', '/sweep_kernels.cl');
+    new DataRequest(12577, 20938, 0, 0).open('GET', '/sweep_kernels.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

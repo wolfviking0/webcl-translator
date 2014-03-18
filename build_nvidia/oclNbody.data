@@ -22,8 +22,6 @@
 
 #define MUL_24(x,y) x*y
 
-//#define MUL_24(x,y) mul24(x,y)
-
 // Macros to simplify shared memory addressing
 #define SX(i) sharedPos[i + MUL_24(get_local_size(0), get_local_id(1))]
 

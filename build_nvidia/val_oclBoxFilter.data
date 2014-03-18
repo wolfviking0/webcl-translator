@@ -158,6 +158,8 @@ __global unsigned int *_wcl_addr_clamp_global_2__u_uglobal__unsigned__int__Ptr(_
  *
  */
 
+
+
 // Inline device function to convert 32-bit unsigned integer to floating point rgba color 
 //*****************************************************************
 float4 rgbaUintToFloat4(_WclProgramAllocations *_wcl_allocs, unsigned int c)

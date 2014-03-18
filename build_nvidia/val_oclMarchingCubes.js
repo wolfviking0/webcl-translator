@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclMarchingCubes.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclMarchingCubes.data';
     var REMOTE_PACKAGE_SIZE = 32768;
-    var PACKAGE_UUID = '06a17f29-5259-4b6a-a977-3eb422ef5ff1';
+    var PACKAGE_UUID = '38d10dff-3047-4b94-8bf3-aba585902f31';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

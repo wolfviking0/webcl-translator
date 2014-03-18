@@ -9,6 +9,7 @@
  *
  */
 
+#define MUL_24(x,y) x*y
 #define QRNG_DIMENSIONS 3
 #define QRNG_RESOLUTION 31
 #define INT_SCALE (1.0f / (float)0x80000001U)
@@ -32,7 +33,7 @@ __kernel void QuasirandomGenerator(__global float *d_Output,
         for(int bit = 0; bit < QRNG_RESOLUTION; bit++, data >>= 1)
             if(data & 1) result ^= c_Table[bit+localID_y*QRNG_RESOLUTION];
 
-        d_Output[mul24(localID_y,N) + pos] = (float)(result + 1) * INT_SCALE;
+        d_Output[MUL_24(localID_y,N) + pos] = (float)(result + 1) * INT_SCALE;
     }
 }
 

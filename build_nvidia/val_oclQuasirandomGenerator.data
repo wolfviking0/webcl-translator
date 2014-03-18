@@ -198,6 +198,7 @@ __constant unsigned int *_wcl_addr_clamp_constant_1__u_uconstant__unsigned__int_
 
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Niederreiter quasirandom number generation kernel
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,7 +235,7 @@ __kernel void QuasirandomGenerator(__global float *d_Output, ulong _wcl_d_Output
         for(int bit = 0; bit < 31; bit++, data >>= 1)
             if(data & 1) result ^= (*(_wcl_addr_clamp_constant_1__u_uconstant__unsigned__int__Ptr((c_Table)+(bit+localID_y*31), 1, (__constant unsigned int *)_wcl_allocs->cl.QuasirandomGenerator__c_Table_min, (__constant unsigned int *)_wcl_allocs->cl.QuasirandomGenerator__c_Table_max, (__constant unsigned int *)_wcl_allocs->cn)));
 
-        (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((d_Output)+(mul24(localID_y,N) + pos), 1, (__global float *)_wcl_allocs->gl.QuasirandomGenerator__d_Output_min, (__global float *)_wcl_allocs->gl.QuasirandomGenerator__d_Output_max, (__global float *)_wcl_allocs->gl.InverseCND__d_Output_min, (__global float *)_wcl_allocs->gl.InverseCND__d_Output_max, (__global float *)_wcl_allocs->gn))) = (float)(result + 1) * (1.0f / (float)0x80000001U);
+        (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((d_Output)+(localID_y*N + pos), 1, (__global float *)_wcl_allocs->gl.QuasirandomGenerator__d_Output_min, (__global float *)_wcl_allocs->gl.QuasirandomGenerator__d_Output_max, (__global float *)_wcl_allocs->gl.InverseCND__d_Output_min, (__global float *)_wcl_allocs->gl.InverseCND__d_Output_max, (__global float *)_wcl_allocs->gn))) = (float)(result + 1) * (1.0f / (float)0x80000001U);
     }
 }
 

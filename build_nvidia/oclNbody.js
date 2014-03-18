@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//oclNbody.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclNbody.data';
-    var REMOTE_PACKAGE_SIZE = 12716;
-    var PACKAGE_UUID = 'e7df68dc-de9d-410e-adb4-6e57b267a28c';
+    var REMOTE_PACKAGE_SIZE = 12680;
+    var PACKAGE_UUID = '7d64f463-0c09-4741-8e55-3d503b46816d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 12716, 0, 0).open('GET', '/oclNbodyKernel.cl');
+      new DataRequest(0, 12680, 0, 0).open('GET', '/oclNbodyKernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

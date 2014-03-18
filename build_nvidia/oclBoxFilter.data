@@ -9,6 +9,8 @@
  *
  */
 
+#define MUL_24(x,y) x*y
+
 // Inline device function to convert 32-bit unsigned integer to floating point rgba color 
 //*****************************************************************
 float4 rgbaUintToFloat4(unsigned int c)
@@ -43,7 +45,7 @@ unsigned int rgbaFloat4ToUint(float4 rgba, float fScale)
     {
         // Row to process (note:  1 dimensional workgroup and ND range used for row kernel)
 	    size_t globalPosY = get_global_id(0);
-        size_t szBaseOffset = mul24(globalPosY, uiWidth);
+        size_t szBaseOffset = MUL_24(globalPosY, uiWidth);
 
         // Process the row as long as Y pos isn'f4Sum off the image
         if (globalPosY < uiHeight) 

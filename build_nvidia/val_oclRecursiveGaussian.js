@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../../../../build//val_oclRecursiveGaussian.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclRecursiveGaussian.data';
-    var REMOTE_PACKAGE_SIZE = 3145745;
-    var PACKAGE_UUID = 'f138fa06-e4a4-4d2b-9b88-132f0e999332';
+    var REMOTE_PACKAGE_SIZE = 3189704;
+    var PACKAGE_UUID = 'e467fd04-5418-4e16-bed2-15e3b9b732f8';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -116,8 +116,8 @@ Module['FS_createPath']('/', 'data', true, true);
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 0, 0, 0).open('GET', '/RecursiveGaussian.cl');
-    new DataRequest(0, 3145745, 0, 0).open('GET', '/data/StoneRGB.ppm');
+      new DataRequest(0, 43959, 0, 0).open('GET', '/RecursiveGaussian.cl');
+    new DataRequest(43959, 3189704, 0, 0).open('GET', '/data/StoneRGB.ppm');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
