@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = 'a9a72ddf-eecf-4e44-a669-da76ec998f7a';
+    var PACKAGE_UUID = '187d8752-7cb8-4ea3-b557-b85bb8aa8dce';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -153,8 +153,6 @@ function assert(check, msg) {
 
 })();
 
-// Note: Some Emscripten settings will significantly limit the speed of the generated code.
-// Note: Some Emscripten settings may limit the speed of the generated code.
 // The Module object: Our interface to the outside world. We import
 // and export values on it, and do the work to get that through
 // closure compiler if necessary. There are various ways Module can be used:
@@ -431,7 +429,6 @@ var Runtime = {
   STACK_ALIGN: 8,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
-    if (vararg) return 8;
     if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
@@ -541,23 +538,28 @@ var Runtime = {
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
       assert(args.length == sig.length-1);
-      return FUNCTION_TABLE[ptr].apply(null, args);
+      if (!args.splice) args = Array.prototype.slice.call(args);
+      args.splice(0, 0, ptr);
+      assert(('dynCall_' + sig) in Module, 'bad function pointer type - no table for sig \'' + sig + '\'');
+      return Module['dynCall_' + sig].apply(null, args);
     } else {
       assert(sig.length == 1);
-      return FUNCTION_TABLE[ptr]();
+      assert(('dynCall_' + sig) in Module, 'bad function pointer type - no table for sig \'' + sig + '\'');
+      return Module['dynCall_' + sig].call(null, ptr);
     }
   },
+  functionPointers: [],
   addFunction: function (func) {
-    var table = FUNCTION_TABLE;
-    var ret = table.length;
-    assert(ret % 2 === 0);
-    table.push(func);
-    for (var i = 0; i < 2-1; i++) table.push(0);
-    return ret;
+    for (var i = 0; i < Runtime.functionPointers.length; i++) {
+      if (!Runtime.functionPointers[i]) {
+        Runtime.functionPointers[i] = func;
+        return 2*(1 + i);
+      }
+    }
+    throw 'Finished up all reserved function pointers. Use a higher value for RESERVED_FUNCTION_POINTERS.';
   },
   removeFunction: function (index) {
-    var table = FUNCTION_TABLE;
-    table[index] = null;
+    Runtime.functionPointers[(index-2)/2] = null;
   },
   getAsmConst: function (code, numArgs) {
     // code is a constant string on the heap, so we can cache these
@@ -661,11 +663,11 @@ var Runtime = {
   getCompilerSetting: function (name) {
     throw 'You must build with -s RETAIN_COMPILER_SETTINGS=1 for Runtime.getCompilerSetting or emscripten_get_compiler_setting to work';
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((STACKTOP|0) < (STACK_MAX|0))|0); return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
   staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
   dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
   alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
-  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((low>>>0)+((high>>>0)*4294967296)) : ((low>>>0)+((high|0)*4294967296))); return ret; },
+  makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+((low>>>0)))+((+((high>>>0)))*4294967296.0)) : ((+((low>>>0)))+((+((high|0)))*4294967296.0))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
   __dummy__: 0
@@ -687,8 +689,6 @@ Module['Runtime'] = Runtime;
 //========================================
 
 var __THREW__ = 0; // Used in checking for thrown exceptions.
-var setjmpId = 1; // Used in setjmp/longjmp
-var setjmpLabels = {};
 
 var ABORT = false; // whether we are quitting the application. no code should run after this. set in exit() and abort()
 var EXITSTATUS = 0;
@@ -805,7 +805,7 @@ function setValue(ptr, value, type, noSafe) {
       case 'i8': HEAP8[(ptr)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
-      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,Math_abs(tempDouble) >= 1 ? (tempDouble > 0 ? Math_min(Math_floor((tempDouble)/4294967296), 4294967295)>>>0 : (~~(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
+      case 'i64': (tempI64 = [value>>>0,(tempDouble=value,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
       case 'float': HEAPF32[((ptr)>>2)]=value; break;
       case 'double': HEAPF64[((ptr)>>3)]=value; break;
       default: abort('invalid type for setValue: ' + type);
@@ -1222,6 +1222,18 @@ var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
+var totalMemory = 4096;
+while (totalMemory < TOTAL_MEMORY || totalMemory < 2*TOTAL_STACK) {
+  if (totalMemory < 16*1024*1024) {
+    totalMemory *= 2;
+  } else {
+    totalMemory += 16*1024*1024
+  }
+}
+if (totalMemory !== TOTAL_MEMORY) {
+  Module.printErr('increasing TOTAL_MEMORY to ' + totalMemory + ' to be more reasonable');
+  TOTAL_MEMORY = totalMemory;
+}
 
 // Initialize the runtime's memory
 // check for full engine support (use string 'subarray' to avoid closure compiler confusion)
@@ -1528,197 +1540,18 @@ var memoryInitializer = null;
 
 
 
+
+
 STATIC_BASE = 8;
 
-STATICTOP = STATIC_BASE + 3704;
+STATICTOP = STATIC_BASE + Runtime.alignMemory(3707);
+/* global initializers */ __ATINIT__.push();
 
 
-/* global initializers */ __ATINIT__.push({ func: function() { runPostSets() } });
+/* memory initializer */ allocate([99,112,117,0,0,0,0,0,103,112,117,0,0,0,0,0,105,110,116,101,114,111,112,0,0,0,0,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,71,80,85,0,0,0,0,0,67,80,85,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,83,104,117,116,116,105,110,103,32,100,111,119,110,46,46,46,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,160,65,0,0,0,0,83,99,97,108,101,32,61,32,37,46,51,102,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,67,0,0,0,67,66,105,97,115,32,61,32,40,37,46,51,102,44,32,37,46,51,102,41,10,0,0,0,0,0,0,0,0,0,0,0,0,37,115,10,0,0,0,0,0,224,1,0,0,248,1,0,0,16,2,0,0,40,2,0,0,83,99,97,108,101,32,61,32,37,102,10,0,0,0,0,0,0,0,128,63,0,0,0,0,65,109,112,108,105,116,117,100,101,32,61,32,37,102,10,0,51,51,83,64,0,0,0,0,79,99,116,97,118,101,115,32,61,32,37,102,10,0,0,0,174,71,1,64,0,0,0,0,76,97,99,117,110,97,114,105,116,121,32,61,32,37,102,10,0,0,0,0,0,0,0,0,0,0,128,63,0,0,0,0,73,110,99,114,101,109,101,110,116,32,61,32,37,102,10,0,71,114,97,100,105,101,110,116,78,111,105,115,101,65,114,114,97,121,50,100,0,0,0,0,77,111,110,111,70,114,97,99,116,97,108,65,114,114,97,121,50,100,0,0,0,0,0,0,84,117,114,98,117,108,101,110,99,101,65,114,114,97,121,50,100,0,0,0,0,0,0,0,82,105,100,103,101,100,77,117,108,116,105,70,114,97,99,116,97,108,65,114,114,97,121,50,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,32,37,100,32,102,114,111,109,32,82,101,99,111,109,112,117,116,101,33,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,244,1,0,0,0,0,0,0,91,37,115,93,32,67,111,109,112,117,116,101,58,32,37,51,46,50,102,32,109,115,32,32,68,105,115,112,108,97,121,58,32,37,51,46,50,102,32,102,112,115,32,40,37,115,41,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,97,116,116,97,99,104,101,100,0,0,0,0,0,0,0,0,99,111,112,121,105,110,103,0,20,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,63,205,204,76,62,154,153,25,63,205,204,76,63,0,0,128,63,225,13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,25,0,0,0,0,0,0,1,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,107,101,114,110,101,108,33,32,37,100,10,0,0,0,70,97,105,108,101,100,32,116,111,32,97,99,113,117,105,114,101,32,71,76,32,111,98,106,101,99,116,33,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,112,121,32,98,117,102,102,101,114,32,116,111,32,105,109,97,103,101,33,32,37,100,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,71,76,32,111,98,106,101,99,116,33,32,37,100,10,0,0,0,0,0,0,0,0,218,16,0,0,0,0,0,0,1,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,79,112,101,110,71,76,32,115,116,97,116,101,33,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,110,110,101,99,116,32,116,111,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,32,69,114,114,111,114,32,37,100,10,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,0,83,116,97,114,116,105,110,103,32,101,118,101,110,116,32,108,111,111,112,46,46,46,10,0,76,111,97,100,105,110,103,32,107,101,114,110,101,108,32,115,111,117,114,99,101,32,102,114,111,109,32,102,105,108,101,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,110,111,105,115,101,95,107,101,114,110,101,108,46,99,108,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,32,37,100,10,0,0,0,0,66,117,105,108,100,105,110,103,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,46,46,46,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,0,0,0,0,0,0,0,0,67,114,101,97,116,105,110,103,32,107,101,114,110,101,108,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,37,115,32,77,97,120,87,111,114,107,71,114,111,117,112,83,105,122,101,58,32,37,100,10,0,0,0,0,0,0,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,105,109,97,103,101,46,46,46,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,71,76,32,116,101,120,116,117,114,101,32,114,101,102,101,114,101,110,99,101,33,32,37,100,10,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,46,46,46,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,97,114,114,97,121,33,32,37,100,10,0,0,0,0,0,0,69,114,114,111,114,32,111,112,101,110,105,110,103,32,102,105,108,101,32,37,115,10,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,115,116,97,116,117,115,32,102,111,114,32,102,105,108,101,32,37,115,10,0,0,0,0,0,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,102,114,111,109,32,102,105,108,101,32,37,115,10,0,0,0,0,0,85,115,105,110,103,32,97,99,116,105,118,101,32,79,112,101,110,71,76,32,99,111,110,116,101,120,116,46,46,46,10,0,12,32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,113,117,101,117,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,193,132,0,0,0,0,0,0,8,25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* memory initializer */ allocate([66,105,97,115,32,61,32,40,37,46,51,102,44,32,37,46,51,102,41,10,0,0,0,0,83,99,97,108,101,32,61,32,37,46,51,102,10,0,0,0,83,104,117,116,116,105,110,103,32,100,111,119,110,46,46,46,10,0,0,0,0,0,0,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,113,117,101,117,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,115,32,102,111,114,32,99,111,110,116,101,120,116,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,0,0,67,80,85,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,10,0,0,0,0,0,85,115,105,110,103,32,97,99,116,105,118,101,32,79,112,101,110,71,76,32,99,111,110,116,101,120,116,46,46,46,10,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,102,114,111,109,32,102,105,108,101,32,37,115,10,0,0,0,0,0,69,114,114,111,114,32,114,101,97,100,105,110,103,32,115,116,97,116,117,115,32,102,111,114,32,102,105,108,101,32,37,115,10,0,0,0,0,0,0,0,69,114,114,111,114,32,111,112,101,110,105,110,103,32,102,105,108,101,32,37,115,10,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,97,114,114,97,121,33,32,37,100,10,0,0,0,0,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,46,46,46,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,71,76,32,116,101,120,116,117,114,101,32,114,101,102,101,114,101,110,99,101,33,32,37,100,10,0,0,65,108,108,111,99,97,116,105,110,103,32,99,111,109,112,117,116,101,32,114,101,115,117,108,116,32,105,109,97,103,101,46,46,46,10,0,0,0,0,0,37,115,32,77,97,120,87,111,114,107,71,114,111,117,112,83,105,122,101,58,32,37,100,10,0,0,0,0,0,0,0,0,71,80,85,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,105,110,102,111,33,32,37,100,10,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,67,114,101,97,116,105,110,103,32,107,101,114,110,101,108,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,66,117,105,108,100,105,110,103,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,46,46,46,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,32,37,100,10,0,0,0,0,110,111,105,115,101,95,107,101,114,110,101,108,46,99,108,0,76,111,97,100,105,110,103,32,107,101,114,110,101,108,32,115,111,117,114,99,101,32,102,114,111,109,32,102,105,108,101,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,83,116,97,114,116,105,110,103,32,101,118,101,110,116,32,108,111,111,112,46,46,46,10,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,32,69,114,114,111,114,32,37,100,10,0,0,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,110,110,101,99,116,32,116,111,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,32,69,114,114,111,114,32,37,100,10,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,117,112,32,79,112,101,110,71,76,32,115,116,97,116,101,33,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,71,76,32,111,98,106,101,99,116,33,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,111,112,121,32,98,117,102,102,101,114,32,116,111,32,105,109,97,103,101,33,32,37,100,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,97,99,113,117,105,114,101,32,71,76,32,111,98,106,101,99,116,33,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,107,101,114,110,101,108,33,32,37,100,10,0,0,0,99,111,112,121,105,110,103,0,97,116,116,97,99,104,101,100,0,0,0,0,0,0,0,0,91,37,115,93,32,67,111,109,112,117,116,101,58,32,37,51,46,50,102,32,109,115,32,32,68,105,115,112,108,97,121,58,32,37,51,46,50,102,32,102,112,115,32,40,37,115,41,10,0,0,0,0,0,0,0,0,69,114,114,111,114,32,37,100,32,102,114,111,109,32,82,101,99,111,109,112,117,116,101,33,10,0,0,0,0,0,0,0,105,110,116,101,114,111,112,0,82,105,100,103,101,100,77,117,108,116,105,70,114,97,99,116,97,108,65,114,114,97,121,50,100,0,0,0,0,0,0,0,84,117,114,98,117,108,101,110,99,101,65,114,114,97,121,50,100,0,0,0,0,0,0,0,77,111,110,111,70,114,97,99,116,97,108,65,114,114,97,121,50,100,0,0,0,0,0,0,71,114,97,100,105,101,110,116,78,111,105,115,101,65,114,114,97,121,50,100,0,0,0,0,73,110,99,114,101,109,101,110,116,32,61,32,37,102,10,0,76,97,99,117,110,97,114,105,116,121,32,61,32,37,102,10,0,0,0,0,0,0,0,0,79,99,116,97,118,101,115,32,61,32,37,102,10,0,0,0,65,109,112,108,105,116,117,100,101,32,61,32,37,102,10,0,83,99,97,108,101,32,61,32,37,102,10,0,0,0,0,0,37,115,10,0,0,0,0,0,103,112,117,0,0,0,0,0,99,112,117,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,20,0,0,0,0,0,0,225,13,0,0,0,0,0,0,8,25,0,0,0,0,0,0,8,25,0,0,0,0,0,0,20,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,63,12,32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,160,65,0,0,0,0,244,1,0,0,0,0,0,0,218,16,0,0,0,0,0,0,51,51,83,64,0,0,0,0,174,71,1,64,0,0,0,0,0,0,128,63,0,0,0,0,205,204,76,62,154,153,25,63,205,204,76,63,0,0,128,63,0,2,0,0,0,0,0,0,80,6,0,0,56,6,0,0,32,6,0,0,0,6,0,0,0,0,0,67,0,0,0,67,0,0,128,63,0,0,0,0,193,132,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
-function runPostSets() {
-
-
-}
 
 var tempDoublePtr = Runtime.alignMemory(allocate(12, "i8", ALLOC_STATIC), 8);
 
@@ -1757,32 +1590,474 @@ function copyTempDouble(ptr) {
 }
 
 
-  function _strstr(ptr1, ptr2) {
-      var check = 0, start;
-      do {
-        if (!check) {
-          start = ptr1;
-          check = ptr2;
+  
+  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
+        GL.createLog2ceilLookup(GL.MAX_TEMP_BUFFER_SIZE);
+        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+      },recordError:function recordError(errorCode) {
+        if (!GL.lastError) {
+          GL.lastError = errorCode;
         }
-        var curr1 = HEAP8[((ptr1++)|0)];
-        var curr2 = HEAP8[((check++)|0)];
-        if (curr2 == 0) return start;
-        if (curr2 != curr1) {
-          // rewind to one character after start, to find ez in eeez
-          ptr1 = start + 1;
-          check = 0;
+      },getNewId:function (table) {
+        var ret = GL.counter++;
+        for (var i = table.length; i < ret; i++) {
+          table[i] = null;
         }
-      } while (curr1);
-      return 0;
+        return ret;
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempVertexBuffers1:[],tempVertexBufferCounters1:[],tempVertexBuffers2:[],tempVertexBufferCounters2:[],numTempVertexBuffersPerSize:64,tempIndexBuffers:[],tempQuadIndexBuffer:null,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
+        GL.log2ceilLookup = new Uint8Array(maxValue+1);
+        var log2 = 0;
+        var pow2 = 1;
+        GL.log2ceilLookup[0] = 0;
+        for(var i = 1; i <= maxValue; ++i) {
+          if (i > pow2) {
+            pow2 <<= 1;
+            ++log2;
+          }
+          GL.log2ceilLookup[i] = log2;
+        }
+      },generateTempBuffers:function (quads) {
+        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
+        GL.tempVertexBufferCounters1.length = GL.tempVertexBufferCounters2.length = largestIndex+1;
+        GL.tempVertexBuffers1.length = GL.tempVertexBuffers2.length = largestIndex+1;
+        GL.tempIndexBuffers.length = largestIndex+1;
+        for(var i = 0; i <= largestIndex; ++i) {
+          GL.tempIndexBuffers[i] = null; // Created on-demand
+          GL.tempVertexBufferCounters1[i] = GL.tempVertexBufferCounters2[i] = 0;
+          var ringbufferLength = GL.numTempVertexBuffersPerSize;
+          GL.tempVertexBuffers1[i] = [];
+          GL.tempVertexBuffers2[i] = [];
+          var ringbuffer1 = GL.tempVertexBuffers1[i];
+          var ringbuffer2 = GL.tempVertexBuffers2[i];
+          ringbuffer1.length = ringbuffer2.length = ringbufferLength;
+          for(var j = 0; j < ringbufferLength; ++j) {
+            ringbuffer1[j] = ringbuffer2[j] = null; // Created on-demand
+          }
+        }
+  
+        if (quads) {
+          // GL_QUAD indexes can be precalculated
+          GL.tempQuadIndexBuffer = GLctx.createBuffer();
+          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
+          var quadIndexes = new Uint16Array(numIndexes);
+          var i = 0, v = 0;
+          while (1) {
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+1;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+2;
+            if (i >= numIndexes) break;
+            quadIndexes[i++] = v+3;
+            if (i >= numIndexes) break;
+            v += 4;
+          }
+          GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, GLctx.STATIC_DRAW);
+          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
+        }
+      },getTempVertexBuffer:function getTempVertexBuffer(sizeBytes) {
+        var idx = GL.log2ceilLookup[sizeBytes];
+        var ringbuffer = GL.tempVertexBuffers1[idx];
+        var nextFreeBufferIndex = GL.tempVertexBufferCounters1[idx];
+        GL.tempVertexBufferCounters1[idx] = (GL.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
+        var vbo = ringbuffer[nextFreeBufferIndex];
+        if (vbo) {
+          return vbo;
+        }
+        var prevVBO = GLctx.getParameter(GLctx.ARRAY_BUFFER_BINDING);
+        ringbuffer[nextFreeBufferIndex] = GLctx.createBuffer();
+        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, ringbuffer[nextFreeBufferIndex]);
+        GLctx.bufferData(GLctx.ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
+        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, prevVBO);
+        return ringbuffer[nextFreeBufferIndex];
+      },getTempIndexBuffer:function getTempIndexBuffer(sizeBytes) {
+        var idx = GL.log2ceilLookup[sizeBytes];
+        var ibo = GL.tempIndexBuffers[idx];
+        if (ibo) {
+          return ibo;
+        }
+        var prevIBO = GLctx.getParameter(GLctx.ELEMENT_ARRAY_BUFFER_BINDING);
+        GL.tempIndexBuffers[idx] = GLctx.createBuffer();
+        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[idx]);
+        GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
+        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, prevIBO);
+        return GL.tempIndexBuffers[idx];
+      },newRenderingFrameStarted:function newRenderingFrameStarted() {
+        var vb = GL.tempVertexBuffers1;
+        GL.tempVertexBuffers1 = GL.tempVertexBuffers2;
+        GL.tempVertexBuffers2 = vb;
+        vb = GL.tempVertexBufferCounters1;
+        GL.tempVertexBufferCounters1 = GL.tempVertexBufferCounters2;
+        GL.tempVertexBufferCounters2 = vb;
+        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
+        for(var i = 0; i <= largestIndex; ++i) {
+          GL.tempVertexBufferCounters1[i] = 0;
+        }
+      },findToken:function (source, token) {
+        function isIdentChar(ch) {
+          if (ch >= 48 && ch <= 57) // 0-9
+            return true;
+          if (ch >= 65 && ch <= 90) // A-Z
+            return true;
+          if (ch >= 97 && ch <= 122) // a-z
+            return true;
+          return false;
+        }
+        var i = -1;
+        do {
+          i = source.indexOf(token, i + 1);
+          if (i < 0) {
+            break;
+          }
+          if (i > 0 && isIdentChar(source[i - 1])) {
+            continue;
+          }
+          i += token.length;
+          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
+            continue;
+          }
+          return true;
+        } while (true);
+        return false;
+      },getSource:function (shader, count, string, length) {
+        var source = '';
+        for (var i = 0; i < count; ++i) {
+          var frag;
+          if (length) {
+            var len = HEAP32[(((length)+(i*4))>>2)];
+            if (len < 0) {
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
+            } else {
+              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)], len);
+            }
+          } else {
+            frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
+          }
+          source += frag;
+        }
+        // Let's see if we need to enable the standard derivatives extension
+        type = GLctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
+        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
+          if (GL.findToken(source, "dFdx") ||
+              GL.findToken(source, "dFdy") ||
+              GL.findToken(source, "fwidth")) {
+            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
+            var extension = GLctx.getExtension("OES_standard_derivatives");
+          }
+        }
+        return source;
+      },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        function roundedToNextMultipleOf(x, y) {
+          return Math.floor((x + y - 1) / y) * y
+        }
+        var plainRowSize = width * sizePerPixel;
+        var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
+        return (height <= 0) ? 0 :
+                 ((height - 1) * alignedRowSize + plainRowSize);
+      },get:function (name_, p, type) {
+        // Guard against user passing a null pointer.
+        // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
+        // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
+        // better to report an error instead of doing anything random.
+        if (!p) {
+          GL.recordError(0x0501 /* GL_INVALID_VALUE */);
+          return;
+        }
+        var ret = undefined;
+        switch(name_) { // Handle a few trivial GLES values
+          case 0x8DFA: // GL_SHADER_COMPILER
+            ret = 1;
+            break;
+          case 0x8DF8: // GL_SHADER_BINARY_FORMATS
+            if (type !== 'Integer') {
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+            }
+            return; // Do not write anything to the out pointer, since no binary formats are supported.
+          case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
+            ret = 0;
+            break;
+          case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
+            // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
+            // so implement it ourselves to allow C++ GLES2 code get the length.
+            var formats = GLctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
+            ret = formats.length;
+            break;
+          case 0x8B9A: // GL_IMPLEMENTATION_COLOR_READ_TYPE
+            ret = 0x1401; // GL_UNSIGNED_BYTE
+            break;
+          case 0x8B9B: // GL_IMPLEMENTATION_COLOR_READ_FORMAT
+            ret = 0x1908; // GL_RGBA
+            break;
+        }
+  
+        if (ret === undefined) {
+          var result = GLctx.getParameter(name_);
+          switch (typeof(result)) {
+            case "number":
+              ret = result;
+              break;
+            case "boolean":
+              ret = result ? 1 : 0;
+              break;
+            case "string":
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+            case "object":
+              if (result === null) {
+                // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
+                // can mean an invalid name_, which we need to report as an error
+                switch(name_) {
+                  case 0x8894: // ARRAY_BUFFER_BINDING
+                  case 0x8B8D: // CURRENT_PROGRAM
+                  case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
+                  case 0x8CA6: // FRAMEBUFFER_BINDING
+                  case 0x8CA7: // RENDERBUFFER_BINDING
+                  case 0x8069: // TEXTURE_BINDING_2D
+                  case 0x8514: { // TEXTURE_BINDING_CUBE_MAP
+                    ret = 0;
+                    break;
+                  }
+                  default: {
+                    GL.recordError(0x0500); // GL_INVALID_ENUM
+                    return;
+                  }
+                }
+              } else if (result instanceof Float32Array ||
+                         result instanceof Uint32Array ||
+                         result instanceof Int32Array ||
+                         result instanceof Array) {
+                for (var i = 0; i < result.length; ++i) {
+                  switch (type) {
+                    case 'Integer': HEAP32[(((p)+(i*4))>>2)]=result[i];   break;
+                    case 'Float':   HEAPF32[(((p)+(i*4))>>2)]=result[i]; break;
+                    case 'Boolean': HEAP8[(((p)+(i))|0)]=result[i] ? 1 : 0;    break;
+                    default: throw 'internal glGet error, bad type: ' + type;
+                  }
+                }
+                return;
+              } else if (result instanceof WebGLBuffer ||
+                         result instanceof WebGLProgram ||
+                         result instanceof WebGLFramebuffer ||
+                         result instanceof WebGLRenderbuffer ||
+                         result instanceof WebGLTexture) {
+                ret = result.name | 0;
+              } else {
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return;
+              }
+              break;
+            default:
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return;
+          }
+        }
+  
+        switch (type) {
+          case 'Integer': HEAP32[((p)>>2)]=ret;    break;
+          case 'Float':   HEAPF32[((p)>>2)]=ret;  break;
+          case 'Boolean': HEAP8[(p)]=ret ? 1 : 0; break;
+          default: throw 'internal glGet error, bad type: ' + type;
+        }
+      },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
+        var sizePerPixel;
+        switch (type) {
+          case 0x1401 /* GL_UNSIGNED_BYTE */:
+            switch (format) {
+              case 0x1906 /* GL_ALPHA */:
+              case 0x1909 /* GL_LUMINANCE */:
+                sizePerPixel = 1;
+                break;
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4;
+                break;
+              case 0x190A /* GL_LUMINANCE_ALPHA */:
+                sizePerPixel = 2;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x1403 /* GL_UNSIGNED_SHORT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 2;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x1405 /* GL_UNSIGNED_INT */:
+            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
+              sizePerPixel = 4;
+            } else {
+              throw 'Invalid format (' + format + ')';
+            }
+            break;
+          case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
+            sizePerPixel = 4;
+            break;
+          case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
+          case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
+          case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
+            sizePerPixel = 2;
+            break;
+          case 0x1406 /* GL_FLOAT */:
+            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
+            switch (format) {
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3*4;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4*4;
+                break;
+              default:
+                throw 'Invalid format (' + format + ')';
+            }
+            internalFormat = GLctx.RGBA;
+            break;
+          default:
+            throw 'Invalid type (' + type + ')';
+        }
+        var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
+        if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
+          pixels = HEAPU8.subarray((pixels),(pixels+bytes));
+        } else if (type == 0x1406 /* GL_FLOAT */) {
+          pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
+        } else if (type == 0x1405 /* GL_UNSIGNED_INT */ || type == 0x84FA /* UNSIGNED_INT_24_8_WEBGL */) {
+          pixels = HEAPU32.subarray((pixels)>>2,(pixels+bytes)>>2);
+        } else {
+          pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
+        }
+        return {
+          pixels: pixels,
+          internalFormat: internalFormat
+        }
+      },enabledClientAttribIndices:[],enableVertexAttribArray:function enableVertexAttribArray(index) {
+        if (!GL.enabledClientAttribIndices[index]) {
+          GL.enabledClientAttribIndices[index] = true;
+          GLctx.enableVertexAttribArray(index);
+        }
+      },disableVertexAttribArray:function disableVertexAttribArray(index) {
+        if (GL.enabledClientAttribIndices[index]) {
+          GL.enabledClientAttribIndices[index] = false;
+          GLctx.disableVertexAttribArray(index);
+        }
+      },initExtensions:function () {
+        if (GL.initExtensions.done) return;
+        GL.initExtensions.done = true;
+  
+        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
+  
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+        }
+  
+        GL.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
+  
+        // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
+        GL.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+                            GLctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
+                            GLctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
+  
+        GL.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
+                            GLctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+                            GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+  
+        GL.floatExt = GLctx.getExtension('OES_texture_float');
+  
+        // Extension available from Firefox 26 and Google Chrome 30
+        GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
+        
+        // Extension available from Firefox 25 and WebKit
+        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+  
+        // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
+        // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
+        // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
+        // here, as long as they don't produce a performance impact for users that might not be using those extensions.
+        // E.g. debugging-related extensions should probably be off by default.
+        var automaticallyEnabledExtensions = [ "OES_texture_float", "OES_texture_half_float", "OES_standard_derivatives",
+                                               "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_depth_texture",
+                                               "OES_element_index_uint", "EXT_texture_filter_anisotropic", "ANGLE_instanced_arrays",
+                                               "OES_texture_float_linear", "OES_texture_half_float_linear", "WEBGL_compressed_texture_atc",
+                                               "WEBGL_compressed_texture_pvrtc", "EXT_color_buffer_half_float", "WEBGL_color_buffer_float",
+                                               "EXT_frag_depth", "EXT_sRGB", "WEBGL_draw_buffers", "WEBGL_shared_resources",
+                                               "EXT_shader_texture_lod" ];
+  
+        function shouldEnableAutomatically(extension) {
+          for(var i in automaticallyEnabledExtensions) {
+            var include = automaticallyEnabledExtensions[i];
+            if (ext.indexOf(include) != -1) {
+              return true;
+            }
+          }
+          return false;
+        }
+  
+        var extensions = GLctx.getSupportedExtensions();
+        for(var e in extensions) {
+          var ext = extensions[e].replace('MOZ_', '').replace('WEBKIT_', '');
+          if (automaticallyEnabledExtensions.indexOf(ext) != -1) {
+            GLctx.getExtension(ext); // Calling .getExtension enables that extension permanently, no need to store the return value to be enabled.
+          }
+        }
+      },populateUniformTable:function (program) {
+        var p = GL.programs[program];
+        GL.programInfos[program] = {
+          uniforms: {},
+          maxUniformLength: 0, // This is eagerly computed below, since we already enumerate all uniforms anyway.
+          maxAttributeLength: -1 // This is lazily computed and cached, computed when/if first asked, "-1" meaning not computed yet.
+        };
+  
+        var ptable = GL.programInfos[program];
+        var utable = ptable.uniforms;
+        // A program's uniform table maps the string name of an uniform to an integer location of that uniform.
+        // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
+        var numUniforms = GLctx.getProgramParameter(p, GLctx.ACTIVE_UNIFORMS);
+        for (var i = 0; i < numUniforms; ++i) {
+          var u = GLctx.getActiveUniform(p, i);
+  
+          var name = u.name;
+          ptable.maxUniformLength = Math.max(ptable.maxUniformLength, name.length+1);
+  
+          // Strip off any trailing array specifier we might have got, e.g. "[0]".
+          if (name.indexOf(']', name.length-1) !== -1) {
+            var ls = name.lastIndexOf('[');
+            name = name.slice(0, ls);
+          }
+  
+          // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then 
+          // only store the string 'colors' in utable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
+          // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
+          var loc = GLctx.getUniformLocation(p, name);
+          var id = GL.getNewId(GL.uniforms);
+          utable[name] = [u.size, id];
+          GL.uniforms[id] = loc;
+  
+          for (var j = 1; j < u.size; ++j) {
+            var n = name + '['+j+']';
+            loc = GLctx.getUniformLocation(p, n);
+            id = GL.getNewId(GL.uniforms);
+  
+            GL.uniforms[id] = loc;
+          }
+        }
+      }};function _glTexCoord2f(u, v) {
+      assert(GLImmediate.mode >= 0); // must be in begin/end
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = u;
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = v;
+      GLImmediate.addRendererComponent(GLImmediate.TEXTURE0, 2, GLctx.FLOAT);
     }
 
-  
-  
-  
-  
-  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:42,EIDRM:43,ECHRNG:44,EL2NSYNC:45,EL3HLT:46,EL3RST:47,ELNRNG:48,EUNATCH:49,ENOCSI:50,EL2HLT:51,EDEADLK:35,ENOLCK:37,EBADE:52,EBADR:53,EXFULL:54,ENOANO:55,EBADRQC:56,EBADSLT:57,EDEADLOCK:35,EBFONT:59,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:72,EDOTDOT:73,EBADMSG:74,ENOTUNIQ:76,EBADFD:77,EREMCHG:78,ELIBACC:79,ELIBBAD:80,ELIBSCN:81,ELIBMAX:82,ELIBEXEC:83,ENOSYS:38,ENOTEMPTY:39,ENAMETOOLONG:36,ELOOP:40,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:97,EPROTOTYPE:91,ENOTSOCK:88,ENOPROTOOPT:92,ESHUTDOWN:108,ECONNREFUSED:111,EADDRINUSE:98,ECONNABORTED:103,ENETUNREACH:101,ENETDOWN:100,ETIMEDOUT:110,EHOSTDOWN:112,EHOSTUNREACH:113,EINPROGRESS:115,EALREADY:114,EDESTADDRREQ:89,EMSGSIZE:90,EPROTONOSUPPORT:93,ESOCKTNOSUPPORT:94,EADDRNOTAVAIL:99,ENETRESET:102,EISCONN:106,ENOTCONN:107,ETOOMANYREFS:109,EUSERS:87,EDQUOT:122,ESTALE:116,ENOTSUP:95,ENOMEDIUM:123,EILSEQ:84,EOVERFLOW:75,ECANCELED:125,ENOTRECOVERABLE:131,EOWNERDEAD:130,ESTRPIPE:86};
-  
-  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"File locking deadlock error",36:"File or path name too long",37:"No record locks available",38:"Function not implemented",39:"Directory not empty",40:"Too many symbolic links",42:"No message of desired type",43:"Identifier removed",44:"Channel number out of range",45:"Level 2 not synchronized",46:"Level 3 halted",47:"Level 3 reset",48:"Link number out of range",49:"Protocol driver not attached",50:"No CSI structure available",51:"Level 2 halted",52:"Invalid exchange",53:"Invalid request descriptor",54:"Exchange full",55:"No anode",56:"Invalid request code",57:"Invalid slot",59:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",72:"Multihop attempted",73:"Cross mount point (not really error)",74:"Trying to read unreadable message",75:"Value too large for defined data type",76:"Given log. name not unique",77:"f.d. invalid for this operation",78:"Remote address changed",79:"Can   access a needed shared lib",80:"Accessing a corrupted shared lib",81:".lib section in a.out corrupted",82:"Attempting to link in too many libs",83:"Attempting to exec a shared library",84:"Illegal byte sequence",86:"Streams pipe error",87:"Too many users",88:"Socket operation on non-socket",89:"Destination address required",90:"Message too long",91:"Protocol wrong type for socket",92:"Protocol not available",93:"Unknown protocol",94:"Socket type not supported",95:"Not supported",96:"Protocol family not supported",97:"Address family not supported by protocol family",98:"Address already in use",99:"Address not available",100:"Network interface is not configured",101:"Network is unreachable",102:"Connection reset by network",103:"Connection aborted",104:"Connection reset by peer",105:"No buffer space available",106:"Socket is already connected",107:"Socket is not connected",108:"Can't send after socket shutdown",109:"Too many references",110:"Connection timed out",111:"Connection refused",112:"Host is down",113:"Host is unreachable",114:"Socket already connected",115:"Connection already in progress",116:"Stale file handle",122:"Quota exceeded",123:"No medium (in tape drive)",125:"Operation canceled",130:"Previous owner died",131:"State not recoverable"};
+  function _glClearColor(x0, x1, x2, x3) { GLctx.clearColor(x0, x1, x2, x3) }
+
   
   
   var ___errno_state=0;function ___setErrNo(value) {
@@ -1791,123 +2066,1153 @@ function copyTempDouble(ptr) {
       return value;
     }
   
-  var PATH={splitPath:function (filename) {
-        var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-        return splitPathRe.exec(filename).slice(1);
-      },normalizeArray:function (parts, allowAboveRoot) {
-        // if the path tries to go above the root, `up` ends up > 0
-        var up = 0;
-        for (var i = parts.length - 1; i >= 0; i--) {
-          var last = parts[i];
-          if (last === '.') {
-            parts.splice(i, 1);
-          } else if (last === '..') {
-            parts.splice(i, 1);
-            up++;
-          } else if (up) {
-            parts.splice(i, 1);
-            up--;
+  var ERRNO_CODES={EPERM:1,ENOENT:2,ESRCH:3,EINTR:4,EIO:5,ENXIO:6,E2BIG:7,ENOEXEC:8,EBADF:9,ECHILD:10,EAGAIN:11,EWOULDBLOCK:11,ENOMEM:12,EACCES:13,EFAULT:14,ENOTBLK:15,EBUSY:16,EEXIST:17,EXDEV:18,ENODEV:19,ENOTDIR:20,EISDIR:21,EINVAL:22,ENFILE:23,EMFILE:24,ENOTTY:25,ETXTBSY:26,EFBIG:27,ENOSPC:28,ESPIPE:29,EROFS:30,EMLINK:31,EPIPE:32,EDOM:33,ERANGE:34,ENOMSG:42,EIDRM:43,ECHRNG:44,EL2NSYNC:45,EL3HLT:46,EL3RST:47,ELNRNG:48,EUNATCH:49,ENOCSI:50,EL2HLT:51,EDEADLK:35,ENOLCK:37,EBADE:52,EBADR:53,EXFULL:54,ENOANO:55,EBADRQC:56,EBADSLT:57,EDEADLOCK:35,EBFONT:59,ENOSTR:60,ENODATA:61,ETIME:62,ENOSR:63,ENONET:64,ENOPKG:65,EREMOTE:66,ENOLINK:67,EADV:68,ESRMNT:69,ECOMM:70,EPROTO:71,EMULTIHOP:72,EDOTDOT:73,EBADMSG:74,ENOTUNIQ:76,EBADFD:77,EREMCHG:78,ELIBACC:79,ELIBBAD:80,ELIBSCN:81,ELIBMAX:82,ELIBEXEC:83,ENOSYS:38,ENOTEMPTY:39,ENAMETOOLONG:36,ELOOP:40,EOPNOTSUPP:95,EPFNOSUPPORT:96,ECONNRESET:104,ENOBUFS:105,EAFNOSUPPORT:97,EPROTOTYPE:91,ENOTSOCK:88,ENOPROTOOPT:92,ESHUTDOWN:108,ECONNREFUSED:111,EADDRINUSE:98,ECONNABORTED:103,ENETUNREACH:101,ENETDOWN:100,ETIMEDOUT:110,EHOSTDOWN:112,EHOSTUNREACH:113,EINPROGRESS:115,EALREADY:114,EDESTADDRREQ:89,EMSGSIZE:90,EPROTONOSUPPORT:93,ESOCKTNOSUPPORT:94,EADDRNOTAVAIL:99,ENETRESET:102,EISCONN:106,ENOTCONN:107,ETOOMANYREFS:109,EUSERS:87,EDQUOT:122,ESTALE:116,ENOTSUP:95,ENOMEDIUM:123,EILSEQ:84,EOVERFLOW:75,ECANCELED:125,ENOTRECOVERABLE:131,EOWNERDEAD:130,ESTRPIPE:86};function _sysconf(name) {
+      // long sysconf(int name);
+      // http://pubs.opengroup.org/onlinepubs/009695399/functions/sysconf.html
+      switch(name) {
+        case 30: return PAGE_SIZE;
+        case 132:
+        case 133:
+        case 12:
+        case 137:
+        case 138:
+        case 15:
+        case 235:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 149:
+        case 13:
+        case 10:
+        case 236:
+        case 153:
+        case 9:
+        case 21:
+        case 22:
+        case 159:
+        case 154:
+        case 14:
+        case 77:
+        case 78:
+        case 139:
+        case 80:
+        case 81:
+        case 79:
+        case 82:
+        case 68:
+        case 67:
+        case 164:
+        case 11:
+        case 29:
+        case 47:
+        case 48:
+        case 95:
+        case 52:
+        case 51:
+        case 46:
+          return 200809;
+        case 27:
+        case 246:
+        case 127:
+        case 128:
+        case 23:
+        case 24:
+        case 160:
+        case 161:
+        case 181:
+        case 182:
+        case 242:
+        case 183:
+        case 184:
+        case 243:
+        case 244:
+        case 245:
+        case 165:
+        case 178:
+        case 179:
+        case 49:
+        case 50:
+        case 168:
+        case 169:
+        case 175:
+        case 170:
+        case 171:
+        case 172:
+        case 97:
+        case 76:
+        case 32:
+        case 173:
+        case 35:
+          return -1;
+        case 176:
+        case 177:
+        case 7:
+        case 155:
+        case 8:
+        case 157:
+        case 125:
+        case 126:
+        case 92:
+        case 93:
+        case 129:
+        case 130:
+        case 131:
+        case 94:
+        case 91:
+          return 1;
+        case 74:
+        case 60:
+        case 69:
+        case 70:
+        case 4:
+          return 1024;
+        case 31:
+        case 42:
+        case 72:
+          return 32;
+        case 87:
+        case 26:
+        case 33:
+          return 2147483647;
+        case 34:
+        case 1:
+          return 47839;
+        case 38:
+        case 36:
+          return 99;
+        case 43:
+        case 37:
+          return 2048;
+        case 0: return 2097152;
+        case 3: return 65536;
+        case 28: return 32768;
+        case 44: return 32767;
+        case 75: return 16384;
+        case 39: return 1000;
+        case 89: return 700;
+        case 71: return 256;
+        case 40: return 255;
+        case 2: return 100;
+        case 180: return 64;
+        case 25: return 20;
+        case 5: return 16;
+        case 6: return 6;
+        case 73: return 4;
+        case 84: return 1;
+      }
+      ___setErrNo(ERRNO_CODES.EINVAL);
+      return -1;
+    }
+
+  
+  var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},init:function () {
+        if (CL.cl_init == 0) {
+          console.log('%c WebCL-Translator V2.0 ! ', 'background: #222; color: #bada55');
+          var nodejs = (typeof window === 'undefined');
+          if(nodejs) {
+            webcl = require('../webcl');
+          }
+  
+          if (webcl == undefined) {
+            alert("Unfortunately your system does not support WebCL. " +
+            "Make sure that you have WebKit Samsung or Firefox Nokia plugin");
+  
+            console.error("Unfortunately your system does not support WebCL.\n");
+            console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
+          } else {
+  
+            // Add webcl constant for parser
+            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+            // Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });          
+            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
+            // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
+            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
+  
+            for (var i = 0; i < CL.cl_extensions.length; i ++) {
+  
+              if (webcl.enableExtension(CL.cl_extensions[i])) {
+                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
+              } else {
+                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
+              }
+            }
+            CL.cl_init = 1;
           }
         }
-        // if the path is allowed to go above the root, restore leading ..s
-        if (allowAboveRoot) {
-          for (; up--; up) {
-            parts.unshift('..');
+  
+        return CL.cl_init;
+      },udid:function (obj) {    
+        var _id;
+  
+        if (obj !== undefined) {
+  
+          if ( obj.hasOwnProperty('udid') ) {
+           _id = obj.udid;
+  
+           if (_id !== undefined) {
+             return _id;
+           }
           }
         }
-        return parts;
-      },normalize:function (path) {
-        var isAbsolute = path.charAt(0) === '/',
-            trailingSlash = path.substr(-1) === '/';
-        // Normalize the path
-        path = PATH.normalizeArray(path.split('/').filter(function(p) {
-          return !!p;
-        }), !isAbsolute).join('/');
-        if (!path && !isAbsolute) {
-          path = '.';
+  
+        var _uuid = [];
+  
+        _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
+        for (var i = 1; i < 6; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
+  
+        _id = _uuid.join('');
+  
+      
+        // /!\ Call udid when you add inside cl_objects if you pass object in parameter
+        if (obj !== undefined) {
+          Object.defineProperty(obj, "udid", { value : _id,writable : false });
+          CL.cl_objects[_id]=obj;
         }
-        if (path && trailingSlash) {
-          path += '/';
+  
+        return _id;      
+      },cast_long:function (arg_size) {
+        var _sizelong = [];
+        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
+        _sizelong.push((arg_size & 0xFFFFFFFF));
+        // var _origin = x << 32 | y;
+        return new Int32Array(_sizelong);
+      },stringType:function (pn_type) {
+        switch(pn_type) {
+          case webcl.SIGNED_INT8:
+            return 'INT8';
+          case webcl.SIGNED_INT16:
+            return 'INT16';
+          case webcl.SIGNED_INT32:
+            return 'INT32';
+          case webcl.UNSIGNED_INT8:
+            return 'UINT8';
+          case webcl.UNSIGNED_INT16:
+            return 'UINT16';
+          case webcl.UNSIGNED_INT32:
+            return 'UINT32';
+          case 0x1304 /*webcl.UNSIGNED_LONG*/:
+            return 'ULONG';
+          case 0x1303 /*webcl.SIGNED_LONG*/:
+            return 'LONG';       
+          case webcl.FLOAT:
+            return 'FLOAT';
+          case webcl.LOCAL:
+            return '__local';   
+          case 0x1300 /*webcl.SAMPLER*/:
+            return 'sampler_t';   
+          case 0x1301 /*webcl.IMAGE2D*/:
+            return 'image2d_t';        
+          case 0x1302 /*webcl.IMAGE3D*/:
+            return 'image3d_t';            
+          default:
+            if (typeof(pn_type) == "string") return 'struct';
+            return 'UNKNOWN';
         }
-        return (isAbsolute ? '/' : '') + path;
-      },dirname:function (path) {
-        var result = PATH.splitPath(path),
-            root = result[0],
-            dir = result[1];
-        if (!root && !dir) {
-          // No dirname whatsoever
-          return '.';
+      },parseType:function (string) {
+        var _value = -1;
+      
+        // First ulong for the webcl validator
+        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
+          // \todo : long ???? 
+          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;  
+        } else if ( string.indexOf("long") >= 0 ) {
+          _value = 0x1303 /*webcl.SIGNED_LONG*/;
+        } else if (string.indexOf("float") >= 0 ) {
+          _value = webcl.FLOAT;
+        } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT8;
+        } else if ( string.indexOf("char") >= 0 ) {
+          _value = webcl.SIGNED_INT8;
+        } else if ( (string.indexOf("ushort") >= 0 ) || (string.indexOf("unsigned short") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT16;
+        } else if ( string.indexOf("short") >= 0 ) {
+          _value = webcl.SIGNED_INT16;                     
+        } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
+          _value = webcl.UNSIGNED_INT32;          
+        } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
+          _value = webcl.SIGNED_INT32;
+        } else if ( string.indexOf("image3d_t") >= 0 ) {
+          _value = 0x1302 /*webcl.IMAGE3D*/;        
+        } else if ( string.indexOf("image2d_t") >= 0 ) {
+          _value = 0x1301 /*webcl.IMAGE2D*/;
+        } else if ( string.indexOf("sampler_t") >= 0 ) {
+          _value = 0x1300 /*webcl.SAMPLER*/;
         }
-        if (dir) {
-          // It has a dirname, strip trailing slash
-          dir = dir.substr(0, dir.length - 1);
-        }
-        return root + dir;
-      },basename:function (path) {
-        // EMSCRIPTEN return '/'' for '/', not an empty string
-        if (path === '/') return '/';
-        var lastSlash = path.lastIndexOf('/');
-        if (lastSlash === -1) return path;
-        return path.substr(lastSlash+1);
-      },extname:function (path) {
-        return PATH.splitPath(path)[3];
-      },join:function () {
-        var paths = Array.prototype.slice.call(arguments, 0);
-        return PATH.normalize(paths.join('/'));
-      },join2:function (l, r) {
-        return PATH.normalize(l + '/' + r);
-      },resolve:function () {
-        var resolvedPath = '',
-          resolvedAbsolute = false;
-        for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-          var path = (i >= 0) ? arguments[i] : FS.cwd();
-          // Skip empty and invalid entries
-          if (typeof path !== 'string') {
-            throw new TypeError('Arguments to path.resolve must be strings');
-          } else if (!path) {
-            continue;
+  
+        return _value;
+      },parseStruct:function (kernel_string,struct_name) {
+  
+        // Experimental parse of Struct
+        // Search kernel function like 'struct_name { }' or '{ } struct_name'
+        // --------------------------------------------------------------------------------
+        // Step 1 : Search pattern struct_name { }
+        // Step 2 : if no result : Search pattern { } struct_name
+        // Step 3 : if no result : return
+        // Step 4 : split by ; // Num of variable of the structure  : int toto; float tata;
+        // Step 5 : split by , // Num of variable for each type     : float toto,tata,titi;
+        // Step 6 : Search pattern [num] // Array Variable          : float toto[4];
+        // Step 7 : Search type of the line
+        // Step 8 : if exist add type else search other struct
+        // --------------------------------------------------------------------------------
+  
+        CL.cl_structs_sig[struct_name] = [];
+  
+        // First search if is #define
+        var _re_define = new RegExp("#[\ ]*define[\ ]*"+struct_name+"[\ ]*[A-Za-z0-9_\s]*");
+        var _define = kernel_string.match(_re_define);
+  
+        if (_define != null && _define.length == 1) {
+  
+          // Get type of the line
+          var _str = _define[0];
+          var _type = CL.parseType(_str);
+          
+          if (_type != -1) {
+            CL.cl_structs_sig[struct_name].push(_type);
+          } else {
+            var _lastSpace = _str.lastIndexOf(" ");
+            var _res = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
+  
+            CL.parseStruct(kernel_string,_res);
           }
-          resolvedPath = path + '/' + resolvedPath;
-          resolvedAbsolute = path.charAt(0) === '/';
+      
+          return;
         }
-        // At this point the path should be resolved to a full absolute path, but
-        // handle relative paths to be safe (might happen when process.cwd() fails)
-        resolvedPath = PATH.normalizeArray(resolvedPath.split('/').filter(function(p) {
-          return !!p;
-        }), !resolvedAbsolute).join('/');
-        return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-      },relative:function (from, to) {
-        from = PATH.resolve(from).substr(1);
-        to = PATH.resolve(to).substr(1);
-        function trim(arr) {
-          var start = 0;
-          for (; start < arr.length; start++) {
-            if (arr[start] !== '') break;
+  
+        // Second search if is typedef type name;
+        var _re_typedef = new RegExp("typedef[\ ]*[A-Za-z0-9_\s]*[\ ]*"+struct_name+"[\ ]*;");
+        var _typedef = kernel_string.match(_re_typedef);
+  
+        if (_typedef != null && _typedef.length == 1) {
+  
+          // Get type of the line
+          var _str = _typedef[0];
+          var _type = CL.parseType(_str);
+  
+          if (_type != -1) {
+            CL.cl_structs_sig[struct_name].push(_type);
+          } else {
+            _str = _str.replace(/^\s+|\s+$/g, ""); // trim
+            var _firstSpace = _str.indexOf(" ");
+            var _lastSpace = _str.lastIndexOf(" ");
+            var _res = _str.substr(_firstSpace + 1,_lastSpace - _firstSpace - 1);
+            
+            CL.parseStruct(kernel_string,_res);
           }
-          var end = arr.length - 1;
-          for (; end >= 0; end--) {
-            if (arr[end] !== '') break;
-          }
-          if (start > end) return [];
-          return arr.slice(start, end - start + 1);
+          
+          return;
         }
-        var fromParts = trim(from.split('/'));
-        var toParts = trim(to.split('/'));
-        var length = Math.min(fromParts.length, toParts.length);
-        var samePartsLength = length;
-        for (var i = 0; i < length; i++) {
-          if (fromParts[i] !== toParts[i]) {
-            samePartsLength = i;
+  
+        // search pattern : struct_name { } ;
+        var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
+  
+        // search pattern : { } struct_name;
+        var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
+  
+        var _res = kernel_string.match(_re_before);
+        var _contains_struct = "";
+        
+        if (_res != null && _res.length == 2) {
+          _contains_struct = _res[1];
+        } else {
+          _res = kernel_string.match(_re_after);
+          if (_res != null && _res.length == 2) {
+              _contains_struct = _res[1];
+          } else {
+            return;
+          }
+        }
+  
+        var _var = _contains_struct.split(";");
+        for (var i = 0; i < _var.length-1; i++ ) {
+          // Need for unsigned int width, height;
+          var _subvar = _var[i].split(","); 
+          
+          // Get type of the line
+          var _type = CL.parseType(_var[i]);
+        
+          // Need for float mu[4];
+          var _arrayNum = 0;
+          _res = _var[i].match(/[0-9]+/); 
+          if (_res != null) _arrayNum = _res;
+        
+          if ( _type != -1) {
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              CL.cl_structs_sig[struct_name].push(_type);
+            }
+          } else {
+            // Search name of the parameter
+            var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
+            var _name = "";
+            var _start = _struct.lastIndexOf(" "); 
+            for (var j = _start - 1; j >= 0 ; j--) {
+              var _chara = _struct.charAt(j);
+              if (_chara == ' ' && _name.length > 0) {
+                break;
+              } else if (_chara != ' ') {
+                _name = _chara + _name;
+              }
+            }
+            
+            // If struct is unknow search it
+            if (!(_name in CL.cl_structs_sig && CL.cl_structs_sig[_name].length > 0)) {
+              CL.parseStruct(kernel_string,_name);
+            }
+  
+            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
+              CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);  
+            }
+          }
+        }
+      },parseKernel:function (kernel_string) {
+  
+  
+        // Experimental parse of Kernel
+        // ----------------------------
+        //
+        // /!\ The minify kernel could be use by the program but some trouble with line
+        // /!\ containing macro #define, for the moment only use the minify kernel for 
+        // /!\ parsing __kernel and struct
+        //
+        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+        // --------------------------------------------------------------------------------
+        // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
+        // Step 2 : Search pattern __kernel ... ( ... )
+        // Step 3 : For each kernel
+        // Step 3 . 1 : Search Open Brace
+        // Step 3 . 2 : Search Kernel Name
+        // Step 3 . 3 : Search Kernel Parameter
+        // Step 3 . 4 : Grab { name : [ param, ... ] }
+        // --------------------------------------------------------------------------------
+  
+        // Remove all comments ...
+        var _mini_kernel_string  = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
+  , "");
+        
+        // Remove all char \n \r \t ...
+        _mini_kernel_string = _mini_kernel_string.replace(/\n/g, " ");
+        _mini_kernel_string = _mini_kernel_string.replace(/\r/g, " ");
+  
+        // Remove all the multispace
+        _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
+  
+        // Search pattern : __kernel ... ( ... )
+        // var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
+        // if (_matches == null) {
+        //   console.error("/!\\ Not found kernel !!!");
+        //   return;
+        // }
+  
+        // Search kernel (Pattern doesn't work with extra __attribute__)
+        var _matches = [];
+        var _found = 1;
+        var _stringKern = _mini_kernel_string;
+        var _security = 10;
+  
+        // Search all the kernel
+        while (_found && _security) {
+          // Just in case no more than 10 loop
+          _security --;
+  
+          var _pattern = "__kernel ";
+          var _kern = _stringKern.indexOf(_pattern);
+  
+          if (_kern == -1) {
+            _pattern = " kernel ";
+            _kern = _stringKern.indexOf(" kernel ");
+            if (_kern == -1) { 
+              _pattern = "kernel ";
+              _kern = _stringKern.indexOf("kernel ");
+              if (_kern == -1) {
+                _found = 0;
+                continue;
+              } else if (_kern != 0) {
+                console.error("/!\\ Find word 'kernel' but is not a real kernel  .. ("+_kern+")");
+                _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
+                continue;
+              }
+            }
+          }
+  
+          _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
+   
+          var _brace = _stringKern.indexOf("{");
+          var _stringKern2 = _stringKern.substr(0,_brace);
+          var _braceOpen = _stringKern2.lastIndexOf("(");
+          var _braceClose = _stringKern2.lastIndexOf(")");
+          var _stringKern3 = _stringKern2.substr(0,_braceOpen).replace(/^\s+|\s+$/g, ""); // trim
+          var _space = _stringKern3.lastIndexOf(" ");
+  
+          _stringKern2 = _stringKern2.substr(_space + 1,_braceClose);
+  
+          // Add the kernel result like name_kernel(..., ... ,...)
+          _matches.push(_stringKern2);
+        }
+  
+        // For each kernel ....
+        for (var i = 0; i < _matches.length; i ++) {
+          // Search the open Brace
+          var _brace = _matches[i].lastIndexOf("(");
+  
+          // Part before '('
+          var _first_part = _matches[i].substr(0,_brace);
+          _first_part = _first_part.replace(/^\s+|\s+$/g, ""); // trim
+  
+          // Part after ')'
+          var _second_part = _matches[i].substr(_brace+1,_matches[i].length-_brace-2);
+          _second_part = _second_part.replace(/^\s+|\s+$/g, ""); // trim
+  
+          // Search name part
+          var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
+  
+          // If name already present reparse it may be is another test with not the same num of parameter ....
+          if (_name in CL.cl_kernels_sig) {
+            delete CL.cl_kernels_sig[_name]
+          }
+  
+          // Search parameter part
+          var _param = [];
+  
+          var _array = _second_part.split(","); 
+          for (var j = 0; j < _array.length; j++) {
+            var _type = CL.parseType(_array[j]);
+  
+            if (_array[j].indexOf("__local") >= 0 ) {
+              _param.push(webcl.LOCAL);
+  
+  
+            } else if (_type == -1) {
+                         
+              _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
+              _array[j] = _array[j].replace("*", "");
+  
+              var _start = _array[j].lastIndexOf(" "); 
+              if (_start != -1) {
+                var _kernels_struct_name = "";
+                // Search Parameter type Name
+                for (var k = _start - 1; k >= 0 ; k--) {
+  
+                  var _chara = _array[j].charAt(k);
+                  if (_chara == ' ' && _kernels_struct_name.length > 0) {
+                    break;
+                  } else if (_chara != ' ') {
+                    _kernels_struct_name = _chara + _kernels_struct_name;
+                  }
+                }             
+  
+                // Parse struct only if is not already inside the map
+                if (!(_kernels_struct_name in CL.cl_structs_sig))
+                  CL.parseStruct(_mini_kernel_string, _kernels_struct_name);
+              
+                // Add the name of the struct inside the map of param kernel
+                _param.push(_kernels_struct_name);         
+  
+              } else {
+                _param.push(webcl.FLOAT);
+              }
+  
+  
+            } else {
+              _param.push(_type);
+  
+            }
+          }        
+  
+          CL.cl_kernels_sig[_name] = _param;
+  
+        }
+  
+        return _mini_kernel_string;
+  
+      },getImageSizeType:function (image) {
+        var _sizeType = 0;
+  
+        
+        var _info = CL.cl_objects[image].getInfo();
+  
+        switch (_info.channelType) {
+          case webcl.SNORM_INT8:
+          case webcl.SIGNED_INT8:
+          case webcl.UNORM_INT8:        
+          case webcl.UNSIGNED_INT8:
+            _sizeType = 1;
             break;
+          case webcl.SNORM_INT16:
+          case webcl.SIGNED_INT16:
+          case webcl.UNORM_INT16:        
+          case webcl.UNSIGNED_INT16:
+          case webcl.HALF_FLOAT:
+            _sizeType = 2;      
+            break;
+          case webcl.SIGNED_INT32:
+          case webcl.UNSIGNED_INT32:      
+          case webcl.FLOAT:
+            _sizeType = 4;
+            break;
+          default:
+            console.error("getImageSizeType : This channel type is not yet implemented => "+_info.channelType);
+        }
+  
+        return _sizeType;
+      },getImageFormatType:function (image) {
+        var _type = 0;
+  
+  
+        var _info = CL.cl_objects[image].getInfo();
+  
+        switch (_info.channelType) {
+          case webcl.SNORM_INT8:
+          case webcl.SIGNED_INT8:
+            _type = webcl.SIGNED_INT8;
+            break;
+          case webcl.UNORM_INT8:        
+          case webcl.UNSIGNED_INT8:
+            _type = webcl.UNSIGNED_INT8;
+            break;
+          case webcl.SNORM_INT16:
+          case webcl.SIGNED_INT16:
+            _type = webcl.SIGNED_INT16;
+            break;
+          case webcl.UNORM_INT16:        
+          case webcl.UNSIGNED_INT16:
+            _type = webcl.UNSIGNED_INT16;
+            break;
+          case webcl.SIGNED_INT32:
+            _type = webcl.SIGNED_INT32;
+          case webcl.UNSIGNED_INT32:
+            _type = webcl.UNSIGNED_INT32;
+            break;        
+          case webcl.FLOAT:
+            _type = webcl.FLOAT;
+            break;
+          default:
+            console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
+        }
+  
+        return _type;
+      },getImageSizeOrder:function (image) {
+        var _sizeOrder = 0;
+  
+  
+        var _info = CL.cl_objects[image].getInfo();
+  
+        switch (_info.channelOrder) {
+          case webcl.R:
+          case webcl.A:
+          case webcl.INTENSITY:
+          case webcl.LUMINANCE:
+            _sizeOrder = 1;
+            break;
+          case webcl.RG:
+          case webcl.RA:
+            _sizeOrder = 2;
+            break;
+          case webcl.RGB:
+            _sizeOrder = 3;
+            break; 
+          case webcl.RGBA:
+          case webcl.BGRA:
+          case webcl.ARGB:      
+            _sizeOrder = 4;
+            break;        
+          default:
+            console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
+        }
+  
+        return _sizeOrder;
+      },getHostPtrArray:function (size,type) { 
+  
+        var _host_ptr = null;
+  
+        if (type.length == 0) {
+        }
+  
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = new Int8Array( size );
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = new Int16Array( size >> 1 );
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = new Int32Array( size >> 2 );
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = new Uint8Array( size );
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = new Uint16Array( size >> 1 );
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = new Uint32Array( size >> 2 );
+              break;         
+            default:
+              _host_ptr = new Float32Array( size >> 2 );
+              break;
+          }
+        } else {
+          _host_ptr = new Float32Array( size >> 2 );
+        }
+  
+        return _host_ptr;
+      },getCopyPointerToArray:function (ptr,size,type) { 
+  
+        var _host_ptr = null;
+  
+        if (type.length == 0) {
+        }
+  
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = new Uint8Array( HEAPU8.subarray((ptr),(ptr+size)) );
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = new Uint16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = new Uint32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
+              break;         
+            default:
+              _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
+              break;
+          }
+        } else {
+          _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
+          
+          // console.info("------");
+          // _host_ptr = new DataView(new ArrayBuffer(size));
+  
+          // var _offset = 0;
+          // for (var i = 0; i < type.length; i++) {
+          //   var _type = type[i][0];
+          //   var _num = type[i][1];
+          //   switch(_type) {
+          //     case webcl.SIGNED_INT8:
+          //       _host_ptr.setInt8(_offset,new Int8Array( HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
+          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.SIGNED_INT16:
+          //       _host_ptr.setInt16(_offset,new Int16Array( HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
+          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.SIGNED_INT32:
+          //       _host_ptr.setInt32(_offset,new Int32Array( HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT8:
+          //       _host_ptr.setUint8(_offset,new Uint8Array( HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
+          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.UNSIGNED_INT16:
+          //       host_ptr.setUint16(_offset,new Uint16Array( HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
+          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT32:
+          //       _host_ptr.setUint32(_offset,new Uint32Array( HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;         
+          //     default:
+          //       _host_ptr.setFloat32(_offset,new Float32Array( HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
+          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //   }
+          // }
+        }
+  
+        return _host_ptr;
+      },getReferencePointerToArray:function (ptr,size,type) {  
+        var _host_ptr = null;
+  
+        if (type.length == 0) {
+        }
+  
+        if (type.length == 1) {
+          switch(type[0][0]) {
+            case webcl.SIGNED_INT8:
+              _host_ptr = HEAP8.subarray((ptr),(ptr+size));
+              break;
+            case webcl.SIGNED_INT16:
+              _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1);
+              break;
+            case webcl.SIGNED_INT32:
+              _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2);
+              break;
+            case webcl.UNSIGNED_INT8:
+              _host_ptr = HEAPU8.subarray((ptr),(ptr+size));
+              break;
+            case webcl.UNSIGNED_INT16:
+              _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1);
+              break;
+            case webcl.UNSIGNED_INT32:
+              _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2);
+              break;         
+            default:
+              _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
+              break;
+          }
+        } else {
+          _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
+          
+          // console.info("------");
+          // _host_ptr = new DataView(new ArrayBuffer(size));
+  
+          // var _offset = 0;
+          // for (var i = 0; i < type.length; i++) {
+          //   var _type = type[i][0];
+          //   var _num = type[i][1];
+          //   switch(_type) {
+          //     case webcl.SIGNED_INT8:
+          //       _host_ptr.setInt8(_offset,HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) );
+          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.SIGNED_INT16:
+          //       _host_ptr.setInt16(_offset,HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
+          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.SIGNED_INT32:
+          //       _host_ptr.setInt32(_offset,HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT8:
+          //       _host_ptr.setUint8(_offset,HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) );
+          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
+          //       _offset += _num;
+          //       break;
+          //     case webcl.UNSIGNED_INT16:
+          //       host_ptr.setUint16(_offset,HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
+          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
+          //       _offset += 2*_num;
+          //       break;
+          //     case webcl.UNSIGNED_INT32:
+          //       _host_ptr.setUint32(_offset,HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;         
+          //     default:
+          //       _host_ptr.setFloat32(_offset,HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
+          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
+          //       _offset += 4*_num;
+          //       break;
+          //   }
+          // }
+        }
+  
+        return _host_ptr;
+      },catchError:function (e) {
+        console.error(e);
+        var _error = -1;
+  
+        if (e instanceof WebCLException) {
+          var _str=e.message;
+          var _n=_str.lastIndexOf(" ");
+          _error = _str.substr(_n+1,_str.length-_n-1);
+        }
+        
+        return _error;
+      }};function _clReleaseKernel(kernel) {
+  
+      // If is an object retain don't release it until retains > 0...
+      if (kernel in CL.cl_objects_retains) {
+  
+        var _retain = CL.cl_objects_retains[kernel] - 1;
+  
+        CL.cl_objects_retains[kernel] = _retain;
+  
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
+      }
+  
+  
+      try {
+  
+        CL.cl_objects[kernel].release();
+          
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+      delete CL.cl_objects[kernel];
+  
+  
+      return webcl.SUCCESS;
+    }
+
+  
+  var GLUT={initTime:null,idleFunc:null,displayFunc:null,keyboardFunc:null,keyboardUpFunc:null,specialFunc:null,specialUpFunc:null,reshapeFunc:null,motionFunc:null,passiveMotionFunc:null,mouseFunc:null,buttons:0,modifiers:0,initWindowWidth:256,initWindowHeight:256,initDisplayMode:18,windowX:0,windowY:0,windowWidth:0,windowHeight:0,requestedAnimationFrame:false,saveModifiers:function (event) {
+        GLUT.modifiers = 0;
+        if (event['shiftKey'])
+          GLUT.modifiers += 1; /* GLUT_ACTIVE_SHIFT */
+        if (event['ctrlKey'])
+          GLUT.modifiers += 2; /* GLUT_ACTIVE_CTRL */
+        if (event['altKey'])
+          GLUT.modifiers += 4; /* GLUT_ACTIVE_ALT */
+      },onMousemove:function (event) {
+        /* Send motion event only if the motion changed, prevents
+         * spamming our app with uncessary callback call. It does happen in
+         * Chrome on Windows.
+         */
+        var lastX = Browser.mouseX;
+        var lastY = Browser.mouseY;
+        Browser.calculateMouseEvent(event);
+        var newX = Browser.mouseX;
+        var newY = Browser.mouseY;
+        if (newX == lastX && newY == lastY) return;
+  
+        if (GLUT.buttons == 0 && event.target == Module["canvas"] && GLUT.passiveMotionFunc) {
+          event.preventDefault();
+          GLUT.saveModifiers(event);
+          Runtime.dynCall('vii', GLUT.passiveMotionFunc, [lastX, lastY]);
+        } else if (GLUT.buttons != 0 && GLUT.motionFunc) {
+          event.preventDefault();
+          GLUT.saveModifiers(event);
+          Runtime.dynCall('vii', GLUT.motionFunc, [lastX, lastY]);
+        }
+      },getSpecialKey:function (keycode) {
+          var key = null;
+          switch (keycode) {
+            case 8:  key = 120 /* backspace */; break;
+            case 46: key = 111 /* delete */; break;
+  
+            case 0x70 /*DOM_VK_F1*/: key = 1 /* GLUT_KEY_F1 */; break;
+            case 0x71 /*DOM_VK_F2*/: key = 2 /* GLUT_KEY_F2 */; break;
+            case 0x72 /*DOM_VK_F3*/: key = 3 /* GLUT_KEY_F3 */; break;
+            case 0x73 /*DOM_VK_F4*/: key = 4 /* GLUT_KEY_F4 */; break;
+            case 0x74 /*DOM_VK_F5*/: key = 5 /* GLUT_KEY_F5 */; break;
+            case 0x75 /*DOM_VK_F6*/: key = 6 /* GLUT_KEY_F6 */; break;
+            case 0x76 /*DOM_VK_F7*/: key = 7 /* GLUT_KEY_F7 */; break;
+            case 0x77 /*DOM_VK_F8*/: key = 8 /* GLUT_KEY_F8 */; break;
+            case 0x78 /*DOM_VK_F9*/: key = 9 /* GLUT_KEY_F9 */; break;
+            case 0x79 /*DOM_VK_F10*/: key = 10 /* GLUT_KEY_F10 */; break;
+            case 0x7a /*DOM_VK_F11*/: key = 11 /* GLUT_KEY_F11 */; break;
+            case 0x7b /*DOM_VK_F12*/: key = 12 /* GLUT_KEY_F12 */; break;
+            case 0x25 /*DOM_VK_LEFT*/: key = 100 /* GLUT_KEY_LEFT */; break;
+            case 0x26 /*DOM_VK_UP*/: key = 101 /* GLUT_KEY_UP */; break;
+            case 0x27 /*DOM_VK_RIGHT*/: key = 102 /* GLUT_KEY_RIGHT */; break;
+            case 0x28 /*DOM_VK_DOWN*/: key = 103 /* GLUT_KEY_DOWN */; break;
+            case 0x21 /*DOM_VK_PAGE_UP*/: key = 104 /* GLUT_KEY_PAGE_UP */; break;
+            case 0x22 /*DOM_VK_PAGE_DOWN*/: key = 105 /* GLUT_KEY_PAGE_DOWN */; break;
+            case 0x24 /*DOM_VK_HOME*/: key = 106 /* GLUT_KEY_HOME */; break;
+            case 0x23 /*DOM_VK_END*/: key = 107 /* GLUT_KEY_END */; break;
+            case 0x2d /*DOM_VK_INSERT*/: key = 108 /* GLUT_KEY_INSERT */; break;
+  
+            case 16   /*DOM_VK_SHIFT*/:
+            case 0x05 /*DOM_VK_LEFT_SHIFT*/:
+              key = 112 /* GLUT_KEY_SHIFT_L */;
+              break;
+            case 0x06 /*DOM_VK_RIGHT_SHIFT*/:
+              key = 113 /* GLUT_KEY_SHIFT_R */;
+              break;
+  
+            case 17   /*DOM_VK_CONTROL*/:
+            case 0x03 /*DOM_VK_LEFT_CONTROL*/:
+              key = 114 /* GLUT_KEY_CONTROL_L */;
+              break;
+            case 0x04 /*DOM_VK_RIGHT_CONTROL*/:
+              key = 115 /* GLUT_KEY_CONTROL_R */;
+              break;
+  
+            case 18   /*DOM_VK_ALT*/:
+            case 0x02 /*DOM_VK_LEFT_ALT*/:
+              key = 116 /* GLUT_KEY_ALT_L */;
+              break;
+            case 0x01 /*DOM_VK_RIGHT_ALT*/:
+              key = 117 /* GLUT_KEY_ALT_R */;
+              break;
+          };
+          return key;
+      },getASCIIKey:function (event) {
+        if (event['ctrlKey'] || event['altKey'] || event['metaKey']) return null;
+  
+        var keycode = event['keyCode'];
+  
+        /* The exact list is soooo hard to find in a canonical place! */
+  
+        if (48 <= keycode && keycode <= 57)
+          return keycode; // numeric  TODO handle shift?
+        if (65 <= keycode && keycode <= 90)
+          return event['shiftKey'] ? keycode : keycode + 32;
+        if (96 <= keycode && keycode <= 105)
+          return keycode - 48; // numpad numbers    
+        if (106 <= keycode && keycode <= 111)
+          return keycode - 106 + 42; // *,+-./  TODO handle shift?
+  
+        switch (keycode) {
+          case 9:  // tab key
+          case 13: // return key
+          case 27: // escape
+          case 32: // space
+          case 61: // equal
+            return keycode;
+        }
+  
+        var s = event['shiftKey'];
+        switch (keycode) {
+          case 186: return s ? 58 : 59; // colon / semi-colon
+          case 187: return s ? 43 : 61; // add / equal (these two may be wrong)
+          case 188: return s ? 60 : 44; // less-than / comma
+          case 189: return s ? 95 : 45; // dash
+          case 190: return s ? 62 : 46; // greater-than / period
+          case 191: return s ? 63 : 47; // forward slash
+          case 219: return s ? 123 : 91; // open bracket
+          case 220: return s ? 124 : 47; // back slash
+          case 221: return s ? 125 : 93; // close braket
+          case 222: return s ? 34 : 39; // single quote
+        }
+  
+        return null;
+      },onKeydown:function (event) {
+        if (GLUT.specialFunc || GLUT.keyboardFunc) {
+          var key = GLUT.getSpecialKey(event['keyCode']);
+          if (key !== null) {
+            if( GLUT.specialFunc ) {
+              event.preventDefault();
+              GLUT.saveModifiers(event);
+              Runtime.dynCall('viii', GLUT.specialFunc, [key, Browser.mouseX, Browser.mouseY]);
+            }
+          }
+          else
+          {
+            key = GLUT.getASCIIKey(event);
+            if( key !== null && GLUT.keyboardFunc ) {
+              event.preventDefault();
+              GLUT.saveModifiers(event);
+              Runtime.dynCall('viii', GLUT.keyboardFunc, [key, Browser.mouseX, Browser.mouseY]);
+            }
           }
         }
-        var outputParts = [];
-        for (var i = samePartsLength; i < fromParts.length; i++) {
-          outputParts.push('..');
+      },onKeyup:function (event) {
+        if (GLUT.specialUpFunc || GLUT.keyboardUpFunc) {
+          var key = GLUT.getSpecialKey(event['keyCode']);
+          if (key !== null) {
+            if(GLUT.specialUpFunc) {
+              event.preventDefault ();
+              GLUT.saveModifiers(event);
+              Runtime.dynCall('viii', GLUT.specialUpFunc, [key, Browser.mouseX, Browser.mouseY]);
+            }
+          }
+          else
+          {
+            key = GLUT.getASCIIKey(event);
+            if( key !== null && GLUT.keyboardUpFunc ) {
+              event.preventDefault ();
+              GLUT.saveModifiers(event);
+              Runtime.dynCall('viii', GLUT.keyboardUpFunc, [key, Browser.mouseX, Browser.mouseY]);
+            }
+          }
         }
-        outputParts = outputParts.concat(toParts.slice(samePartsLength));
-        return outputParts.join('/');
-      }};
+      },onMouseButtonDown:function (event) {
+        Browser.calculateMouseEvent(event);
+  
+        GLUT.buttons |= (1 << event['button']);
+  
+        if (event.target == Module["canvas"] && GLUT.mouseFunc) {
+          try {
+            event.target.setCapture();
+          } catch (e) {}
+          event.preventDefault();
+          GLUT.saveModifiers(event);
+          Runtime.dynCall('viiii', GLUT.mouseFunc, [event['button'], 0/*GLUT_DOWN*/, Browser.mouseX, Browser.mouseY]);
+        }
+      },onMouseButtonUp:function (event) {
+        Browser.calculateMouseEvent(event);
+  
+        GLUT.buttons &= ~(1 << event['button']);
+  
+        if (GLUT.mouseFunc) {
+          event.preventDefault();
+          GLUT.saveModifiers(event);
+          Runtime.dynCall('viiii', GLUT.mouseFunc, [event['button'], 1/*GLUT_UP*/, Browser.mouseX, Browser.mouseY]);
+        }
+      },onMouseWheel:function (event) {
+        Browser.calculateMouseEvent(event);
+  
+        // cross-browser wheel delta
+        var e = window.event || event; // old IE support
+        var delta = -Browser.getMouseWheelDelta(event);
+  
+        var button = 3; // wheel up
+        if (delta < 0) {
+          button = 4; // wheel down
+        }
+  
+        if (GLUT.mouseFunc) {
+          event.preventDefault();
+          GLUT.saveModifiers(event);
+          Runtime.dynCall('viiii', GLUT.mouseFunc, [button, 0/*GLUT_DOWN*/, Browser.mouseX, Browser.mouseY]);
+        }
+      },onFullScreenEventChange:function (event) {
+        var width;
+        var height;
+        if (document["fullScreen"] || document["mozFullScreen"] || document["webkitIsFullScreen"]) {
+          width = screen["width"];
+          height = screen["height"];
+        } else {
+          width = GLUT.windowWidth;
+          height = GLUT.windowHeight;
+          // TODO set position
+          document.removeEventListener('fullscreenchange', GLUT.onFullScreenEventChange, true);
+          document.removeEventListener('mozfullscreenchange', GLUT.onFullScreenEventChange, true);
+          document.removeEventListener('webkitfullscreenchange', GLUT.onFullScreenEventChange, true);
+        }
+        Browser.setCanvasSize(width, height);
+        /* Can't call _glutReshapeWindow as that requests cancelling fullscreen. */
+        if (GLUT.reshapeFunc) {
+          // console.log("GLUT.reshapeFunc (from FS): " + width + ", " + height);
+          Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
+        }
+        _glutPostRedisplay();
+      },requestFullScreen:function () {
+        var RFS = Module["canvas"]['requestFullscreen'] ||
+                  Module["canvas"]['requestFullScreen'] ||
+                  Module["canvas"]['mozRequestFullScreen'] ||
+                  Module["canvas"]['webkitRequestFullScreen'] ||
+                  (function() {});
+        RFS.apply(Module["canvas"], []);
+      },cancelFullScreen:function () {
+        var CFS = document['exitFullscreen'] ||
+                  document['cancelFullScreen'] ||
+                  document['mozCancelFullScreen'] ||
+                  document['webkitCancelFullScreen'] ||
+                  (function() {});
+        CFS.apply(document, []);
+      }};function _glutSwapBuffers() {}
+
+  
+  
+  
+  
+  
+  
+  var ERRNO_MESSAGES={0:"Success",1:"Not super-user",2:"No such file or directory",3:"No such process",4:"Interrupted system call",5:"I/O error",6:"No such device or address",7:"Arg list too long",8:"Exec format error",9:"Bad file number",10:"No children",11:"No more processes",12:"Not enough core",13:"Permission denied",14:"Bad address",15:"Block device required",16:"Mount device busy",17:"File exists",18:"Cross-device link",19:"No such device",20:"Not a directory",21:"Is a directory",22:"Invalid argument",23:"Too many open files in system",24:"Too many open files",25:"Not a typewriter",26:"Text file busy",27:"File too large",28:"No space left on device",29:"Illegal seek",30:"Read only file system",31:"Too many links",32:"Broken pipe",33:"Math arg out of domain of func",34:"Math result not representable",35:"File locking deadlock error",36:"File or path name too long",37:"No record locks available",38:"Function not implemented",39:"Directory not empty",40:"Too many symbolic links",42:"No message of desired type",43:"Identifier removed",44:"Channel number out of range",45:"Level 2 not synchronized",46:"Level 3 halted",47:"Level 3 reset",48:"Link number out of range",49:"Protocol driver not attached",50:"No CSI structure available",51:"Level 2 halted",52:"Invalid exchange",53:"Invalid request descriptor",54:"Exchange full",55:"No anode",56:"Invalid request code",57:"Invalid slot",59:"Bad font file fmt",60:"Device not a stream",61:"No data (for no delay io)",62:"Timer expired",63:"Out of streams resources",64:"Machine is not on the network",65:"Package not installed",66:"The object is remote",67:"The link has been severed",68:"Advertise error",69:"Srmount error",70:"Communication error on send",71:"Protocol error",72:"Multihop attempted",73:"Cross mount point (not really error)",74:"Trying to read unreadable message",75:"Value too large for defined data type",76:"Given log. name not unique",77:"f.d. invalid for this operation",78:"Remote address changed",79:"Can   access a needed shared lib",80:"Accessing a corrupted shared lib",81:".lib section in a.out corrupted",82:"Attempting to link in too many libs",83:"Attempting to exec a shared library",84:"Illegal byte sequence",86:"Streams pipe error",87:"Too many users",88:"Socket operation on non-socket",89:"Destination address required",90:"Message too long",91:"Protocol wrong type for socket",92:"Protocol not available",93:"Unknown protocol",94:"Socket type not supported",95:"Not supported",96:"Protocol family not supported",97:"Address family not supported by protocol family",98:"Address already in use",99:"Address not available",100:"Network interface is not configured",101:"Network is unreachable",102:"Connection reset by network",103:"Connection aborted",104:"Connection reset by peer",105:"No buffer space available",106:"Socket is already connected",107:"Socket is not connected",108:"Can't send after socket shutdown",109:"Too many references",110:"Connection timed out",111:"Connection refused",112:"Host is down",113:"Host is unreachable",114:"Socket already connected",115:"Connection already in progress",116:"Stale file handle",122:"Quota exceeded",123:"No medium (in tape drive)",125:"Operation canceled",130:"Previous owner died",131:"State not recoverable"};
   
   var TTY={ttys:[],init:function () {
         // https://github.com/kripken/emscripten/pull/1555
@@ -4241,995 +5546,123 @@ function copyTempDouble(ptr) {
           transaction.onerror = onerror;
         };
         openRequest.onerror = onerror;
-      }};
-  
-  
-  
-  
-  function _mkport() { throw 'TODO' }var SOCKFS={mount:function (mount) {
-        return FS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
-      },createSocket:function (family, type, protocol) {
-        var streaming = type == 1;
-        if (protocol) {
-          assert(streaming == (protocol == 6)); // if SOCK_STREAM, must be tcp
+      }};var PATH={splitPath:function (filename) {
+        var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+        return splitPathRe.exec(filename).slice(1);
+      },normalizeArray:function (parts, allowAboveRoot) {
+        // if the path tries to go above the root, `up` ends up > 0
+        var up = 0;
+        for (var i = parts.length - 1; i >= 0; i--) {
+          var last = parts[i];
+          if (last === '.') {
+            parts.splice(i, 1);
+          } else if (last === '..') {
+            parts.splice(i, 1);
+            up++;
+          } else if (up) {
+            parts.splice(i, 1);
+            up--;
+          }
         }
-  
-        // create our internal socket structure
-        var sock = {
-          family: family,
-          type: type,
-          protocol: protocol,
-          server: null,
-          peers: {},
-          pending: [],
-          recv_queue: [],
-          sock_ops: SOCKFS.websocket_sock_ops
-        };
-  
-        // create the filesystem node to store the socket structure
-        var name = SOCKFS.nextname();
-        var node = FS.createNode(SOCKFS.root, name, 49152, 0);
-        node.sock = sock;
-  
-        // and the wrapping stream that enables library functions such
-        // as read and write to indirectly interact with the socket
-        var stream = FS.createStream({
-          path: name,
-          node: node,
-          flags: FS.modeStringToFlags('r+'),
-          seekable: false,
-          stream_ops: SOCKFS.stream_ops
-        });
-  
-        // map the new stream to the socket structure (sockets have a 1:1
-        // relationship with a stream)
-        sock.stream = stream;
-  
-        return sock;
-      },getSocket:function (fd) {
-        var stream = FS.getStream(fd);
-        if (!stream || !FS.isSocket(stream.node.mode)) {
-          return null;
+        // if the path is allowed to go above the root, restore leading ..s
+        if (allowAboveRoot) {
+          for (; up--; up) {
+            parts.unshift('..');
+          }
         }
-        return stream.node.sock;
-      },stream_ops:{poll:function (stream) {
-          var sock = stream.node.sock;
-          return sock.sock_ops.poll(sock);
-        },ioctl:function (stream, request, varargs) {
-          var sock = stream.node.sock;
-          return sock.sock_ops.ioctl(sock, request, varargs);
-        },read:function (stream, buffer, offset, length, position /* ignored */) {
-          var sock = stream.node.sock;
-          var msg = sock.sock_ops.recvmsg(sock, length);
-          if (!msg) {
-            // socket is closed
-            return 0;
-          }
-          buffer.set(msg.buffer, offset);
-          return msg.buffer.length;
-        },write:function (stream, buffer, offset, length, position /* ignored */) {
-          var sock = stream.node.sock;
-          return sock.sock_ops.sendmsg(sock, buffer, offset, length);
-        },close:function (stream) {
-          var sock = stream.node.sock;
-          sock.sock_ops.close(sock);
-        }},nextname:function () {
-        if (!SOCKFS.nextname.current) {
-          SOCKFS.nextname.current = 0;
+        return parts;
+      },normalize:function (path) {
+        var isAbsolute = path.charAt(0) === '/',
+            trailingSlash = path.substr(-1) === '/';
+        // Normalize the path
+        path = PATH.normalizeArray(path.split('/').filter(function(p) {
+          return !!p;
+        }), !isAbsolute).join('/');
+        if (!path && !isAbsolute) {
+          path = '.';
         }
-        return 'socket[' + (SOCKFS.nextname.current++) + ']';
-      },websocket_sock_ops:{createPeer:function (sock, addr, port) {
-          var ws;
-  
-          if (typeof addr === 'object') {
-            ws = addr;
-            addr = null;
-            port = null;
-          }
-  
-          if (ws) {
-            // for sockets that've already connected (e.g. we're the server)
-            // we can inspect the _socket property for the address
-            if (ws._socket) {
-              addr = ws._socket.remoteAddress;
-              port = ws._socket.remotePort;
-            }
-            // if we're just now initializing a connection to the remote,
-            // inspect the url property
-            else {
-              var result = /ws[s]?:\/\/([^:]+):(\d+)/.exec(ws.url);
-              if (!result) {
-                throw new Error('WebSocket URL must be in the format ws(s)://address:port');
-              }
-              addr = result[1];
-              port = parseInt(result[2], 10);
-            }
-          } else {
-            // create the actual websocket object and connect
-            try {
-              var url = 'ws://' + addr + ':' + port;
-              // the node ws library API is slightly different than the browser's
-              var opts = ENVIRONMENT_IS_NODE ? {headers: {'websocket-protocol': ['binary']}} : ['binary'];
-              // If node we use the ws library.
-              var WebSocket = ENVIRONMENT_IS_NODE ? require('ws') : window['WebSocket'];
-              ws = new WebSocket(url, opts);
-              ws.binaryType = 'arraybuffer';
-            } catch (e) {
-              throw new FS.ErrnoError(ERRNO_CODES.EHOSTUNREACH);
-            }
-          }
-  
-  
-          var peer = {
-            addr: addr,
-            port: port,
-            socket: ws,
-            dgram_send_queue: []
-          };
-  
-          SOCKFS.websocket_sock_ops.addPeer(sock, peer);
-          SOCKFS.websocket_sock_ops.handlePeerEvents(sock, peer);
-  
-          // if this is a bound dgram socket, send the port number first to allow
-          // us to override the ephemeral port reported to us by remotePort on the
-          // remote end.
-          if (sock.type === 2 && typeof sock.sport !== 'undefined') {
-            peer.dgram_send_queue.push(new Uint8Array([
-                255, 255, 255, 255,
-                'p'.charCodeAt(0), 'o'.charCodeAt(0), 'r'.charCodeAt(0), 't'.charCodeAt(0),
-                ((sock.sport & 0xff00) >> 8) , (sock.sport & 0xff)
-            ]));
-          }
-  
-          return peer;
-        },getPeer:function (sock, addr, port) {
-          return sock.peers[addr + ':' + port];
-        },addPeer:function (sock, peer) {
-          sock.peers[peer.addr + ':' + peer.port] = peer;
-        },removePeer:function (sock, peer) {
-          delete sock.peers[peer.addr + ':' + peer.port];
-        },handlePeerEvents:function (sock, peer) {
-          var first = true;
-  
-          var handleOpen = function () {
-            try {
-              var queued = peer.dgram_send_queue.shift();
-              while (queued) {
-                peer.socket.send(queued);
-                queued = peer.dgram_send_queue.shift();
-              }
-            } catch (e) {
-              // not much we can do here in the way of proper error handling as we've already
-              // lied and said this data was sent. shut it down.
-              peer.socket.close();
-            }
-          };
-  
-          function handleMessage(data) {
-            assert(typeof data !== 'string' && data.byteLength !== undefined);  // must receive an ArrayBuffer
-            data = new Uint8Array(data);  // make a typed array view on the array buffer
-  
-  
-            // if this is the port message, override the peer's port with it
-            var wasfirst = first;
-            first = false;
-            if (wasfirst &&
-                data.length === 10 &&
-                data[0] === 255 && data[1] === 255 && data[2] === 255 && data[3] === 255 &&
-                data[4] === 'p'.charCodeAt(0) && data[5] === 'o'.charCodeAt(0) && data[6] === 'r'.charCodeAt(0) && data[7] === 't'.charCodeAt(0)) {
-              // update the peer's port and it's key in the peer map
-              var newport = ((data[8] << 8) | data[9]);
-              SOCKFS.websocket_sock_ops.removePeer(sock, peer);
-              peer.port = newport;
-              SOCKFS.websocket_sock_ops.addPeer(sock, peer);
-              return;
-            }
-  
-            sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
-          };
-  
-          if (ENVIRONMENT_IS_NODE) {
-            peer.socket.on('open', handleOpen);
-            peer.socket.on('message', function(data, flags) {
-              if (!flags.binary) {
-                return;
-              }
-              handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
-            });
-            peer.socket.on('error', function() {
-              // don't throw
-            });
-          } else {
-            peer.socket.onopen = handleOpen;
-            peer.socket.onmessage = function peer_socket_onmessage(event) {
-              handleMessage(event.data);
-            };
-          }
-        },poll:function (sock) {
-          if (sock.type === 1 && sock.server) {
-            // listen sockets should only say they're available for reading
-            // if there are pending clients.
-            return sock.pending.length ? (64 | 1) : 0;
-          }
-  
-          var mask = 0;
-          var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
-            SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport) :
-            null;
-  
-          if (sock.recv_queue.length ||
-              !dest ||  // connection-less sockets are always ready to read
-              (dest && dest.socket.readyState === dest.socket.CLOSING) ||
-              (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
-            mask |= (64 | 1);
-          }
-  
-          if (!dest ||  // connection-less sockets are always ready to write
-              (dest && dest.socket.readyState === dest.socket.OPEN)) {
-            mask |= 4;
-          }
-  
-          if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
-              (dest && dest.socket.readyState === dest.socket.CLOSED)) {
-            mask |= 16;
-          }
-  
-          return mask;
-        },ioctl:function (sock, request, arg) {
-          switch (request) {
-            case 21531:
-              var bytes = 0;
-              if (sock.recv_queue.length) {
-                bytes = sock.recv_queue[0].data.length;
-              }
-              HEAP32[((arg)>>2)]=bytes;
-              return 0;
-            default:
-              return ERRNO_CODES.EINVAL;
-          }
-        },close:function (sock) {
-          // if we've spawned a listen server, close it
-          if (sock.server) {
-            try {
-              sock.server.close();
-            } catch (e) {
-            }
-            sock.server = null;
-          }
-          // close any peer connections
-          var peers = Object.keys(sock.peers);
-          for (var i = 0; i < peers.length; i++) {
-            var peer = sock.peers[peers[i]];
-            try {
-              peer.socket.close();
-            } catch (e) {
-            }
-            SOCKFS.websocket_sock_ops.removePeer(sock, peer);
-          }
-          return 0;
-        },bind:function (sock, addr, port) {
-          if (typeof sock.saddr !== 'undefined' || typeof sock.sport !== 'undefined') {
-            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already bound
-          }
-          sock.saddr = addr;
-          sock.sport = port || _mkport();
-          // in order to emulate dgram sockets, we need to launch a listen server when
-          // binding on a connection-less socket
-          // note: this is only required on the server side
-          if (sock.type === 2) {
-            // close the existing server if it exists
-            if (sock.server) {
-              sock.server.close();
-              sock.server = null;
-            }
-            // swallow error operation not supported error that occurs when binding in the
-            // browser where this isn't supported
-            try {
-              sock.sock_ops.listen(sock, 0);
-            } catch (e) {
-              if (!(e instanceof FS.ErrnoError)) throw e;
-              if (e.errno !== ERRNO_CODES.EOPNOTSUPP) throw e;
-            }
-          }
-        },connect:function (sock, addr, port) {
-          if (sock.server) {
-            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
-          }
-  
-          // TODO autobind
-          // if (!sock.addr && sock.type == 2) {
-          // }
-  
-          // early out if we're already connected / in the middle of connecting
-          if (typeof sock.daddr !== 'undefined' && typeof sock.dport !== 'undefined') {
-            var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
-            if (dest) {
-              if (dest.socket.readyState === dest.socket.CONNECTING) {
-                throw new FS.ErrnoError(ERRNO_CODES.EALREADY);
-              } else {
-                throw new FS.ErrnoError(ERRNO_CODES.EISCONN);
-              }
-            }
-          }
-  
-          // add the socket to our peer list and set our
-          // destination address / port to match
-          var peer = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
-          sock.daddr = peer.addr;
-          sock.dport = peer.port;
-  
-          // always "fail" in non-blocking mode
-          throw new FS.ErrnoError(ERRNO_CODES.EINPROGRESS);
-        },listen:function (sock, backlog) {
-          if (!ENVIRONMENT_IS_NODE) {
-            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
-          }
-          if (sock.server) {
-             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already listening
-          }
-          var WebSocketServer = require('ws').Server;
-          var host = sock.saddr;
-          sock.server = new WebSocketServer({
-            host: host,
-            port: sock.sport
-            // TODO support backlog
-          });
-  
-          sock.server.on('connection', function(ws) {
-            if (sock.type === 1) {
-              var newsock = SOCKFS.createSocket(sock.family, sock.type, sock.protocol);
-  
-              // create a peer on the new socket
-              var peer = SOCKFS.websocket_sock_ops.createPeer(newsock, ws);
-              newsock.daddr = peer.addr;
-              newsock.dport = peer.port;
-  
-              // push to queue for accept to pick up
-              sock.pending.push(newsock);
-            } else {
-              // create a peer on the listen socket so calling sendto
-              // with the listen socket and an address will resolve
-              // to the correct client
-              SOCKFS.websocket_sock_ops.createPeer(sock, ws);
-            }
-          });
-          sock.server.on('closed', function() {
-            sock.server = null;
-          });
-          sock.server.on('error', function() {
-            // don't throw
-          });
-        },accept:function (listensock) {
-          if (!listensock.server) {
-            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-          }
-          var newsock = listensock.pending.shift();
-          newsock.stream.flags = listensock.stream.flags;
-          return newsock;
-        },getname:function (sock, peer) {
-          var addr, port;
-          if (peer) {
-            if (sock.daddr === undefined || sock.dport === undefined) {
-              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
-            }
-            addr = sock.daddr;
-            port = sock.dport;
-          } else {
-            // TODO saddr and sport will be set for bind()'d UDP sockets, but what
-            // should we be returning for TCP sockets that've been connect()'d?
-            addr = sock.saddr || 0;
-            port = sock.sport || 0;
-          }
-          return { addr: addr, port: port };
-        },sendmsg:function (sock, buffer, offset, length, addr, port) {
-          if (sock.type === 2) {
-            // connection-less sockets will honor the message address,
-            // and otherwise fall back to the bound destination address
-            if (addr === undefined || port === undefined) {
-              addr = sock.daddr;
-              port = sock.dport;
-            }
-            // if there was no address to fall back to, error out
-            if (addr === undefined || port === undefined) {
-              throw new FS.ErrnoError(ERRNO_CODES.EDESTADDRREQ);
-            }
-          } else {
-            // connection-based sockets will only use the bound
-            addr = sock.daddr;
-            port = sock.dport;
-          }
-  
-          // find the peer for the destination address
-          var dest = SOCKFS.websocket_sock_ops.getPeer(sock, addr, port);
-  
-          // early out if not connected with a connection-based socket
-          if (sock.type === 1) {
-            if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
-              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
-            } else if (dest.socket.readyState === dest.socket.CONNECTING) {
-              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
-            }
-          }
-  
-          // create a copy of the incoming data to send, as the WebSocket API
-          // doesn't work entirely with an ArrayBufferView, it'll just send
-          // the entire underlying buffer
-          var data;
-          if (buffer instanceof Array || buffer instanceof ArrayBuffer) {
-            data = buffer.slice(offset, offset + length);
-          } else {  // ArrayBufferView
-            data = buffer.buffer.slice(buffer.byteOffset + offset, buffer.byteOffset + offset + length);
-          }
-  
-          // if we're emulating a connection-less dgram socket and don't have
-          // a cached connection, queue the buffer to send upon connect and
-          // lie, saying the data was sent now.
-          if (sock.type === 2) {
-            if (!dest || dest.socket.readyState !== dest.socket.OPEN) {
-              // if we're not connected, open a new connection
-              if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
-                dest = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
-              }
-              dest.dgram_send_queue.push(data);
-              return length;
-            }
-          }
-  
-          try {
-            // send the actual data
-            dest.socket.send(data);
-            return length;
-          } catch (e) {
-            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-          }
-        },recvmsg:function (sock, length) {
-          // http://pubs.opengroup.org/onlinepubs/7908799/xns/recvmsg.html
-          if (sock.type === 1 && sock.server) {
-            // tcp servers should not be recv()'ing on the listen socket
-            throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
-          }
-  
-          var queued = sock.recv_queue.shift();
-          if (!queued) {
-            if (sock.type === 1) {
-              var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
-  
-              if (!dest) {
-                // if we have a destination address but are not connected, error out
-                throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
-              }
-              else if (dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
-                // return null if the socket has closed
-                return null;
-              }
-              else {
-                // else, our socket is in a valid state but truly has nothing available
-                throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
-              }
-            } else {
-              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
-            }
-          }
-  
-          // queued.data will be an ArrayBuffer if it's unadulterated, but if it's
-          // requeued TCP data it'll be an ArrayBufferView
-          var queuedLength = queued.data.byteLength || queued.data.length;
-          var queuedOffset = queued.data.byteOffset || 0;
-          var queuedBuffer = queued.data.buffer || queued.data;
-          var bytesRead = Math.min(length, queuedLength);
-          var res = {
-            buffer: new Uint8Array(queuedBuffer, queuedOffset, bytesRead),
-            addr: queued.addr,
-            port: queued.port
-          };
-  
-  
-          // push back any unread data for TCP connections
-          if (sock.type === 1 && bytesRead < queuedLength) {
-            var bytesRemaining = queuedLength - bytesRead;
-            queued.data = new Uint8Array(queuedBuffer, queuedOffset + bytesRead, bytesRemaining);
-            sock.recv_queue.unshift(queued);
-          }
-  
-          return res;
-        }}};function _send(fd, buf, len, flags) {
-      var sock = SOCKFS.getSocket(fd);
-      if (!sock) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-      // TODO honor flags
-      return _write(fd, buf, len);
-    }
-  
-  function _pwrite(fildes, buf, nbyte, offset) {
-      // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-      try {
-        var slab = HEAP8;
-        return FS.write(stream, slab, buf, nbyte, offset);
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
-      }
-    }function _write(fildes, buf, nbyte) {
-      // ssize_t write(int fildes, const void *buf, size_t nbyte);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-  
-  
-      try {
-        var slab = HEAP8;
-        return FS.write(stream, slab, buf, nbyte);
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
-      }
-    }
-  
-  function _fileno(stream) {
-      // int fileno(FILE *stream);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
-      stream = FS.getStreamFromPtr(stream);
-      if (!stream) return -1;
-      return stream.fd;
-    }function _fwrite(ptr, size, nitems, stream) {
-      // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
-      var bytesToWrite = nitems * size;
-      if (bytesToWrite == 0) return 0;
-      var fd = _fileno(stream);
-      var bytesWritten = _write(fd, ptr, bytesToWrite);
-      if (bytesWritten == -1) {
-        var streamObj = FS.getStreamFromPtr(stream);
-        if (streamObj) streamObj.error = true;
-        return 0;
-      } else {
-        return Math.floor(bytesWritten / size);
-      }
-    }
-  
-  
-  function _strlen(ptr) {
-      ptr = ptr|0;
-      var curr = 0;
-      curr = ptr;
-      while (HEAP8[(curr)]) {
-        curr = (curr + 1)|0;
-      }
-      return (curr - ptr)|0;
-    }
-  
-  function __reallyNegative(x) {
-      return x < 0 || (x === 0 && (1/x) === -Infinity);
-    }function __formatString(format, varargs) {
-      var textIndex = format;
-      var argIndex = 0;
-      function getNextArg(type) {
-        // NOTE: Explicitly ignoring type safety. Otherwise this fails:
-        //       int x = 4; printf("%c\n", (char)x);
-        var ret;
-        if (type === 'double') {
-          ret = HEAPF64[(((varargs)+(argIndex))>>3)];
-        } else if (type == 'i64') {
-          ret = [HEAP32[(((varargs)+(argIndex))>>2)],
-                 HEAP32[(((varargs)+(argIndex+8))>>2)]];
-          argIndex += 8; // each 32-bit chunk is in a 64-bit block
-  
-        } else {
-          type = 'i32'; // varargs are always i32, i64, or double
-          ret = HEAP32[(((varargs)+(argIndex))>>2)];
+        if (path && trailingSlash) {
+          path += '/';
         }
-        argIndex += Math.max(Runtime.getNativeFieldSize(type), Runtime.getAlignSize(type, null, true));
-        return ret;
-      }
-  
-      var ret = [];
-      var curr, next, currArg;
-      while(1) {
-        var startTextIndex = textIndex;
-        curr = HEAP8[(textIndex)];
-        if (curr === 0) break;
-        next = HEAP8[((textIndex+1)|0)];
-        if (curr == 37) {
-          // Handle flags.
-          var flagAlwaysSigned = false;
-          var flagLeftAlign = false;
-          var flagAlternative = false;
-          var flagZeroPad = false;
-          var flagPadSign = false;
-          flagsLoop: while (1) {
-            switch (next) {
-              case 43:
-                flagAlwaysSigned = true;
-                break;
-              case 45:
-                flagLeftAlign = true;
-                break;
-              case 35:
-                flagAlternative = true;
-                break;
-              case 48:
-                if (flagZeroPad) {
-                  break flagsLoop;
-                } else {
-                  flagZeroPad = true;
-                  break;
-                }
-              case 32:
-                flagPadSign = true;
-                break;
-              default:
-                break flagsLoop;
-            }
-            textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
-          }
-  
-          // Handle width.
-          var width = 0;
-          if (next == 42) {
-            width = getNextArg('i32');
-            textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
-          } else {
-            while (next >= 48 && next <= 57) {
-              width = width * 10 + (next - 48);
-              textIndex++;
-              next = HEAP8[((textIndex+1)|0)];
-            }
-          }
-  
-          // Handle precision.
-          var precisionSet = false, precision = -1;
-          if (next == 46) {
-            precision = 0;
-            precisionSet = true;
-            textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
-            if (next == 42) {
-              precision = getNextArg('i32');
-              textIndex++;
-            } else {
-              while(1) {
-                var precisionChr = HEAP8[((textIndex+1)|0)];
-                if (precisionChr < 48 ||
-                    precisionChr > 57) break;
-                precision = precision * 10 + (precisionChr - 48);
-                textIndex++;
-              }
-            }
-            next = HEAP8[((textIndex+1)|0)];
-          }
-          if (precision < 0) {
-            precision = 6; // Standard default.
-            precisionSet = false;
-          }
-  
-          // Handle integer sizes. WARNING: These assume a 32-bit architecture!
-          var argSize;
-          switch (String.fromCharCode(next)) {
-            case 'h':
-              var nextNext = HEAP8[((textIndex+2)|0)];
-              if (nextNext == 104) {
-                textIndex++;
-                argSize = 1; // char (actually i32 in varargs)
-              } else {
-                argSize = 2; // short (actually i32 in varargs)
-              }
-              break;
-            case 'l':
-              var nextNext = HEAP8[((textIndex+2)|0)];
-              if (nextNext == 108) {
-                textIndex++;
-                argSize = 8; // long long
-              } else {
-                argSize = 4; // long
-              }
-              break;
-            case 'L': // long long
-            case 'q': // int64_t
-            case 'j': // intmax_t
-              argSize = 8;
-              break;
-            case 'z': // size_t
-            case 't': // ptrdiff_t
-            case 'I': // signed ptrdiff_t or unsigned size_t
-              argSize = 4;
-              break;
-            default:
-              argSize = null;
-          }
-          if (argSize) textIndex++;
-          next = HEAP8[((textIndex+1)|0)];
-  
-          // Handle type specifier.
-          switch (String.fromCharCode(next)) {
-            case 'd': case 'i': case 'u': case 'o': case 'x': case 'X': case 'p': {
-              // Integer.
-              var signed = next == 100 || next == 105;
-              argSize = argSize || 4;
-              var currArg = getNextArg('i' + (argSize * 8));
-              var origArg = currArg;
-              var argText;
-              // Flatten i64-1 [low, high] into a (slightly rounded) double
-              if (argSize == 8) {
-                currArg = Runtime.makeBigInt(currArg[0], currArg[1], next == 117);
-              }
-              // Truncate to requested size.
-              if (argSize <= 4) {
-                var limit = Math.pow(256, argSize) - 1;
-                currArg = (signed ? reSign : unSign)(currArg & limit, argSize * 8);
-              }
-              // Format the number.
-              var currAbsArg = Math.abs(currArg);
-              var prefix = '';
-              if (next == 100 || next == 105) {
-                if (argSize == 8 && i64Math) argText = i64Math.stringify(origArg[0], origArg[1], null); else
-                argText = reSign(currArg, 8 * argSize, 1).toString(10);
-              } else if (next == 117) {
-                if (argSize == 8 && i64Math) argText = i64Math.stringify(origArg[0], origArg[1], true); else
-                argText = unSign(currArg, 8 * argSize, 1).toString(10);
-                currArg = Math.abs(currArg);
-              } else if (next == 111) {
-                argText = (flagAlternative ? '0' : '') + currAbsArg.toString(8);
-              } else if (next == 120 || next == 88) {
-                prefix = (flagAlternative && currArg != 0) ? '0x' : '';
-                if (argSize == 8 && i64Math) {
-                  if (origArg[1]) {
-                    argText = (origArg[1]>>>0).toString(16);
-                    var lower = (origArg[0]>>>0).toString(16);
-                    while (lower.length < 8) lower = '0' + lower;
-                    argText += lower;
-                  } else {
-                    argText = (origArg[0]>>>0).toString(16);
-                  }
-                } else
-                if (currArg < 0) {
-                  // Represent negative numbers in hex as 2's complement.
-                  currArg = -currArg;
-                  argText = (currAbsArg - 1).toString(16);
-                  var buffer = [];
-                  for (var i = 0; i < argText.length; i++) {
-                    buffer.push((0xF - parseInt(argText[i], 16)).toString(16));
-                  }
-                  argText = buffer.join('');
-                  while (argText.length < argSize * 2) argText = 'f' + argText;
-                } else {
-                  argText = currAbsArg.toString(16);
-                }
-                if (next == 88) {
-                  prefix = prefix.toUpperCase();
-                  argText = argText.toUpperCase();
-                }
-              } else if (next == 112) {
-                if (currAbsArg === 0) {
-                  argText = '(nil)';
-                } else {
-                  prefix = '0x';
-                  argText = currAbsArg.toString(16);
-                }
-              }
-              if (precisionSet) {
-                while (argText.length < precision) {
-                  argText = '0' + argText;
-                }
-              }
-  
-              // Add sign if needed
-              if (currArg >= 0) {
-                if (flagAlwaysSigned) {
-                  prefix = '+' + prefix;
-                } else if (flagPadSign) {
-                  prefix = ' ' + prefix;
-                }
-              }
-  
-              // Move sign to prefix so we zero-pad after the sign
-              if (argText.charAt(0) == '-') {
-                prefix = '-' + prefix;
-                argText = argText.substr(1);
-              }
-  
-              // Add padding.
-              while (prefix.length + argText.length < width) {
-                if (flagLeftAlign) {
-                  argText += ' ';
-                } else {
-                  if (flagZeroPad) {
-                    argText = '0' + argText;
-                  } else {
-                    prefix = ' ' + prefix;
-                  }
-                }
-              }
-  
-              // Insert the result into the buffer.
-              argText = prefix + argText;
-              argText.split('').forEach(function(chr) {
-                ret.push(chr.charCodeAt(0));
-              });
-              break;
-            }
-            case 'f': case 'F': case 'e': case 'E': case 'g': case 'G': {
-              // Float.
-              var currArg = getNextArg('double');
-              var argText;
-              if (isNaN(currArg)) {
-                argText = 'nan';
-                flagZeroPad = false;
-              } else if (!isFinite(currArg)) {
-                argText = (currArg < 0 ? '-' : '') + 'inf';
-                flagZeroPad = false;
-              } else {
-                var isGeneral = false;
-                var effectivePrecision = Math.min(precision, 20);
-  
-                // Convert g/G to f/F or e/E, as per:
-                // http://pubs.opengroup.org/onlinepubs/9699919799/functions/printf.html
-                if (next == 103 || next == 71) {
-                  isGeneral = true;
-                  precision = precision || 1;
-                  var exponent = parseInt(currArg.toExponential(effectivePrecision).split('e')[1], 10);
-                  if (precision > exponent && exponent >= -4) {
-                    next = ((next == 103) ? 'f' : 'F').charCodeAt(0);
-                    precision -= exponent + 1;
-                  } else {
-                    next = ((next == 103) ? 'e' : 'E').charCodeAt(0);
-                    precision--;
-                  }
-                  effectivePrecision = Math.min(precision, 20);
-                }
-  
-                if (next == 101 || next == 69) {
-                  argText = currArg.toExponential(effectivePrecision);
-                  // Make sure the exponent has at least 2 digits.
-                  if (/[eE][-+]\d$/.test(argText)) {
-                    argText = argText.slice(0, -1) + '0' + argText.slice(-1);
-                  }
-                } else if (next == 102 || next == 70) {
-                  argText = currArg.toFixed(effectivePrecision);
-                  if (currArg === 0 && __reallyNegative(currArg)) {
-                    argText = '-' + argText;
-                  }
-                }
-  
-                var parts = argText.split('e');
-                if (isGeneral && !flagAlternative) {
-                  // Discard trailing zeros and periods.
-                  while (parts[0].length > 1 && parts[0].indexOf('.') != -1 &&
-                         (parts[0].slice(-1) == '0' || parts[0].slice(-1) == '.')) {
-                    parts[0] = parts[0].slice(0, -1);
-                  }
-                } else {
-                  // Make sure we have a period in alternative mode.
-                  if (flagAlternative && argText.indexOf('.') == -1) parts[0] += '.';
-                  // Zero pad until required precision.
-                  while (precision > effectivePrecision++) parts[0] += '0';
-                }
-                argText = parts[0] + (parts.length > 1 ? 'e' + parts[1] : '');
-  
-                // Capitalize 'E' if needed.
-                if (next == 69) argText = argText.toUpperCase();
-  
-                // Add sign.
-                if (currArg >= 0) {
-                  if (flagAlwaysSigned) {
-                    argText = '+' + argText;
-                  } else if (flagPadSign) {
-                    argText = ' ' + argText;
-                  }
-                }
-              }
-  
-              // Add padding.
-              while (argText.length < width) {
-                if (flagLeftAlign) {
-                  argText += ' ';
-                } else {
-                  if (flagZeroPad && (argText[0] == '-' || argText[0] == '+')) {
-                    argText = argText[0] + '0' + argText.slice(1);
-                  } else {
-                    argText = (flagZeroPad ? '0' : ' ') + argText;
-                  }
-                }
-              }
-  
-              // Adjust case.
-              if (next < 97) argText = argText.toUpperCase();
-  
-              // Insert the result into the buffer.
-              argText.split('').forEach(function(chr) {
-                ret.push(chr.charCodeAt(0));
-              });
-              break;
-            }
-            case 's': {
-              // String.
-              var arg = getNextArg('i8*');
-              var argLength = arg ? _strlen(arg) : '(null)'.length;
-              if (precisionSet) argLength = Math.min(argLength, precision);
-              if (!flagLeftAlign) {
-                while (argLength < width--) {
-                  ret.push(32);
-                }
-              }
-              if (arg) {
-                for (var i = 0; i < argLength; i++) {
-                  ret.push(HEAPU8[((arg++)|0)]);
-                }
-              } else {
-                ret = ret.concat(intArrayFromString('(null)'.substr(0, argLength), true));
-              }
-              if (flagLeftAlign) {
-                while (argLength < width--) {
-                  ret.push(32);
-                }
-              }
-              break;
-            }
-            case 'c': {
-              // Character.
-              if (flagLeftAlign) ret.push(getNextArg('i8'));
-              while (--width > 0) {
-                ret.push(32);
-              }
-              if (!flagLeftAlign) ret.push(getNextArg('i8'));
-              break;
-            }
-            case 'n': {
-              // Write the length written so far to the next parameter.
-              var ptr = getNextArg('i32*');
-              HEAP32[((ptr)>>2)]=ret.length;
-              break;
-            }
-            case '%': {
-              // Literal percent sign.
-              ret.push(curr);
-              break;
-            }
-            default: {
-              // Unknown specifiers remain untouched.
-              for (var i = startTextIndex; i < textIndex + 2; i++) {
-                ret.push(HEAP8[(i)]);
-              }
-            }
-          }
-          textIndex += 2;
-          // TODO: Support a/A (hex float) and m (last error) specifiers.
-          // TODO: Support %1${specifier} for arg selection.
-        } else {
-          ret.push(curr);
-          textIndex += 1;
+        return (isAbsolute ? '/' : '') + path;
+      },dirname:function (path) {
+        var result = PATH.splitPath(path),
+            root = result[0],
+            dir = result[1];
+        if (!root && !dir) {
+          // No dirname whatsoever
+          return '.';
         }
-      }
-      return ret;
-    }function _fprintf(stream, format, varargs) {
-      // int fprintf(FILE *restrict stream, const char *restrict format, ...);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
-      var result = __formatString(format, varargs);
-      var stack = Runtime.stackSave();
-      var ret = _fwrite(allocate(result, 'i8', ALLOC_STACK), 1, result.length, stream);
-      Runtime.stackRestore(stack);
-      return ret;
-    }function _printf(format, varargs) {
-      // int printf(const char *restrict format, ...);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
-      var stdout = HEAP32[((_stdout)>>2)];
-      return _fprintf(stdout, format, varargs);
-    }
-
-  
-  var Browser={mainLoop:{scheduler:null,method:"",shouldPause:false,paused:false,queue:[],pause:function () {
+        if (dir) {
+          // It has a dirname, strip trailing slash
+          dir = dir.substr(0, dir.length - 1);
+        }
+        return root + dir;
+      },basename:function (path) {
+        // EMSCRIPTEN return '/'' for '/', not an empty string
+        if (path === '/') return '/';
+        var lastSlash = path.lastIndexOf('/');
+        if (lastSlash === -1) return path;
+        return path.substr(lastSlash+1);
+      },extname:function (path) {
+        return PATH.splitPath(path)[3];
+      },join:function () {
+        var paths = Array.prototype.slice.call(arguments, 0);
+        return PATH.normalize(paths.join('/'));
+      },join2:function (l, r) {
+        return PATH.normalize(l + '/' + r);
+      },resolve:function () {
+        var resolvedPath = '',
+          resolvedAbsolute = false;
+        for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+          var path = (i >= 0) ? arguments[i] : FS.cwd();
+          // Skip empty and invalid entries
+          if (typeof path !== 'string') {
+            throw new TypeError('Arguments to path.resolve must be strings');
+          } else if (!path) {
+            continue;
+          }
+          resolvedPath = path + '/' + resolvedPath;
+          resolvedAbsolute = path.charAt(0) === '/';
+        }
+        // At this point the path should be resolved to a full absolute path, but
+        // handle relative paths to be safe (might happen when process.cwd() fails)
+        resolvedPath = PATH.normalizeArray(resolvedPath.split('/').filter(function(p) {
+          return !!p;
+        }), !resolvedAbsolute).join('/');
+        return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+      },relative:function (from, to) {
+        from = PATH.resolve(from).substr(1);
+        to = PATH.resolve(to).substr(1);
+        function trim(arr) {
+          var start = 0;
+          for (; start < arr.length; start++) {
+            if (arr[start] !== '') break;
+          }
+          var end = arr.length - 1;
+          for (; end >= 0; end--) {
+            if (arr[end] !== '') break;
+          }
+          if (start > end) return [];
+          return arr.slice(start, end - start + 1);
+        }
+        var fromParts = trim(from.split('/'));
+        var toParts = trim(to.split('/'));
+        var length = Math.min(fromParts.length, toParts.length);
+        var samePartsLength = length;
+        for (var i = 0; i < length; i++) {
+          if (fromParts[i] !== toParts[i]) {
+            samePartsLength = i;
+            break;
+          }
+        }
+        var outputParts = [];
+        for (var i = samePartsLength; i < fromParts.length; i++) {
+          outputParts.push('..');
+        }
+        outputParts = outputParts.concat(toParts.slice(samePartsLength));
+        return outputParts.join('/');
+      }};var Browser={mainLoop:{scheduler:null,method:"",shouldPause:false,paused:false,queue:[],pause:function () {
           Browser.mainLoop.shouldPause = true;
         },resume:function () {
           if (Browser.mainLoop.paused) {
@@ -5760,1733 +6193,7 @@ function copyTempDouble(ptr) {
             }
           }
         }
-      }};function _glutInit(argcp, argv) {
-      // Ignore arguments
-      GLUT.initTime = Date.now();
-  
-      var isTouchDevice = 'ontouchstart' in document.documentElement;
-  
-      window.addEventListener("keydown", GLUT.onKeydown, true);
-      window.addEventListener("keyup", GLUT.onKeyup, true);
-      if (isTouchDevice) {
-        window.addEventListener("touchmove", GLUT.onMousemove, true);
-        window.addEventListener("touchstart", GLUT.onMouseButtonDown, true);
-        window.addEventListener("touchend", GLUT.onMouseButtonUp, true);
-      } else {
-        window.addEventListener("mousemove", GLUT.onMousemove, true);
-        window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
-        window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
-        // IE9, Chrome, Safari, Opera
-        window.addEventListener("mousewheel", GLUT.onMouseWheel, true);
-        // Firefox
-        window.addEventListener("DOMMouseScroll", GLUT.onMouseWheel, true);
-      }
-  
-      Browser.resizeListeners.push(function(width, height) {
-        if (GLUT.reshapeFunc) {
-        	Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
-        }
-      });
-  
-      __ATEXIT__.push({ func: function() {
-        window.removeEventListener("keydown", GLUT.onKeydown, true);
-        window.removeEventListener("keyup", GLUT.onKeyup, true);
-        if (isTouchDevice) {
-          window.removeEventListener("touchmove", GLUT.onMousemove, true);
-          window.removeEventListener("touchstart", GLUT.onMouseButtonDown, true);
-          window.removeEventListener("touchend", GLUT.onMouseButtonUp, true);
-        } else {
-          window.removeEventListener("mousemove", GLUT.onMousemove, true);
-          window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
-          window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
-          // IE9, Chrome, Safari, Opera
-          window.removeEventListener("mousewheel", GLUT.onMouseWheel, true);
-          // Firefox
-          window.removeEventListener("DOMMouseScroll", GLUT.onMouseWheel, true);
-        }
-        Module["canvas"].width = Module["canvas"].height = 1;
-      } });
-    }
-
-  
-  var GLUT={initTime:null,idleFunc:null,displayFunc:null,keyboardFunc:null,keyboardUpFunc:null,specialFunc:null,specialUpFunc:null,reshapeFunc:null,motionFunc:null,passiveMotionFunc:null,mouseFunc:null,buttons:0,modifiers:0,initWindowWidth:256,initWindowHeight:256,initDisplayMode:18,windowX:0,windowY:0,windowWidth:0,windowHeight:0,requestedAnimationFrame:false,saveModifiers:function (event) {
-        GLUT.modifiers = 0;
-        if (event['shiftKey'])
-          GLUT.modifiers += 1; /* GLUT_ACTIVE_SHIFT */
-        if (event['ctrlKey'])
-          GLUT.modifiers += 2; /* GLUT_ACTIVE_CTRL */
-        if (event['altKey'])
-          GLUT.modifiers += 4; /* GLUT_ACTIVE_ALT */
-      },onMousemove:function (event) {
-        /* Send motion event only if the motion changed, prevents
-         * spamming our app with uncessary callback call. It does happen in
-         * Chrome on Windows.
-         */
-        var lastX = Browser.mouseX;
-        var lastY = Browser.mouseY;
-        Browser.calculateMouseEvent(event);
-        var newX = Browser.mouseX;
-        var newY = Browser.mouseY;
-        if (newX == lastX && newY == lastY) return;
-  
-        if (GLUT.buttons == 0 && event.target == Module["canvas"] && GLUT.passiveMotionFunc) {
-          event.preventDefault();
-          GLUT.saveModifiers(event);
-          Runtime.dynCall('vii', GLUT.passiveMotionFunc, [lastX, lastY]);
-        } else if (GLUT.buttons != 0 && GLUT.motionFunc) {
-          event.preventDefault();
-          GLUT.saveModifiers(event);
-          Runtime.dynCall('vii', GLUT.motionFunc, [lastX, lastY]);
-        }
-      },getSpecialKey:function (keycode) {
-          var key = null;
-          switch (keycode) {
-            case 8:  key = 120 /* backspace */; break;
-            case 46: key = 111 /* delete */; break;
-  
-            case 0x70 /*DOM_VK_F1*/: key = 1 /* GLUT_KEY_F1 */; break;
-            case 0x71 /*DOM_VK_F2*/: key = 2 /* GLUT_KEY_F2 */; break;
-            case 0x72 /*DOM_VK_F3*/: key = 3 /* GLUT_KEY_F3 */; break;
-            case 0x73 /*DOM_VK_F4*/: key = 4 /* GLUT_KEY_F4 */; break;
-            case 0x74 /*DOM_VK_F5*/: key = 5 /* GLUT_KEY_F5 */; break;
-            case 0x75 /*DOM_VK_F6*/: key = 6 /* GLUT_KEY_F6 */; break;
-            case 0x76 /*DOM_VK_F7*/: key = 7 /* GLUT_KEY_F7 */; break;
-            case 0x77 /*DOM_VK_F8*/: key = 8 /* GLUT_KEY_F8 */; break;
-            case 0x78 /*DOM_VK_F9*/: key = 9 /* GLUT_KEY_F9 */; break;
-            case 0x79 /*DOM_VK_F10*/: key = 10 /* GLUT_KEY_F10 */; break;
-            case 0x7a /*DOM_VK_F11*/: key = 11 /* GLUT_KEY_F11 */; break;
-            case 0x7b /*DOM_VK_F12*/: key = 12 /* GLUT_KEY_F12 */; break;
-            case 0x25 /*DOM_VK_LEFT*/: key = 100 /* GLUT_KEY_LEFT */; break;
-            case 0x26 /*DOM_VK_UP*/: key = 101 /* GLUT_KEY_UP */; break;
-            case 0x27 /*DOM_VK_RIGHT*/: key = 102 /* GLUT_KEY_RIGHT */; break;
-            case 0x28 /*DOM_VK_DOWN*/: key = 103 /* GLUT_KEY_DOWN */; break;
-            case 0x21 /*DOM_VK_PAGE_UP*/: key = 104 /* GLUT_KEY_PAGE_UP */; break;
-            case 0x22 /*DOM_VK_PAGE_DOWN*/: key = 105 /* GLUT_KEY_PAGE_DOWN */; break;
-            case 0x24 /*DOM_VK_HOME*/: key = 106 /* GLUT_KEY_HOME */; break;
-            case 0x23 /*DOM_VK_END*/: key = 107 /* GLUT_KEY_END */; break;
-            case 0x2d /*DOM_VK_INSERT*/: key = 108 /* GLUT_KEY_INSERT */; break;
-  
-            case 16   /*DOM_VK_SHIFT*/:
-            case 0x05 /*DOM_VK_LEFT_SHIFT*/:
-              key = 112 /* GLUT_KEY_SHIFT_L */;
-              break;
-            case 0x06 /*DOM_VK_RIGHT_SHIFT*/:
-              key = 113 /* GLUT_KEY_SHIFT_R */;
-              break;
-  
-            case 17   /*DOM_VK_CONTROL*/:
-            case 0x03 /*DOM_VK_LEFT_CONTROL*/:
-              key = 114 /* GLUT_KEY_CONTROL_L */;
-              break;
-            case 0x04 /*DOM_VK_RIGHT_CONTROL*/:
-              key = 115 /* GLUT_KEY_CONTROL_R */;
-              break;
-  
-            case 18   /*DOM_VK_ALT*/:
-            case 0x02 /*DOM_VK_LEFT_ALT*/:
-              key = 116 /* GLUT_KEY_ALT_L */;
-              break;
-            case 0x01 /*DOM_VK_RIGHT_ALT*/:
-              key = 117 /* GLUT_KEY_ALT_R */;
-              break;
-          };
-          return key;
-      },getASCIIKey:function (event) {
-        if (event['ctrlKey'] || event['altKey'] || event['metaKey']) return null;
-  
-        var keycode = event['keyCode'];
-  
-        /* The exact list is soooo hard to find in a canonical place! */
-  
-        if (48 <= keycode && keycode <= 57)
-          return keycode; // numeric  TODO handle shift?
-        if (65 <= keycode && keycode <= 90)
-          return event['shiftKey'] ? keycode : keycode + 32;
-        if (96 <= keycode && keycode <= 105)
-          return keycode - 48; // numpad numbers    
-        if (106 <= keycode && keycode <= 111)
-          return keycode - 106 + 42; // *,+-./  TODO handle shift?
-  
-        switch (keycode) {
-          case 9:  // tab key
-          case 13: // return key
-          case 27: // escape
-          case 32: // space
-          case 61: // equal
-            return keycode;
-        }
-  
-        var s = event['shiftKey'];
-        switch (keycode) {
-          case 186: return s ? 58 : 59; // colon / semi-colon
-          case 187: return s ? 43 : 61; // add / equal (these two may be wrong)
-          case 188: return s ? 60 : 44; // less-than / comma
-          case 189: return s ? 95 : 45; // dash
-          case 190: return s ? 62 : 46; // greater-than / period
-          case 191: return s ? 63 : 47; // forward slash
-          case 219: return s ? 123 : 91; // open bracket
-          case 220: return s ? 124 : 47; // back slash
-          case 221: return s ? 125 : 93; // close braket
-          case 222: return s ? 34 : 39; // single quote
-        }
-  
-        return null;
-      },onKeydown:function (event) {
-        if (GLUT.specialFunc || GLUT.keyboardFunc) {
-          var key = GLUT.getSpecialKey(event['keyCode']);
-          if (key !== null) {
-            if( GLUT.specialFunc ) {
-              event.preventDefault();
-              GLUT.saveModifiers(event);
-              Runtime.dynCall('viii', GLUT.specialFunc, [key, Browser.mouseX, Browser.mouseY]);
-            }
-          }
-          else
-          {
-            key = GLUT.getASCIIKey(event);
-            if( key !== null && GLUT.keyboardFunc ) {
-              event.preventDefault();
-              GLUT.saveModifiers(event);
-              Runtime.dynCall('viii', GLUT.keyboardFunc, [key, Browser.mouseX, Browser.mouseY]);
-            }
-          }
-        }
-      },onKeyup:function (event) {
-        if (GLUT.specialUpFunc || GLUT.keyboardUpFunc) {
-          var key = GLUT.getSpecialKey(event['keyCode']);
-          if (key !== null) {
-            if(GLUT.specialUpFunc) {
-              event.preventDefault ();
-              GLUT.saveModifiers(event);
-              Runtime.dynCall('viii', GLUT.specialUpFunc, [key, Browser.mouseX, Browser.mouseY]);
-            }
-          }
-          else
-          {
-            key = GLUT.getASCIIKey(event);
-            if( key !== null && GLUT.keyboardUpFunc ) {
-              event.preventDefault ();
-              GLUT.saveModifiers(event);
-              Runtime.dynCall('viii', GLUT.keyboardUpFunc, [key, Browser.mouseX, Browser.mouseY]);
-            }
-          }
-        }
-      },onMouseButtonDown:function (event) {
-        Browser.calculateMouseEvent(event);
-  
-        GLUT.buttons |= (1 << event['button']);
-  
-        if (event.target == Module["canvas"] && GLUT.mouseFunc) {
-          try {
-            event.target.setCapture();
-          } catch (e) {}
-          event.preventDefault();
-          GLUT.saveModifiers(event);
-          Runtime.dynCall('viiii', GLUT.mouseFunc, [event['button'], 0/*GLUT_DOWN*/, Browser.mouseX, Browser.mouseY]);
-        }
-      },onMouseButtonUp:function (event) {
-        Browser.calculateMouseEvent(event);
-  
-        GLUT.buttons &= ~(1 << event['button']);
-  
-        if (GLUT.mouseFunc) {
-          event.preventDefault();
-          GLUT.saveModifiers(event);
-          Runtime.dynCall('viiii', GLUT.mouseFunc, [event['button'], 1/*GLUT_UP*/, Browser.mouseX, Browser.mouseY]);
-        }
-      },onMouseWheel:function (event) {
-        Browser.calculateMouseEvent(event);
-  
-        // cross-browser wheel delta
-        var e = window.event || event; // old IE support
-        var delta = -Browser.getMouseWheelDelta(event);
-  
-        var button = 3; // wheel up
-        if (delta < 0) {
-          button = 4; // wheel down
-        }
-  
-        if (GLUT.mouseFunc) {
-          event.preventDefault();
-          GLUT.saveModifiers(event);
-          Runtime.dynCall('viiii', GLUT.mouseFunc, [button, 0/*GLUT_DOWN*/, Browser.mouseX, Browser.mouseY]);
-        }
-      },onFullScreenEventChange:function (event) {
-        var width;
-        var height;
-        if (document["fullScreen"] || document["mozFullScreen"] || document["webkitIsFullScreen"]) {
-          width = screen["width"];
-          height = screen["height"];
-        } else {
-          width = GLUT.windowWidth;
-          height = GLUT.windowHeight;
-          // TODO set position
-          document.removeEventListener('fullscreenchange', GLUT.onFullScreenEventChange, true);
-          document.removeEventListener('mozfullscreenchange', GLUT.onFullScreenEventChange, true);
-          document.removeEventListener('webkitfullscreenchange', GLUT.onFullScreenEventChange, true);
-        }
-        Browser.setCanvasSize(width, height);
-        /* Can't call _glutReshapeWindow as that requests cancelling fullscreen. */
-        if (GLUT.reshapeFunc) {
-          // console.log("GLUT.reshapeFunc (from FS): " + width + ", " + height);
-          Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
-        }
-        _glutPostRedisplay();
-      },requestFullScreen:function () {
-        var RFS = Module["canvas"]['requestFullscreen'] ||
-                  Module["canvas"]['requestFullScreen'] ||
-                  Module["canvas"]['mozRequestFullScreen'] ||
-                  Module["canvas"]['webkitRequestFullScreen'] ||
-                  (function() {});
-        RFS.apply(Module["canvas"], []);
-      },cancelFullScreen:function () {
-        var CFS = document['exitFullscreen'] ||
-                  document['cancelFullScreen'] ||
-                  document['mozCancelFullScreen'] ||
-                  document['webkitCancelFullScreen'] ||
-                  (function() {});
-        CFS.apply(document, []);
-      }};function _glutInitDisplayMode(mode) {
-      GLUT.initDisplayMode = mode;
-    }
-
-  function _glutInitWindowSize(width, height) {
-      Browser.setCanvasSize( GLUT.initWindowWidth = width,
-                             GLUT.initWindowHeight = height );
-    }
-
-  function _glutInitWindowPosition(x, y) {
-      // Ignore for now
-    }
-
-  function _glutCreateWindow(name) {
-      var contextAttributes = {
-        antialias: ((GLUT.initDisplayMode & 0x0080 /*GLUT_MULTISAMPLE*/) != 0),
-        depth: ((GLUT.initDisplayMode & 0x0010 /*GLUT_DEPTH*/) != 0),
-        stencil: ((GLUT.initDisplayMode & 0x0020 /*GLUT_STENCIL*/) != 0)
-      };
-      Module.ctx = Browser.createContext(Module['canvas'], true, true, contextAttributes);
-      return Module.ctx ? 1 /* a new GLUT window ID for the created context */ : 0 /* failure */;
-    }
-
-  function _glutDisplayFunc(func) {
-      GLUT.displayFunc = func;
-    }
-
-  function _glutIdleFunc(func) {
-      function callback() {
-        if (GLUT.idleFunc) {
-          Runtime.dynCall('v', GLUT.idleFunc);
-          Browser.safeSetTimeout(callback, 0);
-        }
-      }
-      if (!GLUT.idleFunc) {
-        Browser.safeSetTimeout(callback, 0);
-      }
-      GLUT.idleFunc = func;
-    }
-
-  function _glutReshapeFunc(func) {
-      GLUT.reshapeFunc = func;
-    }
-
-  function _glutKeyboardFunc(func) {
-      GLUT.keyboardFunc = func;
-    }
-
-  function _glutMouseFunc(func) {
-      GLUT.mouseFunc = func;
-    }
-
-  function _glutMotionFunc(func) {
-      GLUT.motionFunc = func;
-    }
-
-  
-  
-  function _glutPostRedisplay() {
-      if (GLUT.displayFunc && !GLUT.requestedAnimationFrame) {
-        GLUT.requestedAnimationFrame = true;
-        Browser.requestAnimationFrame(function() {
-          GLUT.requestedAnimationFrame = false;
-          if (ABORT) return;
-          Runtime.dynCall('v', GLUT.displayFunc);
-        });
-      }
-    }function _glutReshapeWindow(width, height) {
-      GLUT.cancelFullScreen();
-      Browser.setCanvasSize(width, height);
-      if (GLUT.reshapeFunc) {
-        Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
-      }
-      _glutPostRedisplay();
-    }function _glutMainLoop() {
-      _glutReshapeWindow(Module['canvas'].width, Module['canvas'].height);
-      _glutPostRedisplay();
-      throw 'SimulateInfiniteLoop';
-    }
-
-  function _atexit(func, arg) {
-      __ATEXIT__.unshift({ func: func, arg: arg });
-    }
-
-  
-  
-  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
-        GL.createLog2ceilLookup(GL.MAX_TEMP_BUFFER_SIZE);
-        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
-      },recordError:function recordError(errorCode) {
-        if (!GL.lastError) {
-          GL.lastError = errorCode;
-        }
-      },getNewId:function (table) {
-        var ret = GL.counter++;
-        for (var i = table.length; i < ret; i++) {
-          table[i] = null;
-        }
-        return ret;
-      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempVertexBuffers1:[],tempVertexBufferCounters1:[],tempVertexBuffers2:[],tempVertexBufferCounters2:[],numTempVertexBuffersPerSize:64,tempIndexBuffers:[],tempQuadIndexBuffer:null,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
-        GL.log2ceilLookup = new Uint8Array(maxValue+1);
-        var log2 = 0;
-        var pow2 = 1;
-        GL.log2ceilLookup[0] = 0;
-        for(var i = 1; i <= maxValue; ++i) {
-          if (i > pow2) {
-            pow2 <<= 1;
-            ++log2;
-          }
-          GL.log2ceilLookup[i] = log2;
-        }
-      },generateTempBuffers:function (quads) {
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        GL.tempVertexBufferCounters1.length = GL.tempVertexBufferCounters2.length = largestIndex+1;
-        GL.tempVertexBuffers1.length = GL.tempVertexBuffers2.length = largestIndex+1;
-        GL.tempIndexBuffers.length = largestIndex+1;
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempIndexBuffers[i] = null; // Created on-demand
-          GL.tempVertexBufferCounters1[i] = GL.tempVertexBufferCounters2[i] = 0;
-          var ringbufferLength = GL.numTempVertexBuffersPerSize;
-          GL.tempVertexBuffers1[i] = [];
-          GL.tempVertexBuffers2[i] = [];
-          var ringbuffer1 = GL.tempVertexBuffers1[i];
-          var ringbuffer2 = GL.tempVertexBuffers2[i];
-          ringbuffer1.length = ringbuffer2.length = ringbufferLength;
-          for(var j = 0; j < ringbufferLength; ++j) {
-            ringbuffer1[j] = ringbuffer2[j] = null; // Created on-demand
-          }
-        }
-  
-        if (quads) {
-          // GL_QUAD indexes can be precalculated
-          GL.tempQuadIndexBuffer = GLctx.createBuffer();
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
-          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
-          var quadIndexes = new Uint16Array(numIndexes);
-          var i = 0, v = 0;
-          while (1) {
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+1;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+3;
-            if (i >= numIndexes) break;
-            v += 4;
-          }
-          GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, GLctx.STATIC_DRAW);
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
-        }
-      },getTempVertexBuffer:function getTempVertexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ringbuffer = GL.tempVertexBuffers1[idx];
-        var nextFreeBufferIndex = GL.tempVertexBufferCounters1[idx];
-        GL.tempVertexBufferCounters1[idx] = (GL.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
-        var vbo = ringbuffer[nextFreeBufferIndex];
-        if (vbo) {
-          return vbo;
-        }
-        var prevVBO = GLctx.getParameter(GLctx.ARRAY_BUFFER_BINDING);
-        ringbuffer[nextFreeBufferIndex] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, ringbuffer[nextFreeBufferIndex]);
-        GLctx.bufferData(GLctx.ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, prevVBO);
-        return ringbuffer[nextFreeBufferIndex];
-      },getTempIndexBuffer:function getTempIndexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ibo = GL.tempIndexBuffers[idx];
-        if (ibo) {
-          return ibo;
-        }
-        var prevIBO = GLctx.getParameter(GLctx.ELEMENT_ARRAY_BUFFER_BINDING);
-        GL.tempIndexBuffers[idx] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[idx]);
-        GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, prevIBO);
-        return GL.tempIndexBuffers[idx];
-      },newRenderingFrameStarted:function newRenderingFrameStarted() {
-        var vb = GL.tempVertexBuffers1;
-        GL.tempVertexBuffers1 = GL.tempVertexBuffers2;
-        GL.tempVertexBuffers2 = vb;
-        vb = GL.tempVertexBufferCounters1;
-        GL.tempVertexBufferCounters1 = GL.tempVertexBufferCounters2;
-        GL.tempVertexBufferCounters2 = vb;
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempVertexBufferCounters1[i] = 0;
-        }
-      },findToken:function (source, token) {
-        function isIdentChar(ch) {
-          if (ch >= 48 && ch <= 57) // 0-9
-            return true;
-          if (ch >= 65 && ch <= 90) // A-Z
-            return true;
-          if (ch >= 97 && ch <= 122) // a-z
-            return true;
-          return false;
-        }
-        var i = -1;
-        do {
-          i = source.indexOf(token, i + 1);
-          if (i < 0) {
-            break;
-          }
-          if (i > 0 && isIdentChar(source[i - 1])) {
-            continue;
-          }
-          i += token.length;
-          if (i < source.length - 1 && isIdentChar(source[i + 1])) {
-            continue;
-          }
-          return true;
-        } while (true);
-        return false;
-      },getSource:function (shader, count, string, length) {
-        var source = '';
-        for (var i = 0; i < count; ++i) {
-          var frag;
-          if (length) {
-            var len = HEAP32[(((length)+(i*4))>>2)];
-            if (len < 0) {
-              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
-            } else {
-              frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)], len);
-            }
-          } else {
-            frag = Pointer_stringify(HEAP32[(((string)+(i*4))>>2)]);
-          }
-          source += frag;
-        }
-        // Let's see if we need to enable the standard derivatives extension
-        type = GLctx.getShaderParameter(GL.shaders[shader], 0x8B4F /* GL_SHADER_TYPE */);
-        if (type == 0x8B30 /* GL_FRAGMENT_SHADER */) {
-          if (GL.findToken(source, "dFdx") ||
-              GL.findToken(source, "dFdy") ||
-              GL.findToken(source, "fwidth")) {
-            source = "#extension GL_OES_standard_derivatives : enable\n" + source;
-            var extension = GLctx.getExtension("OES_standard_derivatives");
-          }
-        }
-        return source;
-      },computeImageSize:function (width, height, sizePerPixel, alignment) {
-        function roundedToNextMultipleOf(x, y) {
-          return Math.floor((x + y - 1) / y) * y
-        }
-        var plainRowSize = width * sizePerPixel;
-        var alignedRowSize = roundedToNextMultipleOf(plainRowSize, alignment);
-        return (height <= 0) ? 0 :
-                 ((height - 1) * alignedRowSize + plainRowSize);
-      },get:function (name_, p, type) {
-        // Guard against user passing a null pointer.
-        // Note that GLES2 spec does not say anything about how passing a null pointer should be treated.
-        // Testing on desktop core GL 3, the application crashes on glGetIntegerv to a null pointer, but
-        // better to report an error instead of doing anything random.
-        if (!p) {
-          GL.recordError(0x0501 /* GL_INVALID_VALUE */);
-          return;
-        }
-        var ret = undefined;
-        switch(name_) { // Handle a few trivial GLES values
-          case 0x8DFA: // GL_SHADER_COMPILER
-            ret = 1;
-            break;
-          case 0x8DF8: // GL_SHADER_BINARY_FORMATS
-            if (type !== 'Integer') {
-              GL.recordError(0x0500); // GL_INVALID_ENUM
-            }
-            return; // Do not write anything to the out pointer, since no binary formats are supported.
-          case 0x8DF9: // GL_NUM_SHADER_BINARY_FORMATS
-            ret = 0;
-            break;
-          case 0x86A2: // GL_NUM_COMPRESSED_TEXTURE_FORMATS
-            // WebGL doesn't have GL_NUM_COMPRESSED_TEXTURE_FORMATS (it's obsolete since GL_COMPRESSED_TEXTURE_FORMATS returns a JS array that can be queried for length),
-            // so implement it ourselves to allow C++ GLES2 code get the length.
-            var formats = GLctx.getParameter(0x86A3 /*GL_COMPRESSED_TEXTURE_FORMATS*/);
-            ret = formats.length;
-            break;
-          case 0x8B9A: // GL_IMPLEMENTATION_COLOR_READ_TYPE
-            ret = 0x1401; // GL_UNSIGNED_BYTE
-            break;
-          case 0x8B9B: // GL_IMPLEMENTATION_COLOR_READ_FORMAT
-            ret = 0x1908; // GL_RGBA
-            break;
-        }
-  
-        if (ret === undefined) {
-          var result = GLctx.getParameter(name_);
-          switch (typeof(result)) {
-            case "number":
-              ret = result;
-              break;
-            case "boolean":
-              ret = result ? 1 : 0;
-              break;
-            case "string":
-              GL.recordError(0x0500); // GL_INVALID_ENUM
-              return;
-            case "object":
-              if (result === null) {
-                // null is a valid result for some (e.g., which buffer is bound - perhaps nothing is bound), but otherwise
-                // can mean an invalid name_, which we need to report as an error
-                switch(name_) {
-                  case 0x8894: // ARRAY_BUFFER_BINDING
-                  case 0x8B8D: // CURRENT_PROGRAM
-                  case 0x8895: // ELEMENT_ARRAY_BUFFER_BINDING
-                  case 0x8CA6: // FRAMEBUFFER_BINDING
-                  case 0x8CA7: // RENDERBUFFER_BINDING
-                  case 0x8069: // TEXTURE_BINDING_2D
-                  case 0x8514: { // TEXTURE_BINDING_CUBE_MAP
-                    ret = 0;
-                    break;
-                  }
-                  default: {
-                    GL.recordError(0x0500); // GL_INVALID_ENUM
-                    return;
-                  }
-                }
-              } else if (result instanceof Float32Array ||
-                         result instanceof Uint32Array ||
-                         result instanceof Int32Array ||
-                         result instanceof Array) {
-                for (var i = 0; i < result.length; ++i) {
-                  switch (type) {
-                    case 'Integer': HEAP32[(((p)+(i*4))>>2)]=result[i];   break;
-                    case 'Float':   HEAPF32[(((p)+(i*4))>>2)]=result[i]; break;
-                    case 'Boolean': HEAP8[(((p)+(i))|0)]=result[i] ? 1 : 0;    break;
-                    default: throw 'internal glGet error, bad type: ' + type;
-                  }
-                }
-                return;
-              } else if (result instanceof WebGLBuffer ||
-                         result instanceof WebGLProgram ||
-                         result instanceof WebGLFramebuffer ||
-                         result instanceof WebGLRenderbuffer ||
-                         result instanceof WebGLTexture) {
-                ret = result.name | 0;
-              } else {
-                GL.recordError(0x0500); // GL_INVALID_ENUM
-                return;
-              }
-              break;
-            default:
-              GL.recordError(0x0500); // GL_INVALID_ENUM
-              return;
-          }
-        }
-  
-        switch (type) {
-          case 'Integer': HEAP32[((p)>>2)]=ret;    break;
-          case 'Float':   HEAPF32[((p)>>2)]=ret;  break;
-          case 'Boolean': HEAP8[(p)]=ret ? 1 : 0; break;
-          default: throw 'internal glGet error, bad type: ' + type;
-        }
-      },getTexPixelData:function (type, format, width, height, pixels, internalFormat) {
-        var sizePerPixel;
-        switch (type) {
-          case 0x1401 /* GL_UNSIGNED_BYTE */:
-            switch (format) {
-              case 0x1906 /* GL_ALPHA */:
-              case 0x1909 /* GL_LUMINANCE */:
-                sizePerPixel = 1;
-                break;
-              case 0x1907 /* GL_RGB */:
-                sizePerPixel = 3;
-                break;
-              case 0x1908 /* GL_RGBA */:
-                sizePerPixel = 4;
-                break;
-              case 0x190A /* GL_LUMINANCE_ALPHA */:
-                sizePerPixel = 2;
-                break;
-              default:
-                throw 'Invalid format (' + format + ')';
-            }
-            break;
-          case 0x1403 /* GL_UNSIGNED_SHORT */:
-            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
-              sizePerPixel = 2;
-            } else {
-              throw 'Invalid format (' + format + ')';
-            }
-            break;
-          case 0x1405 /* GL_UNSIGNED_INT */:
-            if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
-              sizePerPixel = 4;
-            } else {
-              throw 'Invalid format (' + format + ')';
-            }
-            break;
-          case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
-            sizePerPixel = 4;
-            break;
-          case 0x8363 /* GL_UNSIGNED_SHORT_5_6_5 */:
-          case 0x8033 /* GL_UNSIGNED_SHORT_4_4_4_4 */:
-          case 0x8034 /* GL_UNSIGNED_SHORT_5_5_5_1 */:
-            sizePerPixel = 2;
-            break;
-          case 0x1406 /* GL_FLOAT */:
-            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
-            switch (format) {
-              case 0x1907 /* GL_RGB */:
-                sizePerPixel = 3*4;
-                break;
-              case 0x1908 /* GL_RGBA */:
-                sizePerPixel = 4*4;
-                break;
-              default:
-                throw 'Invalid format (' + format + ')';
-            }
-            internalFormat = GLctx.RGBA;
-            break;
-          default:
-            throw 'Invalid type (' + type + ')';
-        }
-        var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
-        if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
-          pixels = HEAPU8.subarray((pixels),(pixels+bytes));
-        } else if (type == 0x1406 /* GL_FLOAT */) {
-          pixels = HEAPF32.subarray((pixels)>>2,(pixels+bytes)>>2);
-        } else if (type == 0x1405 /* GL_UNSIGNED_INT */ || type == 0x84FA /* UNSIGNED_INT_24_8_WEBGL */) {
-          pixels = HEAPU32.subarray((pixels)>>2,(pixels+bytes)>>2);
-        } else {
-          pixels = HEAPU16.subarray((pixels)>>1,(pixels+bytes)>>1);
-        }
-        return {
-          pixels: pixels,
-          internalFormat: internalFormat
-        }
-      },enabledClientAttribIndices:[],enableVertexAttribArray:function enableVertexAttribArray(index) {
-        if (!GL.enabledClientAttribIndices[index]) {
-          GL.enabledClientAttribIndices[index] = true;
-          GLctx.enableVertexAttribArray(index);
-        }
-      },disableVertexAttribArray:function disableVertexAttribArray(index) {
-        if (GL.enabledClientAttribIndices[index]) {
-          GL.enabledClientAttribIndices[index] = false;
-          GLctx.disableVertexAttribArray(index);
-        }
-      },initExtensions:function () {
-        if (GL.initExtensions.done) return;
-        GL.initExtensions.done = true;
-  
-        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
-  
-        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
-        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
-          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
-        }
-  
-        GL.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
-  
-        // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
-        GL.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
-                            GLctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
-                            GLctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
-  
-        GL.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
-                            GLctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-                            GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
-  
-        GL.floatExt = GLctx.getExtension('OES_texture_float');
-  
-        // Extension available from Firefox 26 and Google Chrome 30
-        GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
-        
-        // Extension available from Firefox 25 and WebKit
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
-  
-        // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
-        // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
-        // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
-        // here, as long as they don't produce a performance impact for users that might not be using those extensions.
-        // E.g. debugging-related extensions should probably be off by default.
-        var automaticallyEnabledExtensions = [ "OES_texture_float", "OES_texture_half_float", "OES_standard_derivatives",
-                                               "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_depth_texture",
-                                               "OES_element_index_uint", "EXT_texture_filter_anisotropic", "ANGLE_instanced_arrays",
-                                               "OES_texture_float_linear", "OES_texture_half_float_linear", "WEBGL_compressed_texture_atc",
-                                               "WEBGL_compressed_texture_pvrtc", "EXT_color_buffer_half_float", "WEBGL_color_buffer_float",
-                                               "EXT_frag_depth", "EXT_sRGB", "WEBGL_draw_buffers", "WEBGL_shared_resources",
-                                               "EXT_shader_texture_lod" ];
-  
-        function shouldEnableAutomatically(extension) {
-          for(var i in automaticallyEnabledExtensions) {
-            var include = automaticallyEnabledExtensions[i];
-            if (ext.indexOf(include) != -1) {
-              return true;
-            }
-          }
-          return false;
-        }
-  
-        var extensions = GLctx.getSupportedExtensions();
-        for(var e in extensions) {
-          var ext = extensions[e].replace('MOZ_', '').replace('WEBKIT_', '');
-          if (automaticallyEnabledExtensions.indexOf(ext) != -1) {
-            GLctx.getExtension(ext); // Calling .getExtension enables that extension permanently, no need to store the return value to be enabled.
-          }
-        }
-      },populateUniformTable:function (program) {
-        var p = GL.programs[program];
-        GL.programInfos[program] = {
-          uniforms: {},
-          maxUniformLength: 0, // This is eagerly computed below, since we already enumerate all uniforms anyway.
-          maxAttributeLength: -1 // This is lazily computed and cached, computed when/if first asked, "-1" meaning not computed yet.
-        };
-  
-        var ptable = GL.programInfos[program];
-        var utable = ptable.uniforms;
-        // A program's uniform table maps the string name of an uniform to an integer location of that uniform.
-        // The global GL.uniforms map maps integer locations to WebGLUniformLocations.
-        var numUniforms = GLctx.getProgramParameter(p, GLctx.ACTIVE_UNIFORMS);
-        for (var i = 0; i < numUniforms; ++i) {
-          var u = GLctx.getActiveUniform(p, i);
-  
-          var name = u.name;
-          ptable.maxUniformLength = Math.max(ptable.maxUniformLength, name.length+1);
-  
-          // Strip off any trailing array specifier we might have got, e.g. "[0]".
-          if (name.indexOf(']', name.length-1) !== -1) {
-            var ls = name.lastIndexOf('[');
-            name = name.slice(0, ls);
-          }
-  
-          // Optimize memory usage slightly: If we have an array of uniforms, e.g. 'vec3 colors[3];', then 
-          // only store the string 'colors' in utable, and 'colors[0]', 'colors[1]' and 'colors[2]' will be parsed as 'colors'+i.
-          // Note that for the GL.uniforms table, we still need to fetch the all WebGLUniformLocations for all the indices.
-          var loc = GLctx.getUniformLocation(p, name);
-          var id = GL.getNewId(GL.uniforms);
-          utable[name] = [u.size, id];
-          GL.uniforms[id] = loc;
-  
-          for (var j = 1; j < u.size; ++j) {
-            var n = name + '['+j+']';
-            loc = GLctx.getUniformLocation(p, n);
-            id = GL.getNewId(GL.uniforms);
-  
-            GL.uniforms[id] = loc;
-          }
-        }
-      }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},init:function () {
-        if (CL.cl_init == 0) {
-          console.log('%c WebCL-Translator V2.0 ! ', 'background: #222; color: #bada55');
-          var nodejs = (typeof window === 'undefined');
-          if(nodejs) {
-            webcl = require('../webcl');
-          }
-  
-          if (webcl == undefined) {
-            alert("Unfortunately your system does not support WebCL. " +
-            "Make sure that you have WebKit Samsung or Firefox Nokia plugin");
-  
-            console.error("Unfortunately your system does not support WebCL.\n");
-            console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
-          } else {
-  
-            // Add webcl constant for parser
-            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
-            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
-            // Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });          
-            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
-            // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
-            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
-            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
-  
-            for (var i = 0; i < CL.cl_extensions.length; i ++) {
-  
-              if (webcl.enableExtension(CL.cl_extensions[i])) {
-                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
-              } else {
-                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
-              }
-            }
-            CL.cl_init = 1;
-          }
-        }
-  
-        return CL.cl_init;
-      },udid:function (obj) {    
-        var _id;
-  
-        if (obj !== undefined) {
-  
-          if ( obj.hasOwnProperty('udid') ) {
-           _id = obj.udid;
-  
-           if (_id !== undefined) {
-             return _id;
-           }
-          }
-        }
-  
-        var _uuid = [];
-  
-        _uuid[0] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length-1]; // First digit of udid can't be 0
-        for (var i = 1; i < 6; i++) _uuid[i] = CL.cl_digits[0 | Math.random()*CL.cl_digits.length];
-  
-        _id = _uuid.join('');
-  
-      
-        // /!\ Call udid when you add inside cl_objects if you pass object in parameter
-        if (obj !== undefined) {
-          Object.defineProperty(obj, "udid", { value : _id,writable : false });
-          CL.cl_objects[_id]=obj;
-        }
-  
-        return _id;      
-      },cast_long:function (arg_size) {
-        var _sizelong = [];
-        _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
-        _sizelong.push((arg_size & 0xFFFFFFFF));
-        // var _origin = x << 32 | y;
-        return new Int32Array(_sizelong);
-      },stringType:function (pn_type) {
-        switch(pn_type) {
-          case webcl.SIGNED_INT8:
-            return 'INT8';
-          case webcl.SIGNED_INT16:
-            return 'INT16';
-          case webcl.SIGNED_INT32:
-            return 'INT32';
-          case webcl.UNSIGNED_INT8:
-            return 'UINT8';
-          case webcl.UNSIGNED_INT16:
-            return 'UINT16';
-          case webcl.UNSIGNED_INT32:
-            return 'UINT32';
-          case 0x1304 /*webcl.UNSIGNED_LONG*/:
-            return 'ULONG';
-          case 0x1303 /*webcl.SIGNED_LONG*/:
-            return 'LONG';       
-          case webcl.FLOAT:
-            return 'FLOAT';
-          case webcl.LOCAL:
-            return '__local';   
-          case 0x1300 /*webcl.SAMPLER*/:
-            return 'sampler_t';   
-          case 0x1301 /*webcl.IMAGE2D*/:
-            return 'image2d_t';        
-          case 0x1302 /*webcl.IMAGE3D*/:
-            return 'image3d_t';            
-          default:
-            if (typeof(pn_type) == "string") return 'struct';
-            return 'UNKNOWN';
-        }
-      },parseType:function (string) {
-        var _value = -1;
-      
-        // First ulong for the webcl validator
-        if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;  
-        } else if ( string.indexOf("long") >= 0 ) {
-          _value = 0x1303 /*webcl.SIGNED_LONG*/;
-        } else if (string.indexOf("float") >= 0 ) {
-          _value = webcl.FLOAT;
-        } else if ( (string.indexOf("uchar") >= 0 ) || (string.indexOf("unsigned char") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT8;
-        } else if ( string.indexOf("char") >= 0 ) {
-          _value = webcl.SIGNED_INT8;
-        } else if ( (string.indexOf("ushort") >= 0 ) || (string.indexOf("unsigned short") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT16;
-        } else if ( string.indexOf("short") >= 0 ) {
-          _value = webcl.SIGNED_INT16;                     
-        } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;          
-        } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
-          _value = webcl.SIGNED_INT32;
-        } else if ( string.indexOf("image3d_t") >= 0 ) {
-          _value = 0x1302 /*webcl.IMAGE3D*/;        
-        } else if ( string.indexOf("image2d_t") >= 0 ) {
-          _value = 0x1301 /*webcl.IMAGE2D*/;
-        } else if ( string.indexOf("sampler_t") >= 0 ) {
-          _value = 0x1300 /*webcl.SAMPLER*/;
-        }
-  
-        return _value;
-      },parseStruct:function (kernel_string,struct_name) {
-  
-        // Experimental parse of Struct
-        // Search kernel function like 'struct_name { }' or '{ } struct_name'
-        // --------------------------------------------------------------------------------
-        // Step 1 : Search pattern struct_name { }
-        // Step 2 : if no result : Search pattern { } struct_name
-        // Step 3 : if no result : return
-        // Step 4 : split by ; // Num of variable of the structure  : int toto; float tata;
-        // Step 5 : split by , // Num of variable for each type     : float toto,tata,titi;
-        // Step 6 : Search pattern [num] // Array Variable          : float toto[4];
-        // Step 7 : Search type of the line
-        // Step 8 : if exist add type else search other struct
-        // --------------------------------------------------------------------------------
-  
-        CL.cl_structs_sig[struct_name] = [];
-  
-        // First search if is #define
-        var _re_define = new RegExp("#[\ ]*define[\ ]*"+struct_name+"[\ ]*[A-Za-z0-9_\s]*");
-        var _define = kernel_string.match(_re_define);
-  
-        if (_define != null && _define.length == 1) {
-  
-          // Get type of the line
-          var _str = _define[0];
-          var _type = CL.parseType(_str);
-          
-          if (_type != -1) {
-            CL.cl_structs_sig[struct_name].push(_type);
-          } else {
-            var _lastSpace = _str.lastIndexOf(" ");
-            var _res = _str.substr(_lastSpace + 1,_str.length - _lastSpace);
-  
-            CL.parseStruct(kernel_string,_res);
-          }
-      
-          return;
-        }
-  
-        // Second search if is typedef type name;
-        var _re_typedef = new RegExp("typedef[\ ]*[A-Za-z0-9_\s]*[\ ]*"+struct_name+"[\ ]*;");
-        var _typedef = kernel_string.match(_re_typedef);
-  
-        if (_typedef != null && _typedef.length == 1) {
-  
-          // Get type of the line
-          var _str = _typedef[0];
-          var _type = CL.parseType(_str);
-  
-          if (_type != -1) {
-            CL.cl_structs_sig[struct_name].push(_type);
-          } else {
-            _str = _str.replace(/^\s+|\s+$/g, ""); // trim
-            var _firstSpace = _str.indexOf(" ");
-            var _lastSpace = _str.lastIndexOf(" ");
-            var _res = _str.substr(_firstSpace + 1,_lastSpace - _firstSpace - 1);
-            
-            CL.parseStruct(kernel_string,_res);
-          }
-          
-          return;
-        }
-  
-        // search pattern : struct_name { } ;
-        var _re_before = new RegExp(struct_name+"[\ ]"+"\{([^}]+)\}");
-  
-        // search pattern : { } struct_name;
-        var _re_after = new RegExp("\{([^}]+)\}"+"[\ ]"+struct_name);
-  
-        var _res = kernel_string.match(_re_before);
-        var _contains_struct = "";
-        
-        if (_res != null && _res.length == 2) {
-          _contains_struct = _res[1];
-        } else {
-          _res = kernel_string.match(_re_after);
-          if (_res != null && _res.length == 2) {
-              _contains_struct = _res[1];
-          } else {
-            return;
-          }
-        }
-  
-        var _var = _contains_struct.split(";");
-        for (var i = 0; i < _var.length-1; i++ ) {
-          // Need for unsigned int width, height;
-          var _subvar = _var[i].split(","); 
-          
-          // Get type of the line
-          var _type = CL.parseType(_var[i]);
-        
-          // Need for float mu[4];
-          var _arrayNum = 0;
-          _res = _var[i].match(/[0-9]+/); 
-          if (_res != null) _arrayNum = _res;
-        
-          if ( _type != -1) {
-            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
-              CL.cl_structs_sig[struct_name].push(_type);
-            }
-          } else {
-            // Search name of the parameter
-            var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
-            var _name = "";
-            var _start = _struct.lastIndexOf(" "); 
-            for (var j = _start - 1; j >= 0 ; j--) {
-              var _chara = _struct.charAt(j);
-              if (_chara == ' ' && _name.length > 0) {
-                break;
-              } else if (_chara != ' ') {
-                _name = _chara + _name;
-              }
-            }
-            
-            // If struct is unknow search it
-            if (!(_name in CL.cl_structs_sig && CL.cl_structs_sig[_name].length > 0)) {
-              CL.parseStruct(kernel_string,_name);
-            }
-  
-            for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
-              CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);  
-            }
-          }
-        }
-      },parseKernel:function (kernel_string) {
-  
-  
-        // Experimental parse of Kernel
-        // ----------------------------
-        //
-        // /!\ The minify kernel could be use by the program but some trouble with line
-        // /!\ containing macro #define, for the moment only use the minify kernel for 
-        // /!\ parsing __kernel and struct
-        //
-        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
-        // --------------------------------------------------------------------------------
-        // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
-        // Step 2 : Search pattern __kernel ... ( ... )
-        // Step 3 : For each kernel
-        // Step 3 . 1 : Search Open Brace
-        // Step 3 . 2 : Search Kernel Name
-        // Step 3 . 3 : Search Kernel Parameter
-        // Step 3 . 4 : Grab { name : [ param, ... ] }
-        // --------------------------------------------------------------------------------
-  
-        // Remove all comments ...
-        var _mini_kernel_string  = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
-  , "");
-        
-        // Remove all char \n \r \t ...
-        _mini_kernel_string = _mini_kernel_string.replace(/\n/g, " ");
-        _mini_kernel_string = _mini_kernel_string.replace(/\r/g, " ");
-  
-        // Remove all the multispace
-        _mini_kernel_string = _mini_kernel_string.replace(/\s{2,}/g, " ");
-  
-        // Search pattern : __kernel ... ( ... )
-        // var _matches = _mini_kernel_string.match(/__kernel[A-Za-z0-9_\s]+\(([^)]+)\)/g);
-        // if (_matches == null) {
-        //   console.error("/!\\ Not found kernel !!!");
-        //   return;
-        // }
-  
-        // Search kernel (Pattern doesn't work with extra __attribute__)
-        var _matches = [];
-        var _found = 1;
-        var _stringKern = _mini_kernel_string;
-        var _security = 10;
-  
-        // Search all the kernel
-        while (_found && _security) {
-          // Just in case no more than 10 loop
-          _security --;
-  
-          var _pattern = "__kernel ";
-          var _kern = _stringKern.indexOf(_pattern);
-  
-          if (_kern == -1) {
-            _pattern = " kernel ";
-            _kern = _stringKern.indexOf(" kernel ");
-            if (_kern == -1) { 
-              _pattern = "kernel ";
-              _kern = _stringKern.indexOf("kernel ");
-              if (_kern == -1) {
-                _found = 0;
-                continue;
-              } else if (_kern != 0) {
-                console.error("/!\\ Find word 'kernel' but is not a real kernel  .. ("+_kern+")");
-                _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
-                continue;
-              }
-            }
-          }
-  
-          _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
-   
-          var _brace = _stringKern.indexOf("{");
-          var _stringKern2 = _stringKern.substr(0,_brace);
-          var _braceOpen = _stringKern2.lastIndexOf("(");
-          var _braceClose = _stringKern2.lastIndexOf(")");
-          var _stringKern3 = _stringKern2.substr(0,_braceOpen).replace(/^\s+|\s+$/g, ""); // trim
-          var _space = _stringKern3.lastIndexOf(" ");
-  
-          _stringKern2 = _stringKern2.substr(_space + 1,_braceClose);
-  
-          // Add the kernel result like name_kernel(..., ... ,...)
-          _matches.push(_stringKern2);
-        }
-  
-        // For each kernel ....
-        for (var i = 0; i < _matches.length; i ++) {
-          // Search the open Brace
-          var _brace = _matches[i].lastIndexOf("(");
-  
-          // Part before '('
-          var _first_part = _matches[i].substr(0,_brace);
-          _first_part = _first_part.replace(/^\s+|\s+$/g, ""); // trim
-  
-          // Part after ')'
-          var _second_part = _matches[i].substr(_brace+1,_matches[i].length-_brace-2);
-          _second_part = _second_part.replace(/^\s+|\s+$/g, ""); // trim
-  
-          // Search name part
-          var _name = _first_part.substr(_first_part.lastIndexOf(" ") + 1);
-  
-          // If name already present reparse it may be is another test with not the same num of parameter ....
-          if (_name in CL.cl_kernels_sig) {
-            delete CL.cl_kernels_sig[_name]
-          }
-  
-          // Search parameter part
-          var _param = [];
-  
-          var _array = _second_part.split(","); 
-          for (var j = 0; j < _array.length; j++) {
-            var _type = CL.parseType(_array[j]);
-  
-            if (_array[j].indexOf("__local") >= 0 ) {
-              _param.push(webcl.LOCAL);
-  
-  
-            } else if (_type == -1) {
-                         
-              _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
-              _array[j] = _array[j].replace("*", "");
-  
-              var _start = _array[j].lastIndexOf(" "); 
-              if (_start != -1) {
-                var _kernels_struct_name = "";
-                // Search Parameter type Name
-                for (var k = _start - 1; k >= 0 ; k--) {
-  
-                  var _chara = _array[j].charAt(k);
-                  if (_chara == ' ' && _kernels_struct_name.length > 0) {
-                    break;
-                  } else if (_chara != ' ') {
-                    _kernels_struct_name = _chara + _kernels_struct_name;
-                  }
-                }             
-  
-                // Parse struct only if is not already inside the map
-                if (!(_kernels_struct_name in CL.cl_structs_sig))
-                  CL.parseStruct(_mini_kernel_string, _kernels_struct_name);
-              
-                // Add the name of the struct inside the map of param kernel
-                _param.push(_kernels_struct_name);         
-  
-              } else {
-                _param.push(webcl.FLOAT);
-              }
-  
-  
-            } else {
-              _param.push(_type);
-  
-            }
-          }        
-  
-          CL.cl_kernels_sig[_name] = _param;
-  
-        }
-  
-        return _mini_kernel_string;
-  
-      },getImageSizeType:function (image) {
-        var _sizeType = 0;
-  
-        
-        var _info = CL.cl_objects[image].getInfo();
-  
-        switch (_info.channelType) {
-          case webcl.SNORM_INT8:
-          case webcl.SIGNED_INT8:
-          case webcl.UNORM_INT8:        
-          case webcl.UNSIGNED_INT8:
-            _sizeType = 1;
-            break;
-          case webcl.SNORM_INT16:
-          case webcl.SIGNED_INT16:
-          case webcl.UNORM_INT16:        
-          case webcl.UNSIGNED_INT16:
-          case webcl.HALF_FLOAT:
-            _sizeType = 2;      
-            break;
-          case webcl.SIGNED_INT32:
-          case webcl.UNSIGNED_INT32:      
-          case webcl.FLOAT:
-            _sizeType = 4;
-            break;
-          default:
-            console.error("getImageSizeType : This channel type is not yet implemented => "+_info.channelType);
-        }
-  
-        return _sizeType;
-      },getImageFormatType:function (image) {
-        var _type = 0;
-  
-  
-        var _info = CL.cl_objects[image].getInfo();
-  
-        switch (_info.channelType) {
-          case webcl.SNORM_INT8:
-          case webcl.SIGNED_INT8:
-            _type = webcl.SIGNED_INT8;
-            break;
-          case webcl.UNORM_INT8:        
-          case webcl.UNSIGNED_INT8:
-            _type = webcl.UNSIGNED_INT8;
-            break;
-          case webcl.SNORM_INT16:
-          case webcl.SIGNED_INT16:
-            _type = webcl.SIGNED_INT16;
-            break;
-          case webcl.UNORM_INT16:        
-          case webcl.UNSIGNED_INT16:
-            _type = webcl.UNSIGNED_INT16;
-            break;
-          case webcl.SIGNED_INT32:
-            _type = webcl.SIGNED_INT32;
-          case webcl.UNSIGNED_INT32:
-            _type = webcl.UNSIGNED_INT32;
-            break;        
-          case webcl.FLOAT:
-            _type = webcl.FLOAT;
-            break;
-          default:
-            console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
-        }
-  
-        return _type;
-      },getImageSizeOrder:function (image) {
-        var _sizeOrder = 0;
-  
-  
-        var _info = CL.cl_objects[image].getInfo();
-  
-        switch (_info.channelOrder) {
-          case webcl.R:
-          case webcl.A:
-          case webcl.INTENSITY:
-          case webcl.LUMINANCE:
-            _sizeOrder = 1;
-            break;
-          case webcl.RG:
-          case webcl.RA:
-            _sizeOrder = 2;
-            break;
-          case webcl.RGB:
-            _sizeOrder = 3;
-            break; 
-          case webcl.RGBA:
-          case webcl.BGRA:
-          case webcl.ARGB:      
-            _sizeOrder = 4;
-            break;        
-          default:
-            console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
-        }
-  
-        return _sizeOrder;
-      },getHostPtrArray:function (size,type) { 
-  
-        var _host_ptr = null;
-  
-        if (type.length == 0) {
-        }
-  
-        if (type.length == 1) {
-          switch(type[0][0]) {
-            case webcl.SIGNED_INT8:
-              _host_ptr = new Int8Array( size );
-              break;
-            case webcl.SIGNED_INT16:
-              _host_ptr = new Int16Array( size >> 1 );
-              break;
-            case webcl.SIGNED_INT32:
-              _host_ptr = new Int32Array( size >> 2 );
-              break;
-            case webcl.UNSIGNED_INT8:
-              _host_ptr = new Uint8Array( size );
-              break;
-            case webcl.UNSIGNED_INT16:
-              _host_ptr = new Uint16Array( size >> 1 );
-              break;
-            case webcl.UNSIGNED_INT32:
-              _host_ptr = new Uint32Array( size >> 2 );
-              break;         
-            default:
-              _host_ptr = new Float32Array( size >> 2 );
-              break;
-          }
-        } else {
-          _host_ptr = new Float32Array( size >> 2 );
-        }
-  
-        return _host_ptr;
-      },getCopyPointerToArray:function (ptr,size,type) { 
-  
-        var _host_ptr = null;
-  
-        if (type.length == 0) {
-        }
-  
-        if (type.length == 1) {
-          switch(type[0][0]) {
-            case webcl.SIGNED_INT8:
-              _host_ptr = new Int8Array( HEAP8.subarray((ptr),(ptr+size)) );
-              break;
-            case webcl.SIGNED_INT16:
-              _host_ptr = new Int16Array( HEAP16.subarray((ptr)>>1,(ptr+size)>>1) );
-              break;
-            case webcl.SIGNED_INT32:
-              _host_ptr = new Int32Array( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
-              break;
-            case webcl.UNSIGNED_INT8:
-              _host_ptr = new Uint8Array( HEAPU8.subarray((ptr),(ptr+size)) );
-              break;
-            case webcl.UNSIGNED_INT16:
-              _host_ptr = new Uint16Array( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
-              break;
-            case webcl.UNSIGNED_INT32:
-              _host_ptr = new Uint32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
-              break;         
-            default:
-              _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
-              break;
-          }
-        } else {
-          _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
-          
-          // console.info("------");
-          // _host_ptr = new DataView(new ArrayBuffer(size));
-  
-          // var _offset = 0;
-          // for (var i = 0; i < type.length; i++) {
-          //   var _type = type[i][0];
-          //   var _num = type[i][1];
-          //   switch(_type) {
-          //     case webcl.SIGNED_INT8:
-          //       _host_ptr.setInt8(_offset,new Int8Array( HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
-          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-          //       _offset += _num;
-          //       break;
-          //     case webcl.SIGNED_INT16:
-          //       _host_ptr.setInt16(_offset,new Int16Array( HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
-          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-          //       _offset += 2*_num;
-          //       break;
-          //     case webcl.SIGNED_INT32:
-          //       _host_ptr.setInt32(_offset,new Int32Array( HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;
-          //     case webcl.UNSIGNED_INT8:
-          //       _host_ptr.setUint8(_offset,new Uint8Array( HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) ));
-          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-          //       _offset += _num;
-          //       break;
-          //     case webcl.UNSIGNED_INT16:
-          //       host_ptr.setUint16(_offset,new Uint16Array( HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) ));
-          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-          //       _offset += 2*_num;
-          //       break;
-          //     case webcl.UNSIGNED_INT32:
-          //       _host_ptr.setUint32(_offset,new Uint32Array( HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;         
-          //     default:
-          //       _host_ptr.setFloat32(_offset,new Float32Array( HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) ));
-          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;
-          //   }
-          // }
-        }
-  
-        return _host_ptr;
-      },getReferencePointerToArray:function (ptr,size,type) {  
-        var _host_ptr = null;
-  
-        if (type.length == 0) {
-        }
-  
-        if (type.length == 1) {
-          switch(type[0][0]) {
-            case webcl.SIGNED_INT8:
-              _host_ptr = HEAP8.subarray((ptr),(ptr+size));
-              break;
-            case webcl.SIGNED_INT16:
-              _host_ptr = HEAP16.subarray((ptr)>>1,(ptr+size)>>1);
-              break;
-            case webcl.SIGNED_INT32:
-              _host_ptr = HEAP32.subarray((ptr)>>2,(ptr+size)>>2);
-              break;
-            case webcl.UNSIGNED_INT8:
-              _host_ptr = HEAPU8.subarray((ptr),(ptr+size));
-              break;
-            case webcl.UNSIGNED_INT16:
-              _host_ptr = HEAPU16.subarray((ptr)>>1,(ptr+size)>>1);
-              break;
-            case webcl.UNSIGNED_INT32:
-              _host_ptr = HEAPU32.subarray((ptr)>>2,(ptr+size)>>2);
-              break;         
-            default:
-              _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
-              break;
-          }
-        } else {
-          _host_ptr = HEAPF32.subarray((ptr)>>2,(ptr+size)>>2);
-          
-          // console.info("------");
-          // _host_ptr = new DataView(new ArrayBuffer(size));
-  
-          // var _offset = 0;
-          // for (var i = 0; i < type.length; i++) {
-          //   var _type = type[i][0];
-          //   var _num = type[i][1];
-          //   switch(_type) {
-          //     case webcl.SIGNED_INT8:
-          //       _host_ptr.setInt8(_offset,HEAP8.subarray((ptr+_offset),(ptr+_offset+_num)) );
-          //       console.info("setInt8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-          //       _offset += _num;
-          //       break;
-          //     case webcl.SIGNED_INT16:
-          //       _host_ptr.setInt16(_offset,HEAP16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
-          //       console.info("setInt16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-          //       _offset += 2*_num;
-          //       break;
-          //     case webcl.SIGNED_INT32:
-          //       _host_ptr.setInt32(_offset,HEAP32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-          //       console.info("setInt32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;
-          //     case webcl.UNSIGNED_INT8:
-          //       _host_ptr.setUint8(_offset,HEAPU8.subarray((ptr+_offset),(ptr+_offset+_num)) );
-          //       console.info("setUint8 : "+_offset+ " - "+(_offset+_num)+" / "+size );
-          //       _offset += _num;
-          //       break;
-          //     case webcl.UNSIGNED_INT16:
-          //       host_ptr.setUint16(_offset,HEAPU16.subarray((ptr+_offset)>>1,(ptr+_offset+_num*2)>>1) );
-          //       console.info("setUint16 : "+_offset+ " - "+(_offset+_num*2)+" / "+size );
-          //       _offset += 2*_num;
-          //       break;
-          //     case webcl.UNSIGNED_INT32:
-          //       _host_ptr.setUint32(_offset,HEAPU32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-          //       console.info("setUint32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;         
-          //     default:
-          //       _host_ptr.setFloat32(_offset,HEAPF32.subarray((ptr+_offset)>>2,(ptr+_offset+_num*4)>>2) );
-          //       console.info("setFloat32 : "+_offset+ " - "+(_offset+_num*4)+" / "+size );
-          //       _offset += 4*_num;
-          //       break;
-          //   }
-          // }
-        }
-  
-        return _host_ptr;
-      },catchError:function (e) {
-        console.error(e);
-        var _error = -1;
-  
-        if (e instanceof WebCLException) {
-          var _str=e.message;
-          var _n=_str.lastIndexOf(" ");
-          _error = _str.substr(_n+1,_str.length-_n-1);
-        }
-        
-        return _error;
-      }};function _clFinish(command_queue) {
-  
-  
-      try {
-  
-        CL.cl_objects[command_queue].finish();
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        return _error;
-      }
-  
-  
-      return webcl.SUCCESS;
-    }
-
-  function _clReleaseKernel(kernel) {
-  
-      // If is an object retain don't release it until retains > 0...
-      if (kernel in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[kernel] - 1;
-  
-        CL.cl_objects_retains[kernel] = _retain;
-  
-        if (_retain >= 0) {
-          return webcl.SUCCESS;
-        }
-      }
-  
-  
-      try {
-  
-        CL.cl_objects[kernel].release();
-          
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-      delete CL.cl_objects[kernel];
-  
-  
-      return webcl.SUCCESS;
-    }
-
-  function _clReleaseProgram(program) {
-  
-  
-      // If is an object retain don't release it until retains > 0...
-      if (program in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[program] - 1;
-  
-        CL.cl_objects_retains[program] = _retain;
-  
-        if (_retain >= 0) {
-          return webcl.SUCCESS;
-        }
-      }
-  
-      try {
-  
-          CL.cl_objects[program].release();
-          delete CL.cl_objects[program]; 
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-  
-      return webcl.SUCCESS;
-  
-    }
-
-  function _clReleaseCommandQueue(command_queue) {
-  
-      // If is an object retain don't release it until retains > 0...
-      if (command_queue in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[command_queue] - 1;
-  
-        CL.cl_objects_retains[command_queue] = _retain;
-  
-        if (_retain >= 0) {
-          return webcl.SUCCESS;
-        }
-      }
-  
-      try {
-  
-          CL.cl_objects[command_queue].release();
-          delete CL.cl_objects[command_queue];  
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-      return webcl.SUCCESS;
-    }
-
-  function _clReleaseMemObject(memobj) {
-  
-      // If is an object retain don't release it until retains > 0...
-      if (memobj in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[memobj] - 1;
-  
-        CL.cl_objects_retains[memobj] = _retain;
-  
-        if (_retain >= 0) {
-          
-          // Call the callback 
-          if (memobj in CL.cl_objects_mem_callback) {
-            if (CL.cl_objects_mem_callback[memobj].length > 0)
-              CL.cl_objects_mem_callback[memobj].pop()();
-          }
-  
-          return webcl.SUCCESS;
-        }
-      }
-  
-      try {
-  
-        // Call the callback 
-        if (memobj in CL.cl_objects_mem_callback) {
-          if (CL.cl_objects_mem_callback[memobj].length > 0)
-            CL.cl_objects_mem_callback[memobj].pop()();
-        }
-  
-        CL.cl_objects[memobj].release();
-        delete CL.cl_objects[memobj];  
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-      return webcl.SUCCESS;
-    }
-
-  var _fabs=Math_abs;
-
-
-  function _glutGetModifiers() { return GLUT.modifiers; }
-
-  
-  function __exit(status) {
-      // void _exit(int status);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
-      Module['exit'](status);
-    }function _exit(status) {
-      __exit(status);
-    }
-
-  function _glViewport(x0, x1, x2, x3) { GLctx.viewport(x0, x1, x2, x3) }
-
-  
-  
+      }};
   
   
   function _glEnable(x0) { GLctx.enable(x0) }
@@ -11881,76 +10588,7 @@ function copyTempDouble(ptr) {
   })();
   
   ;
-  var GLImmediateSetup={};function _glMatrixMode(mode) {
-      if (mode == 0x1700 /* GL_MODELVIEW */) {
-        GLImmediate.currentMatrix = 0/*m*/;
-      } else if (mode == 0x1701 /* GL_PROJECTION */) {
-        GLImmediate.currentMatrix = 1/*p*/;
-      } else if (mode == 0x1702) { // GL_TEXTURE
-        GLImmediate.useTextureMatrix = true;
-        GLImmediate.currentMatrix = 2/*t*/ + GLImmediate.clientActiveTexture;
-      } else {
-        throw "Wrong mode " + mode + " passed to glMatrixMode";
-      }
-    }
-
-  function _glLoadIdentity() {
-      GLImmediate.matricesModified = true;
-      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
-      GLImmediate.matrixLib.mat4.identity(GLImmediate.matrix[GLImmediate.currentMatrix]);
-    }
-
-  function _glClear(x0) { GLctx.clear(x0) }
-
-  function _glFinish() { GLctx.finish() }
-
-  function _glutSwapBuffers() {}
-
-
-
-  
-  function _emscripten_glOrtho(left, right, bottom, top_, nearVal, farVal) {
-      GLImmediate.matricesModified = true;
-      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
-      GLImmediate.matrixLib.mat4.multiply(GLImmediate.matrix[GLImmediate.currentMatrix],
-          GLImmediate.matrixLib.mat4.ortho(left, right, bottom, top_, nearVal, farVal));
-    }function _gluOrtho2D(left, right, bottom, top) {
-      _emscripten_glOrtho(left, right, bottom, top, -1, 1);
-    }
-
-
-  function _glBindTexture(target, texture) {
-      GLctx.bindTexture(target, texture ? GL.textures[texture] : null);
-    }
-
-  function _glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels) {
-      if (pixels) {
-        var data = GL.getTexPixelData(type, format, width, height, pixels, -1);
-        pixels = data.pixels;
-      } else {
-        pixels = null;
-      }
-      GLctx.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-    }
-
-  function _glDisableClientState(cap) {
-      var attrib = GLEmulation.getAttributeFromCapability(cap);
-      if (attrib === null) {
-        Module.printErr('WARNING: unhandled clientstate: ' + cap);
-        return;
-      }
-      if (GLImmediate.enabledClientAttributes[attrib]) {
-        GLImmediate.enabledClientAttributes[attrib] = false;
-        GLImmediate.totalEnabledClientAttributes--;
-        GLImmediate.currentRenderer = null; // Will need to change current renderer, since the set of active vertex pointers changed.
-        // In GL_FFP_ONLY mode, attributes are bound to the same index in each FFP emulation shader, so we can immediately apply the change here.
-        GL.disableVertexAttribArray(attrib);
-        if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledClientStates[cap];
-        GLImmediate.modifiedClientAttributes = true;
-      }
-    }
-
-  function _glBegin(mode) {
+  var GLImmediateSetup={};function _glBegin(mode) {
       // Push the old state:
       GLImmediate.enabledClientAttributes_preBegin = GLImmediate.enabledClientAttributes;
       GLImmediate.enabledClientAttributes = [];
@@ -11972,61 +10610,1388 @@ function copyTempDouble(ptr) {
     }
 
   
-  function _emscripten_glColor4f(r, g, b, a) {
-      r = Math.max(Math.min(r, 1), 0);
-      g = Math.max(Math.min(g, 1), 0);
-      b = Math.max(Math.min(b, 1), 0);
-      a = Math.max(Math.min(a, 1), 0);
   
-      // TODO: make ub the default, not f, save a few mathops
-      if (GLImmediate.mode >= 0) {
-        var start = GLImmediate.vertexCounter << 2;
-        GLImmediate.vertexDataU8[start + 0] = r * 255;
-        GLImmediate.vertexDataU8[start + 1] = g * 255;
-        GLImmediate.vertexDataU8[start + 2] = b * 255;
-        GLImmediate.vertexDataU8[start + 3] = a * 255;
-        GLImmediate.vertexCounter++;
-        GLImmediate.addRendererComponent(GLImmediate.COLOR, 4, GLctx.UNSIGNED_BYTE);
-      } else {
-        GLImmediate.clientColor[0] = r;
-        GLImmediate.clientColor[1] = g;
-        GLImmediate.clientColor[2] = b;
-        GLImmediate.clientColor[3] = a;
-        GLctx.vertexAttrib4fv(GLImmediate.COLOR, GLImmediate.clientColor);
+  
+  
+  
+  
+  function _mkport() { throw 'TODO' }var SOCKFS={mount:function (mount) {
+        return FS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
+      },createSocket:function (family, type, protocol) {
+        var streaming = type == 1;
+        if (protocol) {
+          assert(streaming == (protocol == 6)); // if SOCK_STREAM, must be tcp
+        }
+  
+        // create our internal socket structure
+        var sock = {
+          family: family,
+          type: type,
+          protocol: protocol,
+          server: null,
+          peers: {},
+          pending: [],
+          recv_queue: [],
+          sock_ops: SOCKFS.websocket_sock_ops
+        };
+  
+        // create the filesystem node to store the socket structure
+        var name = SOCKFS.nextname();
+        var node = FS.createNode(SOCKFS.root, name, 49152, 0);
+        node.sock = sock;
+  
+        // and the wrapping stream that enables library functions such
+        // as read and write to indirectly interact with the socket
+        var stream = FS.createStream({
+          path: name,
+          node: node,
+          flags: FS.modeStringToFlags('r+'),
+          seekable: false,
+          stream_ops: SOCKFS.stream_ops
+        });
+  
+        // map the new stream to the socket structure (sockets have a 1:1
+        // relationship with a stream)
+        sock.stream = stream;
+  
+        return sock;
+      },getSocket:function (fd) {
+        var stream = FS.getStream(fd);
+        if (!stream || !FS.isSocket(stream.node.mode)) {
+          return null;
+        }
+        return stream.node.sock;
+      },stream_ops:{poll:function (stream) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.poll(sock);
+        },ioctl:function (stream, request, varargs) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.ioctl(sock, request, varargs);
+        },read:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          var msg = sock.sock_ops.recvmsg(sock, length);
+          if (!msg) {
+            // socket is closed
+            return 0;
+          }
+          buffer.set(msg.buffer, offset);
+          return msg.buffer.length;
+        },write:function (stream, buffer, offset, length, position /* ignored */) {
+          var sock = stream.node.sock;
+          return sock.sock_ops.sendmsg(sock, buffer, offset, length);
+        },close:function (stream) {
+          var sock = stream.node.sock;
+          sock.sock_ops.close(sock);
+        }},nextname:function () {
+        if (!SOCKFS.nextname.current) {
+          SOCKFS.nextname.current = 0;
+        }
+        return 'socket[' + (SOCKFS.nextname.current++) + ']';
+      },websocket_sock_ops:{createPeer:function (sock, addr, port) {
+          var ws;
+  
+          if (typeof addr === 'object') {
+            ws = addr;
+            addr = null;
+            port = null;
+          }
+  
+          if (ws) {
+            // for sockets that've already connected (e.g. we're the server)
+            // we can inspect the _socket property for the address
+            if (ws._socket) {
+              addr = ws._socket.remoteAddress;
+              port = ws._socket.remotePort;
+            }
+            // if we're just now initializing a connection to the remote,
+            // inspect the url property
+            else {
+              var result = /ws[s]?:\/\/([^:]+):(\d+)/.exec(ws.url);
+              if (!result) {
+                throw new Error('WebSocket URL must be in the format ws(s)://address:port');
+              }
+              addr = result[1];
+              port = parseInt(result[2], 10);
+            }
+          } else {
+            // create the actual websocket object and connect
+            try {
+              var url = 'ws://' + addr + ':' + port;
+              // the node ws library API is slightly different than the browser's
+              var opts = ENVIRONMENT_IS_NODE ? {headers: {'websocket-protocol': ['binary']}} : ['binary'];
+              // If node we use the ws library.
+              var WebSocket = ENVIRONMENT_IS_NODE ? require('ws') : window['WebSocket'];
+              ws = new WebSocket(url, opts);
+              ws.binaryType = 'arraybuffer';
+            } catch (e) {
+              throw new FS.ErrnoError(ERRNO_CODES.EHOSTUNREACH);
+            }
+          }
+  
+  
+          var peer = {
+            addr: addr,
+            port: port,
+            socket: ws,
+            dgram_send_queue: []
+          };
+  
+          SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+          SOCKFS.websocket_sock_ops.handlePeerEvents(sock, peer);
+  
+          // if this is a bound dgram socket, send the port number first to allow
+          // us to override the ephemeral port reported to us by remotePort on the
+          // remote end.
+          if (sock.type === 2 && typeof sock.sport !== 'undefined') {
+            peer.dgram_send_queue.push(new Uint8Array([
+                255, 255, 255, 255,
+                'p'.charCodeAt(0), 'o'.charCodeAt(0), 'r'.charCodeAt(0), 't'.charCodeAt(0),
+                ((sock.sport & 0xff00) >> 8) , (sock.sport & 0xff)
+            ]));
+          }
+  
+          return peer;
+        },getPeer:function (sock, addr, port) {
+          return sock.peers[addr + ':' + port];
+        },addPeer:function (sock, peer) {
+          sock.peers[peer.addr + ':' + peer.port] = peer;
+        },removePeer:function (sock, peer) {
+          delete sock.peers[peer.addr + ':' + peer.port];
+        },handlePeerEvents:function (sock, peer) {
+          var first = true;
+  
+          var handleOpen = function () {
+            try {
+              var queued = peer.dgram_send_queue.shift();
+              while (queued) {
+                peer.socket.send(queued);
+                queued = peer.dgram_send_queue.shift();
+              }
+            } catch (e) {
+              // not much we can do here in the way of proper error handling as we've already
+              // lied and said this data was sent. shut it down.
+              peer.socket.close();
+            }
+          };
+  
+          function handleMessage(data) {
+            assert(typeof data !== 'string' && data.byteLength !== undefined);  // must receive an ArrayBuffer
+            data = new Uint8Array(data);  // make a typed array view on the array buffer
+  
+  
+            // if this is the port message, override the peer's port with it
+            var wasfirst = first;
+            first = false;
+            if (wasfirst &&
+                data.length === 10 &&
+                data[0] === 255 && data[1] === 255 && data[2] === 255 && data[3] === 255 &&
+                data[4] === 'p'.charCodeAt(0) && data[5] === 'o'.charCodeAt(0) && data[6] === 'r'.charCodeAt(0) && data[7] === 't'.charCodeAt(0)) {
+              // update the peer's port and it's key in the peer map
+              var newport = ((data[8] << 8) | data[9]);
+              SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+              peer.port = newport;
+              SOCKFS.websocket_sock_ops.addPeer(sock, peer);
+              return;
+            }
+  
+            sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
+          };
+  
+          if (ENVIRONMENT_IS_NODE) {
+            peer.socket.on('open', handleOpen);
+            peer.socket.on('message', function(data, flags) {
+              if (!flags.binary) {
+                return;
+              }
+              handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
+            });
+            peer.socket.on('error', function() {
+              // don't throw
+            });
+          } else {
+            peer.socket.onopen = handleOpen;
+            peer.socket.onmessage = function peer_socket_onmessage(event) {
+              handleMessage(event.data);
+            };
+          }
+        },poll:function (sock) {
+          if (sock.type === 1 && sock.server) {
+            // listen sockets should only say they're available for reading
+            // if there are pending clients.
+            return sock.pending.length ? (64 | 1) : 0;
+          }
+  
+          var mask = 0;
+          var dest = sock.type === 1 ?  // we only care about the socket state for connection-based sockets
+            SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport) :
+            null;
+  
+          if (sock.recv_queue.length ||
+              !dest ||  // connection-less sockets are always ready to read
+              (dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {  // let recv return 0 once closed
+            mask |= (64 | 1);
+          }
+  
+          if (!dest ||  // connection-less sockets are always ready to write
+              (dest && dest.socket.readyState === dest.socket.OPEN)) {
+            mask |= 4;
+          }
+  
+          if ((dest && dest.socket.readyState === dest.socket.CLOSING) ||
+              (dest && dest.socket.readyState === dest.socket.CLOSED)) {
+            mask |= 16;
+          }
+  
+          return mask;
+        },ioctl:function (sock, request, arg) {
+          switch (request) {
+            case 21531:
+              var bytes = 0;
+              if (sock.recv_queue.length) {
+                bytes = sock.recv_queue[0].data.length;
+              }
+              HEAP32[((arg)>>2)]=bytes;
+              return 0;
+            default:
+              return ERRNO_CODES.EINVAL;
+          }
+        },close:function (sock) {
+          // if we've spawned a listen server, close it
+          if (sock.server) {
+            try {
+              sock.server.close();
+            } catch (e) {
+            }
+            sock.server = null;
+          }
+          // close any peer connections
+          var peers = Object.keys(sock.peers);
+          for (var i = 0; i < peers.length; i++) {
+            var peer = sock.peers[peers[i]];
+            try {
+              peer.socket.close();
+            } catch (e) {
+            }
+            SOCKFS.websocket_sock_ops.removePeer(sock, peer);
+          }
+          return 0;
+        },bind:function (sock, addr, port) {
+          if (typeof sock.saddr !== 'undefined' || typeof sock.sport !== 'undefined') {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already bound
+          }
+          sock.saddr = addr;
+          sock.sport = port || _mkport();
+          // in order to emulate dgram sockets, we need to launch a listen server when
+          // binding on a connection-less socket
+          // note: this is only required on the server side
+          if (sock.type === 2) {
+            // close the existing server if it exists
+            if (sock.server) {
+              sock.server.close();
+              sock.server = null;
+            }
+            // swallow error operation not supported error that occurs when binding in the
+            // browser where this isn't supported
+            try {
+              sock.sock_ops.listen(sock, 0);
+            } catch (e) {
+              if (!(e instanceof FS.ErrnoError)) throw e;
+              if (e.errno !== ERRNO_CODES.EOPNOTSUPP) throw e;
+            }
+          }
+        },connect:function (sock, addr, port) {
+          if (sock.server) {
+            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
+          }
+  
+          // TODO autobind
+          // if (!sock.addr && sock.type == 2) {
+          // }
+  
+          // early out if we're already connected / in the middle of connecting
+          if (typeof sock.daddr !== 'undefined' && typeof sock.dport !== 'undefined') {
+            var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+            if (dest) {
+              if (dest.socket.readyState === dest.socket.CONNECTING) {
+                throw new FS.ErrnoError(ERRNO_CODES.EALREADY);
+              } else {
+                throw new FS.ErrnoError(ERRNO_CODES.EISCONN);
+              }
+            }
+          }
+  
+          // add the socket to our peer list and set our
+          // destination address / port to match
+          var peer = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+          sock.daddr = peer.addr;
+          sock.dport = peer.port;
+  
+          // always "fail" in non-blocking mode
+          throw new FS.ErrnoError(ERRNO_CODES.EINPROGRESS);
+        },listen:function (sock, backlog) {
+          if (!ENVIRONMENT_IS_NODE) {
+            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
+          }
+          if (sock.server) {
+             throw new FS.ErrnoError(ERRNO_CODES.EINVAL);  // already listening
+          }
+          var WebSocketServer = require('ws').Server;
+          var host = sock.saddr;
+          sock.server = new WebSocketServer({
+            host: host,
+            port: sock.sport
+            // TODO support backlog
+          });
+  
+          sock.server.on('connection', function(ws) {
+            if (sock.type === 1) {
+              var newsock = SOCKFS.createSocket(sock.family, sock.type, sock.protocol);
+  
+              // create a peer on the new socket
+              var peer = SOCKFS.websocket_sock_ops.createPeer(newsock, ws);
+              newsock.daddr = peer.addr;
+              newsock.dport = peer.port;
+  
+              // push to queue for accept to pick up
+              sock.pending.push(newsock);
+            } else {
+              // create a peer on the listen socket so calling sendto
+              // with the listen socket and an address will resolve
+              // to the correct client
+              SOCKFS.websocket_sock_ops.createPeer(sock, ws);
+            }
+          });
+          sock.server.on('closed', function() {
+            sock.server = null;
+          });
+          sock.server.on('error', function() {
+            // don't throw
+          });
+        },accept:function (listensock) {
+          if (!listensock.server) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+          var newsock = listensock.pending.shift();
+          newsock.stream.flags = listensock.stream.flags;
+          return newsock;
+        },getname:function (sock, peer) {
+          var addr, port;
+          if (peer) {
+            if (sock.daddr === undefined || sock.dport === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            }
+            addr = sock.daddr;
+            port = sock.dport;
+          } else {
+            // TODO saddr and sport will be set for bind()'d UDP sockets, but what
+            // should we be returning for TCP sockets that've been connect()'d?
+            addr = sock.saddr || 0;
+            port = sock.sport || 0;
+          }
+          return { addr: addr, port: port };
+        },sendmsg:function (sock, buffer, offset, length, addr, port) {
+          if (sock.type === 2) {
+            // connection-less sockets will honor the message address,
+            // and otherwise fall back to the bound destination address
+            if (addr === undefined || port === undefined) {
+              addr = sock.daddr;
+              port = sock.dport;
+            }
+            // if there was no address to fall back to, error out
+            if (addr === undefined || port === undefined) {
+              throw new FS.ErrnoError(ERRNO_CODES.EDESTADDRREQ);
+            }
+          } else {
+            // connection-based sockets will only use the bound
+            addr = sock.daddr;
+            port = sock.dport;
+          }
+  
+          // find the peer for the destination address
+          var dest = SOCKFS.websocket_sock_ops.getPeer(sock, addr, port);
+  
+          // early out if not connected with a connection-based socket
+          if (sock.type === 1) {
+            if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+              throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+            } else if (dest.socket.readyState === dest.socket.CONNECTING) {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+  
+          // create a copy of the incoming data to send, as the WebSocket API
+          // doesn't work entirely with an ArrayBufferView, it'll just send
+          // the entire underlying buffer
+          var data;
+          if (buffer instanceof Array || buffer instanceof ArrayBuffer) {
+            data = buffer.slice(offset, offset + length);
+          } else {  // ArrayBufferView
+            data = buffer.buffer.slice(buffer.byteOffset + offset, buffer.byteOffset + offset + length);
+          }
+  
+          // if we're emulating a connection-less dgram socket and don't have
+          // a cached connection, queue the buffer to send upon connect and
+          // lie, saying the data was sent now.
+          if (sock.type === 2) {
+            if (!dest || dest.socket.readyState !== dest.socket.OPEN) {
+              // if we're not connected, open a new connection
+              if (!dest || dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                dest = SOCKFS.websocket_sock_ops.createPeer(sock, addr, port);
+              }
+              dest.dgram_send_queue.push(data);
+              return length;
+            }
+          }
+  
+          try {
+            // send the actual data
+            dest.socket.send(data);
+            return length;
+          } catch (e) {
+            throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+          }
+        },recvmsg:function (sock, length) {
+          // http://pubs.opengroup.org/onlinepubs/7908799/xns/recvmsg.html
+          if (sock.type === 1 && sock.server) {
+            // tcp servers should not be recv()'ing on the listen socket
+            throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+          }
+  
+          var queued = sock.recv_queue.shift();
+          if (!queued) {
+            if (sock.type === 1) {
+              var dest = SOCKFS.websocket_sock_ops.getPeer(sock, sock.daddr, sock.dport);
+  
+              if (!dest) {
+                // if we have a destination address but are not connected, error out
+                throw new FS.ErrnoError(ERRNO_CODES.ENOTCONN);
+              }
+              else if (dest.socket.readyState === dest.socket.CLOSING || dest.socket.readyState === dest.socket.CLOSED) {
+                // return null if the socket has closed
+                return null;
+              }
+              else {
+                // else, our socket is in a valid state but truly has nothing available
+                throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+              }
+            } else {
+              throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+            }
+          }
+  
+          // queued.data will be an ArrayBuffer if it's unadulterated, but if it's
+          // requeued TCP data it'll be an ArrayBufferView
+          var queuedLength = queued.data.byteLength || queued.data.length;
+          var queuedOffset = queued.data.byteOffset || 0;
+          var queuedBuffer = queued.data.buffer || queued.data;
+          var bytesRead = Math.min(length, queuedLength);
+          var res = {
+            buffer: new Uint8Array(queuedBuffer, queuedOffset, bytesRead),
+            addr: queued.addr,
+            port: queued.port
+          };
+  
+  
+          // push back any unread data for TCP connections
+          if (sock.type === 1 && bytesRead < queuedLength) {
+            var bytesRemaining = queuedLength - bytesRead;
+            queued.data = new Uint8Array(queuedBuffer, queuedOffset + bytesRead, bytesRemaining);
+            sock.recv_queue.unshift(queued);
+          }
+  
+          return res;
+        }}};function _send(fd, buf, len, flags) {
+      var sock = SOCKFS.getSocket(fd);
+      if (!sock) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
       }
-    }function _glColor3f(r, g, b) {
-      _emscripten_glColor4f(r, g, b, 1);
+      // TODO honor flags
+      return _write(fd, buf, len);
     }
-
-  function _glTexCoord2f(u, v) {
-      assert(GLImmediate.mode >= 0); // must be in begin/end
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = u;
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = v;
-      GLImmediate.addRendererComponent(GLImmediate.TEXTURE0, 2, GLctx.FLOAT);
-    }
-
-  function _glVertex3f(x, y, z) {
-      assert(GLImmediate.mode >= 0); // must be in begin/end
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = x;
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = y;
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = z || 0;
-      assert(GLImmediate.vertexCounter << 2 < GL.MAX_TEMP_BUFFER_SIZE);
-      GLImmediate.addRendererComponent(GLImmediate.VERTEX, 3, GLctx.FLOAT);
-    }
-
-  function _glEnd() {
-      GLImmediate.prepareClientAttributes(GLImmediate.rendererComponents[GLImmediate.VERTEX], true);
-      GLImmediate.firstVertex = 0;
-      GLImmediate.lastVertex = GLImmediate.vertexCounter / (GLImmediate.stride >> 2);
-      GLImmediate.flush();
-      GLImmediate.disableBeginEndClientAttributes();
-      GLImmediate.mode = -1;
   
-      // Pop the old state:
-      GLImmediate.enabledClientAttributes = GLImmediate.enabledClientAttributes_preBegin;
-      GLImmediate.clientAttributes = GLImmediate.clientAttributes_preBegin;
-      GLImmediate.currentRenderer = null; // The set of active client attributes changed, we must re-lookup the renderer to use.
-      GLImmediate.modifiedClientAttributes = true;
+  function _pwrite(fildes, buf, nbyte, offset) {
+      // ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      try {
+        var slab = HEAP8;
+        return FS.write(stream, slab, buf, nbyte, offset);
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
+    }function _write(fildes, buf, nbyte) {
+      // ssize_t write(int fildes, const void *buf, size_t nbyte);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/write.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+  
+  
+      try {
+        var slab = HEAP8;
+        return FS.write(stream, slab, buf, nbyte);
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
+    }
+  
+  function _fileno(stream) {
+      // int fileno(FILE *stream);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fileno.html
+      stream = FS.getStreamFromPtr(stream);
+      if (!stream) return -1;
+      return stream.fd;
+    }function _fwrite(ptr, size, nitems, stream) {
+      // size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/fwrite.html
+      var bytesToWrite = nitems * size;
+      if (bytesToWrite == 0) return 0;
+      var fd = _fileno(stream);
+      var bytesWritten = _write(fd, ptr, bytesToWrite);
+      if (bytesWritten == -1) {
+        var streamObj = FS.getStreamFromPtr(stream);
+        if (streamObj) streamObj.error = true;
+        return 0;
+      } else {
+        return Math.floor(bytesWritten / size);
+      }
+    }
+  
+  
+   
+  Module["_strlen"] = _strlen;
+  
+  function __reallyNegative(x) {
+      return x < 0 || (x === 0 && (1/x) === -Infinity);
+    }function __formatString(format, varargs) {
+      var textIndex = format;
+      var argIndex = 0;
+      function getNextArg(type) {
+        // NOTE: Explicitly ignoring type safety. Otherwise this fails:
+        //       int x = 4; printf("%c\n", (char)x);
+        var ret;
+        if (type === 'double') {
+          ret = (HEAP32[((tempDoublePtr)>>2)]=HEAP32[(((varargs)+(argIndex))>>2)],HEAP32[(((tempDoublePtr)+(4))>>2)]=HEAP32[(((varargs)+((argIndex)+(4)))>>2)],(+(HEAPF64[(tempDoublePtr)>>3])));
+        } else if (type == 'i64') {
+          ret = [HEAP32[(((varargs)+(argIndex))>>2)],
+                 HEAP32[(((varargs)+(argIndex+4))>>2)]];
+  
+        } else {
+          type = 'i32'; // varargs are always i32, i64, or double
+          ret = HEAP32[(((varargs)+(argIndex))>>2)];
+        }
+        argIndex += Runtime.getNativeFieldSize(type);
+        return ret;
+      }
+  
+      var ret = [];
+      var curr, next, currArg;
+      while(1) {
+        var startTextIndex = textIndex;
+        curr = HEAP8[(textIndex)];
+        if (curr === 0) break;
+        next = HEAP8[((textIndex+1)|0)];
+        if (curr == 37) {
+          // Handle flags.
+          var flagAlwaysSigned = false;
+          var flagLeftAlign = false;
+          var flagAlternative = false;
+          var flagZeroPad = false;
+          var flagPadSign = false;
+          flagsLoop: while (1) {
+            switch (next) {
+              case 43:
+                flagAlwaysSigned = true;
+                break;
+              case 45:
+                flagLeftAlign = true;
+                break;
+              case 35:
+                flagAlternative = true;
+                break;
+              case 48:
+                if (flagZeroPad) {
+                  break flagsLoop;
+                } else {
+                  flagZeroPad = true;
+                  break;
+                }
+              case 32:
+                flagPadSign = true;
+                break;
+              default:
+                break flagsLoop;
+            }
+            textIndex++;
+            next = HEAP8[((textIndex+1)|0)];
+          }
+  
+          // Handle width.
+          var width = 0;
+          if (next == 42) {
+            width = getNextArg('i32');
+            textIndex++;
+            next = HEAP8[((textIndex+1)|0)];
+          } else {
+            while (next >= 48 && next <= 57) {
+              width = width * 10 + (next - 48);
+              textIndex++;
+              next = HEAP8[((textIndex+1)|0)];
+            }
+          }
+  
+          // Handle precision.
+          var precisionSet = false, precision = -1;
+          if (next == 46) {
+            precision = 0;
+            precisionSet = true;
+            textIndex++;
+            next = HEAP8[((textIndex+1)|0)];
+            if (next == 42) {
+              precision = getNextArg('i32');
+              textIndex++;
+            } else {
+              while(1) {
+                var precisionChr = HEAP8[((textIndex+1)|0)];
+                if (precisionChr < 48 ||
+                    precisionChr > 57) break;
+                precision = precision * 10 + (precisionChr - 48);
+                textIndex++;
+              }
+            }
+            next = HEAP8[((textIndex+1)|0)];
+          }
+          if (precision < 0) {
+            precision = 6; // Standard default.
+            precisionSet = false;
+          }
+  
+          // Handle integer sizes. WARNING: These assume a 32-bit architecture!
+          var argSize;
+          switch (String.fromCharCode(next)) {
+            case 'h':
+              var nextNext = HEAP8[((textIndex+2)|0)];
+              if (nextNext == 104) {
+                textIndex++;
+                argSize = 1; // char (actually i32 in varargs)
+              } else {
+                argSize = 2; // short (actually i32 in varargs)
+              }
+              break;
+            case 'l':
+              var nextNext = HEAP8[((textIndex+2)|0)];
+              if (nextNext == 108) {
+                textIndex++;
+                argSize = 8; // long long
+              } else {
+                argSize = 4; // long
+              }
+              break;
+            case 'L': // long long
+            case 'q': // int64_t
+            case 'j': // intmax_t
+              argSize = 8;
+              break;
+            case 'z': // size_t
+            case 't': // ptrdiff_t
+            case 'I': // signed ptrdiff_t or unsigned size_t
+              argSize = 4;
+              break;
+            default:
+              argSize = null;
+          }
+          if (argSize) textIndex++;
+          next = HEAP8[((textIndex+1)|0)];
+  
+          // Handle type specifier.
+          switch (String.fromCharCode(next)) {
+            case 'd': case 'i': case 'u': case 'o': case 'x': case 'X': case 'p': {
+              // Integer.
+              var signed = next == 100 || next == 105;
+              argSize = argSize || 4;
+              var currArg = getNextArg('i' + (argSize * 8));
+              var origArg = currArg;
+              var argText;
+              // Flatten i64-1 [low, high] into a (slightly rounded) double
+              if (argSize == 8) {
+                currArg = Runtime.makeBigInt(currArg[0], currArg[1], next == 117);
+              }
+              // Truncate to requested size.
+              if (argSize <= 4) {
+                var limit = Math.pow(256, argSize) - 1;
+                currArg = (signed ? reSign : unSign)(currArg & limit, argSize * 8);
+              }
+              // Format the number.
+              var currAbsArg = Math.abs(currArg);
+              var prefix = '';
+              if (next == 100 || next == 105) {
+                if (argSize == 8 && i64Math) argText = i64Math.stringify(origArg[0], origArg[1], null); else
+                argText = reSign(currArg, 8 * argSize, 1).toString(10);
+              } else if (next == 117) {
+                if (argSize == 8 && i64Math) argText = i64Math.stringify(origArg[0], origArg[1], true); else
+                argText = unSign(currArg, 8 * argSize, 1).toString(10);
+                currArg = Math.abs(currArg);
+              } else if (next == 111) {
+                argText = (flagAlternative ? '0' : '') + currAbsArg.toString(8);
+              } else if (next == 120 || next == 88) {
+                prefix = (flagAlternative && currArg != 0) ? '0x' : '';
+                if (argSize == 8 && i64Math) {
+                  if (origArg[1]) {
+                    argText = (origArg[1]>>>0).toString(16);
+                    var lower = (origArg[0]>>>0).toString(16);
+                    while (lower.length < 8) lower = '0' + lower;
+                    argText += lower;
+                  } else {
+                    argText = (origArg[0]>>>0).toString(16);
+                  }
+                } else
+                if (currArg < 0) {
+                  // Represent negative numbers in hex as 2's complement.
+                  currArg = -currArg;
+                  argText = (currAbsArg - 1).toString(16);
+                  var buffer = [];
+                  for (var i = 0; i < argText.length; i++) {
+                    buffer.push((0xF - parseInt(argText[i], 16)).toString(16));
+                  }
+                  argText = buffer.join('');
+                  while (argText.length < argSize * 2) argText = 'f' + argText;
+                } else {
+                  argText = currAbsArg.toString(16);
+                }
+                if (next == 88) {
+                  prefix = prefix.toUpperCase();
+                  argText = argText.toUpperCase();
+                }
+              } else if (next == 112) {
+                if (currAbsArg === 0) {
+                  argText = '(nil)';
+                } else {
+                  prefix = '0x';
+                  argText = currAbsArg.toString(16);
+                }
+              }
+              if (precisionSet) {
+                while (argText.length < precision) {
+                  argText = '0' + argText;
+                }
+              }
+  
+              // Add sign if needed
+              if (currArg >= 0) {
+                if (flagAlwaysSigned) {
+                  prefix = '+' + prefix;
+                } else if (flagPadSign) {
+                  prefix = ' ' + prefix;
+                }
+              }
+  
+              // Move sign to prefix so we zero-pad after the sign
+              if (argText.charAt(0) == '-') {
+                prefix = '-' + prefix;
+                argText = argText.substr(1);
+              }
+  
+              // Add padding.
+              while (prefix.length + argText.length < width) {
+                if (flagLeftAlign) {
+                  argText += ' ';
+                } else {
+                  if (flagZeroPad) {
+                    argText = '0' + argText;
+                  } else {
+                    prefix = ' ' + prefix;
+                  }
+                }
+              }
+  
+              // Insert the result into the buffer.
+              argText = prefix + argText;
+              argText.split('').forEach(function(chr) {
+                ret.push(chr.charCodeAt(0));
+              });
+              break;
+            }
+            case 'f': case 'F': case 'e': case 'E': case 'g': case 'G': {
+              // Float.
+              var currArg = getNextArg('double');
+              var argText;
+              if (isNaN(currArg)) {
+                argText = 'nan';
+                flagZeroPad = false;
+              } else if (!isFinite(currArg)) {
+                argText = (currArg < 0 ? '-' : '') + 'inf';
+                flagZeroPad = false;
+              } else {
+                var isGeneral = false;
+                var effectivePrecision = Math.min(precision, 20);
+  
+                // Convert g/G to f/F or e/E, as per:
+                // http://pubs.opengroup.org/onlinepubs/9699919799/functions/printf.html
+                if (next == 103 || next == 71) {
+                  isGeneral = true;
+                  precision = precision || 1;
+                  var exponent = parseInt(currArg.toExponential(effectivePrecision).split('e')[1], 10);
+                  if (precision > exponent && exponent >= -4) {
+                    next = ((next == 103) ? 'f' : 'F').charCodeAt(0);
+                    precision -= exponent + 1;
+                  } else {
+                    next = ((next == 103) ? 'e' : 'E').charCodeAt(0);
+                    precision--;
+                  }
+                  effectivePrecision = Math.min(precision, 20);
+                }
+  
+                if (next == 101 || next == 69) {
+                  argText = currArg.toExponential(effectivePrecision);
+                  // Make sure the exponent has at least 2 digits.
+                  if (/[eE][-+]\d$/.test(argText)) {
+                    argText = argText.slice(0, -1) + '0' + argText.slice(-1);
+                  }
+                } else if (next == 102 || next == 70) {
+                  argText = currArg.toFixed(effectivePrecision);
+                  if (currArg === 0 && __reallyNegative(currArg)) {
+                    argText = '-' + argText;
+                  }
+                }
+  
+                var parts = argText.split('e');
+                if (isGeneral && !flagAlternative) {
+                  // Discard trailing zeros and periods.
+                  while (parts[0].length > 1 && parts[0].indexOf('.') != -1 &&
+                         (parts[0].slice(-1) == '0' || parts[0].slice(-1) == '.')) {
+                    parts[0] = parts[0].slice(0, -1);
+                  }
+                } else {
+                  // Make sure we have a period in alternative mode.
+                  if (flagAlternative && argText.indexOf('.') == -1) parts[0] += '.';
+                  // Zero pad until required precision.
+                  while (precision > effectivePrecision++) parts[0] += '0';
+                }
+                argText = parts[0] + (parts.length > 1 ? 'e' + parts[1] : '');
+  
+                // Capitalize 'E' if needed.
+                if (next == 69) argText = argText.toUpperCase();
+  
+                // Add sign.
+                if (currArg >= 0) {
+                  if (flagAlwaysSigned) {
+                    argText = '+' + argText;
+                  } else if (flagPadSign) {
+                    argText = ' ' + argText;
+                  }
+                }
+              }
+  
+              // Add padding.
+              while (argText.length < width) {
+                if (flagLeftAlign) {
+                  argText += ' ';
+                } else {
+                  if (flagZeroPad && (argText[0] == '-' || argText[0] == '+')) {
+                    argText = argText[0] + '0' + argText.slice(1);
+                  } else {
+                    argText = (flagZeroPad ? '0' : ' ') + argText;
+                  }
+                }
+              }
+  
+              // Adjust case.
+              if (next < 97) argText = argText.toUpperCase();
+  
+              // Insert the result into the buffer.
+              argText.split('').forEach(function(chr) {
+                ret.push(chr.charCodeAt(0));
+              });
+              break;
+            }
+            case 's': {
+              // String.
+              var arg = getNextArg('i8*');
+              var argLength = arg ? _strlen(arg) : '(null)'.length;
+              if (precisionSet) argLength = Math.min(argLength, precision);
+              if (!flagLeftAlign) {
+                while (argLength < width--) {
+                  ret.push(32);
+                }
+              }
+              if (arg) {
+                for (var i = 0; i < argLength; i++) {
+                  ret.push(HEAPU8[((arg++)|0)]);
+                }
+              } else {
+                ret = ret.concat(intArrayFromString('(null)'.substr(0, argLength), true));
+              }
+              if (flagLeftAlign) {
+                while (argLength < width--) {
+                  ret.push(32);
+                }
+              }
+              break;
+            }
+            case 'c': {
+              // Character.
+              if (flagLeftAlign) ret.push(getNextArg('i8'));
+              while (--width > 0) {
+                ret.push(32);
+              }
+              if (!flagLeftAlign) ret.push(getNextArg('i8'));
+              break;
+            }
+            case 'n': {
+              // Write the length written so far to the next parameter.
+              var ptr = getNextArg('i32*');
+              HEAP32[((ptr)>>2)]=ret.length;
+              break;
+            }
+            case '%': {
+              // Literal percent sign.
+              ret.push(curr);
+              break;
+            }
+            default: {
+              // Unknown specifiers remain untouched.
+              for (var i = startTextIndex; i < textIndex + 2; i++) {
+                ret.push(HEAP8[(i)]);
+              }
+            }
+          }
+          textIndex += 2;
+          // TODO: Support a/A (hex float) and m (last error) specifiers.
+          // TODO: Support %1${specifier} for arg selection.
+        } else {
+          ret.push(curr);
+          textIndex += 1;
+        }
+      }
+      return ret;
+    }function _fprintf(stream, format, varargs) {
+      // int fprintf(FILE *restrict stream, const char *restrict format, ...);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
+      var result = __formatString(format, varargs);
+      var stack = Runtime.stackSave();
+      var ret = _fwrite(allocate(result, 'i8', ALLOC_STACK), 1, result.length, stream);
+      Runtime.stackRestore(stack);
+      return ret;
+    }function _printf(format, varargs) {
+      // int printf(const char *restrict format, ...);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/printf.html
+      var stdout = HEAP32[((_stdout)>>2)];
+      return _fprintf(stdout, format, varargs);
+    }
+
+  function _glBindTexture(target, texture) {
+      GLctx.bindTexture(target, texture ? GL.textures[texture] : null);
+    }
+
+  function _glVertexPointer(size, type, stride, pointer) {
+      GLImmediate.setClientAttribute(GLImmediate.VERTEX, size, type, stride, pointer);
+      if (GL.currArrayBuffer) {
+        GLctx.vertexAttribPointer(GLImmediate.VERTEX, size, type, false, stride, pointer);
+      }
+    }
+
+  function _open(path, oflag, varargs) {
+      // int open(const char *path, int oflag, ...);
+      // http://pubs.opengroup.org/onlinepubs/009695399/functions/open.html
+      var mode = HEAP32[((varargs)>>2)];
+      path = Pointer_stringify(path);
+      try {
+        var stream = FS.open(path, oflag, mode);
+        return stream.fd;
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
+    }
+
+  function _clReleaseProgram(program) {
+  
+  
+      // If is an object retain don't release it until retains > 0...
+      if (program in CL.cl_objects_retains) {
+  
+        var _retain = CL.cl_objects_retains[program] - 1;
+  
+        CL.cl_objects_retains[program] = _retain;
+  
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
+        }
+      }
+  
+      try {
+  
+          CL.cl_objects[program].release();
+          delete CL.cl_objects[program]; 
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+  
+      return webcl.SUCCESS;
+  
+    }
+
+  function _clEnqueueReleaseGLObjects(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
+        
+      var _event_wait_list = [];
+      var _mem_objects = [];
+  
+      for (var i = 0; i < num_events_in_wait_list; i++) {
+        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+  
+        
+        _event_wait_list.push(CL.cl_objects[_event_wait]);
+      }
+  
+      for (var i = 0; i < num_objects; i++) {
+        var _id = HEAP32[(((mem_objects)+(i*4))>>2)];
+  
+        
+        _mem_objects.push(CL.cl_objects[_id]);
+      }
+  
+      try { 
+  
+          if (event != 0) {
+            var _event = new WebCLEvent();
+            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
+            HEAP32[((event)>>2)]=CL.udid(_event);  
+          } else {
+            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);      
+          }
+  
+      } catch (e) {
+  
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+      
+      return webcl.SUCCESS;
+    }
+
+  function _clSetTypePointer(pn_type, num_pn_type) {
+      /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
+      
+      // Clean
+      CL.cl_pn_type = [];
+  
+  
+      var _old_pn_type = -1;
+      var _num_pn_type = 0;
+      for (var i = 0; i < num_pn_type ; i++) {
+        var _pn_type = HEAP32[(((pn_type)+(i*4))>>2)]
+  
+        if (_pn_type != _old_pn_type) {
+          if (_num_pn_type > 0)
+            CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
+  
+          _old_pn_type = _pn_type;
+          _num_pn_type = 1;
+        } else {
+          _num_pn_type ++;
+        }
+  
+  
+      }
+  
+      if (_num_pn_type > 0)
+        CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
+    
+  
+      return webcl.SUCCESS;
+    }
+
+  function _glutGetModifiers() { return GLUT.modifiers; }
+
+  function _glClear(x0) { GLctx.clear(x0) }
+
+  function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
+  
+    
+      var  _info = null;
+  
+      try { 
+  
+          var _object = CL.cl_objects[device];
+     
+        switch (param_name) {
+          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
+            _info = parseInt(CL.udid(_object));
+          break;
+          case 0x102B /*CL_DEVICE_NAME*/ :
+            var _type = _object.getInfo(webcl.DEVICE_TYPE);
+            switch (_type) {
+              case webcl.DEVICE_TYPE_CPU:
+                _info = "WEBCL_DEVICE_CPU";
+              break;
+              case webcl.DEVICE_TYPE_GPU:
+                _info = "WEBCL_DEVICE_GPU";
+              break;
+              case webcl.DEVICE_TYPE_ACCELERATOR:
+                _info = "WEBCL_DEVICE_ACCELERATOR";
+              break;
+              case webcl.DEVICE_TYPE_DEFAULT:
+                _info = "WEBCL_DEVICE_DEFAULT";
+              break;
+            }
+          break;
+          case 0x102C /*CL_DEVICE_VENDOR*/ :
+            _info = "WEBCL_DEVICE_VENDOR";
+          break;
+          case 0x100B /*CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/ :
+            _info = 0;
+          break;
+          case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
+            _info = webcl.getSupportedExtensions().join(' ') ; 
+          break;
+          case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
+            _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
+          break;
+          default:
+            _info = _object.getInfo(param_name);
+        }  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
+        }
+      
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+  
+        return _error;
+      }
+          
+      if(typeof(_info) == "number") {
+  
+        if (param_value_size == 8) {
+          if (param_value != 0) (tempI64 = [_info>>>0,((+(Math_abs(_info))) >= 1.0 ? (_info > 0.0 ? ((Math_min((+(Math_floor((_info)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((_info - +(((~~(_info)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
+        } else {
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        } 
+        
+      } else if(typeof(_info) == "boolean") {
+  
+        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+      } else if(typeof(_info) == "string") {
+  
+        if (param_name != webcl.DEVICE_PROFILE) _info += " ";
+        if (param_value != 0) writeStringToMemory(_info, param_value);
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
+  
+      } else if(typeof(_info) == "object") {
+  
+        if (_info instanceof Array) {
+         
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+        
+        } else if (_info instanceof WebCLPlatform) {
+       
+          var _id = CL.udid(_info);
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+        
+        } else if (_info == null) {
+  
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+  
+        } else {
+          return webcl.INVALID_VALUE;
+        }
+      } else {
+        return webcl.INVALID_VALUE;
+      }
+  
+      return webcl.SUCCESS;
+    }
+
+  function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
+  
+      var _event = null;
+      var _event_wait_list;
+      var _local_work_size;
+  
+      // \todo need to be remove when webkit will be support null
+      /**** **** **** **** **** **** **** ****/
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
+        _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
+        _local_work_size = (local_work_size != 0) ? [] : null;
+      } else {
+        _event_wait_list = [];
+        _local_work_size = [];
+      }
+  
+  
+      var _global_work_offset = [];
+      var _global_work_size = [];
+      
+  
+      for (var i = 0; i < work_dim; i++) {
+        _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
+  
+        if (global_work_offset != 0)
+          _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
+        else
+          _global_work_offset.push(0);
+  
+        if (local_work_size != 0)
+          _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
+      }
+  
+      for (var i = 0; i < num_events_in_wait_list; i++) {
+        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+         
+        _event_wait_list.push(CL.cl_objects[_event_wait]);
+      }
+             
+      try { 
+        
+        if (event != 0) {
+          _event = new WebCLEvent();
+        }
+  
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
+         
+        if (event != 0) { 
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        }
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+      
+      return webcl.SUCCESS;    
+  
+    }
+
+  function _frexp(x, exp_addr) {
+      var sig = 0, exp_ = 0;
+      if (x !== 0) {
+        var sign = 1;
+        if (x < 0) {
+          x = -x;
+          sign = -1;
+        }
+        var raw_exp = Math.log(x)/Math.log(2);
+        exp_ = Math.ceil(raw_exp);
+        if (exp_ === raw_exp) exp_ += 1;
+        sig = sign*x/Math.pow(2, exp_);
+      }
+      HEAP32[((exp_addr)>>2)]=exp_;
+      return sig;
+    }
+
+
+  function _emscripten_get_now() {
+      if (!_emscripten_get_now.actual) {
+        if (ENVIRONMENT_IS_NODE) {
+          _emscripten_get_now.actual = function _emscripten_get_now_actual() {
+            var t = process['hrtime']();
+            return t[0] * 1e3 + t[1] / 1e6;
+          }
+        } else if (typeof dateNow !== 'undefined') {
+          _emscripten_get_now.actual = dateNow;
+        } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
+          _emscripten_get_now.actual = function _emscripten_get_now_actual() { return window['performance']['now'](); };
+        } else {
+          _emscripten_get_now.actual = Date.now;
+        }
+      }
+      return _emscripten_get_now.actual();
+    }
+
+  function _glutInitWindowSize(width, height) {
+      Browser.setCanvasSize( GLUT.initWindowWidth = width,
+                             GLUT.initWindowHeight = height );
+    }
+
+  
+  function __exit(status) {
+      // void _exit(int status);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
+      Module['exit'](status);
+    }function _exit(status) {
+      __exit(status);
+    }
+
+  function _glutMotionFunc(func) {
+      GLUT.motionFunc = func;
+    }
+
+  
+  function _stat(path, buf, dontResolveLastLink) {
+      // http://pubs.opengroup.org/onlinepubs/7908799/xsh/stat.html
+      // int stat(const char *path, struct stat *buf);
+      // NOTE: dontResolveLastLink is a shortcut for lstat(). It should never be
+      //       used in client code.
+      path = typeof path !== 'string' ? Pointer_stringify(path) : path;
+      try {
+        var stat = dontResolveLastLink ? FS.lstat(path) : FS.stat(path);
+        HEAP32[((buf)>>2)]=stat.dev;
+        HEAP32[(((buf)+(4))>>2)]=0;
+        HEAP32[(((buf)+(8))>>2)]=stat.ino;
+        HEAP32[(((buf)+(12))>>2)]=stat.mode;
+        HEAP32[(((buf)+(16))>>2)]=stat.nlink;
+        HEAP32[(((buf)+(20))>>2)]=stat.uid;
+        HEAP32[(((buf)+(24))>>2)]=stat.gid;
+        HEAP32[(((buf)+(28))>>2)]=stat.rdev;
+        HEAP32[(((buf)+(32))>>2)]=0;
+        HEAP32[(((buf)+(36))>>2)]=stat.size;
+        HEAP32[(((buf)+(40))>>2)]=4096;
+        HEAP32[(((buf)+(44))>>2)]=stat.blocks;
+        HEAP32[(((buf)+(48))>>2)]=Math.floor(stat.atime.getTime() / 1000);
+        HEAP32[(((buf)+(52))>>2)]=0;
+        HEAP32[(((buf)+(56))>>2)]=Math.floor(stat.mtime.getTime() / 1000);
+        HEAP32[(((buf)+(60))>>2)]=0;
+        HEAP32[(((buf)+(64))>>2)]=Math.floor(stat.ctime.getTime() / 1000);
+        HEAP32[(((buf)+(68))>>2)]=0;
+        HEAP32[(((buf)+(72))>>2)]=stat.ino;
+        return 0;
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
+    }function _fstat(fildes, buf) {
+      // int fstat(int fildes, struct stat *buf);
+      // http://pubs.opengroup.org/onlinepubs/7908799/xsh/fstat.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      return _stat(stream.path, buf);
     }
 
   function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
@@ -12083,161 +12048,24 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
 
-  function _clEnqueueNDRangeKernel(command_queue,kernel,work_dim,global_work_offset,global_work_size,local_work_size,num_events_in_wait_list,event_wait_list,event) {
+  function _clReleaseCommandQueue(command_queue) {
   
-      var _event_wait_list;
-      var _local_work_size;
+      // If is an object retain don't release it until retains > 0...
+      if (command_queue in CL.cl_objects_retains) {
   
-      // \todo need to be remove when webkit will be support null
-      /**** **** **** **** **** **** **** ****/
-      if (navigator.userAgent.toLowerCase().indexOf('firefox') != -1) {
-        _event_wait_list = num_events_in_wait_list > 0 ? [] : null;
-        _local_work_size = (local_work_size != 0) ? [] : null;
-      } else {
-        _event_wait_list = [];
-        _local_work_size = [];
-      }
+        var _retain = CL.cl_objects_retains[command_queue] - 1;
   
+        CL.cl_objects_retains[command_queue] = _retain;
   
-      var _global_work_offset = [];
-      var _global_work_size = [];
-      
-  
-      for (var i = 0; i < work_dim; i++) {
-        _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
-  
-        if (global_work_offset != 0)
-          _global_work_offset.push(HEAP32[(((global_work_offset)+(i*4))>>2)]);
-      
-        if (local_work_size != 0)
-          _local_work_size.push(HEAP32[(((local_work_size)+(i*4))>>2)]);
-      }
-  
-      for (var i = 0; i < num_events_in_wait_list; i++) {
-        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
-         
-        _event_wait_list.push(CL.cl_objects[_event_wait]);
-      }
-             
-      try { 
-        
-        if (event != 0) {
-          var _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
-          HEAP32[((event)>>2)]=CL.udid(_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list);  
-        }
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-      
-      return webcl.SUCCESS;    
-  
-    }
-
-  function _clEnqueueAcquireGLObjects(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
-        
-      var _event_wait_list = [];
-      var _mem_objects = [];
-  
-      for (var i = 0; i < num_events_in_wait_list; i++) {
-        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
-  
-        
-        _event_wait_list.push(CL.cl_objects[_event_wait]);
-      }
-  
-      for (var i = 0; i < num_objects; i++) {
-        var _id = HEAP32[(((mem_objects)+(i*4))>>2)];
-  
-        
-        _mem_objects.push(CL.cl_objects[_id]);
-      }
-  
-      try { 
-  
-        if (event != 0) {
-          var _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event); 
-          HEAP32[((event)>>2)]=CL.udid(_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
-        }
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-      
-      return webcl.SUCCESS;
-    }
-
-  
-  function _memset(ptr, value, num) {
-      ptr = ptr|0; value = value|0; num = num|0;
-      var stop = 0, value4 = 0, stop4 = 0, unaligned = 0;
-      stop = (ptr + num)|0;
-      if ((num|0) >= 20) {
-        // This is unaligned, but quite large, so work hard to get to aligned settings
-        value = value & 0xff;
-        unaligned = ptr & 3;
-        value4 = value | (value << 8) | (value << 16) | (value << 24);
-        stop4 = stop & ~3;
-        if (unaligned) {
-          unaligned = (ptr + 4 - unaligned)|0;
-          while ((ptr|0) < (unaligned|0)) { // no need to check for stop, since we have large num
-            HEAP8[(ptr)]=value;
-            ptr = (ptr+1)|0;
-          }
-        }
-        while ((ptr|0) < (stop4|0)) {
-          HEAP32[((ptr)>>2)]=value4;
-          ptr = (ptr+4)|0;
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
         }
       }
-      while ((ptr|0) < (stop|0)) {
-        HEAP8[(ptr)]=value;
-        ptr = (ptr+1)|0;
-      }
-      return (ptr-num)|0;
-    }var _llvm_memset_p0i8_i32=_memset;
-
-  function _clEnqueueCopyBufferToImage(command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
   
-      var _event_wait_list = [];
-  
-      var _dest_origin = []; 
-      var _region = []; 
-  
-      for (var i = 0; i < 2; i++) {
-        _dest_origin.push(HEAP32[(((dst_origin)+(i*4))>>2)]);
-        _region.push(HEAP32[(((region)+(i*4))>>2)]);            
-      }
-  
-      for (var i = 0; i < num_events_in_wait_list; i++) {
-        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
-  
-        _event_wait_list.push(CL.cl_objects[_event_wait]);
-      } 
-    
       try {
   
-        if (event != 0) {
-          var _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
-          HEAP32[((event)>>2)]=CL.udid(_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
-        }
+          CL.cl_objects[command_queue].release();
+          delete CL.cl_objects[command_queue];  
   
       } catch (e) {
         var _error = CL.catchError(e);
@@ -12246,115 +12074,79 @@ function copyTempDouble(ptr) {
         return _error;
       }
   
-      
       return webcl.SUCCESS;
     }
 
-  function _clEnqueueReleaseGLObjects(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
-        
-      var _event_wait_list = [];
-      var _mem_objects = [];
+  function _glutCreateWindow(name) {
+      var contextAttributes = {
+        antialias: ((GLUT.initDisplayMode & 0x0080 /*GLUT_MULTISAMPLE*/) != 0),
+        depth: ((GLUT.initDisplayMode & 0x0010 /*GLUT_DEPTH*/) != 0),
+        stencil: ((GLUT.initDisplayMode & 0x0020 /*GLUT_STENCIL*/) != 0)
+      };
+      Module.ctx = Browser.createContext(Module['canvas'], true, true, contextAttributes);
+      return Module.ctx ? 1 /* a new GLUT window ID for the created context */ : 0 /* failure */;
+    }
+
   
-      for (var i = 0; i < num_events_in_wait_list; i++) {
-        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
-  
-        
-        _event_wait_list.push(CL.cl_objects[_event_wait]);
+  function _recv(fd, buf, len, flags) {
+      var sock = SOCKFS.getSocket(fd);
+      if (!sock) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
       }
+      // TODO honor flags
+      return _read(fd, buf, len);
+    }
   
-      for (var i = 0; i < num_objects; i++) {
-        var _id = HEAP32[(((mem_objects)+(i*4))>>2)];
-  
-        
-        _mem_objects.push(CL.cl_objects[_id]);
+  function _pread(fildes, buf, nbyte, offset) {
+      // ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
       }
-  
-      try { 
-  
-          if (event != 0) {
-            var _event = new WebCLEvent();
-            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
-            HEAP32[((event)>>2)]=CL.udid(_event);  
-          } else {
-            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);      
-          }
-  
+      try {
+        var slab = HEAP8;
+        return FS.read(stream, slab, buf, nbyte, offset);
       } catch (e) {
-  
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
+        FS.handleFSError(e);
+        return -1;
+      }
+    }function _read(fildes, buf, nbyte) {
+      // ssize_t read(int fildes, void *buf, size_t nbyte);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
       }
   
-      
-      return webcl.SUCCESS;
+  
+      try {
+        var slab = HEAP8;
+        return FS.read(stream, slab, buf, nbyte);
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
     }
 
-  
-  
-  function _emscripten_memcpy_big(dest, src, num) {
-      HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
-      return dest;
-    }function _memcpy(dest, src, num) {
-      dest = dest|0; src = src|0; num = num|0;
-      var ret = 0;
-      if ((num|0) >= 4096) return _emscripten_memcpy_big(dest|0, src|0, num|0)|0;
-      ret = dest|0;
-      if ((dest&3) == (src&3)) {
-        while (dest & 3) {
-          if ((num|0) == 0) return ret|0;
-          HEAP8[(dest)]=HEAP8[(src)];
-          dest = (dest+1)|0;
-          src = (src+1)|0;
-          num = (num-1)|0;
-        }
-        while ((num|0) >= 4) {
-          HEAP32[((dest)>>2)]=HEAP32[((src)>>2)];
-          dest = (dest+4)|0;
-          src = (src+4)|0;
-          num = (num-4)|0;
-        }
+  function _glDisableClientState(cap) {
+      var attrib = GLEmulation.getAttributeFromCapability(cap);
+      if (attrib === null) {
+        Module.printErr('WARNING: unhandled clientstate: ' + cap);
+        return;
       }
-      while ((num|0) > 0) {
-        HEAP8[(dest)]=HEAP8[(src)];
-        dest = (dest+1)|0;
-        src = (src+1)|0;
-        num = (num-1)|0;
+      if (GLImmediate.enabledClientAttributes[attrib]) {
+        GLImmediate.enabledClientAttributes[attrib] = false;
+        GLImmediate.totalEnabledClientAttributes--;
+        GLImmediate.currentRenderer = null; // Will need to change current renderer, since the set of active vertex pointers changed.
+        // In GL_FFP_ONLY mode, attributes are bound to the same index in each FFP emulation shader, so we can immediately apply the change here.
+        GL.disableVertexAttribArray(attrib);
+        if (GLEmulation.currentVao) delete GLEmulation.currentVao.enabledClientStates[cap];
+        GLImmediate.modifiedClientAttributes = true;
       }
-      return ret|0;
-    }var _llvm_memcpy_p0i8_p0i8_i32=_memcpy;
-
-  function _clSetTypePointer(pn_type, num_pn_type) {
-      /*pn_type : CL_SIGNED_INT8,CL_SIGNED_INT16,CL_SIGNED_INT32,CL_UNSIGNED_INT8,CL_UNSIGNED_INT16,CL_UNSIGNED_INT32,CL_FLOAT*/
-      
-      // Clean
-      CL.cl_pn_type = [];
-  
-  
-      var _old_pn_type = -1;
-      var _num_pn_type = 0;
-      for (var i = 0; i < num_pn_type ; i++) {
-        var _pn_type = HEAP32[(((pn_type)+(i*4))>>2)]
-  
-        if (_pn_type != _old_pn_type) {
-          if (_num_pn_type > 0)
-            CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
-  
-          _old_pn_type = _pn_type;
-          _num_pn_type = 1;
-        } else {
-          _num_pn_type ++;
-        }
-  
-  
-      }
-  
-      if (_num_pn_type > 0)
-        CL.cl_pn_type.push([_old_pn_type,_num_pn_type]);       
-    
-  
-      return webcl.SUCCESS;
     }
 
   function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -12387,128 +12179,39 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;    
     }
 
-  function _emscripten_get_now() {
-      if (!_emscripten_get_now.actual) {
-        if (ENVIRONMENT_IS_NODE) {
-          _emscripten_get_now.actual = function _emscripten_get_now_actual() {
-            var t = process['hrtime']();
-            return t[0] * 1e3 + t[1] / 1e6;
-          }
-        } else if (typeof dateNow !== 'undefined') {
-          _emscripten_get_now.actual = dateNow;
-        } else if (ENVIRONMENT_IS_WEB && window['performance'] && window['performance']['now']) {
-          _emscripten_get_now.actual = function _emscripten_get_now_actual() { return window['performance']['now'](); };
-        } else {
-          _emscripten_get_now.actual = Date.now;
-        }
-      }
-      return _emscripten_get_now.actual();
+  function _glutInitWindowPosition(x, y) {
+      // Ignore for now
     }
 
-  function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
-      
+  function _clGetContextInfo(context,param_name,param_value_size,param_value,param_value_size_ret) {
   
-      var _id = null;
-      var _program = null;
-  
-      // Context must be created
-  
-      try {
-        
-        var _string = "";
-  
-        for (var i = 0; i < count; i++) {
-          if (lengths) {
-            var _len = HEAP32[(((lengths)+(i*4))>>2)];
-            if (_len < 0) {
-              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);   
-            } else {
-              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)], _len);   
-            }
-          } else {
-            _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]); 
-          }
-        }
-  
-        CL.parseKernel(_string);
-  
-  
-        _program = CL.cl_objects[context].createProgram(_string);
-    
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (cl_errcode_ret != 0) {
-          HEAP32[((cl_errcode_ret)>>2)]=_error;
-        }
-  
-        return 0; // NULL Pointer
-      }
-  
-      if (cl_errcode_ret != 0) {
-        HEAP32[((cl_errcode_ret)>>2)]=0;
-      }
-  
-      _id = CL.udid(_program);
-  
-  
-      return _id;
-    }
-
-  function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
-  
-      try {
-  
-        var _devices = [];
-        var _option = (options == 0) ? "" : Pointer_stringify(options); 
-  
-        if (device_list != 0 && num_devices > 0 ) {
-          for (var i = 0; i < num_devices ; i++) {
-            var _device = HEAP32[(((device_list)+(i*4))>>2)]
-              _devices.push(CL.cl_objects[_device]);
-          }
-        }
-  
-        // If device_list is NULL value, the program executable is built for all devices associated with program.
-        if (_devices.length == 0) {
-          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
-        }
-  
-        var _callback = null
-        if (pfn_notify != 0) {
-          /**
-           * Description
-           * @return 
-           */
-          _callback = function() { 
-            console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
-            FUNCTION_TABLE[pfn_notify](program, user_data) 
-          };
-        }
-  
-        
-        CL.cl_objects[program].build(_devices,_option,_callback);
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-  
-      return webcl.SUCCESS;      
-  
-    }
-
-  function _clGetProgramBuildInfo(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
   
       var _info = null;
   
       try { 
   
   
-        _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
+        if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
+          _info = 0;
+  
+          if (context in CL.cl_objects) {
+            _info++;
+          }
+  
+          if (context in CL.cl_objects_retains) {
+            _info+=CL.cl_objects_retains[context];
+          }
+  
+        }  else if (param_name == 0x1082 /* CL_CONTEXT_PROPERTIES */) {
+        
+          _info = "WebCLContextProperties";
+  
+        } else {
+  
+          _info = CL.cl_objects[context].getInfo(param_name);
+  
+        }
+        
   
       } catch (e) {
         var _error = CL.catchError(e);
@@ -12516,29 +12219,169 @@ function copyTempDouble(ptr) {
         if (param_value != 0) {
           HEAP32[((param_value)>>2)]=0;
         }
-  
+      
         if (param_value_size_ret != 0) {
           HEAP32[((param_value_size_ret)>>2)]=0;
         }
   
         return _error;
       }
+      
+       if (_info == "WebCLContextProperties") {
   
-      if(typeof(_info) == "number") {
+        var _size = 0;
+  
+        if (param_value != 0) {
+  
+          if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
+            var _properties = CL.cl_objects[context].properties;
+  
+            for (elt in _properties) {
+              HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
+              _size ++;
+  
+            }
+          }
+        }
+  
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
+  
+      } else if(typeof(_info) == "number") {
   
         if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
-      } else if(typeof(_info) == "string") {
-        if (param_value != 0) {
-          writeStringToMemory(_info, param_value);
-        }
-      
-        if (param_value_size_ret != 0) {
-          HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
+      } else if(typeof(_info) == "boolean") {
+  
+        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+      } else if(typeof(_info) == "object") {
+  
+        if (_info instanceof WebCLPlatform) {
+       
+          var _id = CL.udid(_info);
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+        } else if (_info instanceof Array) {
+  
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            var _id = CL.udid(_info[i]);
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length*4;
+  
+        } else if (_info == null) {
+  
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+  
+        } else {
+          return webcl.INVALID_VALUE;
         }
       } else {
         return webcl.INVALID_VALUE;
+      }
+  
+      return webcl.SUCCESS;
+    }
+
+  
+  function _emscripten_memcpy_big(dest, src, num) {
+      HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
+      return dest;
+    } 
+  Module["_memcpy"] = _memcpy;
+
+  function _strstr(ptr1, ptr2) {
+      var check = 0, start;
+      do {
+        if (!check) {
+          start = ptr1;
+          check = ptr2;
+        }
+        var curr1 = HEAP8[((ptr1++)|0)];
+        var curr2 = HEAP8[((check++)|0)];
+        if (curr2 == 0) return start;
+        if (curr2 != curr1) {
+          // rewind to one character after start, to find ez in eeez
+          ptr1 = start + 1;
+          check = 0;
+        }
+      } while (curr1);
+      return 0;
+    }
+
+  function _sbrk(bytes) {
+      // Implement a Linux-like 'memory area' for our 'process'.
+      // Changes the size of the memory area by |bytes|; returns the
+      // address of the previous top ('break') of the memory area
+      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
+      var self = _sbrk;
+      if (!self.called) {
+        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
+        self.called = true;
+        assert(Runtime.dynamicAlloc);
+        self.alloc = Runtime.dynamicAlloc;
+        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
+      }
+      var ret = DYNAMICTOP;
+      if (bytes != 0) self.alloc(bytes);
+      return ret;  // Previous break location.
+    }
+
+  function _glGenTextures(n, textures) {
+      for (var i = 0; i < n; i++) {
+        var id = GL.getNewId(GL.textures);
+        var texture = GLctx.createTexture();
+        texture.name = id;
+        GL.textures[id] = texture;
+        HEAP32[(((textures)+(i*4))>>2)]=id;
+      }
+    }
+
+  function _glutMouseFunc(func) {
+      GLUT.mouseFunc = func;
+    }
+
+  function _clReleaseMemObject(memobj) {
+  
+      // If is an object retain don't release it until retains > 0...
+      if (memobj in CL.cl_objects_retains) {
+  
+        var _retain = CL.cl_objects_retains[memobj] - 1;
+  
+        CL.cl_objects_retains[memobj] = _retain;
+  
+        if (_retain >= 0) {
+          
+          // Call the callback 
+          if (memobj in CL.cl_objects_mem_callback) {
+            if (CL.cl_objects_mem_callback[memobj].length > 0)
+              CL.cl_objects_mem_callback[memobj].pop()();
+          }
+  
+          return webcl.SUCCESS;
+        }
+      }
+  
+      try {
+  
+        // Call the callback 
+        if (memobj in CL.cl_objects_mem_callback) {
+          if (CL.cl_objects_mem_callback[memobj].length > 0)
+            CL.cl_objects_mem_callback[memobj].pop()();
+        }
+  
+        CL.cl_objects[memobj].release();
+        delete CL.cl_objects[memobj];  
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
       }
   
       return webcl.SUCCESS;
@@ -12577,85 +12420,6 @@ function copyTempDouble(ptr) {
       }
   
       _id = CL.udid(_kernel);
-  
-  
-      return _id;
-    }
-
-  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
-  
-      try {
-  
-        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
-  
-        if(typeof(_info) == "number") {
-  
-          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-        } else if (_info instanceof Int32Array) {
-         
-          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
-          }
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-        
-        } else {
-  
-          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
-          
-          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-  
-        }
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-        
-        return _error;
-      }
-  
-      return webcl.SUCCESS;
-    }
-
-  function _clCreateFromGLTexture2D(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
-      // Assume the flags is i32 
-      assert(flags_i64_2 == 0, 'Invalid flags i64');
-  
-      var _id = null;
-      var _buffer = null;
-      var _flags;
-  
-      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
-        _flags = webcl.MEM_READ_WRITE;
-      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
-        _flags = webcl.MEM_WRITE_ONLY;
-      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
-        _flags = webcl.MEM_READ_ONLY;
-      } else {
-        if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
-        return 0; 
-      }
-  
-  
-  
-      try {
-  
-        _buffer = CL.cl_objects[context].createFromGLTexture(_flags, target, miplevel, GL.textures[texture]);
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-      
-        if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=_error;
-        return 0; // NULL Pointer
-      }
-  
-      if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=0;
-      
-      _id = CL.udid(_buffer);
   
   
       return _id;
@@ -12781,141 +12545,250 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
-  function _frexp(x, exp_addr) {
-      var sig = 0, exp_ = 0;
-      if (x !== 0) {
-        var sign = 1;
-        if (x < 0) {
-          x = -x;
-          sign = -1;
+  function _clGetProgramBuildInfo(program,device,param_name,param_value_size,param_value,param_value_size_ret) {
+  
+      var _info = null;
+  
+      try { 
+  
+  
+        _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (param_value != 0) {
+          HEAP32[((param_value)>>2)]=0;
         }
-        var raw_exp = Math.log(x)/Math.log(2);
-        exp_ = Math.ceil(raw_exp);
-        if (exp_ === raw_exp) exp_ += 1;
-        sig = sign*x/Math.pow(2, exp_);
+  
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=0;
+        }
+  
+        return _error;
       }
-      HEAP32[((exp_addr)>>2)]=exp_;
-      return sig;
+  
+      if(typeof(_info) == "number") {
+  
+        if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+      } else if(typeof(_info) == "string") {
+        if (param_value != 0) {
+          writeStringToMemory(_info, param_value);
+        }
+      
+        if (param_value_size_ret != 0) {
+          HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
+        }
+      } else {
+        return webcl.INVALID_VALUE;
+      }
+  
+      return webcl.SUCCESS;
     }
 
-  function _open(path, oflag, varargs) {
-      // int open(const char *path, int oflag, ...);
-      // http://pubs.opengroup.org/onlinepubs/009695399/functions/open.html
-      var mode = HEAP32[((varargs)>>2)];
-      path = Pointer_stringify(path);
-      try {
-        var stream = FS.open(path, oflag, mode);
-        return stream.fd;
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
-      }
-    }
-
-  
-  function _stat(path, buf, dontResolveLastLink) {
-      // http://pubs.opengroup.org/onlinepubs/7908799/xsh/stat.html
-      // int stat(const char *path, struct stat *buf);
-      // NOTE: dontResolveLastLink is a shortcut for lstat(). It should never be
-      //       used in client code.
-      path = typeof path !== 'string' ? Pointer_stringify(path) : path;
-      try {
-        var stat = dontResolveLastLink ? FS.lstat(path) : FS.stat(path);
-        HEAP32[((buf)>>2)]=stat.dev;
-        HEAP32[(((buf)+(4))>>2)]=0;
-        HEAP32[(((buf)+(8))>>2)]=stat.ino;
-        HEAP32[(((buf)+(12))>>2)]=stat.mode;
-        HEAP32[(((buf)+(16))>>2)]=stat.nlink;
-        HEAP32[(((buf)+(20))>>2)]=stat.uid;
-        HEAP32[(((buf)+(24))>>2)]=stat.gid;
-        HEAP32[(((buf)+(28))>>2)]=stat.rdev;
-        HEAP32[(((buf)+(32))>>2)]=0;
-        HEAP32[(((buf)+(36))>>2)]=stat.size;
-        HEAP32[(((buf)+(40))>>2)]=4096;
-        HEAP32[(((buf)+(44))>>2)]=stat.blocks;
-        HEAP32[(((buf)+(48))>>2)]=Math.floor(stat.atime.getTime() / 1000);
-        HEAP32[(((buf)+(52))>>2)]=0;
-        HEAP32[(((buf)+(56))>>2)]=Math.floor(stat.mtime.getTime() / 1000);
-        HEAP32[(((buf)+(60))>>2)]=0;
-        HEAP32[(((buf)+(64))>>2)]=Math.floor(stat.ctime.getTime() / 1000);
-        HEAP32[(((buf)+(68))>>2)]=0;
-        HEAP32[(((buf)+(72))>>2)]=stat.ino;
-        return 0;
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
-      }
-    }function _fstat(fildes, buf) {
-      // int fstat(int fildes, struct stat *buf);
-      // http://pubs.opengroup.org/onlinepubs/7908799/xsh/fstat.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-      return _stat(stream.path, buf);
-    }
-
-  
-  function _recv(fd, buf, len, flags) {
-      var sock = SOCKFS.getSocket(fd);
-      if (!sock) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-      // TODO honor flags
-      return _read(fd, buf, len);
-    }
-  
-  function _pread(fildes, buf, nbyte, offset) {
-      // ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-      try {
-        var slab = HEAP8;
-        return FS.read(stream, slab, buf, nbyte, offset);
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
-      }
-    }function _read(fildes, buf, nbyte) {
-      // ssize_t read(int fildes, void *buf, size_t nbyte);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/read.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
-      }
-  
-  
-      try {
-        var slab = HEAP8;
-        return FS.read(stream, slab, buf, nbyte);
-      } catch (e) {
-        FS.handleFSError(e);
-        return -1;
+  function _glTexCoordPointer(size, type, stride, pointer) {
+      GLImmediate.setClientAttribute(GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture, size, type, stride, pointer);
+      if (GL.currArrayBuffer) {
+        var loc = GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture;
+        GLctx.vertexAttribPointer(loc, size, type, false, stride, pointer);
       }
     }
 
-  function _close(fildes) {
-      // int close(int fildes);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/close.html
-      var stream = FS.getStream(fildes);
-      if (!stream) {
-        ___setErrNo(ERRNO_CODES.EBADF);
-        return -1;
+  function _clCreateFromGLTexture2D(context,flags_i64_1,flags_i64_2,target,miplevel,texture,cl_errcode_ret) {
+      // Assume the flags is i32 
+      assert(flags_i64_2 == 0, 'Invalid flags i64');
+  
+      var _id = null;
+      var _buffer = null;
+      var _flags;
+  
+      if (flags_i64_1 & webcl.MEM_READ_WRITE) {
+        _flags = webcl.MEM_READ_WRITE;
+      } else if (flags_i64_1 & webcl.MEM_WRITE_ONLY) {
+        _flags = webcl.MEM_WRITE_ONLY;
+      } else if (flags_i64_1 & webcl.MEM_READ_ONLY) {
+        _flags = webcl.MEM_READ_ONLY;
+      } else {
+        if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
+        return 0; 
       }
+  
+  
+  
       try {
-        FS.close(stream);
-        return 0;
+  
+        _buffer = CL.cl_objects[context].createFromGLTexture(_flags, target, miplevel, GL.textures[texture]);
+  
       } catch (e) {
-        FS.handleFSError(e);
-        return -1;
+        var _error = CL.catchError(e);
+      
+        if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=_error;
+        return 0; // NULL Pointer
       }
+  
+      if (cl_errcode_ret != 0) HEAP32[((cl_errcode_ret)>>2)]=0;
+      
+      _id = CL.udid(_buffer);
+  
+  
+      return _id;
+    }
+
+  function _glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels) {
+      if (pixels) {
+        var data = GL.getTexPixelData(type, format, width, height, pixels, -1);
+        pixels = data.pixels;
+      } else {
+        pixels = null;
+      }
+      GLctx.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    }
+
+  function _glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels) {
+      if (pixels) {
+        var data = GL.getTexPixelData(type, format, width, height, pixels, internalFormat);
+        pixels = data.pixels;
+        internalFormat = data.internalFormat;
+      } else {
+        pixels = null;
+      }
+      GLctx.texImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
+    }
+
+
+  function _clGetDeviceIDs(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
+      // Assume the device_type is i32 
+      assert(device_type_i64_2 == 0, 'Invalid device_type i64');
+  
+      
+      // Init webcl variable if necessary
+      if (CL.init() == 0) {
+        return webcl.INVALID_VALUE;
+      }
+  
+      if ( num_entries == 0 && devices != 0) {
+        return webcl.INVALID_VALUE;
+      }
+  
+      if ( num_devices == 0 && devices == 0) {
+        return webcl.INVALID_VALUE;
+      }
+  
+      if ( platform != 0 && !(platform in CL.cl_objects)) {
+        return webcl.INVALID_PLATFORM;  
+      }
+  
+      var _device = null;
+  
+      try {
+  
+        // If platform is NULL use the first platform found ...
+        if (platform == 0) {
+          var _platforms = webcl.getPlatforms();
+          if (_platforms.length == 0) {
+            return webcl.INVALID_PLATFORM;  
+          }
+  
+          // Create a new UDID 
+          platform = CL.udid(_platforms[0]);
+        } 
+  
+        var _platform = CL.cl_objects[platform];
+  
+          
+        _devices = _platform.getDevices(device_type_i64_1);
+  
+      } catch (e) {
+  
+        var _error = CL.catchError(e);
+  
+        return _error;
+      }
+  
+      if (num_devices != 0) {
+        HEAP32[((num_devices)>>2)]=_devices.length /* Num of device */;
+      } 
+  
+      if (devices != 0) {
+        for (var i = 0; i < Math.min(num_entries,_devices.length); i++) {
+          var _id = CL.udid(_devices[i]);
+          HEAP32[(((devices)+(i*4))>>2)]=_id;
+        }
+      }
+  
+      return webcl.SUCCESS;
+  
+    }
+
+  function _clEnqueueCopyBufferToImage(command_queue,src_buffer,dst_image,src_offset,dst_origin,region,num_events_in_wait_list,event_wait_list,event) {
+  
+      var _event_wait_list = [];
+  
+      var _dest_origin = []; 
+      var _region = []; 
+  
+      for (var i = 0; i < 2; i++) {
+        _dest_origin.push(HEAP32[(((dst_origin)+(i*4))>>2)]);
+        _region.push(HEAP32[(((region)+(i*4))>>2)]);            
+      }
+  
+      for (var i = 0; i < num_events_in_wait_list; i++) {
+        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+  
+        _event_wait_list.push(CL.cl_objects[_event_wait]);
+      } 
+    
+      try {
+  
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list,_event);    
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueCopyBufferToImage(CL.cl_objects[src_buffer],CL.cl_objects[dst_image],src_offset,_dest_origin,_region,_event_wait_list);    
+        }
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+      
+      return webcl.SUCCESS;
+    }
+
+  function ___errno_location() {
+      return ___errno_state;
+    }
+
+   
+  Module["_memset"] = _memset;
+
+  function _glEnd() {
+      GLImmediate.prepareClientAttributes(GLImmediate.rendererComponents[GLImmediate.VERTEX], true);
+      GLImmediate.firstVertex = 0;
+      GLImmediate.lastVertex = GLImmediate.vertexCounter / (GLImmediate.stride >> 2);
+      GLImmediate.flush();
+      GLImmediate.disableBeginEndClientAttributes();
+      GLImmediate.mode = -1;
+  
+      // Pop the old state:
+      GLImmediate.enabledClientAttributes = GLImmediate.enabledClientAttributes_preBegin;
+      GLImmediate.clientAttributes = GLImmediate.clientAttributes_preBegin;
+      GLImmediate.currentRenderer = null; // The set of active client attributes changed, we must re-lookup the renderer to use.
+      GLImmediate.modifiedClientAttributes = true;
+    }
+
+  function _atexit(func, arg) {
+      __ATEXIT__.unshift({ func: func, arg: arg });
+    }
+
+  function _abort() {
+      Module['abort']();
     }
 
   function _clCreateContext(properties,num_devices,devices,pfn_notify,user_data,cl_errcode_ret) {
@@ -13052,279 +12925,97 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
-  function _clGetDeviceIDs(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
-      // Assume the device_type is i32 
-      assert(device_type_i64_2 == 0, 'Invalid device_type i64');
+  function _close(fildes) {
+      // int close(int fildes);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/close.html
+      var stream = FS.getStream(fildes);
+      if (!stream) {
+        ___setErrNo(ERRNO_CODES.EBADF);
+        return -1;
+      }
+      try {
+        FS.close(stream);
+        return 0;
+      } catch (e) {
+        FS.handleFSError(e);
+        return -1;
+      }
+    }
+
+  function _clEnqueueAcquireGLObjects(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
+        
+      var _event_wait_list = [];
+      var _mem_objects = [];
+  
+      for (var i = 0; i < num_events_in_wait_list; i++) {
+        var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
+  
+        
+        _event_wait_list.push(CL.cl_objects[_event_wait]);
+      }
+  
+      for (var i = 0; i < num_objects; i++) {
+        var _id = HEAP32[(((mem_objects)+(i*4))>>2)];
+  
+        
+        _mem_objects.push(CL.cl_objects[_id]);
+      }
+  
+      try { 
+  
+        if (event != 0) {
+          var _event = new WebCLEvent();
+          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event); 
+          HEAP32[((event)>>2)]=CL.udid(_event);
+        } else {
+          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
+        }
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
   
       
-      // Init webcl variable if necessary
-      if (CL.init() == 0) {
-        return webcl.INVALID_VALUE;
-      }
-  
-      if ( num_entries == 0 && devices != 0) {
-        return webcl.INVALID_VALUE;
-      }
-  
-      if ( num_devices == 0 && devices == 0) {
-        return webcl.INVALID_VALUE;
-      }
-  
-      if ( platform != 0 && !(platform in CL.cl_objects)) {
-        return webcl.INVALID_PLATFORM;  
-      }
-  
-      var _device = null;
+      return webcl.SUCCESS;
+    }
+
+  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
   
       try {
   
-        // If platform is NULL use the first platform found ...
-        if (platform == 0) {
-          var _platforms = webcl.getPlatforms();
-          if (_platforms.length == 0) {
-            return webcl.INVALID_PLATFORM;  
-          }
+        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
   
-          // Create a new UDID 
-          platform = CL.udid(_platforms[0]);
-        } 
+        if(typeof(_info) == "number") {
   
-        var _platform = CL.cl_objects[platform];
-  
-          
-        _devices = _platform.getDevices(device_type_i64_1);
-  
-      } catch (e) {
-  
-        var _error = CL.catchError(e);
-  
-        return _error;
-      }
-  
-      if (num_devices != 0) {
-        HEAP32[((num_devices)>>2)]=_devices.length /* Num of device */;
-      } 
-  
-      if (devices != 0) {
-        for (var i = 0; i < Math.min(num_entries,_devices.length); i++) {
-          var _id = CL.udid(_devices[i]);
-          HEAP32[(((devices)+(i*4))>>2)]=_id;
-        }
-      }
-  
-      return webcl.SUCCESS;
-  
-    }
-
-  function _clGetContextInfo(context,param_name,param_value_size,param_value,param_value_size_ret) {
-  
-  
-      var _info = null;
-  
-      try { 
-  
-  
-        if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
-          _info = 0;
-  
-          if (context in CL.cl_objects) {
-            _info++;
-          }
-  
-          if (context in CL.cl_objects_retains) {
-            _info+=CL.cl_objects_retains[context];
-          }
-  
-        }  else if (param_name == 0x1082 /* CL_CONTEXT_PROPERTIES */) {
-        
-          _info = "WebCLContextProperties";
-  
-        } else {
-  
-          _info = CL.cl_objects[context].getInfo(param_name);
-  
-        }
-        
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (param_value != 0) {
-          HEAP32[((param_value)>>2)]=0;
-        }
-      
-        if (param_value_size_ret != 0) {
-          HEAP32[((param_value_size_ret)>>2)]=0;
-        }
-  
-        return _error;
-      }
-      
-       if (_info == "WebCLContextProperties") {
-  
-        var _size = 0;
-  
-        if (param_value != 0) {
-  
-          if ( CL.cl_objects[context].hasOwnProperty('properties') ) {
-            var _properties = CL.cl_objects[context].properties;
-  
-            for (elt in _properties) {
-              HEAP32[(((param_value)+(_size*4))>>2)]=_properties[elt];
-              _size ++;
-  
-            }
-          }
-        }
-  
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_size*4;
-  
-      } else if(typeof(_info) == "number") {
-  
-        if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-      } else if(typeof(_info) == "boolean") {
-  
-        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-      } else if(typeof(_info) == "object") {
-  
-        if (_info instanceof WebCLPlatform) {
-       
-          var _id = CL.udid(_info);
-          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-        } else if (_info instanceof Array) {
-  
-          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-            var _id = CL.udid(_info[i]);
-            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_id;
-          }
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length*4;
-  
-        } else if (_info == null) {
-  
-          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-  
-        } else {
-          return webcl.INVALID_VALUE;
-        }
-      } else {
-        return webcl.INVALID_VALUE;
-      }
-  
-      return webcl.SUCCESS;
-    }
-
-  function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
-  
-    
-      var  _info = null;
-  
-      try { 
-  
-          var _object = CL.cl_objects[device];
-     
-        switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
-          case 0x102B /*CL_DEVICE_NAME*/ :
-            var _type = _object.getInfo(webcl.DEVICE_TYPE);
-            switch (_type) {
-              case webcl.DEVICE_TYPE_CPU:
-                _info = "WEBCL_DEVICE_CPU";
-              break;
-              case webcl.DEVICE_TYPE_GPU:
-                _info = "WEBCL_DEVICE_GPU";
-              break;
-              case webcl.DEVICE_TYPE_ACCELERATOR:
-                _info = "WEBCL_DEVICE_ACCELERATOR";
-              break;
-              case webcl.DEVICE_TYPE_DEFAULT:
-                _info = "WEBCL_DEVICE_DEFAULT";
-              break;
-            }
-          break;
-          case 0x102C /*CL_DEVICE_VENDOR*/ :
-            _info = "WEBCL_DEVICE_VENDOR";
-          break;
-          case 0x100B /*CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE*/ :
-            _info = 0;
-          break;
-          case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions().join(' ') ; 
-          break;
-          case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
-            _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
-          break;
-          default:
-            _info = _object.getInfo(param_name);
-        }  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (param_value != 0) {
-          HEAP32[((param_value)>>2)]=0;
-        }
-      
-        if (param_value_size_ret != 0) {
-          HEAP32[((param_value_size_ret)>>2)]=0;
-        }
-  
-        return _error;
-      }
-          
-      if(typeof(_info) == "number") {
-  
-        if (param_value_size == 8) {
-          if (param_value != 0) (tempI64 = [_info>>>0,(Math_abs(_info) >= 1 ? (_info > 0 ? Math_min(Math_floor((_info)/4294967296), 4294967295)>>>0 : (~~(Math_ceil((_info - +(((~~(_info)))>>>0))/4294967296)))>>>0) : 0)],HEAP32[((param_value)>>2)]=tempI64[0],HEAP32[(((param_value)+(4))>>2)]=tempI64[1]);
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=8;
-        } else {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-        } 
-        
-      } else if(typeof(_info) == "boolean") {
   
-        if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-      } else if(typeof(_info) == "string") {
-  
-        if (param_name != webcl.DEVICE_PROFILE) _info += " ";
-        if (param_value != 0) writeStringToMemory(_info, param_value);
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
-  
-      } else if(typeof(_info) == "object") {
-  
-        if (_info instanceof Array) {
+        } else if (_info instanceof Int32Array) {
          
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
           }
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
         
-        } else if (_info instanceof WebCLPlatform) {
-       
-          var _id = CL.udid(_info);
-          if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-        
-        } else if (_info == null) {
+        } else {
   
+          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
+          
           if (param_value != 0) HEAP32[((param_value)>>2)]=0;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
   
-        } else {
-          return webcl.INVALID_VALUE;
         }
-      } else {
-        return webcl.INVALID_VALUE;
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+        
+        return _error;
       }
   
       return webcl.SUCCESS;
@@ -13367,8 +13058,236 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
-  function _glClearColor(x0, x1, x2, x3) { GLctx.clearColor(x0, x1, x2, x3) }
+  function _glutIdleFunc(func) {
+      function callback() {
+        if (GLUT.idleFunc) {
+          Runtime.dynCall('v', GLUT.idleFunc);
+          Browser.safeSetTimeout(callback, 0);
+        }
+      }
+      if (!GLUT.idleFunc) {
+        Browser.safeSetTimeout(callback, 0);
+      }
+      GLUT.idleFunc = func;
+    }
 
+
+  var _fabs=Math_abs;
+
+  function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
+  
+      try {
+  
+        var _devices = [];
+        var _option = (options == 0) ? "" : Pointer_stringify(options); 
+  
+        if (device_list != 0 && num_devices > 0 ) {
+          for (var i = 0; i < num_devices ; i++) {
+            var _device = HEAP32[(((device_list)+(i*4))>>2)]
+              _devices.push(CL.cl_objects[_device]);
+          }
+        }
+  
+        // If device_list is NULL value, the program executable is built for all devices associated with program.
+        if (_devices.length == 0) {
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
+        }
+  
+        var _callback = null
+        if (pfn_notify != 0) {
+          /**
+           * Description
+           * @return 
+           */
+          _callback = function() { 
+            console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
+            FUNCTION_TABLE[pfn_notify](program, user_data) 
+          };
+        }
+  
+        
+        CL.cl_objects[program].build(_devices,_option,_callback);
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+  
+      return webcl.SUCCESS;      
+  
+    }
+
+
+  function _glutDisplayFunc(func) {
+      GLUT.displayFunc = func;
+    }
+
+  function _glutPostRedisplay() {
+      if (GLUT.displayFunc && !GLUT.requestedAnimationFrame) {
+        GLUT.requestedAnimationFrame = true;
+        Browser.requestAnimationFrame(function() {
+          GLUT.requestedAnimationFrame = false;
+          if (ABORT) return;
+          Runtime.dynCall('v', GLUT.displayFunc);
+        });
+      }
+    }
+
+  function _glutInit(argcp, argv) {
+      // Ignore arguments
+      GLUT.initTime = Date.now();
+  
+      var isTouchDevice = 'ontouchstart' in document.documentElement;
+  
+      window.addEventListener("keydown", GLUT.onKeydown, true);
+      window.addEventListener("keyup", GLUT.onKeyup, true);
+      if (isTouchDevice) {
+        window.addEventListener("touchmove", GLUT.onMousemove, true);
+        window.addEventListener("touchstart", GLUT.onMouseButtonDown, true);
+        window.addEventListener("touchend", GLUT.onMouseButtonUp, true);
+      } else {
+        window.addEventListener("mousemove", GLUT.onMousemove, true);
+        window.addEventListener("mousedown", GLUT.onMouseButtonDown, true);
+        window.addEventListener("mouseup", GLUT.onMouseButtonUp, true);
+        // IE9, Chrome, Safari, Opera
+        window.addEventListener("mousewheel", GLUT.onMouseWheel, true);
+        // Firefox
+        window.addEventListener("DOMMouseScroll", GLUT.onMouseWheel, true);
+      }
+  
+      Browser.resizeListeners.push(function(width, height) {
+        if (GLUT.reshapeFunc) {
+        	Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
+        }
+      });
+  
+      __ATEXIT__.push({ func: function() {
+        window.removeEventListener("keydown", GLUT.onKeydown, true);
+        window.removeEventListener("keyup", GLUT.onKeyup, true);
+        if (isTouchDevice) {
+          window.removeEventListener("touchmove", GLUT.onMousemove, true);
+          window.removeEventListener("touchstart", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("touchend", GLUT.onMouseButtonUp, true);
+        } else {
+          window.removeEventListener("mousemove", GLUT.onMousemove, true);
+          window.removeEventListener("mousedown", GLUT.onMouseButtonDown, true);
+          window.removeEventListener("mouseup", GLUT.onMouseButtonUp, true);
+          // IE9, Chrome, Safari, Opera
+          window.removeEventListener("mousewheel", GLUT.onMouseWheel, true);
+          // Firefox
+          window.removeEventListener("DOMMouseScroll", GLUT.onMouseWheel, true);
+        }
+        Module["canvas"].width = Module["canvas"].height = 1;
+      } });
+    }
+
+
+  function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
+      
+  
+      var _id = null;
+      var _program = null;
+  
+      // Context must be created
+  
+      try {
+        
+        var _string = "";
+  
+        for (var i = 0; i < count; i++) {
+          if (lengths) {
+            var _len = HEAP32[(((lengths)+(i*4))>>2)];
+            if (_len < 0) {
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);   
+            } else {
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)], _len);   
+            }
+          } else {
+            _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]); 
+          }
+        }
+  
+        CL.parseKernel(_string);
+  
+  
+        _program = CL.cl_objects[context].createProgram(_string);
+    
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+  
+        return 0; // NULL Pointer
+      }
+  
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+  
+      _id = CL.udid(_program);
+  
+  
+      return _id;
+    }
+
+  function _glLoadIdentity() {
+      GLImmediate.matricesModified = true;
+      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
+      GLImmediate.matrixLib.mat4.identity(GLImmediate.matrix[GLImmediate.currentMatrix]);
+    }
+
+  function _glFinish() { GLctx.finish() }
+
+  
+  function _emscripten_glColor4f(r, g, b, a) {
+      r = Math.max(Math.min(r, 1), 0);
+      g = Math.max(Math.min(g, 1), 0);
+      b = Math.max(Math.min(b, 1), 0);
+      a = Math.max(Math.min(a, 1), 0);
+  
+      // TODO: make ub the default, not f, save a few mathops
+      if (GLImmediate.mode >= 0) {
+        var start = GLImmediate.vertexCounter << 2;
+        GLImmediate.vertexDataU8[start + 0] = r * 255;
+        GLImmediate.vertexDataU8[start + 1] = g * 255;
+        GLImmediate.vertexDataU8[start + 2] = b * 255;
+        GLImmediate.vertexDataU8[start + 3] = a * 255;
+        GLImmediate.vertexCounter++;
+        GLImmediate.addRendererComponent(GLImmediate.COLOR, 4, GLctx.UNSIGNED_BYTE);
+      } else {
+        GLImmediate.clientColor[0] = r;
+        GLImmediate.clientColor[1] = g;
+        GLImmediate.clientColor[2] = b;
+        GLImmediate.clientColor[3] = a;
+        GLctx.vertexAttrib4fv(GLImmediate.COLOR, GLImmediate.clientColor);
+      }
+    }function _glColor3f(r, g, b) {
+      _emscripten_glColor4f(r, g, b, 1);
+    }
+
+  function _glVertex3f(x, y, z) {
+      assert(GLImmediate.mode >= 0); // must be in begin/end
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = x;
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = y;
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = z || 0;
+      assert(GLImmediate.vertexCounter << 2 < GL.MAX_TEMP_BUFFER_SIZE);
+      GLImmediate.addRendererComponent(GLImmediate.VERTEX, 3, GLctx.FLOAT);
+    }
+
+  function _glViewport(x0, x1, x2, x3) { GLctx.viewport(x0, x1, x2, x3) }
+
+  function _time(ptr) {
+      var ret = Math.floor(Date.now()/1000);
+      if (ptr) {
+        HEAP32[((ptr)>>2)]=ret;
+      }
+      return ret;
+    }
 
   function _glEnableClientState(cap) {
       var attrib = GLEmulation.getAttributeFromCapability(cap);
@@ -13387,242 +13306,92 @@ function copyTempDouble(ptr) {
       }
     }
 
-  function _glVertexPointer(size, type, stride, pointer) {
-      GLImmediate.setClientAttribute(GLImmediate.VERTEX, size, type, stride, pointer);
-      if (GL.currArrayBuffer) {
-        GLctx.vertexAttribPointer(GLImmediate.VERTEX, size, type, false, stride, pointer);
-      }
+  
+  function _emscripten_glOrtho(left, right, bottom, top_, nearVal, farVal) {
+      GLImmediate.matricesModified = true;
+      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
+      GLImmediate.matrixLib.mat4.multiply(GLImmediate.matrix[GLImmediate.currentMatrix],
+          GLImmediate.matrixLib.mat4.ortho(left, right, bottom, top_, nearVal, farVal));
+    }function _gluOrtho2D(left, right, bottom, top) {
+      _emscripten_glOrtho(left, right, bottom, top, -1, 1);
     }
 
   function _glClientActiveTexture(texture) {
       GLImmediate.clientActiveTexture = texture - 0x84C0; // GL_TEXTURE0
     }
 
-  function _glTexCoordPointer(size, type, stride, pointer) {
-      GLImmediate.setClientAttribute(GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture, size, type, stride, pointer);
-      if (GL.currArrayBuffer) {
-        var loc = GLImmediate.TEXTURE0 + GLImmediate.clientActiveTexture;
-        GLctx.vertexAttribPointer(loc, size, type, false, stride, pointer);
-      }
-    }
-
-  function _glGenTextures(n, textures) {
-      for (var i = 0; i < n; i++) {
-        var id = GL.getNewId(GL.textures);
-        var texture = GLctx.createTexture();
-        texture.name = id;
-        GL.textures[id] = texture;
-        HEAP32[(((textures)+(i*4))>>2)]=id;
-      }
-    }
-
   function _glTexParameteri(x0, x1, x2) { GLctx.texParameteri(x0, x1, x2) }
 
-  function _glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels) {
-      if (pixels) {
-        var data = GL.getTexPixelData(type, format, width, height, pixels, internalFormat);
-        pixels = data.pixels;
-        internalFormat = data.internalFormat;
+  function _glMatrixMode(mode) {
+      if (mode == 0x1700 /* GL_MODELVIEW */) {
+        GLImmediate.currentMatrix = 0/*m*/;
+      } else if (mode == 0x1701 /* GL_PROJECTION */) {
+        GLImmediate.currentMatrix = 1/*p*/;
+      } else if (mode == 0x1702) { // GL_TEXTURE
+        GLImmediate.useTextureMatrix = true;
+        GLImmediate.currentMatrix = 2/*t*/ + GLImmediate.clientActiveTexture;
       } else {
-        pixels = null;
+        throw "Wrong mode " + mode + " passed to glMatrixMode";
       }
-      GLctx.texImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
     }
 
-  function _abort() {
-      Module['abort']();
+  function _glutReshapeFunc(func) {
+      GLUT.reshapeFunc = func;
     }
 
-  function ___errno_location() {
-      return ___errno_state;
-    }
-
-  function _sbrk(bytes) {
-      // Implement a Linux-like 'memory area' for our 'process'.
-      // Changes the size of the memory area by |bytes|; returns the
-      // address of the previous top ('break') of the memory area
-      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
-      var self = _sbrk;
-      if (!self.called) {
-        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
-        self.called = true;
-        assert(Runtime.dynamicAlloc);
-        self.alloc = Runtime.dynamicAlloc;
-        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
+  function _clFinish(command_queue) {
+  
+  
+      try {
+  
+        CL.cl_objects[command_queue].finish();
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        return _error;
       }
-      var ret = DYNAMICTOP;
-      if (bytes != 0) self.alloc(bytes);
-      return ret;  // Previous break location.
+  
+  
+      return webcl.SUCCESS;
     }
 
-  function _sysconf(name) {
-      // long sysconf(int name);
-      // http://pubs.opengroup.org/onlinepubs/009695399/functions/sysconf.html
-      switch(name) {
-        case 30: return PAGE_SIZE;
-        case 132:
-        case 133:
-        case 12:
-        case 137:
-        case 138:
-        case 15:
-        case 235:
-        case 16:
-        case 17:
-        case 18:
-        case 19:
-        case 20:
-        case 149:
-        case 13:
-        case 10:
-        case 236:
-        case 153:
-        case 9:
-        case 21:
-        case 22:
-        case 159:
-        case 154:
-        case 14:
-        case 77:
-        case 78:
-        case 139:
-        case 80:
-        case 81:
-        case 79:
-        case 82:
-        case 68:
-        case 67:
-        case 164:
-        case 11:
-        case 29:
-        case 47:
-        case 48:
-        case 95:
-        case 52:
-        case 51:
-        case 46:
-          return 200809;
-        case 27:
-        case 246:
-        case 127:
-        case 128:
-        case 23:
-        case 24:
-        case 160:
-        case 161:
-        case 181:
-        case 182:
-        case 242:
-        case 183:
-        case 184:
-        case 243:
-        case 244:
-        case 245:
-        case 165:
-        case 178:
-        case 179:
-        case 49:
-        case 50:
-        case 168:
-        case 169:
-        case 175:
-        case 170:
-        case 171:
-        case 172:
-        case 97:
-        case 76:
-        case 32:
-        case 173:
-        case 35:
-          return -1;
-        case 176:
-        case 177:
-        case 7:
-        case 155:
-        case 8:
-        case 157:
-        case 125:
-        case 126:
-        case 92:
-        case 93:
-        case 129:
-        case 130:
-        case 131:
-        case 94:
-        case 91:
-          return 1;
-        case 74:
-        case 60:
-        case 69:
-        case 70:
-        case 4:
-          return 1024;
-        case 31:
-        case 42:
-        case 72:
-          return 32;
-        case 87:
-        case 26:
-        case 33:
-          return 2147483647;
-        case 34:
-        case 1:
-          return 47839;
-        case 38:
-        case 36:
-          return 99;
-        case 43:
-        case 37:
-          return 2048;
-        case 0: return 2097152;
-        case 3: return 65536;
-        case 28: return 32768;
-        case 44: return 32767;
-        case 75: return 16384;
-        case 39: return 1000;
-        case 89: return 700;
-        case 71: return 256;
-        case 40: return 255;
-        case 2: return 100;
-        case 180: return 64;
-        case 25: return 20;
-        case 5: return 16;
-        case 6: return 6;
-        case 73: return 4;
-        case 84: return 1;
+  function _glutInitDisplayMode(mode) {
+      GLUT.initDisplayMode = mode;
+    }
+
+  
+  function _glutReshapeWindow(width, height) {
+      GLUT.cancelFullScreen();
+      Browser.setCanvasSize(width, height);
+      if (GLUT.reshapeFunc) {
+        Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
       }
-      ___setErrNo(ERRNO_CODES.EINVAL);
-      return -1;
+      _glutPostRedisplay();
+    }function _glutMainLoop() {
+      _glutReshapeWindow(Module['canvas'].width, Module['canvas'].height);
+      _glutPostRedisplay();
+      throw 'SimulateInfiniteLoop';
     }
 
-  function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
-      if (ptr) {
-        HEAP32[((ptr)>>2)]=ret;
-      }
-      return ret;
+  function _glutKeyboardFunc(func) {
+      GLUT.keyboardFunc = func;
     }
 
-
-
-
-
-
-
-FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
+var GLctx; GL.init()
 ___errno_state = Runtime.staticAlloc(4); HEAP32[((___errno_state)>>2)]=0;
-__ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
-if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); NODEFS.staticInit(); }
-__ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
+GLImmediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GLImmediate.init() });
 Module["requestFullScreen"] = function Module_requestFullScreen(lockPointer, resizeCanvas) { Browser.requestFullScreen(lockPointer, resizeCanvas) };
   Module["requestAnimationFrame"] = function Module_requestAnimationFrame(func) { Browser.requestAnimationFrame(func) };
   Module["setCanvasSize"] = function Module_setCanvasSize(width, height, noUpdates) { Browser.setCanvasSize(width, height, noUpdates) };
   Module["pauseMainLoop"] = function Module_pauseMainLoop() { Browser.mainLoop.pause() };
   Module["resumeMainLoop"] = function Module_resumeMainLoop() { Browser.mainLoop.resume() };
   Module["getUserMedia"] = function Module_getUserMedia() { Browser.getUserMedia() }
-var GLctx; GL.init()
-GLImmediate.setupFuncs(); Browser.moduleContextCreatedCallbacks.push(function() { GLImmediate.init() });
+FS.staticInit();__ATINIT__.unshift({ func: function() { if (!Module["noFSInit"] && !FS.init.initialized) FS.init() } });__ATMAIN__.push({ func: function() { FS.ignorePermissions = false } });__ATEXIT__.push({ func: function() { FS.quit() } });Module["FS_createFolder"] = FS.createFolder;Module["FS_createPath"] = FS.createPath;Module["FS_createDataFile"] = FS.createDataFile;Module["FS_createPreloadedFile"] = FS.createPreloadedFile;Module["FS_createLazyFile"] = FS.createLazyFile;Module["FS_createLink"] = FS.createLink;Module["FS_createDevice"] = FS.createDevice;
+__ATINIT__.unshift({ func: function() { TTY.init() } });__ATEXIT__.push({ func: function() { TTY.shutdown() } });TTY.utf8 = new Runtime.UTF8Processor();
+if (ENVIRONMENT_IS_NODE) { var fs = require("fs"); NODEFS.staticInit(); }
 GLEmulation.init();
+__ATINIT__.push({ func: function() { SOCKFS.root = FS.mount(SOCKFS, {}, null); } });
 STACK_BASE = STACKTOP = Runtime.alignMemory(STATICTOP);
 
 staticSealed = true; // seal the static portion of memory
@@ -13634,5106 +13403,5546 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 
 
+var Math_min = Math.min;
+function nullFunc_viiii(x) { Module["printErr"]("Invalid function pointer called with signature 'viiii'. Perhaps this is an invalid value (e.g. caused by calling a virtual method on a NULL pointer)? Or calling a function with an incorrect type, which will fail? (it is worth building your source files with -Werror (warnings are errors), as warnings can indicate undefined behavior which can cause this)");  Module["printErr"]("Build with ASSERTIONS=2 for more info."); abort(x) }
 
-var FUNCTION_TABLE = [0,0,_Motion,0,_ShutdownCompute,0,_Display,0,_Mouse,0,_Reshape,0,_Keyboard,0];
+function nullFunc_vii(x) { Module["printErr"]("Invalid function pointer called with signature 'vii'. Perhaps this is an invalid value (e.g. caused by calling a virtual method on a NULL pointer)? Or calling a function with an incorrect type, which will fail? (it is worth building your source files with -Werror (warnings are errors), as warnings can indicate undefined behavior which can cause this)");  Module["printErr"]("Build with ASSERTIONS=2 for more info."); abort(x) }
+
+function nullFunc_viii(x) { Module["printErr"]("Invalid function pointer called with signature 'viii'. Perhaps this is an invalid value (e.g. caused by calling a virtual method on a NULL pointer)? Or calling a function with an incorrect type, which will fail? (it is worth building your source files with -Werror (warnings are errors), as warnings can indicate undefined behavior which can cause this)");  Module["printErr"]("Build with ASSERTIONS=2 for more info."); abort(x) }
+
+function nullFunc_v(x) { Module["printErr"]("Invalid function pointer called with signature 'v'. Perhaps this is an invalid value (e.g. caused by calling a virtual method on a NULL pointer)? Or calling a function with an incorrect type, which will fail? (it is worth building your source files with -Werror (warnings are errors), as warnings can indicate undefined behavior which can cause this)");  Module["printErr"]("Build with ASSERTIONS=2 for more info."); abort(x) }
+
+function invoke_viiii(index,a1,a2,a3,a4) {
+  try {
+    Module["dynCall_viiii"](index,a1,a2,a3,a4);
+  } catch(e) {
+    if (typeof e !== 'number' && e !== 'longjmp') throw e;
+    asm["setThrew"](1, 0);
+  }
+}
+
+function invoke_vii(index,a1,a2) {
+  try {
+    Module["dynCall_vii"](index,a1,a2);
+  } catch(e) {
+    if (typeof e !== 'number' && e !== 'longjmp') throw e;
+    asm["setThrew"](1, 0);
+  }
+}
+
+function invoke_viii(index,a1,a2,a3) {
+  try {
+    Module["dynCall_viii"](index,a1,a2,a3);
+  } catch(e) {
+    if (typeof e !== 'number' && e !== 'longjmp') throw e;
+    asm["setThrew"](1, 0);
+  }
+}
+
+function invoke_v(index) {
+  try {
+    Module["dynCall_v"](index);
+  } catch(e) {
+    if (typeof e !== 'number' && e !== 'longjmp') throw e;
+    asm["setThrew"](1, 0);
+  }
+}
+
+function asmPrintInt(x, y) {
+  Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
+}
+function asmPrintFloat(x, y) {
+  Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
+}
+// EMSCRIPTEN_START_ASM
+var asm = (function(global, env, buffer) {
+  'almost asm';
+  var HEAP8 = new global.Int8Array(buffer);
+  var HEAP16 = new global.Int16Array(buffer);
+  var HEAP32 = new global.Int32Array(buffer);
+  var HEAPU8 = new global.Uint8Array(buffer);
+  var HEAPU16 = new global.Uint16Array(buffer);
+  var HEAPU32 = new global.Uint32Array(buffer);
+  var HEAPF32 = new global.Float32Array(buffer);
+  var HEAPF64 = new global.Float64Array(buffer);
+
+  var STACKTOP=env.STACKTOP|0;
+  var STACK_MAX=env.STACK_MAX|0;
+  var tempDoublePtr=env.tempDoublePtr|0;
+  var ABORT=env.ABORT|0;
+
+  var __THREW__ = 0;
+  var threwValue = 0;
+  var setjmpId = 0;
+  var undef = 0;
+  var nan = +env.NaN, inf = +env.Infinity;
+  var tempInt = 0, tempBigInt = 0, tempBigIntP = 0, tempBigIntS = 0, tempBigIntR = 0.0, tempBigIntI = 0, tempBigIntD = 0, tempValue = 0, tempDouble = 0.0;
+
+  var tempRet0 = 0;
+  var tempRet1 = 0;
+  var tempRet2 = 0;
+  var tempRet3 = 0;
+  var tempRet4 = 0;
+  var tempRet5 = 0;
+  var tempRet6 = 0;
+  var tempRet7 = 0;
+  var tempRet8 = 0;
+  var tempRet9 = 0;
+  var Math_floor=global.Math.floor;
+  var Math_abs=global.Math.abs;
+  var Math_sqrt=global.Math.sqrt;
+  var Math_pow=global.Math.pow;
+  var Math_cos=global.Math.cos;
+  var Math_sin=global.Math.sin;
+  var Math_tan=global.Math.tan;
+  var Math_acos=global.Math.acos;
+  var Math_asin=global.Math.asin;
+  var Math_atan=global.Math.atan;
+  var Math_atan2=global.Math.atan2;
+  var Math_exp=global.Math.exp;
+  var Math_log=global.Math.log;
+  var Math_ceil=global.Math.ceil;
+  var Math_imul=global.Math.imul;
+  var abort=env.abort;
+  var assert=env.assert;
+  var asmPrintInt=env.asmPrintInt;
+  var asmPrintFloat=env.asmPrintFloat;
+  var Math_min=env.min;
+  var nullFunc_viiii=env.nullFunc_viiii;
+  var nullFunc_vii=env.nullFunc_vii;
+  var nullFunc_viii=env.nullFunc_viii;
+  var nullFunc_v=env.nullFunc_v;
+  var invoke_viiii=env.invoke_viiii;
+  var invoke_vii=env.invoke_vii;
+  var invoke_viii=env.invoke_viii;
+  var invoke_v=env.invoke_v;
+  var _glUseProgram=env._glUseProgram;
+  var _fabs=env._fabs;
+  var _frexp=env._frexp;
+  var _clReleaseProgram=env._clReleaseProgram;
+  var _fstat=env._fstat;
+  var _clEnqueueNDRangeKernel=env._clEnqueueNDRangeKernel;
+  var _clCreateContext=env._clCreateContext;
+  var _glDeleteProgram=env._glDeleteProgram;
+  var _clCreateProgramWithSource=env._clCreateProgramWithSource;
+  var _glBindBuffer=env._glBindBuffer;
+  var _sbrk=env._sbrk;
+  var _glutReshapeWindow=env._glutReshapeWindow;
+  var _glDisableVertexAttribArray=env._glDisableVertexAttribArray;
+  var _glCreateShader=env._glCreateShader;
+  var _glutSwapBuffers=env._glutSwapBuffers;
+  var _sysconf=env._sysconf;
+  var _close=env._close;
+  var _glTexCoord2f=env._glTexCoord2f;
+  var _clCreateCommandQueue=env._clCreateCommandQueue;
+  var _glLoadIdentity=env._glLoadIdentity;
+  var _clEnqueueReleaseGLObjects=env._clEnqueueReleaseGLObjects;
+  var _write=env._write;
+  var _glShaderSource=env._glShaderSource;
+  var _glutMotionFunc=env._glutMotionFunc;
+  var _glVertexPointer=env._glVertexPointer;
+  var _clCreateFromGLTexture2D=env._clCreateFromGLTexture2D;
+  var _glutCreateWindow=env._glutCreateWindow;
+  var _strstr=env._strstr;
+  var _glVertexAttribPointer=env._glVertexAttribPointer;
+  var _glHint=env._glHint;
+  var _send=env._send;
+  var _clReleaseKernel=env._clReleaseKernel;
+  var _glutDisplayFunc=env._glutDisplayFunc;
+  var _clSetTypePointer=env._clSetTypePointer;
+  var _glBegin=env._glBegin;
+  var _clGetProgramBuildInfo=env._clGetProgramBuildInfo;
+  var _glutInitDisplayMode=env._glutInitDisplayMode;
+  var _glViewport=env._glViewport;
+  var _glGetBooleanv=env._glGetBooleanv;
+  var ___setErrNo=env.___setErrNo;
+  var _glutPostRedisplay=env._glutPostRedisplay;
+  var _glutReshapeFunc=env._glutReshapeFunc;
+  var _glEnable=env._glEnable;
+  var _printf=env._printf;
+  var _glGenTextures=env._glGenTextures;
+  var _clReleaseCommandQueue=env._clReleaseCommandQueue;
+  var _glGetIntegerv=env._glGetIntegerv;
+  var _glGetString=env._glGetString;
+  var _emscripten_get_now=env._emscripten_get_now;
+  var _stat=env._stat;
+  var _glAttachShader=env._glAttachShader;
+  var _read=env._read;
+  var _clSetKernelArg=env._clSetKernelArg;
+  var _fwrite=env._fwrite;
+  var _time=env._time;
+  var _glColor3f=env._glColor3f;
+  var _glDetachShader=env._glDetachShader;
+  var _glutInitWindowPosition=env._glutInitWindowPosition;
+  var _exit=env._exit;
+  var _glutGetModifiers=env._glutGetModifiers;
+  var _emscripten_glOrtho=env._emscripten_glOrtho;
+  var _glEnableClientState=env._glEnableClientState;
+  var _pwrite=env._pwrite;
+  var _glFinish=env._glFinish;
+  var _open=env._open;
+  var _glClearColor=env._glClearColor;
+  var _glIsEnabled=env._glIsEnabled;
+  var _glBindTexture=env._glBindTexture;
+  var ___errno_location=env.___errno_location;
+  var _glGetFloatv=env._glGetFloatv;
+  var _glutIdleFunc=env._glutIdleFunc;
+  var _emscripten_memcpy_big=env._emscripten_memcpy_big;
+  var _clFinish=env._clFinish;
+  var _clGetDeviceIDs=env._clGetDeviceIDs;
+  var _glutMouseFunc=env._glutMouseFunc;
+  var _glActiveTexture=env._glActiveTexture;
+  var _clGetKernelWorkGroupInfo=env._clGetKernelWorkGroupInfo;
+  var _clCreateBuffer=env._clCreateBuffer;
+  var _glTexCoordPointer=env._glTexCoordPointer;
+  var _recv=env._recv;
+  var _glCompileShader=env._glCompileShader;
+  var _glEnableVertexAttribArray=env._glEnableVertexAttribArray;
+  var _abort=env._abort;
+  var _clBuildProgram=env._clBuildProgram;
+  var _glTexImage2D=env._glTexImage2D;
+  var _glutMainLoop=env._glutMainLoop;
+  var _clGetContextInfo=env._clGetContextInfo;
+  var _clCreateKernel=env._clCreateKernel;
+  var _glDisableClientState=env._glDisableClientState;
+  var _glutKeyboardFunc=env._glutKeyboardFunc;
+  var _clEnqueueWriteBuffer=env._clEnqueueWriteBuffer;
+  var _glLinkProgram=env._glLinkProgram;
+  var _fprintf=env._fprintf;
+  var __reallyNegative=env.__reallyNegative;
+  var _glutInitWindowSize=env._glutInitWindowSize;
+  var _glClear=env._glClear;
+  var _fileno=env._fileno;
+  var _glMatrixMode=env._glMatrixMode;
+  var __exit=env.__exit;
+  var _glBindAttribLocation=env._glBindAttribLocation;
+  var _emscripten_glColor4f=env._emscripten_glColor4f;
+  var _clEnqueueCopyBufferToImage=env._clEnqueueCopyBufferToImage;
+  var _glVertex3f=env._glVertex3f;
+  var _pread=env._pread;
+  var _mkport=env._mkport;
+  var _glEnd=env._glEnd;
+  var _clReleaseMemObject=env._clReleaseMemObject;
+  var _clGetDeviceInfo=env._clGetDeviceInfo;
+  var _fflush=env._fflush;
+  var _clEnqueueReadBuffer=env._clEnqueueReadBuffer;
+  var _gluOrtho2D=env._gluOrtho2D;
+  var _clEnqueueAcquireGLObjects=env._clEnqueueAcquireGLObjects;
+  var _glClientActiveTexture=env._glClientActiveTexture;
+  var _glutInit=env._glutInit;
+  var _glDisable=env._glDisable;
+  var _glTexParameteri=env._glTexParameteri;
+  var __formatString=env.__formatString;
+  var _atexit=env._atexit;
+  var _glTexSubImage2D=env._glTexSubImage2D;
+  var tempFloat = 0.0;
 
 // EMSCRIPTEN_START_FUNCS
+function stackAlloc(size) {
+  size = size|0;
+  var ret = 0;
+  ret = STACKTOP;
+  STACKTOP = (STACKTOP + size)|0;
+STACKTOP = (STACKTOP + 7)&-8;
+  return ret|0;
+}
+function stackSave() {
+  return STACKTOP|0;
+}
+function stackRestore(top) {
+  top = top|0;
+  STACKTOP = top;
+}
+function setThrew(threw, value) {
+  threw = threw|0;
+  value = value|0;
+  if ((__THREW__|0) == 0) {
+    __THREW__ = threw;
+    threwValue = value;
+  }
+}
+function copyTempFloat(ptr) {
+  ptr = ptr|0;
+  HEAP8[tempDoublePtr] = HEAP8[ptr];
+  HEAP8[tempDoublePtr+1|0] = HEAP8[ptr+1|0];
+  HEAP8[tempDoublePtr+2|0] = HEAP8[ptr+2|0];
+  HEAP8[tempDoublePtr+3|0] = HEAP8[ptr+3|0];
+}
+function copyTempDouble(ptr) {
+  ptr = ptr|0;
+  HEAP8[tempDoublePtr] = HEAP8[ptr];
+  HEAP8[tempDoublePtr+1|0] = HEAP8[ptr+1|0];
+  HEAP8[tempDoublePtr+2|0] = HEAP8[ptr+2|0];
+  HEAP8[tempDoublePtr+3|0] = HEAP8[ptr+3|0];
+  HEAP8[tempDoublePtr+4|0] = HEAP8[ptr+4|0];
+  HEAP8[tempDoublePtr+5|0] = HEAP8[ptr+5|0];
+  HEAP8[tempDoublePtr+6|0] = HEAP8[ptr+6|0];
+  HEAP8[tempDoublePtr+7|0] = HEAP8[ptr+7|0];
+}
 
-function _main($argc,$argv){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+8)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2=sp;
- var $3;
- var $i;
- var $use_gpu;
- $1=0;
- HEAP32[(($2)>>2)]=$argc;
- $3=$argv;
- $use_gpu=1;
- $i=0;
- label=2;break;
- case 2: 
- var $5=$i;
- var $6=HEAP32[(($2)>>2)];
- var $7=($5|0)<($6|0);
- if($7){label=3;break;}else{var $12=0;label=4;break;}
- case 3: 
- var $9=$3;
- var $10=($9|0)!=0;
- var $12=$10;label=4;break;
- case 4: 
- var $12;
- if($12){label=5;break;}else{label=17;break;}
- case 5: 
- var $14=$i;
- var $15=$3;
- var $16=(($15+($14<<2))|0);
- var $17=HEAP32[(($16)>>2)];
- var $18=($17|0)!=0;
- if($18){label=7;break;}else{label=6;break;}
- case 6: 
- label=16;break;
- case 7: 
- var $21=$i;
- var $22=$3;
- var $23=(($22+($21<<2))|0);
- var $24=HEAP32[(($23)>>2)];
- var $25=_strstr($24,1744);
- var $26=($25|0)!=0;
- if($26){label=8;break;}else{label=9;break;}
- case 8: 
- $use_gpu=0;
- label=15;break;
- case 9: 
- var $29=$i;
- var $30=$3;
- var $31=(($30+($29<<2))|0);
- var $32=HEAP32[(($31)>>2)];
- var $33=_strstr($32,1736);
- var $34=($33|0)!=0;
- if($34){label=10;break;}else{label=11;break;}
- case 10: 
- $use_gpu=1;
- label=14;break;
- case 11: 
- var $37=$i;
- var $38=$3;
- var $39=(($38+($37<<2))|0);
- var $40=HEAP32[(($39)>>2)];
- var $41=_strstr($40,1528);
- var $42=($41|0)!=0;
- if($42){label=12;break;}else{label=13;break;}
- case 12: 
- HEAP32[((2488)>>2)]=1;
- label=13;break;
- case 13: 
- label=14;break;
- case 14: 
- label=15;break;
- case 15: 
- label=16;break;
- case 16: 
- var $48=$i;
- var $49=((($48)+(1))|0);
- $i=$49;
- label=2;break;
- case 17: 
- var $51=$use_gpu;
- var $52=($51|0)==1;
- var $53=($52?744:360);
- var $54=_printf(1152,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$53,tempVarArgs)); STACKTOP=tempVarArgs;
- var $55=$3;
- _glutInit($2,$55);
+function setTempRet0(value) {
+  value = value|0;
+  tempRet0 = value;
+}
+
+function setTempRet1(value) {
+  value = value|0;
+  tempRet1 = value;
+}
+
+function setTempRet2(value) {
+  value = value|0;
+  tempRet2 = value;
+}
+
+function setTempRet3(value) {
+  value = value|0;
+  tempRet3 = value;
+}
+
+function setTempRet4(value) {
+  value = value|0;
+  tempRet4 = value;
+}
+
+function setTempRet5(value) {
+  value = value|0;
+  tempRet5 = value;
+}
+
+function setTempRet6(value) {
+  value = value|0;
+  tempRet6 = value;
+}
+
+function setTempRet7(value) {
+  value = value|0;
+  tempRet7 = value;
+}
+
+function setTempRet8(value) {
+  value = value|0;
+  tempRet8 = value;
+}
+
+function setTempRet9(value) {
+  value = value|0;
+  tempRet9 = value;
+}
+
+function _main($argc,$argv) {
+ $argc = $argc|0;
+ $argv = $argv|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
+ var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, $use_gpu = 0, $vararg_buffer = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 32|0;
+ $vararg_buffer = sp;
+ $1 = sp + 16|0;
+ $0 = 0;
+ HEAP32[$1>>2] = $argc;
+ $2 = $argv;
+ $use_gpu = 1;
+ $i = 0;
+ while(1) {
+  $3 = $i;
+  $4 = HEAP32[$1>>2]|0;
+  $5 = ($3|0)<($4|0);
+  if ($5) {
+   $6 = $2;
+   $7 = ($6|0)!=(0|0);
+   $44 = $7;
+  } else {
+   $44 = 0;
+  }
+  if (!($44)) {
+   break;
+  }
+  $8 = $i;
+  $9 = $2;
+  $10 = (($9) + ($8<<2)|0);
+  $11 = HEAP32[$10>>2]|0;
+  $12 = ($11|0)!=(0|0);
+  if ($12) {
+   $13 = $i;
+   $14 = $2;
+   $15 = (($14) + ($13<<2)|0);
+   $16 = HEAP32[$15>>2]|0;
+   $17 = (_strstr(($16|0),(8|0))|0);
+   $18 = ($17|0)!=(0|0);
+   if ($18) {
+    $use_gpu = 0;
+   } else {
+    $19 = $i;
+    $20 = $2;
+    $21 = (($20) + ($19<<2)|0);
+    $22 = HEAP32[$21>>2]|0;
+    $23 = (_strstr(($22|0),(16|0))|0);
+    $24 = ($23|0)!=(0|0);
+    if ($24) {
+     $use_gpu = 1;
+    } else {
+     $25 = $i;
+     $26 = $2;
+     $27 = (($26) + ($25<<2)|0);
+     $28 = HEAP32[$27>>2]|0;
+     $29 = (_strstr(($28|0),(24|0))|0);
+     $30 = ($29|0)!=(0|0);
+     if ($30) {
+      HEAP32[32>>2] = 1;
+     }
+    }
+   }
+  } else {
+  }
+  $31 = $i;
+  $32 = (($31) + 1)|0;
+  $i = $32;
+ }
+ $33 = $use_gpu;
+ $34 = ($33|0)==(1);
+ $35 = $34 ? 72 : 80;
+ HEAP32[$vararg_buffer>>2] = $35;
+ (_printf((40|0),($vararg_buffer|0))|0);
+ $36 = $2;
+ _glutInit(($1|0),($36|0));
  _glutInitDisplayMode(18);
- var $56=HEAP32[((1752)>>2)];
- var $57=HEAP32[((1944)>>2)];
- _glutInitWindowSize($56,$57);
+ $37 = HEAP32[88>>2]|0;
+ $38 = HEAP32[96>>2]|0;
+ _glutInitWindowSize(($37|0),($38|0));
  _glutInitWindowPosition(0,0);
- var $58=$3;
- var $59=(($58)|0);
- var $60=HEAP32[(($59)>>2)];
- var $61=_glutCreateWindow($60);
- var $62=$use_gpu;
- var $63=_Initialize($62);
- var $64=($63|0)==0;
- if($64){label=18;break;}else{label=19;break;}
- case 18: 
- _glutDisplayFunc(6);
- _glutIdleFunc(6);
- _glutReshapeFunc(10);
- _glutKeyboardFunc(12);
- _glutMouseFunc(8);
- _glutMotionFunc(2);
+ $39 = $2;
+ $40 = HEAP32[$39>>2]|0;
+ (_glutCreateWindow(($40|0))|0);
+ $41 = $use_gpu;
+ $42 = (_Initialize($41)|0);
+ $43 = ($42|0)==(0);
+ if (!($43)) {
+  (_atexit((2|0))|0);
+  STACKTOP = sp;return 0;
+ }
+ _glutDisplayFunc((1|0));
+ _glutIdleFunc((1|0));
+ _glutReshapeFunc((1|0));
+ _glutKeyboardFunc((1|0));
+ _glutMouseFunc((1|0));
+ _glutMotionFunc((2|0));
  _glutMainLoop();
- label=19;break;
- case 19: 
- var $67=_atexit(4);
- STACKTOP=sp;return 0;
-  default: assert(0, "bad label: " + label);
- }
-
+ (_atexit((2|0))|0);
+ STACKTOP = sp;return 0;
 }
-Module["_main"] = _main;
-
-function _Initialize($gpu){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $err;
- $1=$gpu;
- var $2=_SetupGraphics();
- $err=$2;
- var $3=$err;
- var $4=($3|0)!=0;
- if($4){label=2;break;}else{label=3;break;}
- case 2: 
- var $6=_printf(1232,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $7=$err;
- _exit($7);
- throw "Reached an unreachable!";
- case 3: 
- var $9=$1;
- var $10=_SetupComputeDevices($9);
- $err=$10;
- var $11=$err;
- var $12=($11|0)!=0;
- if($12){label=4;break;}else{label=5;break;}
- case 4: 
- var $14=$err;
- var $15=_printf(1184,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$14,tempVarArgs)); STACKTOP=tempVarArgs;
- var $16=$err;
- _exit($16);
- throw "Reached an unreachable!";
- case 5: 
- var $18=_SetupComputeKernels();
- $err=$18;
- var $19=$err;
- var $20=($19|0)!=0;
- if($20){label=6;break;}else{label=7;break;}
- case 6: 
- var $22=$err;
- var $23=_printf(1104,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$22,tempVarArgs)); STACKTOP=tempVarArgs;
- var $24=$err;
- _exit($24);
- throw "Reached an unreachable!";
- case 7: 
- var $26=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $27=_printf(1080,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- STACKTOP=sp;return 0;
-  default: assert(0, "bad label: " + label);
+function _Initialize($gpu) {
+ $gpu = $gpu|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $err = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer3 = 0;
+ var $vararg_buffer6 = 0, $vararg_buffer8 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 48|0;
+ $vararg_buffer8 = sp;
+ $vararg_buffer6 = sp + 16|0;
+ $vararg_buffer3 = sp + 24|0;
+ $vararg_buffer1 = sp + 32|0;
+ $vararg_buffer = sp + 8|0;
+ $0 = $gpu;
+ $1 = (_SetupGraphics()|0);
+ $err = $1;
+ $2 = $err;
+ $3 = ($2|0)!=(0);
+ if ($3) {
+  (_printf((2032|0),($vararg_buffer|0))|0);
+  $4 = $err;
+  _exit(($4|0));
+  // unreachable;
  }
-
+ $5 = $0;
+ $6 = (_SetupComputeDevices($5)|0);
+ $err = $6;
+ $7 = $err;
+ $8 = ($7|0)!=(0);
+ if ($8) {
+  $9 = $err;
+  HEAP32[$vararg_buffer1>>2] = $9;
+  (_printf((2064|0),($vararg_buffer1|0))|0);
+  $10 = $err;
+  _exit(($10|0));
+  // unreachable;
+ }
+ $11 = (_SetupComputeKernels()|0);
+ $err = $11;
+ $12 = $err;
+ $13 = ($12|0)!=(0);
+ if ($13) {
+  $14 = $err;
+  HEAP32[$vararg_buffer3>>2] = $14;
+  (_printf((2112|0),($vararg_buffer3|0))|0);
+  $15 = $err;
+  _exit(($15|0));
+  // unreachable;
+ } else {
+  (_printf((104|0),($vararg_buffer6|0))|0);
+  (_printf((2160|0),($vararg_buffer8|0))|0);
+  STACKTOP = sp;return 0;
+ }
+ return 0|0;
 }
-
-
-function _Display(){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $uiStartTime;
- var $err;
- var $uiEndTime;
- var $1=HEAP32[((3592)>>2)];
- var $2=((($1)+(1))|0);
- HEAP32[((3592)>>2)]=$2;
- var $3=_GetCurrentTime();
- $uiStartTime=$3;
+function _Display() {
+ var $0 = 0, $1 = 0, $10 = 0.0, $2 = 0.0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0.0, $9 = 0.0, $err = 0, $uiEndTime = 0.0, $uiStartTime = 0.0, $vararg_buffer = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $vararg_buffer = sp;
+ $0 = HEAP32[584>>2]|0;
+ $1 = (($0) + 1)|0;
+ HEAP32[584>>2] = $1;
+ $2 = (+_GetCurrentTime());
+ $uiStartTime = $2;
  _glClear(16384);
- var $4=_Recompute();
- $err=$4;
- var $5=$err;
- var $6=($5|0)!=0;
- if($6){label=2;break;}else{label=3;break;}
- case 2: 
- var $8=$err;
- var $9=_printf(1496,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$8,tempVarArgs)); STACKTOP=tempVarArgs;
- _exit(1);
- throw "Reached an unreachable!";
- case 3: 
- var $11=HEAP32[((3584)>>2)];
- _RenderTexture($11);
- _ReportInfo();
- _glFinish();
- var $12=_GetCurrentTime();
- $uiEndTime=$12;
- var $13=$uiStartTime;
- var $14=$uiEndTime;
- _ReportStats($13,$14);
-
- _glutPostRedisplay();
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+ $3 = (_Recompute()|0);
+ $err = $3;
+ $4 = $err;
+ $5 = ($4|0)!=(0);
+ if ($5) {
+  $6 = $err;
+  HEAP32[$vararg_buffer>>2] = $6;
+  (_printf((592|0),($vararg_buffer|0))|0);
+  _exit(1);
+  // unreachable;
+ } else {
+  $7 = HEAP32[624>>2]|0;
+  _RenderTexture($7);
+  _ReportInfo();
+  _glFinish();
+  $8 = (+_GetCurrentTime());
+  $uiEndTime = $8;
+  $9 = $uiStartTime;
+  $10 = $uiEndTime;
+  _ReportStats($9,$10);
+  _glutSwapBuffers();
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
  }
-
 }
-
-
-function _Reshape($w,$h){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
-
- var $1;
- var $2;
- $1=$w;
- $2=$h;
- var $3=$1;
- var $4=$2;
- _glViewport(0,0,$3,$4);
+function _Reshape($w,$h) {
+ $w = $w|0;
+ $h = $h|0;
+ var $0 = 0, $1 = 0, $2 = 0, $3 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = $w;
+ $1 = $h;
+ $2 = $0;
+ $3 = $1;
+ _glViewport(0,0,($2|0),($3|0));
  _glMatrixMode(5888);
  _glLoadIdentity();
  _glMatrixMode(5889);
  _glLoadIdentity();
- STACKTOP=sp;return;
+ STACKTOP = sp;return;
 }
-
-
-function _Keyboard($key,$x,$y){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $3;
- $1=$key;
- $2=$x;
- $3=$y;
- var $4=$1;
- var $5=($4&255);
- switch(($5|0)){case 120:{ label=10;break;}case 99:{ label=11;break;}case 118:{ label=15;break;}case 98:{ label=19;break;}case 49:case 50:case 51:case 52:{ label=2;break;}case 110:{ label=20;break;}case 109:{ label=21;break;}case 44:{ label=22;break;}case 27:{ label=23;break;}case 61:{ label=3;break;}case 45:{ label=4;break;}case 113:{ label=5;break;}case 122:{ label=6;break;}default:{label=24;break;}}break;
- case 2: 
- var $7=$1;
- var $8=($7&255);
- var $9=((($8)-(49))|0);
- HEAP32[((3704)>>2)]=$9;
- var $10=HEAP32[((3704)>>2)];
- var $11=((1952+($10<<2))|0);
- var $12=HEAP32[(($11)>>2)];
- var $13=_printf(1728,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$12,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 3: 
- var $15=HEAPF32[((1880)>>2)];
- var $16=$15;
- var $17=($16)*((0.9));
- var $18=$17;
- HEAPF32[((1880)>>2)]=$18;
- var $19=HEAPF32[((1880)>>2)];
- var $20=$19;
- var $21=_printf(1712,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$20,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 4: 
- var $23=HEAPF32[((1880)>>2)];
- var $24=$23;
- var $25=($24)*((1.1));
- var $26=$25;
- HEAPF32[((1880)>>2)]=$26;
- var $27=HEAPF32[((1880)>>2)];
- var $28=$27;
- var $29=_printf(1712,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$28,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 5: 
- _exit(0);
- throw "Reached an unreachable!";
- case 6: 
- var $32=HEAPF32[((1976)>>2)];
- var $33=($32)*((0.9090908765792847));
- HEAPF32[((1976)>>2)]=$33;
- var $34=HEAPF32[((1976)>>2)];
- var $35=$34<(0.00009999999747378752);
- if($35){label=7;break;}else{label=8;break;}
- case 7: 
- var $40=0.00009999999747378752;label=9;break;
- case 8: 
- var $38=HEAPF32[((1976)>>2)];
- var $40=$38;label=9;break;
- case 9: 
- var $40;
- HEAPF32[((1976)>>2)]=$40;
- var $41=HEAPF32[((1976)>>2)];
- var $42=$41;
- var $43=_printf(1696,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$42,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 10: 
- var $45=HEAPF32[((1976)>>2)];
- var $46=($45)*((1.100000023841858));
- HEAPF32[((1976)>>2)]=$46;
- var $47=HEAPF32[((1976)>>2)];
- var $48=$47;
- var $49=_printf(1696,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$48,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 11: 
- var $51=HEAPF32[((1904)>>2)];
- var $52=($51)*((0.9090908765792847));
- HEAPF32[((1904)>>2)]=$52;
- var $53=HEAPF32[((1904)>>2)];
- var $54=$53<1;
- if($54){label=12;break;}else{label=13;break;}
- case 12: 
- var $59=1;label=14;break;
- case 13: 
- var $57=HEAPF32[((1904)>>2)];
- var $59=$57;label=14;break;
- case 14: 
- var $59;
- HEAPF32[((1904)>>2)]=$59;
- var $60=HEAPF32[((1904)>>2)];
- var $61=$60;
- var $62=_printf(1680,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$61,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 15: 
- var $64=HEAPF32[((1904)>>2)];
- var $65=($64)*((1.100000023841858));
- HEAPF32[((1904)>>2)]=$65;
- var $66=HEAPF32[((1904)>>2)];
- var $67=$66>10;
- if($67){label=16;break;}else{label=17;break;}
- case 16: 
- var $72=10;label=18;break;
- case 17: 
- var $70=HEAPF32[((1904)>>2)];
- var $72=$70;label=18;break;
- case 18: 
- var $72;
- HEAPF32[((1904)>>2)]=$72;
- var $73=HEAPF32[((1904)>>2)];
- var $74=$73;
- var $75=_printf(1680,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$74,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 19: 
- var $77=HEAPF32[((1912)>>2)];
- var $78=($77)*((0.9998999834060669));
- HEAPF32[((1912)>>2)]=$78;
- var $79=HEAPF32[((1912)>>2)];
- var $80=$79;
- var $81=_printf(1656,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$80,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 20: 
- var $83=HEAPF32[((1912)>>2)];
- var $84=($83)*((1.000100016593933));
- HEAPF32[((1912)>>2)]=$84;
- var $85=HEAPF32[((1912)>>2)];
- var $86=$85;
- var $87=_printf(1656,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$86,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 21: 
- var $89=HEAPF32[((1920)>>2)];
- var $90=($89)*((0.9090908765792847));
- HEAPF32[((1920)>>2)]=$90;
- var $91=HEAPF32[((1920)>>2)];
- var $92=$91;
- var $93=_printf(1640,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$92,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 22: 
- var $95=HEAPF32[((1920)>>2)];
- var $96=($95)*((1.100000023841858));
- HEAPF32[((1920)>>2)]=$96;
- var $97=HEAPF32[((1920)>>2)];
- var $98=$97;
- var $99=_printf(1640,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$98,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=24;break;
- case 23: 
- _ShutdownCompute();
- _exit(0);
- throw "Reached an unreachable!";
- case 24: 
+function _Keyboard($key,$x,$y) {
+ $key = $key|0;
+ $x = $x|0;
+ $y = $y|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $12 = 0.0, $13 = 0.0, $14 = 0.0, $15 = 0.0, $16 = 0.0, $17 = 0.0, $18 = 0.0, $19 = 0.0, $2 = 0, $20 = 0.0, $21 = 0.0, $22 = 0.0, $23 = 0.0, $24 = 0.0, $25 = 0.0, $26 = 0;
+ var $27 = 0.0, $28 = 0.0, $29 = 0.0, $3 = 0, $30 = 0.0, $31 = 0.0, $32 = 0.0, $33 = 0.0, $34 = 0.0, $35 = 0.0, $36 = 0.0, $37 = 0.0, $38 = 0, $39 = 0.0, $4 = 0, $40 = 0.0, $41 = 0.0, $42 = 0.0, $43 = 0.0, $44 = 0.0;
+ var $45 = 0.0, $46 = 0, $47 = 0.0, $48 = 0.0, $49 = 0.0, $5 = 0, $50 = 0.0, $51 = 0.0, $52 = 0.0, $53 = 0.0, $54 = 0.0, $55 = 0.0, $56 = 0.0, $57 = 0.0, $58 = 0.0, $59 = 0.0, $6 = 0, $60 = 0.0, $61 = 0.0, $62 = 0.0;
+ var $63 = 0.0, $64 = 0.0, $65 = 0.0, $66 = 0.0, $7 = 0, $8 = 0, $9 = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer13 = 0, $vararg_buffer16 = 0, $vararg_buffer19 = 0, $vararg_buffer22 = 0, $vararg_buffer25 = 0, $vararg_buffer28 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 112|0;
+ $vararg_buffer28 = sp + 80|0;
+ $vararg_buffer25 = sp + 56|0;
+ $vararg_buffer22 = sp;
+ $vararg_buffer19 = sp + 32|0;
+ $vararg_buffer16 = sp + 64|0;
+ $vararg_buffer13 = sp + 72|0;
+ $vararg_buffer10 = sp + 24|0;
+ $vararg_buffer7 = sp + 48|0;
+ $vararg_buffer4 = sp + 40|0;
+ $vararg_buffer1 = sp + 16|0;
+ $vararg_buffer = sp + 8|0;
+ $0 = $key;
+ $1 = $x;
+ $2 = $y;
+ $3 = $0;
+ $4 = $3&255;
+ switch ($4|0) {
+ case 52: case 51: case 50: case 49:  {
+  $5 = $0;
+  $6 = $5&255;
+  $7 = (($6) - 49)|0;
+  HEAP32[328>>2] = $7;
+  $8 = HEAP32[328>>2]|0;
+  $9 = (344 + ($8<<2)|0);
+  $10 = HEAP32[$9>>2]|0;
+  HEAP32[$vararg_buffer>>2] = $10;
+  (_printf((336|0),($vararg_buffer|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 61:  {
+  $11 = +HEAPF32[264>>2];
+  $12 = $11;
+  $13 = $12 * 0.900000000000000022204;
+  $14 = $13;
+  HEAPF32[264>>2] = $14;
+  $15 = +HEAPF32[264>>2];
+  $16 = $15;
+  HEAPF64[tempDoublePtr>>3]=$16;HEAP32[$vararg_buffer1>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer1+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((360|0),($vararg_buffer1|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 113:  {
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 45:  {
+  $17 = +HEAPF32[264>>2];
+  $18 = $17;
+  $19 = $18 * 1.10000000000000008882;
+  $20 = $19;
+  HEAPF32[264>>2] = $20;
+  $21 = +HEAPF32[264>>2];
+  $22 = $21;
+  HEAPF64[tempDoublePtr>>3]=$22;HEAP32[$vararg_buffer4>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer4+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((360|0),($vararg_buffer4|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 122:  {
+  $23 = +HEAPF32[376>>2];
+  $24 = $23 * 0.909090876579284667968;
+  HEAPF32[376>>2] = $24;
+  $25 = +HEAPF32[376>>2];
+  $26 = $25 < 9.99999974737875163555E-5;
+  if ($26) {
+   $28 = 9.99999974737875163555E-5;
+  } else {
+   $27 = +HEAPF32[376>>2];
+   $28 = $27;
+  }
+  HEAPF32[376>>2] = $28;
+  $29 = +HEAPF32[376>>2];
+  $30 = $29;
+  HEAPF64[tempDoublePtr>>3]=$30;HEAP32[$vararg_buffer7>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer7+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((384|0),($vararg_buffer7|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 120:  {
+  $31 = +HEAPF32[376>>2];
+  $32 = $31 * 1.10000002384185791016;
+  HEAPF32[376>>2] = $32;
+  $33 = +HEAPF32[376>>2];
+  $34 = $33;
+  HEAPF64[tempDoublePtr>>3]=$34;HEAP32[$vararg_buffer10>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer10+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((384|0),($vararg_buffer10|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 99:  {
+  $35 = +HEAPF32[400>>2];
+  $36 = $35 * 0.909090876579284667968;
+  HEAPF32[400>>2] = $36;
+  $37 = +HEAPF32[400>>2];
+  $38 = $37 < 1.0;
+  if ($38) {
+   $40 = 1.0;
+  } else {
+   $39 = +HEAPF32[400>>2];
+   $40 = $39;
+  }
+  HEAPF32[400>>2] = $40;
+  $41 = +HEAPF32[400>>2];
+  $42 = $41;
+  HEAPF64[tempDoublePtr>>3]=$42;HEAP32[$vararg_buffer13>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer13+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((408|0),($vararg_buffer13|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 118:  {
+  $43 = +HEAPF32[400>>2];
+  $44 = $43 * 1.10000002384185791016;
+  HEAPF32[400>>2] = $44;
+  $45 = +HEAPF32[400>>2];
+  $46 = $45 > 10.0;
+  if ($46) {
+   $48 = 10.0;
+  } else {
+   $47 = +HEAPF32[400>>2];
+   $48 = $47;
+  }
+  HEAPF32[400>>2] = $48;
+  $49 = +HEAPF32[400>>2];
+  $50 = $49;
+  HEAPF64[tempDoublePtr>>3]=$50;HEAP32[$vararg_buffer16>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer16+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((408|0),($vararg_buffer16|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 98:  {
+  $51 = +HEAPF32[424>>2];
+  $52 = $51 * 0.999899983406066894531;
+  HEAPF32[424>>2] = $52;
+  $53 = +HEAPF32[424>>2];
+  $54 = $53;
+  HEAPF64[tempDoublePtr>>3]=$54;HEAP32[$vararg_buffer19>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer19+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((432|0),($vararg_buffer19|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 110:  {
+  $55 = +HEAPF32[424>>2];
+  $56 = $55 * 1.00010001659393310547;
+  HEAPF32[424>>2] = $56;
+  $57 = +HEAPF32[424>>2];
+  $58 = $57;
+  HEAPF64[tempDoublePtr>>3]=$58;HEAP32[$vararg_buffer22>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer22+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((432|0),($vararg_buffer22|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 109:  {
+  $59 = +HEAPF32[456>>2];
+  $60 = $59 * 0.909090876579284667968;
+  HEAPF32[456>>2] = $60;
+  $61 = +HEAPF32[456>>2];
+  $62 = $61;
+  HEAPF64[tempDoublePtr>>3]=$62;HEAP32[$vararg_buffer25>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer25+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((464|0),($vararg_buffer25|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 27:  {
+  _ShutdownCompute();
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 44:  {
+  $63 = +HEAPF32[456>>2];
+  $64 = $63 * 1.10000002384185791016;
+  HEAPF32[456>>2] = $64;
+  $65 = +HEAPF32[456>>2];
+  $66 = $65;
+  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((464|0),($vararg_buffer28|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ default: {
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+ }
+ }
+}
+function _Mouse($button,$state,$x,$y) {
+ $button = $button|0;
+ $state = $state|0;
+ $x = $x|0;
+ $y = $y|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
+ var $9 = 0, $mods = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 32|0;
+ $0 = $button;
+ $1 = $state;
+ $2 = $x;
+ $3 = $y;
+ $4 = $1;
+ $5 = ($4|0)==(0);
+ if ($5) {
+  $6 = $0;
+  $7 = 1 << $6;
+  $8 = HEAP32[256>>2]|0;
+  $9 = $8 | $7;
+  HEAP32[256>>2] = $9;
+ } else {
+  $10 = $1;
+  $11 = ($10|0)==(1);
+  if ($11) {
+   HEAP32[256>>2] = 0;
+  }
+ }
+ $12 = (_glutGetModifiers()|0);
+ $mods = $12;
+ $13 = $mods;
+ $14 = $13 & 1;
+ $15 = ($14|0)!=(0);
+ if ($15) {
+  HEAP32[256>>2] = 2;
+ } else {
+  $16 = $mods;
+  $17 = $16 & 2;
+  $18 = ($17|0)!=(0);
+  if ($18) {
+   HEAP32[256>>2] = 3;
+  }
+ }
+ $19 = $2;
+ HEAP32[240>>2] = $19;
+ $20 = $3;
+ HEAP32[248>>2] = $20;
  _glutPostRedisplay();
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
- }
-
+ STACKTOP = sp;return;
 }
-
-
-function _Mouse($button,$state,$x,$y){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $3;
- var $4;
- var $mods;
- $1=$button;
- $2=$state;
- $3=$x;
- $4=$y;
- var $5=$2;
- var $6=($5|0)==0;
- if($6){label=2;break;}else{label=3;break;}
- case 2: 
- var $8=$1;
- var $9=1<<$8;
- var $10=HEAP32[((3696)>>2)];
- var $11=$10|$9;
- HEAP32[((3696)>>2)]=$11;
- label=6;break;
- case 3: 
- var $13=$2;
- var $14=($13|0)==1;
- if($14){label=4;break;}else{label=5;break;}
- case 4: 
- HEAP32[((3696)>>2)]=0;
- label=5;break;
- case 5: 
- label=6;break;
- case 6: 
- var $18=_glutGetModifiers();
- $mods=$18;
- var $19=$mods;
- var $20=$19&1;
- var $21=($20|0)!=0;
- if($21){label=7;break;}else{label=8;break;}
- case 7: 
- HEAP32[((3696)>>2)]=2;
- label=11;break;
- case 8: 
- var $24=$mods;
- var $25=$24&2;
- var $26=($25|0)!=0;
- if($26){label=9;break;}else{label=10;break;}
- case 9: 
- HEAP32[((3696)>>2)]=3;
- label=10;break;
- case 10: 
- label=11;break;
- case 11: 
- var $30=$3;
- HEAP32[((2552)>>2)]=$30;
- var $31=$4;
- HEAP32[((2544)>>2)]=$31;
+function _Motion($x,$y) {
+ $x = $x|0;
+ $y = $y|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0.0, $13 = 0.0, $14 = 0.0, $15 = 0.0, $16 = 0.0, $17 = 0.0, $18 = 0.0, $19 = 0.0, $2 = 0, $20 = 0.0, $21 = 0.0, $22 = 0.0, $23 = 0.0, $24 = 0.0, $25 = 0.0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0.0, $3 = 0, $30 = 0.0, $31 = 0.0, $32 = 0.0, $33 = 0.0, $34 = 0.0, $35 = 0.0, $36 = 0.0, $37 = 0.0, $38 = 0.0, $39 = 0.0, $4 = 0, $40 = 0.0, $41 = 0.0, $42 = 0.0, $43 = 0.0, $44 = 0.0;
+ var $45 = 0, $46 = 0, $47 = 0, $48 = 0.0, $49 = 0.0, $5 = 0.0, $50 = 0.0, $51 = 0.0, $52 = 0.0, $53 = 0.0, $54 = 0.0, $55 = 0.0, $56 = 0.0, $57 = 0.0, $58 = 0.0, $59 = 0.0, $6 = 0, $60 = 0.0, $61 = 0.0, $62 = 0.0;
+ var $63 = 0.0, $64 = 0.0, $65 = 0.0, $66 = 0, $67 = 0, $7 = 0, $8 = 0, $9 = 0.0, $dx = 0.0, $dy = 0.0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer5 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 64|0;
+ $vararg_buffer5 = sp;
+ $vararg_buffer1 = sp + 16|0;
+ $vararg_buffer = sp + 32|0;
+ $0 = $x;
+ $1 = $y;
+ $2 = $0;
+ $3 = HEAP32[240>>2]|0;
+ $4 = (($2) - ($3))|0;
+ $5 = (+($4|0));
+ $dx = $5;
+ $6 = $1;
+ $7 = HEAP32[248>>2]|0;
+ $8 = (($6) - ($7))|0;
+ $9 = (+($8|0));
+ $dy = $9;
+ $10 = HEAP32[256>>2]|0;
+ $11 = ($10|0)==(3);
+ if ($11) {
+  $12 = $dy;
+  $13 = $12;
+  $14 = $13 / 100.0;
+  $15 = $14 * 0.5;
+  $16 = +HEAPF32[264>>2];
+  $17 = $16;
+  $18 = (+Math_abs((+$17)));
+  $19 = $15 * $18;
+  $20 = +HEAPF32[264>>2];
+  $21 = $20;
+  $22 = $21 + $19;
+  $23 = $22;
+  HEAPF32[264>>2] = $23;
+  $24 = +HEAPF32[264>>2];
+  $25 = $24;
+  HEAPF64[tempDoublePtr>>3]=$25;HEAP32[$vararg_buffer>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((272|0),($vararg_buffer|0))|0);
+  HEAP32[288>>2] = 1;
+  $66 = $0;
+  HEAP32[240>>2] = $66;
+  $67 = $1;
+  HEAP32[248>>2] = $67;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+ }
+ $26 = HEAP32[256>>2]|0;
+ $27 = $26 & 1;
+ $28 = ($27|0)!=(0);
+ if ($28) {
+  $29 = $dx;
+  $30 = $29 / 100.0;
+  $31 = +HEAPF32[264>>2];
+  $32 = $30 / $31;
+  $33 = +HEAPF32[296>>2];
+  $34 = $33 + $32;
+  HEAPF32[296>>2] = $34;
+  $35 = $dy;
+  $36 = $35 / 100.0;
+  $37 = +HEAPF32[264>>2];
+  $38 = $36 / $37;
+  $39 = +HEAPF32[((296 + 4|0))>>2];
+  $40 = $39 + $38;
+  HEAPF32[((296 + 4|0))>>2] = $40;
+  $41 = +HEAPF32[296>>2];
+  $42 = $41;
+  $43 = +HEAPF32[((296 + 4|0))>>2];
+  $44 = $43;
+  HEAPF64[tempDoublePtr>>3]=$42;HEAP32[$vararg_buffer1>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer1+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  $vararg_ptr4 = (($vararg_buffer1) + 8|0);
+  HEAPF64[tempDoublePtr>>3]=$44;HEAP32[$vararg_ptr4>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr4+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((304|0),($vararg_buffer1|0))|0);
+  HEAP32[288>>2] = 1;
+ } else {
+  $45 = HEAP32[256>>2]|0;
+  $46 = $45 & 2;
+  $47 = ($46|0)!=(0);
+  if ($47) {
+   $48 = $dy;
+   $49 = $48;
+   $50 = $49 / 5.0;
+   $51 = +HEAPF32[296>>2];
+   $52 = $51;
+   $53 = $52 + $50;
+   $54 = $53;
+   HEAPF32[296>>2] = $54;
+   $55 = $dx;
+   $56 = $55;
+   $57 = $56 / 5.0;
+   $58 = +HEAPF32[((296 + 4|0))>>2];
+   $59 = $58;
+   $60 = $59 + $57;
+   $61 = $60;
+   HEAPF32[((296 + 4|0))>>2] = $61;
+   $62 = +HEAPF32[296>>2];
+   $63 = $62;
+   $64 = +HEAPF32[((296 + 4|0))>>2];
+   $65 = $64;
+   HEAPF64[tempDoublePtr>>3]=$63;HEAP32[$vararg_buffer5>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer5+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   $vararg_ptr8 = (($vararg_buffer5) + 8|0);
+   HEAPF64[tempDoublePtr>>3]=$65;HEAP32[$vararg_ptr8>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr8+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   (_printf((304|0),($vararg_buffer5|0))|0);
+   HEAP32[288>>2] = 1;
+  }
+ }
+ $66 = $0;
+ HEAP32[240>>2] = $66;
+ $67 = $1;
+ HEAP32[248>>2] = $67;
  _glutPostRedisplay();
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
- }
-
+ STACKTOP = sp;return;
 }
-
-
-function _Motion($x,$y){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $dx;
- var $dy;
- $1=$x;
- $2=$y;
- var $3=$1;
- var $4=HEAP32[((2552)>>2)];
- var $5=((($3)-($4))|0);
- var $6=($5|0);
- $dx=$6;
- var $7=$2;
- var $8=HEAP32[((2544)>>2)];
- var $9=((($7)-($8))|0);
- var $10=($9|0);
- $dy=$10;
- var $11=HEAP32[((3696)>>2)];
- var $12=($11|0)==3;
- if($12){label=2;break;}else{label=3;break;}
- case 2: 
- var $14=$dy;
- var $15=$14;
- var $16=($15)/(100);
- var $17=($16)*((0.5));
- var $18=HEAPF32[((1880)>>2)];
- var $19=$18;
- var $20=Math_abs($19);
- var $21=($17)*($20);
- var $22=HEAPF32[((1880)>>2)];
- var $23=$22;
- var $24=($23)+($21);
- var $25=$24;
- HEAPF32[((1880)>>2)]=$25;
- var $26=HEAPF32[((1880)>>2)];
- var $27=$26;
- var $28=_printf(32,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$27,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=9;break;
- case 3: 
- var $30=HEAP32[((3696)>>2)];
- var $31=$30&1;
- var $32=($31|0)!=0;
- if($32){label=4;break;}else{label=5;break;}
- case 4: 
- var $34=$dx;
- var $35=($34)/(100);
- var $36=HEAPF32[((1880)>>2)];
- var $37=($35)/($36);
- var $38=HEAPF32[((1968)>>2)];
- var $39=($38)+($37);
- HEAPF32[((1968)>>2)]=$39;
- var $40=$dy;
- var $41=($40)/(100);
- var $42=HEAPF32[((1880)>>2)];
- var $43=($41)/($42);
- var $44=HEAPF32[((1972)>>2)];
- var $45=($44)+($43);
- HEAPF32[((1972)>>2)]=$45;
- var $46=HEAPF32[((1968)>>2)];
- var $47=$46;
- var $48=HEAPF32[((1972)>>2)];
- var $49=$48;
- var $50=_printf(8,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$47,HEAPF64[(((tempVarArgs)+(8))>>3)]=$49,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=8;break;
- case 5: 
- var $52=HEAP32[((3696)>>2)];
- var $53=$52&2;
- var $54=($53|0)!=0;
- if($54){label=6;break;}else{label=7;break;}
- case 6: 
- var $56=$dy;
- var $57=$56;
- var $58=($57)/(5);
- var $59=HEAPF32[((1968)>>2)];
- var $60=$59;
- var $61=($60)+($58);
- var $62=$61;
- HEAPF32[((1968)>>2)]=$62;
- var $63=$dx;
- var $64=$63;
- var $65=($64)/(5);
- var $66=HEAPF32[((1972)>>2)];
- var $67=$66;
- var $68=($67)+($65);
- var $69=$68;
- HEAPF32[((1972)>>2)]=$69;
- var $70=HEAPF32[((1968)>>2)];
- var $71=$70;
- var $72=HEAPF32[((1972)>>2)];
- var $73=$72;
- var $74=_printf(8,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAPF64[((tempVarArgs)>>3)]=$71,HEAPF64[(((tempVarArgs)+(8))>>3)]=$73,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((2536)>>2)]=1;
- label=7;break;
- case 7: 
- label=8;break;
- case 8: 
- label=9;break;
- case 9: 
- var $78=$1;
- HEAP32[((2552)>>2)]=$78;
- var $79=$2;
- HEAP32[((2544)>>2)]=$79;
- _glutPostRedisplay();
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+function _ShutdownCompute() {
+ var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $vararg_buffer1 = sp + 8|0;
+ $vararg_buffer = sp;
+ (_printf((104|0),($vararg_buffer|0))|0);
+ (_printf((176|0),($vararg_buffer1|0))|0);
+ $0 = HEAP32[200>>2]|0;
+ (_clFinish(($0|0))|0);
+ $1 = HEAP32[208>>2]|0;
+ (_clReleaseKernel(($1|0))|0);
+ $2 = HEAP32[216>>2]|0;
+ (_clReleaseProgram(($2|0))|0);
+ $3 = HEAP32[200>>2]|0;
+ (_clReleaseCommandQueue(($3|0))|0);
+ $4 = HEAP32[224>>2]|0;
+ (_clReleaseMemObject(($4|0))|0);
+ $5 = HEAP32[32>>2]|0;
+ $6 = ($5|0)!=(0);
+ if (!($6)) {
+  STACKTOP = sp;return;
  }
-
+ $7 = HEAP32[232>>2]|0;
+ (_clReleaseMemObject(($7|0))|0);
+ STACKTOP = sp;return;
 }
-
-
-function _ShutdownCompute(){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $2=_printf(48,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $3=HEAP32[((3688)>>2)];
- var $4=_clFinish($3);
- var $5=HEAP32[((3648)>>2)];
- var $6=_clReleaseKernel($5);
- var $7=HEAP32[((3608)>>2)];
- var $8=_clReleaseProgram($7);
- var $9=HEAP32[((3688)>>2)];
- var $10=_clReleaseCommandQueue($9);
- var $11=HEAP32[((3600)>>2)];
- var $12=_clReleaseMemObject($11);
- var $13=HEAP32[((2488)>>2)];
- var $14=($13|0)!=0;
- if($14){label=2;break;}else{label=3;break;}
- case 2: 
- var $16=HEAP32[((3656)>>2)];
- var $17=_clReleaseMemObject($16);
- label=3;break;
- case 3: 
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+function _Recompute() {
+ var $0 = 0, $1 = 0.0, $10 = 0.0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0, $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0.0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0, $115 = 0;
+ var $116 = 0, $117 = 0, $118 = 0, $119 = 0, $12 = 0.0, $120 = 0, $121 = 0, $122 = 0, $123 = 0, $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0.0, $130 = 0, $131 = 0, $132 = 0, $133 = 0;
+ var $134 = 0, $135 = 0, $136 = 0, $137 = 0, $138 = 0, $139 = 0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0, $144 = 0, $15 = 0.0, $16 = 0.0, $17 = 0.0, $18 = 0.0, $19 = 0, $2 = 0.0, $20 = 0, $21 = 0;
+ var $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0.0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0.0;
+ var $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0;
+ var $59 = 0, $6 = 0.0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0.0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0;
+ var $77 = 0, $78 = 0, $79 = 0, $8 = 0.0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0.0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0;
+ var $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $_arr_ = 0, $arg = 0, $bias = 0, $err = 0, $global = 0, $i = 0, $local = 0, $origin = 0, $region = 0, $s = 0, $scale = 0, $size = 0, $sizes = 0, $type = 0, $v = 0;
+ var $values = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 208|0;
+ $vararg_buffer7 = sp;
+ $vararg_buffer4 = sp + 16|0;
+ $vararg_buffer1 = sp + 8|0;
+ $vararg_buffer = sp + 24|0;
+ $values = sp + 80|0;
+ $sizes = sp + 40|0;
+ $global = sp + 152|0;
+ $local = sp + 136|0;
+ $bias = sp + 32|0;
+ $scale = sp + 144|0;
+ $origin = sp + 168|0;
+ $region = sp + 180|0;
+ $type = sp + 196|0;
+ $_arr_ = sp + 200|0;
+ $arg = 0;
+ $err = 0;
+ $1 = +HEAPF32[296>>2];
+ $2 = $1;
+ $3 = (+Math_abs((+$2)));
+ $4 = $3;
+ HEAPF32[$bias>>2] = $4;
+ $5 = (($bias) + 4|0);
+ $6 = +HEAPF32[((296 + 4|0))>>2];
+ $7 = $6;
+ $8 = (+Math_abs((+$7)));
+ $9 = $8;
+ HEAPF32[$5>>2] = $9;
+ $10 = +HEAPF32[264>>2];
+ $11 = $10;
+ $12 = (+Math_abs((+$11)));
+ $13 = $12;
+ HEAPF32[$scale>>2] = $13;
+ $14 = (($scale) + 4|0);
+ $15 = +HEAPF32[264>>2];
+ $16 = $15;
+ $17 = (+Math_abs((+$16)));
+ $18 = $17;
+ HEAPF32[$14>>2] = $18;
+ $v = 0;
+ $s = 0;
+ $19 = $v;
+ $20 = (($19) + 1)|0;
+ $v = $20;
+ $21 = (($values) + ($19<<2)|0);
+ HEAP32[$21>>2] = 224;
+ $22 = $v;
+ $23 = (($22) + 1)|0;
+ $v = $23;
+ $24 = (($values) + ($22<<2)|0);
+ HEAP32[$24>>2] = $bias;
+ $25 = $v;
+ $26 = (($25) + 1)|0;
+ $v = $26;
+ $27 = (($values) + ($25<<2)|0);
+ HEAP32[$27>>2] = $scale;
+ $28 = HEAP32[328>>2]|0;
+ $29 = ($28|0)>(0);
+ if ($29) {
+  $30 = $v;
+  $31 = (($30) + 1)|0;
+  $v = $31;
+  $32 = (($values) + ($30<<2)|0);
+  HEAP32[$32>>2] = 424;
+  $33 = $v;
+  $34 = (($33) + 1)|0;
+  $v = $34;
+  $35 = (($values) + ($33<<2)|0);
+  HEAP32[$35>>2] = 456;
+  $36 = $v;
+  $37 = (($36) + 1)|0;
+  $v = $37;
+  $38 = (($values) + ($36<<2)|0);
+  HEAP32[$38>>2] = 400;
  }
-
-}
-
-
-function _Recompute(){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+160)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $values=sp;
- var $sizes=(sp)+(40);
- var $global=(sp)+(80);
- var $local=(sp)+(88);
- var $arg;
- var $err;
- var $bias=(sp)+(96);
- var $scale=(sp)+(104);
- var $v;
- var $s;
- var $origin=(sp)+(112);
- var $region=(sp)+(128);
- var $size;
- var $type=(sp)+(144);
- var $_arr_=(sp)+(152);
- var $i;
- $arg=0;
- $err=0;
- var $2=(($bias)|0);
- var $3=HEAPF32[((1968)>>2)];
- var $4=$3;
- var $5=Math_abs($4);
- var $6=$5;
- HEAPF32[(($2)>>2)]=$6;
- var $7=(($2+4)|0);
- var $8=HEAPF32[((1972)>>2)];
- var $9=$8;
- var $10=Math_abs($9);
- var $11=$10;
- HEAPF32[(($7)>>2)]=$11;
- var $12=(($scale)|0);
- var $13=HEAPF32[((1880)>>2)];
- var $14=$13;
- var $15=Math_abs($14);
- var $16=$15;
- HEAPF32[(($12)>>2)]=$16;
- var $17=(($12+4)|0);
- var $18=HEAPF32[((1880)>>2)];
- var $19=$18;
- var $20=Math_abs($19);
- var $21=$20;
- HEAPF32[(($17)>>2)]=$21;
- $v=0;
- $s=0;
- var $22=$v;
- var $23=((($22)+(1))|0);
- $v=$23;
- var $24=(($values+($22<<2))|0);
- HEAP32[(($24)>>2)]=3600;
- var $25=(($bias)|0);
- var $26=$25;
- var $27=$v;
- var $28=((($27)+(1))|0);
- $v=$28;
- var $29=(($values+($27<<2))|0);
- HEAP32[(($29)>>2)]=$26;
- var $30=(($scale)|0);
- var $31=$30;
- var $32=$v;
- var $33=((($32)+(1))|0);
- $v=$33;
- var $34=(($values+($32<<2))|0);
- HEAP32[(($34)>>2)]=$31;
- var $35=HEAP32[((3704)>>2)];
- var $36=($35|0)>0;
- if($36){label=2;break;}else{label=3;break;}
- case 2: 
- var $38=$v;
- var $39=((($38)+(1))|0);
- $v=$39;
- var $40=(($values+($38<<2))|0);
- HEAP32[(($40)>>2)]=1912;
- var $41=$v;
- var $42=((($41)+(1))|0);
- $v=$42;
- var $43=(($values+($41<<2))|0);
- HEAP32[(($43)>>2)]=1920;
- var $44=$v;
- var $45=((($44)+(1))|0);
- $v=$45;
- var $46=(($values+($44<<2))|0);
- HEAP32[(($46)>>2)]=1904;
- label=3;break;
- case 3: 
- var $48=$v;
- var $49=((($48)+(1))|0);
- $v=$49;
- var $50=(($values+($48<<2))|0);
- HEAP32[(($50)>>2)]=1976;
- var $51=$s;
- var $52=((($51)+(1))|0);
- $s=$52;
- var $53=(($sizes+($51<<2))|0);
- HEAP32[(($53)>>2)]=4;
- var $54=$s;
- var $55=((($54)+(1))|0);
- $s=$55;
- var $56=(($sizes+($54<<2))|0);
- HEAP32[(($56)>>2)]=8;
- var $57=$s;
- var $58=((($57)+(1))|0);
- $s=$58;
- var $59=(($sizes+($57<<2))|0);
- HEAP32[(($59)>>2)]=8;
- var $60=HEAP32[((3704)>>2)];
- var $61=($60|0)>0;
- if($61){label=4;break;}else{label=5;break;}
- case 4: 
- var $63=$s;
- var $64=((($63)+(1))|0);
- $s=$64;
- var $65=(($sizes+($63<<2))|0);
- HEAP32[(($65)>>2)]=4;
- var $66=$s;
- var $67=((($66)+(1))|0);
- $s=$67;
- var $68=(($sizes+($66<<2))|0);
- HEAP32[(($68)>>2)]=4;
- var $69=$s;
- var $70=((($69)+(1))|0);
- $s=$70;
- var $71=(($sizes+($69<<2))|0);
- HEAP32[(($71)>>2)]=4;
- label=5;break;
- case 5: 
- var $73=$s;
- var $74=((($73)+(1))|0);
- $s=$74;
- var $75=(($sizes+($73<<2))|0);
- HEAP32[(($75)>>2)]=4;
- $err=0;
- $arg=0;
- label=6;break;
- case 6: 
- var $77=$arg;
- var $78=$s;
- var $79=($77>>>0)<($78>>>0);
- if($79){label=7;break;}else{label=9;break;}
- case 7: 
- var $81=HEAP32[((3704)>>2)];
- var $82=((3616+($81<<2))|0);
- var $83=HEAP32[(($82)>>2)];
- var $84=$arg;
- var $85=$arg;
- var $86=(($sizes+($85<<2))|0);
- var $87=HEAP32[(($86)>>2)];
- var $88=$arg;
- var $89=(($values+($88<<2))|0);
- var $90=HEAP32[(($89)>>2)];
- var $91=_clSetKernelArg($83,$84,$87,$90);
- var $92=$err;
- var $93=$92|$91;
- $err=$93;
- label=8;break;
- case 8: 
- var $95=$arg;
- var $96=((($95)+(1))|0);
- $arg=$96;
- label=6;break;
- case 9: 
- var $98=$err;
- var $99=($98|0)!=0;
- if($99){label=10;break;}else{label=11;break;}
- case 10: 
- $1=-10;
- label=29;break;
- case 11: 
- var $102=HEAP32[((1752)>>2)];
- var $103=(($global)|0);
- HEAP32[(($103)>>2)]=$102;
- var $104=HEAP32[((1944)>>2)];
- var $105=(($global+4)|0);
- HEAP32[(($105)>>2)]=$104;
- var $106=HEAP32[((3704)>>2)];
- var $107=((3632+($106<<2))|0);
- var $108=HEAP32[(($107)>>2)];
- var $109=(($local)|0);
- HEAP32[(($109)>>2)]=$108;
- var $110=(($local+4)|0);
- HEAP32[(($110)>>2)]=1;
- var $111=HEAP32[((3688)>>2)];
- var $112=HEAP32[((3704)>>2)];
- var $113=((3616+($112<<2))|0);
- var $114=HEAP32[(($113)>>2)];
- var $115=(($global)|0);
- var $116=(($local)|0);
- var $117=_clEnqueueNDRangeKernel($111,$114,2,0,$115,$116,0,0,0);
- $err=$117;
- var $118=$err;
- var $119=($118|0)!=0;
- if($119){label=12;break;}else{label=13;break;}
- case 12: 
- var $121=$err;
- var $122=_printf(1384,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$121,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=29;break;
- case 13: 
- var $124=HEAP32[((2488)>>2)];
- var $125=($124|0)!=0;
- if($125){label=14;break;}else{label=21;break;}
- case 14: 
- var $127=HEAP32[((3688)>>2)];
- var $128=_clEnqueueAcquireGLObjects($127,1,3656,0,0,0);
- $err=$128;
- var $129=$err;
- var $130=($129|0)!=0;
- if($130){label=15;break;}else{label=16;break;}
- case 15: 
- var $132=$err;
- var $133=_printf(1344,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$132,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=29;break;
- case 16: 
- var $135=$origin;
- HEAP32[(($135)>>2)]=0; HEAP32[((($135)+(4))>>2)]=0; HEAP32[((($135)+(8))>>2)]=0;
- var $136=(($region)|0);
- var $137=HEAP32[((1752)>>2)];
- HEAP32[(($136)>>2)]=$137;
- var $138=(($136+4)|0);
- var $139=HEAP32[((1944)>>2)];
- HEAP32[(($138)>>2)]=$139;
- var $140=(($138+4)|0);
- HEAP32[(($140)>>2)]=1;
- var $141=HEAP32[((3688)>>2)];
- var $142=HEAP32[((3600)>>2)];
- var $143=HEAP32[((3656)>>2)];
- var $144=(($origin)|0);
- var $145=(($region)|0);
- var $146=_clEnqueueCopyBufferToImage($141,$142,$143,0,$144,$145,0,0,0);
- $err=$146;
- var $147=$err;
- var $148=($147|0)!=0;
- if($148){label=17;break;}else{label=18;break;}
- case 17: 
- var $150=$err;
- var $151=_printf(1304,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$150,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=29;break;
- case 18: 
- var $153=HEAP32[((3688)>>2)];
- var $154=_clEnqueueReleaseGLObjects($153,1,3656,0,0,0);
- $err=$154;
- var $155=$err;
- var $156=($155|0)!=0;
- if($156){label=19;break;}else{label=20;break;}
- case 19: 
- var $158=$err;
- var $159=_printf(1264,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$158,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=29;break;
- case 20: 
- label=28;break;
- case 21: 
- $size=1;
- var $162=$_arr_;
- assert(4 % 1 === 0);HEAP32[(($162)>>2)]=HEAP32[((1896)>>2)];
- $i=0;
- label=22;break;
- case 22: 
- var $164=$i;
- var $165=($164>>>0)<1;
- if($165){label=23;break;}else{label=25;break;}
- case 23: 
- var $167=$i;
- var $168=(($_arr_+($167<<2))|0);
- var $169=HEAP32[(($168)>>2)];
- var $170=$i;
- var $171=(($type+($170<<2))|0);
- HEAP32[(($171)>>2)]=$169;
- label=24;break;
- case 24: 
- var $173=$i;
- var $174=((($173)+(1))|0);
- $i=$174;
- label=22;break;
- case 25: 
- var $176=(($type)|0);
- var $177=_clSetTypePointer($176,1);
- var $178=HEAP32[((3688)>>2)];
- var $179=HEAP32[((3600)>>2)];
- var $180=HEAP32[((1752)>>2)];
- var $181=HEAP32[((1944)>>2)];
- var $182=(Math_imul($180,$181)|0);
- var $183=HEAP32[((1800)>>2)];
- var $184=(Math_imul($182,$183)|0);
- var $185=($184<<2);
- var $186=HEAP32[((3584)>>2)];
- var $187=_clEnqueueReadBuffer($178,$179,1,0,$185,$186,0,0,0);
- $err=$187;
- var $188=$err;
- var $189=($188|0)!=0;
- if($189){label=26;break;}else{label=27;break;}
- case 26: 
- $1=-5;
- label=29;break;
- case 27: 
- label=28;break;
- case 28: 
- $1=0;
- label=29;break;
- case 29: 
- var $194=$1;
- STACKTOP=sp;return $194;
-  default: assert(0, "bad label: " + label);
+ $39 = $v;
+ $40 = (($39) + 1)|0;
+ $v = $40;
+ $41 = (($values) + ($39<<2)|0);
+ HEAP32[$41>>2] = 376;
+ $42 = $s;
+ $43 = (($42) + 1)|0;
+ $s = $43;
+ $44 = (($sizes) + ($42<<2)|0);
+ HEAP32[$44>>2] = 4;
+ $45 = $s;
+ $46 = (($45) + 1)|0;
+ $s = $46;
+ $47 = (($sizes) + ($45<<2)|0);
+ HEAP32[$47>>2] = 8;
+ $48 = $s;
+ $49 = (($48) + 1)|0;
+ $s = $49;
+ $50 = (($sizes) + ($48<<2)|0);
+ HEAP32[$50>>2] = 8;
+ $51 = HEAP32[328>>2]|0;
+ $52 = ($51|0)>(0);
+ if ($52) {
+  $53 = $s;
+  $54 = (($53) + 1)|0;
+  $s = $54;
+  $55 = (($sizes) + ($53<<2)|0);
+  HEAP32[$55>>2] = 4;
+  $56 = $s;
+  $57 = (($56) + 1)|0;
+  $s = $57;
+  $58 = (($sizes) + ($56<<2)|0);
+  HEAP32[$58>>2] = 4;
+  $59 = $s;
+  $60 = (($59) + 1)|0;
+  $s = $60;
+  $61 = (($sizes) + ($59<<2)|0);
+  HEAP32[$61>>2] = 4;
  }
-
+ $62 = $s;
+ $63 = (($62) + 1)|0;
+ $s = $63;
+ $64 = (($sizes) + ($62<<2)|0);
+ HEAP32[$64>>2] = 4;
+ $err = 0;
+ $arg = 0;
+ while(1) {
+  $65 = $arg;
+  $66 = $s;
+  $67 = ($65>>>0)<($66>>>0);
+  if (!($67)) {
+   break;
+  }
+  $68 = HEAP32[328>>2]|0;
+  $69 = (1832 + ($68<<2)|0);
+  $70 = HEAP32[$69>>2]|0;
+  $71 = $arg;
+  $72 = $arg;
+  $73 = (($sizes) + ($72<<2)|0);
+  $74 = HEAP32[$73>>2]|0;
+  $75 = $arg;
+  $76 = (($values) + ($75<<2)|0);
+  $77 = HEAP32[$76>>2]|0;
+  $78 = (_clSetKernelArg(($70|0),($71|0),($74|0),($77|0))|0);
+  $79 = $err;
+  $80 = $79 | $78;
+  $err = $80;
+  $81 = $arg;
+  $82 = (($81) + 1)|0;
+  $arg = $82;
+ }
+ $83 = $err;
+ $84 = ($83|0)!=(0);
+ if ($84) {
+  $0 = -10;
+  $144 = $0;
+  STACKTOP = sp;return ($144|0);
+ }
+ $85 = HEAP32[88>>2]|0;
+ HEAP32[$global>>2] = $85;
+ $86 = HEAP32[96>>2]|0;
+ $87 = (($global) + 4|0);
+ HEAP32[$87>>2] = $86;
+ $88 = HEAP32[328>>2]|0;
+ $89 = (1848 + ($88<<2)|0);
+ $90 = HEAP32[$89>>2]|0;
+ HEAP32[$local>>2] = $90;
+ $91 = (($local) + 4|0);
+ HEAP32[$91>>2] = 1;
+ $92 = HEAP32[200>>2]|0;
+ $93 = HEAP32[328>>2]|0;
+ $94 = (1832 + ($93<<2)|0);
+ $95 = HEAP32[$94>>2]|0;
+ $96 = (_clEnqueueNDRangeKernel(($92|0),($95|0),2,(0|0),($global|0),($local|0),0,(0|0),(0|0))|0);
+ $err = $96;
+ $97 = $err;
+ $98 = ($97|0)!=(0);
+ if ($98) {
+  $99 = $err;
+  HEAP32[$vararg_buffer>>2] = $99;
+  (_printf((1864|0),($vararg_buffer|0))|0);
+  $0 = 1;
+  $144 = $0;
+  STACKTOP = sp;return ($144|0);
+ }
+ $100 = HEAP32[32>>2]|0;
+ $101 = ($100|0)!=(0);
+ do {
+  if ($101) {
+   $102 = HEAP32[200>>2]|0;
+   $103 = (_clEnqueueAcquireGLObjects(($102|0),1,(232|0),0,(0|0),(0|0))|0);
+   $err = $103;
+   $104 = $err;
+   $105 = ($104|0)!=(0);
+   if ($105) {
+    $106 = $err;
+    HEAP32[$vararg_buffer1>>2] = $106;
+    (_printf((1896|0),($vararg_buffer1|0))|0);
+    $0 = 1;
+    $144 = $0;
+    STACKTOP = sp;return ($144|0);
+   }
+   ;HEAP32[$origin+0>>2]=0|0;HEAP32[$origin+4>>2]=0|0;HEAP32[$origin+8>>2]=0|0;
+   $107 = HEAP32[88>>2]|0;
+   HEAP32[$region>>2] = $107;
+   $108 = (($region) + 4|0);
+   $109 = HEAP32[96>>2]|0;
+   HEAP32[$108>>2] = $109;
+   $110 = (($108) + 4|0);
+   HEAP32[$110>>2] = 1;
+   $111 = HEAP32[200>>2]|0;
+   $112 = HEAP32[224>>2]|0;
+   $113 = HEAP32[232>>2]|0;
+   $114 = (_clEnqueueCopyBufferToImage(($111|0),($112|0),($113|0),0,($origin|0),($region|0),0,(0|0),(0|0))|0);
+   $err = $114;
+   $115 = $err;
+   $116 = ($115|0)!=(0);
+   if ($116) {
+    $117 = $err;
+    HEAP32[$vararg_buffer4>>2] = $117;
+    (_printf((1936|0),($vararg_buffer4|0))|0);
+    $0 = 1;
+    $144 = $0;
+    STACKTOP = sp;return ($144|0);
+   }
+   $118 = HEAP32[200>>2]|0;
+   $119 = (_clEnqueueReleaseGLObjects(($118|0),1,(232|0),0,(0|0),(0|0))|0);
+   $err = $119;
+   $120 = $err;
+   $121 = ($120|0)!=(0);
+   if (!($121)) {
+    break;
+   }
+   $122 = $err;
+   HEAP32[$vararg_buffer7>>2] = $122;
+   (_printf((1976|0),($vararg_buffer7|0))|0);
+   $0 = 1;
+   $144 = $0;
+   STACKTOP = sp;return ($144|0);
+  } else {
+   $size = 1;
+   ;HEAP32[$_arr_+0>>2]=HEAP32[2016+0>>2]|0;
+   $i = 0;
+   while(1) {
+    $123 = $i;
+    $124 = ($123>>>0)<(1);
+    if (!($124)) {
+     break;
+    }
+    $125 = $i;
+    $126 = (($_arr_) + ($125<<2)|0);
+    $127 = HEAP32[$126>>2]|0;
+    $128 = $i;
+    $129 = (($type) + ($128<<2)|0);
+    HEAP32[$129>>2] = $127;
+    $130 = $i;
+    $131 = (($130) + 1)|0;
+    $i = $131;
+   }
+   (_clSetTypePointer(($type|0),1)|0);
+   $132 = HEAP32[200>>2]|0;
+   $133 = HEAP32[224>>2]|0;
+   $134 = HEAP32[88>>2]|0;
+   $135 = HEAP32[96>>2]|0;
+   $136 = Math_imul($134, $135)|0;
+   $137 = HEAP32[2024>>2]|0;
+   $138 = Math_imul($136, $137)|0;
+   $139 = $138<<2;
+   $140 = HEAP32[624>>2]|0;
+   $141 = (_clEnqueueReadBuffer(($132|0),($133|0),1,0,($139|0),($140|0),0,(0|0),(0|0))|0);
+   $err = $141;
+   $142 = $err;
+   $143 = ($142|0)!=(0);
+   if (!($143)) {
+    break;
+   }
+   $0 = -5;
+   $144 = $0;
+   STACKTOP = sp;return ($144|0);
+  }
+ } while(0);
+ $0 = 0;
+ $144 = $0;
+ STACKTOP = sp;return ($144|0);
 }
-
-
-function _RenderTexture($pvData){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- $1=$pvData;
+function _RenderTexture($pvData) {
+ $pvData = $pvData|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = $pvData;
  _glDisable(2896);
- var $2=HEAP32[((1752)>>2)];
- var $3=HEAP32[((1944)>>2)];
- _glViewport(0,0,$2,$3);
+ $1 = HEAP32[88>>2]|0;
+ $2 = HEAP32[96>>2]|0;
+ _glViewport(0,0,($1|0),($2|0));
  _glMatrixMode(5889);
  _glLoadIdentity();
- _gluOrtho2D(-1,1,-1,1);
+ _gluOrtho2D(-1.0,1.0,-1.0,1.0);
  _glMatrixMode(5888);
  _glLoadIdentity();
  _glMatrixMode(5890);
  _glLoadIdentity();
- var $4=HEAP32[((1816)>>2)];
- _glEnable($4);
- var $5=HEAP32[((1816)>>2)];
- var $6=HEAP32[((2496)>>2)];
- _glBindTexture($5,$6);
- var $7=$1;
- var $8=($7|0)!=0;
- if($8){label=2;break;}else{label=3;break;}
- case 2: 
- var $10=HEAP32[((1816)>>2)];
- var $11=HEAP32[((1752)>>2)];
- var $12=HEAP32[((1944)>>2)];
- var $13=HEAP32[((1832)>>2)];
- var $14=HEAP32[((1808)>>2)];
- var $15=$1;
- _glTexSubImage2D($10,0,0,0,$11,$12,$13,$14,$15);
- label=3;break;
- case 3: 
+ $3 = HEAP32[1800>>2]|0;
+ _glEnable(($3|0));
+ $4 = HEAP32[1800>>2]|0;
+ $5 = HEAP32[1808>>2]|0;
+ _glBindTexture(($4|0),($5|0));
+ $6 = $0;
+ $7 = ($6|0)!=(0|0);
+ if ($7) {
+  $8 = HEAP32[1800>>2]|0;
+  $9 = HEAP32[88>>2]|0;
+  $10 = HEAP32[96>>2]|0;
+  $11 = HEAP32[1816>>2]|0;
+  $12 = HEAP32[1824>>2]|0;
+  $13 = $0;
+  _glTexSubImage2D(($8|0),0,0,0,($9|0),($10|0),($11|0),($12|0),($13|0));
+ }
  _glDisableClientState(32888);
  _glDisableClientState(32884);
  _glBegin(7);
- _glColor3f(1,1,1);
- _glTexCoord2f(0,0);
- _glVertex3f(-1,-1,0);
- _glColor3f(1,1,1);
- _glTexCoord2f(0,1);
- _glVertex3f(-1,1,0);
- _glColor3f(1,1,1);
- _glTexCoord2f(1,1);
- _glVertex3f(1,1,0);
- _glColor3f(1,1,1);
- _glTexCoord2f(1,0);
- _glVertex3f(1,-1,0);
+ _glColor3f(1.0,1.0,1.0);
+ _glTexCoord2f(0.0,0.0);
+ _glVertex3f(-1.0,-1.0,0.0);
+ _glColor3f(1.0,1.0,1.0);
+ _glTexCoord2f(0.0,1.0);
+ _glVertex3f(-1.0,1.0,0.0);
+ _glColor3f(1.0,1.0,1.0);
+ _glTexCoord2f(1.0,1.0);
+ _glVertex3f(1.0,1.0,0.0);
+ _glColor3f(1.0,1.0,1.0);
+ _glTexCoord2f(1.0,0.0);
+ _glVertex3f(1.0,-1.0,0.0);
  _glEnd();
- var $17=HEAP32[((1816)>>2)];
- _glBindTexture($17,0);
- var $18=HEAP32[((1816)>>2)];
- _glDisable($18);
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+ $14 = HEAP32[1800>>2]|0;
+ _glBindTexture(($14|0),0);
+ $15 = HEAP32[1800>>2]|0;
+ _glDisable(($15|0));
+ STACKTOP = sp;return;
+}
+function _ReportInfo() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0.0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0.0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0.0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0.0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0.0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
+ var $45 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $iX = 0, $iY = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = HEAP32[288>>2]|0;
+ $1 = ($0|0)==(0);
+ if ($1) {
+  STACKTOP = sp;return;
  }
-
-}
-
-
-function _ReportInfo(){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $iX;
- var $iY;
- var $1=HEAP32[((2536)>>2)];
- var $2=($1|0)==0;
- if($2){label=2;break;}else{label=3;break;}
- case 2: 
- label=7;break;
- case 3: 
- var $5=HEAP32[((1840)>>2)];
- $iX=$5;
- var $6=HEAP32[((1844)>>2)];
- $iY=$6;
- var $7=HEAP32[((1752)>>2)];
- var $8=$iX;
- var $9=((($7)-($8))|0);
- var $10=((($9)-(1))|0);
- var $11=_strlen(2560);
- var $12=((($11)*(10))&-1);
- var $13=((($10)-($12))|0);
- var $14=($13>>>0);
- var $15=HEAP32[((1944)>>2)];
- var $16=$iY;
- var $17=((($15)-($16))|0);
- var $18=((($17)-(1))|0);
- var $19=($18|0);
- _DrawText($14,$19,1848,2560);
- var $20=HEAP32[((1752)>>2)];
- var $21=$iX;
- var $22=((($20)-($21))|0);
- var $23=((($22)-(2))|0);
- var $24=_strlen(2560);
- var $25=((($24)*(10))&-1);
- var $26=((($23)-($25))|0);
- var $27=($26>>>0);
- var $28=HEAP32[((1944)>>2)];
- var $29=$iY;
- var $30=((($28)-($29))|0);
- var $31=((($30)-(2))|0);
- var $32=($31|0);
- _DrawText($27,$32,1848,2560);
- var $33=HEAP32[((1752)>>2)];
- var $34=$iX;
- var $35=((($33)-($34))|0);
- var $36=_strlen(2560);
- var $37=((($36)*(10))&-1);
- var $38=((($35)-($37))|0);
- var $39=($38>>>0);
- var $40=HEAP32[((1944)>>2)];
- var $41=$iY;
- var $42=((($40)-($41))|0);
- var $43=($42|0);
- _DrawText($39,$43,1928,2560);
- var $44=HEAP32[((2536)>>2)];
- var $45=($44>>>0)>200;
- if($45){label=4;break;}else{label=5;break;}
- case 4: 
- var $51=0;label=6;break;
- case 5: 
- var $48=HEAP32[((2536)>>2)];
- var $49=((($48)+(1))|0);
- var $51=$49;label=6;break;
- case 6: 
- var $51;
- HEAP32[((2536)>>2)]=$51;
- label=7;break;
- case 7: 
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+ $2 = HEAP32[736>>2]|0;
+ $iX = $2;
+ $3 = HEAP32[((736 + 4|0))>>2]|0;
+ $iY = $3;
+ $4 = HEAP32[88>>2]|0;
+ $5 = $iX;
+ $6 = (($4) - ($5))|0;
+ $7 = (($6) - 1)|0;
+ $8 = (_strlen((744|0))|0);
+ $9 = ($8*10)|0;
+ $10 = (($7) - ($9))|0;
+ $11 = (+($10>>>0));
+ $12 = HEAP32[96>>2]|0;
+ $13 = $iY;
+ $14 = (($12) - ($13))|0;
+ $15 = (($14) - 1)|0;
+ $16 = (+($15|0));
+ _DrawText($11,$16,1768,744);
+ $17 = HEAP32[88>>2]|0;
+ $18 = $iX;
+ $19 = (($17) - ($18))|0;
+ $20 = (($19) - 2)|0;
+ $21 = (_strlen((744|0))|0);
+ $22 = ($21*10)|0;
+ $23 = (($20) - ($22))|0;
+ $24 = (+($23>>>0));
+ $25 = HEAP32[96>>2]|0;
+ $26 = $iY;
+ $27 = (($25) - ($26))|0;
+ $28 = (($27) - 2)|0;
+ $29 = (+($28|0));
+ _DrawText($24,$29,1768,744);
+ $30 = HEAP32[88>>2]|0;
+ $31 = $iX;
+ $32 = (($30) - ($31))|0;
+ $33 = (_strlen((744|0))|0);
+ $34 = ($33*10)|0;
+ $35 = (($32) - ($34))|0;
+ $36 = (+($35>>>0));
+ $37 = HEAP32[96>>2]|0;
+ $38 = $iY;
+ $39 = (($37) - ($38))|0;
+ $40 = (+($39|0));
+ _DrawText($36,$40,1784,744);
+ $41 = HEAP32[288>>2]|0;
+ $42 = ($41>>>0)>(200);
+ if ($42) {
+  $45 = 0;
+ } else {
+  $43 = HEAP32[288>>2]|0;
+  $44 = (($43) + 1)|0;
+  $45 = $44;
  }
-
+ HEAP32[288>>2] = $45;
+ STACKTOP = sp;return;
 }
-
-
-function _ReportStats($uiStartTime,$uiEndTime){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $fMs;
- var $fFps;
- $1=$uiStartTime;
- $2=$uiEndTime;
- var $3=$2;
- var $4=$1;
- var $5=_SubtractTime($3,$4);
- var $6=$5;
- var $7=HEAPF64[((1792)>>3)];
- var $8=($7)+($6);
- HEAPF64[((1792)>>3)]=$8;
- var $9=HEAPF64[((1792)>>3)];
- var $10=$9!=0;
- if($10){label=2;break;}else{label=5;break;}
- case 2: 
- var $12=HEAP32[((3592)>>2)];
- var $13=($12|0)!=0;
- if($13){label=3;break;}else{label=5;break;}
- case 3: 
- var $15=HEAP32[((3592)>>2)];
- var $16=HEAP32[((1888)>>2)];
- var $17=($15>>>0)>($16>>>0);
- if($17){label=4;break;}else{label=5;break;}
- case 4: 
- var $19=HEAPF64[((1792)>>3)];
- var $20=($19)*(1000);
- var $21=HEAP32[((3592)>>2)];
- var $22=($21|0);
- var $23=($20)/($22);
- $fMs=$23;
- var $24=$fMs;
- var $25=($24)/(1000);
- var $26=(1)/($25);
- $fFps=$26;
- var $ld$0$0=3664;
- var $27$0=HEAP32[(($ld$0$0)>>2)];
- var $ld$1$1=3668;
- var $27$1=HEAP32[(($ld$1$1)>>2)];
- var $$etemp$2$0=4;
- var $$etemp$2$1=0;
- var $28=(($27$0|0) == ($$etemp$2$0|0)) & (($27$1|0) == ($$etemp$2$1|0));
- var $29=($28?744:360);
- var $30=$fMs;
- var $31=$fFps;
- var $32=HEAP32[((2488)>>2)];
- var $33=($32|0)!=0;
- var $34=($33?1424:1416);
- var $35=_printf(1440,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 32)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$29,HEAPF64[(((tempVarArgs)+(8))>>3)]=$30,HEAPF64[(((tempVarArgs)+(16))>>3)]=$31,HEAP32[(((tempVarArgs)+(24))>>2)]=$34,tempVarArgs)); STACKTOP=tempVarArgs;
- HEAP32[((3592)>>2)]=0;
- HEAPF64[((1792)>>3)]=0;
- label=5;break;
- case 5: 
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+function _ReportStats($uiStartTime,$uiEndTime) {
+ $uiStartTime = +$uiStartTime;
+ $uiEndTime = +$uiEndTime;
+ var $0 = 0.0, $1 = 0.0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0.0, $16 = 0.0, $17 = 0, $18 = 0.0, $19 = 0.0, $2 = 0.0, $20 = 0.0, $21 = 0.0, $22 = 0.0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0.0, $30 = 0, $31 = 0, $32 = 0, $33 = 0.0, $34 = 0.0, $35 = 0, $36 = 0, $37 = 0, $4 = 0.0, $5 = 0.0, $6 = 0.0, $7 = 0.0, $8 = 0.0, $9 = 0, $fFps = 0.0, $fMs = 0.0;
+ var $vararg_buffer = 0, $vararg_ptr1 = 0, $vararg_ptr2 = 0, $vararg_ptr3 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 48|0;
+ $vararg_buffer = sp + 16|0;
+ $0 = $uiStartTime;
+ $1 = $uiEndTime;
+ $2 = $1;
+ $3 = $0;
+ $4 = (+_SubtractTime($2,$3));
+ $5 = $4;
+ $6 = +HEAPF64[632>>3];
+ $7 = $6 + $5;
+ HEAPF64[632>>3] = $7;
+ $8 = +HEAPF64[632>>3];
+ $9 = $8 != 0.0;
+ if (!($9)) {
+  STACKTOP = sp;return;
  }
-
+ $10 = HEAP32[584>>2]|0;
+ $11 = ($10|0)!=(0);
+ if (!($11)) {
+  STACKTOP = sp;return;
+ }
+ $12 = HEAP32[584>>2]|0;
+ $13 = HEAP32[640>>2]|0;
+ $14 = ($12>>>0)>($13>>>0);
+ if (!($14)) {
+  STACKTOP = sp;return;
+ }
+ $15 = +HEAPF64[632>>3];
+ $16 = $15 * 1000.0;
+ $17 = HEAP32[584>>2]|0;
+ $18 = (+($17|0));
+ $19 = $16 / $18;
+ $fMs = $19;
+ $20 = $fMs;
+ $21 = $20 / 1000.0;
+ $22 = 1.0 / $21;
+ $fFps = $22;
+ $23 = 704;
+ $24 = $23;
+ $25 = HEAP32[$24>>2]|0;
+ $26 = (($23) + 4)|0;
+ $27 = $26;
+ $28 = HEAP32[$27>>2]|0;
+ $29 = ($25|0)==(4);
+ $30 = ($28|0)==(0);
+ $31 = $29 & $30;
+ $32 = $31 ? 72 : 80;
+ $33 = $fMs;
+ $34 = $fFps;
+ $35 = HEAP32[32>>2]|0;
+ $36 = ($35|0)!=(0);
+ $37 = $36 ? 712 : 728;
+ HEAP32[$vararg_buffer>>2] = $32;
+ $vararg_ptr1 = (($vararg_buffer) + 4|0);
+ HEAPF64[tempDoublePtr>>3]=$33;HEAP32[$vararg_ptr1>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr1+4>>2]=HEAP32[tempDoublePtr+4>>2];
+ $vararg_ptr2 = (($vararg_buffer) + 12|0);
+ HEAPF64[tempDoublePtr>>3]=$34;HEAP32[$vararg_ptr2>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr2+4>>2]=HEAP32[tempDoublePtr+4>>2];
+ $vararg_ptr3 = (($vararg_buffer) + 20|0);
+ HEAP32[$vararg_ptr3>>2] = $37;
+ (_printf((648|0),($vararg_buffer|0))|0);
+ HEAP32[584>>2] = 0;
+ HEAPF64[632>>3] = 0.0;
+ STACKTOP = sp;return;
 }
-
-
-function _SubtractTime($uiEndTime,$uiStartTime){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
-
- var $1;
- var $2;
- $1=$uiEndTime;
- $2=$uiStartTime;
- var $3=$1;
- var $4=$2;
- var $5=($3)-($4);
- var $6=((0.0010000000474974513))*($5);
- STACKTOP=sp;return $6;
+function _SubtractTime($uiEndTime,$uiStartTime) {
+ $uiEndTime = +$uiEndTime;
+ $uiStartTime = +$uiStartTime;
+ var $0 = 0.0, $1 = 0.0, $2 = 0.0, $3 = 0.0, $4 = 0.0, $5 = 0.0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = $uiEndTime;
+ $1 = $uiStartTime;
+ $2 = $0;
+ $3 = $1;
+ $4 = $2 - $3;
+ $5 = 0.00100000004749745130539 * $4;
+ STACKTOP = sp;return (+$5);
 }
-
-
-function _DrawText($x,$y,$color,$acString){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
-
- var $1;
- var $2;
- var $3;
- var $4;
- $1=$x;
- $2=$y;
- $3=$color;
- $4=$acString;
- STACKTOP=sp;return;
+function _DrawText($x,$y,$color,$acString) {
+ $x = +$x;
+ $y = +$y;
+ $color = $color|0;
+ $acString = $acString|0;
+ var $0 = 0.0, $1 = 0.0, $2 = 0, $3 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = $x;
+ $1 = $y;
+ $2 = $color;
+ $3 = $acString;
+ STACKTOP = sp;return;
 }
-
-
-function _GetCurrentTime(){
- var label=0;
-
-
- var $1=_emscripten_get_now();
- var $2=$1;
- return $2;
+function _GetCurrentTime() {
+ var $0 = 0.0, $1 = 0.0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = (+_emscripten_get_now());
+ $1 = $0;
+ STACKTOP = sp;return (+$1);
 }
-
-
-function _SetupGraphics(){
- var label=0;
-
-
- _glClearColor(0,0,0,0);
- var $1=HEAP32[((1752)>>2)];
- var $2=HEAP32[((1944)>>2)];
- _CreateTexture($1,$2);
+function _SetupGraphics() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0.0, $6 = 0, $7 = 0.0, $8 = 0, $9 = 0.0, label = 0, sp = 0;
+ sp = STACKTOP;
+ _glClearColor(0.0,0.0,0.0,0.0);
+ $0 = HEAP32[88>>2]|0;
+ $1 = HEAP32[96>>2]|0;
+ _CreateTexture($0,$1);
  _glDisable(2929);
  _glActiveTexture(33984);
- var $3=HEAP32[((1752)>>2)];
- var $4=HEAP32[((1944)>>2)];
- _glViewport(0,0,$3,$4);
+ $2 = HEAP32[88>>2]|0;
+ $3 = HEAP32[96>>2]|0;
+ _glViewport(0,0,($2|0),($3|0));
  _glMatrixMode(5888);
  _glLoadIdentity();
  _glMatrixMode(5889);
  _glLoadIdentity();
- HEAPF32[((2528)>>2)]=0;
- HEAPF32[((2532)>>2)]=0;
- var $5=HEAP32[((1752)>>2)];
- var $6=($5|0);
- HEAPF32[((2520)>>2)]=$6;
- HEAPF32[((2524)>>2)]=0;
- var $7=HEAP32[((1752)>>2)];
- var $8=($7|0);
- HEAPF32[((2512)>>2)]=$8;
- var $9=HEAP32[((1944)>>2)];
- var $10=($9|0);
- HEAPF32[((2516)>>2)]=$10;
- HEAPF32[((2504)>>2)]=0;
- var $11=HEAP32[((1944)>>2)];
- var $12=($11|0);
- HEAPF32[((2508)>>2)]=$12;
+ HEAPF32[((3136 + 24|0))>>2] = 0.0;
+ HEAPF32[((3136 + 28|0))>>2] = 0.0;
+ $4 = HEAP32[88>>2]|0;
+ $5 = (+($4|0));
+ HEAPF32[((3136 + 16|0))>>2] = $5;
+ HEAPF32[((3136 + 20|0))>>2] = 0.0;
+ $6 = HEAP32[88>>2]|0;
+ $7 = (+($6|0));
+ HEAPF32[((3136 + 8|0))>>2] = $7;
+ $8 = HEAP32[96>>2]|0;
+ $9 = (+($8|0));
+ HEAPF32[((3136 + 12|0))>>2] = $9;
+ HEAPF32[3136>>2] = 0.0;
+ $10 = HEAP32[96>>2]|0;
+ $11 = (+($10|0));
+ HEAPF32[((3136 + 4|0))>>2] = $11;
  _glEnableClientState(32884);
  _glEnableClientState(32888);
- _glVertexPointer(2,5126,0,1760);
+ _glVertexPointer(2,5126,0,(3168|0));
  _glClientActiveTexture(33984);
- _glTexCoordPointer(2,5126,0,2504);
- return 0;
+ _glTexCoordPointer(2,5126,0,(3136|0));
+ STACKTOP = sp;return 0;
 }
-
-
-function _SetupComputeDevices($gpu){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+2152)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $err=sp;
- var $returned_size=(sp)+(8);
- var $properties=(sp)+(16);
- var $device_count;
- var $device_ids=(sp)+(32);
- var $i;
- var $device_found;
- var $device_type=(sp)+(96);
- var $vendor_name=(sp)+(104);
- var $device_name=(sp)+(1128);
- $2=$gpu;
- var $3=$2;
- var $4=($3|0)!=0;
- var $5=($4?4:2);
- var $6$0=$5;
- var $6$1=((((($5|0)<0))|0)?-1:0);
- var $st$0$0=3664;
- HEAP32[(($st$0$0)>>2)]=$6$0;
- var $st$1$1=3668;
- HEAP32[(($st$1$1)>>2)]=$6$1;
- var $7=HEAP32[((2488)>>2)];
- var $8=($7|0)!=0;
- if($8){label=2;break;}else{label=5;break;}
- case 2: 
- var $10=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $11=_printf(416,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $12=$properties;
- assert(12 % 1 === 0);HEAP32[(($12)>>2)]=HEAP32[((1864)>>2)];HEAP32[((($12)+(4))>>2)]=HEAP32[((1868)>>2)];HEAP32[((($12)+(8))>>2)]=HEAP32[((1872)>>2)];
- var $13=(($properties)|0);
- var $14=_clCreateContext($13,0,0,0,0,0);
- HEAP32[((3680)>>2)]=$14;
- var $15=HEAP32[((3680)>>2)];
- var $16=($15|0)!=0;
- if($16){label=4;break;}else{label=3;break;}
- case 3: 
- var $18=_printf(368,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 4: 
- label=10;break;
- case 5: 
- var $ld$2$0=3664;
- var $21$0=HEAP32[(($ld$2$0)>>2)];
- var $ld$3$1=3668;
- var $21$1=HEAP32[(($ld$3$1)>>2)];
- var $22=_clGetDeviceIDs(0,$21$0,$21$1,1,3672,0);
- HEAP32[(($err)>>2)]=$22;
- var $23=HEAP32[(($err)>>2)];
- var $24=($23|0)!=0;
- if($24){label=6;break;}else{label=7;break;}
- case 6: 
- var $26=_printf(312,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 7: 
- var $28=_clCreateContext(0,1,3672,0,0,$err);
- HEAP32[((3680)>>2)]=$28;
- var $29=HEAP32[((3680)>>2)];
- var $30=($29|0)!=0;
- if($30){label=9;break;}else{label=8;break;}
- case 8: 
- var $32=_printf(368,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 9: 
- label=10;break;
- case 10: 
- var $35=HEAP32[((3680)>>2)];
- var $36=(($device_ids)|0);
- var $37=$36;
- var $38=_clGetContextInfo($35,4225,64,$37,$returned_size);
- HEAP32[(($err)>>2)]=$38;
- var $39=HEAP32[(($err)>>2)];
- var $40=($39|0)!=0;
- if($40){label=11;break;}else{label=12;break;}
- case 11: 
- var $42=_printf(256,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 12: 
- var $44=HEAP32[(($returned_size)>>2)];
- var $45=(((($44>>>0))/(4))&-1);
- $device_count=$45;
- $i=0;
- $device_found=0;
- $i=0;
- label=13;break;
- case 13: 
- var $47=$i;
- var $48=$device_count;
- var $49=($47>>>0)<($48>>>0);
- if($49){label=14;break;}else{label=18;break;}
- case 14: 
- var $51=$i;
- var $52=(($device_ids+($51<<2))|0);
- var $53=HEAP32[(($52)>>2)];
- var $54=$device_type;
- var $55=_clGetDeviceInfo($53,4096,8,$54,0);
- var $ld$4$0=(($device_type)|0);
- var $56$0=HEAP32[(($ld$4$0)>>2)];
- var $ld$5$1=(($device_type+4)|0);
- var $56$1=HEAP32[(($ld$5$1)>>2)];
- var $ld$6$0=3664;
- var $57$0=HEAP32[(($ld$6$0)>>2)];
- var $ld$7$1=3668;
- var $57$1=HEAP32[(($ld$7$1)>>2)];
- var $58=(($56$0|0) == ($57$0|0)) & (($56$1|0) == ($57$1|0));
- if($58){label=15;break;}else{label=16;break;}
- case 15: 
- var $60=$i;
- var $61=(($device_ids+($60<<2))|0);
- var $62=HEAP32[(($61)>>2)];
- HEAP32[((3672)>>2)]=$62;
- $device_found=1;
- label=18;break;
- case 16: 
- label=17;break;
- case 17: 
- var $65=$i;
- var $66=((($65)+(1))|0);
- $i=$66;
- label=13;break;
- case 18: 
- var $68=$device_found;
- var $69=($68|0)!=0;
- if($69){label=20;break;}else{label=19;break;}
- case 19: 
- var $71=_printf(312,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 20: 
- var $73=HEAP32[((3680)>>2)];
- var $74=HEAP32[((3672)>>2)];
- var $$etemp$8$0=0;
- var $$etemp$8$1=0;
- var $75=_clCreateCommandQueue($73,$74,$$etemp$8$0,$$etemp$8$1,$err);
- HEAP32[((3688)>>2)]=$75;
- var $76=HEAP32[((3688)>>2)];
- var $77=($76|0)!=0;
- if($77){label=22;break;}else{label=21;break;}
- case 21: 
- var $79=_printf(208,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=25;break;
- case 22: 
- var $81=$vendor_name;
- _memset($81, 0, 1024)|0;
- var $82=$device_name;
- _memset($82, 0, 1024)|0;
- var $83=HEAP32[((3672)>>2)];
- var $84=(($vendor_name)|0);
- var $85=_clGetDeviceInfo($83,4140,1024,$84,$returned_size);
- HEAP32[(($err)>>2)]=$85;
- var $86=HEAP32[((3672)>>2)];
- var $87=(($device_name)|0);
- var $88=_clGetDeviceInfo($86,4139,1024,$87,$returned_size);
- var $89=HEAP32[(($err)>>2)];
- var $90=$89|$88;
- HEAP32[(($err)>>2)]=$90;
- var $91=HEAP32[(($err)>>2)];
- var $92=($91|0)!=0;
- if($92){label=23;break;}else{label=24;break;}
- case 23: 
- var $94=_printf(168,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- label=24;break;
- case 24: 
- var $96=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $97=(($vendor_name)|0);
- var $98=(($device_name)|0);
- var $99=_printf(144,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$97,HEAP32[(((tempVarArgs)+(8))>>2)]=$98,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=0;
- label=25;break;
- case 25: 
- var $101=$1;
- STACKTOP=sp;return $101;
-  default: assert(0, "bad label: " + label);
+function _SetupComputeDevices($gpu) {
+ $gpu = $gpu|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
+ var $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0;
+ var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $8 = 0, $9 = 0, $device_count = 0, $device_found = 0, $device_ids = 0, $device_name = 0;
+ var $device_type = 0, $err = 0, $i = 0, $properties = 0, $returned_size = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer11 = 0, $vararg_buffer13 = 0, $vararg_buffer15 = 0, $vararg_buffer17 = 0, $vararg_buffer19 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_ptr21 = 0, $vendor_name = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 2256|0;
+ $vararg_buffer19 = sp + 64|0;
+ $vararg_buffer17 = sp + 32|0;
+ $vararg_buffer15 = sp;
+ $vararg_buffer13 = sp + 88|0;
+ $vararg_buffer11 = sp + 72|0;
+ $vararg_buffer9 = sp + 80|0;
+ $vararg_buffer7 = sp + 24|0;
+ $vararg_buffer5 = sp + 48|0;
+ $vararg_buffer3 = sp + 40|0;
+ $vararg_buffer1 = sp + 16|0;
+ $vararg_buffer = sp + 8|0;
+ $err = sp + 172|0;
+ $returned_size = sp + 164|0;
+ $properties = sp + 176|0;
+ $device_ids = sp + 96|0;
+ $device_type = sp + 56|0;
+ $vendor_name = sp + 1224|0;
+ $device_name = sp + 200|0;
+ $1 = $gpu;
+ $2 = $1;
+ $3 = ($2|0)!=(0);
+ $4 = $3 ? 4 : 2;
+ $5 = ($4|0)<(0);
+ $6 = $5 << 31 >> 31;
+ $7 = 704;
+ $8 = $7;
+ HEAP32[$8>>2] = $4;
+ $9 = (($7) + 4)|0;
+ $10 = $9;
+ HEAP32[$10>>2] = $6;
+ $11 = HEAP32[32>>2]|0;
+ $12 = ($11|0)!=(0);
+ do {
+  if ($12) {
+   (_printf((104|0),($vararg_buffer|0))|0);
+   (_printf((2824|0),($vararg_buffer1|0))|0);
+   ;HEAP32[$properties+0>>2]=HEAP32[2856+0>>2]|0;HEAP32[$properties+4>>2]=HEAP32[2856+4>>2]|0;HEAP32[$properties+8>>2]=HEAP32[2856+8>>2]|0;
+   $13 = (_clCreateContext(($properties|0),0,(0|0),(0|0),(0|0),(0|0))|0);
+   HEAP32[2248>>2] = $13;
+   $14 = HEAP32[2248>>2]|0;
+   $15 = ($14|0)!=(0|0);
+   if ($15) {
+    break;
+   }
+   (_printf((2872|0),($vararg_buffer3|0))|0);
+   $0 = 1;
+   $75 = $0;
+   STACKTOP = sp;return ($75|0);
+  } else {
+   $16 = 704;
+   $17 = $16;
+   $18 = HEAP32[$17>>2]|0;
+   $19 = (($16) + 4)|0;
+   $20 = $19;
+   $21 = HEAP32[$20>>2]|0;
+   $22 = (_clGetDeviceIDs((0|0),($18|0),($21|0),1,(2384|0),(0|0))|0);
+   HEAP32[$err>>2] = $22;
+   $23 = HEAP32[$err>>2]|0;
+   $24 = ($23|0)!=(0);
+   if ($24) {
+    (_printf((2920|0),($vararg_buffer5|0))|0);
+    $0 = 1;
+    $75 = $0;
+    STACKTOP = sp;return ($75|0);
+   }
+   $25 = (_clCreateContext((0|0),1,(2384|0),(0|0),(0|0),($err|0))|0);
+   HEAP32[2248>>2] = $25;
+   $26 = HEAP32[2248>>2]|0;
+   $27 = ($26|0)!=(0|0);
+   if ($27) {
+    break;
+   }
+   (_printf((2872|0),($vararg_buffer7|0))|0);
+   $0 = 1;
+   $75 = $0;
+   STACKTOP = sp;return ($75|0);
+  }
+ } while(0);
+ $28 = HEAP32[2248>>2]|0;
+ $29 = (_clGetContextInfo(($28|0),4225,64,($device_ids|0),($returned_size|0))|0);
+ HEAP32[$err>>2] = $29;
+ $30 = HEAP32[$err>>2]|0;
+ $31 = ($30|0)!=(0);
+ if ($31) {
+  (_printf((2968|0),($vararg_buffer9|0))|0);
+  $0 = 1;
+  $75 = $0;
+  STACKTOP = sp;return ($75|0);
  }
-
-}
-
-
-function _SetupComputeKernels(){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+2088)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $err=sp;
- var $source=(sp)+(8);
- var $length=(sp)+(16);
- var $len=(sp)+(24);
- var $buffer=(sp)+(32);
- var $i;
- var $max=(sp)+(2080);
- HEAP32[(($err)>>2)]=0;
- HEAP32[(($source)>>2)]=0;
- HEAP32[(($length)>>2)]=0;
- var $2=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $3=_printf(1032,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=1016,tempVarArgs)); STACKTOP=tempVarArgs;
- var $4=_LoadTextFromFile(1016,$source,$length);
- HEAP32[(($err)>>2)]=$4;
- var $5=HEAP32[(($err)>>2)];
- var $6=($5|0)!=0;
- if($6){label=2;break;}else{label=3;break;}
- case 2: 
- $1=-8;
- label=21;break;
- case 3: 
- var $9=HEAP32[((3680)>>2)];
- var $10=_clCreateProgramWithSource($9,1,$source,0,$err);
- HEAP32[((3608)>>2)]=$10;
- var $11=HEAP32[((3608)>>2)];
- var $12=($11|0)!=0;
- if($12){label=4;break;}else{label=5;break;}
- case 4: 
- var $14=HEAP32[(($err)>>2)];
- var $15=($14|0)!=0;
- if($15){label=5;break;}else{label=6;break;}
- case 5: 
- var $17=HEAP32[(($err)>>2)];
- var $18=_printf(968,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$17,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=21;break;
- case 6: 
- var $20=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $21=_printf(936,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $22=HEAP32[((3608)>>2)];
- var $23=_clBuildProgram($22,0,0,0,0,0);
- HEAP32[(($err)>>2)]=$23;
- var $24=HEAP32[(($err)>>2)];
- var $25=($24|0)!=0;
- if($25){label=7;break;}else{label=8;break;}
- case 7: 
- var $27=_printf(888,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $28=HEAP32[((3608)>>2)];
- var $29=HEAP32[((3672)>>2)];
- var $30=(($buffer)|0);
- var $31=_clGetProgramBuildInfo($28,$29,4483,2048,$30,$len);
- var $32=(($buffer)|0);
- var $33=_printf(1728,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$32,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=21;break;
- case 8: 
- $i=0;
- $i=0;
- label=9;break;
- case 9: 
- var $36=$i;
- var $37=($36|0)<4;
- if($37){label=10;break;}else{label=20;break;}
- case 10: 
- var $39=$i;
- var $40=((1952+($39<<2))|0);
- var $41=HEAP32[(($40)>>2)];
- var $42=_printf(856,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$41,tempVarArgs)); STACKTOP=tempVarArgs;
- var $43=HEAP32[((3608)>>2)];
- var $44=$i;
- var $45=((1952+($44<<2))|0);
- var $46=HEAP32[(($45)>>2)];
- var $47=_clCreateKernel($43,$46,$err);
- var $48=$i;
- var $49=((3616+($48<<2))|0);
- HEAP32[(($49)>>2)]=$47;
- var $50=$i;
- var $51=((3616+($50<<2))|0);
- var $52=HEAP32[(($51)>>2)];
- var $53=($52|0)!=0;
- if($53){label=11;break;}else{label=12;break;}
- case 11: 
- var $55=HEAP32[(($err)>>2)];
- var $56=($55|0)!=0;
- if($56){label=12;break;}else{label=13;break;}
- case 12: 
- var $58=_printf(808,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=21;break;
- case 13: 
- HEAP32[(($max)>>2)]=1;
- var $60=$i;
- var $61=((3616+($60<<2))|0);
- var $62=HEAP32[(($61)>>2)];
- var $63=HEAP32[((3672)>>2)];
- var $64=$max;
- var $65=_clGetKernelWorkGroupInfo($62,$63,4528,4,$64,0);
- HEAP32[(($err)>>2)]=$65;
- var $66=HEAP32[(($err)>>2)];
- var $67=($66|0)!=0;
- if($67){label=14;break;}else{label=15;break;}
- case 14: 
- var $69=HEAP32[(($err)>>2)];
- var $70=_printf(752,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$69,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=21;break;
- case 15: 
- var $72=HEAP32[(($max)>>2)];
- var $73=($72>>>0)>1;
- if($73){label=16;break;}else{label=17;break;}
- case 16: 
- var $75=HEAP32[(($max)>>2)];
- var $76=_FloorPow2($75);
- var $80=$76;label=18;break;
- case 17: 
- var $78=HEAP32[(($max)>>2)];
- var $80=$78;label=18;break;
- case 18: 
- var $80;
- var $81=$i;
- var $82=((3632+($81<<2))|0);
- HEAP32[(($82)>>2)]=$80;
- var $83=$i;
- var $84=((1952+($83<<2))|0);
- var $85=HEAP32[(($84)>>2)];
- var $86=$i;
- var $87=((3632+($86<<2))|0);
- var $88=HEAP32[(($87)>>2)];
- var $89=_printf(712,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 16)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$85,HEAP32[(((tempVarArgs)+(8))>>2)]=$88,tempVarArgs)); STACKTOP=tempVarArgs;
- label=19;break;
- case 19: 
- var $91=$i;
- var $92=((($91)+(1))|0);
- $i=$92;
- label=9;break;
- case 20: 
- var $94=_CreateComputeResult();
- $1=$94;
- label=21;break;
- case 21: 
- var $96=$1;
- STACKTOP=sp;return $96;
-  default: assert(0, "bad label: " + label);
+ $32 = HEAP32[$returned_size>>2]|0;
+ $33 = (($32>>>0) / 4)&-1;
+ $device_count = $33;
+ $i = 0;
+ $device_found = 0;
+ $i = 0;
+ while(1) {
+  $34 = $i;
+  $35 = $device_count;
+  $36 = ($34>>>0)<($35>>>0);
+  if (!($36)) {
+   break;
+  }
+  $37 = $i;
+  $38 = (($device_ids) + ($37<<2)|0);
+  $39 = HEAP32[$38>>2]|0;
+  (_clGetDeviceInfo(($39|0),4096,8,($device_type|0),(0|0))|0);
+  $40 = $device_type;
+  $41 = $40;
+  $42 = HEAP32[$41>>2]|0;
+  $43 = (($40) + 4)|0;
+  $44 = $43;
+  $45 = HEAP32[$44>>2]|0;
+  $46 = 704;
+  $47 = $46;
+  $48 = HEAP32[$47>>2]|0;
+  $49 = (($46) + 4)|0;
+  $50 = $49;
+  $51 = HEAP32[$50>>2]|0;
+  $52 = ($42|0)==($48|0);
+  $53 = ($45|0)==($51|0);
+  $54 = $52 & $53;
+  if ($54) {
+   label = 15;
+   break;
+  }
+  $58 = $i;
+  $59 = (($58) + 1)|0;
+  $i = $59;
  }
-
-}
-
-
-function _LoadTextFromFile($file_name,$result_string,$string_len){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+80)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- var $3;
- var $4;
- var $fd;
- var $file_len;
- var $file_status=sp;
- var $ret;
- $2=$file_name;
- $3=$result_string;
- $4=$string_len;
- var $5=$4;
- HEAP32[(($5)>>2)]=0;
- var $6=$2;
- var $7=_open($6,0,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- $fd=$7;
- var $8=$fd;
- var $9=($8|0)==-1;
- if($9){label=2;break;}else{label=3;break;}
- case 2: 
- var $11=$2;
- var $12=_printf(520,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$11,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=-1;
- label=8;break;
- case 3: 
- var $14=$fd;
- var $15=_fstat($14,$file_status);
- $ret=$15;
- var $16=$ret;
- var $17=($16|0)!=0;
- if($17){label=4;break;}else{label=5;break;}
- case 4: 
- var $19=$2;
- var $20=_printf(480,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$19,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=-1;
- label=8;break;
- case 5: 
- var $22=(($file_status+36)|0);
- var $23=HEAP32[(($22)>>2)];
- $file_len=$23;
- var $24=$file_len;
- var $25=((($24)+(1))|0);
- var $26=_calloc($25,1);
- var $27=$3;
- HEAP32[(($27)>>2)]=$26;
- var $28=$fd;
- var $29=$3;
- var $30=HEAP32[(($29)>>2)];
- var $31=$file_len;
- var $32=_read($28,$30,$31);
- $ret=$32;
- var $33=$ret;
- var $34=($33|0)!=0;
- if($34){label=7;break;}else{label=6;break;}
- case 6: 
- var $36=$2;
- var $37=_printf(448,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$36,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=-1;
- label=8;break;
- case 7: 
- var $39=$fd;
- var $40=_close($39);
- var $41=$file_len;
- var $42=$4;
- HEAP32[(($42)>>2)]=$41;
- $1=0;
- label=8;break;
- case 8: 
- var $44=$1;
- STACKTOP=sp;return $44;
-  default: assert(0, "bad label: " + label);
+ if ((label|0) == 15) {
+  $55 = $i;
+  $56 = (($device_ids) + ($55<<2)|0);
+  $57 = HEAP32[$56>>2]|0;
+  HEAP32[2384>>2] = $57;
+  $device_found = 1;
  }
-
-}
-
-
-function _FloorPow2($n){
- var label=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+8)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
-
- var $1;
- var $exp=sp;
- $1=$n;
- var $2=$1;
- var $3=($2|0);
- var $4=$3;
- var $5=_frexp($4,$exp);
- var $6=HEAP32[(($exp)>>2)];
- var $7=((($6)-(1))|0);
- var $8=1<<$7;
- STACKTOP=sp;return $8;
-}
-
-
-function _CreateComputeResult(){
- var label=0;
- var tempVarArgs=0;
- var sp=STACKTOP;STACKTOP=(STACKTOP+8)|0; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $err=sp;
- HEAP32[(($err)>>2)]=0;
- var $2=_printf(72,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $3=HEAP32[((2488)>>2)];
- var $4=($3|0)!=0;
- if($4){label=2;break;}else{label=6;break;}
- case 2: 
- var $6=_printf(672,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $7=HEAP32[((3680)>>2)];
- var $8=HEAP32[((1816)>>2)];
- var $9=HEAP32[((2496)>>2)];
- var $$etemp$0$0=2;
- var $$etemp$0$1=0;
- var $10=_clCreateFromGLTexture2D($7,$$etemp$0$0,$$etemp$0$1,$8,0,$9,$err);
- HEAP32[((3656)>>2)]=$10;
- var $11=HEAP32[((3656)>>2)];
- var $12=($11|0)!=0;
- if($12){label=3;break;}else{label=4;break;}
- case 3: 
- var $14=HEAP32[(($err)>>2)];
- var $15=($14|0)!=0;
- if($15){label=4;break;}else{label=5;break;}
- case 4: 
- var $17=HEAP32[(($err)>>2)];
- var $18=_printf(624,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$17,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=-1;
- label=10;break;
- case 5: 
- label=6;break;
- case 6: 
- var $21=_printf(584,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 1)|0,STACKTOP = (((STACKTOP)+7)&-8),(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=0,tempVarArgs)); STACKTOP=tempVarArgs;
- var $22=HEAP32[((3680)>>2)];
- var $23=HEAP32[((1800)>>2)];
- var $24=($23<<2);
- var $25=HEAP32[((1752)>>2)];
- var $26=(Math_imul($24,$25)|0);
- var $27=HEAP32[((1944)>>2)];
- var $28=(Math_imul($26,$27)|0);
- var $$etemp$1$0=2;
- var $$etemp$1$1=0;
- var $29=_clCreateBuffer($22,$$etemp$1$0,$$etemp$1$1,$28,0,$err);
- HEAP32[((3600)>>2)]=$29;
- var $30=HEAP32[((3600)>>2)];
- var $31=($30|0)!=0;
- if($31){label=7;break;}else{label=8;break;}
- case 7: 
- var $33=HEAP32[(($err)>>2)];
- var $34=($33|0)!=0;
- if($34){label=8;break;}else{label=9;break;}
- case 8: 
- var $36=HEAP32[(($err)>>2)];
- var $37=_printf(544,(tempVarArgs=STACKTOP,STACKTOP = (STACKTOP + 8)|0,(assert((STACKTOP|0) < (STACK_MAX|0))|0),HEAP32[((tempVarArgs)>>2)]=$36,tempVarArgs)); STACKTOP=tempVarArgs;
- $1=1;
- label=10;break;
- case 9: 
- $1=0;
- label=10;break;
- case 10: 
- var $40=$1;
- STACKTOP=sp;return $40;
-  default: assert(0, "bad label: " + label);
+ $60 = $device_found;
+ $61 = ($60|0)!=(0);
+ if (!($61)) {
+  (_printf((2920|0),($vararg_buffer11|0))|0);
+  $0 = 1;
+  $75 = $0;
+  STACKTOP = sp;return ($75|0);
  }
-
-}
-
-
-function _CreateTexture($width,$height){
- var label=0;
- var sp=STACKTOP; (assert((STACKTOP|0) < (STACK_MAX|0))|0);
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1;
- var $2;
- $1=$width;
- $2=$height;
- var $3=HEAP32[((3584)>>2)];
- var $4=($3|0)!=0;
- if($4){label=2;break;}else{label=3;break;}
- case 2: 
- var $6=HEAP32[((3584)>>2)];
- _free($6);
- label=3;break;
- case 3: 
- var $8=HEAP32[((1752)>>2)];
- var $9=HEAP32[((1944)>>2)];
- var $10=(Math_imul($8,$9)|0);
- var $11=HEAP32[((1800)>>2)];
- var $12=(Math_imul($10,$11)|0);
- var $13=($12<<2);
- var $14=_malloc($13);
- HEAP32[((3584)>>2)]=$14;
- var $15=HEAP32[((3584)>>2)];
- var $16=HEAP32[((1752)>>2)];
- var $17=HEAP32[((1944)>>2)];
- var $18=(Math_imul($16,$17)|0);
- var $19=HEAP32[((1800)>>2)];
- var $20=(Math_imul($18,$19)|0);
- var $21=($20<<2);
- _memset($15, 0, $21)|0;
- var $22=HEAP32[((1984)>>2)];
- _glActiveTexture($22);
- _glGenTextures(1,2496);
- var $23=HEAP32[((1816)>>2)];
- var $24=HEAP32[((2496)>>2)];
- _glBindTexture($23,$24);
- var $25=HEAP32[((1816)>>2)];
- _glTexParameteri($25,10240,9728);
- var $26=HEAP32[((1816)>>2)];
- _glTexParameteri($26,10241,9728);
- var $27=HEAP32[((1816)>>2)];
- var $28=HEAP32[((1824)>>2)];
- var $29=$1;
- var $30=$2;
- var $31=HEAP32[((1832)>>2)];
- var $32=HEAP32[((1808)>>2)];
- var $33=HEAP32[((3584)>>2)];
- _glTexImage2D($27,0,$28,$29,$30,0,$31,$32,$33);
- var $34=HEAP32[((1816)>>2)];
- _glBindTexture($34,0);
- var $35=HEAP32[((2488)>>2)];
- var $36=($35|0)!=0;
- if($36){label=4;break;}else{label=5;break;}
- case 4: 
- var $38=HEAP32[((3584)>>2)];
- _free($38);
- HEAP32[((3584)>>2)]=0;
- label=5;break;
- case 5: 
- STACKTOP=sp;return;
-  default: assert(0, "bad label: " + label);
+ $62 = HEAP32[2248>>2]|0;
+ $63 = HEAP32[2384>>2]|0;
+ $64 = (_clCreateCommandQueue(($62|0),($63|0),0,0,($err|0))|0);
+ HEAP32[200>>2] = $64;
+ $65 = HEAP32[200>>2]|0;
+ $66 = ($65|0)!=(0|0);
+ if (!($66)) {
+  (_printf((3024|0),($vararg_buffer13|0))|0);
+  $0 = 1;
+  $75 = $0;
+  STACKTOP = sp;return ($75|0);
  }
-
-}
-
-
-function _malloc($bytes){
- var label=0;
-
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1=($bytes>>>0)<245;
- if($1){label=2;break;}else{label=78;break;}
- case 2: 
- var $3=($bytes>>>0)<11;
- if($3){var $8=16;label=4;break;}else{label=3;break;}
- case 3: 
- var $5=((($bytes)+(11))|0);
- var $6=$5&-8;
- var $8=$6;label=4;break;
- case 4: 
- var $8;
- var $9=$8>>>3;
- var $10=HEAP32[((2016)>>2)];
- var $11=$10>>>($9>>>0);
- var $12=$11&3;
- var $13=($12|0)==0;
- if($13){label=12;break;}else{label=5;break;}
- case 5: 
- var $15=$11&1;
- var $16=$15^1;
- var $17=((($16)+($9))|0);
- var $18=$17<<1;
- var $19=((2056+($18<<2))|0);
- var $20=$19;
- var $_sum11=((($18)+(2))|0);
- var $21=((2056+($_sum11<<2))|0);
- var $22=HEAP32[(($21)>>2)];
- var $23=(($22+8)|0);
- var $24=HEAP32[(($23)>>2)];
- var $25=($20|0)==($24|0);
- if($25){label=6;break;}else{label=7;break;}
- case 6: 
- var $27=1<<$17;
- var $28=$27^-1;
- var $29=$10&$28;
- HEAP32[((2016)>>2)]=$29;
- label=11;break;
- case 7: 
- var $31=$24;
- var $32=HEAP32[((2032)>>2)];
- var $33=($31>>>0)<($32>>>0);
- if($33){label=10;break;}else{label=8;break;}
- case 8: 
- var $35=(($24+12)|0);
- var $36=HEAP32[(($35)>>2)];
- var $37=($36|0)==($22|0);
- if($37){label=9;break;}else{label=10;break;}
- case 9: 
- HEAP32[(($35)>>2)]=$20;
- HEAP32[(($21)>>2)]=$24;
- label=11;break;
- case 10: 
- _abort();
- throw "Reached an unreachable!";
- case 11: 
- var $40=$17<<3;
- var $41=$40|3;
- var $42=(($22+4)|0);
- HEAP32[(($42)>>2)]=$41;
- var $43=$22;
- var $_sum1314=$40|4;
- var $44=(($43+$_sum1314)|0);
- var $45=$44;
- var $46=HEAP32[(($45)>>2)];
- var $47=$46|1;
- HEAP32[(($45)>>2)]=$47;
- var $48=$23;
- var $mem_0=$48;label=344;break;
- case 12: 
- var $50=HEAP32[((2024)>>2)];
- var $51=($8>>>0)>($50>>>0);
- if($51){label=13;break;}else{var $nb_0=$8;label=161;break;}
- case 13: 
- var $53=($11|0)==0;
- if($53){label=27;break;}else{label=14;break;}
- case 14: 
- var $55=$11<<$9;
- var $56=2<<$9;
- var $57=(((-$56))|0);
- var $58=$56|$57;
- var $59=$55&$58;
- var $60=(((-$59))|0);
- var $61=$59&$60;
- var $62=((($61)-(1))|0);
- var $63=$62>>>12;
- var $64=$63&16;
- var $65=$62>>>($64>>>0);
- var $66=$65>>>5;
- var $67=$66&8;
- var $68=$67|$64;
- var $69=$65>>>($67>>>0);
- var $70=$69>>>2;
- var $71=$70&4;
- var $72=$68|$71;
- var $73=$69>>>($71>>>0);
- var $74=$73>>>1;
- var $75=$74&2;
- var $76=$72|$75;
- var $77=$73>>>($75>>>0);
- var $78=$77>>>1;
- var $79=$78&1;
- var $80=$76|$79;
- var $81=$77>>>($79>>>0);
- var $82=((($80)+($81))|0);
- var $83=$82<<1;
- var $84=((2056+($83<<2))|0);
- var $85=$84;
- var $_sum4=((($83)+(2))|0);
- var $86=((2056+($_sum4<<2))|0);
- var $87=HEAP32[(($86)>>2)];
- var $88=(($87+8)|0);
- var $89=HEAP32[(($88)>>2)];
- var $90=($85|0)==($89|0);
- if($90){label=15;break;}else{label=16;break;}
- case 15: 
- var $92=1<<$82;
- var $93=$92^-1;
- var $94=$10&$93;
- HEAP32[((2016)>>2)]=$94;
- label=20;break;
- case 16: 
- var $96=$89;
- var $97=HEAP32[((2032)>>2)];
- var $98=($96>>>0)<($97>>>0);
- if($98){label=19;break;}else{label=17;break;}
- case 17: 
- var $100=(($89+12)|0);
- var $101=HEAP32[(($100)>>2)];
- var $102=($101|0)==($87|0);
- if($102){label=18;break;}else{label=19;break;}
- case 18: 
- HEAP32[(($100)>>2)]=$85;
- HEAP32[(($86)>>2)]=$89;
- label=20;break;
- case 19: 
- _abort();
- throw "Reached an unreachable!";
- case 20: 
- var $105=$82<<3;
- var $106=((($105)-($8))|0);
- var $107=$8|3;
- var $108=(($87+4)|0);
- HEAP32[(($108)>>2)]=$107;
- var $109=$87;
- var $110=(($109+$8)|0);
- var $111=$110;
- var $112=$106|1;
- var $_sum67=$8|4;
- var $113=(($109+$_sum67)|0);
- var $114=$113;
- HEAP32[(($114)>>2)]=$112;
- var $115=(($109+$105)|0);
- var $116=$115;
- HEAP32[(($116)>>2)]=$106;
- var $117=HEAP32[((2024)>>2)];
- var $118=($117|0)==0;
- if($118){label=26;break;}else{label=21;break;}
- case 21: 
- var $120=HEAP32[((2036)>>2)];
- var $121=$117>>>3;
- var $122=$121<<1;
- var $123=((2056+($122<<2))|0);
- var $124=$123;
- var $125=HEAP32[((2016)>>2)];
- var $126=1<<$121;
- var $127=$125&$126;
- var $128=($127|0)==0;
- if($128){label=22;break;}else{label=23;break;}
- case 22: 
- var $130=$125|$126;
- HEAP32[((2016)>>2)]=$130;
- var $_sum9_pre=((($122)+(2))|0);
- var $_pre=((2056+($_sum9_pre<<2))|0);
- var $F4_0=$124;var $_pre_phi=$_pre;label=25;break;
- case 23: 
- var $_sum10=((($122)+(2))|0);
- var $132=((2056+($_sum10<<2))|0);
- var $133=HEAP32[(($132)>>2)];
- var $134=$133;
- var $135=HEAP32[((2032)>>2)];
- var $136=($134>>>0)<($135>>>0);
- if($136){label=24;break;}else{var $F4_0=$133;var $_pre_phi=$132;label=25;break;}
- case 24: 
- _abort();
- throw "Reached an unreachable!";
- case 25: 
- var $_pre_phi;
- var $F4_0;
- HEAP32[(($_pre_phi)>>2)]=$120;
- var $139=(($F4_0+12)|0);
- HEAP32[(($139)>>2)]=$120;
- var $140=(($120+8)|0);
- HEAP32[(($140)>>2)]=$F4_0;
- var $141=(($120+12)|0);
- HEAP32[(($141)>>2)]=$124;
- label=26;break;
- case 26: 
- HEAP32[((2024)>>2)]=$106;
- HEAP32[((2036)>>2)]=$111;
- var $143=$88;
- var $mem_0=$143;label=344;break;
- case 27: 
- var $145=HEAP32[((2020)>>2)];
- var $146=($145|0)==0;
- if($146){var $nb_0=$8;label=161;break;}else{label=28;break;}
- case 28: 
- var $148=(((-$145))|0);
- var $149=$145&$148;
- var $150=((($149)-(1))|0);
- var $151=$150>>>12;
- var $152=$151&16;
- var $153=$150>>>($152>>>0);
- var $154=$153>>>5;
- var $155=$154&8;
- var $156=$155|$152;
- var $157=$153>>>($155>>>0);
- var $158=$157>>>2;
- var $159=$158&4;
- var $160=$156|$159;
- var $161=$157>>>($159>>>0);
- var $162=$161>>>1;
- var $163=$162&2;
- var $164=$160|$163;
- var $165=$161>>>($163>>>0);
- var $166=$165>>>1;
- var $167=$166&1;
- var $168=$164|$167;
- var $169=$165>>>($167>>>0);
- var $170=((($168)+($169))|0);
- var $171=((2320+($170<<2))|0);
- var $172=HEAP32[(($171)>>2)];
- var $173=(($172+4)|0);
- var $174=HEAP32[(($173)>>2)];
- var $175=$174&-8;
- var $176=((($175)-($8))|0);
- var $t_0_i=$172;var $v_0_i=$172;var $rsize_0_i=$176;label=29;break;
- case 29: 
- var $rsize_0_i;
- var $v_0_i;
- var $t_0_i;
- var $178=(($t_0_i+16)|0);
- var $179=HEAP32[(($178)>>2)];
- var $180=($179|0)==0;
- if($180){label=30;break;}else{var $185=$179;label=31;break;}
- case 30: 
- var $182=(($t_0_i+20)|0);
- var $183=HEAP32[(($182)>>2)];
- var $184=($183|0)==0;
- if($184){label=32;break;}else{var $185=$183;label=31;break;}
- case 31: 
- var $185;
- var $186=(($185+4)|0);
- var $187=HEAP32[(($186)>>2)];
- var $188=$187&-8;
- var $189=((($188)-($8))|0);
- var $190=($189>>>0)<($rsize_0_i>>>0);
- var $_rsize_0_i=($190?$189:$rsize_0_i);
- var $_v_0_i=($190?$185:$v_0_i);
- var $t_0_i=$185;var $v_0_i=$_v_0_i;var $rsize_0_i=$_rsize_0_i;label=29;break;
- case 32: 
- var $192=$v_0_i;
- var $193=HEAP32[((2032)>>2)];
- var $194=($192>>>0)<($193>>>0);
- if($194){label=76;break;}else{label=33;break;}
- case 33: 
- var $196=(($192+$8)|0);
- var $197=$196;
- var $198=($192>>>0)<($196>>>0);
- if($198){label=34;break;}else{label=76;break;}
- case 34: 
- var $200=(($v_0_i+24)|0);
- var $201=HEAP32[(($200)>>2)];
- var $202=(($v_0_i+12)|0);
- var $203=HEAP32[(($202)>>2)];
- var $204=($203|0)==($v_0_i|0);
- if($204){label=40;break;}else{label=35;break;}
- case 35: 
- var $206=(($v_0_i+8)|0);
- var $207=HEAP32[(($206)>>2)];
- var $208=$207;
- var $209=($208>>>0)<($193>>>0);
- if($209){label=39;break;}else{label=36;break;}
- case 36: 
- var $211=(($207+12)|0);
- var $212=HEAP32[(($211)>>2)];
- var $213=($212|0)==($v_0_i|0);
- if($213){label=37;break;}else{label=39;break;}
- case 37: 
- var $215=(($203+8)|0);
- var $216=HEAP32[(($215)>>2)];
- var $217=($216|0)==($v_0_i|0);
- if($217){label=38;break;}else{label=39;break;}
- case 38: 
- HEAP32[(($211)>>2)]=$203;
- HEAP32[(($215)>>2)]=$207;
- var $R_1_i=$203;label=47;break;
- case 39: 
- _abort();
- throw "Reached an unreachable!";
- case 40: 
- var $220=(($v_0_i+20)|0);
- var $221=HEAP32[(($220)>>2)];
- var $222=($221|0)==0;
- if($222){label=41;break;}else{var $R_0_i=$221;var $RP_0_i=$220;label=42;break;}
- case 41: 
- var $224=(($v_0_i+16)|0);
- var $225=HEAP32[(($224)>>2)];
- var $226=($225|0)==0;
- if($226){var $R_1_i=0;label=47;break;}else{var $R_0_i=$225;var $RP_0_i=$224;label=42;break;}
- case 42: 
- var $RP_0_i;
- var $R_0_i;
- var $227=(($R_0_i+20)|0);
- var $228=HEAP32[(($227)>>2)];
- var $229=($228|0)==0;
- if($229){label=43;break;}else{var $R_0_i=$228;var $RP_0_i=$227;label=42;break;}
- case 43: 
- var $231=(($R_0_i+16)|0);
- var $232=HEAP32[(($231)>>2)];
- var $233=($232|0)==0;
- if($233){label=44;break;}else{var $R_0_i=$232;var $RP_0_i=$231;label=42;break;}
- case 44: 
- var $235=$RP_0_i;
- var $236=($235>>>0)<($193>>>0);
- if($236){label=46;break;}else{label=45;break;}
- case 45: 
- HEAP32[(($RP_0_i)>>2)]=0;
- var $R_1_i=$R_0_i;label=47;break;
- case 46: 
- _abort();
- throw "Reached an unreachable!";
- case 47: 
- var $R_1_i;
- var $240=($201|0)==0;
- if($240){label=67;break;}else{label=48;break;}
- case 48: 
- var $242=(($v_0_i+28)|0);
- var $243=HEAP32[(($242)>>2)];
- var $244=((2320+($243<<2))|0);
- var $245=HEAP32[(($244)>>2)];
- var $246=($v_0_i|0)==($245|0);
- if($246){label=49;break;}else{label=51;break;}
- case 49: 
- HEAP32[(($244)>>2)]=$R_1_i;
- var $cond_i=($R_1_i|0)==0;
- if($cond_i){label=50;break;}else{label=57;break;}
- case 50: 
- var $248=1<<$243;
- var $249=$248^-1;
- var $250=HEAP32[((2020)>>2)];
- var $251=$250&$249;
- HEAP32[((2020)>>2)]=$251;
- label=67;break;
- case 51: 
- var $253=$201;
- var $254=HEAP32[((2032)>>2)];
- var $255=($253>>>0)<($254>>>0);
- if($255){label=55;break;}else{label=52;break;}
- case 52: 
- var $257=(($201+16)|0);
- var $258=HEAP32[(($257)>>2)];
- var $259=($258|0)==($v_0_i|0);
- if($259){label=53;break;}else{label=54;break;}
- case 53: 
- HEAP32[(($257)>>2)]=$R_1_i;
- label=56;break;
- case 54: 
- var $262=(($201+20)|0);
- HEAP32[(($262)>>2)]=$R_1_i;
- label=56;break;
- case 55: 
- _abort();
- throw "Reached an unreachable!";
- case 56: 
- var $265=($R_1_i|0)==0;
- if($265){label=67;break;}else{label=57;break;}
- case 57: 
- var $267=$R_1_i;
- var $268=HEAP32[((2032)>>2)];
- var $269=($267>>>0)<($268>>>0);
- if($269){label=66;break;}else{label=58;break;}
- case 58: 
- var $271=(($R_1_i+24)|0);
- HEAP32[(($271)>>2)]=$201;
- var $272=(($v_0_i+16)|0);
- var $273=HEAP32[(($272)>>2)];
- var $274=($273|0)==0;
- if($274){label=62;break;}else{label=59;break;}
- case 59: 
- var $276=$273;
- var $277=HEAP32[((2032)>>2)];
- var $278=($276>>>0)<($277>>>0);
- if($278){label=61;break;}else{label=60;break;}
- case 60: 
- var $280=(($R_1_i+16)|0);
- HEAP32[(($280)>>2)]=$273;
- var $281=(($273+24)|0);
- HEAP32[(($281)>>2)]=$R_1_i;
- label=62;break;
- case 61: 
- _abort();
- throw "Reached an unreachable!";
- case 62: 
- var $284=(($v_0_i+20)|0);
- var $285=HEAP32[(($284)>>2)];
- var $286=($285|0)==0;
- if($286){label=67;break;}else{label=63;break;}
- case 63: 
- var $288=$285;
- var $289=HEAP32[((2032)>>2)];
- var $290=($288>>>0)<($289>>>0);
- if($290){label=65;break;}else{label=64;break;}
- case 64: 
- var $292=(($R_1_i+20)|0);
- HEAP32[(($292)>>2)]=$285;
- var $293=(($285+24)|0);
- HEAP32[(($293)>>2)]=$R_1_i;
- label=67;break;
- case 65: 
- _abort();
- throw "Reached an unreachable!";
- case 66: 
- _abort();
- throw "Reached an unreachable!";
- case 67: 
- var $297=($rsize_0_i>>>0)<16;
- if($297){label=68;break;}else{label=69;break;}
- case 68: 
- var $299=((($rsize_0_i)+($8))|0);
- var $300=$299|3;
- var $301=(($v_0_i+4)|0);
- HEAP32[(($301)>>2)]=$300;
- var $_sum4_i=((($299)+(4))|0);
- var $302=(($192+$_sum4_i)|0);
- var $303=$302;
- var $304=HEAP32[(($303)>>2)];
- var $305=$304|1;
- HEAP32[(($303)>>2)]=$305;
- label=77;break;
- case 69: 
- var $307=$8|3;
- var $308=(($v_0_i+4)|0);
- HEAP32[(($308)>>2)]=$307;
- var $309=$rsize_0_i|1;
- var $_sum_i37=$8|4;
- var $310=(($192+$_sum_i37)|0);
- var $311=$310;
- HEAP32[(($311)>>2)]=$309;
- var $_sum1_i=((($rsize_0_i)+($8))|0);
- var $312=(($192+$_sum1_i)|0);
- var $313=$312;
- HEAP32[(($313)>>2)]=$rsize_0_i;
- var $314=HEAP32[((2024)>>2)];
- var $315=($314|0)==0;
- if($315){label=75;break;}else{label=70;break;}
- case 70: 
- var $317=HEAP32[((2036)>>2)];
- var $318=$314>>>3;
- var $319=$318<<1;
- var $320=((2056+($319<<2))|0);
- var $321=$320;
- var $322=HEAP32[((2016)>>2)];
- var $323=1<<$318;
- var $324=$322&$323;
- var $325=($324|0)==0;
- if($325){label=71;break;}else{label=72;break;}
- case 71: 
- var $327=$322|$323;
- HEAP32[((2016)>>2)]=$327;
- var $_sum2_pre_i=((($319)+(2))|0);
- var $_pre_i=((2056+($_sum2_pre_i<<2))|0);
- var $F1_0_i=$321;var $_pre_phi_i=$_pre_i;label=74;break;
- case 72: 
- var $_sum3_i=((($319)+(2))|0);
- var $329=((2056+($_sum3_i<<2))|0);
- var $330=HEAP32[(($329)>>2)];
- var $331=$330;
- var $332=HEAP32[((2032)>>2)];
- var $333=($331>>>0)<($332>>>0);
- if($333){label=73;break;}else{var $F1_0_i=$330;var $_pre_phi_i=$329;label=74;break;}
- case 73: 
- _abort();
- throw "Reached an unreachable!";
- case 74: 
- var $_pre_phi_i;
- var $F1_0_i;
- HEAP32[(($_pre_phi_i)>>2)]=$317;
- var $336=(($F1_0_i+12)|0);
- HEAP32[(($336)>>2)]=$317;
- var $337=(($317+8)|0);
- HEAP32[(($337)>>2)]=$F1_0_i;
- var $338=(($317+12)|0);
- HEAP32[(($338)>>2)]=$321;
- label=75;break;
- case 75: 
- HEAP32[((2024)>>2)]=$rsize_0_i;
- HEAP32[((2036)>>2)]=$197;
- label=77;break;
- case 76: 
- _abort();
- throw "Reached an unreachable!";
- case 77: 
- var $341=(($v_0_i+8)|0);
- var $342=$341;
- var $mem_0=$342;label=344;break;
- case 78: 
- var $344=($bytes>>>0)>4294967231;
- if($344){var $nb_0=-1;label=161;break;}else{label=79;break;}
- case 79: 
- var $346=((($bytes)+(11))|0);
- var $347=$346&-8;
- var $348=HEAP32[((2020)>>2)];
- var $349=($348|0)==0;
- if($349){var $nb_0=$347;label=161;break;}else{label=80;break;}
- case 80: 
- var $351=(((-$347))|0);
- var $352=$346>>>8;
- var $353=($352|0)==0;
- if($353){var $idx_0_i=0;label=83;break;}else{label=81;break;}
- case 81: 
- var $355=($347>>>0)>16777215;
- if($355){var $idx_0_i=31;label=83;break;}else{label=82;break;}
- case 82: 
- var $357=((($352)+(1048320))|0);
- var $358=$357>>>16;
- var $359=$358&8;
- var $360=$352<<$359;
- var $361=((($360)+(520192))|0);
- var $362=$361>>>16;
- var $363=$362&4;
- var $364=$363|$359;
- var $365=$360<<$363;
- var $366=((($365)+(245760))|0);
- var $367=$366>>>16;
- var $368=$367&2;
- var $369=$364|$368;
- var $370=(((14)-($369))|0);
- var $371=$365<<$368;
- var $372=$371>>>15;
- var $373=((($370)+($372))|0);
- var $374=$373<<1;
- var $375=((($373)+(7))|0);
- var $376=$347>>>($375>>>0);
- var $377=$376&1;
- var $378=$377|$374;
- var $idx_0_i=$378;label=83;break;
- case 83: 
- var $idx_0_i;
- var $380=((2320+($idx_0_i<<2))|0);
- var $381=HEAP32[(($380)>>2)];
- var $382=($381|0)==0;
- if($382){var $v_2_i=0;var $rsize_2_i=$351;var $t_1_i=0;label=90;break;}else{label=84;break;}
- case 84: 
- var $384=($idx_0_i|0)==31;
- if($384){var $389=0;label=86;break;}else{label=85;break;}
- case 85: 
- var $386=$idx_0_i>>>1;
- var $387=(((25)-($386))|0);
- var $389=$387;label=86;break;
- case 86: 
- var $389;
- var $390=$347<<$389;
- var $v_0_i18=0;var $rsize_0_i17=$351;var $t_0_i16=$381;var $sizebits_0_i=$390;var $rst_0_i=0;label=87;break;
- case 87: 
- var $rst_0_i;
- var $sizebits_0_i;
- var $t_0_i16;
- var $rsize_0_i17;
- var $v_0_i18;
- var $392=(($t_0_i16+4)|0);
- var $393=HEAP32[(($392)>>2)];
- var $394=$393&-8;
- var $395=((($394)-($347))|0);
- var $396=($395>>>0)<($rsize_0_i17>>>0);
- if($396){label=88;break;}else{var $v_1_i=$v_0_i18;var $rsize_1_i=$rsize_0_i17;label=89;break;}
- case 88: 
- var $398=($394|0)==($347|0);
- if($398){var $v_2_i=$t_0_i16;var $rsize_2_i=$395;var $t_1_i=$t_0_i16;label=90;break;}else{var $v_1_i=$t_0_i16;var $rsize_1_i=$395;label=89;break;}
- case 89: 
- var $rsize_1_i;
- var $v_1_i;
- var $400=(($t_0_i16+20)|0);
- var $401=HEAP32[(($400)>>2)];
- var $402=$sizebits_0_i>>>31;
- var $403=(($t_0_i16+16+($402<<2))|0);
- var $404=HEAP32[(($403)>>2)];
- var $405=($401|0)==0;
- var $406=($401|0)==($404|0);
- var $or_cond_i=$405|$406;
- var $rst_1_i=($or_cond_i?$rst_0_i:$401);
- var $407=($404|0)==0;
- var $408=$sizebits_0_i<<1;
- if($407){var $v_2_i=$v_1_i;var $rsize_2_i=$rsize_1_i;var $t_1_i=$rst_1_i;label=90;break;}else{var $v_0_i18=$v_1_i;var $rsize_0_i17=$rsize_1_i;var $t_0_i16=$404;var $sizebits_0_i=$408;var $rst_0_i=$rst_1_i;label=87;break;}
- case 90: 
- var $t_1_i;
- var $rsize_2_i;
- var $v_2_i;
- var $409=($t_1_i|0)==0;
- var $410=($v_2_i|0)==0;
- var $or_cond21_i=$409&$410;
- if($or_cond21_i){label=91;break;}else{var $t_2_ph_i=$t_1_i;label=93;break;}
- case 91: 
- var $412=2<<$idx_0_i;
- var $413=(((-$412))|0);
- var $414=$412|$413;
- var $415=$348&$414;
- var $416=($415|0)==0;
- if($416){var $nb_0=$347;label=161;break;}else{label=92;break;}
- case 92: 
- var $418=(((-$415))|0);
- var $419=$415&$418;
- var $420=((($419)-(1))|0);
- var $421=$420>>>12;
- var $422=$421&16;
- var $423=$420>>>($422>>>0);
- var $424=$423>>>5;
- var $425=$424&8;
- var $426=$425|$422;
- var $427=$423>>>($425>>>0);
- var $428=$427>>>2;
- var $429=$428&4;
- var $430=$426|$429;
- var $431=$427>>>($429>>>0);
- var $432=$431>>>1;
- var $433=$432&2;
- var $434=$430|$433;
- var $435=$431>>>($433>>>0);
- var $436=$435>>>1;
- var $437=$436&1;
- var $438=$434|$437;
- var $439=$435>>>($437>>>0);
- var $440=((($438)+($439))|0);
- var $441=((2320+($440<<2))|0);
- var $442=HEAP32[(($441)>>2)];
- var $t_2_ph_i=$442;label=93;break;
- case 93: 
- var $t_2_ph_i;
- var $443=($t_2_ph_i|0)==0;
- if($443){var $rsize_3_lcssa_i=$rsize_2_i;var $v_3_lcssa_i=$v_2_i;label=96;break;}else{var $t_230_i=$t_2_ph_i;var $rsize_331_i=$rsize_2_i;var $v_332_i=$v_2_i;label=94;break;}
- case 94: 
- var $v_332_i;
- var $rsize_331_i;
- var $t_230_i;
- var $444=(($t_230_i+4)|0);
- var $445=HEAP32[(($444)>>2)];
- var $446=$445&-8;
- var $447=((($446)-($347))|0);
- var $448=($447>>>0)<($rsize_331_i>>>0);
- var $_rsize_3_i=($448?$447:$rsize_331_i);
- var $t_2_v_3_i=($448?$t_230_i:$v_332_i);
- var $449=(($t_230_i+16)|0);
- var $450=HEAP32[(($449)>>2)];
- var $451=($450|0)==0;
- if($451){label=95;break;}else{var $t_230_i=$450;var $rsize_331_i=$_rsize_3_i;var $v_332_i=$t_2_v_3_i;label=94;break;}
- case 95: 
- var $452=(($t_230_i+20)|0);
- var $453=HEAP32[(($452)>>2)];
- var $454=($453|0)==0;
- if($454){var $rsize_3_lcssa_i=$_rsize_3_i;var $v_3_lcssa_i=$t_2_v_3_i;label=96;break;}else{var $t_230_i=$453;var $rsize_331_i=$_rsize_3_i;var $v_332_i=$t_2_v_3_i;label=94;break;}
- case 96: 
- var $v_3_lcssa_i;
- var $rsize_3_lcssa_i;
- var $455=($v_3_lcssa_i|0)==0;
- if($455){var $nb_0=$347;label=161;break;}else{label=97;break;}
- case 97: 
- var $457=HEAP32[((2024)>>2)];
- var $458=((($457)-($347))|0);
- var $459=($rsize_3_lcssa_i>>>0)<($458>>>0);
- if($459){label=98;break;}else{var $nb_0=$347;label=161;break;}
- case 98: 
- var $461=$v_3_lcssa_i;
- var $462=HEAP32[((2032)>>2)];
- var $463=($461>>>0)<($462>>>0);
- if($463){label=159;break;}else{label=99;break;}
- case 99: 
- var $465=(($461+$347)|0);
- var $466=$465;
- var $467=($461>>>0)<($465>>>0);
- if($467){label=100;break;}else{label=159;break;}
- case 100: 
- var $469=(($v_3_lcssa_i+24)|0);
- var $470=HEAP32[(($469)>>2)];
- var $471=(($v_3_lcssa_i+12)|0);
- var $472=HEAP32[(($471)>>2)];
- var $473=($472|0)==($v_3_lcssa_i|0);
- if($473){label=106;break;}else{label=101;break;}
- case 101: 
- var $475=(($v_3_lcssa_i+8)|0);
- var $476=HEAP32[(($475)>>2)];
- var $477=$476;
- var $478=($477>>>0)<($462>>>0);
- if($478){label=105;break;}else{label=102;break;}
- case 102: 
- var $480=(($476+12)|0);
- var $481=HEAP32[(($480)>>2)];
- var $482=($481|0)==($v_3_lcssa_i|0);
- if($482){label=103;break;}else{label=105;break;}
- case 103: 
- var $484=(($472+8)|0);
- var $485=HEAP32[(($484)>>2)];
- var $486=($485|0)==($v_3_lcssa_i|0);
- if($486){label=104;break;}else{label=105;break;}
- case 104: 
- HEAP32[(($480)>>2)]=$472;
- HEAP32[(($484)>>2)]=$476;
- var $R_1_i22=$472;label=113;break;
- case 105: 
- _abort();
- throw "Reached an unreachable!";
- case 106: 
- var $489=(($v_3_lcssa_i+20)|0);
- var $490=HEAP32[(($489)>>2)];
- var $491=($490|0)==0;
- if($491){label=107;break;}else{var $R_0_i20=$490;var $RP_0_i19=$489;label=108;break;}
- case 107: 
- var $493=(($v_3_lcssa_i+16)|0);
- var $494=HEAP32[(($493)>>2)];
- var $495=($494|0)==0;
- if($495){var $R_1_i22=0;label=113;break;}else{var $R_0_i20=$494;var $RP_0_i19=$493;label=108;break;}
- case 108: 
- var $RP_0_i19;
- var $R_0_i20;
- var $496=(($R_0_i20+20)|0);
- var $497=HEAP32[(($496)>>2)];
- var $498=($497|0)==0;
- if($498){label=109;break;}else{var $R_0_i20=$497;var $RP_0_i19=$496;label=108;break;}
- case 109: 
- var $500=(($R_0_i20+16)|0);
- var $501=HEAP32[(($500)>>2)];
- var $502=($501|0)==0;
- if($502){label=110;break;}else{var $R_0_i20=$501;var $RP_0_i19=$500;label=108;break;}
- case 110: 
- var $504=$RP_0_i19;
- var $505=($504>>>0)<($462>>>0);
- if($505){label=112;break;}else{label=111;break;}
- case 111: 
- HEAP32[(($RP_0_i19)>>2)]=0;
- var $R_1_i22=$R_0_i20;label=113;break;
- case 112: 
- _abort();
- throw "Reached an unreachable!";
- case 113: 
- var $R_1_i22;
- var $509=($470|0)==0;
- if($509){label=133;break;}else{label=114;break;}
- case 114: 
- var $511=(($v_3_lcssa_i+28)|0);
- var $512=HEAP32[(($511)>>2)];
- var $513=((2320+($512<<2))|0);
- var $514=HEAP32[(($513)>>2)];
- var $515=($v_3_lcssa_i|0)==($514|0);
- if($515){label=115;break;}else{label=117;break;}
- case 115: 
- HEAP32[(($513)>>2)]=$R_1_i22;
- var $cond_i23=($R_1_i22|0)==0;
- if($cond_i23){label=116;break;}else{label=123;break;}
- case 116: 
- var $517=1<<$512;
- var $518=$517^-1;
- var $519=HEAP32[((2020)>>2)];
- var $520=$519&$518;
- HEAP32[((2020)>>2)]=$520;
- label=133;break;
- case 117: 
- var $522=$470;
- var $523=HEAP32[((2032)>>2)];
- var $524=($522>>>0)<($523>>>0);
- if($524){label=121;break;}else{label=118;break;}
- case 118: 
- var $526=(($470+16)|0);
- var $527=HEAP32[(($526)>>2)];
- var $528=($527|0)==($v_3_lcssa_i|0);
- if($528){label=119;break;}else{label=120;break;}
- case 119: 
- HEAP32[(($526)>>2)]=$R_1_i22;
- label=122;break;
- case 120: 
- var $531=(($470+20)|0);
- HEAP32[(($531)>>2)]=$R_1_i22;
- label=122;break;
- case 121: 
- _abort();
- throw "Reached an unreachable!";
- case 122: 
- var $534=($R_1_i22|0)==0;
- if($534){label=133;break;}else{label=123;break;}
- case 123: 
- var $536=$R_1_i22;
- var $537=HEAP32[((2032)>>2)];
- var $538=($536>>>0)<($537>>>0);
- if($538){label=132;break;}else{label=124;break;}
- case 124: 
- var $540=(($R_1_i22+24)|0);
- HEAP32[(($540)>>2)]=$470;
- var $541=(($v_3_lcssa_i+16)|0);
- var $542=HEAP32[(($541)>>2)];
- var $543=($542|0)==0;
- if($543){label=128;break;}else{label=125;break;}
- case 125: 
- var $545=$542;
- var $546=HEAP32[((2032)>>2)];
- var $547=($545>>>0)<($546>>>0);
- if($547){label=127;break;}else{label=126;break;}
- case 126: 
- var $549=(($R_1_i22+16)|0);
- HEAP32[(($549)>>2)]=$542;
- var $550=(($542+24)|0);
- HEAP32[(($550)>>2)]=$R_1_i22;
- label=128;break;
- case 127: 
- _abort();
- throw "Reached an unreachable!";
- case 128: 
- var $553=(($v_3_lcssa_i+20)|0);
- var $554=HEAP32[(($553)>>2)];
- var $555=($554|0)==0;
- if($555){label=133;break;}else{label=129;break;}
- case 129: 
- var $557=$554;
- var $558=HEAP32[((2032)>>2)];
- var $559=($557>>>0)<($558>>>0);
- if($559){label=131;break;}else{label=130;break;}
- case 130: 
- var $561=(($R_1_i22+20)|0);
- HEAP32[(($561)>>2)]=$554;
- var $562=(($554+24)|0);
- HEAP32[(($562)>>2)]=$R_1_i22;
- label=133;break;
- case 131: 
- _abort();
- throw "Reached an unreachable!";
- case 132: 
- _abort();
- throw "Reached an unreachable!";
- case 133: 
- var $566=($rsize_3_lcssa_i>>>0)<16;
- if($566){label=134;break;}else{label=135;break;}
- case 134: 
- var $568=((($rsize_3_lcssa_i)+($347))|0);
- var $569=$568|3;
- var $570=(($v_3_lcssa_i+4)|0);
- HEAP32[(($570)>>2)]=$569;
- var $_sum19_i=((($568)+(4))|0);
- var $571=(($461+$_sum19_i)|0);
- var $572=$571;
- var $573=HEAP32[(($572)>>2)];
- var $574=$573|1;
- HEAP32[(($572)>>2)]=$574;
- label=160;break;
- case 135: 
- var $576=$347|3;
- var $577=(($v_3_lcssa_i+4)|0);
- HEAP32[(($577)>>2)]=$576;
- var $578=$rsize_3_lcssa_i|1;
- var $_sum_i2536=$347|4;
- var $579=(($461+$_sum_i2536)|0);
- var $580=$579;
- HEAP32[(($580)>>2)]=$578;
- var $_sum1_i26=((($rsize_3_lcssa_i)+($347))|0);
- var $581=(($461+$_sum1_i26)|0);
- var $582=$581;
- HEAP32[(($582)>>2)]=$rsize_3_lcssa_i;
- var $583=$rsize_3_lcssa_i>>>3;
- var $584=($rsize_3_lcssa_i>>>0)<256;
- if($584){label=136;break;}else{label=141;break;}
- case 136: 
- var $586=$583<<1;
- var $587=((2056+($586<<2))|0);
- var $588=$587;
- var $589=HEAP32[((2016)>>2)];
- var $590=1<<$583;
- var $591=$589&$590;
- var $592=($591|0)==0;
- if($592){label=137;break;}else{label=138;break;}
- case 137: 
- var $594=$589|$590;
- HEAP32[((2016)>>2)]=$594;
- var $_sum15_pre_i=((($586)+(2))|0);
- var $_pre_i27=((2056+($_sum15_pre_i<<2))|0);
- var $F5_0_i=$588;var $_pre_phi_i28=$_pre_i27;label=140;break;
- case 138: 
- var $_sum18_i=((($586)+(2))|0);
- var $596=((2056+($_sum18_i<<2))|0);
- var $597=HEAP32[(($596)>>2)];
- var $598=$597;
- var $599=HEAP32[((2032)>>2)];
- var $600=($598>>>0)<($599>>>0);
- if($600){label=139;break;}else{var $F5_0_i=$597;var $_pre_phi_i28=$596;label=140;break;}
- case 139: 
- _abort();
- throw "Reached an unreachable!";
- case 140: 
- var $_pre_phi_i28;
- var $F5_0_i;
- HEAP32[(($_pre_phi_i28)>>2)]=$466;
- var $603=(($F5_0_i+12)|0);
- HEAP32[(($603)>>2)]=$466;
- var $_sum16_i=((($347)+(8))|0);
- var $604=(($461+$_sum16_i)|0);
- var $605=$604;
- HEAP32[(($605)>>2)]=$F5_0_i;
- var $_sum17_i=((($347)+(12))|0);
- var $606=(($461+$_sum17_i)|0);
- var $607=$606;
- HEAP32[(($607)>>2)]=$588;
- label=160;break;
- case 141: 
- var $609=$465;
- var $610=$rsize_3_lcssa_i>>>8;
- var $611=($610|0)==0;
- if($611){var $I7_0_i=0;label=144;break;}else{label=142;break;}
- case 142: 
- var $613=($rsize_3_lcssa_i>>>0)>16777215;
- if($613){var $I7_0_i=31;label=144;break;}else{label=143;break;}
- case 143: 
- var $615=((($610)+(1048320))|0);
- var $616=$615>>>16;
- var $617=$616&8;
- var $618=$610<<$617;
- var $619=((($618)+(520192))|0);
- var $620=$619>>>16;
- var $621=$620&4;
- var $622=$621|$617;
- var $623=$618<<$621;
- var $624=((($623)+(245760))|0);
- var $625=$624>>>16;
- var $626=$625&2;
- var $627=$622|$626;
- var $628=(((14)-($627))|0);
- var $629=$623<<$626;
- var $630=$629>>>15;
- var $631=((($628)+($630))|0);
- var $632=$631<<1;
- var $633=((($631)+(7))|0);
- var $634=$rsize_3_lcssa_i>>>($633>>>0);
- var $635=$634&1;
- var $636=$635|$632;
- var $I7_0_i=$636;label=144;break;
- case 144: 
- var $I7_0_i;
- var $638=((2320+($I7_0_i<<2))|0);
- var $_sum2_i=((($347)+(28))|0);
- var $639=(($461+$_sum2_i)|0);
- var $640=$639;
- HEAP32[(($640)>>2)]=$I7_0_i;
- var $_sum3_i29=((($347)+(16))|0);
- var $641=(($461+$_sum3_i29)|0);
- var $_sum4_i30=((($347)+(20))|0);
- var $642=(($461+$_sum4_i30)|0);
- var $643=$642;
- HEAP32[(($643)>>2)]=0;
- var $644=$641;
- HEAP32[(($644)>>2)]=0;
- var $645=HEAP32[((2020)>>2)];
- var $646=1<<$I7_0_i;
- var $647=$645&$646;
- var $648=($647|0)==0;
- if($648){label=145;break;}else{label=146;break;}
- case 145: 
- var $650=$645|$646;
- HEAP32[((2020)>>2)]=$650;
- HEAP32[(($638)>>2)]=$609;
- var $651=$638;
- var $_sum5_i=((($347)+(24))|0);
- var $652=(($461+$_sum5_i)|0);
- var $653=$652;
- HEAP32[(($653)>>2)]=$651;
- var $_sum6_i=((($347)+(12))|0);
- var $654=(($461+$_sum6_i)|0);
- var $655=$654;
- HEAP32[(($655)>>2)]=$609;
- var $_sum7_i=((($347)+(8))|0);
- var $656=(($461+$_sum7_i)|0);
- var $657=$656;
- HEAP32[(($657)>>2)]=$609;
- label=160;break;
- case 146: 
- var $659=HEAP32[(($638)>>2)];
- var $660=($I7_0_i|0)==31;
- if($660){var $665=0;label=148;break;}else{label=147;break;}
- case 147: 
- var $662=$I7_0_i>>>1;
- var $663=(((25)-($662))|0);
- var $665=$663;label=148;break;
- case 148: 
- var $665;
- var $666=(($659+4)|0);
- var $667=HEAP32[(($666)>>2)];
- var $668=$667&-8;
- var $669=($668|0)==($rsize_3_lcssa_i|0);
- if($669){var $T_0_lcssa_i=$659;label=155;break;}else{label=149;break;}
- case 149: 
- var $670=$rsize_3_lcssa_i<<$665;
- var $T_026_i=$659;var $K12_027_i=$670;label=151;break;
- case 150: 
- var $672=$K12_027_i<<1;
- var $673=(($680+4)|0);
- var $674=HEAP32[(($673)>>2)];
- var $675=$674&-8;
- var $676=($675|0)==($rsize_3_lcssa_i|0);
- if($676){var $T_0_lcssa_i=$680;label=155;break;}else{var $T_026_i=$680;var $K12_027_i=$672;label=151;break;}
- case 151: 
- var $K12_027_i;
- var $T_026_i;
- var $678=$K12_027_i>>>31;
- var $679=(($T_026_i+16+($678<<2))|0);
- var $680=HEAP32[(($679)>>2)];
- var $681=($680|0)==0;
- if($681){label=152;break;}else{label=150;break;}
- case 152: 
- var $683=$679;
- var $684=HEAP32[((2032)>>2)];
- var $685=($683>>>0)<($684>>>0);
- if($685){label=154;break;}else{label=153;break;}
- case 153: 
- HEAP32[(($679)>>2)]=$609;
- var $_sum12_i=((($347)+(24))|0);
- var $687=(($461+$_sum12_i)|0);
- var $688=$687;
- HEAP32[(($688)>>2)]=$T_026_i;
- var $_sum13_i=((($347)+(12))|0);
- var $689=(($461+$_sum13_i)|0);
- var $690=$689;
- HEAP32[(($690)>>2)]=$609;
- var $_sum14_i=((($347)+(8))|0);
- var $691=(($461+$_sum14_i)|0);
- var $692=$691;
- HEAP32[(($692)>>2)]=$609;
- label=160;break;
- case 154: 
- _abort();
- throw "Reached an unreachable!";
- case 155: 
- var $T_0_lcssa_i;
- var $694=(($T_0_lcssa_i+8)|0);
- var $695=HEAP32[(($694)>>2)];
- var $696=$T_0_lcssa_i;
- var $697=HEAP32[((2032)>>2)];
- var $698=($696>>>0)<($697>>>0);
- if($698){label=158;break;}else{label=156;break;}
- case 156: 
- var $700=$695;
- var $701=($700>>>0)<($697>>>0);
- if($701){label=158;break;}else{label=157;break;}
- case 157: 
- var $703=(($695+12)|0);
- HEAP32[(($703)>>2)]=$609;
- HEAP32[(($694)>>2)]=$609;
- var $_sum9_i=((($347)+(8))|0);
- var $704=(($461+$_sum9_i)|0);
- var $705=$704;
- HEAP32[(($705)>>2)]=$695;
- var $_sum10_i=((($347)+(12))|0);
- var $706=(($461+$_sum10_i)|0);
- var $707=$706;
- HEAP32[(($707)>>2)]=$T_0_lcssa_i;
- var $_sum11_i=((($347)+(24))|0);
- var $708=(($461+$_sum11_i)|0);
- var $709=$708;
- HEAP32[(($709)>>2)]=0;
- label=160;break;
- case 158: 
- _abort();
- throw "Reached an unreachable!";
- case 159: 
- _abort();
- throw "Reached an unreachable!";
- case 160: 
- var $711=(($v_3_lcssa_i+8)|0);
- var $712=$711;
- var $mem_0=$712;label=344;break;
- case 161: 
- var $nb_0;
- var $713=HEAP32[((2024)>>2)];
- var $714=($nb_0>>>0)>($713>>>0);
- if($714){label=166;break;}else{label=162;break;}
- case 162: 
- var $716=((($713)-($nb_0))|0);
- var $717=HEAP32[((2036)>>2)];
- var $718=($716>>>0)>15;
- if($718){label=163;break;}else{label=164;break;}
- case 163: 
- var $720=$717;
- var $721=(($720+$nb_0)|0);
- var $722=$721;
- HEAP32[((2036)>>2)]=$722;
- HEAP32[((2024)>>2)]=$716;
- var $723=$716|1;
- var $_sum2=((($nb_0)+(4))|0);
- var $724=(($720+$_sum2)|0);
- var $725=$724;
- HEAP32[(($725)>>2)]=$723;
- var $726=(($720+$713)|0);
- var $727=$726;
- HEAP32[(($727)>>2)]=$716;
- var $728=$nb_0|3;
- var $729=(($717+4)|0);
- HEAP32[(($729)>>2)]=$728;
- label=165;break;
- case 164: 
- HEAP32[((2024)>>2)]=0;
- HEAP32[((2036)>>2)]=0;
- var $731=$713|3;
- var $732=(($717+4)|0);
- HEAP32[(($732)>>2)]=$731;
- var $733=$717;
- var $_sum1=((($713)+(4))|0);
- var $734=(($733+$_sum1)|0);
- var $735=$734;
- var $736=HEAP32[(($735)>>2)];
- var $737=$736|1;
- HEAP32[(($735)>>2)]=$737;
- label=165;break;
- case 165: 
- var $739=(($717+8)|0);
- var $740=$739;
- var $mem_0=$740;label=344;break;
- case 166: 
- var $742=HEAP32[((2028)>>2)];
- var $743=($nb_0>>>0)<($742>>>0);
- if($743){label=167;break;}else{label=168;break;}
- case 167: 
- var $745=((($742)-($nb_0))|0);
- HEAP32[((2028)>>2)]=$745;
- var $746=HEAP32[((2040)>>2)];
- var $747=$746;
- var $748=(($747+$nb_0)|0);
- var $749=$748;
- HEAP32[((2040)>>2)]=$749;
- var $750=$745|1;
- var $_sum=((($nb_0)+(4))|0);
- var $751=(($747+$_sum)|0);
- var $752=$751;
- HEAP32[(($752)>>2)]=$750;
- var $753=$nb_0|3;
- var $754=(($746+4)|0);
- HEAP32[(($754)>>2)]=$753;
- var $755=(($746+8)|0);
- var $756=$755;
- var $mem_0=$756;label=344;break;
- case 168: 
- var $758=HEAP32[((1992)>>2)];
- var $759=($758|0)==0;
- if($759){label=169;break;}else{label=172;break;}
- case 169: 
- var $761=_sysconf(30);
- var $762=((($761)-(1))|0);
- var $763=$762&$761;
- var $764=($763|0)==0;
- if($764){label=171;break;}else{label=170;break;}
- case 170: 
- _abort();
- throw "Reached an unreachable!";
- case 171: 
- HEAP32[((2000)>>2)]=$761;
- HEAP32[((1996)>>2)]=$761;
- HEAP32[((2004)>>2)]=-1;
- HEAP32[((2008)>>2)]=-1;
- HEAP32[((2012)>>2)]=0;
- HEAP32[((2460)>>2)]=0;
- var $766=_time(0);
- var $767=$766&-16;
- var $768=$767^1431655768;
- HEAP32[((1992)>>2)]=$768;
- label=172;break;
- case 172: 
- var $770=((($nb_0)+(48))|0);
- var $771=HEAP32[((2000)>>2)];
- var $772=((($nb_0)+(47))|0);
- var $773=((($771)+($772))|0);
- var $774=(((-$771))|0);
- var $775=$773&$774;
- var $776=($775>>>0)>($nb_0>>>0);
- if($776){label=173;break;}else{var $mem_0=0;label=344;break;}
- case 173: 
- var $778=HEAP32[((2456)>>2)];
- var $779=($778|0)==0;
- if($779){label=175;break;}else{label=174;break;}
- case 174: 
- var $781=HEAP32[((2448)>>2)];
- var $782=((($781)+($775))|0);
- var $783=($782>>>0)<=($781>>>0);
- var $784=($782>>>0)>($778>>>0);
- var $or_cond1_i=$783|$784;
- if($or_cond1_i){var $mem_0=0;label=344;break;}else{label=175;break;}
- case 175: 
- var $786=HEAP32[((2460)>>2)];
- var $787=$786&4;
- var $788=($787|0)==0;
- if($788){label=176;break;}else{var $tsize_1_i=0;label=199;break;}
- case 176: 
- var $790=HEAP32[((2040)>>2)];
- var $791=($790|0)==0;
- if($791){label=182;break;}else{label=177;break;}
- case 177: 
- var $793=$790;
- var $sp_0_i_i=2464;label=178;break;
- case 178: 
- var $sp_0_i_i;
- var $795=(($sp_0_i_i)|0);
- var $796=HEAP32[(($795)>>2)];
- var $797=($796>>>0)>($793>>>0);
- if($797){label=180;break;}else{label=179;break;}
- case 179: 
- var $799=(($sp_0_i_i+4)|0);
- var $800=HEAP32[(($799)>>2)];
- var $801=(($796+$800)|0);
- var $802=($801>>>0)>($793>>>0);
- if($802){label=181;break;}else{label=180;break;}
- case 180: 
- var $804=(($sp_0_i_i+8)|0);
- var $805=HEAP32[(($804)>>2)];
- var $806=($805|0)==0;
- if($806){label=182;break;}else{var $sp_0_i_i=$805;label=178;break;}
- case 181: 
- var $807=($sp_0_i_i|0)==0;
- if($807){label=182;break;}else{label=189;break;}
- case 182: 
- var $808=_sbrk(0);
- var $809=($808|0)==-1;
- if($809){var $tsize_0323841_i=0;label=198;break;}else{label=183;break;}
- case 183: 
- var $811=$808;
- var $812=HEAP32[((1996)>>2)];
- var $813=((($812)-(1))|0);
- var $814=$813&$811;
- var $815=($814|0)==0;
- if($815){var $ssize_0_i=$775;label=185;break;}else{label=184;break;}
- case 184: 
- var $817=((($813)+($811))|0);
- var $818=(((-$812))|0);
- var $819=$817&$818;
- var $820=((($775)-($811))|0);
- var $821=((($820)+($819))|0);
- var $ssize_0_i=$821;label=185;break;
- case 185: 
- var $ssize_0_i;
- var $823=HEAP32[((2448)>>2)];
- var $824=((($823)+($ssize_0_i))|0);
- var $825=($ssize_0_i>>>0)>($nb_0>>>0);
- var $826=($ssize_0_i>>>0)<2147483647;
- var $or_cond_i31=$825&$826;
- if($or_cond_i31){label=186;break;}else{var $tsize_0323841_i=0;label=198;break;}
- case 186: 
- var $828=HEAP32[((2456)>>2)];
- var $829=($828|0)==0;
- if($829){label=188;break;}else{label=187;break;}
- case 187: 
- var $831=($824>>>0)<=($823>>>0);
- var $832=($824>>>0)>($828>>>0);
- var $or_cond2_i=$831|$832;
- if($or_cond2_i){var $tsize_0323841_i=0;label=198;break;}else{label=188;break;}
- case 188: 
- var $834=_sbrk($ssize_0_i);
- var $835=($834|0)==($808|0);
- var $ssize_0__i=($835?$ssize_0_i:0);
- var $__i=($835?$808:-1);
- var $tbase_0_i=$__i;var $tsize_0_i=$ssize_0__i;var $br_0_i=$834;var $ssize_1_i=$ssize_0_i;label=191;break;
- case 189: 
- var $837=HEAP32[((2028)>>2)];
- var $838=((($773)-($837))|0);
- var $839=$838&$774;
- var $840=($839>>>0)<2147483647;
- if($840){label=190;break;}else{var $tsize_0323841_i=0;label=198;break;}
- case 190: 
- var $842=_sbrk($839);
- var $843=HEAP32[(($795)>>2)];
- var $844=HEAP32[(($799)>>2)];
- var $845=(($843+$844)|0);
- var $846=($842|0)==($845|0);
- var $_3_i=($846?$839:0);
- var $_4_i=($846?$842:-1);
- var $tbase_0_i=$_4_i;var $tsize_0_i=$_3_i;var $br_0_i=$842;var $ssize_1_i=$839;label=191;break;
- case 191: 
- var $ssize_1_i;
- var $br_0_i;
- var $tsize_0_i;
- var $tbase_0_i;
- var $848=(((-$ssize_1_i))|0);
- var $849=($tbase_0_i|0)==-1;
- if($849){label=192;break;}else{var $tsize_246_i=$tsize_0_i;var $tbase_247_i=$tbase_0_i;label=202;break;}
- case 192: 
- var $851=($br_0_i|0)!=-1;
- var $852=($ssize_1_i>>>0)<2147483647;
- var $or_cond5_i=$851&$852;
- var $853=($ssize_1_i>>>0)<($770>>>0);
- var $or_cond6_i=$or_cond5_i&$853;
- if($or_cond6_i){label=193;break;}else{var $ssize_2_i=$ssize_1_i;label=197;break;}
- case 193: 
- var $855=HEAP32[((2000)>>2)];
- var $856=((($772)-($ssize_1_i))|0);
- var $857=((($856)+($855))|0);
- var $858=(((-$855))|0);
- var $859=$857&$858;
- var $860=($859>>>0)<2147483647;
- if($860){label=194;break;}else{var $ssize_2_i=$ssize_1_i;label=197;break;}
- case 194: 
- var $862=_sbrk($859);
- var $863=($862|0)==-1;
- if($863){label=196;break;}else{label=195;break;}
- case 195: 
- var $865=((($859)+($ssize_1_i))|0);
- var $ssize_2_i=$865;label=197;break;
- case 196: 
- var $867=_sbrk($848);
- var $tsize_0323841_i=$tsize_0_i;label=198;break;
- case 197: 
- var $ssize_2_i;
- var $869=($br_0_i|0)==-1;
- if($869){var $tsize_0323841_i=$tsize_0_i;label=198;break;}else{var $tsize_246_i=$ssize_2_i;var $tbase_247_i=$br_0_i;label=202;break;}
- case 198: 
- var $tsize_0323841_i;
- var $870=HEAP32[((2460)>>2)];
- var $871=$870|4;
- HEAP32[((2460)>>2)]=$871;
- var $tsize_1_i=$tsize_0323841_i;label=199;break;
- case 199: 
- var $tsize_1_i;
- var $873=($775>>>0)<2147483647;
- if($873){label=200;break;}else{label=343;break;}
- case 200: 
- var $875=_sbrk($775);
- var $876=_sbrk(0);
- var $notlhs_i=($875|0)!=-1;
- var $notrhs_i=($876|0)!=-1;
- var $or_cond8_not_i=$notrhs_i&$notlhs_i;
- var $877=($875>>>0)<($876>>>0);
- var $or_cond9_i=$or_cond8_not_i&$877;
- if($or_cond9_i){label=201;break;}else{label=343;break;}
- case 201: 
- var $878=$876;
- var $879=$875;
- var $880=((($878)-($879))|0);
- var $881=((($nb_0)+(40))|0);
- var $882=($880>>>0)>($881>>>0);
- var $_tsize_1_i=($882?$880:$tsize_1_i);
- if($882){var $tsize_246_i=$_tsize_1_i;var $tbase_247_i=$875;label=202;break;}else{label=343;break;}
- case 202: 
- var $tbase_247_i;
- var $tsize_246_i;
- var $883=HEAP32[((2448)>>2)];
- var $884=((($883)+($tsize_246_i))|0);
- HEAP32[((2448)>>2)]=$884;
- var $885=HEAP32[((2452)>>2)];
- var $886=($884>>>0)>($885>>>0);
- if($886){label=203;break;}else{label=204;break;}
- case 203: 
- HEAP32[((2452)>>2)]=$884;
- label=204;break;
- case 204: 
- var $888=HEAP32[((2040)>>2)];
- var $889=($888|0)==0;
- if($889){label=205;break;}else{var $sp_075_i=2464;label=212;break;}
- case 205: 
- var $891=HEAP32[((2032)>>2)];
- var $892=($891|0)==0;
- var $893=($tbase_247_i>>>0)<($891>>>0);
- var $or_cond10_i=$892|$893;
- if($or_cond10_i){label=206;break;}else{label=207;break;}
- case 206: 
- HEAP32[((2032)>>2)]=$tbase_247_i;
- label=207;break;
- case 207: 
- HEAP32[((2464)>>2)]=$tbase_247_i;
- HEAP32[((2468)>>2)]=$tsize_246_i;
- HEAP32[((2476)>>2)]=0;
- var $895=HEAP32[((1992)>>2)];
- HEAP32[((2052)>>2)]=$895;
- HEAP32[((2048)>>2)]=-1;
- var $i_02_i_i=0;label=208;break;
- case 208: 
- var $i_02_i_i;
- var $897=$i_02_i_i<<1;
- var $898=((2056+($897<<2))|0);
- var $899=$898;
- var $_sum_i_i=((($897)+(3))|0);
- var $900=((2056+($_sum_i_i<<2))|0);
- HEAP32[(($900)>>2)]=$899;
- var $_sum1_i_i=((($897)+(2))|0);
- var $901=((2056+($_sum1_i_i<<2))|0);
- HEAP32[(($901)>>2)]=$899;
- var $902=((($i_02_i_i)+(1))|0);
- var $903=($902>>>0)<32;
- if($903){var $i_02_i_i=$902;label=208;break;}else{label=209;break;}
- case 209: 
- var $904=((($tsize_246_i)-(40))|0);
- var $905=(($tbase_247_i+8)|0);
- var $906=$905;
- var $907=$906&7;
- var $908=($907|0)==0;
- if($908){var $912=0;label=211;break;}else{label=210;break;}
- case 210: 
- var $910=(((-$906))|0);
- var $911=$910&7;
- var $912=$911;label=211;break;
- case 211: 
- var $912;
- var $913=(($tbase_247_i+$912)|0);
- var $914=$913;
- var $915=((($904)-($912))|0);
- HEAP32[((2040)>>2)]=$914;
- HEAP32[((2028)>>2)]=$915;
- var $916=$915|1;
- var $_sum_i14_i=((($912)+(4))|0);
- var $917=(($tbase_247_i+$_sum_i14_i)|0);
- var $918=$917;
- HEAP32[(($918)>>2)]=$916;
- var $_sum2_i_i=((($tsize_246_i)-(36))|0);
- var $919=(($tbase_247_i+$_sum2_i_i)|0);
- var $920=$919;
- HEAP32[(($920)>>2)]=40;
- var $921=HEAP32[((2008)>>2)];
- HEAP32[((2044)>>2)]=$921;
- label=341;break;
- case 212: 
- var $sp_075_i;
- var $922=(($sp_075_i)|0);
- var $923=HEAP32[(($922)>>2)];
- var $924=(($sp_075_i+4)|0);
- var $925=HEAP32[(($924)>>2)];
- var $926=(($923+$925)|0);
- var $927=($tbase_247_i|0)==($926|0);
- if($927){label=214;break;}else{label=213;break;}
- case 213: 
- var $929=(($sp_075_i+8)|0);
- var $930=HEAP32[(($929)>>2)];
- var $931=($930|0)==0;
- if($931){label=219;break;}else{var $sp_075_i=$930;label=212;break;}
- case 214: 
- var $932=(($sp_075_i+12)|0);
- var $933=HEAP32[(($932)>>2)];
- var $934=$933&8;
- var $935=($934|0)==0;
- if($935){label=215;break;}else{label=219;break;}
- case 215: 
- var $937=$888;
- var $938=($937>>>0)>=($923>>>0);
- var $939=($937>>>0)<($tbase_247_i>>>0);
- var $or_cond49_i=$938&$939;
- if($or_cond49_i){label=216;break;}else{label=219;break;}
- case 216: 
- var $941=((($925)+($tsize_246_i))|0);
- HEAP32[(($924)>>2)]=$941;
- var $942=HEAP32[((2028)>>2)];
- var $943=((($942)+($tsize_246_i))|0);
- var $944=(($888+8)|0);
- var $945=$944;
- var $946=$945&7;
- var $947=($946|0)==0;
- if($947){var $951=0;label=218;break;}else{label=217;break;}
- case 217: 
- var $949=(((-$945))|0);
- var $950=$949&7;
- var $951=$950;label=218;break;
- case 218: 
- var $951;
- var $952=(($937+$951)|0);
- var $953=$952;
- var $954=((($943)-($951))|0);
- HEAP32[((2040)>>2)]=$953;
- HEAP32[((2028)>>2)]=$954;
- var $955=$954|1;
- var $_sum_i18_i=((($951)+(4))|0);
- var $956=(($937+$_sum_i18_i)|0);
- var $957=$956;
- HEAP32[(($957)>>2)]=$955;
- var $_sum2_i19_i=((($943)+(4))|0);
- var $958=(($937+$_sum2_i19_i)|0);
- var $959=$958;
- HEAP32[(($959)>>2)]=40;
- var $960=HEAP32[((2008)>>2)];
- HEAP32[((2044)>>2)]=$960;
- label=341;break;
- case 219: 
- var $961=HEAP32[((2032)>>2)];
- var $962=($tbase_247_i>>>0)<($961>>>0);
- if($962){label=220;break;}else{label=221;break;}
- case 220: 
- HEAP32[((2032)>>2)]=$tbase_247_i;
- label=221;break;
- case 221: 
- var $964=(($tbase_247_i+$tsize_246_i)|0);
- var $sp_168_i=2464;label=222;break;
- case 222: 
- var $sp_168_i;
- var $966=(($sp_168_i)|0);
- var $967=HEAP32[(($966)>>2)];
- var $968=($967|0)==($964|0);
- if($968){label=224;break;}else{label=223;break;}
- case 223: 
- var $970=(($sp_168_i+8)|0);
- var $971=HEAP32[(($970)>>2)];
- var $972=($971|0)==0;
- if($972){label=306;break;}else{var $sp_168_i=$971;label=222;break;}
- case 224: 
- var $973=(($sp_168_i+12)|0);
- var $974=HEAP32[(($973)>>2)];
- var $975=$974&8;
- var $976=($975|0)==0;
- if($976){label=225;break;}else{label=306;break;}
- case 225: 
- HEAP32[(($966)>>2)]=$tbase_247_i;
- var $978=(($sp_168_i+4)|0);
- var $979=HEAP32[(($978)>>2)];
- var $980=((($979)+($tsize_246_i))|0);
- HEAP32[(($978)>>2)]=$980;
- var $981=(($tbase_247_i+8)|0);
- var $982=$981;
- var $983=$982&7;
- var $984=($983|0)==0;
- if($984){var $989=0;label=227;break;}else{label=226;break;}
- case 226: 
- var $986=(((-$982))|0);
- var $987=$986&7;
- var $989=$987;label=227;break;
- case 227: 
- var $989;
- var $990=(($tbase_247_i+$989)|0);
- var $_sum107_i=((($tsize_246_i)+(8))|0);
- var $991=(($tbase_247_i+$_sum107_i)|0);
- var $992=$991;
- var $993=$992&7;
- var $994=($993|0)==0;
- if($994){var $999=0;label=229;break;}else{label=228;break;}
- case 228: 
- var $996=(((-$992))|0);
- var $997=$996&7;
- var $999=$997;label=229;break;
- case 229: 
- var $999;
- var $_sum108_i=((($999)+($tsize_246_i))|0);
- var $1000=(($tbase_247_i+$_sum108_i)|0);
- var $1001=$1000;
- var $1002=$1000;
- var $1003=$990;
- var $1004=((($1002)-($1003))|0);
- var $_sum_i21_i=((($989)+($nb_0))|0);
- var $1005=(($tbase_247_i+$_sum_i21_i)|0);
- var $1006=$1005;
- var $1007=((($1004)-($nb_0))|0);
- var $1008=$nb_0|3;
- var $_sum1_i22_i=((($989)+(4))|0);
- var $1009=(($tbase_247_i+$_sum1_i22_i)|0);
- var $1010=$1009;
- HEAP32[(($1010)>>2)]=$1008;
- var $1011=HEAP32[((2040)>>2)];
- var $1012=($1001|0)==($1011|0);
- if($1012){label=230;break;}else{label=231;break;}
- case 230: 
- var $1014=HEAP32[((2028)>>2)];
- var $1015=((($1014)+($1007))|0);
- HEAP32[((2028)>>2)]=$1015;
- HEAP32[((2040)>>2)]=$1006;
- var $1016=$1015|1;
- var $_sum46_i_i=((($_sum_i21_i)+(4))|0);
- var $1017=(($tbase_247_i+$_sum46_i_i)|0);
- var $1018=$1017;
- HEAP32[(($1018)>>2)]=$1016;
- label=305;break;
- case 231: 
- var $1020=HEAP32[((2036)>>2)];
- var $1021=($1001|0)==($1020|0);
- if($1021){label=232;break;}else{label=233;break;}
- case 232: 
- var $1023=HEAP32[((2024)>>2)];
- var $1024=((($1023)+($1007))|0);
- HEAP32[((2024)>>2)]=$1024;
- HEAP32[((2036)>>2)]=$1006;
- var $1025=$1024|1;
- var $_sum44_i_i=((($_sum_i21_i)+(4))|0);
- var $1026=(($tbase_247_i+$_sum44_i_i)|0);
- var $1027=$1026;
- HEAP32[(($1027)>>2)]=$1025;
- var $_sum45_i_i=((($1024)+($_sum_i21_i))|0);
- var $1028=(($tbase_247_i+$_sum45_i_i)|0);
- var $1029=$1028;
- HEAP32[(($1029)>>2)]=$1024;
- label=305;break;
- case 233: 
- var $_sum2_i23_i=((($tsize_246_i)+(4))|0);
- var $_sum109_i=((($_sum2_i23_i)+($999))|0);
- var $1031=(($tbase_247_i+$_sum109_i)|0);
- var $1032=$1031;
- var $1033=HEAP32[(($1032)>>2)];
- var $1034=$1033&3;
- var $1035=($1034|0)==1;
- if($1035){label=234;break;}else{var $oldfirst_0_i_i=$1001;var $qsize_0_i_i=$1007;label=281;break;}
- case 234: 
- var $1037=$1033&-8;
- var $1038=$1033>>>3;
- var $1039=($1033>>>0)<256;
- if($1039){label=235;break;}else{label=247;break;}
- case 235: 
- var $_sum3940_i_i=$999|8;
- var $_sum119_i=((($_sum3940_i_i)+($tsize_246_i))|0);
- var $1041=(($tbase_247_i+$_sum119_i)|0);
- var $1042=$1041;
- var $1043=HEAP32[(($1042)>>2)];
- var $_sum41_i_i=((($tsize_246_i)+(12))|0);
- var $_sum120_i=((($_sum41_i_i)+($999))|0);
- var $1044=(($tbase_247_i+$_sum120_i)|0);
- var $1045=$1044;
- var $1046=HEAP32[(($1045)>>2)];
- var $1047=$1038<<1;
- var $1048=((2056+($1047<<2))|0);
- var $1049=$1048;
- var $1050=($1043|0)==($1049|0);
- if($1050){label=238;break;}else{label=236;break;}
- case 236: 
- var $1052=$1043;
- var $1053=HEAP32[((2032)>>2)];
- var $1054=($1052>>>0)<($1053>>>0);
- if($1054){label=246;break;}else{label=237;break;}
- case 237: 
- var $1056=(($1043+12)|0);
- var $1057=HEAP32[(($1056)>>2)];
- var $1058=($1057|0)==($1001|0);
- if($1058){label=238;break;}else{label=246;break;}
- case 238: 
- var $1059=($1046|0)==($1043|0);
- if($1059){label=239;break;}else{label=240;break;}
- case 239: 
- var $1061=1<<$1038;
- var $1062=$1061^-1;
- var $1063=HEAP32[((2016)>>2)];
- var $1064=$1063&$1062;
- HEAP32[((2016)>>2)]=$1064;
- label=280;break;
- case 240: 
- var $1066=($1046|0)==($1049|0);
- if($1066){label=241;break;}else{label=242;break;}
- case 241: 
- var $_pre61_i_i=(($1046+8)|0);
- var $_pre_phi62_i_i=$_pre61_i_i;label=244;break;
- case 242: 
- var $1068=$1046;
- var $1069=HEAP32[((2032)>>2)];
- var $1070=($1068>>>0)<($1069>>>0);
- if($1070){label=245;break;}else{label=243;break;}
- case 243: 
- var $1072=(($1046+8)|0);
- var $1073=HEAP32[(($1072)>>2)];
- var $1074=($1073|0)==($1001|0);
- if($1074){var $_pre_phi62_i_i=$1072;label=244;break;}else{label=245;break;}
- case 244: 
- var $_pre_phi62_i_i;
- var $1075=(($1043+12)|0);
- HEAP32[(($1075)>>2)]=$1046;
- HEAP32[(($_pre_phi62_i_i)>>2)]=$1043;
- label=280;break;
- case 245: 
- _abort();
- throw "Reached an unreachable!";
- case 246: 
- _abort();
- throw "Reached an unreachable!";
- case 247: 
- var $1077=$1000;
- var $_sum34_i_i=$999|24;
- var $_sum110_i=((($_sum34_i_i)+($tsize_246_i))|0);
- var $1078=(($tbase_247_i+$_sum110_i)|0);
- var $1079=$1078;
- var $1080=HEAP32[(($1079)>>2)];
- var $_sum5_i_i=((($tsize_246_i)+(12))|0);
- var $_sum111_i=((($_sum5_i_i)+($999))|0);
- var $1081=(($tbase_247_i+$_sum111_i)|0);
- var $1082=$1081;
- var $1083=HEAP32[(($1082)>>2)];
- var $1084=($1083|0)==($1077|0);
- if($1084){label=253;break;}else{label=248;break;}
- case 248: 
- var $_sum3637_i_i=$999|8;
- var $_sum112_i=((($_sum3637_i_i)+($tsize_246_i))|0);
- var $1086=(($tbase_247_i+$_sum112_i)|0);
- var $1087=$1086;
- var $1088=HEAP32[(($1087)>>2)];
- var $1089=$1088;
- var $1090=HEAP32[((2032)>>2)];
- var $1091=($1089>>>0)<($1090>>>0);
- if($1091){label=252;break;}else{label=249;break;}
- case 249: 
- var $1093=(($1088+12)|0);
- var $1094=HEAP32[(($1093)>>2)];
- var $1095=($1094|0)==($1077|0);
- if($1095){label=250;break;}else{label=252;break;}
- case 250: 
- var $1097=(($1083+8)|0);
- var $1098=HEAP32[(($1097)>>2)];
- var $1099=($1098|0)==($1077|0);
- if($1099){label=251;break;}else{label=252;break;}
- case 251: 
- HEAP32[(($1093)>>2)]=$1083;
- HEAP32[(($1097)>>2)]=$1088;
- var $R_1_i_i=$1083;label=260;break;
- case 252: 
- _abort();
- throw "Reached an unreachable!";
- case 253: 
- var $_sum67_i_i=$999|16;
- var $_sum117_i=((($_sum2_i23_i)+($_sum67_i_i))|0);
- var $1102=(($tbase_247_i+$_sum117_i)|0);
- var $1103=$1102;
- var $1104=HEAP32[(($1103)>>2)];
- var $1105=($1104|0)==0;
- if($1105){label=254;break;}else{var $R_0_i_i=$1104;var $RP_0_i_i=$1103;label=255;break;}
- case 254: 
- var $_sum118_i=((($_sum67_i_i)+($tsize_246_i))|0);
- var $1107=(($tbase_247_i+$_sum118_i)|0);
- var $1108=$1107;
- var $1109=HEAP32[(($1108)>>2)];
- var $1110=($1109|0)==0;
- if($1110){var $R_1_i_i=0;label=260;break;}else{var $R_0_i_i=$1109;var $RP_0_i_i=$1108;label=255;break;}
- case 255: 
- var $RP_0_i_i;
- var $R_0_i_i;
- var $1111=(($R_0_i_i+20)|0);
- var $1112=HEAP32[(($1111)>>2)];
- var $1113=($1112|0)==0;
- if($1113){label=256;break;}else{var $R_0_i_i=$1112;var $RP_0_i_i=$1111;label=255;break;}
- case 256: 
- var $1115=(($R_0_i_i+16)|0);
- var $1116=HEAP32[(($1115)>>2)];
- var $1117=($1116|0)==0;
- if($1117){label=257;break;}else{var $R_0_i_i=$1116;var $RP_0_i_i=$1115;label=255;break;}
- case 257: 
- var $1119=$RP_0_i_i;
- var $1120=HEAP32[((2032)>>2)];
- var $1121=($1119>>>0)<($1120>>>0);
- if($1121){label=259;break;}else{label=258;break;}
- case 258: 
- HEAP32[(($RP_0_i_i)>>2)]=0;
- var $R_1_i_i=$R_0_i_i;label=260;break;
- case 259: 
- _abort();
- throw "Reached an unreachable!";
- case 260: 
- var $R_1_i_i;
- var $1125=($1080|0)==0;
- if($1125){label=280;break;}else{label=261;break;}
- case 261: 
- var $_sum31_i_i=((($tsize_246_i)+(28))|0);
- var $_sum113_i=((($_sum31_i_i)+($999))|0);
- var $1127=(($tbase_247_i+$_sum113_i)|0);
- var $1128=$1127;
- var $1129=HEAP32[(($1128)>>2)];
- var $1130=((2320+($1129<<2))|0);
- var $1131=HEAP32[(($1130)>>2)];
- var $1132=($1077|0)==($1131|0);
- if($1132){label=262;break;}else{label=264;break;}
- case 262: 
- HEAP32[(($1130)>>2)]=$R_1_i_i;
- var $cond_i_i=($R_1_i_i|0)==0;
- if($cond_i_i){label=263;break;}else{label=270;break;}
- case 263: 
- var $1134=1<<$1129;
- var $1135=$1134^-1;
- var $1136=HEAP32[((2020)>>2)];
- var $1137=$1136&$1135;
- HEAP32[((2020)>>2)]=$1137;
- label=280;break;
- case 264: 
- var $1139=$1080;
- var $1140=HEAP32[((2032)>>2)];
- var $1141=($1139>>>0)<($1140>>>0);
- if($1141){label=268;break;}else{label=265;break;}
- case 265: 
- var $1143=(($1080+16)|0);
- var $1144=HEAP32[(($1143)>>2)];
- var $1145=($1144|0)==($1077|0);
- if($1145){label=266;break;}else{label=267;break;}
- case 266: 
- HEAP32[(($1143)>>2)]=$R_1_i_i;
- label=269;break;
- case 267: 
- var $1148=(($1080+20)|0);
- HEAP32[(($1148)>>2)]=$R_1_i_i;
- label=269;break;
- case 268: 
- _abort();
- throw "Reached an unreachable!";
- case 269: 
- var $1151=($R_1_i_i|0)==0;
- if($1151){label=280;break;}else{label=270;break;}
- case 270: 
- var $1153=$R_1_i_i;
- var $1154=HEAP32[((2032)>>2)];
- var $1155=($1153>>>0)<($1154>>>0);
- if($1155){label=279;break;}else{label=271;break;}
- case 271: 
- var $1157=(($R_1_i_i+24)|0);
- HEAP32[(($1157)>>2)]=$1080;
- var $_sum3233_i_i=$999|16;
- var $_sum114_i=((($_sum3233_i_i)+($tsize_246_i))|0);
- var $1158=(($tbase_247_i+$_sum114_i)|0);
- var $1159=$1158;
- var $1160=HEAP32[(($1159)>>2)];
- var $1161=($1160|0)==0;
- if($1161){label=275;break;}else{label=272;break;}
- case 272: 
- var $1163=$1160;
- var $1164=HEAP32[((2032)>>2)];
- var $1165=($1163>>>0)<($1164>>>0);
- if($1165){label=274;break;}else{label=273;break;}
- case 273: 
- var $1167=(($R_1_i_i+16)|0);
- HEAP32[(($1167)>>2)]=$1160;
- var $1168=(($1160+24)|0);
- HEAP32[(($1168)>>2)]=$R_1_i_i;
- label=275;break;
- case 274: 
- _abort();
- throw "Reached an unreachable!";
- case 275: 
- var $_sum115_i=((($_sum2_i23_i)+($_sum3233_i_i))|0);
- var $1171=(($tbase_247_i+$_sum115_i)|0);
- var $1172=$1171;
- var $1173=HEAP32[(($1172)>>2)];
- var $1174=($1173|0)==0;
- if($1174){label=280;break;}else{label=276;break;}
- case 276: 
- var $1176=$1173;
- var $1177=HEAP32[((2032)>>2)];
- var $1178=($1176>>>0)<($1177>>>0);
- if($1178){label=278;break;}else{label=277;break;}
- case 277: 
- var $1180=(($R_1_i_i+20)|0);
- HEAP32[(($1180)>>2)]=$1173;
- var $1181=(($1173+24)|0);
- HEAP32[(($1181)>>2)]=$R_1_i_i;
- label=280;break;
- case 278: 
- _abort();
- throw "Reached an unreachable!";
- case 279: 
- _abort();
- throw "Reached an unreachable!";
- case 280: 
- var $_sum9_i_i=$1037|$999;
- var $_sum116_i=((($_sum9_i_i)+($tsize_246_i))|0);
- var $1185=(($tbase_247_i+$_sum116_i)|0);
- var $1186=$1185;
- var $1187=((($1037)+($1007))|0);
- var $oldfirst_0_i_i=$1186;var $qsize_0_i_i=$1187;label=281;break;
- case 281: 
- var $qsize_0_i_i;
- var $oldfirst_0_i_i;
- var $1189=(($oldfirst_0_i_i+4)|0);
- var $1190=HEAP32[(($1189)>>2)];
- var $1191=$1190&-2;
- HEAP32[(($1189)>>2)]=$1191;
- var $1192=$qsize_0_i_i|1;
- var $_sum10_i_i=((($_sum_i21_i)+(4))|0);
- var $1193=(($tbase_247_i+$_sum10_i_i)|0);
- var $1194=$1193;
- HEAP32[(($1194)>>2)]=$1192;
- var $_sum11_i_i=((($qsize_0_i_i)+($_sum_i21_i))|0);
- var $1195=(($tbase_247_i+$_sum11_i_i)|0);
- var $1196=$1195;
- HEAP32[(($1196)>>2)]=$qsize_0_i_i;
- var $1197=$qsize_0_i_i>>>3;
- var $1198=($qsize_0_i_i>>>0)<256;
- if($1198){label=282;break;}else{label=287;break;}
- case 282: 
- var $1200=$1197<<1;
- var $1201=((2056+($1200<<2))|0);
- var $1202=$1201;
- var $1203=HEAP32[((2016)>>2)];
- var $1204=1<<$1197;
- var $1205=$1203&$1204;
- var $1206=($1205|0)==0;
- if($1206){label=283;break;}else{label=284;break;}
- case 283: 
- var $1208=$1203|$1204;
- HEAP32[((2016)>>2)]=$1208;
- var $_sum27_pre_i_i=((($1200)+(2))|0);
- var $_pre_i24_i=((2056+($_sum27_pre_i_i<<2))|0);
- var $F4_0_i_i=$1202;var $_pre_phi_i25_i=$_pre_i24_i;label=286;break;
- case 284: 
- var $_sum30_i_i=((($1200)+(2))|0);
- var $1210=((2056+($_sum30_i_i<<2))|0);
- var $1211=HEAP32[(($1210)>>2)];
- var $1212=$1211;
- var $1213=HEAP32[((2032)>>2)];
- var $1214=($1212>>>0)<($1213>>>0);
- if($1214){label=285;break;}else{var $F4_0_i_i=$1211;var $_pre_phi_i25_i=$1210;label=286;break;}
- case 285: 
- _abort();
- throw "Reached an unreachable!";
- case 286: 
- var $_pre_phi_i25_i;
- var $F4_0_i_i;
- HEAP32[(($_pre_phi_i25_i)>>2)]=$1006;
- var $1217=(($F4_0_i_i+12)|0);
- HEAP32[(($1217)>>2)]=$1006;
- var $_sum28_i_i=((($_sum_i21_i)+(8))|0);
- var $1218=(($tbase_247_i+$_sum28_i_i)|0);
- var $1219=$1218;
- HEAP32[(($1219)>>2)]=$F4_0_i_i;
- var $_sum29_i_i=((($_sum_i21_i)+(12))|0);
- var $1220=(($tbase_247_i+$_sum29_i_i)|0);
- var $1221=$1220;
- HEAP32[(($1221)>>2)]=$1202;
- label=305;break;
- case 287: 
- var $1223=$1005;
- var $1224=$qsize_0_i_i>>>8;
- var $1225=($1224|0)==0;
- if($1225){var $I7_0_i_i=0;label=290;break;}else{label=288;break;}
- case 288: 
- var $1227=($qsize_0_i_i>>>0)>16777215;
- if($1227){var $I7_0_i_i=31;label=290;break;}else{label=289;break;}
- case 289: 
- var $1229=((($1224)+(1048320))|0);
- var $1230=$1229>>>16;
- var $1231=$1230&8;
- var $1232=$1224<<$1231;
- var $1233=((($1232)+(520192))|0);
- var $1234=$1233>>>16;
- var $1235=$1234&4;
- var $1236=$1235|$1231;
- var $1237=$1232<<$1235;
- var $1238=((($1237)+(245760))|0);
- var $1239=$1238>>>16;
- var $1240=$1239&2;
- var $1241=$1236|$1240;
- var $1242=(((14)-($1241))|0);
- var $1243=$1237<<$1240;
- var $1244=$1243>>>15;
- var $1245=((($1242)+($1244))|0);
- var $1246=$1245<<1;
- var $1247=((($1245)+(7))|0);
- var $1248=$qsize_0_i_i>>>($1247>>>0);
- var $1249=$1248&1;
- var $1250=$1249|$1246;
- var $I7_0_i_i=$1250;label=290;break;
- case 290: 
- var $I7_0_i_i;
- var $1252=((2320+($I7_0_i_i<<2))|0);
- var $_sum12_i26_i=((($_sum_i21_i)+(28))|0);
- var $1253=(($tbase_247_i+$_sum12_i26_i)|0);
- var $1254=$1253;
- HEAP32[(($1254)>>2)]=$I7_0_i_i;
- var $_sum13_i_i=((($_sum_i21_i)+(16))|0);
- var $1255=(($tbase_247_i+$_sum13_i_i)|0);
- var $_sum14_i_i=((($_sum_i21_i)+(20))|0);
- var $1256=(($tbase_247_i+$_sum14_i_i)|0);
- var $1257=$1256;
- HEAP32[(($1257)>>2)]=0;
- var $1258=$1255;
- HEAP32[(($1258)>>2)]=0;
- var $1259=HEAP32[((2020)>>2)];
- var $1260=1<<$I7_0_i_i;
- var $1261=$1259&$1260;
- var $1262=($1261|0)==0;
- if($1262){label=291;break;}else{label=292;break;}
- case 291: 
- var $1264=$1259|$1260;
- HEAP32[((2020)>>2)]=$1264;
- HEAP32[(($1252)>>2)]=$1223;
- var $1265=$1252;
- var $_sum15_i_i=((($_sum_i21_i)+(24))|0);
- var $1266=(($tbase_247_i+$_sum15_i_i)|0);
- var $1267=$1266;
- HEAP32[(($1267)>>2)]=$1265;
- var $_sum16_i_i=((($_sum_i21_i)+(12))|0);
- var $1268=(($tbase_247_i+$_sum16_i_i)|0);
- var $1269=$1268;
- HEAP32[(($1269)>>2)]=$1223;
- var $_sum17_i_i=((($_sum_i21_i)+(8))|0);
- var $1270=(($tbase_247_i+$_sum17_i_i)|0);
- var $1271=$1270;
- HEAP32[(($1271)>>2)]=$1223;
- label=305;break;
- case 292: 
- var $1273=HEAP32[(($1252)>>2)];
- var $1274=($I7_0_i_i|0)==31;
- if($1274){var $1279=0;label=294;break;}else{label=293;break;}
- case 293: 
- var $1276=$I7_0_i_i>>>1;
- var $1277=(((25)-($1276))|0);
- var $1279=$1277;label=294;break;
- case 294: 
- var $1279;
- var $1280=(($1273+4)|0);
- var $1281=HEAP32[(($1280)>>2)];
- var $1282=$1281&-8;
- var $1283=($1282|0)==($qsize_0_i_i|0);
- if($1283){var $T_0_lcssa_i28_i=$1273;label=301;break;}else{label=295;break;}
- case 295: 
- var $1284=$qsize_0_i_i<<$1279;
- var $T_055_i_i=$1273;var $K8_056_i_i=$1284;label=297;break;
- case 296: 
- var $1286=$K8_056_i_i<<1;
- var $1287=(($1294+4)|0);
- var $1288=HEAP32[(($1287)>>2)];
- var $1289=$1288&-8;
- var $1290=($1289|0)==($qsize_0_i_i|0);
- if($1290){var $T_0_lcssa_i28_i=$1294;label=301;break;}else{var $T_055_i_i=$1294;var $K8_056_i_i=$1286;label=297;break;}
- case 297: 
- var $K8_056_i_i;
- var $T_055_i_i;
- var $1292=$K8_056_i_i>>>31;
- var $1293=(($T_055_i_i+16+($1292<<2))|0);
- var $1294=HEAP32[(($1293)>>2)];
- var $1295=($1294|0)==0;
- if($1295){label=298;break;}else{label=296;break;}
- case 298: 
- var $1297=$1293;
- var $1298=HEAP32[((2032)>>2)];
- var $1299=($1297>>>0)<($1298>>>0);
- if($1299){label=300;break;}else{label=299;break;}
- case 299: 
- HEAP32[(($1293)>>2)]=$1223;
- var $_sum24_i_i=((($_sum_i21_i)+(24))|0);
- var $1301=(($tbase_247_i+$_sum24_i_i)|0);
- var $1302=$1301;
- HEAP32[(($1302)>>2)]=$T_055_i_i;
- var $_sum25_i_i=((($_sum_i21_i)+(12))|0);
- var $1303=(($tbase_247_i+$_sum25_i_i)|0);
- var $1304=$1303;
- HEAP32[(($1304)>>2)]=$1223;
- var $_sum26_i_i=((($_sum_i21_i)+(8))|0);
- var $1305=(($tbase_247_i+$_sum26_i_i)|0);
- var $1306=$1305;
- HEAP32[(($1306)>>2)]=$1223;
- label=305;break;
- case 300: 
- _abort();
- throw "Reached an unreachable!";
- case 301: 
- var $T_0_lcssa_i28_i;
- var $1308=(($T_0_lcssa_i28_i+8)|0);
- var $1309=HEAP32[(($1308)>>2)];
- var $1310=$T_0_lcssa_i28_i;
- var $1311=HEAP32[((2032)>>2)];
- var $1312=($1310>>>0)<($1311>>>0);
- if($1312){label=304;break;}else{label=302;break;}
- case 302: 
- var $1314=$1309;
- var $1315=($1314>>>0)<($1311>>>0);
- if($1315){label=304;break;}else{label=303;break;}
- case 303: 
- var $1317=(($1309+12)|0);
- HEAP32[(($1317)>>2)]=$1223;
- HEAP32[(($1308)>>2)]=$1223;
- var $_sum21_i_i=((($_sum_i21_i)+(8))|0);
- var $1318=(($tbase_247_i+$_sum21_i_i)|0);
- var $1319=$1318;
- HEAP32[(($1319)>>2)]=$1309;
- var $_sum22_i_i=((($_sum_i21_i)+(12))|0);
- var $1320=(($tbase_247_i+$_sum22_i_i)|0);
- var $1321=$1320;
- HEAP32[(($1321)>>2)]=$T_0_lcssa_i28_i;
- var $_sum23_i_i=((($_sum_i21_i)+(24))|0);
- var $1322=(($tbase_247_i+$_sum23_i_i)|0);
- var $1323=$1322;
- HEAP32[(($1323)>>2)]=0;
- label=305;break;
- case 304: 
- _abort();
- throw "Reached an unreachable!";
- case 305: 
- var $_sum1819_i_i=$989|8;
- var $1324=(($tbase_247_i+$_sum1819_i_i)|0);
- var $mem_0=$1324;label=344;break;
- case 306: 
- var $1325=$888;
- var $sp_0_i_i_i=2464;label=307;break;
- case 307: 
- var $sp_0_i_i_i;
- var $1327=(($sp_0_i_i_i)|0);
- var $1328=HEAP32[(($1327)>>2)];
- var $1329=($1328>>>0)>($1325>>>0);
- if($1329){label=309;break;}else{label=308;break;}
- case 308: 
- var $1331=(($sp_0_i_i_i+4)|0);
- var $1332=HEAP32[(($1331)>>2)];
- var $1333=(($1328+$1332)|0);
- var $1334=($1333>>>0)>($1325>>>0);
- if($1334){label=310;break;}else{label=309;break;}
- case 309: 
- var $1336=(($sp_0_i_i_i+8)|0);
- var $1337=HEAP32[(($1336)>>2)];
- var $sp_0_i_i_i=$1337;label=307;break;
- case 310: 
- var $_sum_i15_i=((($1332)-(47))|0);
- var $_sum1_i16_i=((($1332)-(39))|0);
- var $1338=(($1328+$_sum1_i16_i)|0);
- var $1339=$1338;
- var $1340=$1339&7;
- var $1341=($1340|0)==0;
- if($1341){var $1346=0;label=312;break;}else{label=311;break;}
- case 311: 
- var $1343=(((-$1339))|0);
- var $1344=$1343&7;
- var $1346=$1344;label=312;break;
- case 312: 
- var $1346;
- var $_sum2_i17_i=((($_sum_i15_i)+($1346))|0);
- var $1347=(($1328+$_sum2_i17_i)|0);
- var $1348=(($888+16)|0);
- var $1349=$1348;
- var $1350=($1347>>>0)<($1349>>>0);
- var $1351=($1350?$1325:$1347);
- var $1352=(($1351+8)|0);
- var $1353=$1352;
- var $1354=((($tsize_246_i)-(40))|0);
- var $1355=(($tbase_247_i+8)|0);
- var $1356=$1355;
- var $1357=$1356&7;
- var $1358=($1357|0)==0;
- if($1358){var $1362=0;label=314;break;}else{label=313;break;}
- case 313: 
- var $1360=(((-$1356))|0);
- var $1361=$1360&7;
- var $1362=$1361;label=314;break;
- case 314: 
- var $1362;
- var $1363=(($tbase_247_i+$1362)|0);
- var $1364=$1363;
- var $1365=((($1354)-($1362))|0);
- HEAP32[((2040)>>2)]=$1364;
- HEAP32[((2028)>>2)]=$1365;
- var $1366=$1365|1;
- var $_sum_i_i_i=((($1362)+(4))|0);
- var $1367=(($tbase_247_i+$_sum_i_i_i)|0);
- var $1368=$1367;
- HEAP32[(($1368)>>2)]=$1366;
- var $_sum2_i_i_i=((($tsize_246_i)-(36))|0);
- var $1369=(($tbase_247_i+$_sum2_i_i_i)|0);
- var $1370=$1369;
- HEAP32[(($1370)>>2)]=40;
- var $1371=HEAP32[((2008)>>2)];
- HEAP32[((2044)>>2)]=$1371;
- var $1372=(($1351+4)|0);
- var $1373=$1372;
- HEAP32[(($1373)>>2)]=27;
- assert(16 % 1 === 0);HEAP32[(($1352)>>2)]=HEAP32[((2464)>>2)];HEAP32[((($1352)+(4))>>2)]=HEAP32[((2468)>>2)];HEAP32[((($1352)+(8))>>2)]=HEAP32[((2472)>>2)];HEAP32[((($1352)+(12))>>2)]=HEAP32[((2476)>>2)];
- HEAP32[((2464)>>2)]=$tbase_247_i;
- HEAP32[((2468)>>2)]=$tsize_246_i;
- HEAP32[((2476)>>2)]=0;
- HEAP32[((2472)>>2)]=$1353;
- var $1374=(($1351+28)|0);
- var $1375=$1374;
- HEAP32[(($1375)>>2)]=7;
- var $1376=(($1351+32)|0);
- var $1377=($1376>>>0)<($1333>>>0);
- if($1377){var $1378=$1375;label=315;break;}else{label=316;break;}
- case 315: 
- var $1378;
- var $1379=(($1378+4)|0);
- HEAP32[(($1379)>>2)]=7;
- var $1380=(($1378+8)|0);
- var $1381=$1380;
- var $1382=($1381>>>0)<($1333>>>0);
- if($1382){var $1378=$1379;label=315;break;}else{label=316;break;}
- case 316: 
- var $1383=($1351|0)==($1325|0);
- if($1383){label=341;break;}else{label=317;break;}
- case 317: 
- var $1385=$1351;
- var $1386=$888;
- var $1387=((($1385)-($1386))|0);
- var $1388=(($1325+$1387)|0);
- var $_sum3_i_i=((($1387)+(4))|0);
- var $1389=(($1325+$_sum3_i_i)|0);
- var $1390=$1389;
- var $1391=HEAP32[(($1390)>>2)];
- var $1392=$1391&-2;
- HEAP32[(($1390)>>2)]=$1392;
- var $1393=$1387|1;
- var $1394=(($888+4)|0);
- HEAP32[(($1394)>>2)]=$1393;
- var $1395=$1388;
- HEAP32[(($1395)>>2)]=$1387;
- var $1396=$1387>>>3;
- var $1397=($1387>>>0)<256;
- if($1397){label=318;break;}else{label=323;break;}
- case 318: 
- var $1399=$1396<<1;
- var $1400=((2056+($1399<<2))|0);
- var $1401=$1400;
- var $1402=HEAP32[((2016)>>2)];
- var $1403=1<<$1396;
- var $1404=$1402&$1403;
- var $1405=($1404|0)==0;
- if($1405){label=319;break;}else{label=320;break;}
- case 319: 
- var $1407=$1402|$1403;
- HEAP32[((2016)>>2)]=$1407;
- var $_sum11_pre_i_i=((($1399)+(2))|0);
- var $_pre_i_i=((2056+($_sum11_pre_i_i<<2))|0);
- var $F_0_i_i=$1401;var $_pre_phi_i_i=$_pre_i_i;label=322;break;
- case 320: 
- var $_sum12_i_i=((($1399)+(2))|0);
- var $1409=((2056+($_sum12_i_i<<2))|0);
- var $1410=HEAP32[(($1409)>>2)];
- var $1411=$1410;
- var $1412=HEAP32[((2032)>>2)];
- var $1413=($1411>>>0)<($1412>>>0);
- if($1413){label=321;break;}else{var $F_0_i_i=$1410;var $_pre_phi_i_i=$1409;label=322;break;}
- case 321: 
- _abort();
- throw "Reached an unreachable!";
- case 322: 
- var $_pre_phi_i_i;
- var $F_0_i_i;
- HEAP32[(($_pre_phi_i_i)>>2)]=$888;
- var $1416=(($F_0_i_i+12)|0);
- HEAP32[(($1416)>>2)]=$888;
- var $1417=(($888+8)|0);
- HEAP32[(($1417)>>2)]=$F_0_i_i;
- var $1418=(($888+12)|0);
- HEAP32[(($1418)>>2)]=$1401;
- label=341;break;
- case 323: 
- var $1420=$888;
- var $1421=$1387>>>8;
- var $1422=($1421|0)==0;
- if($1422){var $I1_0_i_i=0;label=326;break;}else{label=324;break;}
- case 324: 
- var $1424=($1387>>>0)>16777215;
- if($1424){var $I1_0_i_i=31;label=326;break;}else{label=325;break;}
- case 325: 
- var $1426=((($1421)+(1048320))|0);
- var $1427=$1426>>>16;
- var $1428=$1427&8;
- var $1429=$1421<<$1428;
- var $1430=((($1429)+(520192))|0);
- var $1431=$1430>>>16;
- var $1432=$1431&4;
- var $1433=$1432|$1428;
- var $1434=$1429<<$1432;
- var $1435=((($1434)+(245760))|0);
- var $1436=$1435>>>16;
- var $1437=$1436&2;
- var $1438=$1433|$1437;
- var $1439=(((14)-($1438))|0);
- var $1440=$1434<<$1437;
- var $1441=$1440>>>15;
- var $1442=((($1439)+($1441))|0);
- var $1443=$1442<<1;
- var $1444=((($1442)+(7))|0);
- var $1445=$1387>>>($1444>>>0);
- var $1446=$1445&1;
- var $1447=$1446|$1443;
- var $I1_0_i_i=$1447;label=326;break;
- case 326: 
- var $I1_0_i_i;
- var $1449=((2320+($I1_0_i_i<<2))|0);
- var $1450=(($888+28)|0);
- var $I1_0_c_i_i=$I1_0_i_i;
- HEAP32[(($1450)>>2)]=$I1_0_c_i_i;
- var $1451=(($888+20)|0);
- HEAP32[(($1451)>>2)]=0;
- var $1452=(($888+16)|0);
- HEAP32[(($1452)>>2)]=0;
- var $1453=HEAP32[((2020)>>2)];
- var $1454=1<<$I1_0_i_i;
- var $1455=$1453&$1454;
- var $1456=($1455|0)==0;
- if($1456){label=327;break;}else{label=328;break;}
- case 327: 
- var $1458=$1453|$1454;
- HEAP32[((2020)>>2)]=$1458;
- HEAP32[(($1449)>>2)]=$1420;
- var $1459=(($888+24)|0);
- var $_c_i_i=$1449;
- HEAP32[(($1459)>>2)]=$_c_i_i;
- var $1460=(($888+12)|0);
- HEAP32[(($1460)>>2)]=$888;
- var $1461=(($888+8)|0);
- HEAP32[(($1461)>>2)]=$888;
- label=341;break;
- case 328: 
- var $1463=HEAP32[(($1449)>>2)];
- var $1464=($I1_0_i_i|0)==31;
- if($1464){var $1469=0;label=330;break;}else{label=329;break;}
- case 329: 
- var $1466=$I1_0_i_i>>>1;
- var $1467=(((25)-($1466))|0);
- var $1469=$1467;label=330;break;
- case 330: 
- var $1469;
- var $1470=(($1463+4)|0);
- var $1471=HEAP32[(($1470)>>2)];
- var $1472=$1471&-8;
- var $1473=($1472|0)==($1387|0);
- if($1473){var $T_0_lcssa_i_i=$1463;label=337;break;}else{label=331;break;}
- case 331: 
- var $1474=$1387<<$1469;
- var $T_014_i_i=$1463;var $K2_015_i_i=$1474;label=333;break;
- case 332: 
- var $1476=$K2_015_i_i<<1;
- var $1477=(($1484+4)|0);
- var $1478=HEAP32[(($1477)>>2)];
- var $1479=$1478&-8;
- var $1480=($1479|0)==($1387|0);
- if($1480){var $T_0_lcssa_i_i=$1484;label=337;break;}else{var $T_014_i_i=$1484;var $K2_015_i_i=$1476;label=333;break;}
- case 333: 
- var $K2_015_i_i;
- var $T_014_i_i;
- var $1482=$K2_015_i_i>>>31;
- var $1483=(($T_014_i_i+16+($1482<<2))|0);
- var $1484=HEAP32[(($1483)>>2)];
- var $1485=($1484|0)==0;
- if($1485){label=334;break;}else{label=332;break;}
- case 334: 
- var $1487=$1483;
- var $1488=HEAP32[((2032)>>2)];
- var $1489=($1487>>>0)<($1488>>>0);
- if($1489){label=336;break;}else{label=335;break;}
- case 335: 
- HEAP32[(($1483)>>2)]=$1420;
- var $1491=(($888+24)|0);
- var $T_0_c8_i_i=$T_014_i_i;
- HEAP32[(($1491)>>2)]=$T_0_c8_i_i;
- var $1492=(($888+12)|0);
- HEAP32[(($1492)>>2)]=$888;
- var $1493=(($888+8)|0);
- HEAP32[(($1493)>>2)]=$888;
- label=341;break;
- case 336: 
- _abort();
- throw "Reached an unreachable!";
- case 337: 
- var $T_0_lcssa_i_i;
- var $1495=(($T_0_lcssa_i_i+8)|0);
- var $1496=HEAP32[(($1495)>>2)];
- var $1497=$T_0_lcssa_i_i;
- var $1498=HEAP32[((2032)>>2)];
- var $1499=($1497>>>0)<($1498>>>0);
- if($1499){label=340;break;}else{label=338;break;}
- case 338: 
- var $1501=$1496;
- var $1502=($1501>>>0)<($1498>>>0);
- if($1502){label=340;break;}else{label=339;break;}
- case 339: 
- var $1504=(($1496+12)|0);
- HEAP32[(($1504)>>2)]=$1420;
- HEAP32[(($1495)>>2)]=$1420;
- var $1505=(($888+8)|0);
- var $_c7_i_i=$1496;
- HEAP32[(($1505)>>2)]=$_c7_i_i;
- var $1506=(($888+12)|0);
- var $T_0_c_i_i=$T_0_lcssa_i_i;
- HEAP32[(($1506)>>2)]=$T_0_c_i_i;
- var $1507=(($888+24)|0);
- HEAP32[(($1507)>>2)]=0;
- label=341;break;
- case 340: 
- _abort();
- throw "Reached an unreachable!";
- case 341: 
- var $1508=HEAP32[((2028)>>2)];
- var $1509=($1508>>>0)>($nb_0>>>0);
- if($1509){label=342;break;}else{label=343;break;}
- case 342: 
- var $1511=((($1508)-($nb_0))|0);
- HEAP32[((2028)>>2)]=$1511;
- var $1512=HEAP32[((2040)>>2)];
- var $1513=$1512;
- var $1514=(($1513+$nb_0)|0);
- var $1515=$1514;
- HEAP32[((2040)>>2)]=$1515;
- var $1516=$1511|1;
- var $_sum_i34=((($nb_0)+(4))|0);
- var $1517=(($1513+$_sum_i34)|0);
- var $1518=$1517;
- HEAP32[(($1518)>>2)]=$1516;
- var $1519=$nb_0|3;
- var $1520=(($1512+4)|0);
- HEAP32[(($1520)>>2)]=$1519;
- var $1521=(($1512+8)|0);
- var $1522=$1521;
- var $mem_0=$1522;label=344;break;
- case 343: 
- var $1523=___errno_location();
- HEAP32[(($1523)>>2)]=12;
- var $mem_0=0;label=344;break;
- case 344: 
- var $mem_0;
- return $mem_0;
-  default: assert(0, "bad label: " + label);
+ _memset(($vendor_name|0),0,1024)|0;
+ _memset(($device_name|0),0,1024)|0;
+ $67 = HEAP32[2384>>2]|0;
+ $68 = (_clGetDeviceInfo(($67|0),4140,1024,($vendor_name|0),($returned_size|0))|0);
+ HEAP32[$err>>2] = $68;
+ $69 = HEAP32[2384>>2]|0;
+ $70 = (_clGetDeviceInfo(($69|0),4139,1024,($device_name|0),($returned_size|0))|0);
+ $71 = HEAP32[$err>>2]|0;
+ $72 = $71 | $70;
+ HEAP32[$err>>2] = $72;
+ $73 = HEAP32[$err>>2]|0;
+ $74 = ($73|0)!=(0);
+ if ($74) {
+  (_printf((3072|0),($vararg_buffer15|0))|0);
  }
-
+ (_printf((104|0),($vararg_buffer17|0))|0);
+ HEAP32[$vararg_buffer19>>2] = $vendor_name;
+ $vararg_ptr21 = (($vararg_buffer19) + 4|0);
+ HEAP32[$vararg_ptr21>>2] = $device_name;
+ (_printf((3112|0),($vararg_buffer19|0))|0);
+ $0 = 0;
+ $75 = $0;
+ STACKTOP = sp;return ($75|0);
 }
-Module["_malloc"] = _malloc;
-
-function _free($mem){
- var label=0;
-
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1=($mem|0)==0;
- if($1){label=141;break;}else{label=2;break;}
- case 2: 
- var $3=((($mem)-(8))|0);
- var $4=$3;
- var $5=HEAP32[((2032)>>2)];
- var $6=($3>>>0)<($5>>>0);
- if($6){label=140;break;}else{label=3;break;}
- case 3: 
- var $8=((($mem)-(4))|0);
- var $9=$8;
- var $10=HEAP32[(($9)>>2)];
- var $11=$10&3;
- var $12=($11|0)==1;
- if($12){label=140;break;}else{label=4;break;}
- case 4: 
- var $14=$10&-8;
- var $_sum=((($14)-(8))|0);
- var $15=(($mem+$_sum)|0);
- var $16=$15;
- var $17=$10&1;
- var $18=($17|0)==0;
- if($18){label=5;break;}else{var $p_0=$4;var $psize_0=$14;label=56;break;}
- case 5: 
- var $20=$3;
- var $21=HEAP32[(($20)>>2)];
- var $22=($11|0)==0;
- if($22){label=141;break;}else{label=6;break;}
- case 6: 
- var $_sum3=(((-8)-($21))|0);
- var $24=(($mem+$_sum3)|0);
- var $25=$24;
- var $26=((($21)+($14))|0);
- var $27=($24>>>0)<($5>>>0);
- if($27){label=140;break;}else{label=7;break;}
- case 7: 
- var $29=HEAP32[((2036)>>2)];
- var $30=($25|0)==($29|0);
- if($30){label=54;break;}else{label=8;break;}
- case 8: 
- var $32=$21>>>3;
- var $33=($21>>>0)<256;
- if($33){label=9;break;}else{label=21;break;}
- case 9: 
- var $_sum47=((($_sum3)+(8))|0);
- var $35=(($mem+$_sum47)|0);
- var $36=$35;
- var $37=HEAP32[(($36)>>2)];
- var $_sum48=((($_sum3)+(12))|0);
- var $38=(($mem+$_sum48)|0);
- var $39=$38;
- var $40=HEAP32[(($39)>>2)];
- var $41=$32<<1;
- var $42=((2056+($41<<2))|0);
- var $43=$42;
- var $44=($37|0)==($43|0);
- if($44){label=12;break;}else{label=10;break;}
- case 10: 
- var $46=$37;
- var $47=($46>>>0)<($5>>>0);
- if($47){label=20;break;}else{label=11;break;}
- case 11: 
- var $49=(($37+12)|0);
- var $50=HEAP32[(($49)>>2)];
- var $51=($50|0)==($25|0);
- if($51){label=12;break;}else{label=20;break;}
- case 12: 
- var $52=($40|0)==($37|0);
- if($52){label=13;break;}else{label=14;break;}
- case 13: 
- var $54=1<<$32;
- var $55=$54^-1;
- var $56=HEAP32[((2016)>>2)];
- var $57=$56&$55;
- HEAP32[((2016)>>2)]=$57;
- var $p_0=$25;var $psize_0=$26;label=56;break;
- case 14: 
- var $59=($40|0)==($43|0);
- if($59){label=15;break;}else{label=16;break;}
- case 15: 
- var $_pre84=(($40+8)|0);
- var $_pre_phi85=$_pre84;label=18;break;
- case 16: 
- var $61=$40;
- var $62=($61>>>0)<($5>>>0);
- if($62){label=19;break;}else{label=17;break;}
- case 17: 
- var $64=(($40+8)|0);
- var $65=HEAP32[(($64)>>2)];
- var $66=($65|0)==($25|0);
- if($66){var $_pre_phi85=$64;label=18;break;}else{label=19;break;}
- case 18: 
- var $_pre_phi85;
- var $67=(($37+12)|0);
- HEAP32[(($67)>>2)]=$40;
- HEAP32[(($_pre_phi85)>>2)]=$37;
- var $p_0=$25;var $psize_0=$26;label=56;break;
- case 19: 
- _abort();
- throw "Reached an unreachable!";
- case 20: 
- _abort();
- throw "Reached an unreachable!";
- case 21: 
- var $69=$24;
- var $_sum37=((($_sum3)+(24))|0);
- var $70=(($mem+$_sum37)|0);
- var $71=$70;
- var $72=HEAP32[(($71)>>2)];
- var $_sum38=((($_sum3)+(12))|0);
- var $73=(($mem+$_sum38)|0);
- var $74=$73;
- var $75=HEAP32[(($74)>>2)];
- var $76=($75|0)==($69|0);
- if($76){label=27;break;}else{label=22;break;}
- case 22: 
- var $_sum44=((($_sum3)+(8))|0);
- var $78=(($mem+$_sum44)|0);
- var $79=$78;
- var $80=HEAP32[(($79)>>2)];
- var $81=$80;
- var $82=($81>>>0)<($5>>>0);
- if($82){label=26;break;}else{label=23;break;}
- case 23: 
- var $84=(($80+12)|0);
- var $85=HEAP32[(($84)>>2)];
- var $86=($85|0)==($69|0);
- if($86){label=24;break;}else{label=26;break;}
- case 24: 
- var $88=(($75+8)|0);
- var $89=HEAP32[(($88)>>2)];
- var $90=($89|0)==($69|0);
- if($90){label=25;break;}else{label=26;break;}
- case 25: 
- HEAP32[(($84)>>2)]=$75;
- HEAP32[(($88)>>2)]=$80;
- var $R_1=$75;label=34;break;
- case 26: 
- _abort();
- throw "Reached an unreachable!";
- case 27: 
- var $_sum40=((($_sum3)+(20))|0);
- var $93=(($mem+$_sum40)|0);
- var $94=$93;
- var $95=HEAP32[(($94)>>2)];
- var $96=($95|0)==0;
- if($96){label=28;break;}else{var $R_0=$95;var $RP_0=$94;label=29;break;}
- case 28: 
- var $_sum39=((($_sum3)+(16))|0);
- var $98=(($mem+$_sum39)|0);
- var $99=$98;
- var $100=HEAP32[(($99)>>2)];
- var $101=($100|0)==0;
- if($101){var $R_1=0;label=34;break;}else{var $R_0=$100;var $RP_0=$99;label=29;break;}
- case 29: 
- var $RP_0;
- var $R_0;
- var $102=(($R_0+20)|0);
- var $103=HEAP32[(($102)>>2)];
- var $104=($103|0)==0;
- if($104){label=30;break;}else{var $R_0=$103;var $RP_0=$102;label=29;break;}
- case 30: 
- var $106=(($R_0+16)|0);
- var $107=HEAP32[(($106)>>2)];
- var $108=($107|0)==0;
- if($108){label=31;break;}else{var $R_0=$107;var $RP_0=$106;label=29;break;}
- case 31: 
- var $110=$RP_0;
- var $111=($110>>>0)<($5>>>0);
- if($111){label=33;break;}else{label=32;break;}
- case 32: 
- HEAP32[(($RP_0)>>2)]=0;
- var $R_1=$R_0;label=34;break;
- case 33: 
- _abort();
- throw "Reached an unreachable!";
- case 34: 
- var $R_1;
- var $115=($72|0)==0;
- if($115){var $p_0=$25;var $psize_0=$26;label=56;break;}else{label=35;break;}
- case 35: 
- var $_sum41=((($_sum3)+(28))|0);
- var $117=(($mem+$_sum41)|0);
- var $118=$117;
- var $119=HEAP32[(($118)>>2)];
- var $120=((2320+($119<<2))|0);
- var $121=HEAP32[(($120)>>2)];
- var $122=($69|0)==($121|0);
- if($122){label=36;break;}else{label=38;break;}
- case 36: 
- HEAP32[(($120)>>2)]=$R_1;
- var $cond=($R_1|0)==0;
- if($cond){label=37;break;}else{label=44;break;}
- case 37: 
- var $124=1<<$119;
- var $125=$124^-1;
- var $126=HEAP32[((2020)>>2)];
- var $127=$126&$125;
- HEAP32[((2020)>>2)]=$127;
- var $p_0=$25;var $psize_0=$26;label=56;break;
- case 38: 
- var $129=$72;
- var $130=HEAP32[((2032)>>2)];
- var $131=($129>>>0)<($130>>>0);
- if($131){label=42;break;}else{label=39;break;}
- case 39: 
- var $133=(($72+16)|0);
- var $134=HEAP32[(($133)>>2)];
- var $135=($134|0)==($69|0);
- if($135){label=40;break;}else{label=41;break;}
- case 40: 
- HEAP32[(($133)>>2)]=$R_1;
- label=43;break;
- case 41: 
- var $138=(($72+20)|0);
- HEAP32[(($138)>>2)]=$R_1;
- label=43;break;
- case 42: 
- _abort();
- throw "Reached an unreachable!";
- case 43: 
- var $141=($R_1|0)==0;
- if($141){var $p_0=$25;var $psize_0=$26;label=56;break;}else{label=44;break;}
- case 44: 
- var $143=$R_1;
- var $144=HEAP32[((2032)>>2)];
- var $145=($143>>>0)<($144>>>0);
- if($145){label=53;break;}else{label=45;break;}
- case 45: 
- var $147=(($R_1+24)|0);
- HEAP32[(($147)>>2)]=$72;
- var $_sum42=((($_sum3)+(16))|0);
- var $148=(($mem+$_sum42)|0);
- var $149=$148;
- var $150=HEAP32[(($149)>>2)];
- var $151=($150|0)==0;
- if($151){label=49;break;}else{label=46;break;}
- case 46: 
- var $153=$150;
- var $154=HEAP32[((2032)>>2)];
- var $155=($153>>>0)<($154>>>0);
- if($155){label=48;break;}else{label=47;break;}
- case 47: 
- var $157=(($R_1+16)|0);
- HEAP32[(($157)>>2)]=$150;
- var $158=(($150+24)|0);
- HEAP32[(($158)>>2)]=$R_1;
- label=49;break;
- case 48: 
- _abort();
- throw "Reached an unreachable!";
- case 49: 
- var $_sum43=((($_sum3)+(20))|0);
- var $161=(($mem+$_sum43)|0);
- var $162=$161;
- var $163=HEAP32[(($162)>>2)];
- var $164=($163|0)==0;
- if($164){var $p_0=$25;var $psize_0=$26;label=56;break;}else{label=50;break;}
- case 50: 
- var $166=$163;
- var $167=HEAP32[((2032)>>2)];
- var $168=($166>>>0)<($167>>>0);
- if($168){label=52;break;}else{label=51;break;}
- case 51: 
- var $170=(($R_1+20)|0);
- HEAP32[(($170)>>2)]=$163;
- var $171=(($163+24)|0);
- HEAP32[(($171)>>2)]=$R_1;
- var $p_0=$25;var $psize_0=$26;label=56;break;
- case 52: 
- _abort();
- throw "Reached an unreachable!";
- case 53: 
- _abort();
- throw "Reached an unreachable!";
- case 54: 
- var $_sum4=((($14)-(4))|0);
- var $175=(($mem+$_sum4)|0);
- var $176=$175;
- var $177=HEAP32[(($176)>>2)];
- var $178=$177&3;
- var $179=($178|0)==3;
- if($179){label=55;break;}else{var $p_0=$25;var $psize_0=$26;label=56;break;}
- case 55: 
- HEAP32[((2024)>>2)]=$26;
- var $181=HEAP32[(($176)>>2)];
- var $182=$181&-2;
- HEAP32[(($176)>>2)]=$182;
- var $183=$26|1;
- var $_sum35=((($_sum3)+(4))|0);
- var $184=(($mem+$_sum35)|0);
- var $185=$184;
- HEAP32[(($185)>>2)]=$183;
- var $186=$15;
- HEAP32[(($186)>>2)]=$26;
- label=141;break;
- case 56: 
- var $psize_0;
- var $p_0;
- var $188=$p_0;
- var $189=($188>>>0)<($15>>>0);
- if($189){label=57;break;}else{label=140;break;}
- case 57: 
- var $_sum34=((($14)-(4))|0);
- var $191=(($mem+$_sum34)|0);
- var $192=$191;
- var $193=HEAP32[(($192)>>2)];
- var $194=$193&1;
- var $phitmp=($194|0)==0;
- if($phitmp){label=140;break;}else{label=58;break;}
- case 58: 
- var $196=$193&2;
- var $197=($196|0)==0;
- if($197){label=59;break;}else{label=112;break;}
- case 59: 
- var $199=HEAP32[((2040)>>2)];
- var $200=($16|0)==($199|0);
- if($200){label=60;break;}else{label=62;break;}
- case 60: 
- var $202=HEAP32[((2028)>>2)];
- var $203=((($202)+($psize_0))|0);
- HEAP32[((2028)>>2)]=$203;
- HEAP32[((2040)>>2)]=$p_0;
- var $204=$203|1;
- var $205=(($p_0+4)|0);
- HEAP32[(($205)>>2)]=$204;
- var $206=HEAP32[((2036)>>2)];
- var $207=($p_0|0)==($206|0);
- if($207){label=61;break;}else{label=141;break;}
- case 61: 
- HEAP32[((2036)>>2)]=0;
- HEAP32[((2024)>>2)]=0;
- label=141;break;
- case 62: 
- var $210=HEAP32[((2036)>>2)];
- var $211=($16|0)==($210|0);
- if($211){label=63;break;}else{label=64;break;}
- case 63: 
- var $213=HEAP32[((2024)>>2)];
- var $214=((($213)+($psize_0))|0);
- HEAP32[((2024)>>2)]=$214;
- HEAP32[((2036)>>2)]=$p_0;
- var $215=$214|1;
- var $216=(($p_0+4)|0);
- HEAP32[(($216)>>2)]=$215;
- var $217=(($188+$214)|0);
- var $218=$217;
- HEAP32[(($218)>>2)]=$214;
- label=141;break;
- case 64: 
- var $220=$193&-8;
- var $221=((($220)+($psize_0))|0);
- var $222=$193>>>3;
- var $223=($193>>>0)<256;
- if($223){label=65;break;}else{label=77;break;}
- case 65: 
- var $225=(($mem+$14)|0);
- var $226=$225;
- var $227=HEAP32[(($226)>>2)];
- var $_sum2829=$14|4;
- var $228=(($mem+$_sum2829)|0);
- var $229=$228;
- var $230=HEAP32[(($229)>>2)];
- var $231=$222<<1;
- var $232=((2056+($231<<2))|0);
- var $233=$232;
- var $234=($227|0)==($233|0);
- if($234){label=68;break;}else{label=66;break;}
- case 66: 
- var $236=$227;
- var $237=HEAP32[((2032)>>2)];
- var $238=($236>>>0)<($237>>>0);
- if($238){label=76;break;}else{label=67;break;}
- case 67: 
- var $240=(($227+12)|0);
- var $241=HEAP32[(($240)>>2)];
- var $242=($241|0)==($16|0);
- if($242){label=68;break;}else{label=76;break;}
- case 68: 
- var $243=($230|0)==($227|0);
- if($243){label=69;break;}else{label=70;break;}
- case 69: 
- var $245=1<<$222;
- var $246=$245^-1;
- var $247=HEAP32[((2016)>>2)];
- var $248=$247&$246;
- HEAP32[((2016)>>2)]=$248;
- label=110;break;
- case 70: 
- var $250=($230|0)==($233|0);
- if($250){label=71;break;}else{label=72;break;}
- case 71: 
- var $_pre82=(($230+8)|0);
- var $_pre_phi83=$_pre82;label=74;break;
- case 72: 
- var $252=$230;
- var $253=HEAP32[((2032)>>2)];
- var $254=($252>>>0)<($253>>>0);
- if($254){label=75;break;}else{label=73;break;}
- case 73: 
- var $256=(($230+8)|0);
- var $257=HEAP32[(($256)>>2)];
- var $258=($257|0)==($16|0);
- if($258){var $_pre_phi83=$256;label=74;break;}else{label=75;break;}
- case 74: 
- var $_pre_phi83;
- var $259=(($227+12)|0);
- HEAP32[(($259)>>2)]=$230;
- HEAP32[(($_pre_phi83)>>2)]=$227;
- label=110;break;
- case 75: 
- _abort();
- throw "Reached an unreachable!";
- case 76: 
- _abort();
- throw "Reached an unreachable!";
- case 77: 
- var $261=$15;
- var $_sum6=((($14)+(16))|0);
- var $262=(($mem+$_sum6)|0);
- var $263=$262;
- var $264=HEAP32[(($263)>>2)];
- var $_sum78=$14|4;
- var $265=(($mem+$_sum78)|0);
- var $266=$265;
- var $267=HEAP32[(($266)>>2)];
- var $268=($267|0)==($261|0);
- if($268){label=83;break;}else{label=78;break;}
- case 78: 
- var $270=(($mem+$14)|0);
- var $271=$270;
- var $272=HEAP32[(($271)>>2)];
- var $273=$272;
- var $274=HEAP32[((2032)>>2)];
- var $275=($273>>>0)<($274>>>0);
- if($275){label=82;break;}else{label=79;break;}
- case 79: 
- var $277=(($272+12)|0);
- var $278=HEAP32[(($277)>>2)];
- var $279=($278|0)==($261|0);
- if($279){label=80;break;}else{label=82;break;}
- case 80: 
- var $281=(($267+8)|0);
- var $282=HEAP32[(($281)>>2)];
- var $283=($282|0)==($261|0);
- if($283){label=81;break;}else{label=82;break;}
- case 81: 
- HEAP32[(($277)>>2)]=$267;
- HEAP32[(($281)>>2)]=$272;
- var $R7_1=$267;label=90;break;
- case 82: 
- _abort();
- throw "Reached an unreachable!";
- case 83: 
- var $_sum10=((($14)+(12))|0);
- var $286=(($mem+$_sum10)|0);
- var $287=$286;
- var $288=HEAP32[(($287)>>2)];
- var $289=($288|0)==0;
- if($289){label=84;break;}else{var $R7_0=$288;var $RP9_0=$287;label=85;break;}
- case 84: 
- var $_sum9=((($14)+(8))|0);
- var $291=(($mem+$_sum9)|0);
- var $292=$291;
- var $293=HEAP32[(($292)>>2)];
- var $294=($293|0)==0;
- if($294){var $R7_1=0;label=90;break;}else{var $R7_0=$293;var $RP9_0=$292;label=85;break;}
- case 85: 
- var $RP9_0;
- var $R7_0;
- var $295=(($R7_0+20)|0);
- var $296=HEAP32[(($295)>>2)];
- var $297=($296|0)==0;
- if($297){label=86;break;}else{var $R7_0=$296;var $RP9_0=$295;label=85;break;}
- case 86: 
- var $299=(($R7_0+16)|0);
- var $300=HEAP32[(($299)>>2)];
- var $301=($300|0)==0;
- if($301){label=87;break;}else{var $R7_0=$300;var $RP9_0=$299;label=85;break;}
- case 87: 
- var $303=$RP9_0;
- var $304=HEAP32[((2032)>>2)];
- var $305=($303>>>0)<($304>>>0);
- if($305){label=89;break;}else{label=88;break;}
- case 88: 
- HEAP32[(($RP9_0)>>2)]=0;
- var $R7_1=$R7_0;label=90;break;
- case 89: 
- _abort();
- throw "Reached an unreachable!";
- case 90: 
- var $R7_1;
- var $309=($264|0)==0;
- if($309){label=110;break;}else{label=91;break;}
- case 91: 
- var $_sum21=((($14)+(20))|0);
- var $311=(($mem+$_sum21)|0);
- var $312=$311;
- var $313=HEAP32[(($312)>>2)];
- var $314=((2320+($313<<2))|0);
- var $315=HEAP32[(($314)>>2)];
- var $316=($261|0)==($315|0);
- if($316){label=92;break;}else{label=94;break;}
- case 92: 
- HEAP32[(($314)>>2)]=$R7_1;
- var $cond69=($R7_1|0)==0;
- if($cond69){label=93;break;}else{label=100;break;}
- case 93: 
- var $318=1<<$313;
- var $319=$318^-1;
- var $320=HEAP32[((2020)>>2)];
- var $321=$320&$319;
- HEAP32[((2020)>>2)]=$321;
- label=110;break;
- case 94: 
- var $323=$264;
- var $324=HEAP32[((2032)>>2)];
- var $325=($323>>>0)<($324>>>0);
- if($325){label=98;break;}else{label=95;break;}
- case 95: 
- var $327=(($264+16)|0);
- var $328=HEAP32[(($327)>>2)];
- var $329=($328|0)==($261|0);
- if($329){label=96;break;}else{label=97;break;}
- case 96: 
- HEAP32[(($327)>>2)]=$R7_1;
- label=99;break;
- case 97: 
- var $332=(($264+20)|0);
- HEAP32[(($332)>>2)]=$R7_1;
- label=99;break;
- case 98: 
- _abort();
- throw "Reached an unreachable!";
- case 99: 
- var $335=($R7_1|0)==0;
- if($335){label=110;break;}else{label=100;break;}
- case 100: 
- var $337=$R7_1;
- var $338=HEAP32[((2032)>>2)];
- var $339=($337>>>0)<($338>>>0);
- if($339){label=109;break;}else{label=101;break;}
- case 101: 
- var $341=(($R7_1+24)|0);
- HEAP32[(($341)>>2)]=$264;
- var $_sum22=((($14)+(8))|0);
- var $342=(($mem+$_sum22)|0);
- var $343=$342;
- var $344=HEAP32[(($343)>>2)];
- var $345=($344|0)==0;
- if($345){label=105;break;}else{label=102;break;}
- case 102: 
- var $347=$344;
- var $348=HEAP32[((2032)>>2)];
- var $349=($347>>>0)<($348>>>0);
- if($349){label=104;break;}else{label=103;break;}
- case 103: 
- var $351=(($R7_1+16)|0);
- HEAP32[(($351)>>2)]=$344;
- var $352=(($344+24)|0);
- HEAP32[(($352)>>2)]=$R7_1;
- label=105;break;
- case 104: 
- _abort();
- throw "Reached an unreachable!";
- case 105: 
- var $_sum23=((($14)+(12))|0);
- var $355=(($mem+$_sum23)|0);
- var $356=$355;
- var $357=HEAP32[(($356)>>2)];
- var $358=($357|0)==0;
- if($358){label=110;break;}else{label=106;break;}
- case 106: 
- var $360=$357;
- var $361=HEAP32[((2032)>>2)];
- var $362=($360>>>0)<($361>>>0);
- if($362){label=108;break;}else{label=107;break;}
- case 107: 
- var $364=(($R7_1+20)|0);
- HEAP32[(($364)>>2)]=$357;
- var $365=(($357+24)|0);
- HEAP32[(($365)>>2)]=$R7_1;
- label=110;break;
- case 108: 
- _abort();
- throw "Reached an unreachable!";
- case 109: 
- _abort();
- throw "Reached an unreachable!";
- case 110: 
- var $368=$221|1;
- var $369=(($p_0+4)|0);
- HEAP32[(($369)>>2)]=$368;
- var $370=(($188+$221)|0);
- var $371=$370;
- HEAP32[(($371)>>2)]=$221;
- var $372=HEAP32[((2036)>>2)];
- var $373=($p_0|0)==($372|0);
- if($373){label=111;break;}else{var $psize_1=$221;label=113;break;}
- case 111: 
- HEAP32[((2024)>>2)]=$221;
- label=141;break;
- case 112: 
- var $376=$193&-2;
- HEAP32[(($192)>>2)]=$376;
- var $377=$psize_0|1;
- var $378=(($p_0+4)|0);
- HEAP32[(($378)>>2)]=$377;
- var $379=(($188+$psize_0)|0);
- var $380=$379;
- HEAP32[(($380)>>2)]=$psize_0;
- var $psize_1=$psize_0;label=113;break;
- case 113: 
- var $psize_1;
- var $382=$psize_1>>>3;
- var $383=($psize_1>>>0)<256;
- if($383){label=114;break;}else{label=119;break;}
- case 114: 
- var $385=$382<<1;
- var $386=((2056+($385<<2))|0);
- var $387=$386;
- var $388=HEAP32[((2016)>>2)];
- var $389=1<<$382;
- var $390=$388&$389;
- var $391=($390|0)==0;
- if($391){label=115;break;}else{label=116;break;}
- case 115: 
- var $393=$388|$389;
- HEAP32[((2016)>>2)]=$393;
- var $_sum19_pre=((($385)+(2))|0);
- var $_pre=((2056+($_sum19_pre<<2))|0);
- var $F16_0=$387;var $_pre_phi=$_pre;label=118;break;
- case 116: 
- var $_sum20=((($385)+(2))|0);
- var $395=((2056+($_sum20<<2))|0);
- var $396=HEAP32[(($395)>>2)];
- var $397=$396;
- var $398=HEAP32[((2032)>>2)];
- var $399=($397>>>0)<($398>>>0);
- if($399){label=117;break;}else{var $F16_0=$396;var $_pre_phi=$395;label=118;break;}
- case 117: 
- _abort();
- throw "Reached an unreachable!";
- case 118: 
- var $_pre_phi;
- var $F16_0;
- HEAP32[(($_pre_phi)>>2)]=$p_0;
- var $402=(($F16_0+12)|0);
- HEAP32[(($402)>>2)]=$p_0;
- var $403=(($p_0+8)|0);
- HEAP32[(($403)>>2)]=$F16_0;
- var $404=(($p_0+12)|0);
- HEAP32[(($404)>>2)]=$387;
- label=141;break;
- case 119: 
- var $406=$p_0;
- var $407=$psize_1>>>8;
- var $408=($407|0)==0;
- if($408){var $I18_0=0;label=122;break;}else{label=120;break;}
- case 120: 
- var $410=($psize_1>>>0)>16777215;
- if($410){var $I18_0=31;label=122;break;}else{label=121;break;}
- case 121: 
- var $412=((($407)+(1048320))|0);
- var $413=$412>>>16;
- var $414=$413&8;
- var $415=$407<<$414;
- var $416=((($415)+(520192))|0);
- var $417=$416>>>16;
- var $418=$417&4;
- var $419=$418|$414;
- var $420=$415<<$418;
- var $421=((($420)+(245760))|0);
- var $422=$421>>>16;
- var $423=$422&2;
- var $424=$419|$423;
- var $425=(((14)-($424))|0);
- var $426=$420<<$423;
- var $427=$426>>>15;
- var $428=((($425)+($427))|0);
- var $429=$428<<1;
- var $430=((($428)+(7))|0);
- var $431=$psize_1>>>($430>>>0);
- var $432=$431&1;
- var $433=$432|$429;
- var $I18_0=$433;label=122;break;
- case 122: 
- var $I18_0;
- var $435=((2320+($I18_0<<2))|0);
- var $436=(($p_0+28)|0);
- var $I18_0_c=$I18_0;
- HEAP32[(($436)>>2)]=$I18_0_c;
- var $437=(($p_0+20)|0);
- HEAP32[(($437)>>2)]=0;
- var $438=(($p_0+16)|0);
- HEAP32[(($438)>>2)]=0;
- var $439=HEAP32[((2020)>>2)];
- var $440=1<<$I18_0;
- var $441=$439&$440;
- var $442=($441|0)==0;
- if($442){label=123;break;}else{label=124;break;}
- case 123: 
- var $444=$439|$440;
- HEAP32[((2020)>>2)]=$444;
- HEAP32[(($435)>>2)]=$406;
- var $445=(($p_0+24)|0);
- var $_c=$435;
- HEAP32[(($445)>>2)]=$_c;
- var $446=(($p_0+12)|0);
- HEAP32[(($446)>>2)]=$p_0;
- var $447=(($p_0+8)|0);
- HEAP32[(($447)>>2)]=$p_0;
- label=137;break;
- case 124: 
- var $449=HEAP32[(($435)>>2)];
- var $450=($I18_0|0)==31;
- if($450){var $455=0;label=126;break;}else{label=125;break;}
- case 125: 
- var $452=$I18_0>>>1;
- var $453=(((25)-($452))|0);
- var $455=$453;label=126;break;
- case 126: 
- var $455;
- var $456=(($449+4)|0);
- var $457=HEAP32[(($456)>>2)];
- var $458=$457&-8;
- var $459=($458|0)==($psize_1|0);
- if($459){var $T_0_lcssa=$449;label=133;break;}else{label=127;break;}
- case 127: 
- var $460=$psize_1<<$455;
- var $T_071=$449;var $K19_072=$460;label=129;break;
- case 128: 
- var $462=$K19_072<<1;
- var $463=(($470+4)|0);
- var $464=HEAP32[(($463)>>2)];
- var $465=$464&-8;
- var $466=($465|0)==($psize_1|0);
- if($466){var $T_0_lcssa=$470;label=133;break;}else{var $T_071=$470;var $K19_072=$462;label=129;break;}
- case 129: 
- var $K19_072;
- var $T_071;
- var $468=$K19_072>>>31;
- var $469=(($T_071+16+($468<<2))|0);
- var $470=HEAP32[(($469)>>2)];
- var $471=($470|0)==0;
- if($471){label=130;break;}else{label=128;break;}
- case 130: 
- var $473=$469;
- var $474=HEAP32[((2032)>>2)];
- var $475=($473>>>0)<($474>>>0);
- if($475){label=132;break;}else{label=131;break;}
- case 131: 
- HEAP32[(($469)>>2)]=$406;
- var $477=(($p_0+24)|0);
- var $T_0_c16=$T_071;
- HEAP32[(($477)>>2)]=$T_0_c16;
- var $478=(($p_0+12)|0);
- HEAP32[(($478)>>2)]=$p_0;
- var $479=(($p_0+8)|0);
- HEAP32[(($479)>>2)]=$p_0;
- label=137;break;
- case 132: 
- _abort();
- throw "Reached an unreachable!";
- case 133: 
- var $T_0_lcssa;
- var $481=(($T_0_lcssa+8)|0);
- var $482=HEAP32[(($481)>>2)];
- var $483=$T_0_lcssa;
- var $484=HEAP32[((2032)>>2)];
- var $485=($483>>>0)<($484>>>0);
- if($485){label=136;break;}else{label=134;break;}
- case 134: 
- var $487=$482;
- var $488=($487>>>0)<($484>>>0);
- if($488){label=136;break;}else{label=135;break;}
- case 135: 
- var $490=(($482+12)|0);
- HEAP32[(($490)>>2)]=$406;
- HEAP32[(($481)>>2)]=$406;
- var $491=(($p_0+8)|0);
- var $_c15=$482;
- HEAP32[(($491)>>2)]=$_c15;
- var $492=(($p_0+12)|0);
- var $T_0_c=$T_0_lcssa;
- HEAP32[(($492)>>2)]=$T_0_c;
- var $493=(($p_0+24)|0);
- HEAP32[(($493)>>2)]=0;
- label=137;break;
- case 136: 
- _abort();
- throw "Reached an unreachable!";
- case 137: 
- var $495=HEAP32[((2048)>>2)];
- var $496=((($495)-(1))|0);
- HEAP32[((2048)>>2)]=$496;
- var $497=($496|0)==0;
- if($497){var $sp_0_in_i=2472;label=138;break;}else{label=141;break;}
- case 138: 
- var $sp_0_in_i;
- var $sp_0_i=HEAP32[(($sp_0_in_i)>>2)];
- var $498=($sp_0_i|0)==0;
- var $499=(($sp_0_i+8)|0);
- if($498){label=139;break;}else{var $sp_0_in_i=$499;label=138;break;}
- case 139: 
- HEAP32[((2048)>>2)]=-1;
- label=141;break;
- case 140: 
- _abort();
- throw "Reached an unreachable!";
- case 141: 
- return;
-  default: assert(0, "bad label: " + label);
+function _SetupComputeKernels() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
+ var $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $7 = 0, $8 = 0;
+ var $9 = 0, $buffer = 0, $err = 0, $i = 0, $len = 0, $length = 0, $max = 0, $source = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer12 = 0, $vararg_buffer15 = 0, $vararg_buffer18 = 0, $vararg_buffer20 = 0, $vararg_buffer23 = 0, $vararg_buffer3 = 0, $vararg_buffer6 = 0, $vararg_buffer8 = 0, $vararg_ptr26 = 0;
+ var label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 2176|0;
+ $vararg_buffer23 = sp + 80|0;
+ $vararg_buffer20 = sp + 56|0;
+ $vararg_buffer18 = sp + 32|0;
+ $vararg_buffer15 = sp;
+ $vararg_buffer12 = sp + 64|0;
+ $vararg_buffer10 = sp + 72|0;
+ $vararg_buffer8 = sp + 24|0;
+ $vararg_buffer6 = sp + 48|0;
+ $vararg_buffer3 = sp + 40|0;
+ $vararg_buffer1 = sp + 16|0;
+ $vararg_buffer = sp + 8|0;
+ $err = sp + 104|0;
+ $source = sp + 100|0;
+ $length = sp + 96|0;
+ $len = sp + 112|0;
+ $buffer = sp + 120|0;
+ $max = sp + 88|0;
+ HEAP32[$err>>2] = 0;
+ HEAP32[$source>>2] = 0;
+ HEAP32[$length>>2] = 0;
+ (_printf((104|0),($vararg_buffer|0))|0);
+ HEAP32[$vararg_buffer1>>2] = 2232;
+ (_printf((2184|0),($vararg_buffer1|0))|0);
+ $1 = (_LoadTextFromFile(2232,$source,$length)|0);
+ HEAP32[$err>>2] = $1;
+ $2 = HEAP32[$err>>2]|0;
+ $3 = ($2|0)!=(0);
+ if ($3) {
+  $0 = -8;
+  $60 = $0;
+  STACKTOP = sp;return ($60|0);
  }
-
-}
-Module["_free"] = _free;
-
-function _calloc($n_elements,$elem_size){
- var label=0;
-
- label = 1; 
- while(1)switch(label){
- case 1: 
- var $1=($n_elements|0)==0;
- if($1){var $req_0=0;label=4;break;}else{label=2;break;}
- case 2: 
- var $3=(Math_imul($elem_size,$n_elements)|0);
- var $4=$elem_size|$n_elements;
- var $5=($4>>>0)>65535;
- if($5){label=3;break;}else{var $req_0=$3;label=4;break;}
- case 3: 
- var $7=(((($3>>>0))/(($n_elements>>>0)))&-1);
- var $8=($7|0)==($elem_size|0);
- var $_=($8?$3:-1);
- var $req_0=$_;label=4;break;
- case 4: 
- var $req_0;
- var $10=_malloc($req_0);
- var $11=($10|0)==0;
- if($11){label=7;break;}else{label=5;break;}
- case 5: 
- var $13=((($10)-(4))|0);
- var $14=$13;
- var $15=HEAP32[(($14)>>2)];
- var $16=$15&3;
- var $17=($16|0)==0;
- if($17){label=7;break;}else{label=6;break;}
- case 6: 
- _memset($10, 0, $req_0)|0;
- label=7;break;
- case 7: 
- return $10;
-  default: assert(0, "bad label: " + label);
+ $4 = HEAP32[2248>>2]|0;
+ $5 = (_clCreateProgramWithSource(($4|0),1,($source|0),(0|0),($err|0))|0);
+ HEAP32[216>>2] = $5;
+ $6 = HEAP32[216>>2]|0;
+ $7 = ($6|0)!=(0|0);
+ if ($7) {
+  $8 = HEAP32[$err>>2]|0;
+  $9 = ($8|0)!=(0);
+  if (!($9)) {
+   (_printf((104|0),($vararg_buffer6|0))|0);
+   (_printf((2304|0),($vararg_buffer8|0))|0);
+   $11 = HEAP32[216>>2]|0;
+   $12 = (_clBuildProgram(($11|0),0,(0|0),(0|0),(0|0),(0|0))|0);
+   HEAP32[$err>>2] = $12;
+   $13 = HEAP32[$err>>2]|0;
+   $14 = ($13|0)!=(0);
+   if ($14) {
+    (_printf((2336|0),($vararg_buffer10|0))|0);
+    $15 = HEAP32[216>>2]|0;
+    $16 = HEAP32[2384>>2]|0;
+    (_clGetProgramBuildInfo(($15|0),($16|0),4483,2048,($buffer|0),($len|0))|0);
+    HEAP32[$vararg_buffer12>>2] = $buffer;
+    (_printf((336|0),($vararg_buffer12|0))|0);
+    $0 = 1;
+    $60 = $0;
+    STACKTOP = sp;return ($60|0);
+   }
+   $i = 0;
+   $i = 0;
+   while(1) {
+    $17 = $i;
+    $18 = ($17|0)<(4);
+    if (!($18)) {
+     label = 20;
+     break;
+    }
+    $19 = $i;
+    $20 = (344 + ($19<<2)|0);
+    $21 = HEAP32[$20>>2]|0;
+    HEAP32[$vararg_buffer15>>2] = $21;
+    (_printf((2392|0),($vararg_buffer15|0))|0);
+    $22 = HEAP32[216>>2]|0;
+    $23 = $i;
+    $24 = (344 + ($23<<2)|0);
+    $25 = HEAP32[$24>>2]|0;
+    $26 = (_clCreateKernel(($22|0),($25|0),($err|0))|0);
+    $27 = $i;
+    $28 = (1832 + ($27<<2)|0);
+    HEAP32[$28>>2] = $26;
+    $29 = $i;
+    $30 = (1832 + ($29<<2)|0);
+    $31 = HEAP32[$30>>2]|0;
+    $32 = ($31|0)!=(0|0);
+    if (!($32)) {
+     label = 12;
+     break;
+    }
+    $33 = HEAP32[$err>>2]|0;
+    $34 = ($33|0)!=(0);
+    if ($34) {
+     label = 12;
+     break;
+    }
+    HEAP32[$max>>2] = 1;
+    $35 = $i;
+    $36 = (1832 + ($35<<2)|0);
+    $37 = HEAP32[$36>>2]|0;
+    $38 = HEAP32[2384>>2]|0;
+    $39 = (_clGetKernelWorkGroupInfo(($37|0),($38|0),4528,4,($max|0),(0|0))|0);
+    HEAP32[$err>>2] = $39;
+    $40 = HEAP32[$err>>2]|0;
+    $41 = ($40|0)!=(0);
+    if ($41) {
+     label = 14;
+     break;
+    }
+    $43 = HEAP32[$max>>2]|0;
+    $44 = ($43>>>0)>(1);
+    if ($44) {
+     $45 = HEAP32[$max>>2]|0;
+     $46 = (_FloorPow2($45)|0);
+     $50 = $46;
+    } else {
+     $47 = HEAP32[$max>>2]|0;
+     $50 = $47;
+    }
+    $48 = $i;
+    $49 = (1848 + ($48<<2)|0);
+    HEAP32[$49>>2] = $50;
+    $51 = $i;
+    $52 = (344 + ($51<<2)|0);
+    $53 = HEAP32[$52>>2]|0;
+    $54 = $i;
+    $55 = (1848 + ($54<<2)|0);
+    $56 = HEAP32[$55>>2]|0;
+    HEAP32[$vararg_buffer23>>2] = $53;
+    $vararg_ptr26 = (($vararg_buffer23) + 4|0);
+    HEAP32[$vararg_ptr26>>2] = $56;
+    (_printf((2528|0),($vararg_buffer23|0))|0);
+    $57 = $i;
+    $58 = (($57) + 1)|0;
+    $i = $58;
+   }
+   if ((label|0) == 12) {
+    (_printf((2424|0),($vararg_buffer18|0))|0);
+    $0 = 1;
+    $60 = $0;
+    STACKTOP = sp;return ($60|0);
+   }
+   else if ((label|0) == 14) {
+    $42 = HEAP32[$err>>2]|0;
+    HEAP32[$vararg_buffer20>>2] = $42;
+    (_printf((2472|0),($vararg_buffer20|0))|0);
+    $0 = 1;
+    $60 = $0;
+    STACKTOP = sp;return ($60|0);
+   }
+   else if ((label|0) == 20) {
+    $59 = (_CreateComputeResult()|0);
+    $0 = $59;
+    $60 = $0;
+    STACKTOP = sp;return ($60|0);
+   }
+  }
  }
-
+ $10 = HEAP32[$err>>2]|0;
+ HEAP32[$vararg_buffer3>>2] = $10;
+ (_printf((2256|0),($vararg_buffer3|0))|0);
+ $0 = 1;
+ $60 = $0;
+ STACKTOP = sp;return ($60|0);
 }
-Module["_calloc"] = _calloc;
-
+function _LoadTextFromFile($file_name,$result_string,$string_len) {
+ $file_name = $file_name|0;
+ $result_string = $result_string|0;
+ $string_len = $string_len|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $fd = 0, $file_len = 0, $file_status = 0, $ret = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer3 = 0;
+ var $vararg_buffer6 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 144|0;
+ $vararg_buffer6 = sp + 16|0;
+ $vararg_buffer3 = sp + 8|0;
+ $vararg_buffer1 = sp + 24|0;
+ $vararg_buffer = sp;
+ $file_status = sp + 52|0;
+ $1 = $file_name;
+ $2 = $result_string;
+ $3 = $string_len;
+ $4 = $3;
+ HEAP32[$4>>2] = 0;
+ $5 = $1;
+ $6 = (_open(($5|0),0,($vararg_buffer|0))|0);
+ $fd = $6;
+ $7 = $fd;
+ $8 = ($7|0)==(-1);
+ if ($8) {
+  $9 = $1;
+  HEAP32[$vararg_buffer1>>2] = $9;
+  (_printf((2728|0),($vararg_buffer1|0))|0);
+  $0 = -1;
+  $32 = $0;
+  STACKTOP = sp;return ($32|0);
+ }
+ $10 = $fd;
+ $11 = (_fstat(($10|0),($file_status|0))|0);
+ $ret = $11;
+ $12 = $ret;
+ $13 = ($12|0)!=(0);
+ if ($13) {
+  $14 = $1;
+  HEAP32[$vararg_buffer3>>2] = $14;
+  (_printf((2752|0),($vararg_buffer3|0))|0);
+  $0 = -1;
+  $32 = $0;
+  STACKTOP = sp;return ($32|0);
+ }
+ $15 = (($file_status) + 36|0);
+ $16 = HEAP32[$15>>2]|0;
+ $file_len = $16;
+ $17 = $file_len;
+ $18 = (($17) + 1)|0;
+ $19 = (_calloc($18,1)|0);
+ $20 = $2;
+ HEAP32[$20>>2] = $19;
+ $21 = $fd;
+ $22 = $2;
+ $23 = HEAP32[$22>>2]|0;
+ $24 = $file_len;
+ $25 = (_read(($21|0),($23|0),($24|0))|0);
+ $ret = $25;
+ $26 = $ret;
+ $27 = ($26|0)!=(0);
+ if ($27) {
+  $29 = $fd;
+  (_close(($29|0))|0);
+  $30 = $file_len;
+  $31 = $3;
+  HEAP32[$31>>2] = $30;
+  $0 = 0;
+  $32 = $0;
+  STACKTOP = sp;return ($32|0);
+ } else {
+  $28 = $1;
+  HEAP32[$vararg_buffer6>>2] = $28;
+  (_printf((2792|0),($vararg_buffer6|0))|0);
+  $0 = -1;
+  $32 = $0;
+  STACKTOP = sp;return ($32|0);
+ }
+ return 0|0;
+}
+function _FloorPow2($n) {
+ $n = $n|0;
+ var $0 = 0, $1 = 0, $2 = 0.0, $3 = 0.0, $4 = 0, $5 = 0, $6 = 0, $exp = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $exp = sp;
+ $0 = $n;
+ $1 = $0;
+ $2 = (+($1|0));
+ $3 = $2;
+ (+_frexp((+$3),($exp|0)));
+ $4 = HEAP32[$exp>>2]|0;
+ $5 = (($4) - 1)|0;
+ $6 = 1 << $5;
+ STACKTOP = sp;return ($6|0);
+}
+function _CreateComputeResult() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $3 = 0;
+ var $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $err = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 48|0;
+ $vararg_buffer7 = sp;
+ $vararg_buffer5 = sp + 16|0;
+ $vararg_buffer3 = sp + 24|0;
+ $vararg_buffer1 = sp + 32|0;
+ $vararg_buffer = sp + 8|0;
+ $err = sp + 36|0;
+ HEAP32[$err>>2] = 0;
+ (_printf((104|0),($vararg_buffer|0))|0);
+ $1 = HEAP32[32>>2]|0;
+ $2 = ($1|0)!=(0);
+ do {
+  if ($2) {
+   (_printf((2560|0),($vararg_buffer1|0))|0);
+   $3 = HEAP32[2248>>2]|0;
+   $4 = HEAP32[1800>>2]|0;
+   $5 = HEAP32[1808>>2]|0;
+   $6 = (_clCreateFromGLTexture2D(($3|0),2,0,($4|0),0,($5|0),($err|0))|0);
+   HEAP32[232>>2] = $6;
+   $7 = HEAP32[232>>2]|0;
+   $8 = ($7|0)!=(0|0);
+   if ($8) {
+    $9 = HEAP32[$err>>2]|0;
+    $10 = ($9|0)!=(0);
+    if (!($10)) {
+     break;
+    }
+   }
+   $11 = HEAP32[$err>>2]|0;
+   HEAP32[$vararg_buffer3>>2] = $11;
+   (_printf((2600|0),($vararg_buffer3|0))|0);
+   $0 = -1;
+   $25 = $0;
+   STACKTOP = sp;return ($25|0);
+  }
+ } while(0);
+ (_printf((2648|0),($vararg_buffer5|0))|0);
+ $12 = HEAP32[2248>>2]|0;
+ $13 = HEAP32[2024>>2]|0;
+ $14 = $13<<2;
+ $15 = HEAP32[88>>2]|0;
+ $16 = Math_imul($14, $15)|0;
+ $17 = HEAP32[96>>2]|0;
+ $18 = Math_imul($16, $17)|0;
+ $19 = (_clCreateBuffer(($12|0),2,0,($18|0),(0|0),($err|0))|0);
+ HEAP32[224>>2] = $19;
+ $20 = HEAP32[224>>2]|0;
+ $21 = ($20|0)!=(0|0);
+ if ($21) {
+  $22 = HEAP32[$err>>2]|0;
+  $23 = ($22|0)!=(0);
+  if (!($23)) {
+   $0 = 0;
+   $25 = $0;
+   STACKTOP = sp;return ($25|0);
+  }
+ }
+ $24 = HEAP32[$err>>2]|0;
+ HEAP32[$vararg_buffer7>>2] = $24;
+ (_printf((2688|0),($vararg_buffer7|0))|0);
+ $0 = 1;
+ $25 = $0;
+ STACKTOP = sp;return ($25|0);
+}
+function _CreateTexture($width,$height) {
+ $width = $width|0;
+ $height = $height|0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
+ var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ STACKTOP = STACKTOP + 16|0;
+ $0 = $width;
+ $1 = $height;
+ $2 = HEAP32[624>>2]|0;
+ $3 = ($2|0)!=(0|0);
+ if ($3) {
+  $4 = HEAP32[624>>2]|0;
+  _free($4);
+ }
+ $5 = HEAP32[88>>2]|0;
+ $6 = HEAP32[96>>2]|0;
+ $7 = Math_imul($5, $6)|0;
+ $8 = HEAP32[2024>>2]|0;
+ $9 = Math_imul($7, $8)|0;
+ $10 = $9<<2;
+ $11 = (_malloc($10)|0);
+ HEAP32[624>>2] = $11;
+ $12 = HEAP32[624>>2]|0;
+ $13 = HEAP32[88>>2]|0;
+ $14 = HEAP32[96>>2]|0;
+ $15 = Math_imul($13, $14)|0;
+ $16 = HEAP32[2024>>2]|0;
+ $17 = Math_imul($15, $16)|0;
+ $18 = $17<<2;
+ _memset(($12|0),0,($18|0))|0;
+ $19 = HEAP32[3200>>2]|0;
+ _glActiveTexture(($19|0));
+ _glGenTextures(1,(1808|0));
+ $20 = HEAP32[1800>>2]|0;
+ $21 = HEAP32[1808>>2]|0;
+ _glBindTexture(($20|0),($21|0));
+ $22 = HEAP32[1800>>2]|0;
+ _glTexParameteri(($22|0),10240,9728);
+ $23 = HEAP32[1800>>2]|0;
+ _glTexParameteri(($23|0),10241,9728);
+ $24 = HEAP32[1800>>2]|0;
+ $25 = HEAP32[3208>>2]|0;
+ $26 = $0;
+ $27 = $1;
+ $28 = HEAP32[1816>>2]|0;
+ $29 = HEAP32[1824>>2]|0;
+ $30 = HEAP32[624>>2]|0;
+ _glTexImage2D(($24|0),0,($25|0),($26|0),($27|0),0,($28|0),($29|0),($30|0));
+ $31 = HEAP32[1800>>2]|0;
+ _glBindTexture(($31|0),0);
+ $32 = HEAP32[32>>2]|0;
+ $33 = ($32|0)!=(0);
+ if (!($33)) {
+  STACKTOP = sp;return;
+ }
+ $34 = HEAP32[624>>2]|0;
+ _free($34);
+ HEAP32[624>>2] = 0;
+ STACKTOP = sp;return;
+}
+function _malloc($bytes) {
+ $bytes = $bytes|0;
+ var $$$i = 0, $$3$i = 0, $$4$i = 0, $$pre = 0, $$pre$i = 0, $$pre$i$i = 0, $$pre$i25 = 0, $$pre$i25$i = 0, $$pre$phi$i$iZ2D = 0, $$pre$phi$i26$iZ2D = 0, $$pre$phi$i26Z2D = 0, $$pre$phi$iZ2D = 0, $$pre$phi58$i$iZ2D = 0, $$pre$phiZ2D = 0, $$pre57$i$i = 0, $$rsize$0$i = 0, $$rsize$3$i = 0, $$sum = 0, $$sum$i$i = 0, $$sum$i$i$i = 0;
+ var $$sum$i14$i = 0, $$sum$i15$i = 0, $$sum$i18$i = 0, $$sum$i21$i = 0, $$sum$i2334 = 0, $$sum$i32 = 0, $$sum$i35 = 0, $$sum1 = 0, $$sum1$i = 0, $$sum1$i$i = 0, $$sum1$i16$i = 0, $$sum1$i22$i = 0, $$sum1$i24 = 0, $$sum10 = 0, $$sum10$i = 0, $$sum10$i$i = 0, $$sum10$pre$i$i = 0, $$sum107$i = 0, $$sum108$i = 0, $$sum109$i = 0;
+ var $$sum11$i = 0, $$sum11$i$i = 0, $$sum11$i24$i = 0, $$sum110$i = 0, $$sum111$i = 0, $$sum1112 = 0, $$sum112$i = 0, $$sum113$i = 0, $$sum114$i = 0, $$sum115$i = 0, $$sum116$i = 0, $$sum117$i = 0, $$sum118$i = 0, $$sum119$i = 0, $$sum12$i = 0, $$sum12$i$i = 0, $$sum120$i = 0, $$sum13$i = 0, $$sum13$i$i = 0, $$sum14$i$i = 0;
+ var $$sum14$pre$i = 0, $$sum15$i = 0, $$sum15$i$i = 0, $$sum16$i = 0, $$sum16$i$i = 0, $$sum17$i = 0, $$sum17$i$i = 0, $$sum18$i = 0, $$sum1819$i$i = 0, $$sum2 = 0, $$sum2$i = 0, $$sum2$i$i = 0, $$sum2$i$i$i = 0, $$sum2$i17$i = 0, $$sum2$i19$i = 0, $$sum2$i23$i = 0, $$sum2$pre$i = 0, $$sum20$i$i = 0, $$sum21$i$i = 0, $$sum22$i$i = 0;
+ var $$sum23$i$i = 0, $$sum24$i$i = 0, $$sum25$i$i = 0, $$sum26$pre$i$i = 0, $$sum27$i$i = 0, $$sum28$i$i = 0, $$sum29$i$i = 0, $$sum3$i = 0, $$sum3$i$i = 0, $$sum3$i27 = 0, $$sum30$i$i = 0, $$sum3132$i$i = 0, $$sum34$i$i = 0, $$sum3536$i$i = 0, $$sum3738$i$i = 0, $$sum39$i$i = 0, $$sum4 = 0, $$sum4$i = 0, $$sum4$i28 = 0, $$sum40$i$i = 0;
+ var $$sum41$i$i = 0, $$sum42$i$i = 0, $$sum5$i = 0, $$sum5$i$i = 0, $$sum56 = 0, $$sum6$i = 0, $$sum67$i$i = 0, $$sum7$i = 0, $$sum8$i = 0, $$sum8$pre = 0, $$sum9 = 0, $$sum9$i = 0, $$sum9$i$i = 0, $$tsize$1$i = 0, $$v$0$i = 0, $0 = 0, $1 = 0, $10 = 0, $100 = 0, $1000 = 0;
+ var $1001 = 0, $1002 = 0, $1003 = 0, $1004 = 0, $1005 = 0, $1006 = 0, $1007 = 0, $1008 = 0, $1009 = 0, $101 = 0, $1010 = 0, $1011 = 0, $1012 = 0, $1013 = 0, $1014 = 0, $1015 = 0, $1016 = 0, $1017 = 0, $1018 = 0, $1019 = 0;
+ var $102 = 0, $1020 = 0, $1021 = 0, $1022 = 0, $1023 = 0, $1024 = 0, $1025 = 0, $1026 = 0, $1027 = 0, $1028 = 0, $1029 = 0, $103 = 0, $1030 = 0, $1031 = 0, $1032 = 0, $1033 = 0, $1034 = 0, $1035 = 0, $1036 = 0, $1037 = 0;
+ var $1038 = 0, $1039 = 0, $104 = 0, $1040 = 0, $1041 = 0, $1042 = 0, $1043 = 0, $1044 = 0, $1045 = 0, $1046 = 0, $1047 = 0, $1048 = 0, $1049 = 0, $105 = 0, $1050 = 0, $1051 = 0, $1052 = 0, $1053 = 0, $1054 = 0, $1055 = 0;
+ var $1056 = 0, $1057 = 0, $1058 = 0, $1059 = 0, $106 = 0, $1060 = 0, $1061 = 0, $1062 = 0, $1063 = 0, $1064 = 0, $1065 = 0, $1066 = 0, $1067 = 0, $1068 = 0, $1069 = 0, $107 = 0, $1070 = 0, $1071 = 0, $1072 = 0, $1073 = 0;
+ var $1074 = 0, $1075 = 0, $1076 = 0, $1077 = 0, $1078 = 0, $1079 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0, $115 = 0, $116 = 0, $117 = 0, $118 = 0, $119 = 0, $12 = 0;
+ var $120 = 0, $121 = 0, $122 = 0, $123 = 0, $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0, $131 = 0, $132 = 0, $133 = 0, $134 = 0, $135 = 0, $136 = 0, $137 = 0, $138 = 0;
+ var $139 = 0, $14 = 0, $140 = 0, $141 = 0, $142 = 0, $143 = 0, $144 = 0, $145 = 0, $146 = 0, $147 = 0, $148 = 0, $149 = 0, $15 = 0, $150 = 0, $151 = 0, $152 = 0, $153 = 0, $154 = 0, $155 = 0, $156 = 0;
+ var $157 = 0, $158 = 0, $159 = 0, $16 = 0, $160 = 0, $161 = 0, $162 = 0, $163 = 0, $164 = 0, $165 = 0, $166 = 0, $167 = 0, $168 = 0, $169 = 0, $17 = 0, $170 = 0, $171 = 0, $172 = 0, $173 = 0, $174 = 0;
+ var $175 = 0, $176 = 0, $177 = 0, $178 = 0, $179 = 0, $18 = 0, $180 = 0, $181 = 0, $182 = 0, $183 = 0, $184 = 0, $185 = 0, $186 = 0, $187 = 0, $188 = 0, $189 = 0, $19 = 0, $190 = 0, $191 = 0, $192 = 0;
+ var $193 = 0, $194 = 0, $195 = 0, $196 = 0, $197 = 0, $198 = 0, $199 = 0, $2 = 0, $20 = 0, $200 = 0, $201 = 0, $202 = 0, $203 = 0, $204 = 0, $205 = 0, $206 = 0, $207 = 0, $208 = 0, $209 = 0, $21 = 0;
+ var $210 = 0, $211 = 0, $212 = 0, $213 = 0, $214 = 0, $215 = 0, $216 = 0, $217 = 0, $218 = 0, $219 = 0, $22 = 0, $220 = 0, $221 = 0, $222 = 0, $223 = 0, $224 = 0, $225 = 0, $226 = 0, $227 = 0, $228 = 0;
+ var $229 = 0, $23 = 0, $230 = 0, $231 = 0, $232 = 0, $233 = 0, $234 = 0, $235 = 0, $236 = 0, $237 = 0, $238 = 0, $239 = 0, $24 = 0, $240 = 0, $241 = 0, $242 = 0, $243 = 0, $244 = 0, $245 = 0, $246 = 0;
+ var $247 = 0, $248 = 0, $249 = 0, $25 = 0, $250 = 0, $251 = 0, $252 = 0, $253 = 0, $254 = 0, $255 = 0, $256 = 0, $257 = 0, $258 = 0, $259 = 0, $26 = 0, $260 = 0, $261 = 0, $262 = 0, $263 = 0, $264 = 0;
+ var $265 = 0, $266 = 0, $267 = 0, $268 = 0, $269 = 0, $27 = 0, $270 = 0, $271 = 0, $272 = 0, $273 = 0, $274 = 0, $275 = 0, $276 = 0, $277 = 0, $278 = 0, $279 = 0, $28 = 0, $280 = 0, $281 = 0, $282 = 0;
+ var $283 = 0, $284 = 0, $285 = 0, $286 = 0, $287 = 0, $288 = 0, $289 = 0, $29 = 0, $290 = 0, $291 = 0, $292 = 0, $293 = 0, $294 = 0, $295 = 0, $296 = 0, $297 = 0, $298 = 0, $299 = 0, $3 = 0, $30 = 0;
+ var $300 = 0, $301 = 0, $302 = 0, $303 = 0, $304 = 0, $305 = 0, $306 = 0, $307 = 0, $308 = 0, $309 = 0, $31 = 0, $310 = 0, $311 = 0, $312 = 0, $313 = 0, $314 = 0, $315 = 0, $316 = 0, $317 = 0, $318 = 0;
+ var $319 = 0, $32 = 0, $320 = 0, $321 = 0, $322 = 0, $323 = 0, $324 = 0, $325 = 0, $326 = 0, $327 = 0, $328 = 0, $329 = 0, $33 = 0, $330 = 0, $331 = 0, $332 = 0, $333 = 0, $334 = 0, $335 = 0, $336 = 0;
+ var $337 = 0, $338 = 0, $339 = 0, $34 = 0, $340 = 0, $341 = 0, $342 = 0, $343 = 0, $344 = 0, $345 = 0, $346 = 0, $347 = 0, $348 = 0, $349 = 0, $35 = 0, $350 = 0, $351 = 0, $352 = 0, $353 = 0, $354 = 0;
+ var $355 = 0, $356 = 0, $357 = 0, $358 = 0, $359 = 0, $36 = 0, $360 = 0, $361 = 0, $362 = 0, $363 = 0, $364 = 0, $365 = 0, $366 = 0, $367 = 0, $368 = 0, $369 = 0, $37 = 0, $370 = 0, $371 = 0, $372 = 0;
+ var $373 = 0, $374 = 0, $375 = 0, $376 = 0, $377 = 0, $378 = 0, $379 = 0, $38 = 0, $380 = 0, $381 = 0, $382 = 0, $383 = 0, $384 = 0, $385 = 0, $386 = 0, $387 = 0, $388 = 0, $389 = 0, $39 = 0, $390 = 0;
+ var $391 = 0, $392 = 0, $393 = 0, $394 = 0, $395 = 0, $396 = 0, $397 = 0, $398 = 0, $399 = 0, $4 = 0, $40 = 0, $400 = 0, $401 = 0, $402 = 0, $403 = 0, $404 = 0, $405 = 0, $406 = 0, $407 = 0, $408 = 0;
+ var $409 = 0, $41 = 0, $410 = 0, $411 = 0, $412 = 0, $413 = 0, $414 = 0, $415 = 0, $416 = 0, $417 = 0, $418 = 0, $419 = 0, $42 = 0, $420 = 0, $421 = 0, $422 = 0, $423 = 0, $424 = 0, $425 = 0, $426 = 0;
+ var $427 = 0, $428 = 0, $429 = 0, $43 = 0, $430 = 0, $431 = 0, $432 = 0, $433 = 0, $434 = 0, $435 = 0, $436 = 0, $437 = 0, $438 = 0, $439 = 0, $44 = 0, $440 = 0, $441 = 0, $442 = 0, $443 = 0, $444 = 0;
+ var $445 = 0, $446 = 0, $447 = 0, $448 = 0, $449 = 0, $45 = 0, $450 = 0, $451 = 0, $452 = 0, $453 = 0, $454 = 0, $455 = 0, $456 = 0, $457 = 0, $458 = 0, $459 = 0, $46 = 0, $460 = 0, $461 = 0, $462 = 0;
+ var $463 = 0, $464 = 0, $465 = 0, $466 = 0, $467 = 0, $468 = 0, $469 = 0, $47 = 0, $470 = 0, $471 = 0, $472 = 0, $473 = 0, $474 = 0, $475 = 0, $476 = 0, $477 = 0, $478 = 0, $479 = 0, $48 = 0, $480 = 0;
+ var $481 = 0, $482 = 0, $483 = 0, $484 = 0, $485 = 0, $486 = 0, $487 = 0, $488 = 0, $489 = 0, $49 = 0, $490 = 0, $491 = 0, $492 = 0, $493 = 0, $494 = 0, $495 = 0, $496 = 0, $497 = 0, $498 = 0, $499 = 0;
+ var $5 = 0, $50 = 0, $500 = 0, $501 = 0, $502 = 0, $503 = 0, $504 = 0, $505 = 0, $506 = 0, $507 = 0, $508 = 0, $509 = 0, $51 = 0, $510 = 0, $511 = 0, $512 = 0, $513 = 0, $514 = 0, $515 = 0, $516 = 0;
+ var $517 = 0, $518 = 0, $519 = 0, $52 = 0, $520 = 0, $521 = 0, $522 = 0, $523 = 0, $524 = 0, $525 = 0, $526 = 0, $527 = 0, $528 = 0, $529 = 0, $53 = 0, $530 = 0, $531 = 0, $532 = 0, $533 = 0, $534 = 0;
+ var $535 = 0, $536 = 0, $537 = 0, $538 = 0, $539 = 0, $54 = 0, $540 = 0, $541 = 0, $542 = 0, $543 = 0, $544 = 0, $545 = 0, $546 = 0, $547 = 0, $548 = 0, $549 = 0, $55 = 0, $550 = 0, $551 = 0, $552 = 0;
+ var $553 = 0, $554 = 0, $555 = 0, $556 = 0, $557 = 0, $558 = 0, $559 = 0, $56 = 0, $560 = 0, $561 = 0, $562 = 0, $563 = 0, $564 = 0, $565 = 0, $566 = 0, $567 = 0, $568 = 0, $569 = 0, $57 = 0, $570 = 0;
+ var $571 = 0, $572 = 0, $573 = 0, $574 = 0, $575 = 0, $576 = 0, $577 = 0, $578 = 0, $579 = 0, $58 = 0, $580 = 0, $581 = 0, $582 = 0, $583 = 0, $584 = 0, $585 = 0, $586 = 0, $587 = 0, $588 = 0, $589 = 0;
+ var $59 = 0, $590 = 0, $591 = 0, $592 = 0, $593 = 0, $594 = 0, $595 = 0, $596 = 0, $597 = 0, $598 = 0, $599 = 0, $6 = 0, $60 = 0, $600 = 0, $601 = 0, $602 = 0, $603 = 0, $604 = 0, $605 = 0, $606 = 0;
+ var $607 = 0, $608 = 0, $609 = 0, $61 = 0, $610 = 0, $611 = 0, $612 = 0, $613 = 0, $614 = 0, $615 = 0, $616 = 0, $617 = 0, $618 = 0, $619 = 0, $62 = 0, $620 = 0, $621 = 0, $622 = 0, $623 = 0, $624 = 0;
+ var $625 = 0, $626 = 0, $627 = 0, $628 = 0, $629 = 0, $63 = 0, $630 = 0, $631 = 0, $632 = 0, $633 = 0, $634 = 0, $635 = 0, $636 = 0, $637 = 0, $638 = 0, $639 = 0, $64 = 0, $640 = 0, $641 = 0, $642 = 0;
+ var $643 = 0, $644 = 0, $645 = 0, $646 = 0, $647 = 0, $648 = 0, $649 = 0, $65 = 0, $650 = 0, $651 = 0, $652 = 0, $653 = 0, $654 = 0, $655 = 0, $656 = 0, $657 = 0, $658 = 0, $659 = 0, $66 = 0, $660 = 0;
+ var $661 = 0, $662 = 0, $663 = 0, $664 = 0, $665 = 0, $666 = 0, $667 = 0, $668 = 0, $669 = 0, $67 = 0, $670 = 0, $671 = 0, $672 = 0, $673 = 0, $674 = 0, $675 = 0, $676 = 0, $677 = 0, $678 = 0, $679 = 0;
+ var $68 = 0, $680 = 0, $681 = 0, $682 = 0, $683 = 0, $684 = 0, $685 = 0, $686 = 0, $687 = 0, $688 = 0, $689 = 0, $69 = 0, $690 = 0, $691 = 0, $692 = 0, $693 = 0, $694 = 0, $695 = 0, $696 = 0, $697 = 0;
+ var $698 = 0, $699 = 0, $7 = 0, $70 = 0, $700 = 0, $701 = 0, $702 = 0, $703 = 0, $704 = 0, $705 = 0, $706 = 0, $707 = 0, $708 = 0, $709 = 0, $71 = 0, $710 = 0, $711 = 0, $712 = 0, $713 = 0, $714 = 0;
+ var $715 = 0, $716 = 0, $717 = 0, $718 = 0, $719 = 0, $72 = 0, $720 = 0, $721 = 0, $722 = 0, $723 = 0, $724 = 0, $725 = 0, $726 = 0, $727 = 0, $728 = 0, $729 = 0, $73 = 0, $730 = 0, $731 = 0, $732 = 0;
+ var $733 = 0, $734 = 0, $735 = 0, $736 = 0, $737 = 0, $738 = 0, $739 = 0, $74 = 0, $740 = 0, $741 = 0, $742 = 0, $743 = 0, $744 = 0, $745 = 0, $746 = 0, $747 = 0, $748 = 0, $749 = 0, $75 = 0, $750 = 0;
+ var $751 = 0, $752 = 0, $753 = 0, $754 = 0, $755 = 0, $756 = 0, $757 = 0, $758 = 0, $759 = 0, $76 = 0, $760 = 0, $761 = 0, $762 = 0, $763 = 0, $764 = 0, $765 = 0, $766 = 0, $767 = 0, $768 = 0, $769 = 0;
+ var $77 = 0, $770 = 0, $771 = 0, $772 = 0, $773 = 0, $774 = 0, $775 = 0, $776 = 0, $777 = 0, $778 = 0, $779 = 0, $78 = 0, $780 = 0, $781 = 0, $782 = 0, $783 = 0, $784 = 0, $785 = 0, $786 = 0, $787 = 0;
+ var $788 = 0, $789 = 0, $79 = 0, $790 = 0, $791 = 0, $792 = 0, $793 = 0, $794 = 0, $795 = 0, $796 = 0, $797 = 0, $798 = 0, $799 = 0, $8 = 0, $80 = 0, $800 = 0, $801 = 0, $802 = 0, $803 = 0, $804 = 0;
+ var $805 = 0, $806 = 0, $807 = 0, $808 = 0, $809 = 0, $81 = 0, $810 = 0, $811 = 0, $812 = 0, $813 = 0, $814 = 0, $815 = 0, $816 = 0, $817 = 0, $818 = 0, $819 = 0, $82 = 0, $820 = 0, $821 = 0, $822 = 0;
+ var $823 = 0, $824 = 0, $825 = 0, $826 = 0, $827 = 0, $828 = 0, $829 = 0, $83 = 0, $830 = 0, $831 = 0, $832 = 0, $833 = 0, $834 = 0, $835 = 0, $836 = 0, $837 = 0, $838 = 0, $839 = 0, $84 = 0, $840 = 0;
+ var $841 = 0, $842 = 0, $843 = 0, $844 = 0, $845 = 0, $846 = 0, $847 = 0, $848 = 0, $849 = 0, $85 = 0, $850 = 0, $851 = 0, $852 = 0, $853 = 0, $854 = 0, $855 = 0, $856 = 0, $857 = 0, $858 = 0, $859 = 0;
+ var $86 = 0, $860 = 0, $861 = 0, $862 = 0, $863 = 0, $864 = 0, $865 = 0, $866 = 0, $867 = 0, $868 = 0, $869 = 0, $87 = 0, $870 = 0, $871 = 0, $872 = 0, $873 = 0, $874 = 0, $875 = 0, $876 = 0, $877 = 0;
+ var $878 = 0, $879 = 0, $88 = 0, $880 = 0, $881 = 0, $882 = 0, $883 = 0, $884 = 0, $885 = 0, $886 = 0, $887 = 0, $888 = 0, $889 = 0, $89 = 0, $890 = 0, $891 = 0, $892 = 0, $893 = 0, $894 = 0, $895 = 0;
+ var $896 = 0, $897 = 0, $898 = 0, $899 = 0, $9 = 0, $90 = 0, $900 = 0, $901 = 0, $902 = 0, $903 = 0, $904 = 0, $905 = 0, $906 = 0, $907 = 0, $908 = 0, $909 = 0, $91 = 0, $910 = 0, $911 = 0, $912 = 0;
+ var $913 = 0, $914 = 0, $915 = 0, $916 = 0, $917 = 0, $918 = 0, $919 = 0, $92 = 0, $920 = 0, $921 = 0, $922 = 0, $923 = 0, $924 = 0, $925 = 0, $926 = 0, $927 = 0, $928 = 0, $929 = 0, $93 = 0, $930 = 0;
+ var $931 = 0, $932 = 0, $933 = 0, $934 = 0, $935 = 0, $936 = 0, $937 = 0, $938 = 0, $939 = 0, $94 = 0, $940 = 0, $941 = 0, $942 = 0, $943 = 0, $944 = 0, $945 = 0, $946 = 0, $947 = 0, $948 = 0, $949 = 0;
+ var $95 = 0, $950 = 0, $951 = 0, $952 = 0, $953 = 0, $954 = 0, $955 = 0, $956 = 0, $957 = 0, $958 = 0, $959 = 0, $96 = 0, $960 = 0, $961 = 0, $962 = 0, $963 = 0, $964 = 0, $965 = 0, $966 = 0, $967 = 0;
+ var $968 = 0, $969 = 0, $97 = 0, $970 = 0, $970$phi = 0, $971 = 0, $972 = 0, $973 = 0, $974 = 0, $975 = 0, $976 = 0, $977 = 0, $978 = 0, $979 = 0, $98 = 0, $980 = 0, $981 = 0, $982 = 0, $983 = 0, $984 = 0;
+ var $985 = 0, $986 = 0, $987 = 0, $988 = 0, $989 = 0, $99 = 0, $990 = 0, $991 = 0, $992 = 0, $993 = 0, $994 = 0, $995 = 0, $996 = 0, $997 = 0, $998 = 0, $999 = 0, $F$0$i$i = 0, $F1$0$i = 0, $F4$0 = 0, $F4$0$i$i = 0;
+ var $F5$0$i = 0, $I1$0$c$i$i = 0, $I1$0$i$i = 0, $I7$0$i = 0, $I7$0$i$i = 0, $K12$025$i = 0, $K2$014$i$i = 0, $K8$052$i$i = 0, $R$0$i = 0, $R$0$i$i = 0, $R$0$i$i$phi = 0, $R$0$i$phi = 0, $R$0$i18 = 0, $R$0$i18$phi = 0, $R$1$i = 0, $R$1$i$i = 0, $R$1$i20 = 0, $RP$0$i = 0, $RP$0$i$i = 0, $RP$0$i$i$phi = 0;
+ var $RP$0$i$phi = 0, $RP$0$i17 = 0, $RP$0$i17$phi = 0, $T$0$lcssa$i = 0, $T$0$lcssa$i$i = 0, $T$0$lcssa$i28$i = 0, $T$013$i$i = 0, $T$013$i$i$phi = 0, $T$024$i = 0, $T$024$i$phi = 0, $T$051$i$i = 0, $T$051$i$i$phi = 0, $br$0$i = 0, $cond$i = 0, $cond$i$i = 0, $cond$i21 = 0, $exitcond$i$i = 0, $i$02$i$i = 0, $i$02$i$i$phi = 0, $idx$0$i = 0;
+ var $mem$0 = 0, $nb$0 = 0, $notlhs$i = 0, $notrhs$i = 0, $oldfirst$0$i$i = 0, $or$cond$i = 0, $or$cond$i29 = 0, $or$cond1$i = 0, $or$cond10$i = 0, $or$cond19$i = 0, $or$cond2$i = 0, $or$cond49$i = 0, $or$cond5$i = 0, $or$cond6$i = 0, $or$cond8$not$i = 0, $or$cond9$i = 0, $qsize$0$i$i = 0, $rsize$0$i = 0, $rsize$0$i15 = 0, $rsize$1$i = 0;
+ var $rsize$2$i = 0, $rsize$3$lcssa$i = 0, $rsize$329$i = 0, $rsize$329$i$phi = 0, $rst$0$i = 0, $rst$1$i = 0, $sizebits$0$i = 0, $sp$0$i$i = 0, $sp$0$i$i$i = 0, $sp$075$i = 0, $sp$168$i = 0, $ssize$0$$i = 0, $ssize$0$i = 0, $ssize$1$i = 0, $ssize$2$i = 0, $t$0$i = 0, $t$0$i14 = 0, $t$1$i = 0, $t$2$ph$i = 0, $t$2$v$3$i = 0;
+ var $t$228$i = 0, $t$228$i$phi = 0, $tbase$0$i = 0, $tbase$247$i = 0, $tsize$0$i = 0, $tsize$0323841$i = 0, $tsize$1$i = 0, $tsize$246$i = 0, $v$0$i = 0, $v$0$i16 = 0, $v$1$i = 0, $v$2$i = 0, $v$3$lcssa$i = 0, $v$330$i = 0, $v$330$i$phi = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = ($bytes>>>0)<(245);
+ do {
+  if ($0) {
+   $1 = ($bytes>>>0)<(11);
+   if ($1) {
+    $5 = 16;
+   } else {
+    $2 = (($bytes) + 11)|0;
+    $3 = $2 & -8;
+    $5 = $3;
+   }
+   $4 = $5 >>> 3;
+   $6 = HEAP32[3216>>2]|0;
+   $7 = $6 >>> $4;
+   $8 = $7 & 3;
+   $9 = ($8|0)==(0);
+   if (!($9)) {
+    $10 = $7 & 1;
+    $11 = $10 ^ 1;
+    $12 = (($11) + ($4))|0;
+    $13 = $12 << 1;
+    $14 = ((3216 + ($13<<2)|0) + 40|0);
+    $$sum10 = (($13) + 2)|0;
+    $15 = ((3216 + ($$sum10<<2)|0) + 40|0);
+    $16 = HEAP32[$15>>2]|0;
+    $17 = (($16) + 8|0);
+    $18 = HEAP32[$17>>2]|0;
+    $19 = ($14|0)==($18|0);
+    do {
+     if ($19) {
+      $20 = 1 << $12;
+      $21 = $20 ^ -1;
+      $22 = $6 & $21;
+      HEAP32[3216>>2] = $22;
+     } else {
+      $23 = HEAP32[((3216 + 16|0))>>2]|0;
+      $24 = ($18>>>0)<($23>>>0);
+      if ($24) {
+       _abort();
+       // unreachable;
+      }
+      $25 = (($18) + 12|0);
+      $26 = HEAP32[$25>>2]|0;
+      $27 = ($26|0)==($16|0);
+      if ($27) {
+       HEAP32[$25>>2] = $14;
+       HEAP32[$15>>2] = $18;
+       break;
+      } else {
+       _abort();
+       // unreachable;
+      }
+     }
+    } while(0);
+    $28 = $12 << 3;
+    $29 = $28 | 3;
+    $30 = (($16) + 4|0);
+    HEAP32[$30>>2] = $29;
+    $$sum1112 = $28 | 4;
+    $31 = (($16) + ($$sum1112)|0);
+    $32 = HEAP32[$31>>2]|0;
+    $33 = $32 | 1;
+    HEAP32[$31>>2] = $33;
+    $mem$0 = $17;
+    STACKTOP = sp;return ($mem$0|0);
+   }
+   $34 = HEAP32[((3216 + 8|0))>>2]|0;
+   $35 = ($5>>>0)>($34>>>0);
+   if ($35) {
+    $36 = ($7|0)==(0);
+    if (!($36)) {
+     $37 = $7 << $4;
+     $38 = 2 << $4;
+     $39 = (0 - ($38))|0;
+     $40 = $38 | $39;
+     $41 = $37 & $40;
+     $42 = (0 - ($41))|0;
+     $43 = $41 & $42;
+     $44 = (($43) + -1)|0;
+     $45 = $44 >>> 12;
+     $46 = $45 & 16;
+     $47 = $44 >>> $46;
+     $48 = $47 >>> 5;
+     $49 = $48 & 8;
+     $50 = $49 | $46;
+     $51 = $47 >>> $49;
+     $52 = $51 >>> 2;
+     $53 = $52 & 4;
+     $54 = $50 | $53;
+     $55 = $51 >>> $53;
+     $56 = $55 >>> 1;
+     $57 = $56 & 2;
+     $58 = $54 | $57;
+     $59 = $55 >>> $57;
+     $60 = $59 >>> 1;
+     $61 = $60 & 1;
+     $62 = $58 | $61;
+     $63 = $59 >>> $61;
+     $64 = (($62) + ($63))|0;
+     $65 = $64 << 1;
+     $66 = ((3216 + ($65<<2)|0) + 40|0);
+     $$sum4 = (($65) + 2)|0;
+     $67 = ((3216 + ($$sum4<<2)|0) + 40|0);
+     $68 = HEAP32[$67>>2]|0;
+     $69 = (($68) + 8|0);
+     $70 = HEAP32[$69>>2]|0;
+     $71 = ($66|0)==($70|0);
+     do {
+      if ($71) {
+       $72 = 1 << $64;
+       $73 = $72 ^ -1;
+       $74 = $6 & $73;
+       HEAP32[3216>>2] = $74;
+      } else {
+       $75 = HEAP32[((3216 + 16|0))>>2]|0;
+       $76 = ($70>>>0)<($75>>>0);
+       if ($76) {
+        _abort();
+        // unreachable;
+       }
+       $77 = (($70) + 12|0);
+       $78 = HEAP32[$77>>2]|0;
+       $79 = ($78|0)==($68|0);
+       if ($79) {
+        HEAP32[$77>>2] = $66;
+        HEAP32[$67>>2] = $70;
+        break;
+       } else {
+        _abort();
+        // unreachable;
+       }
+      }
+     } while(0);
+     $80 = $64 << 3;
+     $81 = (($80) - ($5))|0;
+     $82 = $5 | 3;
+     $83 = (($68) + 4|0);
+     HEAP32[$83>>2] = $82;
+     $84 = (($68) + ($5)|0);
+     $85 = $81 | 1;
+     $$sum56 = $5 | 4;
+     $86 = (($68) + ($$sum56)|0);
+     HEAP32[$86>>2] = $85;
+     $87 = (($68) + ($80)|0);
+     HEAP32[$87>>2] = $81;
+     $88 = HEAP32[((3216 + 8|0))>>2]|0;
+     $89 = ($88|0)==(0);
+     if (!($89)) {
+      $90 = HEAP32[((3216 + 20|0))>>2]|0;
+      $91 = $88 >>> 3;
+      $92 = $91 << 1;
+      $93 = ((3216 + ($92<<2)|0) + 40|0);
+      $94 = HEAP32[3216>>2]|0;
+      $95 = 1 << $91;
+      $96 = $94 & $95;
+      $97 = ($96|0)==(0);
+      if ($97) {
+       $98 = $94 | $95;
+       HEAP32[3216>>2] = $98;
+       $$sum8$pre = (($92) + 2)|0;
+       $$pre = ((3216 + ($$sum8$pre<<2)|0) + 40|0);
+       $$pre$phiZ2D = $$pre;$F4$0 = $93;
+      } else {
+       $$sum9 = (($92) + 2)|0;
+       $99 = ((3216 + ($$sum9<<2)|0) + 40|0);
+       $100 = HEAP32[$99>>2]|0;
+       $101 = HEAP32[((3216 + 16|0))>>2]|0;
+       $102 = ($100>>>0)<($101>>>0);
+       if ($102) {
+        _abort();
+        // unreachable;
+       } else {
+        $$pre$phiZ2D = $99;$F4$0 = $100;
+       }
+      }
+      HEAP32[$$pre$phiZ2D>>2] = $90;
+      $103 = (($F4$0) + 12|0);
+      HEAP32[$103>>2] = $90;
+      $104 = (($90) + 8|0);
+      HEAP32[$104>>2] = $F4$0;
+      $105 = (($90) + 12|0);
+      HEAP32[$105>>2] = $93;
+     }
+     HEAP32[((3216 + 8|0))>>2] = $81;
+     HEAP32[((3216 + 20|0))>>2] = $84;
+     $mem$0 = $69;
+     STACKTOP = sp;return ($mem$0|0);
+    }
+    $106 = HEAP32[((3216 + 4|0))>>2]|0;
+    $107 = ($106|0)==(0);
+    if ($107) {
+     $nb$0 = $5;
+    } else {
+     $108 = (0 - ($106))|0;
+     $109 = $106 & $108;
+     $110 = (($109) + -1)|0;
+     $111 = $110 >>> 12;
+     $112 = $111 & 16;
+     $113 = $110 >>> $112;
+     $114 = $113 >>> 5;
+     $115 = $114 & 8;
+     $116 = $115 | $112;
+     $117 = $113 >>> $115;
+     $118 = $117 >>> 2;
+     $119 = $118 & 4;
+     $120 = $116 | $119;
+     $121 = $117 >>> $119;
+     $122 = $121 >>> 1;
+     $123 = $122 & 2;
+     $124 = $120 | $123;
+     $125 = $121 >>> $123;
+     $126 = $125 >>> 1;
+     $127 = $126 & 1;
+     $128 = $124 | $127;
+     $129 = $125 >>> $127;
+     $130 = (($128) + ($129))|0;
+     $131 = ((3216 + ($130<<2)|0) + 304|0);
+     $132 = HEAP32[$131>>2]|0;
+     $133 = (($132) + 4|0);
+     $134 = HEAP32[$133>>2]|0;
+     $135 = $134 & -8;
+     $136 = (($135) - ($5))|0;
+     $rsize$0$i = $136;$t$0$i = $132;$v$0$i = $132;
+     while(1) {
+      $137 = (($t$0$i) + 16|0);
+      $138 = HEAP32[$137>>2]|0;
+      $139 = ($138|0)==(0|0);
+      if ($139) {
+       $140 = (($t$0$i) + 20|0);
+       $141 = HEAP32[$140>>2]|0;
+       $142 = ($141|0)==(0|0);
+       if ($142) {
+        break;
+       } else {
+        $144 = $141;
+       }
+      } else {
+       $144 = $138;
+      }
+      $143 = (($144) + 4|0);
+      $145 = HEAP32[$143>>2]|0;
+      $146 = $145 & -8;
+      $147 = (($146) - ($5))|0;
+      $148 = ($147>>>0)<($rsize$0$i>>>0);
+      $$rsize$0$i = $148 ? $147 : $rsize$0$i;
+      $$v$0$i = $148 ? $144 : $v$0$i;
+      $rsize$0$i = $$rsize$0$i;$t$0$i = $144;$v$0$i = $$v$0$i;
+     }
+     $149 = HEAP32[((3216 + 16|0))>>2]|0;
+     $150 = ($v$0$i>>>0)<($149>>>0);
+     if ($150) {
+      _abort();
+      // unreachable;
+     }
+     $151 = (($v$0$i) + ($5)|0);
+     $152 = ($v$0$i>>>0)<($151>>>0);
+     if (!($152)) {
+      _abort();
+      // unreachable;
+     }
+     $153 = (($v$0$i) + 24|0);
+     $154 = HEAP32[$153>>2]|0;
+     $155 = (($v$0$i) + 12|0);
+     $156 = HEAP32[$155>>2]|0;
+     $157 = ($156|0)==($v$0$i|0);
+     do {
+      if ($157) {
+       $167 = (($v$0$i) + 20|0);
+       $168 = HEAP32[$167>>2]|0;
+       $169 = ($168|0)==(0|0);
+       if ($169) {
+        $170 = (($v$0$i) + 16|0);
+        $171 = HEAP32[$170>>2]|0;
+        $172 = ($171|0)==(0|0);
+        if ($172) {
+         $R$1$i = 0;
+         break;
+        } else {
+         $R$0$i = $171;$RP$0$i = $170;
+        }
+       } else {
+        $R$0$i = $168;$RP$0$i = $167;
+       }
+       while(1) {
+        $173 = (($R$0$i) + 20|0);
+        $174 = HEAP32[$173>>2]|0;
+        $175 = ($174|0)==(0|0);
+        if (!($175)) {
+         $RP$0$i$phi = $173;$R$0$i$phi = $174;$RP$0$i = $RP$0$i$phi;$R$0$i = $R$0$i$phi;
+         continue;
+        }
+        $176 = (($R$0$i) + 16|0);
+        $177 = HEAP32[$176>>2]|0;
+        $178 = ($177|0)==(0|0);
+        if ($178) {
+         break;
+        } else {
+         $R$0$i = $177;$RP$0$i = $176;
+        }
+       }
+       $179 = ($RP$0$i>>>0)<($149>>>0);
+       if ($179) {
+        _abort();
+        // unreachable;
+       } else {
+        HEAP32[$RP$0$i>>2] = 0;
+        $R$1$i = $R$0$i;
+        break;
+       }
+      } else {
+       $158 = (($v$0$i) + 8|0);
+       $159 = HEAP32[$158>>2]|0;
+       $160 = ($159>>>0)<($149>>>0);
+       if ($160) {
+        _abort();
+        // unreachable;
+       }
+       $161 = (($159) + 12|0);
+       $162 = HEAP32[$161>>2]|0;
+       $163 = ($162|0)==($v$0$i|0);
+       if (!($163)) {
+        _abort();
+        // unreachable;
+       }
+       $164 = (($156) + 8|0);
+       $165 = HEAP32[$164>>2]|0;
+       $166 = ($165|0)==($v$0$i|0);
+       if ($166) {
+        HEAP32[$161>>2] = $156;
+        HEAP32[$164>>2] = $159;
+        $R$1$i = $156;
+        break;
+       } else {
+        _abort();
+        // unreachable;
+       }
+      }
+     } while(0);
+     $180 = ($154|0)==(0|0);
+     do {
+      if (!($180)) {
+       $181 = (($v$0$i) + 28|0);
+       $182 = HEAP32[$181>>2]|0;
+       $183 = ((3216 + ($182<<2)|0) + 304|0);
+       $184 = HEAP32[$183>>2]|0;
+       $185 = ($v$0$i|0)==($184|0);
+       if ($185) {
+        HEAP32[$183>>2] = $R$1$i;
+        $cond$i = ($R$1$i|0)==(0|0);
+        if ($cond$i) {
+         $186 = 1 << $182;
+         $187 = $186 ^ -1;
+         $188 = HEAP32[((3216 + 4|0))>>2]|0;
+         $189 = $188 & $187;
+         HEAP32[((3216 + 4|0))>>2] = $189;
+         break;
+        }
+       } else {
+        $190 = HEAP32[((3216 + 16|0))>>2]|0;
+        $191 = ($154>>>0)<($190>>>0);
+        if ($191) {
+         _abort();
+         // unreachable;
+        }
+        $192 = (($154) + 16|0);
+        $193 = HEAP32[$192>>2]|0;
+        $194 = ($193|0)==($v$0$i|0);
+        if ($194) {
+         HEAP32[$192>>2] = $R$1$i;
+        } else {
+         $195 = (($154) + 20|0);
+         HEAP32[$195>>2] = $R$1$i;
+        }
+        $196 = ($R$1$i|0)==(0|0);
+        if ($196) {
+         break;
+        }
+       }
+       $197 = HEAP32[((3216 + 16|0))>>2]|0;
+       $198 = ($R$1$i>>>0)<($197>>>0);
+       if ($198) {
+        _abort();
+        // unreachable;
+       }
+       $199 = (($R$1$i) + 24|0);
+       HEAP32[$199>>2] = $154;
+       $200 = (($v$0$i) + 16|0);
+       $201 = HEAP32[$200>>2]|0;
+       $202 = ($201|0)==(0|0);
+       do {
+        if (!($202)) {
+         $203 = HEAP32[((3216 + 16|0))>>2]|0;
+         $204 = ($201>>>0)<($203>>>0);
+         if ($204) {
+          _abort();
+          // unreachable;
+         } else {
+          $205 = (($R$1$i) + 16|0);
+          HEAP32[$205>>2] = $201;
+          $206 = (($201) + 24|0);
+          HEAP32[$206>>2] = $R$1$i;
+          break;
+         }
+        }
+       } while(0);
+       $207 = (($v$0$i) + 20|0);
+       $208 = HEAP32[$207>>2]|0;
+       $209 = ($208|0)==(0|0);
+       if (!($209)) {
+        $210 = HEAP32[((3216 + 16|0))>>2]|0;
+        $211 = ($208>>>0)<($210>>>0);
+        if ($211) {
+         _abort();
+         // unreachable;
+        } else {
+         $212 = (($R$1$i) + 20|0);
+         HEAP32[$212>>2] = $208;
+         $213 = (($208) + 24|0);
+         HEAP32[$213>>2] = $R$1$i;
+         break;
+        }
+       }
+      }
+     } while(0);
+     $214 = ($rsize$0$i>>>0)<(16);
+     if ($214) {
+      $215 = (($rsize$0$i) + ($5))|0;
+      $216 = $215 | 3;
+      $217 = (($v$0$i) + 4|0);
+      HEAP32[$217>>2] = $216;
+      $$sum4$i = (($215) + 4)|0;
+      $218 = (($v$0$i) + ($$sum4$i)|0);
+      $219 = HEAP32[$218>>2]|0;
+      $220 = $219 | 1;
+      HEAP32[$218>>2] = $220;
+     } else {
+      $221 = $5 | 3;
+      $222 = (($v$0$i) + 4|0);
+      HEAP32[$222>>2] = $221;
+      $223 = $rsize$0$i | 1;
+      $$sum$i35 = $5 | 4;
+      $224 = (($v$0$i) + ($$sum$i35)|0);
+      HEAP32[$224>>2] = $223;
+      $$sum1$i = (($rsize$0$i) + ($5))|0;
+      $225 = (($v$0$i) + ($$sum1$i)|0);
+      HEAP32[$225>>2] = $rsize$0$i;
+      $226 = HEAP32[((3216 + 8|0))>>2]|0;
+      $227 = ($226|0)==(0);
+      if (!($227)) {
+       $228 = HEAP32[((3216 + 20|0))>>2]|0;
+       $229 = $226 >>> 3;
+       $230 = $229 << 1;
+       $231 = ((3216 + ($230<<2)|0) + 40|0);
+       $232 = HEAP32[3216>>2]|0;
+       $233 = 1 << $229;
+       $234 = $232 & $233;
+       $235 = ($234|0)==(0);
+       if ($235) {
+        $236 = $232 | $233;
+        HEAP32[3216>>2] = $236;
+        $$sum2$pre$i = (($230) + 2)|0;
+        $$pre$i = ((3216 + ($$sum2$pre$i<<2)|0) + 40|0);
+        $$pre$phi$iZ2D = $$pre$i;$F1$0$i = $231;
+       } else {
+        $$sum3$i = (($230) + 2)|0;
+        $237 = ((3216 + ($$sum3$i<<2)|0) + 40|0);
+        $238 = HEAP32[$237>>2]|0;
+        $239 = HEAP32[((3216 + 16|0))>>2]|0;
+        $240 = ($238>>>0)<($239>>>0);
+        if ($240) {
+         _abort();
+         // unreachable;
+        } else {
+         $$pre$phi$iZ2D = $237;$F1$0$i = $238;
+        }
+       }
+       HEAP32[$$pre$phi$iZ2D>>2] = $228;
+       $241 = (($F1$0$i) + 12|0);
+       HEAP32[$241>>2] = $228;
+       $242 = (($228) + 8|0);
+       HEAP32[$242>>2] = $F1$0$i;
+       $243 = (($228) + 12|0);
+       HEAP32[$243>>2] = $231;
+      }
+      HEAP32[((3216 + 8|0))>>2] = $rsize$0$i;
+      HEAP32[((3216 + 20|0))>>2] = $151;
+     }
+     $244 = (($v$0$i) + 8|0);
+     $mem$0 = $244;
+     STACKTOP = sp;return ($mem$0|0);
+    }
+   } else {
+    $nb$0 = $5;
+   }
+  } else {
+   $245 = ($bytes>>>0)>(4294967231);
+   if ($245) {
+    $nb$0 = -1;
+   } else {
+    $246 = (($bytes) + 11)|0;
+    $247 = $246 & -8;
+    $248 = HEAP32[((3216 + 4|0))>>2]|0;
+    $249 = ($248|0)==(0);
+    if ($249) {
+     $nb$0 = $247;
+    } else {
+     $250 = (0 - ($247))|0;
+     $251 = $246 >>> 8;
+     $252 = ($251|0)==(0);
+     if ($252) {
+      $idx$0$i = 0;
+     } else {
+      $253 = ($247>>>0)>(16777215);
+      if ($253) {
+       $idx$0$i = 31;
+      } else {
+       $254 = (($251) + 1048320)|0;
+       $255 = $254 >>> 16;
+       $256 = $255 & 8;
+       $257 = $251 << $256;
+       $258 = (($257) + 520192)|0;
+       $259 = $258 >>> 16;
+       $260 = $259 & 4;
+       $261 = $260 | $256;
+       $262 = $257 << $260;
+       $263 = (($262) + 245760)|0;
+       $264 = $263 >>> 16;
+       $265 = $264 & 2;
+       $266 = $261 | $265;
+       $267 = (14 - ($266))|0;
+       $268 = $262 << $265;
+       $269 = $268 >>> 15;
+       $270 = (($267) + ($269))|0;
+       $271 = $270 << 1;
+       $272 = (($270) + 7)|0;
+       $273 = $247 >>> $272;
+       $274 = $273 & 1;
+       $275 = $274 | $271;
+       $idx$0$i = $275;
+      }
+     }
+     $276 = ((3216 + ($idx$0$i<<2)|0) + 304|0);
+     $277 = HEAP32[$276>>2]|0;
+     $278 = ($277|0)==(0|0);
+     L126: do {
+      if ($278) {
+       $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
+      } else {
+       $279 = ($idx$0$i|0)==(31);
+       if ($279) {
+        $283 = 0;
+       } else {
+        $280 = $idx$0$i >>> 1;
+        $281 = (25 - ($280))|0;
+        $283 = $281;
+       }
+       $282 = $247 << $283;
+       $rsize$0$i15 = $250;$rst$0$i = 0;$sizebits$0$i = $282;$t$0$i14 = $277;$v$0$i16 = 0;
+       while(1) {
+        $284 = (($t$0$i14) + 4|0);
+        $285 = HEAP32[$284>>2]|0;
+        $286 = $285 & -8;
+        $287 = (($286) - ($247))|0;
+        $288 = ($287>>>0)<($rsize$0$i15>>>0);
+        if ($288) {
+         $289 = ($286|0)==($247|0);
+         if ($289) {
+          $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
+          break L126;
+         } else {
+          $rsize$1$i = $287;$v$1$i = $t$0$i14;
+         }
+        } else {
+         $rsize$1$i = $rsize$0$i15;$v$1$i = $v$0$i16;
+        }
+        $290 = (($t$0$i14) + 20|0);
+        $291 = HEAP32[$290>>2]|0;
+        $292 = $sizebits$0$i >>> 31;
+        $293 = ((($t$0$i14) + ($292<<2)|0) + 16|0);
+        $294 = HEAP32[$293>>2]|0;
+        $295 = ($291|0)==(0|0);
+        $296 = ($291|0)==($294|0);
+        $or$cond$i = $295 | $296;
+        $rst$1$i = $or$cond$i ? $rst$0$i : $291;
+        $297 = ($294|0)==(0|0);
+        $298 = $sizebits$0$i << 1;
+        if ($297) {
+         $rsize$2$i = $rsize$1$i;$t$1$i = $rst$1$i;$v$2$i = $v$1$i;
+         break;
+        } else {
+         $rsize$0$i15 = $rsize$1$i;$rst$0$i = $rst$1$i;$sizebits$0$i = $298;$t$0$i14 = $294;$v$0$i16 = $v$1$i;
+        }
+       }
+      }
+     } while(0);
+     $299 = ($t$1$i|0)==(0|0);
+     $300 = ($v$2$i|0)==(0|0);
+     $or$cond19$i = $299 & $300;
+     if ($or$cond19$i) {
+      $301 = 2 << $idx$0$i;
+      $302 = (0 - ($301))|0;
+      $303 = $301 | $302;
+      $304 = $248 & $303;
+      $305 = ($304|0)==(0);
+      if ($305) {
+       $nb$0 = $247;
+       break;
+      }
+      $306 = (0 - ($304))|0;
+      $307 = $304 & $306;
+      $308 = (($307) + -1)|0;
+      $309 = $308 >>> 12;
+      $310 = $309 & 16;
+      $311 = $308 >>> $310;
+      $312 = $311 >>> 5;
+      $313 = $312 & 8;
+      $314 = $313 | $310;
+      $315 = $311 >>> $313;
+      $316 = $315 >>> 2;
+      $317 = $316 & 4;
+      $318 = $314 | $317;
+      $319 = $315 >>> $317;
+      $320 = $319 >>> 1;
+      $321 = $320 & 2;
+      $322 = $318 | $321;
+      $323 = $319 >>> $321;
+      $324 = $323 >>> 1;
+      $325 = $324 & 1;
+      $326 = $322 | $325;
+      $327 = $323 >>> $325;
+      $328 = (($326) + ($327))|0;
+      $329 = ((3216 + ($328<<2)|0) + 304|0);
+      $330 = HEAP32[$329>>2]|0;
+      $t$2$ph$i = $330;
+     } else {
+      $t$2$ph$i = $t$1$i;
+     }
+     $331 = ($t$2$ph$i|0)==(0|0);
+     if ($331) {
+      $rsize$3$lcssa$i = $rsize$2$i;$v$3$lcssa$i = $v$2$i;
+     } else {
+      $rsize$329$i = $rsize$2$i;$t$228$i = $t$2$ph$i;$v$330$i = $v$2$i;
+      while(1) {
+       $332 = (($t$228$i) + 4|0);
+       $333 = HEAP32[$332>>2]|0;
+       $334 = $333 & -8;
+       $335 = (($334) - ($247))|0;
+       $336 = ($335>>>0)<($rsize$329$i>>>0);
+       $$rsize$3$i = $336 ? $335 : $rsize$329$i;
+       $t$2$v$3$i = $336 ? $t$228$i : $v$330$i;
+       $337 = (($t$228$i) + 16|0);
+       $338 = HEAP32[$337>>2]|0;
+       $339 = ($338|0)==(0|0);
+       if (!($339)) {
+        $v$330$i$phi = $t$2$v$3$i;$t$228$i$phi = $338;$rsize$329$i$phi = $$rsize$3$i;$v$330$i = $v$330$i$phi;$t$228$i = $t$228$i$phi;$rsize$329$i = $rsize$329$i$phi;
+        continue;
+       }
+       $340 = (($t$228$i) + 20|0);
+       $341 = HEAP32[$340>>2]|0;
+       $342 = ($341|0)==(0|0);
+       if ($342) {
+        $rsize$3$lcssa$i = $$rsize$3$i;$v$3$lcssa$i = $t$2$v$3$i;
+        break;
+       } else {
+        $v$330$i$phi = $t$2$v$3$i;$rsize$329$i$phi = $$rsize$3$i;$t$228$i = $341;$v$330$i = $v$330$i$phi;$rsize$329$i = $rsize$329$i$phi;
+       }
+      }
+     }
+     $343 = ($v$3$lcssa$i|0)==(0|0);
+     if ($343) {
+      $nb$0 = $247;
+     } else {
+      $344 = HEAP32[((3216 + 8|0))>>2]|0;
+      $345 = (($344) - ($247))|0;
+      $346 = ($rsize$3$lcssa$i>>>0)<($345>>>0);
+      if ($346) {
+       $347 = HEAP32[((3216 + 16|0))>>2]|0;
+       $348 = ($v$3$lcssa$i>>>0)<($347>>>0);
+       if ($348) {
+        _abort();
+        // unreachable;
+       }
+       $349 = (($v$3$lcssa$i) + ($247)|0);
+       $350 = ($v$3$lcssa$i>>>0)<($349>>>0);
+       if (!($350)) {
+        _abort();
+        // unreachable;
+       }
+       $351 = (($v$3$lcssa$i) + 24|0);
+       $352 = HEAP32[$351>>2]|0;
+       $353 = (($v$3$lcssa$i) + 12|0);
+       $354 = HEAP32[$353>>2]|0;
+       $355 = ($354|0)==($v$3$lcssa$i|0);
+       do {
+        if ($355) {
+         $365 = (($v$3$lcssa$i) + 20|0);
+         $366 = HEAP32[$365>>2]|0;
+         $367 = ($366|0)==(0|0);
+         if ($367) {
+          $368 = (($v$3$lcssa$i) + 16|0);
+          $369 = HEAP32[$368>>2]|0;
+          $370 = ($369|0)==(0|0);
+          if ($370) {
+           $R$1$i20 = 0;
+           break;
+          } else {
+           $R$0$i18 = $369;$RP$0$i17 = $368;
+          }
+         } else {
+          $R$0$i18 = $366;$RP$0$i17 = $365;
+         }
+         while(1) {
+          $371 = (($R$0$i18) + 20|0);
+          $372 = HEAP32[$371>>2]|0;
+          $373 = ($372|0)==(0|0);
+          if (!($373)) {
+           $RP$0$i17$phi = $371;$R$0$i18$phi = $372;$RP$0$i17 = $RP$0$i17$phi;$R$0$i18 = $R$0$i18$phi;
+           continue;
+          }
+          $374 = (($R$0$i18) + 16|0);
+          $375 = HEAP32[$374>>2]|0;
+          $376 = ($375|0)==(0|0);
+          if ($376) {
+           break;
+          } else {
+           $R$0$i18 = $375;$RP$0$i17 = $374;
+          }
+         }
+         $377 = ($RP$0$i17>>>0)<($347>>>0);
+         if ($377) {
+          _abort();
+          // unreachable;
+         } else {
+          HEAP32[$RP$0$i17>>2] = 0;
+          $R$1$i20 = $R$0$i18;
+          break;
+         }
+        } else {
+         $356 = (($v$3$lcssa$i) + 8|0);
+         $357 = HEAP32[$356>>2]|0;
+         $358 = ($357>>>0)<($347>>>0);
+         if ($358) {
+          _abort();
+          // unreachable;
+         }
+         $359 = (($357) + 12|0);
+         $360 = HEAP32[$359>>2]|0;
+         $361 = ($360|0)==($v$3$lcssa$i|0);
+         if (!($361)) {
+          _abort();
+          // unreachable;
+         }
+         $362 = (($354) + 8|0);
+         $363 = HEAP32[$362>>2]|0;
+         $364 = ($363|0)==($v$3$lcssa$i|0);
+         if ($364) {
+          HEAP32[$359>>2] = $354;
+          HEAP32[$362>>2] = $357;
+          $R$1$i20 = $354;
+          break;
+         } else {
+          _abort();
+          // unreachable;
+         }
+        }
+       } while(0);
+       $378 = ($352|0)==(0|0);
+       do {
+        if (!($378)) {
+         $379 = (($v$3$lcssa$i) + 28|0);
+         $380 = HEAP32[$379>>2]|0;
+         $381 = ((3216 + ($380<<2)|0) + 304|0);
+         $382 = HEAP32[$381>>2]|0;
+         $383 = ($v$3$lcssa$i|0)==($382|0);
+         if ($383) {
+          HEAP32[$381>>2] = $R$1$i20;
+          $cond$i21 = ($R$1$i20|0)==(0|0);
+          if ($cond$i21) {
+           $384 = 1 << $380;
+           $385 = $384 ^ -1;
+           $386 = HEAP32[((3216 + 4|0))>>2]|0;
+           $387 = $386 & $385;
+           HEAP32[((3216 + 4|0))>>2] = $387;
+           break;
+          }
+         } else {
+          $388 = HEAP32[((3216 + 16|0))>>2]|0;
+          $389 = ($352>>>0)<($388>>>0);
+          if ($389) {
+           _abort();
+           // unreachable;
+          }
+          $390 = (($352) + 16|0);
+          $391 = HEAP32[$390>>2]|0;
+          $392 = ($391|0)==($v$3$lcssa$i|0);
+          if ($392) {
+           HEAP32[$390>>2] = $R$1$i20;
+          } else {
+           $393 = (($352) + 20|0);
+           HEAP32[$393>>2] = $R$1$i20;
+          }
+          $394 = ($R$1$i20|0)==(0|0);
+          if ($394) {
+           break;
+          }
+         }
+         $395 = HEAP32[((3216 + 16|0))>>2]|0;
+         $396 = ($R$1$i20>>>0)<($395>>>0);
+         if ($396) {
+          _abort();
+          // unreachable;
+         }
+         $397 = (($R$1$i20) + 24|0);
+         HEAP32[$397>>2] = $352;
+         $398 = (($v$3$lcssa$i) + 16|0);
+         $399 = HEAP32[$398>>2]|0;
+         $400 = ($399|0)==(0|0);
+         do {
+          if (!($400)) {
+           $401 = HEAP32[((3216 + 16|0))>>2]|0;
+           $402 = ($399>>>0)<($401>>>0);
+           if ($402) {
+            _abort();
+            // unreachable;
+           } else {
+            $403 = (($R$1$i20) + 16|0);
+            HEAP32[$403>>2] = $399;
+            $404 = (($399) + 24|0);
+            HEAP32[$404>>2] = $R$1$i20;
+            break;
+           }
+          }
+         } while(0);
+         $405 = (($v$3$lcssa$i) + 20|0);
+         $406 = HEAP32[$405>>2]|0;
+         $407 = ($406|0)==(0|0);
+         if (!($407)) {
+          $408 = HEAP32[((3216 + 16|0))>>2]|0;
+          $409 = ($406>>>0)<($408>>>0);
+          if ($409) {
+           _abort();
+           // unreachable;
+          } else {
+           $410 = (($R$1$i20) + 20|0);
+           HEAP32[$410>>2] = $406;
+           $411 = (($406) + 24|0);
+           HEAP32[$411>>2] = $R$1$i20;
+           break;
+          }
+         }
+        }
+       } while(0);
+       $412 = ($rsize$3$lcssa$i>>>0)<(16);
+       L204: do {
+        if ($412) {
+         $413 = (($rsize$3$lcssa$i) + ($247))|0;
+         $414 = $413 | 3;
+         $415 = (($v$3$lcssa$i) + 4|0);
+         HEAP32[$415>>2] = $414;
+         $$sum18$i = (($413) + 4)|0;
+         $416 = (($v$3$lcssa$i) + ($$sum18$i)|0);
+         $417 = HEAP32[$416>>2]|0;
+         $418 = $417 | 1;
+         HEAP32[$416>>2] = $418;
+        } else {
+         $419 = $247 | 3;
+         $420 = (($v$3$lcssa$i) + 4|0);
+         HEAP32[$420>>2] = $419;
+         $421 = $rsize$3$lcssa$i | 1;
+         $$sum$i2334 = $247 | 4;
+         $422 = (($v$3$lcssa$i) + ($$sum$i2334)|0);
+         HEAP32[$422>>2] = $421;
+         $$sum1$i24 = (($rsize$3$lcssa$i) + ($247))|0;
+         $423 = (($v$3$lcssa$i) + ($$sum1$i24)|0);
+         HEAP32[$423>>2] = $rsize$3$lcssa$i;
+         $424 = $rsize$3$lcssa$i >>> 3;
+         $425 = ($rsize$3$lcssa$i>>>0)<(256);
+         if ($425) {
+          $426 = $424 << 1;
+          $427 = ((3216 + ($426<<2)|0) + 40|0);
+          $428 = HEAP32[3216>>2]|0;
+          $429 = 1 << $424;
+          $430 = $428 & $429;
+          $431 = ($430|0)==(0);
+          if ($431) {
+           $432 = $428 | $429;
+           HEAP32[3216>>2] = $432;
+           $$sum14$pre$i = (($426) + 2)|0;
+           $$pre$i25 = ((3216 + ($$sum14$pre$i<<2)|0) + 40|0);
+           $$pre$phi$i26Z2D = $$pre$i25;$F5$0$i = $427;
+          } else {
+           $$sum17$i = (($426) + 2)|0;
+           $433 = ((3216 + ($$sum17$i<<2)|0) + 40|0);
+           $434 = HEAP32[$433>>2]|0;
+           $435 = HEAP32[((3216 + 16|0))>>2]|0;
+           $436 = ($434>>>0)<($435>>>0);
+           if ($436) {
+            _abort();
+            // unreachable;
+           } else {
+            $$pre$phi$i26Z2D = $433;$F5$0$i = $434;
+           }
+          }
+          HEAP32[$$pre$phi$i26Z2D>>2] = $349;
+          $437 = (($F5$0$i) + 12|0);
+          HEAP32[$437>>2] = $349;
+          $$sum15$i = (($247) + 8)|0;
+          $438 = (($v$3$lcssa$i) + ($$sum15$i)|0);
+          HEAP32[$438>>2] = $F5$0$i;
+          $$sum16$i = (($247) + 12)|0;
+          $439 = (($v$3$lcssa$i) + ($$sum16$i)|0);
+          HEAP32[$439>>2] = $427;
+          break;
+         }
+         $440 = $rsize$3$lcssa$i >>> 8;
+         $441 = ($440|0)==(0);
+         if ($441) {
+          $I7$0$i = 0;
+         } else {
+          $442 = ($rsize$3$lcssa$i>>>0)>(16777215);
+          if ($442) {
+           $I7$0$i = 31;
+          } else {
+           $443 = (($440) + 1048320)|0;
+           $444 = $443 >>> 16;
+           $445 = $444 & 8;
+           $446 = $440 << $445;
+           $447 = (($446) + 520192)|0;
+           $448 = $447 >>> 16;
+           $449 = $448 & 4;
+           $450 = $449 | $445;
+           $451 = $446 << $449;
+           $452 = (($451) + 245760)|0;
+           $453 = $452 >>> 16;
+           $454 = $453 & 2;
+           $455 = $450 | $454;
+           $456 = (14 - ($455))|0;
+           $457 = $451 << $454;
+           $458 = $457 >>> 15;
+           $459 = (($456) + ($458))|0;
+           $460 = $459 << 1;
+           $461 = (($459) + 7)|0;
+           $462 = $rsize$3$lcssa$i >>> $461;
+           $463 = $462 & 1;
+           $464 = $463 | $460;
+           $I7$0$i = $464;
+          }
+         }
+         $465 = ((3216 + ($I7$0$i<<2)|0) + 304|0);
+         $$sum2$i = (($247) + 28)|0;
+         $466 = (($v$3$lcssa$i) + ($$sum2$i)|0);
+         HEAP32[$466>>2] = $I7$0$i;
+         $$sum3$i27 = (($247) + 16)|0;
+         $467 = (($v$3$lcssa$i) + ($$sum3$i27)|0);
+         $$sum4$i28 = (($247) + 20)|0;
+         $468 = (($v$3$lcssa$i) + ($$sum4$i28)|0);
+         HEAP32[$468>>2] = 0;
+         HEAP32[$467>>2] = 0;
+         $469 = HEAP32[((3216 + 4|0))>>2]|0;
+         $470 = 1 << $I7$0$i;
+         $471 = $469 & $470;
+         $472 = ($471|0)==(0);
+         if ($472) {
+          $473 = $469 | $470;
+          HEAP32[((3216 + 4|0))>>2] = $473;
+          HEAP32[$465>>2] = $349;
+          $$sum5$i = (($247) + 24)|0;
+          $474 = (($v$3$lcssa$i) + ($$sum5$i)|0);
+          HEAP32[$474>>2] = $465;
+          $$sum6$i = (($247) + 12)|0;
+          $475 = (($v$3$lcssa$i) + ($$sum6$i)|0);
+          HEAP32[$475>>2] = $349;
+          $$sum7$i = (($247) + 8)|0;
+          $476 = (($v$3$lcssa$i) + ($$sum7$i)|0);
+          HEAP32[$476>>2] = $349;
+          break;
+         }
+         $477 = HEAP32[$465>>2]|0;
+         $478 = ($I7$0$i|0)==(31);
+         if ($478) {
+          $486 = 0;
+         } else {
+          $479 = $I7$0$i >>> 1;
+          $480 = (25 - ($479))|0;
+          $486 = $480;
+         }
+         $481 = (($477) + 4|0);
+         $482 = HEAP32[$481>>2]|0;
+         $483 = $482 & -8;
+         $484 = ($483|0)==($rsize$3$lcssa$i|0);
+         L225: do {
+          if ($484) {
+           $T$0$lcssa$i = $477;
+          } else {
+           $485 = $rsize$3$lcssa$i << $486;
+           $K12$025$i = $485;$T$024$i = $477;
+           while(1) {
+            $493 = $K12$025$i >>> 31;
+            $494 = ((($T$024$i) + ($493<<2)|0) + 16|0);
+            $489 = HEAP32[$494>>2]|0;
+            $495 = ($489|0)==(0|0);
+            if ($495) {
+             break;
+            }
+            $487 = $K12$025$i << 1;
+            $488 = (($489) + 4|0);
+            $490 = HEAP32[$488>>2]|0;
+            $491 = $490 & -8;
+            $492 = ($491|0)==($rsize$3$lcssa$i|0);
+            if ($492) {
+             $T$0$lcssa$i = $489;
+             break L225;
+            } else {
+             $T$024$i$phi = $489;$K12$025$i = $487;$T$024$i = $T$024$i$phi;
+            }
+           }
+           $496 = HEAP32[((3216 + 16|0))>>2]|0;
+           $497 = ($494>>>0)<($496>>>0);
+           if ($497) {
+            _abort();
+            // unreachable;
+           } else {
+            HEAP32[$494>>2] = $349;
+            $$sum11$i = (($247) + 24)|0;
+            $498 = (($v$3$lcssa$i) + ($$sum11$i)|0);
+            HEAP32[$498>>2] = $T$024$i;
+            $$sum12$i = (($247) + 12)|0;
+            $499 = (($v$3$lcssa$i) + ($$sum12$i)|0);
+            HEAP32[$499>>2] = $349;
+            $$sum13$i = (($247) + 8)|0;
+            $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
+            HEAP32[$500>>2] = $349;
+            break L204;
+           }
+          }
+         } while(0);
+         $501 = (($T$0$lcssa$i) + 8|0);
+         $502 = HEAP32[$501>>2]|0;
+         $503 = HEAP32[((3216 + 16|0))>>2]|0;
+         $504 = ($T$0$lcssa$i>>>0)<($503>>>0);
+         if ($504) {
+          _abort();
+          // unreachable;
+         }
+         $505 = ($502>>>0)<($503>>>0);
+         if ($505) {
+          _abort();
+          // unreachable;
+         } else {
+          $506 = (($502) + 12|0);
+          HEAP32[$506>>2] = $349;
+          HEAP32[$501>>2] = $349;
+          $$sum8$i = (($247) + 8)|0;
+          $507 = (($v$3$lcssa$i) + ($$sum8$i)|0);
+          HEAP32[$507>>2] = $502;
+          $$sum9$i = (($247) + 12)|0;
+          $508 = (($v$3$lcssa$i) + ($$sum9$i)|0);
+          HEAP32[$508>>2] = $T$0$lcssa$i;
+          $$sum10$i = (($247) + 24)|0;
+          $509 = (($v$3$lcssa$i) + ($$sum10$i)|0);
+          HEAP32[$509>>2] = 0;
+          break;
+         }
+        }
+       } while(0);
+       $510 = (($v$3$lcssa$i) + 8|0);
+       $mem$0 = $510;
+       STACKTOP = sp;return ($mem$0|0);
+      } else {
+       $nb$0 = $247;
+      }
+     }
+    }
+   }
+  }
+ } while(0);
+ $511 = HEAP32[((3216 + 8|0))>>2]|0;
+ $512 = ($nb$0>>>0)>($511>>>0);
+ if (!($512)) {
+  $513 = (($511) - ($nb$0))|0;
+  $514 = HEAP32[((3216 + 20|0))>>2]|0;
+  $515 = ($513>>>0)>(15);
+  if ($515) {
+   $516 = (($514) + ($nb$0)|0);
+   HEAP32[((3216 + 20|0))>>2] = $516;
+   HEAP32[((3216 + 8|0))>>2] = $513;
+   $517 = $513 | 1;
+   $$sum2 = (($nb$0) + 4)|0;
+   $518 = (($514) + ($$sum2)|0);
+   HEAP32[$518>>2] = $517;
+   $519 = (($514) + ($511)|0);
+   HEAP32[$519>>2] = $513;
+   $520 = $nb$0 | 3;
+   $521 = (($514) + 4|0);
+   HEAP32[$521>>2] = $520;
+  } else {
+   HEAP32[((3216 + 8|0))>>2] = 0;
+   HEAP32[((3216 + 20|0))>>2] = 0;
+   $522 = $511 | 3;
+   $523 = (($514) + 4|0);
+   HEAP32[$523>>2] = $522;
+   $$sum1 = (($511) + 4)|0;
+   $524 = (($514) + ($$sum1)|0);
+   $525 = HEAP32[$524>>2]|0;
+   $526 = $525 | 1;
+   HEAP32[$524>>2] = $526;
+  }
+  $527 = (($514) + 8|0);
+  $mem$0 = $527;
+  STACKTOP = sp;return ($mem$0|0);
+ }
+ $528 = HEAP32[((3216 + 12|0))>>2]|0;
+ $529 = ($nb$0>>>0)<($528>>>0);
+ if ($529) {
+  $530 = (($528) - ($nb$0))|0;
+  HEAP32[((3216 + 12|0))>>2] = $530;
+  $531 = HEAP32[((3216 + 24|0))>>2]|0;
+  $532 = (($531) + ($nb$0)|0);
+  HEAP32[((3216 + 24|0))>>2] = $532;
+  $533 = $530 | 1;
+  $$sum = (($nb$0) + 4)|0;
+  $534 = (($531) + ($$sum)|0);
+  HEAP32[$534>>2] = $533;
+  $535 = $nb$0 | 3;
+  $536 = (($531) + 4|0);
+  HEAP32[$536>>2] = $535;
+  $537 = (($531) + 8|0);
+  $mem$0 = $537;
+  STACKTOP = sp;return ($mem$0|0);
+ }
+ $538 = HEAP32[3688>>2]|0;
+ $539 = ($538|0)==(0);
+ do {
+  if ($539) {
+   $540 = (_sysconf(30)|0);
+   $541 = (($540) + -1)|0;
+   $542 = $541 & $540;
+   $543 = ($542|0)==(0);
+   if ($543) {
+    HEAP32[((3688 + 8|0))>>2] = $540;
+    HEAP32[((3688 + 4|0))>>2] = $540;
+    HEAP32[((3688 + 12|0))>>2] = -1;
+    HEAP32[((3688 + 16|0))>>2] = -1;
+    HEAP32[((3688 + 20|0))>>2] = 0;
+    HEAP32[((3216 + 444|0))>>2] = 0;
+    $544 = (_time((0|0))|0);
+    $545 = $544 & -16;
+    $546 = $545 ^ 1431655768;
+    HEAP32[3688>>2] = $546;
+    break;
+   } else {
+    _abort();
+    // unreachable;
+   }
+  }
+ } while(0);
+ $547 = (($nb$0) + 48)|0;
+ $548 = HEAP32[((3688 + 8|0))>>2]|0;
+ $549 = (($nb$0) + 47)|0;
+ $550 = (($548) + ($549))|0;
+ $551 = (0 - ($548))|0;
+ $552 = $550 & $551;
+ $553 = ($552>>>0)>($nb$0>>>0);
+ if (!($553)) {
+  $mem$0 = 0;
+  STACKTOP = sp;return ($mem$0|0);
+ }
+ $554 = HEAP32[((3216 + 440|0))>>2]|0;
+ $555 = ($554|0)==(0);
+ if (!($555)) {
+  $556 = HEAP32[((3216 + 432|0))>>2]|0;
+  $557 = (($556) + ($552))|0;
+  $558 = ($557>>>0)<=($556>>>0);
+  $559 = ($557>>>0)>($554>>>0);
+  $or$cond1$i = $558 | $559;
+  if ($or$cond1$i) {
+   $mem$0 = 0;
+   STACKTOP = sp;return ($mem$0|0);
+  }
+ }
+ $560 = HEAP32[((3216 + 444|0))>>2]|0;
+ $561 = $560 & 4;
+ $562 = ($561|0)==(0);
+ L269: do {
+  if ($562) {
+   $563 = HEAP32[((3216 + 24|0))>>2]|0;
+   $564 = ($563|0)==(0|0);
+   L271: do {
+    if ($564) {
+     label = 182;
+    } else {
+     $sp$0$i$i = ((3216 + 448|0));
+     while(1) {
+      $565 = HEAP32[$sp$0$i$i>>2]|0;
+      $566 = ($565>>>0)>($563>>>0);
+      if (!($566)) {
+       $567 = (($sp$0$i$i) + 4|0);
+       $568 = HEAP32[$567>>2]|0;
+       $569 = (($565) + ($568)|0);
+       $570 = ($569>>>0)>($563>>>0);
+       if ($570) {
+        break;
+       }
+      }
+      $571 = (($sp$0$i$i) + 8|0);
+      $572 = HEAP32[$571>>2]|0;
+      $573 = ($572|0)==(0|0);
+      if ($573) {
+       label = 182;
+       break L271;
+      } else {
+       $sp$0$i$i = $572;
+      }
+     }
+     $574 = ($sp$0$i$i|0)==(0|0);
+     if ($574) {
+      label = 182;
+     } else {
+      $597 = HEAP32[((3216 + 12|0))>>2]|0;
+      $598 = (($550) - ($597))|0;
+      $599 = $598 & $551;
+      $600 = ($599>>>0)<(2147483647);
+      if ($600) {
+       $601 = (_sbrk(($599|0))|0);
+       $602 = HEAP32[$sp$0$i$i>>2]|0;
+       $603 = HEAP32[$567>>2]|0;
+       $604 = (($602) + ($603)|0);
+       $605 = ($601|0)==($604|0);
+       $$3$i = $605 ? $599 : 0;
+       $$4$i = $605 ? $601 : (-1);
+       $br$0$i = $601;$ssize$1$i = $599;$tbase$0$i = $$4$i;$tsize$0$i = $$3$i;
+       label = 191;
+      } else {
+       $tsize$0323841$i = 0;
+      }
+     }
+    }
+   } while(0);
+   do {
+    if ((label|0) == 182) {
+     $575 = (_sbrk(0)|0);
+     $576 = ($575|0)==((-1)|0);
+     if ($576) {
+      $tsize$0323841$i = 0;
+     } else {
+      $577 = $575;
+      $578 = HEAP32[((3688 + 4|0))>>2]|0;
+      $579 = (($578) + -1)|0;
+      $580 = $579 & $577;
+      $581 = ($580|0)==(0);
+      if ($581) {
+       $ssize$0$i = $552;
+      } else {
+       $582 = (($579) + ($577))|0;
+       $583 = (0 - ($578))|0;
+       $584 = $582 & $583;
+       $585 = (($552) - ($577))|0;
+       $586 = (($585) + ($584))|0;
+       $ssize$0$i = $586;
+      }
+      $587 = HEAP32[((3216 + 432|0))>>2]|0;
+      $588 = (($587) + ($ssize$0$i))|0;
+      $589 = ($ssize$0$i>>>0)>($nb$0>>>0);
+      $590 = ($ssize$0$i>>>0)<(2147483647);
+      $or$cond$i29 = $589 & $590;
+      if ($or$cond$i29) {
+       $591 = HEAP32[((3216 + 440|0))>>2]|0;
+       $592 = ($591|0)==(0);
+       if (!($592)) {
+        $593 = ($588>>>0)<=($587>>>0);
+        $594 = ($588>>>0)>($591>>>0);
+        $or$cond2$i = $593 | $594;
+        if ($or$cond2$i) {
+         $tsize$0323841$i = 0;
+         break;
+        }
+       }
+       $595 = (_sbrk(($ssize$0$i|0))|0);
+       $596 = ($595|0)==($575|0);
+       $ssize$0$$i = $596 ? $ssize$0$i : 0;
+       $$$i = $596 ? $575 : (-1);
+       $br$0$i = $595;$ssize$1$i = $ssize$0$i;$tbase$0$i = $$$i;$tsize$0$i = $ssize$0$$i;
+       label = 191;
+      } else {
+       $tsize$0323841$i = 0;
+      }
+     }
+    }
+   } while(0);
+   L291: do {
+    if ((label|0) == 191) {
+     $606 = (0 - ($ssize$1$i))|0;
+     $607 = ($tbase$0$i|0)==((-1)|0);
+     if (!($607)) {
+      $tbase$247$i = $tbase$0$i;$tsize$246$i = $tsize$0$i;
+      label = 202;
+      break L269;
+     }
+     $608 = ($br$0$i|0)!=((-1)|0);
+     $609 = ($ssize$1$i>>>0)<(2147483647);
+     $or$cond5$i = $608 & $609;
+     $610 = ($ssize$1$i>>>0)<($547>>>0);
+     $or$cond6$i = $or$cond5$i & $610;
+     do {
+      if ($or$cond6$i) {
+       $611 = HEAP32[((3688 + 8|0))>>2]|0;
+       $612 = (($549) - ($ssize$1$i))|0;
+       $613 = (($612) + ($611))|0;
+       $614 = (0 - ($611))|0;
+       $615 = $613 & $614;
+       $616 = ($615>>>0)<(2147483647);
+       if ($616) {
+        $617 = (_sbrk(($615|0))|0);
+        $618 = ($617|0)==((-1)|0);
+        if ($618) {
+         (_sbrk(($606|0))|0);
+         $tsize$0323841$i = $tsize$0$i;
+         break L291;
+        } else {
+         $619 = (($615) + ($ssize$1$i))|0;
+         $ssize$2$i = $619;
+         break;
+        }
+       } else {
+        $ssize$2$i = $ssize$1$i;
+       }
+      } else {
+       $ssize$2$i = $ssize$1$i;
+      }
+     } while(0);
+     $620 = ($br$0$i|0)==((-1)|0);
+     if ($620) {
+      $tsize$0323841$i = $tsize$0$i;
+     } else {
+      $tbase$247$i = $br$0$i;$tsize$246$i = $ssize$2$i;
+      label = 202;
+      break L269;
+     }
+    }
+   } while(0);
+   $621 = HEAP32[((3216 + 444|0))>>2]|0;
+   $622 = $621 | 4;
+   HEAP32[((3216 + 444|0))>>2] = $622;
+   $tsize$1$i = $tsize$0323841$i;
+   label = 199;
+  } else {
+   $tsize$1$i = 0;
+   label = 199;
+  }
+ } while(0);
+ if ((label|0) == 199) {
+  $623 = ($552>>>0)<(2147483647);
+  if ($623) {
+   $624 = (_sbrk(($552|0))|0);
+   $625 = (_sbrk(0)|0);
+   $notlhs$i = ($624|0)!=((-1)|0);
+   $notrhs$i = ($625|0)!=((-1)|0);
+   $or$cond8$not$i = $notrhs$i & $notlhs$i;
+   $626 = ($624>>>0)<($625>>>0);
+   $or$cond9$i = $or$cond8$not$i & $626;
+   if ($or$cond9$i) {
+    $627 = $625;
+    $628 = $624;
+    $629 = (($627) - ($628))|0;
+    $630 = (($nb$0) + 40)|0;
+    $631 = ($629>>>0)>($630>>>0);
+    $$tsize$1$i = $631 ? $629 : $tsize$1$i;
+    if ($631) {
+     $tbase$247$i = $624;$tsize$246$i = $$tsize$1$i;
+     label = 202;
+    }
+   }
+  }
+ }
+ if ((label|0) == 202) {
+  $632 = HEAP32[((3216 + 432|0))>>2]|0;
+  $633 = (($632) + ($tsize$246$i))|0;
+  HEAP32[((3216 + 432|0))>>2] = $633;
+  $634 = HEAP32[((3216 + 436|0))>>2]|0;
+  $635 = ($633>>>0)>($634>>>0);
+  if ($635) {
+   HEAP32[((3216 + 436|0))>>2] = $633;
+  }
+  $636 = HEAP32[((3216 + 24|0))>>2]|0;
+  $637 = ($636|0)==(0|0);
+  L311: do {
+   if ($637) {
+    $638 = HEAP32[((3216 + 16|0))>>2]|0;
+    $639 = ($638|0)==(0|0);
+    $640 = ($tbase$247$i>>>0)<($638>>>0);
+    $or$cond10$i = $639 | $640;
+    if ($or$cond10$i) {
+     HEAP32[((3216 + 16|0))>>2] = $tbase$247$i;
+    }
+    HEAP32[((3216 + 448|0))>>2] = $tbase$247$i;
+    HEAP32[((3216 + 452|0))>>2] = $tsize$246$i;
+    HEAP32[((3216 + 460|0))>>2] = 0;
+    $641 = HEAP32[3688>>2]|0;
+    HEAP32[((3216 + 36|0))>>2] = $641;
+    HEAP32[((3216 + 32|0))>>2] = -1;
+    $i$02$i$i = 0;
+    while(1) {
+     $642 = $i$02$i$i << 1;
+     $643 = ((3216 + ($642<<2)|0) + 40|0);
+     $$sum$i$i = (($642) + 3)|0;
+     $644 = ((3216 + ($$sum$i$i<<2)|0) + 40|0);
+     HEAP32[$644>>2] = $643;
+     $$sum1$i$i = (($642) + 2)|0;
+     $645 = ((3216 + ($$sum1$i$i<<2)|0) + 40|0);
+     HEAP32[$645>>2] = $643;
+     $646 = (($i$02$i$i) + 1)|0;
+     $exitcond$i$i = ($646|0)==(32);
+     if ($exitcond$i$i) {
+      break;
+     } else {
+      $i$02$i$i$phi = $646;$i$02$i$i = $i$02$i$i$phi;
+     }
+    }
+    $647 = (($tsize$246$i) + -40)|0;
+    $648 = (($tbase$247$i) + 8|0);
+    $649 = $648;
+    $650 = $649 & 7;
+    $651 = ($650|0)==(0);
+    if ($651) {
+     $655 = 0;
+    } else {
+     $652 = (0 - ($649))|0;
+     $653 = $652 & 7;
+     $655 = $653;
+    }
+    $654 = (($tbase$247$i) + ($655)|0);
+    $656 = (($647) - ($655))|0;
+    HEAP32[((3216 + 24|0))>>2] = $654;
+    HEAP32[((3216 + 12|0))>>2] = $656;
+    $657 = $656 | 1;
+    $$sum$i14$i = (($655) + 4)|0;
+    $658 = (($tbase$247$i) + ($$sum$i14$i)|0);
+    HEAP32[$658>>2] = $657;
+    $$sum2$i$i = (($tsize$246$i) + -36)|0;
+    $659 = (($tbase$247$i) + ($$sum2$i$i)|0);
+    HEAP32[$659>>2] = 40;
+    $660 = HEAP32[((3688 + 16|0))>>2]|0;
+    HEAP32[((3216 + 28|0))>>2] = $660;
+   } else {
+    $sp$075$i = ((3216 + 448|0));
+    while(1) {
+     $661 = HEAP32[$sp$075$i>>2]|0;
+     $662 = (($sp$075$i) + 4|0);
+     $663 = HEAP32[$662>>2]|0;
+     $664 = (($661) + ($663)|0);
+     $665 = ($tbase$247$i|0)==($664|0);
+     if ($665) {
+      label = 214;
+      break;
+     }
+     $666 = (($sp$075$i) + 8|0);
+     $667 = HEAP32[$666>>2]|0;
+     $668 = ($667|0)==(0|0);
+     if ($668) {
+      break;
+     } else {
+      $sp$075$i = $667;
+     }
+    }
+    if ((label|0) == 214) {
+     $669 = (($sp$075$i) + 12|0);
+     $670 = HEAP32[$669>>2]|0;
+     $671 = $670 & 8;
+     $672 = ($671|0)==(0);
+     if ($672) {
+      $673 = ($636>>>0)>=($661>>>0);
+      $674 = ($636>>>0)<($tbase$247$i>>>0);
+      $or$cond49$i = $673 & $674;
+      if ($or$cond49$i) {
+       $675 = (($663) + ($tsize$246$i))|0;
+       HEAP32[$662>>2] = $675;
+       $676 = HEAP32[((3216 + 12|0))>>2]|0;
+       $677 = (($676) + ($tsize$246$i))|0;
+       $678 = (($636) + 8|0);
+       $679 = $678;
+       $680 = $679 & 7;
+       $681 = ($680|0)==(0);
+       if ($681) {
+        $685 = 0;
+       } else {
+        $682 = (0 - ($679))|0;
+        $683 = $682 & 7;
+        $685 = $683;
+       }
+       $684 = (($636) + ($685)|0);
+       $686 = (($677) - ($685))|0;
+       HEAP32[((3216 + 24|0))>>2] = $684;
+       HEAP32[((3216 + 12|0))>>2] = $686;
+       $687 = $686 | 1;
+       $$sum$i18$i = (($685) + 4)|0;
+       $688 = (($636) + ($$sum$i18$i)|0);
+       HEAP32[$688>>2] = $687;
+       $$sum2$i19$i = (($677) + 4)|0;
+       $689 = (($636) + ($$sum2$i19$i)|0);
+       HEAP32[$689>>2] = 40;
+       $690 = HEAP32[((3688 + 16|0))>>2]|0;
+       HEAP32[((3216 + 28|0))>>2] = $690;
+       break;
+      }
+     }
+    }
+    $691 = HEAP32[((3216 + 16|0))>>2]|0;
+    $692 = ($tbase$247$i>>>0)<($691>>>0);
+    if ($692) {
+     HEAP32[((3216 + 16|0))>>2] = $tbase$247$i;
+    }
+    $693 = (($tbase$247$i) + ($tsize$246$i)|0);
+    $sp$168$i = ((3216 + 448|0));
+    while(1) {
+     $694 = HEAP32[$sp$168$i>>2]|0;
+     $695 = ($694|0)==($693|0);
+     if ($695) {
+      label = 224;
+      break;
+     }
+     $696 = (($sp$168$i) + 8|0);
+     $697 = HEAP32[$696>>2]|0;
+     $698 = ($697|0)==(0|0);
+     if ($698) {
+      break;
+     } else {
+      $sp$168$i = $697;
+     }
+    }
+    if ((label|0) == 224) {
+     $699 = (($sp$168$i) + 12|0);
+     $700 = HEAP32[$699>>2]|0;
+     $701 = $700 & 8;
+     $702 = ($701|0)==(0);
+     if ($702) {
+      HEAP32[$sp$168$i>>2] = $tbase$247$i;
+      $703 = (($sp$168$i) + 4|0);
+      $704 = HEAP32[$703>>2]|0;
+      $705 = (($704) + ($tsize$246$i))|0;
+      HEAP32[$703>>2] = $705;
+      $706 = (($tbase$247$i) + 8|0);
+      $707 = $706;
+      $708 = $707 & 7;
+      $709 = ($708|0)==(0);
+      if ($709) {
+       $713 = 0;
+      } else {
+       $710 = (0 - ($707))|0;
+       $711 = $710 & 7;
+       $713 = $711;
+      }
+      $712 = (($tbase$247$i) + ($713)|0);
+      $$sum107$i = (($tsize$246$i) + 8)|0;
+      $714 = (($tbase$247$i) + ($$sum107$i)|0);
+      $715 = $714;
+      $716 = $715 & 7;
+      $717 = ($716|0)==(0);
+      if ($717) {
+       $720 = 0;
+      } else {
+       $718 = (0 - ($715))|0;
+       $719 = $718 & 7;
+       $720 = $719;
+      }
+      $$sum108$i = (($720) + ($tsize$246$i))|0;
+      $721 = (($tbase$247$i) + ($$sum108$i)|0);
+      $722 = $721;
+      $723 = $712;
+      $724 = (($722) - ($723))|0;
+      $$sum$i21$i = (($713) + ($nb$0))|0;
+      $725 = (($tbase$247$i) + ($$sum$i21$i)|0);
+      $726 = (($724) - ($nb$0))|0;
+      $727 = $nb$0 | 3;
+      $$sum1$i22$i = (($713) + 4)|0;
+      $728 = (($tbase$247$i) + ($$sum1$i22$i)|0);
+      HEAP32[$728>>2] = $727;
+      $729 = HEAP32[((3216 + 24|0))>>2]|0;
+      $730 = ($721|0)==($729|0);
+      L348: do {
+       if ($730) {
+        $731 = HEAP32[((3216 + 12|0))>>2]|0;
+        $732 = (($731) + ($726))|0;
+        HEAP32[((3216 + 12|0))>>2] = $732;
+        HEAP32[((3216 + 24|0))>>2] = $725;
+        $733 = $732 | 1;
+        $$sum42$i$i = (($$sum$i21$i) + 4)|0;
+        $734 = (($tbase$247$i) + ($$sum42$i$i)|0);
+        HEAP32[$734>>2] = $733;
+       } else {
+        $735 = HEAP32[((3216 + 20|0))>>2]|0;
+        $736 = ($721|0)==($735|0);
+        if ($736) {
+         $737 = HEAP32[((3216 + 8|0))>>2]|0;
+         $738 = (($737) + ($726))|0;
+         HEAP32[((3216 + 8|0))>>2] = $738;
+         HEAP32[((3216 + 20|0))>>2] = $725;
+         $739 = $738 | 1;
+         $$sum40$i$i = (($$sum$i21$i) + 4)|0;
+         $740 = (($tbase$247$i) + ($$sum40$i$i)|0);
+         HEAP32[$740>>2] = $739;
+         $$sum41$i$i = (($738) + ($$sum$i21$i))|0;
+         $741 = (($tbase$247$i) + ($$sum41$i$i)|0);
+         HEAP32[$741>>2] = $738;
+         break;
+        }
+        $$sum2$i23$i = (($tsize$246$i) + 4)|0;
+        $$sum109$i = (($$sum2$i23$i) + ($720))|0;
+        $742 = (($tbase$247$i) + ($$sum109$i)|0);
+        $743 = HEAP32[$742>>2]|0;
+        $744 = $743 & 3;
+        $745 = ($744|0)==(1);
+        if ($745) {
+         $746 = $743 & -8;
+         $747 = $743 >>> 3;
+         $748 = ($743>>>0)<(256);
+         do {
+          if ($748) {
+           $$sum3738$i$i = $720 | 8;
+           $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
+           $749 = (($tbase$247$i) + ($$sum119$i)|0);
+           $750 = HEAP32[$749>>2]|0;
+           $$sum39$i$i = (($tsize$246$i) + 12)|0;
+           $$sum120$i = (($$sum39$i$i) + ($720))|0;
+           $751 = (($tbase$247$i) + ($$sum120$i)|0);
+           $752 = HEAP32[$751>>2]|0;
+           $753 = $747 << 1;
+           $754 = ((3216 + ($753<<2)|0) + 40|0);
+           $755 = ($750|0)==($754|0);
+           if (!($755)) {
+            $756 = HEAP32[((3216 + 16|0))>>2]|0;
+            $757 = ($750>>>0)<($756>>>0);
+            if ($757) {
+             _abort();
+             // unreachable;
+            }
+            $758 = (($750) + 12|0);
+            $759 = HEAP32[$758>>2]|0;
+            $760 = ($759|0)==($721|0);
+            if (!($760)) {
+             _abort();
+             // unreachable;
+            }
+           }
+           $761 = ($752|0)==($750|0);
+           if ($761) {
+            $762 = 1 << $747;
+            $763 = $762 ^ -1;
+            $764 = HEAP32[3216>>2]|0;
+            $765 = $764 & $763;
+            HEAP32[3216>>2] = $765;
+            break;
+           }
+           $766 = ($752|0)==($754|0);
+           if ($766) {
+            $$pre57$i$i = (($752) + 8|0);
+            $$pre$phi58$i$iZ2D = $$pre57$i$i;
+           } else {
+            $767 = HEAP32[((3216 + 16|0))>>2]|0;
+            $768 = ($752>>>0)<($767>>>0);
+            if ($768) {
+             _abort();
+             // unreachable;
+            }
+            $769 = (($752) + 8|0);
+            $770 = HEAP32[$769>>2]|0;
+            $771 = ($770|0)==($721|0);
+            if ($771) {
+             $$pre$phi58$i$iZ2D = $769;
+            } else {
+             _abort();
+             // unreachable;
+            }
+           }
+           $772 = (($750) + 12|0);
+           HEAP32[$772>>2] = $752;
+           HEAP32[$$pre$phi58$i$iZ2D>>2] = $750;
+          } else {
+           $$sum34$i$i = $720 | 24;
+           $$sum110$i = (($$sum34$i$i) + ($tsize$246$i))|0;
+           $773 = (($tbase$247$i) + ($$sum110$i)|0);
+           $774 = HEAP32[$773>>2]|0;
+           $$sum5$i$i = (($tsize$246$i) + 12)|0;
+           $$sum111$i = (($$sum5$i$i) + ($720))|0;
+           $775 = (($tbase$247$i) + ($$sum111$i)|0);
+           $776 = HEAP32[$775>>2]|0;
+           $777 = ($776|0)==($721|0);
+           do {
+            if ($777) {
+             $$sum67$i$i = $720 | 16;
+             $$sum117$i = (($$sum2$i23$i) + ($$sum67$i$i))|0;
+             $788 = (($tbase$247$i) + ($$sum117$i)|0);
+             $789 = HEAP32[$788>>2]|0;
+             $790 = ($789|0)==(0|0);
+             if ($790) {
+              $$sum118$i = (($$sum67$i$i) + ($tsize$246$i))|0;
+              $791 = (($tbase$247$i) + ($$sum118$i)|0);
+              $792 = HEAP32[$791>>2]|0;
+              $793 = ($792|0)==(0|0);
+              if ($793) {
+               $R$1$i$i = 0;
+               break;
+              } else {
+               $R$0$i$i = $792;$RP$0$i$i = $791;
+              }
+             } else {
+              $R$0$i$i = $789;$RP$0$i$i = $788;
+             }
+             while(1) {
+              $794 = (($R$0$i$i) + 20|0);
+              $795 = HEAP32[$794>>2]|0;
+              $796 = ($795|0)==(0|0);
+              if (!($796)) {
+               $RP$0$i$i$phi = $794;$R$0$i$i$phi = $795;$RP$0$i$i = $RP$0$i$i$phi;$R$0$i$i = $R$0$i$i$phi;
+               continue;
+              }
+              $797 = (($R$0$i$i) + 16|0);
+              $798 = HEAP32[$797>>2]|0;
+              $799 = ($798|0)==(0|0);
+              if ($799) {
+               break;
+              } else {
+               $R$0$i$i = $798;$RP$0$i$i = $797;
+              }
+             }
+             $800 = HEAP32[((3216 + 16|0))>>2]|0;
+             $801 = ($RP$0$i$i>>>0)<($800>>>0);
+             if ($801) {
+              _abort();
+              // unreachable;
+             } else {
+              HEAP32[$RP$0$i$i>>2] = 0;
+              $R$1$i$i = $R$0$i$i;
+              break;
+             }
+            } else {
+             $$sum3536$i$i = $720 | 8;
+             $$sum112$i = (($$sum3536$i$i) + ($tsize$246$i))|0;
+             $778 = (($tbase$247$i) + ($$sum112$i)|0);
+             $779 = HEAP32[$778>>2]|0;
+             $780 = HEAP32[((3216 + 16|0))>>2]|0;
+             $781 = ($779>>>0)<($780>>>0);
+             if ($781) {
+              _abort();
+              // unreachable;
+             }
+             $782 = (($779) + 12|0);
+             $783 = HEAP32[$782>>2]|0;
+             $784 = ($783|0)==($721|0);
+             if (!($784)) {
+              _abort();
+              // unreachable;
+             }
+             $785 = (($776) + 8|0);
+             $786 = HEAP32[$785>>2]|0;
+             $787 = ($786|0)==($721|0);
+             if ($787) {
+              HEAP32[$782>>2] = $776;
+              HEAP32[$785>>2] = $779;
+              $R$1$i$i = $776;
+              break;
+             } else {
+              _abort();
+              // unreachable;
+             }
+            }
+           } while(0);
+           $802 = ($774|0)==(0|0);
+           if (!($802)) {
+            $$sum30$i$i = (($tsize$246$i) + 28)|0;
+            $$sum113$i = (($$sum30$i$i) + ($720))|0;
+            $803 = (($tbase$247$i) + ($$sum113$i)|0);
+            $804 = HEAP32[$803>>2]|0;
+            $805 = ((3216 + ($804<<2)|0) + 304|0);
+            $806 = HEAP32[$805>>2]|0;
+            $807 = ($721|0)==($806|0);
+            if ($807) {
+             HEAP32[$805>>2] = $R$1$i$i;
+             $cond$i$i = ($R$1$i$i|0)==(0|0);
+             if ($cond$i$i) {
+              $808 = 1 << $804;
+              $809 = $808 ^ -1;
+              $810 = HEAP32[((3216 + 4|0))>>2]|0;
+              $811 = $810 & $809;
+              HEAP32[((3216 + 4|0))>>2] = $811;
+              break;
+             }
+            } else {
+             $812 = HEAP32[((3216 + 16|0))>>2]|0;
+             $813 = ($774>>>0)<($812>>>0);
+             if ($813) {
+              _abort();
+              // unreachable;
+             }
+             $814 = (($774) + 16|0);
+             $815 = HEAP32[$814>>2]|0;
+             $816 = ($815|0)==($721|0);
+             if ($816) {
+              HEAP32[$814>>2] = $R$1$i$i;
+             } else {
+              $817 = (($774) + 20|0);
+              HEAP32[$817>>2] = $R$1$i$i;
+             }
+             $818 = ($R$1$i$i|0)==(0|0);
+             if ($818) {
+              break;
+             }
+            }
+            $819 = HEAP32[((3216 + 16|0))>>2]|0;
+            $820 = ($R$1$i$i>>>0)<($819>>>0);
+            if ($820) {
+             _abort();
+             // unreachable;
+            }
+            $821 = (($R$1$i$i) + 24|0);
+            HEAP32[$821>>2] = $774;
+            $$sum3132$i$i = $720 | 16;
+            $$sum114$i = (($$sum3132$i$i) + ($tsize$246$i))|0;
+            $822 = (($tbase$247$i) + ($$sum114$i)|0);
+            $823 = HEAP32[$822>>2]|0;
+            $824 = ($823|0)==(0|0);
+            do {
+             if (!($824)) {
+              $825 = HEAP32[((3216 + 16|0))>>2]|0;
+              $826 = ($823>>>0)<($825>>>0);
+              if ($826) {
+               _abort();
+               // unreachable;
+              } else {
+               $827 = (($R$1$i$i) + 16|0);
+               HEAP32[$827>>2] = $823;
+               $828 = (($823) + 24|0);
+               HEAP32[$828>>2] = $R$1$i$i;
+               break;
+              }
+             }
+            } while(0);
+            $$sum115$i = (($$sum2$i23$i) + ($$sum3132$i$i))|0;
+            $829 = (($tbase$247$i) + ($$sum115$i)|0);
+            $830 = HEAP32[$829>>2]|0;
+            $831 = ($830|0)==(0|0);
+            if (!($831)) {
+             $832 = HEAP32[((3216 + 16|0))>>2]|0;
+             $833 = ($830>>>0)<($832>>>0);
+             if ($833) {
+              _abort();
+              // unreachable;
+             } else {
+              $834 = (($R$1$i$i) + 20|0);
+              HEAP32[$834>>2] = $830;
+              $835 = (($830) + 24|0);
+              HEAP32[$835>>2] = $R$1$i$i;
+              break;
+             }
+            }
+           }
+          }
+         } while(0);
+         $$sum9$i$i = $746 | $720;
+         $$sum116$i = (($$sum9$i$i) + ($tsize$246$i))|0;
+         $836 = (($tbase$247$i) + ($$sum116$i)|0);
+         $837 = (($746) + ($726))|0;
+         $oldfirst$0$i$i = $836;$qsize$0$i$i = $837;
+        } else {
+         $oldfirst$0$i$i = $721;$qsize$0$i$i = $726;
+        }
+        $838 = (($oldfirst$0$i$i) + 4|0);
+        $839 = HEAP32[$838>>2]|0;
+        $840 = $839 & -2;
+        HEAP32[$838>>2] = $840;
+        $841 = $qsize$0$i$i | 1;
+        $$sum10$i$i = (($$sum$i21$i) + 4)|0;
+        $842 = (($tbase$247$i) + ($$sum10$i$i)|0);
+        HEAP32[$842>>2] = $841;
+        $$sum11$i24$i = (($qsize$0$i$i) + ($$sum$i21$i))|0;
+        $843 = (($tbase$247$i) + ($$sum11$i24$i)|0);
+        HEAP32[$843>>2] = $qsize$0$i$i;
+        $844 = $qsize$0$i$i >>> 3;
+        $845 = ($qsize$0$i$i>>>0)<(256);
+        if ($845) {
+         $846 = $844 << 1;
+         $847 = ((3216 + ($846<<2)|0) + 40|0);
+         $848 = HEAP32[3216>>2]|0;
+         $849 = 1 << $844;
+         $850 = $848 & $849;
+         $851 = ($850|0)==(0);
+         if ($851) {
+          $852 = $848 | $849;
+          HEAP32[3216>>2] = $852;
+          $$sum26$pre$i$i = (($846) + 2)|0;
+          $$pre$i25$i = ((3216 + ($$sum26$pre$i$i<<2)|0) + 40|0);
+          $$pre$phi$i26$iZ2D = $$pre$i25$i;$F4$0$i$i = $847;
+         } else {
+          $$sum29$i$i = (($846) + 2)|0;
+          $853 = ((3216 + ($$sum29$i$i<<2)|0) + 40|0);
+          $854 = HEAP32[$853>>2]|0;
+          $855 = HEAP32[((3216 + 16|0))>>2]|0;
+          $856 = ($854>>>0)<($855>>>0);
+          if ($856) {
+           _abort();
+           // unreachable;
+          } else {
+           $$pre$phi$i26$iZ2D = $853;$F4$0$i$i = $854;
+          }
+         }
+         HEAP32[$$pre$phi$i26$iZ2D>>2] = $725;
+         $857 = (($F4$0$i$i) + 12|0);
+         HEAP32[$857>>2] = $725;
+         $$sum27$i$i = (($$sum$i21$i) + 8)|0;
+         $858 = (($tbase$247$i) + ($$sum27$i$i)|0);
+         HEAP32[$858>>2] = $F4$0$i$i;
+         $$sum28$i$i = (($$sum$i21$i) + 12)|0;
+         $859 = (($tbase$247$i) + ($$sum28$i$i)|0);
+         HEAP32[$859>>2] = $847;
+         break;
+        }
+        $860 = $qsize$0$i$i >>> 8;
+        $861 = ($860|0)==(0);
+        if ($861) {
+         $I7$0$i$i = 0;
+        } else {
+         $862 = ($qsize$0$i$i>>>0)>(16777215);
+         if ($862) {
+          $I7$0$i$i = 31;
+         } else {
+          $863 = (($860) + 1048320)|0;
+          $864 = $863 >>> 16;
+          $865 = $864 & 8;
+          $866 = $860 << $865;
+          $867 = (($866) + 520192)|0;
+          $868 = $867 >>> 16;
+          $869 = $868 & 4;
+          $870 = $869 | $865;
+          $871 = $866 << $869;
+          $872 = (($871) + 245760)|0;
+          $873 = $872 >>> 16;
+          $874 = $873 & 2;
+          $875 = $870 | $874;
+          $876 = (14 - ($875))|0;
+          $877 = $871 << $874;
+          $878 = $877 >>> 15;
+          $879 = (($876) + ($878))|0;
+          $880 = $879 << 1;
+          $881 = (($879) + 7)|0;
+          $882 = $qsize$0$i$i >>> $881;
+          $883 = $882 & 1;
+          $884 = $883 | $880;
+          $I7$0$i$i = $884;
+         }
+        }
+        $885 = ((3216 + ($I7$0$i$i<<2)|0) + 304|0);
+        $$sum12$i$i = (($$sum$i21$i) + 28)|0;
+        $886 = (($tbase$247$i) + ($$sum12$i$i)|0);
+        HEAP32[$886>>2] = $I7$0$i$i;
+        $$sum13$i$i = (($$sum$i21$i) + 16)|0;
+        $887 = (($tbase$247$i) + ($$sum13$i$i)|0);
+        $$sum14$i$i = (($$sum$i21$i) + 20)|0;
+        $888 = (($tbase$247$i) + ($$sum14$i$i)|0);
+        HEAP32[$888>>2] = 0;
+        HEAP32[$887>>2] = 0;
+        $889 = HEAP32[((3216 + 4|0))>>2]|0;
+        $890 = 1 << $I7$0$i$i;
+        $891 = $889 & $890;
+        $892 = ($891|0)==(0);
+        if ($892) {
+         $893 = $889 | $890;
+         HEAP32[((3216 + 4|0))>>2] = $893;
+         HEAP32[$885>>2] = $725;
+         $$sum15$i$i = (($$sum$i21$i) + 24)|0;
+         $894 = (($tbase$247$i) + ($$sum15$i$i)|0);
+         HEAP32[$894>>2] = $885;
+         $$sum16$i$i = (($$sum$i21$i) + 12)|0;
+         $895 = (($tbase$247$i) + ($$sum16$i$i)|0);
+         HEAP32[$895>>2] = $725;
+         $$sum17$i$i = (($$sum$i21$i) + 8)|0;
+         $896 = (($tbase$247$i) + ($$sum17$i$i)|0);
+         HEAP32[$896>>2] = $725;
+         break;
+        }
+        $897 = HEAP32[$885>>2]|0;
+        $898 = ($I7$0$i$i|0)==(31);
+        if ($898) {
+         $906 = 0;
+        } else {
+         $899 = $I7$0$i$i >>> 1;
+         $900 = (25 - ($899))|0;
+         $906 = $900;
+        }
+        $901 = (($897) + 4|0);
+        $902 = HEAP32[$901>>2]|0;
+        $903 = $902 & -8;
+        $904 = ($903|0)==($qsize$0$i$i|0);
+        L445: do {
+         if ($904) {
+          $T$0$lcssa$i28$i = $897;
+         } else {
+          $905 = $qsize$0$i$i << $906;
+          $K8$052$i$i = $905;$T$051$i$i = $897;
+          while(1) {
+           $913 = $K8$052$i$i >>> 31;
+           $914 = ((($T$051$i$i) + ($913<<2)|0) + 16|0);
+           $909 = HEAP32[$914>>2]|0;
+           $915 = ($909|0)==(0|0);
+           if ($915) {
+            break;
+           }
+           $907 = $K8$052$i$i << 1;
+           $908 = (($909) + 4|0);
+           $910 = HEAP32[$908>>2]|0;
+           $911 = $910 & -8;
+           $912 = ($911|0)==($qsize$0$i$i|0);
+           if ($912) {
+            $T$0$lcssa$i28$i = $909;
+            break L445;
+           } else {
+            $T$051$i$i$phi = $909;$K8$052$i$i = $907;$T$051$i$i = $T$051$i$i$phi;
+           }
+          }
+          $916 = HEAP32[((3216 + 16|0))>>2]|0;
+          $917 = ($914>>>0)<($916>>>0);
+          if ($917) {
+           _abort();
+           // unreachable;
+          } else {
+           HEAP32[$914>>2] = $725;
+           $$sum23$i$i = (($$sum$i21$i) + 24)|0;
+           $918 = (($tbase$247$i) + ($$sum23$i$i)|0);
+           HEAP32[$918>>2] = $T$051$i$i;
+           $$sum24$i$i = (($$sum$i21$i) + 12)|0;
+           $919 = (($tbase$247$i) + ($$sum24$i$i)|0);
+           HEAP32[$919>>2] = $725;
+           $$sum25$i$i = (($$sum$i21$i) + 8)|0;
+           $920 = (($tbase$247$i) + ($$sum25$i$i)|0);
+           HEAP32[$920>>2] = $725;
+           break L348;
+          }
+         }
+        } while(0);
+        $921 = (($T$0$lcssa$i28$i) + 8|0);
+        $922 = HEAP32[$921>>2]|0;
+        $923 = HEAP32[((3216 + 16|0))>>2]|0;
+        $924 = ($T$0$lcssa$i28$i>>>0)<($923>>>0);
+        if ($924) {
+         _abort();
+         // unreachable;
+        }
+        $925 = ($922>>>0)<($923>>>0);
+        if ($925) {
+         _abort();
+         // unreachable;
+        } else {
+         $926 = (($922) + 12|0);
+         HEAP32[$926>>2] = $725;
+         HEAP32[$921>>2] = $725;
+         $$sum20$i$i = (($$sum$i21$i) + 8)|0;
+         $927 = (($tbase$247$i) + ($$sum20$i$i)|0);
+         HEAP32[$927>>2] = $922;
+         $$sum21$i$i = (($$sum$i21$i) + 12)|0;
+         $928 = (($tbase$247$i) + ($$sum21$i$i)|0);
+         HEAP32[$928>>2] = $T$0$lcssa$i28$i;
+         $$sum22$i$i = (($$sum$i21$i) + 24)|0;
+         $929 = (($tbase$247$i) + ($$sum22$i$i)|0);
+         HEAP32[$929>>2] = 0;
+         break;
+        }
+       }
+      } while(0);
+      $$sum1819$i$i = $713 | 8;
+      $930 = (($tbase$247$i) + ($$sum1819$i$i)|0);
+      $mem$0 = $930;
+      STACKTOP = sp;return ($mem$0|0);
+     }
+    }
+    $sp$0$i$i$i = ((3216 + 448|0));
+    while(1) {
+     $931 = HEAP32[$sp$0$i$i$i>>2]|0;
+     $932 = ($931>>>0)>($636>>>0);
+     if (!($932)) {
+      $933 = (($sp$0$i$i$i) + 4|0);
+      $934 = HEAP32[$933>>2]|0;
+      $935 = (($931) + ($934)|0);
+      $936 = ($935>>>0)>($636>>>0);
+      if ($936) {
+       break;
+      }
+     }
+     $937 = (($sp$0$i$i$i) + 8|0);
+     $938 = HEAP32[$937>>2]|0;
+     $sp$0$i$i$i = $938;
+    }
+    $$sum$i15$i = (($934) + -47)|0;
+    $$sum1$i16$i = (($934) + -39)|0;
+    $939 = (($931) + ($$sum1$i16$i)|0);
+    $940 = $939;
+    $941 = $940 & 7;
+    $942 = ($941|0)==(0);
+    if ($942) {
+     $945 = 0;
+    } else {
+     $943 = (0 - ($940))|0;
+     $944 = $943 & 7;
+     $945 = $944;
+    }
+    $$sum2$i17$i = (($$sum$i15$i) + ($945))|0;
+    $946 = (($931) + ($$sum2$i17$i)|0);
+    $947 = (($636) + 16|0);
+    $948 = ($946>>>0)<($947>>>0);
+    $949 = $948 ? $636 : $946;
+    $950 = (($949) + 8|0);
+    $951 = (($tsize$246$i) + -40)|0;
+    $952 = (($tbase$247$i) + 8|0);
+    $953 = $952;
+    $954 = $953 & 7;
+    $955 = ($954|0)==(0);
+    if ($955) {
+     $959 = 0;
+    } else {
+     $956 = (0 - ($953))|0;
+     $957 = $956 & 7;
+     $959 = $957;
+    }
+    $958 = (($tbase$247$i) + ($959)|0);
+    $960 = (($951) - ($959))|0;
+    HEAP32[((3216 + 24|0))>>2] = $958;
+    HEAP32[((3216 + 12|0))>>2] = $960;
+    $961 = $960 | 1;
+    $$sum$i$i$i = (($959) + 4)|0;
+    $962 = (($tbase$247$i) + ($$sum$i$i$i)|0);
+    HEAP32[$962>>2] = $961;
+    $$sum2$i$i$i = (($tsize$246$i) + -36)|0;
+    $963 = (($tbase$247$i) + ($$sum2$i$i$i)|0);
+    HEAP32[$963>>2] = 40;
+    $964 = HEAP32[((3688 + 16|0))>>2]|0;
+    HEAP32[((3216 + 28|0))>>2] = $964;
+    $965 = (($949) + 4|0);
+    HEAP32[$965>>2] = 27;
+    ;HEAP32[$950+0>>2]=HEAP32[((3216 + 448|0))+0>>2]|0;HEAP32[$950+4>>2]=HEAP32[((3216 + 448|0))+4>>2]|0;HEAP32[$950+8>>2]=HEAP32[((3216 + 448|0))+8>>2]|0;HEAP32[$950+12>>2]=HEAP32[((3216 + 448|0))+12>>2]|0;
+    HEAP32[((3216 + 448|0))>>2] = $tbase$247$i;
+    HEAP32[((3216 + 452|0))>>2] = $tsize$246$i;
+    HEAP32[((3216 + 460|0))>>2] = 0;
+    HEAP32[((3216 + 456|0))>>2] = $950;
+    $966 = (($949) + 28|0);
+    HEAP32[$966>>2] = 7;
+    $967 = (($949) + 32|0);
+    $968 = ($967>>>0)<($935>>>0);
+    if ($968) {
+     $970 = $966;
+     while(1) {
+      $969 = (($970) + 4|0);
+      HEAP32[$969>>2] = 7;
+      $971 = (($970) + 8|0);
+      $972 = ($971>>>0)<($935>>>0);
+      if ($972) {
+       $970$phi = $969;$970 = $970$phi;
+      } else {
+       break;
+      }
+     }
+    }
+    $973 = ($949|0)==($636|0);
+    if (!($973)) {
+     $974 = $949;
+     $975 = $636;
+     $976 = (($974) - ($975))|0;
+     $977 = (($636) + ($976)|0);
+     $$sum3$i$i = (($976) + 4)|0;
+     $978 = (($636) + ($$sum3$i$i)|0);
+     $979 = HEAP32[$978>>2]|0;
+     $980 = $979 & -2;
+     HEAP32[$978>>2] = $980;
+     $981 = $976 | 1;
+     $982 = (($636) + 4|0);
+     HEAP32[$982>>2] = $981;
+     HEAP32[$977>>2] = $976;
+     $983 = $976 >>> 3;
+     $984 = ($976>>>0)<(256);
+     if ($984) {
+      $985 = $983 << 1;
+      $986 = ((3216 + ($985<<2)|0) + 40|0);
+      $987 = HEAP32[3216>>2]|0;
+      $988 = 1 << $983;
+      $989 = $987 & $988;
+      $990 = ($989|0)==(0);
+      if ($990) {
+       $991 = $987 | $988;
+       HEAP32[3216>>2] = $991;
+       $$sum10$pre$i$i = (($985) + 2)|0;
+       $$pre$i$i = ((3216 + ($$sum10$pre$i$i<<2)|0) + 40|0);
+       $$pre$phi$i$iZ2D = $$pre$i$i;$F$0$i$i = $986;
+      } else {
+       $$sum11$i$i = (($985) + 2)|0;
+       $992 = ((3216 + ($$sum11$i$i<<2)|0) + 40|0);
+       $993 = HEAP32[$992>>2]|0;
+       $994 = HEAP32[((3216 + 16|0))>>2]|0;
+       $995 = ($993>>>0)<($994>>>0);
+       if ($995) {
+        _abort();
+        // unreachable;
+       } else {
+        $$pre$phi$i$iZ2D = $992;$F$0$i$i = $993;
+       }
+      }
+      HEAP32[$$pre$phi$i$iZ2D>>2] = $636;
+      $996 = (($F$0$i$i) + 12|0);
+      HEAP32[$996>>2] = $636;
+      $997 = (($636) + 8|0);
+      HEAP32[$997>>2] = $F$0$i$i;
+      $998 = (($636) + 12|0);
+      HEAP32[$998>>2] = $986;
+      break;
+     }
+     $999 = $976 >>> 8;
+     $1000 = ($999|0)==(0);
+     if ($1000) {
+      $I1$0$i$i = 0;
+     } else {
+      $1001 = ($976>>>0)>(16777215);
+      if ($1001) {
+       $I1$0$i$i = 31;
+      } else {
+       $1002 = (($999) + 1048320)|0;
+       $1003 = $1002 >>> 16;
+       $1004 = $1003 & 8;
+       $1005 = $999 << $1004;
+       $1006 = (($1005) + 520192)|0;
+       $1007 = $1006 >>> 16;
+       $1008 = $1007 & 4;
+       $1009 = $1008 | $1004;
+       $1010 = $1005 << $1008;
+       $1011 = (($1010) + 245760)|0;
+       $1012 = $1011 >>> 16;
+       $1013 = $1012 & 2;
+       $1014 = $1009 | $1013;
+       $1015 = (14 - ($1014))|0;
+       $1016 = $1010 << $1013;
+       $1017 = $1016 >>> 15;
+       $1018 = (($1015) + ($1017))|0;
+       $1019 = $1018 << 1;
+       $1020 = (($1018) + 7)|0;
+       $1021 = $976 >>> $1020;
+       $1022 = $1021 & 1;
+       $1023 = $1022 | $1019;
+       $I1$0$i$i = $1023;
+      }
+     }
+     $1024 = ((3216 + ($I1$0$i$i<<2)|0) + 304|0);
+     $1025 = (($636) + 28|0);
+     $I1$0$c$i$i = $I1$0$i$i;
+     HEAP32[$1025>>2] = $I1$0$c$i$i;
+     $1026 = (($636) + 20|0);
+     HEAP32[$1026>>2] = 0;
+     $1027 = (($636) + 16|0);
+     HEAP32[$1027>>2] = 0;
+     $1028 = HEAP32[((3216 + 4|0))>>2]|0;
+     $1029 = 1 << $I1$0$i$i;
+     $1030 = $1028 & $1029;
+     $1031 = ($1030|0)==(0);
+     if ($1031) {
+      $1032 = $1028 | $1029;
+      HEAP32[((3216 + 4|0))>>2] = $1032;
+      HEAP32[$1024>>2] = $636;
+      $1033 = (($636) + 24|0);
+      HEAP32[$1033>>2] = $1024;
+      $1034 = (($636) + 12|0);
+      HEAP32[$1034>>2] = $636;
+      $1035 = (($636) + 8|0);
+      HEAP32[$1035>>2] = $636;
+      break;
+     }
+     $1036 = HEAP32[$1024>>2]|0;
+     $1037 = ($I1$0$i$i|0)==(31);
+     if ($1037) {
+      $1045 = 0;
+     } else {
+      $1038 = $I1$0$i$i >>> 1;
+      $1039 = (25 - ($1038))|0;
+      $1045 = $1039;
+     }
+     $1040 = (($1036) + 4|0);
+     $1041 = HEAP32[$1040>>2]|0;
+     $1042 = $1041 & -8;
+     $1043 = ($1042|0)==($976|0);
+     L499: do {
+      if ($1043) {
+       $T$0$lcssa$i$i = $1036;
+      } else {
+       $1044 = $976 << $1045;
+       $K2$014$i$i = $1044;$T$013$i$i = $1036;
+       while(1) {
+        $1052 = $K2$014$i$i >>> 31;
+        $1053 = ((($T$013$i$i) + ($1052<<2)|0) + 16|0);
+        $1048 = HEAP32[$1053>>2]|0;
+        $1054 = ($1048|0)==(0|0);
+        if ($1054) {
+         break;
+        }
+        $1046 = $K2$014$i$i << 1;
+        $1047 = (($1048) + 4|0);
+        $1049 = HEAP32[$1047>>2]|0;
+        $1050 = $1049 & -8;
+        $1051 = ($1050|0)==($976|0);
+        if ($1051) {
+         $T$0$lcssa$i$i = $1048;
+         break L499;
+        } else {
+         $T$013$i$i$phi = $1048;$K2$014$i$i = $1046;$T$013$i$i = $T$013$i$i$phi;
+        }
+       }
+       $1055 = HEAP32[((3216 + 16|0))>>2]|0;
+       $1056 = ($1053>>>0)<($1055>>>0);
+       if ($1056) {
+        _abort();
+        // unreachable;
+       } else {
+        HEAP32[$1053>>2] = $636;
+        $1057 = (($636) + 24|0);
+        HEAP32[$1057>>2] = $T$013$i$i;
+        $1058 = (($636) + 12|0);
+        HEAP32[$1058>>2] = $636;
+        $1059 = (($636) + 8|0);
+        HEAP32[$1059>>2] = $636;
+        break L311;
+       }
+      }
+     } while(0);
+     $1060 = (($T$0$lcssa$i$i) + 8|0);
+     $1061 = HEAP32[$1060>>2]|0;
+     $1062 = HEAP32[((3216 + 16|0))>>2]|0;
+     $1063 = ($T$0$lcssa$i$i>>>0)<($1062>>>0);
+     if ($1063) {
+      _abort();
+      // unreachable;
+     }
+     $1064 = ($1061>>>0)<($1062>>>0);
+     if ($1064) {
+      _abort();
+      // unreachable;
+     } else {
+      $1065 = (($1061) + 12|0);
+      HEAP32[$1065>>2] = $636;
+      HEAP32[$1060>>2] = $636;
+      $1066 = (($636) + 8|0);
+      HEAP32[$1066>>2] = $1061;
+      $1067 = (($636) + 12|0);
+      HEAP32[$1067>>2] = $T$0$lcssa$i$i;
+      $1068 = (($636) + 24|0);
+      HEAP32[$1068>>2] = 0;
+      break;
+     }
+    }
+   }
+  } while(0);
+  $1069 = HEAP32[((3216 + 12|0))>>2]|0;
+  $1070 = ($1069>>>0)>($nb$0>>>0);
+  if ($1070) {
+   $1071 = (($1069) - ($nb$0))|0;
+   HEAP32[((3216 + 12|0))>>2] = $1071;
+   $1072 = HEAP32[((3216 + 24|0))>>2]|0;
+   $1073 = (($1072) + ($nb$0)|0);
+   HEAP32[((3216 + 24|0))>>2] = $1073;
+   $1074 = $1071 | 1;
+   $$sum$i32 = (($nb$0) + 4)|0;
+   $1075 = (($1072) + ($$sum$i32)|0);
+   HEAP32[$1075>>2] = $1074;
+   $1076 = $nb$0 | 3;
+   $1077 = (($1072) + 4|0);
+   HEAP32[$1077>>2] = $1076;
+   $1078 = (($1072) + 8|0);
+   $mem$0 = $1078;
+   STACKTOP = sp;return ($mem$0|0);
+  }
+ }
+ $1079 = (___errno_location()|0);
+ HEAP32[$1079>>2] = 12;
+ $mem$0 = 0;
+ STACKTOP = sp;return ($mem$0|0);
+}
+function _free($mem) {
+ $mem = $mem|0;
+ var $$pre = 0, $$pre$phi68Z2D = 0, $$pre$phi70Z2D = 0, $$pre$phiZ2D = 0, $$pre67 = 0, $$pre69 = 0, $$sum = 0, $$sum16$pre = 0, $$sum17 = 0, $$sum18 = 0, $$sum19 = 0, $$sum2 = 0, $$sum20 = 0, $$sum2324 = 0, $$sum25 = 0, $$sum26 = 0, $$sum28 = 0, $$sum29 = 0, $$sum3 = 0, $$sum30 = 0;
+ var $$sum31 = 0, $$sum32 = 0, $$sum33 = 0, $$sum34 = 0, $$sum35 = 0, $$sum36 = 0, $$sum37 = 0, $$sum5 = 0, $$sum67 = 0, $$sum8 = 0, $$sum9 = 0, $0 = 0, $1 = 0, $10 = 0, $100 = 0, $101 = 0, $102 = 0, $103 = 0, $104 = 0, $105 = 0;
+ var $106 = 0, $107 = 0, $108 = 0, $109 = 0, $11 = 0, $110 = 0, $111 = 0, $112 = 0, $113 = 0, $114 = 0, $115 = 0, $116 = 0, $117 = 0, $118 = 0, $119 = 0, $12 = 0, $120 = 0, $121 = 0, $122 = 0, $123 = 0;
+ var $124 = 0, $125 = 0, $126 = 0, $127 = 0, $128 = 0, $129 = 0, $13 = 0, $130 = 0, $131 = 0, $132 = 0, $133 = 0, $134 = 0, $135 = 0, $136 = 0, $137 = 0, $138 = 0, $139 = 0, $14 = 0, $140 = 0, $141 = 0;
+ var $142 = 0, $143 = 0, $144 = 0, $145 = 0, $146 = 0, $147 = 0, $148 = 0, $149 = 0, $15 = 0, $150 = 0, $151 = 0, $152 = 0, $153 = 0, $154 = 0, $155 = 0, $156 = 0, $157 = 0, $158 = 0, $159 = 0, $16 = 0;
+ var $160 = 0, $161 = 0, $162 = 0, $163 = 0, $164 = 0, $165 = 0, $166 = 0, $167 = 0, $168 = 0, $169 = 0, $17 = 0, $170 = 0, $171 = 0, $172 = 0, $173 = 0, $174 = 0, $175 = 0, $176 = 0, $177 = 0, $178 = 0;
+ var $179 = 0, $18 = 0, $180 = 0, $181 = 0, $182 = 0, $183 = 0, $184 = 0, $185 = 0, $186 = 0, $187 = 0, $188 = 0, $189 = 0, $19 = 0, $190 = 0, $191 = 0, $192 = 0, $193 = 0, $194 = 0, $195 = 0, $196 = 0;
+ var $197 = 0, $198 = 0, $199 = 0, $2 = 0, $20 = 0, $200 = 0, $201 = 0, $202 = 0, $203 = 0, $204 = 0, $205 = 0, $206 = 0, $207 = 0, $208 = 0, $209 = 0, $21 = 0, $210 = 0, $211 = 0, $212 = 0, $213 = 0;
+ var $214 = 0, $215 = 0, $216 = 0, $217 = 0, $218 = 0, $219 = 0, $22 = 0, $220 = 0, $221 = 0, $222 = 0, $223 = 0, $224 = 0, $225 = 0, $226 = 0, $227 = 0, $228 = 0, $229 = 0, $23 = 0, $230 = 0, $231 = 0;
+ var $232 = 0, $233 = 0, $234 = 0, $235 = 0, $236 = 0, $237 = 0, $238 = 0, $239 = 0, $24 = 0, $240 = 0, $241 = 0, $242 = 0, $243 = 0, $244 = 0, $245 = 0, $246 = 0, $247 = 0, $248 = 0, $249 = 0, $25 = 0;
+ var $250 = 0, $251 = 0, $252 = 0, $253 = 0, $254 = 0, $255 = 0, $256 = 0, $257 = 0, $258 = 0, $259 = 0, $26 = 0, $260 = 0, $261 = 0, $262 = 0, $263 = 0, $264 = 0, $265 = 0, $266 = 0, $267 = 0, $268 = 0;
+ var $269 = 0, $27 = 0, $270 = 0, $271 = 0, $272 = 0, $273 = 0, $274 = 0, $275 = 0, $276 = 0, $277 = 0, $278 = 0, $279 = 0, $28 = 0, $280 = 0, $281 = 0, $282 = 0, $283 = 0, $284 = 0, $285 = 0, $286 = 0;
+ var $287 = 0, $288 = 0, $289 = 0, $29 = 0, $290 = 0, $291 = 0, $292 = 0, $293 = 0, $294 = 0, $295 = 0, $296 = 0, $297 = 0, $298 = 0, $299 = 0, $3 = 0, $30 = 0, $300 = 0, $301 = 0, $302 = 0, $303 = 0;
+ var $304 = 0, $305 = 0, $306 = 0, $307 = 0, $308 = 0, $309 = 0, $31 = 0, $310 = 0, $311 = 0, $312 = 0, $313 = 0, $314 = 0, $315 = 0, $316 = 0, $317 = 0, $318 = 0, $319 = 0, $32 = 0, $320 = 0, $321 = 0;
+ var $322 = 0, $323 = 0, $324 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0;
+ var $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0;
+ var $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0;
+ var $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $F16$0 = 0, $I18$0 = 0, $I18$0$c = 0, $K19$057 = 0;
+ var $R$0 = 0, $R$0$phi = 0, $R$1 = 0, $R7$0 = 0, $R7$0$phi = 0, $R7$1 = 0, $RP$0 = 0, $RP$0$phi = 0, $RP9$0 = 0, $RP9$0$phi = 0, $T$0$lcssa = 0, $T$056 = 0, $T$056$phi = 0, $cond = 0, $cond54 = 0, $p$0 = 0, $psize$0 = 0, $psize$1 = 0, $sp$0$i = 0, $sp$0$in$i = 0;
+ var $sp$0$in$i$phi = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = ($mem|0)==(0|0);
+ if ($0) {
+  STACKTOP = sp;return;
+ }
+ $1 = (($mem) + -8|0);
+ $2 = HEAP32[((3216 + 16|0))>>2]|0;
+ $3 = ($1>>>0)<($2>>>0);
+ if ($3) {
+  _abort();
+  // unreachable;
+ }
+ $4 = (($mem) + -4|0);
+ $5 = HEAP32[$4>>2]|0;
+ $6 = $5 & 3;
+ $7 = ($6|0)==(1);
+ if ($7) {
+  _abort();
+  // unreachable;
+ }
+ $8 = $5 & -8;
+ $$sum = (($8) + -8)|0;
+ $9 = (($mem) + ($$sum)|0);
+ $10 = $5 & 1;
+ $11 = ($10|0)==(0);
+ do {
+  if ($11) {
+   $12 = HEAP32[$1>>2]|0;
+   $13 = ($6|0)==(0);
+   if ($13) {
+    STACKTOP = sp;return;
+   }
+   $$sum2 = (-8 - ($12))|0;
+   $14 = (($mem) + ($$sum2)|0);
+   $15 = (($12) + ($8))|0;
+   $16 = ($14>>>0)<($2>>>0);
+   if ($16) {
+    _abort();
+    // unreachable;
+   }
+   $17 = HEAP32[((3216 + 20|0))>>2]|0;
+   $18 = ($14|0)==($17|0);
+   if ($18) {
+    $$sum3 = (($8) + -4)|0;
+    $104 = (($mem) + ($$sum3)|0);
+    $105 = HEAP32[$104>>2]|0;
+    $106 = $105 & 3;
+    $107 = ($106|0)==(3);
+    if (!($107)) {
+     $p$0 = $14;$psize$0 = $15;
+     break;
+    }
+    HEAP32[((3216 + 8|0))>>2] = $15;
+    $108 = HEAP32[$104>>2]|0;
+    $109 = $108 & -2;
+    HEAP32[$104>>2] = $109;
+    $110 = $15 | 1;
+    $$sum26 = (($$sum2) + 4)|0;
+    $111 = (($mem) + ($$sum26)|0);
+    HEAP32[$111>>2] = $110;
+    HEAP32[$9>>2] = $15;
+    STACKTOP = sp;return;
+   }
+   $19 = $12 >>> 3;
+   $20 = ($12>>>0)<(256);
+   if ($20) {
+    $$sum36 = (($$sum2) + 8)|0;
+    $21 = (($mem) + ($$sum36)|0);
+    $22 = HEAP32[$21>>2]|0;
+    $$sum37 = (($$sum2) + 12)|0;
+    $23 = (($mem) + ($$sum37)|0);
+    $24 = HEAP32[$23>>2]|0;
+    $25 = $19 << 1;
+    $26 = ((3216 + ($25<<2)|0) + 40|0);
+    $27 = ($22|0)==($26|0);
+    if (!($27)) {
+     $28 = ($22>>>0)<($2>>>0);
+     if ($28) {
+      _abort();
+      // unreachable;
+     }
+     $29 = (($22) + 12|0);
+     $30 = HEAP32[$29>>2]|0;
+     $31 = ($30|0)==($14|0);
+     if (!($31)) {
+      _abort();
+      // unreachable;
+     }
+    }
+    $32 = ($24|0)==($22|0);
+    if ($32) {
+     $33 = 1 << $19;
+     $34 = $33 ^ -1;
+     $35 = HEAP32[3216>>2]|0;
+     $36 = $35 & $34;
+     HEAP32[3216>>2] = $36;
+     $p$0 = $14;$psize$0 = $15;
+     break;
+    }
+    $37 = ($24|0)==($26|0);
+    if ($37) {
+     $$pre69 = (($24) + 8|0);
+     $$pre$phi70Z2D = $$pre69;
+    } else {
+     $38 = ($24>>>0)<($2>>>0);
+     if ($38) {
+      _abort();
+      // unreachable;
+     }
+     $39 = (($24) + 8|0);
+     $40 = HEAP32[$39>>2]|0;
+     $41 = ($40|0)==($14|0);
+     if ($41) {
+      $$pre$phi70Z2D = $39;
+     } else {
+      _abort();
+      // unreachable;
+     }
+    }
+    $42 = (($22) + 12|0);
+    HEAP32[$42>>2] = $24;
+    HEAP32[$$pre$phi70Z2D>>2] = $22;
+    $p$0 = $14;$psize$0 = $15;
+    break;
+   }
+   $$sum28 = (($$sum2) + 24)|0;
+   $43 = (($mem) + ($$sum28)|0);
+   $44 = HEAP32[$43>>2]|0;
+   $$sum29 = (($$sum2) + 12)|0;
+   $45 = (($mem) + ($$sum29)|0);
+   $46 = HEAP32[$45>>2]|0;
+   $47 = ($46|0)==($14|0);
+   do {
+    if ($47) {
+     $$sum31 = (($$sum2) + 20)|0;
+     $57 = (($mem) + ($$sum31)|0);
+     $58 = HEAP32[$57>>2]|0;
+     $59 = ($58|0)==(0|0);
+     if ($59) {
+      $$sum30 = (($$sum2) + 16)|0;
+      $60 = (($mem) + ($$sum30)|0);
+      $61 = HEAP32[$60>>2]|0;
+      $62 = ($61|0)==(0|0);
+      if ($62) {
+       $R$1 = 0;
+       break;
+      } else {
+       $R$0 = $61;$RP$0 = $60;
+      }
+     } else {
+      $R$0 = $58;$RP$0 = $57;
+     }
+     while(1) {
+      $63 = (($R$0) + 20|0);
+      $64 = HEAP32[$63>>2]|0;
+      $65 = ($64|0)==(0|0);
+      if (!($65)) {
+       $RP$0$phi = $63;$R$0$phi = $64;$RP$0 = $RP$0$phi;$R$0 = $R$0$phi;
+       continue;
+      }
+      $66 = (($R$0) + 16|0);
+      $67 = HEAP32[$66>>2]|0;
+      $68 = ($67|0)==(0|0);
+      if ($68) {
+       break;
+      } else {
+       $R$0 = $67;$RP$0 = $66;
+      }
+     }
+     $69 = ($RP$0>>>0)<($2>>>0);
+     if ($69) {
+      _abort();
+      // unreachable;
+     } else {
+      HEAP32[$RP$0>>2] = 0;
+      $R$1 = $R$0;
+      break;
+     }
+    } else {
+     $$sum35 = (($$sum2) + 8)|0;
+     $48 = (($mem) + ($$sum35)|0);
+     $49 = HEAP32[$48>>2]|0;
+     $50 = ($49>>>0)<($2>>>0);
+     if ($50) {
+      _abort();
+      // unreachable;
+     }
+     $51 = (($49) + 12|0);
+     $52 = HEAP32[$51>>2]|0;
+     $53 = ($52|0)==($14|0);
+     if (!($53)) {
+      _abort();
+      // unreachable;
+     }
+     $54 = (($46) + 8|0);
+     $55 = HEAP32[$54>>2]|0;
+     $56 = ($55|0)==($14|0);
+     if ($56) {
+      HEAP32[$51>>2] = $46;
+      HEAP32[$54>>2] = $49;
+      $R$1 = $46;
+      break;
+     } else {
+      _abort();
+      // unreachable;
+     }
+    }
+   } while(0);
+   $70 = ($44|0)==(0|0);
+   if ($70) {
+    $p$0 = $14;$psize$0 = $15;
+   } else {
+    $$sum32 = (($$sum2) + 28)|0;
+    $71 = (($mem) + ($$sum32)|0);
+    $72 = HEAP32[$71>>2]|0;
+    $73 = ((3216 + ($72<<2)|0) + 304|0);
+    $74 = HEAP32[$73>>2]|0;
+    $75 = ($14|0)==($74|0);
+    if ($75) {
+     HEAP32[$73>>2] = $R$1;
+     $cond = ($R$1|0)==(0|0);
+     if ($cond) {
+      $76 = 1 << $72;
+      $77 = $76 ^ -1;
+      $78 = HEAP32[((3216 + 4|0))>>2]|0;
+      $79 = $78 & $77;
+      HEAP32[((3216 + 4|0))>>2] = $79;
+      $p$0 = $14;$psize$0 = $15;
+      break;
+     }
+    } else {
+     $80 = HEAP32[((3216 + 16|0))>>2]|0;
+     $81 = ($44>>>0)<($80>>>0);
+     if ($81) {
+      _abort();
+      // unreachable;
+     }
+     $82 = (($44) + 16|0);
+     $83 = HEAP32[$82>>2]|0;
+     $84 = ($83|0)==($14|0);
+     if ($84) {
+      HEAP32[$82>>2] = $R$1;
+     } else {
+      $85 = (($44) + 20|0);
+      HEAP32[$85>>2] = $R$1;
+     }
+     $86 = ($R$1|0)==(0|0);
+     if ($86) {
+      $p$0 = $14;$psize$0 = $15;
+      break;
+     }
+    }
+    $87 = HEAP32[((3216 + 16|0))>>2]|0;
+    $88 = ($R$1>>>0)<($87>>>0);
+    if ($88) {
+     _abort();
+     // unreachable;
+    }
+    $89 = (($R$1) + 24|0);
+    HEAP32[$89>>2] = $44;
+    $$sum33 = (($$sum2) + 16)|0;
+    $90 = (($mem) + ($$sum33)|0);
+    $91 = HEAP32[$90>>2]|0;
+    $92 = ($91|0)==(0|0);
+    do {
+     if (!($92)) {
+      $93 = HEAP32[((3216 + 16|0))>>2]|0;
+      $94 = ($91>>>0)<($93>>>0);
+      if ($94) {
+       _abort();
+       // unreachable;
+      } else {
+       $95 = (($R$1) + 16|0);
+       HEAP32[$95>>2] = $91;
+       $96 = (($91) + 24|0);
+       HEAP32[$96>>2] = $R$1;
+       break;
+      }
+     }
+    } while(0);
+    $$sum34 = (($$sum2) + 20)|0;
+    $97 = (($mem) + ($$sum34)|0);
+    $98 = HEAP32[$97>>2]|0;
+    $99 = ($98|0)==(0|0);
+    if ($99) {
+     $p$0 = $14;$psize$0 = $15;
+    } else {
+     $100 = HEAP32[((3216 + 16|0))>>2]|0;
+     $101 = ($98>>>0)<($100>>>0);
+     if ($101) {
+      _abort();
+      // unreachable;
+     } else {
+      $102 = (($R$1) + 20|0);
+      HEAP32[$102>>2] = $98;
+      $103 = (($98) + 24|0);
+      HEAP32[$103>>2] = $R$1;
+      $p$0 = $14;$psize$0 = $15;
+      break;
+     }
+    }
+   }
+  } else {
+   $p$0 = $1;$psize$0 = $8;
+  }
+ } while(0);
+ $112 = ($p$0>>>0)<($9>>>0);
+ if (!($112)) {
+  _abort();
+  // unreachable;
+ }
+ $$sum25 = (($8) + -4)|0;
+ $113 = (($mem) + ($$sum25)|0);
+ $114 = HEAP32[$113>>2]|0;
+ $115 = $114 & 1;
+ $116 = ($115|0)==(0);
+ if ($116) {
+  _abort();
+  // unreachable;
+ }
+ $117 = $114 & 2;
+ $118 = ($117|0)==(0);
+ if ($118) {
+  $119 = HEAP32[((3216 + 24|0))>>2]|0;
+  $120 = ($9|0)==($119|0);
+  if ($120) {
+   $121 = HEAP32[((3216 + 12|0))>>2]|0;
+   $122 = (($121) + ($psize$0))|0;
+   HEAP32[((3216 + 12|0))>>2] = $122;
+   HEAP32[((3216 + 24|0))>>2] = $p$0;
+   $123 = $122 | 1;
+   $124 = (($p$0) + 4|0);
+   HEAP32[$124>>2] = $123;
+   $125 = HEAP32[((3216 + 20|0))>>2]|0;
+   $126 = ($p$0|0)==($125|0);
+   if (!($126)) {
+    STACKTOP = sp;return;
+   }
+   HEAP32[((3216 + 20|0))>>2] = 0;
+   HEAP32[((3216 + 8|0))>>2] = 0;
+   STACKTOP = sp;return;
+  }
+  $127 = HEAP32[((3216 + 20|0))>>2]|0;
+  $128 = ($9|0)==($127|0);
+  if ($128) {
+   $129 = HEAP32[((3216 + 8|0))>>2]|0;
+   $130 = (($129) + ($psize$0))|0;
+   HEAP32[((3216 + 8|0))>>2] = $130;
+   HEAP32[((3216 + 20|0))>>2] = $p$0;
+   $131 = $130 | 1;
+   $132 = (($p$0) + 4|0);
+   HEAP32[$132>>2] = $131;
+   $133 = (($p$0) + ($130)|0);
+   HEAP32[$133>>2] = $130;
+   STACKTOP = sp;return;
+  }
+  $134 = $114 & -8;
+  $135 = (($134) + ($psize$0))|0;
+  $136 = $114 >>> 3;
+  $137 = ($114>>>0)<(256);
+  do {
+   if ($137) {
+    $138 = (($mem) + ($8)|0);
+    $139 = HEAP32[$138>>2]|0;
+    $$sum2324 = $8 | 4;
+    $140 = (($mem) + ($$sum2324)|0);
+    $141 = HEAP32[$140>>2]|0;
+    $142 = $136 << 1;
+    $143 = ((3216 + ($142<<2)|0) + 40|0);
+    $144 = ($139|0)==($143|0);
+    if (!($144)) {
+     $145 = HEAP32[((3216 + 16|0))>>2]|0;
+     $146 = ($139>>>0)<($145>>>0);
+     if ($146) {
+      _abort();
+      // unreachable;
+     }
+     $147 = (($139) + 12|0);
+     $148 = HEAP32[$147>>2]|0;
+     $149 = ($148|0)==($9|0);
+     if (!($149)) {
+      _abort();
+      // unreachable;
+     }
+    }
+    $150 = ($141|0)==($139|0);
+    if ($150) {
+     $151 = 1 << $136;
+     $152 = $151 ^ -1;
+     $153 = HEAP32[3216>>2]|0;
+     $154 = $153 & $152;
+     HEAP32[3216>>2] = $154;
+     break;
+    }
+    $155 = ($141|0)==($143|0);
+    if ($155) {
+     $$pre67 = (($141) + 8|0);
+     $$pre$phi68Z2D = $$pre67;
+    } else {
+     $156 = HEAP32[((3216 + 16|0))>>2]|0;
+     $157 = ($141>>>0)<($156>>>0);
+     if ($157) {
+      _abort();
+      // unreachable;
+     }
+     $158 = (($141) + 8|0);
+     $159 = HEAP32[$158>>2]|0;
+     $160 = ($159|0)==($9|0);
+     if ($160) {
+      $$pre$phi68Z2D = $158;
+     } else {
+      _abort();
+      // unreachable;
+     }
+    }
+    $161 = (($139) + 12|0);
+    HEAP32[$161>>2] = $141;
+    HEAP32[$$pre$phi68Z2D>>2] = $139;
+   } else {
+    $$sum5 = (($8) + 16)|0;
+    $162 = (($mem) + ($$sum5)|0);
+    $163 = HEAP32[$162>>2]|0;
+    $$sum67 = $8 | 4;
+    $164 = (($mem) + ($$sum67)|0);
+    $165 = HEAP32[$164>>2]|0;
+    $166 = ($165|0)==($9|0);
+    do {
+     if ($166) {
+      $$sum9 = (($8) + 12)|0;
+      $177 = (($mem) + ($$sum9)|0);
+      $178 = HEAP32[$177>>2]|0;
+      $179 = ($178|0)==(0|0);
+      if ($179) {
+       $$sum8 = (($8) + 8)|0;
+       $180 = (($mem) + ($$sum8)|0);
+       $181 = HEAP32[$180>>2]|0;
+       $182 = ($181|0)==(0|0);
+       if ($182) {
+        $R7$1 = 0;
+        break;
+       } else {
+        $R7$0 = $181;$RP9$0 = $180;
+       }
+      } else {
+       $R7$0 = $178;$RP9$0 = $177;
+      }
+      while(1) {
+       $183 = (($R7$0) + 20|0);
+       $184 = HEAP32[$183>>2]|0;
+       $185 = ($184|0)==(0|0);
+       if (!($185)) {
+        $RP9$0$phi = $183;$R7$0$phi = $184;$RP9$0 = $RP9$0$phi;$R7$0 = $R7$0$phi;
+        continue;
+       }
+       $186 = (($R7$0) + 16|0);
+       $187 = HEAP32[$186>>2]|0;
+       $188 = ($187|0)==(0|0);
+       if ($188) {
+        break;
+       } else {
+        $R7$0 = $187;$RP9$0 = $186;
+       }
+      }
+      $189 = HEAP32[((3216 + 16|0))>>2]|0;
+      $190 = ($RP9$0>>>0)<($189>>>0);
+      if ($190) {
+       _abort();
+       // unreachable;
+      } else {
+       HEAP32[$RP9$0>>2] = 0;
+       $R7$1 = $R7$0;
+       break;
+      }
+     } else {
+      $167 = (($mem) + ($8)|0);
+      $168 = HEAP32[$167>>2]|0;
+      $169 = HEAP32[((3216 + 16|0))>>2]|0;
+      $170 = ($168>>>0)<($169>>>0);
+      if ($170) {
+       _abort();
+       // unreachable;
+      }
+      $171 = (($168) + 12|0);
+      $172 = HEAP32[$171>>2]|0;
+      $173 = ($172|0)==($9|0);
+      if (!($173)) {
+       _abort();
+       // unreachable;
+      }
+      $174 = (($165) + 8|0);
+      $175 = HEAP32[$174>>2]|0;
+      $176 = ($175|0)==($9|0);
+      if ($176) {
+       HEAP32[$171>>2] = $165;
+       HEAP32[$174>>2] = $168;
+       $R7$1 = $165;
+       break;
+      } else {
+       _abort();
+       // unreachable;
+      }
+     }
+    } while(0);
+    $191 = ($163|0)==(0|0);
+    if (!($191)) {
+     $$sum18 = (($8) + 20)|0;
+     $192 = (($mem) + ($$sum18)|0);
+     $193 = HEAP32[$192>>2]|0;
+     $194 = ((3216 + ($193<<2)|0) + 304|0);
+     $195 = HEAP32[$194>>2]|0;
+     $196 = ($9|0)==($195|0);
+     if ($196) {
+      HEAP32[$194>>2] = $R7$1;
+      $cond54 = ($R7$1|0)==(0|0);
+      if ($cond54) {
+       $197 = 1 << $193;
+       $198 = $197 ^ -1;
+       $199 = HEAP32[((3216 + 4|0))>>2]|0;
+       $200 = $199 & $198;
+       HEAP32[((3216 + 4|0))>>2] = $200;
+       break;
+      }
+     } else {
+      $201 = HEAP32[((3216 + 16|0))>>2]|0;
+      $202 = ($163>>>0)<($201>>>0);
+      if ($202) {
+       _abort();
+       // unreachable;
+      }
+      $203 = (($163) + 16|0);
+      $204 = HEAP32[$203>>2]|0;
+      $205 = ($204|0)==($9|0);
+      if ($205) {
+       HEAP32[$203>>2] = $R7$1;
+      } else {
+       $206 = (($163) + 20|0);
+       HEAP32[$206>>2] = $R7$1;
+      }
+      $207 = ($R7$1|0)==(0|0);
+      if ($207) {
+       break;
+      }
+     }
+     $208 = HEAP32[((3216 + 16|0))>>2]|0;
+     $209 = ($R7$1>>>0)<($208>>>0);
+     if ($209) {
+      _abort();
+      // unreachable;
+     }
+     $210 = (($R7$1) + 24|0);
+     HEAP32[$210>>2] = $163;
+     $$sum19 = (($8) + 8)|0;
+     $211 = (($mem) + ($$sum19)|0);
+     $212 = HEAP32[$211>>2]|0;
+     $213 = ($212|0)==(0|0);
+     do {
+      if (!($213)) {
+       $214 = HEAP32[((3216 + 16|0))>>2]|0;
+       $215 = ($212>>>0)<($214>>>0);
+       if ($215) {
+        _abort();
+        // unreachable;
+       } else {
+        $216 = (($R7$1) + 16|0);
+        HEAP32[$216>>2] = $212;
+        $217 = (($212) + 24|0);
+        HEAP32[$217>>2] = $R7$1;
+        break;
+       }
+      }
+     } while(0);
+     $$sum20 = (($8) + 12)|0;
+     $218 = (($mem) + ($$sum20)|0);
+     $219 = HEAP32[$218>>2]|0;
+     $220 = ($219|0)==(0|0);
+     if (!($220)) {
+      $221 = HEAP32[((3216 + 16|0))>>2]|0;
+      $222 = ($219>>>0)<($221>>>0);
+      if ($222) {
+       _abort();
+       // unreachable;
+      } else {
+       $223 = (($R7$1) + 20|0);
+       HEAP32[$223>>2] = $219;
+       $224 = (($219) + 24|0);
+       HEAP32[$224>>2] = $R7$1;
+       break;
+      }
+     }
+    }
+   }
+  } while(0);
+  $225 = $135 | 1;
+  $226 = (($p$0) + 4|0);
+  HEAP32[$226>>2] = $225;
+  $227 = (($p$0) + ($135)|0);
+  HEAP32[$227>>2] = $135;
+  $228 = HEAP32[((3216 + 20|0))>>2]|0;
+  $229 = ($p$0|0)==($228|0);
+  if ($229) {
+   HEAP32[((3216 + 8|0))>>2] = $135;
+   STACKTOP = sp;return;
+  } else {
+   $psize$1 = $135;
+  }
+ } else {
+  $230 = $114 & -2;
+  HEAP32[$113>>2] = $230;
+  $231 = $psize$0 | 1;
+  $232 = (($p$0) + 4|0);
+  HEAP32[$232>>2] = $231;
+  $233 = (($p$0) + ($psize$0)|0);
+  HEAP32[$233>>2] = $psize$0;
+  $psize$1 = $psize$0;
+ }
+ $234 = $psize$1 >>> 3;
+ $235 = ($psize$1>>>0)<(256);
+ if ($235) {
+  $236 = $234 << 1;
+  $237 = ((3216 + ($236<<2)|0) + 40|0);
+  $238 = HEAP32[3216>>2]|0;
+  $239 = 1 << $234;
+  $240 = $238 & $239;
+  $241 = ($240|0)==(0);
+  if ($241) {
+   $242 = $238 | $239;
+   HEAP32[3216>>2] = $242;
+   $$sum16$pre = (($236) + 2)|0;
+   $$pre = ((3216 + ($$sum16$pre<<2)|0) + 40|0);
+   $$pre$phiZ2D = $$pre;$F16$0 = $237;
+  } else {
+   $$sum17 = (($236) + 2)|0;
+   $243 = ((3216 + ($$sum17<<2)|0) + 40|0);
+   $244 = HEAP32[$243>>2]|0;
+   $245 = HEAP32[((3216 + 16|0))>>2]|0;
+   $246 = ($244>>>0)<($245>>>0);
+   if ($246) {
+    _abort();
+    // unreachable;
+   } else {
+    $$pre$phiZ2D = $243;$F16$0 = $244;
+   }
+  }
+  HEAP32[$$pre$phiZ2D>>2] = $p$0;
+  $247 = (($F16$0) + 12|0);
+  HEAP32[$247>>2] = $p$0;
+  $248 = (($p$0) + 8|0);
+  HEAP32[$248>>2] = $F16$0;
+  $249 = (($p$0) + 12|0);
+  HEAP32[$249>>2] = $237;
+  STACKTOP = sp;return;
+ }
+ $250 = $psize$1 >>> 8;
+ $251 = ($250|0)==(0);
+ if ($251) {
+  $I18$0 = 0;
+ } else {
+  $252 = ($psize$1>>>0)>(16777215);
+  if ($252) {
+   $I18$0 = 31;
+  } else {
+   $253 = (($250) + 1048320)|0;
+   $254 = $253 >>> 16;
+   $255 = $254 & 8;
+   $256 = $250 << $255;
+   $257 = (($256) + 520192)|0;
+   $258 = $257 >>> 16;
+   $259 = $258 & 4;
+   $260 = $259 | $255;
+   $261 = $256 << $259;
+   $262 = (($261) + 245760)|0;
+   $263 = $262 >>> 16;
+   $264 = $263 & 2;
+   $265 = $260 | $264;
+   $266 = (14 - ($265))|0;
+   $267 = $261 << $264;
+   $268 = $267 >>> 15;
+   $269 = (($266) + ($268))|0;
+   $270 = $269 << 1;
+   $271 = (($269) + 7)|0;
+   $272 = $psize$1 >>> $271;
+   $273 = $272 & 1;
+   $274 = $273 | $270;
+   $I18$0 = $274;
+  }
+ }
+ $275 = ((3216 + ($I18$0<<2)|0) + 304|0);
+ $276 = (($p$0) + 28|0);
+ $I18$0$c = $I18$0;
+ HEAP32[$276>>2] = $I18$0$c;
+ $277 = (($p$0) + 20|0);
+ HEAP32[$277>>2] = 0;
+ $278 = (($p$0) + 16|0);
+ HEAP32[$278>>2] = 0;
+ $279 = HEAP32[((3216 + 4|0))>>2]|0;
+ $280 = 1 << $I18$0;
+ $281 = $279 & $280;
+ $282 = ($281|0)==(0);
+ L199: do {
+  if ($282) {
+   $283 = $279 | $280;
+   HEAP32[((3216 + 4|0))>>2] = $283;
+   HEAP32[$275>>2] = $p$0;
+   $284 = (($p$0) + 24|0);
+   HEAP32[$284>>2] = $275;
+   $285 = (($p$0) + 12|0);
+   HEAP32[$285>>2] = $p$0;
+   $286 = (($p$0) + 8|0);
+   HEAP32[$286>>2] = $p$0;
+  } else {
+   $287 = HEAP32[$275>>2]|0;
+   $288 = ($I18$0|0)==(31);
+   if ($288) {
+    $296 = 0;
+   } else {
+    $289 = $I18$0 >>> 1;
+    $290 = (25 - ($289))|0;
+    $296 = $290;
+   }
+   $291 = (($287) + 4|0);
+   $292 = HEAP32[$291>>2]|0;
+   $293 = $292 & -8;
+   $294 = ($293|0)==($psize$1|0);
+   L205: do {
+    if ($294) {
+     $T$0$lcssa = $287;
+    } else {
+     $295 = $psize$1 << $296;
+     $K19$057 = $295;$T$056 = $287;
+     while(1) {
+      $303 = $K19$057 >>> 31;
+      $304 = ((($T$056) + ($303<<2)|0) + 16|0);
+      $299 = HEAP32[$304>>2]|0;
+      $305 = ($299|0)==(0|0);
+      if ($305) {
+       break;
+      }
+      $297 = $K19$057 << 1;
+      $298 = (($299) + 4|0);
+      $300 = HEAP32[$298>>2]|0;
+      $301 = $300 & -8;
+      $302 = ($301|0)==($psize$1|0);
+      if ($302) {
+       $T$0$lcssa = $299;
+       break L205;
+      } else {
+       $T$056$phi = $299;$K19$057 = $297;$T$056 = $T$056$phi;
+      }
+     }
+     $306 = HEAP32[((3216 + 16|0))>>2]|0;
+     $307 = ($304>>>0)<($306>>>0);
+     if ($307) {
+      _abort();
+      // unreachable;
+     } else {
+      HEAP32[$304>>2] = $p$0;
+      $308 = (($p$0) + 24|0);
+      HEAP32[$308>>2] = $T$056;
+      $309 = (($p$0) + 12|0);
+      HEAP32[$309>>2] = $p$0;
+      $310 = (($p$0) + 8|0);
+      HEAP32[$310>>2] = $p$0;
+      break L199;
+     }
+    }
+   } while(0);
+   $311 = (($T$0$lcssa) + 8|0);
+   $312 = HEAP32[$311>>2]|0;
+   $313 = HEAP32[((3216 + 16|0))>>2]|0;
+   $314 = ($T$0$lcssa>>>0)<($313>>>0);
+   if ($314) {
+    _abort();
+    // unreachable;
+   }
+   $315 = ($312>>>0)<($313>>>0);
+   if ($315) {
+    _abort();
+    // unreachable;
+   } else {
+    $316 = (($312) + 12|0);
+    HEAP32[$316>>2] = $p$0;
+    HEAP32[$311>>2] = $p$0;
+    $317 = (($p$0) + 8|0);
+    HEAP32[$317>>2] = $312;
+    $318 = (($p$0) + 12|0);
+    HEAP32[$318>>2] = $T$0$lcssa;
+    $319 = (($p$0) + 24|0);
+    HEAP32[$319>>2] = 0;
+    break;
+   }
+  }
+ } while(0);
+ $320 = HEAP32[((3216 + 32|0))>>2]|0;
+ $321 = (($320) + -1)|0;
+ HEAP32[((3216 + 32|0))>>2] = $321;
+ $322 = ($321|0)==(0);
+ if ($322) {
+  $sp$0$in$i = ((3216 + 456|0));
+ } else {
+  STACKTOP = sp;return;
+ }
+ while(1) {
+  $sp$0$i = HEAP32[$sp$0$in$i>>2]|0;
+  $323 = ($sp$0$i|0)==(0|0);
+  $324 = (($sp$0$i) + 8|0);
+  if ($323) {
+   break;
+  } else {
+   $sp$0$in$i$phi = $324;$sp$0$in$i = $sp$0$in$i$phi;
+  }
+ }
+ HEAP32[((3216 + 32|0))>>2] = -1;
+ STACKTOP = sp;return;
+}
+function _calloc($n_elements,$elem_size) {
+ $n_elements = $n_elements|0;
+ $elem_size = $elem_size|0;
+ var $$ = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $req$0 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = ($n_elements|0)==(0);
+ if ($0) {
+  $req$0 = 0;
+ } else {
+  $1 = Math_imul($elem_size, $n_elements)|0;
+  $2 = $elem_size | $n_elements;
+  $3 = ($2>>>0)>(65535);
+  if ($3) {
+   $4 = (($1>>>0) / ($n_elements>>>0))&-1;
+   $5 = ($4|0)==($elem_size|0);
+   $$ = $5 ? $1 : -1;
+   $req$0 = $$;
+  } else {
+   $req$0 = $1;
+  }
+ }
+ $6 = (_malloc($req$0)|0);
+ $7 = ($6|0)==(0|0);
+ if ($7) {
+  STACKTOP = sp;return ($6|0);
+ }
+ $8 = (($6) + -4|0);
+ $9 = HEAP32[$8>>2]|0;
+ $10 = $9 & 3;
+ $11 = ($10|0)==(0);
+ if ($11) {
+  STACKTOP = sp;return ($6|0);
+ }
+ _memset(($6|0),0,($req$0|0))|0;
+ STACKTOP = sp;return ($6|0);
+}
+function runPostSets() {
+ 
+}
+function _strlen(ptr) {
+    ptr = ptr|0;
+    var curr = 0;
+    curr = ptr;
+    while (((HEAP8[(curr)])|0)) {
+      curr = (curr + 1)|0;
+    }
+    return (curr - ptr)|0;
+}
+function _memcpy(dest, src, num) {
+    dest = dest|0; src = src|0; num = num|0;
+    var ret = 0;
+    if ((num|0) >= 4096) return _emscripten_memcpy_big(dest|0, src|0, num|0)|0;
+    ret = dest|0;
+    if ((dest&3) == (src&3)) {
+      while (dest & 3) {
+        if ((num|0) == 0) return ret|0;
+        HEAP8[(dest)]=((HEAP8[(src)])|0);
+        dest = (dest+1)|0;
+        src = (src+1)|0;
+        num = (num-1)|0;
+      }
+      while ((num|0) >= 4) {
+        HEAP32[((dest)>>2)]=((HEAP32[((src)>>2)])|0);
+        dest = (dest+4)|0;
+        src = (src+4)|0;
+        num = (num-4)|0;
+      }
+    }
+    while ((num|0) > 0) {
+      HEAP8[(dest)]=((HEAP8[(src)])|0);
+      dest = (dest+1)|0;
+      src = (src+1)|0;
+      num = (num-1)|0;
+    }
+    return ret|0;
+}
+function _memset(ptr, value, num) {
+    ptr = ptr|0; value = value|0; num = num|0;
+    var stop = 0, value4 = 0, stop4 = 0, unaligned = 0;
+    stop = (ptr + num)|0;
+    if ((num|0) >= 20) {
+      // This is unaligned, but quite large, so work hard to get to aligned settings
+      value = value & 0xff;
+      unaligned = ptr & 3;
+      value4 = value | (value << 8) | (value << 16) | (value << 24);
+      stop4 = stop & ~3;
+      if (unaligned) {
+        unaligned = (ptr + 4 - unaligned)|0;
+        while ((ptr|0) < (unaligned|0)) { // no need to check for stop, since we have large num
+          HEAP8[(ptr)]=value;
+          ptr = (ptr+1)|0;
+        }
+      }
+      while ((ptr|0) < (stop4|0)) {
+        HEAP32[((ptr)>>2)]=value4;
+        ptr = (ptr+4)|0;
+      }
+    }
+    while ((ptr|0) < (stop|0)) {
+      HEAP8[(ptr)]=value;
+      ptr = (ptr+1)|0;
+    }
+    return (ptr-num)|0;
+}
 
 // EMSCRIPTEN_END_FUNCS
-// EMSCRIPTEN_END_FUNCS
+
+  
+  function dynCall_viiii(index,a1,a2,a3,a4) {
+    index = index|0;
+    a1=a1|0; a2=a2|0; a3=a3|0; a4=a4|0;
+    FUNCTION_TABLE_viiii[index&1](a1|0,a2|0,a3|0,a4|0);
+  }
+
+
+  function dynCall_vii(index,a1,a2) {
+    index = index|0;
+    a1=a1|0; a2=a2|0;
+    FUNCTION_TABLE_vii[index&3](a1|0,a2|0);
+  }
+
+
+  function dynCall_viii(index,a1,a2,a3) {
+    index = index|0;
+    a1=a1|0; a2=a2|0; a3=a3|0;
+    FUNCTION_TABLE_viii[index&1](a1|0,a2|0,a3|0);
+  }
+
+
+  function dynCall_v(index) {
+    index = index|0;
+    
+    FUNCTION_TABLE_v[index&3]();
+  }
+
+function b0(p0,p1,p2,p3) { p0 = p0|0;p1 = p1|0;p2 = p2|0;p3 = p3|0; nullFunc_viiii(0); }
+  function b1(p0,p1) { p0 = p0|0;p1 = p1|0; nullFunc_vii(1); }
+  function b2(p0,p1,p2) { p0 = p0|0;p1 = p1|0;p2 = p2|0; nullFunc_viii(2); }
+  function b3() { ; nullFunc_v(3); }
+  // EMSCRIPTEN_END_FUNCS
+  var FUNCTION_TABLE_viiii = [b0,_Mouse];
+  var FUNCTION_TABLE_vii = [b1,_Reshape,_Motion,b1];
+  var FUNCTION_TABLE_viii = [b2,_Keyboard];
+  var FUNCTION_TABLE_v = [b3,_Display,_ShutdownCompute,b3];
+
+  return { _strlen: _strlen, _free: _free, _main: _main, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _calloc: _calloc, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, setTempRet1: setTempRet1, setTempRet2: setTempRet2, setTempRet3: setTempRet3, setTempRet4: setTempRet4, setTempRet5: setTempRet5, setTempRet6: setTempRet6, setTempRet7: setTempRet7, setTempRet8: setTempRet8, setTempRet9: setTempRet9, dynCall_viiii: dynCall_viiii, dynCall_vii: dynCall_vii, dynCall_viii: dynCall_viii, dynCall_v: dynCall_v };
+})
+// EMSCRIPTEN_END_ASM
+({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "nullFunc_viiii": nullFunc_viiii, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_v": nullFunc_v, "invoke_viiii": invoke_viiii, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_v": invoke_v, "_glUseProgram": _glUseProgram, "_fabs": _fabs, "_frexp": _frexp, "_clReleaseProgram": _clReleaseProgram, "_fstat": _fstat, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_glDeleteProgram": _glDeleteProgram, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_glBindBuffer": _glBindBuffer, "_sbrk": _sbrk, "_glutReshapeWindow": _glutReshapeWindow, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glCreateShader": _glCreateShader, "_glutSwapBuffers": _glutSwapBuffers, "_sysconf": _sysconf, "_close": _close, "_glTexCoord2f": _glTexCoord2f, "_clCreateCommandQueue": _clCreateCommandQueue, "_glLoadIdentity": _glLoadIdentity, "_clEnqueueReleaseGLObjects": _clEnqueueReleaseGLObjects, "_write": _write, "_glShaderSource": _glShaderSource, "_glutMotionFunc": _glutMotionFunc, "_glVertexPointer": _glVertexPointer, "_clCreateFromGLTexture2D": _clCreateFromGLTexture2D, "_glutCreateWindow": _glutCreateWindow, "_strstr": _strstr, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_send": _send, "_clReleaseKernel": _clReleaseKernel, "_glutDisplayFunc": _glutDisplayFunc, "_clSetTypePointer": _clSetTypePointer, "_glBegin": _glBegin, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glutInitDisplayMode": _glutInitDisplayMode, "_glViewport": _glViewport, "_glGetBooleanv": _glGetBooleanv, "___setErrNo": ___setErrNo, "_glutPostRedisplay": _glutPostRedisplay, "_glutReshapeFunc": _glutReshapeFunc, "_glEnable": _glEnable, "_printf": _printf, "_glGenTextures": _glGenTextures, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_glGetIntegerv": _glGetIntegerv, "_glGetString": _glGetString, "_emscripten_get_now": _emscripten_get_now, "_stat": _stat, "_glAttachShader": _glAttachShader, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_time": _time, "_glColor3f": _glColor3f, "_glDetachShader": _glDetachShader, "_glutInitWindowPosition": _glutInitWindowPosition, "_exit": _exit, "_glutGetModifiers": _glutGetModifiers, "_emscripten_glOrtho": _emscripten_glOrtho, "_glEnableClientState": _glEnableClientState, "_pwrite": _pwrite, "_glFinish": _glFinish, "_open": _open, "_glClearColor": _glClearColor, "_glIsEnabled": _glIsEnabled, "_glBindTexture": _glBindTexture, "___errno_location": ___errno_location, "_glGetFloatv": _glGetFloatv, "_glutIdleFunc": _glutIdleFunc, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_clFinish": _clFinish, "_clGetDeviceIDs": _clGetDeviceIDs, "_glutMouseFunc": _glutMouseFunc, "_glActiveTexture": _glActiveTexture, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_glTexCoordPointer": _glTexCoordPointer, "_recv": _recv, "_glCompileShader": _glCompileShader, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_abort": _abort, "_clBuildProgram": _clBuildProgram, "_glTexImage2D": _glTexImage2D, "_glutMainLoop": _glutMainLoop, "_clGetContextInfo": _clGetContextInfo, "_clCreateKernel": _clCreateKernel, "_glDisableClientState": _glDisableClientState, "_glutKeyboardFunc": _glutKeyboardFunc, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glLinkProgram": _glLinkProgram, "_fprintf": _fprintf, "__reallyNegative": __reallyNegative, "_glutInitWindowSize": _glutInitWindowSize, "_glClear": _glClear, "_fileno": _fileno, "_glMatrixMode": _glMatrixMode, "__exit": __exit, "_glBindAttribLocation": _glBindAttribLocation, "_emscripten_glColor4f": _emscripten_glColor4f, "_clEnqueueCopyBufferToImage": _clEnqueueCopyBufferToImage, "_glVertex3f": _glVertex3f, "_pread": _pread, "_mkport": _mkport, "_glEnd": _glEnd, "_clReleaseMemObject": _clReleaseMemObject, "_clGetDeviceInfo": _clGetDeviceInfo, "_fflush": _fflush, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_gluOrtho2D": _gluOrtho2D, "_clEnqueueAcquireGLObjects": _clEnqueueAcquireGLObjects, "_glClientActiveTexture": _glClientActiveTexture, "_glutInit": _glutInit, "_glDisable": _glDisable, "_glTexParameteri": _glTexParameteri, "__formatString": __formatString, "_atexit": _atexit, "_glTexSubImage2D": _glTexSubImage2D, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
+var _strlen = Module["_strlen"] = asm["_strlen"];
+var _free = Module["_free"] = asm["_free"];
+var _main = Module["_main"] = asm["_main"];
+var _memset = Module["_memset"] = asm["_memset"];
+var _malloc = Module["_malloc"] = asm["_malloc"];
+var _memcpy = Module["_memcpy"] = asm["_memcpy"];
+var _calloc = Module["_calloc"] = asm["_calloc"];
+var runPostSets = Module["runPostSets"] = asm["runPostSets"];
+var dynCall_viiii = Module["dynCall_viiii"] = asm["dynCall_viiii"];
+var dynCall_vii = Module["dynCall_vii"] = asm["dynCall_vii"];
+var dynCall_viii = Module["dynCall_viii"] = asm["dynCall_viii"];
+var dynCall_v = Module["dynCall_v"] = asm["dynCall_v"];
+
+Runtime.stackAlloc = function(size) { return asm['stackAlloc'](size) };
+Runtime.stackSave = function() { return asm['stackSave']() };
+Runtime.stackRestore = function(top) { asm['stackRestore'](top) };
+
 
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
