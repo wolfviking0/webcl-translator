@@ -118,7 +118,7 @@ var configuration_pages = {
       "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",                
     },
-    { 
+    /*{ 
       "title"         : "Image Gaussian Blur",
       "compatibility" : "[Webkit]",
       "pages"         : "build_book/",
@@ -128,7 +128,7 @@ var configuration_pages = {
       "gpu"           : "&gpu",
       "valcpu"        : "",
       "valgpu"        : "&validator=on",               
-    },
+    },*/
     { 
       "title"         : "OpenGL Interop",
       "compatibility" : "[Webkit]",
