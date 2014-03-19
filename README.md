@@ -29,7 +29,7 @@ How To (OSX) :
 	git clone https://github.com/kripken/emscripten-fastcomp.git -b incoming
 	cd emscripten-fastcomp/tools/
 	git clone https://github.com/kripken/emscripten-fastcomp-clang.git -b incoming clang
-	build the llvm/clang emscripten-fastcomp
+	build the llvm/clang emscripten-fastcomp using "configure --enable-optimized --disable-assertions --enable-targets=host,js"
 
 	cd YOUR_ROOT_DIRECTORY
 	git clone https://github.com/KhronosGroup/webcl-validator
