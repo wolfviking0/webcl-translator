@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_trajectories.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_trajectories.data';
     var REMOTE_PACKAGE_SIZE = 33406;
-    var PACKAGE_UUID = '8d7d85fb-11fe-4668-9566-d9e88d4a4438';
+    var PACKAGE_UUID = '901a74e6-93e5-4178-96d5-b757863bac06';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

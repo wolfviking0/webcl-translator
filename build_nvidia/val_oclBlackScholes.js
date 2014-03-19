@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclBlackScholes.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclBlackScholes.data';
     var REMOTE_PACKAGE_SIZE = 17325;
-    var PACKAGE_UUID = '9ff2d5a0-e748-4f24-895e-31f6d0055694';
+    var PACKAGE_UUID = '08e729f8-837d-49a5-8697-0cc0a604c6d9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

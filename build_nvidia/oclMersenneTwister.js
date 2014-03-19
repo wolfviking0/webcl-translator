@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclMersenneTwister.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclMersenneTwister.data';
     var REMOTE_PACKAGE_SIZE = 331215;
-    var PACKAGE_UUID = '62abb4e6-6d55-47c8-a57d-88c33ebe8aa2';
+    var PACKAGE_UUID = 'cb1b6d38-9502-4d2f-9d56-3f10eb29ae94';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

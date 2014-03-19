@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclRecursiveGaussian.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclRecursiveGaussian.data';
     var REMOTE_PACKAGE_SIZE = 3153140;
-    var PACKAGE_UUID = '85c78b22-280c-413a-9a04-0dc1d0176e14';
+    var PACKAGE_UUID = 'c53c8757-6841-4392-9e24-9b493d7ba240';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

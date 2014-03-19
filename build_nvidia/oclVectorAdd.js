@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclVectorAdd.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclVectorAdd.data';
     var REMOTE_PACKAGE_SIZE = 900;
-    var PACKAGE_UUID = '22958829-48bc-4c75-ae85-33fdf1d22123';
+    var PACKAGE_UUID = 'd1aa5946-175f-4246-9502-1ca6cb351f66';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_qjulia.data';
     var REMOTE_PACKAGE_SIZE = 17085;
-    var PACKAGE_UUID = 'fddc86a1-ab63-4f01-b616-52f2d23d42e1';
+    var PACKAGE_UUID = '7434fc2e-a6bb-4f44-bf29-c17682565534';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

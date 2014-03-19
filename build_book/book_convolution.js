@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../build/book_convolution.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'book_convolution.data';
     var REMOTE_PACKAGE_SIZE = 1003;
-    var PACKAGE_UUID = 'bbc36d3e-5721-4c6f-9a32-e30af1e5e05b';
+    var PACKAGE_UUID = '4a3d654e-7fb6-4844-a44d-f5765e1a757e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

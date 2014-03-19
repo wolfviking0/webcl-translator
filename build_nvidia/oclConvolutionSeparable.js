@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclConvolutionSeparable.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclConvolutionSeparable.data';
     var REMOTE_PACKAGE_SIZE = 4897;
-    var PACKAGE_UUID = 'c699a1e3-60a0-492f-b3d8-58cea8edf1ea';
+    var PACKAGE_UUID = 'da5ec41b-b34d-4536-8662-528bf7468bdd';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

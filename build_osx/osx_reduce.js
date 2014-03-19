@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_reduce.data';
     var REMOTE_PACKAGE_SIZE = 43642;
-    var PACKAGE_UUID = 'cc7bfac3-28f6-49eb-99a3-a30a9747f850';
+    var PACKAGE_UUID = '78690140-67f0-4ecd-9b68-da35fc7408a7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

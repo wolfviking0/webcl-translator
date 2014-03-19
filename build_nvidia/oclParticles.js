@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclParticles.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclParticles.data';
     var REMOTE_PACKAGE_SIZE = 20865;
-    var PACKAGE_UUID = '0b971ee3-fa50-49df-b5fd-f299e0d4d7ac';
+    var PACKAGE_UUID = 'c12bfc49-9bd2-46f3-b746-bbc38cb77158';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

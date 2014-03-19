@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//oclMultiThreads.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'oclMultiThreads.data';
     var REMOTE_PACKAGE_SIZE = 87;
-    var PACKAGE_UUID = '4dd6bdeb-e98e-4e99-af73-b777d6d618b1';
+    var PACKAGE_UUID = '444e2c8b-bc3c-4b94-8e54-4aafd3094ef5';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

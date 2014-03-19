@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_imagecopy.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_imagecopy.data';
     var REMOTE_PACKAGE_SIZE = 5190;
-    var PACKAGE_UUID = '3d576c6d-185c-4c51-a81d-bcb2fe430edb';
+    var PACKAGE_UUID = '36d88b8e-1536-4583-b7c8-2e3bc88112d7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

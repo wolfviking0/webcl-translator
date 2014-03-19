@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../../../../build//val_oclBoxFilter.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_oclBoxFilter.data';
     var REMOTE_PACKAGE_SIZE = 3162896;
-    var PACKAGE_UUID = '7f89e133-cc10-4938-82a7-1b3fac8bf181';
+    var PACKAGE_UUID = '11834e44-6ebf-4651-93be-012b93325fb2';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
