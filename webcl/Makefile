@@ -142,7 +142,7 @@ dxt_sample:
 	
 fluids_sample:
 	$(call chdir,fluids/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s ALLOW_MEMORY_GROWTH=1 -s ASM_JS=0 -s LEGACY_GL_EMULATION=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*500 -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file kernels.cl \
 	-o ../build/$(PREFIX)fluids.js
 
