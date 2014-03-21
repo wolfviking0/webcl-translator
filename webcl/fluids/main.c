@@ -467,7 +467,7 @@ static void motion_func ( int x, int y )
 
 static void reshape_func ( int width, int height )
 {
-	glutSetWindow ( win_id );
+	//glutSetWindow ( win_id );
 	glutReshapeWindow ( width, height );
 
 	win_x = width;
