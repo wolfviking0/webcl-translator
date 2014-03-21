@@ -29,6 +29,7 @@ endif
 #LLVM_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/compilo/llvm/bin
 #VALIDATOR = $(LLVM_ROOT)/webcl-validator
 
+CC = $(EMSCRIPTEN_ROOT)/emcc
 CXX = $(EMSCRIPTEN_ROOT)/em++
 
 CHDIR_SHELL := $(SHELL)
@@ -139,6 +140,18 @@ dxt_sample:
 	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
 	-o ../build/$(PREFIX)dxtcompressor.js
 	
+fluids_sample:
+	$(call chdir,fluids/)
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s ALLOW_MEMORY_GROWTH=1 -s ASM_JS=0 -s LEGACY_GL_EMULATION=1 $(MODE) \
+	--preload-file kernels.cl \
+	-o ../build/$(PREFIX)fluids.js
+
+fluids_sample_osx:
+	$(call chdir,fluids/)
+	clang -std=gnu99 main.c cl-helper.c -framework OpenCL -framework GLUT -framework OpenGL	\
+	-o fluids.out
+
+
 attractor_sample:
 	$(call chdir,attractor/)
 	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
