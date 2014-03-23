@@ -19,7 +19,7 @@ float get_data(__global float * x, int i, int j, int k)
   //if(i < 0 || i >= NX || j < 0 || j >= NY || k < 0 || k >= NZ)
   //if(i < 0 || i >= NX || j < 0 || j >= NY)
   //{
-  //	return 0.0f;
+  //  return 0.0f;
   //}
 
   
@@ -45,16 +45,16 @@ float get_interpolated_value(
       float h)
 {
    float3 ph = pos/h;
-	//The grid world pos is 0-1.
+  //The grid world pos is 0-1.
    int3 idx0 = {convert_int(ph.x), convert_int(ph.y), convert_int(ph.z)};
    int3 idx1 = {
             convert_int(clamp(idx0.x + 1, 0,NX-1)),
-	          convert_int(clamp(idx0.y + 1, 0,NY-1)),
+            convert_int(clamp(idx0.y + 1, 0,NY-1)),
             convert_int(clamp(idx0.z + 1, 0,NZ-1))
             };
   
   
-	//Calculate t per component
+  //Calculate t per component
    //float it,jt,kt;
    float3 t = { 
             pos.x - idx0.x*h,
@@ -63,43 +63,43 @@ float get_interpolated_value(
             };
 
 
-	//assert (t.x < 1.0 && t.x >= 0);
-	//assert (t.y < 1.0 && t.y >= 0);
-	//assert (t.z < 1.0 && t.z >= 0);
+  //assert (t.x < 1.0 && t.x >= 0);
+  //assert (t.y < 1.0 && t.y >= 0);
+  //assert (t.z < 1.0 && t.z >= 0);
 
-	// Assume a cube wt.xh 8 points
-	//Front face
-	//Top Front Lerp
-	float xFrontLeftTop = x[IX(idx0.x,idx1.y,idx0.z)];
-	float xFrontRightTop = x[IX(idx1.x,idx1.y,idx0.z)];
-	float xFrontTopInterp = mix(xFrontLeftTop, xFrontRightTop, t.x);
-	//Bottom Front Lerp
-	float xFrontLeftBottom = x[IX(idx0.x,idx0.y,idx0.z)];
-	float xFrontRightBottom = x[IX(idx1.x,idx0.y,idx0.z)];
-	float xFrontBottomInterp = mix(xFrontLeftBottom, xFrontRightBottom, t.x);
+  // Assume a cube wt.xh 8 points
+  //Front face
+  //Top Front Lerp
+  float xFrontLeftTop = x[IX(idx0.x,idx1.y,idx0.z)];
+  float xFrontRightTop = x[IX(idx1.x,idx1.y,idx0.z)];
+  float xFrontTopInterp = mix(xFrontLeftTop, xFrontRightTop, t.x);
+  //Bottom Front Lerp
+  float xFrontLeftBottom = x[IX(idx0.x,idx0.y,idx0.z)];
+  float xFrontRightBottom = x[IX(idx1.x,idx0.y,idx0.z)];
+  float xFrontBottomInterp = mix(xFrontLeftBottom, xFrontRightBottom, t.x);
 
-	//Back face
-	//Top Back Lerp
-	float xBackLeftTop = x[IX(idx0.x,idx1.y,idx1.z)];
-	float xBackRightTop = x[IX(idx1.x,idx1.y,idx1.z)];
-	float xBackTopInterp = mix(xBackLeftTop, xBackRightTop, t.x);
-	//Bottom Back Lerp
-	float xBackLeftBottom = x[IX(idx0.x,idx0.y,idx1.z)];
-	float xBackRightBottom = x[IX(idx1.x,idx0.y,idx1.z)];
-	float xBackBottomInterp = mix(xBackLeftBottom, xBackRightBottom, t.x);
+  //Back face
+  //Top Back Lerp
+  float xBackLeftTop = x[IX(idx0.x,idx1.y,idx1.z)];
+  float xBackRightTop = x[IX(idx1.x,idx1.y,idx1.z)];
+  float xBackTopInterp = mix(xBackLeftTop, xBackRightTop, t.x);
+  //Bottom Back Lerp
+  float xBackLeftBottom = x[IX(idx0.x,idx0.y,idx1.z)];
+  float xBackRightBottom = x[IX(idx1.x,idx0.y,idx1.z)];
+  float xBackBottomInterp = mix(xBackLeftBottom, xBackRightBottom, t.x);
 
 
-	//Now get middle of front -The bilinear interp of the front face
-	float xBiLerpFront = mix(xFrontBottomInterp, xFrontTopInterp,t.y);
+  //Now get middle of front -The bilinear interp of the front face
+  float xBiLerpFront = mix(xFrontBottomInterp, xFrontTopInterp,t.y);
 
-	//Now get middle of back -The bilinear interp of the back face
-	float xBiLerpBack = mix(xBackBottomInterp, xBackTopInterp, t.y);
+  //Now get middle of back -The bilinear interp of the back face
+  float xBiLerpBack = mix(xBackBottomInterp, xBackTopInterp, t.y);
 
-	//Now get the interpolated point between the points calculated in 
+  //Now get the interpolated point between the points calculated in 
    //the front and back faces - The trilinear interp part
-	float xTriLerp = mix(xBiLerpFront, xBiLerpBack, t.z);
+  float xTriLerp = mix(xBiLerpFront, xBiLerpBack, t.z);
 
-	return xTriLerp;
+  return xTriLerp;
 }
 
 __kernel void advect_forward_euler(
@@ -148,16 +148,16 @@ __kernel void advect_forward_euler(
   //debugData1[id] = new_pos.xyzx;
 
 #if !WRAP_BOUNDS
-	new_pos.x   = clamp(new_pos.x,0.0f,NX-1.0f);
-	new_pos.y   = clamp(new_pos.y,0.0f,NY-1.0f);
-	new_pos.z   = clamp(new_pos.z,0.0f,NZ-1.0f);
+  new_pos.x   = clamp(new_pos.x,0.0f,NX-1.0f);
+  new_pos.y   = clamp(new_pos.y,0.0f,NY-1.0f);
+  new_pos.z   = clamp(new_pos.z,0.0f,NZ-1.0f);
 #endif
     
     
   //Have to interpolate at new point
-	float traced_q;
+  float traced_q;
   traced_q = get_interpolated_value( q_prev, new_pos, H);
-		
+    
   
   q[id] = traced_q;
   
@@ -182,10 +182,10 @@ __kernel void advectRK2(
   int id = get_global_id(0);
   
   
-	float dt = -delta_time*NX;
+  float dt = -delta_time*NX;
   
-	//FOR_EACH_FACE
-	//{
+  //FOR_EACH_FACE
+  //{
   int slice_size = NX*NY;
   int row_size = NX;
   int k = id / slice_size;
@@ -239,7 +239,7 @@ __kernel void advectRK2(
   //Has to be set on u
   q[IX(i,j,k)] = traced_q;
 
-	//}
+  //}
 }
 
 
@@ -261,7 +261,7 @@ __kernel void advect_velocity_RK2(
 {
   int id = get_global_id(0);
   
-	float dt = -delta_time*NX;
+  float dt = -delta_time*NX;
   
   int slice_size = NX*NY;
   int row_size = NX;
@@ -405,15 +405,15 @@ float4 get_curl(
                 __global float * w,
                 int i, int j, int k)
 {
-	float dwdj = 0.5f*(get_data(w, i, j+1, k) - get_data(w,i, j-1, k));
-	float dwdi = 0.5f*(get_data(w, i+1, j, k) - get_data(w,i-1, j, k));
+  float dwdj = 0.5f*(get_data(w, i, j+1, k) - get_data(w,i, j-1, k));
+  float dwdi = 0.5f*(get_data(w, i+1, j, k) - get_data(w,i-1, j, k));
 
-	float dudk = 0.5f*(get_data(u, i, j, k+1)-get_data(u, i, j, k-1));
-	float dudj = 0.5f*(get_data(u, i, j+1, k)-get_data(u, i, j-1, k));
-	
-	float dvdk = 0.5f*(get_data(v, i, j, k+1)-get_data(v, i, j, k-1));
-	float dvdi = 0.5f*(get_data(v, i+1, j, k)-get_data(v, i-1, j, k));
-	
+  float dudk = 0.5f*(get_data(u, i, j, k+1)-get_data(u, i, j, k-1));
+  float dudj = 0.5f*(get_data(u, i, j+1, k)-get_data(u, i, j-1, k));
+  
+  float dvdk = 0.5f*(get_data(v, i, j, k+1)-get_data(v, i, j, k-1));
+  float dvdi = 0.5f*(get_data(v, i+1, j, k)-get_data(v, i-1, j, k));
+  
   float4 out = {dwdj-dvdk, dudk-dwdi, dvdi-dudj,0.0f};
   return out;
 }
@@ -439,7 +439,7 @@ __kernel void vorticity_confinement(__global float *u,
     return;
   
   /*
-	float4 curl;
+  float4 curl;
   float4 curl_iplus1;
   float4 curl_iminus1;
   float4 curl_jplus1;
@@ -494,7 +494,7 @@ __kernel void calculate_divergence(
             int3 n,
             float dt )
 {
-	{
+  {
     int id = get_global_id(0);
     int slice_size = NX*NY;
     int row_size = NX;
@@ -502,22 +502,22 @@ __kernel void calculate_divergence(
     int j = (id - k*slice_size) / row_size;
     int i = id - j*row_size - k*slice_size;
     
-		float du = get_data(u,i+1,j,k) - get_data(u,i-1,j,k);
-		float dv = get_data(v,i,j+1,k) - get_data(v,i,j-1,k);
-		float dw = get_data(w,i,j,k+1) - get_data(w,i,j,k-1);
-		float div = 0.5f*(du + dv + dw);
+    float du = get_data(u,i+1,j,k) - get_data(u,i-1,j,k);
+    float dv = get_data(v,i,j+1,k) - get_data(v,i,j-1,k);
+    float dw = get_data(w,i,j,k+1) - get_data(w,i,j,k-1);
+    float div = 0.5f*(du + dv + dw);
     
-		divergence[IX(i,j,k)] = div;
+    divergence[IX(i,j,k)] = div;
     
     barrier(CLK_GLOBAL_MEM_FENCE);
-	}
+  }
 }
 
 __kernel void zero_pressure( __global float *pressure)
 {
   int id = get_global_id(0);
   
-	pressure[id]  = 0.0f;
+  pressure[id]  = 0.0f;
   
 }
 
@@ -569,7 +569,7 @@ __kernel void pressure_solve(
   int i = id - j*row_size - k*slice_size;
   
   
-	
+  
 
   // jacobi solver
   float p = -get_data(divergence,i,j,k);
@@ -582,7 +582,7 @@ __kernel void pressure_solve(
   float v = (p+(a+b+c+d+e+f))/6.0f;
   
   pressure[IX(i,j,k)] = v;
-		
+    
 }
 
 __kernel void pressure_apply(__global float *u,
@@ -657,5 +657,3 @@ __kernel void pressure_apply(__global float *u,
   v[IX(i, j, k)] -=  dpdj;
   w[IX(i, j, k)] -=  dpdk;
 }
-
-
