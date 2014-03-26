@@ -277,8 +277,8 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
-    uint _wcl_sum[3];
     uint4 _wcl_rank;
+    uint _wcl_sum[3];
     uint4 _wcl_lsb;
     uint4 _wcl_r;
     uint4 _wcl_key;

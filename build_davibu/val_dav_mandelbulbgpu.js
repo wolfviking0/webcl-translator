@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
-    var REMOTE_PACKAGE_SIZE = 35816;
-    var PACKAGE_UUID = '5d39ebdb-10bd-43ef-b995-99566a312a0f';
+    var REMOTE_PACKAGE_SIZE = 35814;
+    var PACKAGE_UUID = 'f7249e90-60df-4c1e-8f98-6838ef891bdb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35816, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+      new DataRequest(0, 35814, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -570,17 +570,17 @@ var Runtime = {
     for (var i = 0; i < numArgs; i++) {
       args.push(String.fromCharCode(36) + i); // $0, $1 etc
     }
-    code = Pointer_stringify(code);
-    if (code[0] === '"') {
+    var source = Pointer_stringify(code);
+    if (source[0] === '"') {
       // tolerate EM_ASM("..code..") even though EM_ASM(..code..) is correct
-      if (code.indexOf('"', 1) === code.length-1) {
-        code = code.substr(1, code.length-2);
+      if (source.indexOf('"', 1) === source.length-1) {
+        source = source.substr(1, source.length-2);
       } else {
         // something invalid happened, e.g. EM_ASM("..code($0)..", input)
-        abort('invalid EM_ASM input |' + code + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
+        abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + code + ' })'); // new Function does not allow upvars in node
+    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -10012,9 +10012,39 @@ function copyTempDouble(ptr) {
           } else {
             // create the actual websocket object and connect
             try {
-              var url = 'ws://' + addr + ':' + port;
-              // the node ws library API is slightly different than the browser's
-              var opts = ENVIRONMENT_IS_NODE ? {headers: {'websocket-protocol': ['binary']}} : ['binary'];
+              // runtimeConfig gets set to true if WebSocket runtime configuration is available.
+              var runtimeConfig = (Module['websocket'] && ('object' === typeof Module['websocket']));
+  
+              // The default value is 'ws://' the replace is needed because the compiler replaces "//" comments with '#'
+              // comments without checking context, so we'd end up with ws:#, the replace swaps the "#" for "//" again.
+              var url = 'ws:#'.replace('#', '//');
+  
+              if (runtimeConfig) {
+                if ('string' === typeof Module['websocket']['url']) {
+                  url = Module['websocket']['url']; // Fetch runtime WebSocket URL config.
+                }
+              }
+  
+              if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
+                url = url + addr + ':' + port;
+              }
+  
+              // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
+              var subProtocols = 'binary'; // The default value is 'binary'
+  
+              if (runtimeConfig) {
+                if ('string' === typeof Module['websocket']['subprotocol']) {
+                  subProtocols = Module['websocket']['subprotocol']; // Fetch runtime WebSocket subprotocol config.
+                }
+              }
+  
+              // The regex trims the string (removes spaces at the beginning and end, then splits the string by
+              // <any space>,<any space> into an Array. Whitespace removal is important for Websockify and ws.
+              subProtocols = subProtocols.replace(/^ +| +$/g,"").split(/ *, */);
+  
+              // The node ws library API for specifying optional subprotocol is slightly different than the browser's.
+              var opts = ENVIRONMENT_IS_NODE ? {'protocol': subProtocols.toString()} : subProtocols;
+  
               // If node we use the ws library.
               var WebSocket = ENVIRONMENT_IS_NODE ? require('ws') : window['WebSocket'];
               ws = new WebSocket(url, opts);
@@ -11241,11 +11271,11 @@ function copyTempDouble(ptr) {
         var _matches = [];
         var _found = 1;
         var _stringKern = _mini_kernel_string;
-        var _security = 10;
+        var _security = 50;
   
         // Search all the kernel
         while (_found && _security) {
-          // Just in case no more than 10 loop
+          // Just in case no more than 50 loop
           _security --;
   
           var _pattern = "__kernel ";
@@ -12923,6 +12953,7 @@ function copyTempDouble(ptr) {
                 break;
   
               // /!\ This part, it's for the CL_GL_Interop
+              case (0x200B) /*CL_WGL_HDC_KHR*/:
               case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
@@ -12944,7 +12975,7 @@ function copyTempDouble(ptr) {
   
         if (_deviceType != 0 && _platform != null) {
   
-          if (_glclSharedContext) {
+          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {
             _context = webcl.createContext(Module.ctx, _platform,_deviceType);  
           } else {
             _context = webcl.createContext(_platform,_deviceType);  
@@ -12952,7 +12983,7 @@ function copyTempDouble(ptr) {
               
         } else if (_deviceType != 0) {
   
-          if (_glclSharedContext) {
+          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {
             _context = webcl.createContext(Module.ctx,_deviceType);  
           } else {
             _context = webcl.createContext(_deviceType);  
@@ -15753,6 +15784,21 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 32:  {
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[3000>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
  case 112:  {
   $5 = (_fopen((2896|0),(2912|0))|0);
   $f = $5;
@@ -15908,21 +15954,6 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2920|0),($vararg_buffer|0))|0);
   }
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[3000>>3] = $347;
-  STACKTOP = sp;return;
-  break;
- }
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
- case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16395,24 +16426,16 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2232 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2232 + 72|0))>>2] = $7;
-  break;
- }
  case 104:  {
   $4 = +HEAPF32[((2232 + 72|0))>>2];
   $5 = $4 + 0.5;
   HEAPF32[((2232 + 72|0))>>2] = $5;
   break;
  }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
-  break;
- }
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
+ case 105:  {
+  $6 = +HEAPF32[((2232 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2232 + 72|0))>>2] = $7;
   break;
  }
  case 102:  {
@@ -16421,6 +16444,14 @@ function _specialFunc($key,$x,$y) {
  }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
+  break;
+ }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
   break;
  }
  default: {

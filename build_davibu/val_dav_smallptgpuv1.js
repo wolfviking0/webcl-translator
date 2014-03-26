@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_smallptgpuv1.data';
     var REMOTE_PACKAGE_SIZE = 43004;
-    var PACKAGE_UUID = '61592778-a0c5-4a4a-96cb-ab919123ac97';
+    var PACKAGE_UUID = '52106c9e-be34-4dfa-ac81-bb79a9ada53e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -587,17 +587,17 @@ var Runtime = {
     for (var i = 0; i < numArgs; i++) {
       args.push(String.fromCharCode(36) + i); // $0, $1 etc
     }
-    code = Pointer_stringify(code);
-    if (code[0] === '"') {
+    var source = Pointer_stringify(code);
+    if (source[0] === '"') {
       // tolerate EM_ASM("..code..") even though EM_ASM(..code..) is correct
-      if (code.indexOf('"', 1) === code.length-1) {
-        code = code.substr(1, code.length-2);
+      if (source.indexOf('"', 1) === source.length-1) {
+        source = source.substr(1, source.length-2);
       } else {
         // something invalid happened, e.g. EM_ASM("..code($0)..", input)
-        abort('invalid EM_ASM input |' + code + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
+        abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + code + ' })'); // new Function does not allow upvars in node
+    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -9888,9 +9888,39 @@ function copyTempDouble(ptr) {
           } else {
             // create the actual websocket object and connect
             try {
-              var url = 'ws://' + addr + ':' + port;
-              // the node ws library API is slightly different than the browser's
-              var opts = ENVIRONMENT_IS_NODE ? {headers: {'websocket-protocol': ['binary']}} : ['binary'];
+              // runtimeConfig gets set to true if WebSocket runtime configuration is available.
+              var runtimeConfig = (Module['websocket'] && ('object' === typeof Module['websocket']));
+  
+              // The default value is 'ws://' the replace is needed because the compiler replaces "//" comments with '#'
+              // comments without checking context, so we'd end up with ws:#, the replace swaps the "#" for "//" again.
+              var url = 'ws:#'.replace('#', '//');
+  
+              if (runtimeConfig) {
+                if ('string' === typeof Module['websocket']['url']) {
+                  url = Module['websocket']['url']; // Fetch runtime WebSocket URL config.
+                }
+              }
+  
+              if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
+                url = url + addr + ':' + port;
+              }
+  
+              // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
+              var subProtocols = 'binary'; // The default value is 'binary'
+  
+              if (runtimeConfig) {
+                if ('string' === typeof Module['websocket']['subprotocol']) {
+                  subProtocols = Module['websocket']['subprotocol']; // Fetch runtime WebSocket subprotocol config.
+                }
+              }
+  
+              // The regex trims the string (removes spaces at the beginning and end, then splits the string by
+              // <any space>,<any space> into an Array. Whitespace removal is important for Websockify and ws.
+              subProtocols = subProtocols.replace(/^ +| +$/g,"").split(/ *, */);
+  
+              // The node ws library API for specifying optional subprotocol is slightly different than the browser's.
+              var opts = ENVIRONMENT_IS_NODE ? {'protocol': subProtocols.toString()} : subProtocols;
+  
               // If node we use the ws library.
               var WebSocket = ENVIRONMENT_IS_NODE ? require('ws') : window['WebSocket'];
               ws = new WebSocket(url, opts);
@@ -11117,11 +11147,11 @@ function copyTempDouble(ptr) {
         var _matches = [];
         var _found = 1;
         var _stringKern = _mini_kernel_string;
-        var _security = 10;
+        var _security = 50;
   
         // Search all the kernel
         while (_found && _security) {
-          // Just in case no more than 10 loop
+          // Just in case no more than 50 loop
           _security --;
   
           var _pattern = "__kernel ";
@@ -13020,7 +13050,10 @@ function copyTempDouble(ptr) {
   
         var _platform = CL.cl_objects[platform];
   
-          
+        // Fix -1 type
+        if (device_type_i64_1 == -1) device_type_i64_1 = webcl.DEVICE_TYPE_ALL;
+  
+  
         _devices = _platform.getDevices(device_type_i64_1);
   
       } catch (e) {
@@ -13120,6 +13153,7 @@ function copyTempDouble(ptr) {
                 break;
   
               // /!\ This part, it's for the CL_GL_Interop
+              case (0x200B) /*CL_WGL_HDC_KHR*/:
               case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
               case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
@@ -13141,7 +13175,7 @@ function copyTempDouble(ptr) {
         }
   
         if (num_devices > 0) {
-          if (_glclSharedContext) {       
+          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {       
   
             _context = webcl.createContext(Module.ctx,_devices); 
             
@@ -13152,7 +13186,7 @@ function copyTempDouble(ptr) {
           }
         } else if (_platform != null) {
           
-          if (_glclSharedContext) {
+          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {
             _context = webcl.createContext(Module.ctx,_platform);  
           } else {
             _context = webcl.createContext(_platform);  
@@ -16770,6 +16804,86 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
+ case 102:  {
+  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
+  $159 = +HEAPF32[$t3>>2];
+  $160 = +HEAPF32[600>>2];
+  $161 = $159 - $160;
+  HEAPF32[$t3>>2] = $161;
+  $162 = (($t3) + 4|0);
+  $163 = +HEAPF32[$162>>2];
+  $164 = +HEAPF32[((600 + 4|0))>>2];
+  $165 = $163 - $164;
+  $166 = (($t3) + 4|0);
+  HEAPF32[$166>>2] = $165;
+  $167 = (($t3) + 8|0);
+  $168 = +HEAPF32[$167>>2];
+  $169 = +HEAPF32[((600 + 8|0))>>2];
+  $170 = $168 - $169;
+  $171 = (($t3) + 8|0);
+  HEAPF32[$171>>2] = $170;
+  $172 = +HEAPF32[$t3>>2];
+  $173 = $172;
+  $174 = (+Math_cos(0.0349065850398865909487));
+  $175 = $173 * $174;
+  $176 = (($t3) + 8|0);
+  $177 = +HEAPF32[$176>>2];
+  $178 = $177;
+  $179 = (+Math_sin(0.0349065850398865909487));
+  $180 = $178 * $179;
+  $181 = $175 - $180;
+  $182 = $181;
+  HEAPF32[$t3>>2] = $182;
+  $183 = +HEAPF32[$t3>>2];
+  $184 = $183;
+  $185 = (+Math_sin(0.0349065850398865909487));
+  $186 = $184 * $185;
+  $187 = (($t3) + 8|0);
+  $188 = +HEAPF32[$187>>2];
+  $189 = $188;
+  $190 = (+Math_cos(0.0349065850398865909487));
+  $191 = $189 * $190;
+  $192 = $186 + $191;
+  $193 = $192;
+  $194 = (($t3) + 8|0);
+  HEAPF32[$194>>2] = $193;
+  $195 = +HEAPF32[$t3>>2];
+  $196 = +HEAPF32[600>>2];
+  $197 = $195 + $196;
+  HEAPF32[$t3>>2] = $197;
+  $198 = (($t3) + 4|0);
+  $199 = +HEAPF32[$198>>2];
+  $200 = +HEAPF32[((600 + 4|0))>>2];
+  $201 = $199 + $200;
+  $202 = (($t3) + 4|0);
+  HEAPF32[$202>>2] = $201;
+  $203 = (($t3) + 8|0);
+  $204 = +HEAPF32[$203>>2];
+  $205 = +HEAPF32[((600 + 8|0))>>2];
+  $206 = $204 + $205;
+  $207 = (($t3) + 8|0);
+  HEAPF32[$207>>2] = $206;
+  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 104:  {
+  $208 = +HEAPF32[((600 + 16|0))>>2];
+  $209 = $208 + 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $209;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 105:  {
+  $210 = +HEAPF32[((600 + 16|0))>>2];
+  $211 = $210 - 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $211;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
  case 101:  {
   ;HEAP32[$t+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
   $4 = +HEAPF32[$t>>2];
@@ -16966,86 +17080,6 @@ function _specialFunc($key,$x,$y) {
   $158 = (($t2) + 8|0);
   HEAPF32[$158>>2] = $157;
   ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t2+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t2+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t2+8>>2]|0;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 102:  {
-  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
-  $159 = +HEAPF32[$t3>>2];
-  $160 = +HEAPF32[600>>2];
-  $161 = $159 - $160;
-  HEAPF32[$t3>>2] = $161;
-  $162 = (($t3) + 4|0);
-  $163 = +HEAPF32[$162>>2];
-  $164 = +HEAPF32[((600 + 4|0))>>2];
-  $165 = $163 - $164;
-  $166 = (($t3) + 4|0);
-  HEAPF32[$166>>2] = $165;
-  $167 = (($t3) + 8|0);
-  $168 = +HEAPF32[$167>>2];
-  $169 = +HEAPF32[((600 + 8|0))>>2];
-  $170 = $168 - $169;
-  $171 = (($t3) + 8|0);
-  HEAPF32[$171>>2] = $170;
-  $172 = +HEAPF32[$t3>>2];
-  $173 = $172;
-  $174 = (+Math_cos(0.0349065850398865909487));
-  $175 = $173 * $174;
-  $176 = (($t3) + 8|0);
-  $177 = +HEAPF32[$176>>2];
-  $178 = $177;
-  $179 = (+Math_sin(0.0349065850398865909487));
-  $180 = $178 * $179;
-  $181 = $175 - $180;
-  $182 = $181;
-  HEAPF32[$t3>>2] = $182;
-  $183 = +HEAPF32[$t3>>2];
-  $184 = $183;
-  $185 = (+Math_sin(0.0349065850398865909487));
-  $186 = $184 * $185;
-  $187 = (($t3) + 8|0);
-  $188 = +HEAPF32[$187>>2];
-  $189 = $188;
-  $190 = (+Math_cos(0.0349065850398865909487));
-  $191 = $189 * $190;
-  $192 = $186 + $191;
-  $193 = $192;
-  $194 = (($t3) + 8|0);
-  HEAPF32[$194>>2] = $193;
-  $195 = +HEAPF32[$t3>>2];
-  $196 = +HEAPF32[600>>2];
-  $197 = $195 + $196;
-  HEAPF32[$t3>>2] = $197;
-  $198 = (($t3) + 4|0);
-  $199 = +HEAPF32[$198>>2];
-  $200 = +HEAPF32[((600 + 4|0))>>2];
-  $201 = $199 + $200;
-  $202 = (($t3) + 4|0);
-  HEAPF32[$202>>2] = $201;
-  $203 = (($t3) + 8|0);
-  $204 = +HEAPF32[$203>>2];
-  $205 = +HEAPF32[((600 + 8|0))>>2];
-  $206 = $204 + $205;
-  $207 = (($t3) + 8|0);
-  HEAPF32[$207>>2] = $206;
-  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 104:  {
-  $208 = +HEAPF32[((600 + 16|0))>>2];
-  $209 = $208 + 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $209;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 105:  {
-  $210 = +HEAPF32[((600 + 16|0))>>2];
-  $211 = $210 - 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $211;
   _ReInit(0);
   STACKTOP = sp;return;
   break;
