@@ -128,7 +128,7 @@ void print_platforms_devices()
 
     // get number of devices in platform
     cl_uint dev_count;
-    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
+    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
           0, NULL, &dev_count));
 
     cl_device_id *devices =
@@ -136,7 +136,7 @@ void print_platforms_devices()
     CHECK_SYS_ERROR(!devices, "allocating device array");
 
     // get list of devices in platform
-    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
+    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
           dev_count, devices, NULL));
 
     // iterate over devices
@@ -262,7 +262,7 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
     {
       // get number of devices in platform
       cl_uint dev_count;
-      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
+      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
             0, NULL, &dev_count));
 
       // allocate memory, get list of device handles in platform
@@ -270,7 +270,7 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
         (cl_device_id *) malloc(dev_count*sizeof(cl_device_id));
       CHECK_SYS_ERROR(!devices, "allocating device array");
 
-      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
+      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
             dev_count, devices, NULL));
 
       // {{{ print device menu, if requested

@@ -4,8 +4,8 @@
 #define RUN_TIMINGS 0
 
 //GRID DIMENSIONS
-#define NX 32
-#define NY 32
+#define NX 96
+#define NY 96
 #define NZ 1
 #define H  1.0f
 
@@ -468,8 +468,9 @@ static void motion_func ( int x, int y )
 static void reshape_func ( int width, int height )
 {
 	//glutSetWindow ( win_id );
-	glutReshapeWindow ( width, height );
-
+#ifndef __EMSCRIPTEN
+    glutReshapeWindow ( width, height );
+#endif
 	win_x = width;
 	win_y = height;
 	//particle_system->update_win(win_x,win_xy);
