@@ -88,6 +88,7 @@ all_2: \
 
 all_3: \
 	attractor_sample			\
+	fluids_sample 				\
 	
 	
 
@@ -183,5 +184,5 @@ clean:
 	rm -rf tmp/
 	$(CXX) --clear-cache
 
-	
+.PHONY: imagecopy_sample dxt_sample particles_sample attractor_sample fluids_sample	eventprofiling_sample clean
 	
