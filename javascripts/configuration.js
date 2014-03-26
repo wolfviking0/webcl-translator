@@ -78,7 +78,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",   
+      "valgpu"        : "",   
     },   
   ],
   // ************************ //
