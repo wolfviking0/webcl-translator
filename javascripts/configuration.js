@@ -68,7 +68,18 @@ var configuration_pages = {
       "gpu"           : "&gpu",
       "valcpu"        : "&validator=on",
       "valgpu"        : "&validator=on",   
-    },    
+    },   
+    { 
+      "title"         : "Fluids",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_trans/",
+      "id"            : 5,
+      "gl"            : "on",
+      "cpu"           : "",
+      "gpu"           : "&gpu",
+      "valcpu"        : "",
+      "valgpu"        : "&validator=on",   
+    },   
   ],
   // ************************ //
   // DEMO OPENCL BOOK SAMPLES //
