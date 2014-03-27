@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
-    var REMOTE_PACKAGE_SIZE = 35814;
-    var PACKAGE_UUID = 'f7249e90-60df-4c1e-8f98-6838ef891bdb';
+    var REMOTE_PACKAGE_SIZE = 35808;
+    var PACKAGE_UUID = '834000ef-f81c-461a-8aa0-1b2fa4980034';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35814, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+      new DataRequest(0, 35808, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -15784,21 +15784,6 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
- case 32:  {
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[3000>>3] = $347;
-  STACKTOP = sp;return;
-  break;
- }
  case 112:  {
   $5 = (_fopen((2896|0),(2912|0))|0);
   $f = $5;
@@ -15954,6 +15939,21 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2920|0),($vararg_buffer|0))|0);
   }
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[3000>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16426,6 +16426,18 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
+  break;
+ }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
  case 104:  {
   $4 = +HEAPF32[((2232 + 72|0))>>2];
   $5 = $4 + 0.5;
@@ -16438,20 +16450,8 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2232 + 72|0))>>2] = $7;
   break;
  }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
-  break;
- }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
-  break;
- }
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
   break;
  }
  default: {

@@ -90,14 +90,6 @@ typedef struct _Wcl3Struct {
 
 typedef struct {
     float4 _wcl_r;
-    const __global Camera *_wcl_camera;
-    float4 _wcl_hitPoint;
-    uint _wcl_steps;
-    float4 _wcl_diffuse;
-    float4 _wcl_n;
-    float4 _wcl_color;
-    float4 _wcl_shadowHitPoint;
-    uint _wcl_2_steps;
     float4 _wcl_2_r;
     float _wcl_dist;
     float4 _wcl_z;
@@ -106,6 +98,14 @@ typedef struct {
     float _wcl_gradX;
     float _wcl_gradY;
     float _wcl_gradZ;
+    const __global Camera *_wcl_camera;
+    float4 _wcl_hitPoint;
+    uint _wcl_steps;
+    float4 _wcl_diffuse;
+    float4 _wcl_n;
+    float4 _wcl_color;
+    float4 _wcl_shadowHitPoint;
+    uint _wcl_2_steps;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -253,26 +253,26 @@ const __global float *_wcl_addr_clamp_global_2_const___u_uglobal__float__Ptr(con
  float4 r;
 
 
- _wcl_allocs->pa._wcl_2_r.x = q1.x * q2.x - q1.y * q2.y - q1.z * q2.z - q1.w * q2.w;
+ _wcl_allocs->pa._wcl_r.x = q1.x * q2.x - q1.y * q2.y - q1.z * q2.z - q1.w * q2.w;
 
- _wcl_allocs->pa._wcl_2_r.y = q1.x * q2.y + q1.y * q2.x + q1.z * q2.w - q1.w * q2.z;
+ _wcl_allocs->pa._wcl_r.y = q1.x * q2.y + q1.y * q2.x + q1.z * q2.w - q1.w * q2.z;
 
- _wcl_allocs->pa._wcl_2_r.z = q1.x * q2.z - q1.y * q2.w + q1.z * q2.x + q1.w * q2.y;
+ _wcl_allocs->pa._wcl_r.z = q1.x * q2.z - q1.y * q2.w + q1.z * q2.x + q1.w * q2.y;
 
- _wcl_allocs->pa._wcl_2_r.w = q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
+ _wcl_allocs->pa._wcl_r.w = q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
 
- return _wcl_allocs->pa._wcl_2_r;
+ return _wcl_allocs->pa._wcl_r;
 }
 
  float4 QuatSqr(_WclProgramAllocations *_wcl_allocs, const float4 q) {
  float4 r;
 
- _wcl_allocs->pa._wcl_r.x = q.x * q.x - q.y * q.y - q.z * q.z - q.w * q.w;
- _wcl_allocs->pa._wcl_r.y = 2.f * q.x * q.y;
- _wcl_allocs->pa._wcl_r.z = 2.f * q.x * q.z;
- _wcl_allocs->pa._wcl_r.w = 2.f * q.x * q.w;
+ _wcl_allocs->pa._wcl_2_r.x = q.x * q.x - q.y * q.y - q.z * q.z - q.w * q.w;
+ _wcl_allocs->pa._wcl_2_r.y = 2.f * q.x * q.y;
+ _wcl_allocs->pa._wcl_2_r.z = 2.f * q.x * q.z;
+ _wcl_allocs->pa._wcl_2_r.w = 2.f * q.x * q.w;
 
- return _wcl_allocs->pa._wcl_r;
+ return _wcl_allocs->pa._wcl_2_r;
 }
 
  void IterateIntersect(_WclProgramAllocations *_wcl_allocs, float4 *q, float4 *qp,

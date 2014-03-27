@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_scan.data';
     var REMOTE_PACKAGE_SIZE = 102179;
-    var PACKAGE_UUID = 'ef70a5ce-0c97-4eb6-9c5f-c381cddb8cc7';
+    var PACKAGE_UUID = '1467956d-a64a-456d-8c05-ec651d5b4f76';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
