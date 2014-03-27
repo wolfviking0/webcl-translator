@@ -47,7 +47,7 @@
 #include "second_order_solver.h"
 #include "cl_solver.h"
 
-
+extern int OPENCL_SHARE_WITH_OPENGL;
 
 float dt;
 float force, source;
@@ -1095,6 +1095,7 @@ int main ( int argc, char ** argv )
 	// Parse command line options
     //
     int use_gpu = 1;
+    int use_interop = 0;
     for(int i = 0; i < argc && argv; i++)
     {
         if(!argv[i])
@@ -1105,9 +1106,14 @@ int main ( int argc, char ** argv )
 
         else if(strstr(argv[i], "gpu"))
             use_gpu = 1;
+
+        else if(strstr(argv[i], "interop"))
+            use_interop = 1;
     }
 
-    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+    printf("Parameter detect %s device (%s)\n",use_gpu==1?"GPU":"CPU",use_interop==1?"Share OpenGL":"Not Sharing OpenGL");
+
+	OPENCL_SHARE_WITH_OPENGL = use_interop;
 
   	//testCG();
   	win_x = 512;

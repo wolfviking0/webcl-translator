@@ -27,7 +27,7 @@
 #include <string.h>
 
 
-#define OPENCL_SHARE_WITH_OPENGL 1
+int OPENCL_SHARE_WITH_OPENGL = 0;
 
 #define MAX_NAME_LEN 1000
 
@@ -329,7 +329,7 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
             cl_int status;
             
             // create a context
-#if OPENCL_SHARE_WITH_OPENGL
+if (OPENCL_SHARE_WITH_OPENGL == 1) {
   #if __APPLE__
 //              CGLContextObj kCGLContext = CGLGetCurrentContext();
 //              CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
@@ -375,8 +375,20 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
             CHECK_CL_ERROR(status, "clCreateContext");
 #endif
 
-#else
-            // create a context
+            cl_command_queue_properties qprops = 0;
+            if (enable_profiling)
+              qprops |= CL_QUEUE_PROFILING_ENABLE;
+
+            *queue = clCreateCommandQueue(*ctx, dev, qprops, &status);
+            CHECK_CL_ERROR(status, "clCreateCommandQueue");
+
+ } else {
+             *ctx = clCreateContext(
+                                   0, 1, &dev, NULL, NULL, &status);
+            CHECK_CL_ERROR(status, "clCreateContext");
+
+            // create a command queue
+
             cl_context_properties cps[3] = {
               CL_CONTEXT_PLATFORM, (cl_context_properties) plat, 0 };
             // create a command queue
@@ -386,18 +398,9 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
             
             *queue = clCreateCommandQueue(*ctx, dev, qprops, &status);
             CHECK_CL_ERROR(status, "clCreateCommandQueue");
-#endif
-//            *ctx = clCreateContext(
-//                                   cps, 1, &dev, NULL, NULL, &status);
-//            CHECK_CL_ERROR(status, "clCreateContext");
+}
 
-//            // create a command queue
-            cl_command_queue_properties qprops = 0;
-            if (enable_profiling)
-              qprops |= CL_QUEUE_PROFILING_ENABLE;
 
-            *queue = clCreateCommandQueue(*ctx, dev, qprops, &status);
-            CHECK_CL_ERROR(status, "clCreateCommandQueue");
 
             return;
           }
