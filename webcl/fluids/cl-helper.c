@@ -128,7 +128,7 @@ void print_platforms_devices()
 
     // get number of devices in platform
     cl_uint dev_count;
-    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
+    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
           0, NULL, &dev_count));
 
     cl_device_id *devices =
@@ -136,7 +136,7 @@ void print_platforms_devices()
     CHECK_SYS_ERROR(!devices, "allocating device array");
 
     // get list of devices in platform
-    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
+    CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_ALL,
           dev_count, devices, NULL));
 
     // iterate over devices
@@ -202,7 +202,7 @@ const char *CHOOSE_INTERACTIVELY = "INTERACTIVE";
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
-    cl_context *ctx, cl_command_queue *queue, int enable_profiling)
+    cl_context *ctx, cl_command_queue *queue, int enable_profiling, int use_gpu)
 {
   char dev_sel_buf[MAX_NAME_LEN];
   char platform_sel_buf[MAX_NAME_LEN];
@@ -262,7 +262,7 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
     {
       // get number of devices in platform
       cl_uint dev_count;
-      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
+      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i],  use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU,
             0, NULL, &dev_count));
 
       // allocate memory, get list of device handles in platform
@@ -270,7 +270,7 @@ void create_context_on(const char *plat_name, const char*dev_name, cl_uint idx,
         (cl_device_id *) malloc(dev_count*sizeof(cl_device_id));
       CHECK_SYS_ERROR(!devices, "allocating device array");
 
-      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], CL_DEVICE_TYPE_GPU,
+      CALL_CL_GUARDED(clGetDeviceIDs, (platforms[i], use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU,
             dev_count, devices, NULL));
 
       // {{{ print device menu, if requested

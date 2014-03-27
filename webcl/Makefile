@@ -44,7 +44,7 @@ FAST=1
 
 ifeq ($(VAL),1)
 PREFIX = val_
-VALIDATOR = '[""]' # Enable validator without parameter
+VALIDATOR = '["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE_WITH_PAD:1"]' # Enable validator without parameter
 $(info ************  Mode VALIDATOR : Enabled ************)
 else
 PREFIX = 
@@ -143,7 +143,7 @@ dxt_sample:
 	
 fluids_sample:
 	$(call chdir,fluids/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*512 -s LEGACY_GL_EMULATION=1 $(MODE) \
+	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s GL_FFP_ONLY=1 -s TOTAL_MEMORY=1024*1024*512 -s LEGACY_GL_EMULATION=1 $(MODE) \
 	--preload-file kernels.cl \
 	-o ../build/$(PREFIX)fluids.js
 

@@ -80,12 +80,12 @@ CLData clData;
 int dims[3] = { NX, NY, NZ};
 
 
-void init_opencl()
+void init_opencl(int use_gpu)
 {
 #if 1
-	create_context_on("", "", 0, &clData.ctx, &clData.queue, 0);
+	create_context_on("", "", 0, &clData.ctx, &clData.queue, 0, use_gpu);
 #elif !__APPLE__
-   create_context_on(CHOOSE_INTERACTIVELY, CHOOSE_INTERACTIVELY, 0, &clData.ctx, &clData.queue, 0);
+   create_context_on(CHOOSE_INTERACTIVELY, CHOOSE_INTERACTIVELY, 0, &clData.ctx, &clData.queue, 0, use_gpu);
 #else
 #if USE_OPENCL_ON_CPU
   create_context_on("Apple", "Intel", 0, &clData.ctx, &clData.queue, 0);
@@ -255,11 +255,8 @@ static void draw_velocity ( void )
 
 	h = 1.0f/NX;
 
-	glColor3f ( 1.0f, 1.0f, 1.0f );
-	glLineWidth ( 1.0f );
-
-	glBegin ( GL_LINES );
-
+	glColor3f ( 1.0f, 0.0f, 0.0f );
+	glBegin(GL_LINES);
 		for ( i=0 ; i<NX ; i++ ) {
 			//x = (i-0.5f)*h;
 			x = (i+0.5f)*h;
@@ -267,16 +264,14 @@ static void draw_velocity ( void )
 			for ( j=0 ; j<NY ; j++ ) {
 				//y = (j-0.5f)*h;
 				y = (j+0.5f)*h;
-
+				
 				glColor3f(1.0,1.0,1.0);
-				glVertex2f ( x, y );
+				glVertex2f(x, y );
 				glColor3f(1.0,0.0,0.0);
-				glVertex2f ( x+g_u[IX(i,j,0)], y+g_v[IX(i,j,0)] );
+				glVertex2f(x+g_u[IX(i,j,0)], y+g_v[IX(i,j,0)] );
 			}
 		}
-
-	glColor3f(1.0,1.0,1.0);
-	glEnd ();
+	glEnd();
 }
 
 static void draw_pressure ( void )
@@ -285,6 +280,9 @@ static void draw_pressure ( void )
 	float x, y, h, d00, d01, d10, d11;
 
 	h = 1.0f/NX;
+	
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 
 	glBegin ( GL_QUADS );
 
@@ -298,10 +296,22 @@ static void draw_pressure ( void )
 				d10 = 255.0f * fabs(get_data(g_divergence,i+1,j,0));
 				d11 = 255.0f * fabs(get_data(g_divergence,i+1,j+1,0));
 
-				glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-				glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-				glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-				glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+	            glColor3f ( d00, d00, d00 ); 
+	            glTexCoord2f( 0.0f, 0.0f );
+	            glVertex3f( x, y, 0.0f );
+	            
+	            glColor3f ( d10, d10, d10 ); 
+	            glTexCoord2f( 0.0f, 1.0f );
+	            glVertex3f(x+h, y, 0.0f );
+	            
+	            glColor3f ( d11, d11, d11 ); 
+	            glTexCoord2f( 1.0f, 1.0f );
+	            glVertex3f(x+h, y+h, 0.0f );
+	            
+	            glColor3f ( d01, d01, d01 );
+	            glTexCoord2f( 1.0f, 0.0f );
+	            glVertex3f( x, y+h, 0.0f );
+
 			}
 		}
 
@@ -314,6 +324,9 @@ static void draw_density ( void )
 	float x, y, h, d00, d01, d10, d11;
 
 	h = 1.0f/NX;
+	
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 
 	glBegin ( GL_QUADS );
 
@@ -327,10 +340,21 @@ static void draw_density ( void )
 				d10 = get_data(g_dens,i+1,j,0);
 				d11 = get_data(g_dens,i+1,j+1,0);
 
-				glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-				glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-				glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-				glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+	            glColor3f ( d00, d00, d00 ); 
+	            glTexCoord2f( 0.0f, 0.0f );
+	            glVertex3f( x, y, 0.0f );
+	            
+	            glColor3f ( d10, d10, d10 ); 
+	            glTexCoord2f( 0.0f, 1.0f );
+	            glVertex3f(x+h, y, 0.0f );
+	            
+	            glColor3f ( d11, d11, d11 ); 
+	            glTexCoord2f( 1.0f, 1.0f );
+	            glVertex3f(x+h, y+h, 0.0f );
+	            
+	            glColor3f ( d01, d01, d01 );
+	            glTexCoord2f( 1.0f, 0.0f );
+	            glVertex3f( x, y+h, 0.0f );
 			}
 		}
 
@@ -633,7 +657,7 @@ void readMatrix(float* m, int n){
   fclose(fp);
 }
 
-void runTimings(){
+void runTimings(int use_gpu){
   int ntrips = 10;
   char device_name[256];
   
@@ -643,7 +667,7 @@ void runTimings(){
   ///GPU TIMINGS
   ////////////////////////////////////////////////////
   
-  init_opencl();
+  init_opencl(use_gpu);
   load_cl_kernels(&clData);
   allocate_cl_buffers(&clData);
   
@@ -1002,9 +1026,9 @@ static void test_opencl_opengl_interop()
   
 }
 
-void run_opencl_test(){
+void run_opencl_test(use_gpu){
   
-  init_opencl();
+  init_opencl(use_gpu);
   load_cl_kernels(&clData);
   allocate_cl_buffers(&clData);
   transfer_buffers_to_gpu();
@@ -1068,8 +1092,25 @@ static void open_glut_window ( void )
 
 int main ( int argc, char ** argv )
 {
-  //testCG();
-  win_x = 512;
+	// Parse command line options
+    //
+    int use_gpu = 1;
+    for(int i = 0; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+            
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;        
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
+  	//testCG();
+  	win_x = 512;
 	win_y = 512;
   
   
@@ -1122,7 +1163,7 @@ int main ( int argc, char ** argv )
 //	}
 
 #if RUN_TIMINGS
-  runTimings();
+  runTimings(use_gpu);
   exit(0);
 #endif
   
@@ -1149,13 +1190,13 @@ int main ( int argc, char ** argv )
 
 
 //print_platforms_devices();
-//  run_opencl_test();
+//  run_opencl_test(use_gpu);
   
 //	run_tests();
    
   
 #if USE_OPENCL
-   init_opencl();
+   init_opencl(use_gpu);
    load_cl_kernels(&clData);
    allocate_cl_buffers(&clData);
   
