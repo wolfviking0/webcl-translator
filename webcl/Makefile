@@ -44,7 +44,8 @@ FAST=1
 
 ifeq ($(VAL),1)
 PREFIX = val_
-VALIDATOR = '["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE_WITH_PAD:1"]' # Enable validator without parameter
+-DWGSIZE=1 -DBLOCK_SIZE=8 -DBLOCK_SIZE_WITH_PAD=10
+VALIDATOR = '["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE:8","-DWGSIZE:1","-DBLOCK_SIZE_WITH_PAD:1"]' # Enable validator without parameter
 $(info ************  Mode VALIDATOR : Enabled ************)
 else
 PREFIX = 
