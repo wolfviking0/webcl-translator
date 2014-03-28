@@ -19,7 +19,7 @@ using namespace std;
 	#endif
 #endif
  
-#define DIM 1000
+#define DIM 1300
 #define MAX_SOURCE_SIZE (0x100000)
  
 int main(int argc, char *argv[])
