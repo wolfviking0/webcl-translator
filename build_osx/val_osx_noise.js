@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 47512;
-    var PACKAGE_UUID = '45b156a4-4c0f-48e9-b235-d5aeb5854ba5';
+    var PACKAGE_UUID = '178daf10-69c2-4be4-a73f-43ca00067239';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11782,9 +11782,6 @@ function copyTempDouble(ptr) {
           var _object = CL.cl_objects[device];
      
         switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
@@ -13171,6 +13168,14 @@ function copyTempDouble(ptr) {
   
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
+  
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
   
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {

@@ -6741,6 +6741,14 @@ function copyTempDouble(ptr) {
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
   
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
+  
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]

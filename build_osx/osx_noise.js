@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = '0b1b0a44-79c0-43a8-9511-792bf53c200d';
+    var PACKAGE_UUID = '8f0ad0fd-9d37-4504-b7af-94a3b3827eb3';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11763,9 +11763,6 @@ function copyTempDouble(ptr) {
           var _object = CL.cl_objects[device];
      
         switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
@@ -13134,6 +13131,14 @@ function copyTempDouble(ptr) {
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
   
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
+  
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
             var _device = HEAP32[(((device_list)+(i*4))>>2)]
@@ -14018,21 +14023,6 @@ function _Keyboard($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 52: case 51: case 50: case 49:  {
-  $5 = $0;
-  $6 = $5&255;
-  $7 = (($6) - 49)|0;
-  HEAP32[328>>2] = $7;
-  $8 = HEAP32[328>>2]|0;
-  $9 = (344 + ($8<<2)|0);
-  $10 = HEAP32[$9>>2]|0;
-  HEAP32[$vararg_buffer>>2] = $10;
-  (_printf((336|0),($vararg_buffer|0))|0);
-  HEAP32[288>>2] = 1;
-  _glutPostRedisplay();
-  STACKTOP = sp;return;
-  break;
- }
  case 61:  {
   $11 = +HEAPF32[264>>2];
   $12 = $11;
@@ -14125,19 +14115,6 @@ function _Keyboard($key,$x,$y) {
   STACKTOP = sp;return;
   break;
  }
- case 44:  {
-  $63 = +HEAPF32[456>>2];
-  $64 = $63 * 1.10000002384185791016;
-  HEAPF32[456>>2] = $64;
-  $65 = +HEAPF32[456>>2];
-  $66 = $65;
-  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  (_printf((464|0),($vararg_buffer28|0))|0);
-  HEAP32[288>>2] = 1;
-  _glutPostRedisplay();
-  STACKTOP = sp;return;
-  break;
- }
  case 118:  {
   $43 = +HEAPF32[400>>2];
   $44 = $43 * 1.10000002384185791016;
@@ -14203,6 +14180,34 @@ function _Keyboard($key,$x,$y) {
   _ShutdownCompute();
   _exit(0);
   // unreachable;
+  break;
+ }
+ case 44:  {
+  $63 = +HEAPF32[456>>2];
+  $64 = $63 * 1.10000002384185791016;
+  HEAPF32[456>>2] = $64;
+  $65 = +HEAPF32[456>>2];
+  $66 = $65;
+  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((464|0),($vararg_buffer28|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 52: case 51: case 50: case 49:  {
+  $5 = $0;
+  $6 = $5&255;
+  $7 = (($6) - 49)|0;
+  HEAP32[328>>2] = $7;
+  $8 = HEAP32[328>>2]|0;
+  $9 = (344 + ($8<<2)|0);
+  $10 = HEAP32[$9>>2]|0;
+  HEAP32[$vararg_buffer>>2] = $10;
+  (_printf((336|0),($vararg_buffer|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
   break;
  }
  default: {

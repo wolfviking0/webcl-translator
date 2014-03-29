@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 5799;
-    var PACKAGE_UUID = 'd120eb3f-0de8-45da-a696-fc89f3507c77';
+    var PACKAGE_UUID = '5cb29fc8-3638-4f92-a9a8-7f15942c3c9c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11740,9 +11740,6 @@ function copyTempDouble(ptr) {
           var _object = CL.cl_objects[device];
      
         switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
@@ -12876,6 +12873,14 @@ function copyTempDouble(ptr) {
   
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
+  
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
   
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
@@ -14868,6 +14873,13 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 81: case 113: case 27:  {
+  $42 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($42|0),(2448|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
  case 115:  {
   $5 = (_fopen((2352|0),(2368|0))|0);
   $f = $5;
@@ -14943,13 +14955,6 @@ function _keyFunc($key,$x,$y) {
   $needRedisplay = 0;
   break;
  }
- case 81: case 113: case 27:  {
-  $42 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($42|0),(2448|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
  case 43:  {
   $43 = HEAP32[1928>>2]|0;
   $44 = (($43) + 32)|0;
@@ -15000,38 +15005,6 @@ function _specialFunc($key,$x,$y) {
  $needRedisplay = 1;
  $3 = $0;
  switch ($3|0) {
- case 101:  {
-  $4 = +HEAPF32[1904>>2];
-  $5 = $4 * 0.0250000003725290298462;
-  $6 = +HEAPF32[1920>>2];
-  $7 = $6 + $5;
-  HEAPF32[1920>>2] = $7;
-  break;
- }
- case 103:  {
-  $8 = +HEAPF32[1904>>2];
-  $9 = $8 * 0.0250000003725290298462;
-  $10 = +HEAPF32[1920>>2];
-  $11 = $10 - $9;
-  HEAPF32[1920>>2] = $11;
-  break;
- }
- case 100:  {
-  $12 = +HEAPF32[1904>>2];
-  $13 = $12 * 0.0250000003725290298462;
-  $14 = +HEAPF32[1912>>2];
-  $15 = $14 - $13;
-  HEAPF32[1912>>2] = $15;
-  break;
- }
- case 102:  {
-  $16 = +HEAPF32[1904>>2];
-  $17 = $16 * 0.0250000003725290298462;
-  $18 = +HEAPF32[1912>>2];
-  $19 = $18 + $17;
-  HEAPF32[1912>>2] = $19;
-  break;
- }
  case 104:  {
   $20 = +HEAPF32[1904>>2];
   $21 = $20 * 0.899999976158142089843;
@@ -15042,6 +15015,38 @@ function _specialFunc($key,$x,$y) {
   $22 = +HEAPF32[1904>>2];
   $23 = $22 * 1.10000002384185791016;
   HEAPF32[1904>>2] = $23;
+  break;
+ }
+ case 101:  {
+  $4 = +HEAPF32[1904>>2];
+  $5 = $4 * 0.0250000003725290298462;
+  $6 = +HEAPF32[1920>>2];
+  $7 = $6 + $5;
+  HEAPF32[1920>>2] = $7;
+  break;
+ }
+ case 102:  {
+  $16 = +HEAPF32[1904>>2];
+  $17 = $16 * 0.0250000003725290298462;
+  $18 = +HEAPF32[1912>>2];
+  $19 = $18 + $17;
+  HEAPF32[1912>>2] = $19;
+  break;
+ }
+ case 100:  {
+  $12 = +HEAPF32[1904>>2];
+  $13 = $12 * 0.0250000003725290298462;
+  $14 = +HEAPF32[1912>>2];
+  $15 = $14 - $13;
+  HEAPF32[1912>>2] = $15;
+  break;
+ }
+ case 103:  {
+  $8 = +HEAPF32[1904>>2];
+  $9 = $8 * 0.0250000003725290298462;
+  $10 = +HEAPF32[1920>>2];
+  $11 = $10 - $9;
+  HEAPF32[1920>>2] = $11;
   break;
  }
  default: {

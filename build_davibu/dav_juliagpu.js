@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = '3fa59ac9-4e32-4910-9d1e-6aed74c91327';
+    var PACKAGE_UUID = '156f5ec2-a3ea-4f3e-ba44-342bc48b56d6';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11754,9 +11754,6 @@ function copyTempDouble(ptr) {
           var _object = CL.cl_objects[device];
      
         switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
@@ -12832,6 +12829,14 @@ function copyTempDouble(ptr) {
   
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
+  
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
   
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
@@ -15726,14 +15731,14 @@ function _keyFunc($key,$x,$y) {
  var $k3 = 0.0, $k6 = 0.0, $k7 = 0.0, $k9 = 0.0, $l = 0.0, $l5 = 0.0, $offset = 0, $r = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer5 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 176|0;
- $vararg_buffer10 = sp + 40|0;
+ $vararg_buffer10 = sp + 16|0;
  $vararg_buffer5 = sp + 24|0;
  $vararg_buffer1 = sp;
- $vararg_buffer = sp + 16|0;
- $dir = sp + 88|0;
+ $vararg_buffer = sp + 40|0;
+ $dir = sp + 76|0;
  $dir4 = sp + 116|0;
  $dir8 = sp + 140|0;
- $dir10 = sp + 72|0;
+ $dir10 = sp + 60|0;
  $0 = $key;
  $1 = $x;
  $2 = $y;
@@ -16382,16 +16387,8 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2224 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2224 + 72|0))>>2] = $7;
-  break;
- }
- case 104:  {
-  $4 = +HEAPF32[((2224 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2224 + 72|0))>>2] = $5;
+ case 101:  {
+  _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  case 103:  {
@@ -16406,8 +16403,16 @@ function _specialFunc($key,$x,$y) {
   _rotateCameraY(0.0349065847694873809814);
   break;
  }
- case 101:  {
-  _rotateCameraX(-0.0349065847694873809814);
+ case 104:  {
+  $4 = +HEAPF32[((2224 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2224 + 72|0))>>2] = $5;
+  break;
+ }
+ case 105:  {
+  $6 = +HEAPF32[((2224 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2224 + 72|0))>>2] = $7;
   break;
  }
  default: {

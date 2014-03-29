@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
-    var REMOTE_PACKAGE_SIZE = 35808;
-    var PACKAGE_UUID = '834000ef-f81c-461a-8aa0-1b2fa4980034';
+    var REMOTE_PACKAGE_SIZE = 35816;
+    var PACKAGE_UUID = '7ad4f6de-84cc-4ca1-b558-eda072dd76d0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35808, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+      new DataRequest(0, 35816, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -11773,9 +11773,6 @@ function copyTempDouble(ptr) {
           var _object = CL.cl_objects[device];
      
         switch (param_name) {
-          case 0x1001 /*CL_DEVICE_VENDOR_ID*/ :
-            _info = parseInt(CL.udid(_object));
-          break;
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
             switch (_type) {
@@ -12870,6 +12867,14 @@ function copyTempDouble(ptr) {
   
         var _devices = [];
         var _option = (options == 0) ? "" : Pointer_stringify(options); 
+  
+        if (_option) {
+          // Add space after -D
+          _option = _option.replace(/-D/g, "-D ");
+  
+          // Remove all the multispace
+          _option = _option.replace(/\s{2,}/g, " ");
+        }
   
         if (device_list != 0 && num_devices > 0 ) {
           for (var i = 0; i < num_devices ; i++) {
@@ -15784,6 +15789,21 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 32:  {
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[3000>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
  case 112:  {
   $5 = (_fopen((2896|0),(2912|0))|0);
   $f = $5;
@@ -15939,21 +15959,6 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2920|0),($vararg_buffer|0))|0);
   }
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[3000>>3] = $347;
-  STACKTOP = sp;return;
-  break;
- }
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(2992|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
- case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16426,16 +16431,20 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
+ case 101:  {
+  _rotateCameraX(-0.0349065847694873809814);
+  break;
+ }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
   break;
  }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
   break;
  }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
   break;
  }
  case 104:  {
@@ -16448,10 +16457,6 @@ function _specialFunc($key,$x,$y) {
   $6 = +HEAPF32[((2232 + 72|0))>>2];
   $7 = $6 - 0.5;
   HEAPF32[((2232 + 72|0))>>2] = $7;
-  break;
- }
- case 101:  {
-  _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  default: {
