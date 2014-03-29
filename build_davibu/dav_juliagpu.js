@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = '156f5ec2-a3ea-4f3e-ba44-342bc48b56d6';
+    var PACKAGE_UUID = '4b179e90-6fc2-4d1c-b88c-2ae84c8d4b3b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15731,14 +15731,14 @@ function _keyFunc($key,$x,$y) {
  var $k3 = 0.0, $k6 = 0.0, $k7 = 0.0, $k9 = 0.0, $l = 0.0, $l5 = 0.0, $offset = 0, $r = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer5 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 176|0;
- $vararg_buffer10 = sp + 16|0;
+ $vararg_buffer10 = sp + 40|0;
  $vararg_buffer5 = sp + 24|0;
  $vararg_buffer1 = sp;
- $vararg_buffer = sp + 40|0;
- $dir = sp + 76|0;
+ $vararg_buffer = sp + 16|0;
+ $dir = sp + 88|0;
  $dir4 = sp + 116|0;
  $dir8 = sp + 140|0;
- $dir10 = sp + 60|0;
+ $dir10 = sp + 72|0;
  $0 = $key;
  $1 = $x;
  $2 = $y;
@@ -15750,14 +15750,6 @@ function _keyFunc($key,$x,$y) {
   (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
   _exit(0);
   // unreachable;
-  break;
- }
- case 32:  {
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[2984>>3] = $347;
-  STACKTOP = sp;return;
   break;
  }
  case 112:  {
@@ -15915,6 +15907,14 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2904|0),($vararg_buffer|0))|0);
   }
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[2984>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
+ case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16391,22 +16391,22 @@ function _specialFunc($key,$x,$y) {
   _rotateCameraX(-0.0349065847694873809814);
   break;
  }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
+ case 104:  {
+  $4 = +HEAPF32[((2224 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2224 + 72|0))>>2] = $5;
   break;
  }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
   break;
  }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
   break;
  }
- case 104:  {
-  $4 = +HEAPF32[((2224 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2224 + 72|0))>>2] = $5;
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
   break;
  }
  case 105:  {

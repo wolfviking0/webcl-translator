@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = '68c954bc-54a6-42ef-8ec9-8a34aa8a37c4';
+    var PACKAGE_UUID = '7b0a170c-84ac-4efa-a643-a2e463754671';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16393,10 +16393,12 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2232 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2232 + 72|0))>>2] = $7;
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
   break;
  }
  case 104:  {
@@ -16405,12 +16407,10 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2232 + 72|0))>>2] = $5;
   break;
  }
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
+ case 105:  {
+  $6 = +HEAPF32[((2232 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2232 + 72|0))>>2] = $7;
   break;
  }
  case 101:  {

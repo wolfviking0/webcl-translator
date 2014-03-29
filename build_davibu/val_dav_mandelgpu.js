@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 12533;
-    var PACKAGE_UUID = '1de07d28-134a-46ec-958e-939361cf74fc';
+    var PACKAGE_UUID = '08cc8e80-6bde-4d96-95bc-d87a03227f05';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14911,6 +14911,23 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 45:  {
+  $45 = HEAP32[1928>>2]|0;
+  $46 = (($45) - 32)|0;
+  HEAP32[1928>>2] = $46;
+  break;
+ }
+ case 32:  {
+  break;
+ }
+ case 104:  {
+  $47 = HEAP32[2344>>2]|0;
+  $48 = ($47|0)!=(0);
+  $49 = $48 ^ 1;
+  $50 = $49&1;
+  HEAP32[2344>>2] = $50;
+  break;
+ }
  case 115:  {
   $5 = (_fopen((2352|0),(2368|0))|0);
   $f = $5;
@@ -14997,23 +15014,6 @@ function _keyFunc($key,$x,$y) {
   $43 = HEAP32[1928>>2]|0;
   $44 = (($43) + 32)|0;
   HEAP32[1928>>2] = $44;
-  break;
- }
- case 45:  {
-  $45 = HEAP32[1928>>2]|0;
-  $46 = (($45) - 32)|0;
-  HEAP32[1928>>2] = $46;
-  break;
- }
- case 32:  {
-  break;
- }
- case 104:  {
-  $47 = HEAP32[2344>>2]|0;
-  $48 = ($47|0)!=(0);
-  $49 = $48 ^ 1;
-  $50 = $49&1;
-  HEAP32[2344>>2] = $50;
   break;
  }
  default: {

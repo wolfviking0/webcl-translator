@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 47512;
-    var PACKAGE_UUID = '178daf10-69c2-4be4-a73f-43ca00067239';
+    var PACKAGE_UUID = '27f5a047-97d9-46fd-ac21-f141163a947f';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14168,19 +14168,6 @@ function _Keyboard($key,$x,$y) {
   STACKTOP = sp;return;
   break;
  }
- case 44:  {
-  $63 = +HEAPF32[456>>2];
-  $64 = $63 * 1.10000002384185791016;
-  HEAPF32[456>>2] = $64;
-  $65 = +HEAPF32[456>>2];
-  $66 = $65;
-  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  (_printf((464|0),($vararg_buffer28|0))|0);
-  HEAP32[288>>2] = 1;
-  _glutPostRedisplay();
-  STACKTOP = sp;return;
-  break;
- }
  case 118:  {
   $43 = +HEAPF32[400>>2];
   $44 = $43 * 1.10000002384185791016;
@@ -14246,6 +14233,19 @@ function _Keyboard($key,$x,$y) {
   _ShutdownCompute();
   _exit(0);
   // unreachable;
+  break;
+ }
+ case 44:  {
+  $63 = +HEAPF32[456>>2];
+  $64 = $63 * 1.10000002384185791016;
+  HEAPF32[456>>2] = $64;
+  $65 = +HEAPF32[456>>2];
+  $66 = $65;
+  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((464|0),($vararg_buffer28|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
   break;
  }
  default: {

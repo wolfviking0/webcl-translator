@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'fluids.data';
     var REMOTE_PACKAGE_SIZE = 19219;
-    var PACKAGE_UUID = '96727679-fc0e-4b5e-8662-0a3db54ab270';
+    var PACKAGE_UUID = '58966682-c2fd-4436-9dd9-27c19cdb536e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -19296,20 +19296,6 @@ function _key_func($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 79: case 111:  {
-  $23 = HEAP32[3760>>2]|0;
-  $24 = ($23|0)!=(0);
-  $25 = $24 ^ 1;
-  $26 = $25&1;
-  HEAP32[3760>>2] = $26;
-  $27 = HEAP32[3760>>2]|0;
-  $28 = ($27|0)!=(0);
-  $29 = $28 ? 3984 : 3992;
-  HEAP32[$vararg_buffer4>>2] = $29;
-  (_printf((4000|0),($vararg_buffer4|0))|0);
-  STACKTOP = sp;return;
-  break;
- }
  case 88: case 120:  {
   _clear_data();
   STACKTOP = sp;return;
@@ -19360,6 +19346,20 @@ function _key_func($key,$x,$y) {
   $22 = $21 ? 3984 : 3992;
   HEAP32[$vararg_buffer1>>2] = $22;
   (_printf((3960|0),($vararg_buffer1|0))|0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 79: case 111:  {
+  $23 = HEAP32[3760>>2]|0;
+  $24 = ($23|0)!=(0);
+  $25 = $24 ^ 1;
+  $26 = $25&1;
+  HEAP32[3760>>2] = $26;
+  $27 = HEAP32[3760>>2]|0;
+  $28 = ($27|0)!=(0);
+  $29 = $28 ? 3984 : 3992;
+  HEAP32[$vararg_buffer4>>2] = $29;
+  (_printf((4000|0),($vararg_buffer4|0))|0);
   STACKTOP = sp;return;
   break;
  }

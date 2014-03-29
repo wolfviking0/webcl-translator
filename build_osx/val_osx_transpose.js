@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_transpose.data';
     var REMOTE_PACKAGE_SIZE = 33403;
-    var PACKAGE_UUID = '28bda4ac-b5f5-482e-b759-1fdf4eff0263';
+    var PACKAGE_UUID = '3e45ee20-67e0-4f05-8722-35a7a8263eb0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();

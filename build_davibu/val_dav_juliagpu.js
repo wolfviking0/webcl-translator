@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_dav_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 35179;
-    var PACKAGE_UUID = '383a324a-55ac-44b2-b692-4d03a10e3170';
+    var PACKAGE_UUID = '93b80c61-15d6-4f65-8709-b233266946bb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -15783,6 +15783,21 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 32:  {
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[2984>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
  case 112:  {
   $5 = (_fopen((2880|0),(2896|0))|0);
   $f = $5;
@@ -15938,21 +15953,6 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2904|0),($vararg_buffer|0))|0);
   }
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[2984>>3] = $347;
-  STACKTOP = sp;return;
-  break;
- }
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
- case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16425,24 +16425,16 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 104:  {
-  $4 = +HEAPF32[((2224 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2224 + 72|0))>>2] = $5;
-  break;
- }
  case 105:  {
   $6 = +HEAPF32[((2224 + 72|0))>>2];
   $7 = $6 - 0.5;
   HEAPF32[((2224 + 72|0))>>2] = $7;
   break;
  }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
-  break;
- }
- case 101:  {
-  _rotateCameraX(-0.0349065847694873809814);
+ case 104:  {
+  $4 = +HEAPF32[((2224 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2224 + 72|0))>>2] = $5;
   break;
  }
  case 103:  {
@@ -16451,6 +16443,14 @@ function _specialFunc($key,$x,$y) {
  }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
+  break;
+ }
+ case 101:  {
+  _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  default: {

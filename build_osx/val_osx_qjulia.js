@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_qjulia.data';
     var REMOTE_PACKAGE_SIZE = 17085;
-    var PACKAGE_UUID = '77dd34aa-485e-45f2-b209-b73da536c597';
+    var PACKAGE_UUID = '5a1eca1d-3484-449b-ac9e-8a1f8540da5d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14509,11 +14509,11 @@ function _Recompute() {
  var $sizes = 0, $v = 0, $values = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 192|0;
- $vararg_buffer10 = sp + 32|0;
- $vararg_buffer7 = sp + 16|0;
- $vararg_buffer4 = sp;
- $vararg_buffer1 = sp + 8|0;
- $vararg_buffer = sp + 24|0;
+ $vararg_buffer10 = sp;
+ $vararg_buffer7 = sp + 32|0;
+ $vararg_buffer4 = sp + 16|0;
+ $vararg_buffer1 = sp + 24|0;
+ $vararg_buffer = sp + 8|0;
  $values = sp + 40|0;
  $sizes = sp + 104|0;
  $global = sp + 96|0;

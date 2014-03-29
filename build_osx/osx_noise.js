@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = '8f0ad0fd-9d37-4504-b7af-94a3b3827eb3';
+    var PACKAGE_UUID = 'aee8c8a4-8707-4ab8-a99d-3162e09c3173';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14023,6 +14023,21 @@ function _Keyboard($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 52: case 51: case 50: case 49:  {
+  $5 = $0;
+  $6 = $5&255;
+  $7 = (($6) - 49)|0;
+  HEAP32[328>>2] = $7;
+  $8 = HEAP32[328>>2]|0;
+  $9 = (344 + ($8<<2)|0);
+  $10 = HEAP32[$9>>2]|0;
+  HEAP32[$vararg_buffer>>2] = $10;
+  (_printf((336|0),($vararg_buffer|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
  case 61:  {
   $11 = +HEAPF32[264>>2];
   $12 = $11;
@@ -14190,21 +14205,6 @@ function _Keyboard($key,$x,$y) {
   $66 = $65;
   HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
   (_printf((464|0),($vararg_buffer28|0))|0);
-  HEAP32[288>>2] = 1;
-  _glutPostRedisplay();
-  STACKTOP = sp;return;
-  break;
- }
- case 52: case 51: case 50: case 49:  {
-  $5 = $0;
-  $6 = $5&255;
-  $7 = (($6) - 49)|0;
-  HEAP32[328>>2] = $7;
-  $8 = HEAP32[328>>2]|0;
-  $9 = (344 + ($8<<2)|0);
-  $10 = HEAP32[$9>>2]|0;
-  HEAP32[$vararg_buffer>>2] = $10;
-  (_printf((336|0),($vararg_buffer|0))|0);
   HEAP32[288>>2] = 1;
   _glutPostRedisplay();
   STACKTOP = sp;return;
