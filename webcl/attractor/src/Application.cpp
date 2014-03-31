@@ -300,9 +300,11 @@ void Application::mainLoop()
             FrameCaptor::get()->capture();
 		#endif
 		
+        #ifdef USE_FRAME_CAPTOR
         // check if we should stop the simulation
         if ( simulationEndFrame && curFrame == simulationEndFrame )
             break;
+        #endif
 
         // step simulation
         Solver::get()->step(m_simTime,m_simDeltaTime);

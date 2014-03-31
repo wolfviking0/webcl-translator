@@ -28,7 +28,7 @@ EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../../emscripten
 
 # Native build
 ifeq ($(NAT),1)
-$(info ************ NATIVE : BUILD     ************)
+$(info ************ NATIVE : DEPENDENCIES (GLEW / GLFW3) ************)
 
 CXX = clang++
 CC  = clang
@@ -37,14 +37,14 @@ BUILD_FOLDER = $(CURRENT_ROOT)/bin/
 EXTENSION = .out
 
 ifeq ($(DEB),1)
-$(info ************ NATIVE : DEBUG = 1 ************)
+$(info ************ NATIVE : DEBUG = 1                   ************)
 
-CFLAGS = -O0 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework IOKit -lGLEW
+CFLAGS = -O0 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework AppKit -framework IOKit -framework CoreVideo -framework CoreGraphics -lGLEW -lglfw3
 
 else
-$(info ************ NATIVE : DEBUG = 0 ************)
+$(info ************ NATIVE : DEBUG = 0                   ************)
 
-CFLAGS = -O2 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework IOKit -lGLEW
+CFLAGS = -O2 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework AppKit -framework IOKit -framework CoreVideo -framework CoreGraphics -lGLEW -lglfw3
 
 endif
 
@@ -106,8 +106,8 @@ SOURCES_fluids			= 	cl-helper.c main.c
 
 INCLUDES_dxtcompressor 	= 	-I./common/inc -I./shared/inc
 INCLUDES_particles		=	-I$(EMSCRIPTEN_ROOT)/system/include/
-INCLUDES_attractor		=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include
-INCLUDES_fluids			=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include
+INCLUDES_attractor		=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
+INCLUDES_fluids			=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
 
 ifeq ($(NAT),0)
 
@@ -133,7 +133,7 @@ COPY_imagecopy		= 	cp image_copy.cl $(BUILD_FOLDER) &&
 COPY_eventprofiling	= 	cp event_profiling.cl $(BUILD_FOLDER) &&
 COPY_dxtcompressor	=	mkdir -p $(BUILD_FOLDER)data/ && cp data/lena_ref.dds $(BUILD_FOLDER)data/ && cp data/lena.ppm $(BUILD_FOLDER)data/ && cp DXTCompressor_kernel.cl $(BUILD_FOLDER) &&
 COPY_particles		= 	cp part2.cl $(BUILD_FOLDER) &&
-COPY_attractor		=	mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz.frag $(BUILD_FOLDER)shader/ && cp shader/lorenz.vert $(BUILD_FOLDER)shader/ &&
+COPY_attractor		=	mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz_nat.frag $(BUILD_FOLDER)shader/lorenz.frag && cp shader/lorenz_nat.vert $(BUILD_FOLDER)shader/lorenz.vert &&
 COPY_fluids			= 	cp kernels.cl $(BUILD_FOLDER) &&
 
 endif
