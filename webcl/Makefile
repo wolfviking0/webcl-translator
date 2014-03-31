@@ -6,184 +6,196 @@
 #  Copyright (c) 2013 Anthony Liot. All rights reserved.
 #
 
-ORIG=0
+# Default parameter
+DEB = 0
+VAL = 0
+NAT = 0
+ORIG= 0
+FAST= 1
 
-ifeq ($(ORIG),1)
-EMSCRIPTEN_ROOT:=../../../emscripten
-else
-
-$(info )
-$(info )
-$(info **************************************************************)
-$(info **************************************************************)
-$(info ************ /!\ BUILD USE SUBMODULE CARREFUL /!\ ************)
-$(info **************************************************************)
-$(info **************************************************************)
-$(info )
-$(info )
-
-EMSCRIPTEN_ROOT:=../../emscripten
-endif
-
-#EMSCRIPTEN_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/emscripten
-#LLVM_ROOT = /Volumes/APPLE_MEDIA/WORKSPACE/compilo/llvm/bin
-#VALIDATOR = $(LLVM_ROOT)/webcl-validator
-
-CC = $(EMSCRIPTEN_ROOT)/emcc
-CXX = $(EMSCRIPTEN_ROOT)/em++
-
+# Chdir function
 CHDIR_SHELL := $(SHELL)
 define chdir
    $(eval _D=$(firstword $(1) $(@D)))
    $(info $(MAKE): cd $(_D)) $(eval SHELL = cd $(_D); $(CHDIR_SHELL))
 endef
 
-DEB=0
-VAL=0
-FAST=1
+# Current Folder
+CURRENT_ROOT:=$(PWD)
 
-ifeq ($(VAL),1)
-PREFIX = val_
--DWGSIZE=1 -DBLOCK_SIZE=8 -DBLOCK_SIZE_WITH_PAD=10
-VALIDATOR = '["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE:8","-DWGSIZE:1","-DBLOCK_SIZE_WITH_PAD:1"]' # Enable validator without parameter
-$(info ************  Mode VALIDATOR : Enabled ************)
-else
-PREFIX = 
-VALIDATOR = '[]' # disable validator
-$(info ************  Mode VALIDATOR : Disabled ************)
-endif
+# Emscripten Folder
+EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../../emscripten
 
-DEBUG = -s ASM_JS=1 -s OPT_LEVEL=1 -s DEBUG_LEVEL=2 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s CL_PRINT_TRACE=1 -s DISABLE_EXCEPTION_CATCHING=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s CL_DEBUG=1 -s CL_GRAB_TRACE=1 -s CL_CHECK_VALID_OBJECT=1 -s ASSERTIONS=2
+# Native build
+ifeq ($(NAT),1)
+$(info ************ NATIVE : BUILD     ************)
 
-NO_DEBUG = -s ASM_JS=1 -s OPT_LEVEL=3 -s DEBUG_LEVEL=0 -s CL_VALIDATOR=$(VAL) -s CL_VAL_PARAM=$(VALIDATOR) -s WARN_ON_UNDEFINED_SYMBOLS=0  -s CL_DEBUG=0 -s CL_GRAB_TRACE=0 -s CL_PRINT_TRACE=0 -s CL_CHECK_VALID_OBJECT=0
+CXX = clang++
+CC  = clang
+
+BUILD_FOLDER = $(CURRENT_ROOT)/bin/
+EXTENSION = .out
 
 ifeq ($(DEB),1)
-MODE=$(DEBUG)
-EMCCDEBUG = EMCC_FAST_COMPILER=$(FAST) EMCC_DEBUG
-$(info ************  Mode DEBUG : Enabled ************)
+$(info ************ NATIVE : DEBUG = 1 ************)
+
+CFLAGS = -O0 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework IOKit -lGLEW
+
 else
-MODE=$(NO_DEBUG)
-EMCCDEBUG = EMCC_FAST_COMPILER=$(FAST) EMCCDEBUG
-$(info ************  Mode DEBUG : Disabled ************)
+$(info ************ NATIVE : DEBUG = 0 ************)
+
+CFLAGS = -O2 -framework OpenCL -framework OpenGL -framework GLUT -framework CoreFoundation -framework IOKit -lGLEW
+
 endif
 
-$(info )
-$(info )
+# Emscripten build
+else
+ifeq ($(ORIG),0)
+$(info ************ EMSCRIPTEN : SUBMODULE     = 1 ************)
 
+EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../emscripten
+else
+$(info ************ EMSCRIPTEN : SUBMODULE     = 0 ************)
+endif
 
-#----------------------------------------------------------------------------------------#
-#----------------------------------------------------------------------------------------#
-# BUILD
-#----------------------------------------------------------------------------------------#
-#----------------------------------------------------------------------------------------#		
+CXX = $(EMSCRIPTEN_ROOT)/em++
+CC  = $(EMSCRIPTEN_ROOT)/emcc
 
-all: all_1 all_2 all_3
+BUILD_FOLDER = $(CURRENT_ROOT)/build/
+EXTENSION = .js
+GLOBAL =
+
+ifeq ($(DEB),1)
+$(info ************ EMSCRIPTEN : DEBUG         = 1 ************)
+
+GLOBAL += EMCC_DEBUG=1
+
+CFLAGS = -s OPT_LEVEL=1 -s DEBUG_LEVEL=1 -s CL_PRINT_TRACE=1 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s CL_DEBUG=1 -s CL_GRAB_TRACE=1 -s CL_CHECK_VALID_OBJECT=1
+else
+$(info ************ EMSCRIPTEN : DEBUG         = 0 ************)
+
+CFLAGS = -s OPT_LEVEL=3 -s DEBUG_LEVEL=0 -s CL_PRINT_TRACE=0 -s DISABLE_EXCEPTION_CATCHING=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s CL_DEBUG=0 -s CL_GRAB_TRACE=0 -s CL_CHECK_VALID_OBJECT=0
+endif
+
+ifeq ($(VAL),1)
+$(info ************ EMSCRIPTEN : VALIDATOR     = 1 ************)
+
+PREFIX = val_
+
+CFLAGS += -s CL_VALIDATOR=1
+else
+$(info ************ EMSCRIPTEN : VALIDATOR     = 0 ************)
+endif
+
+ifeq ($(FAST),1)
+$(info ************ EMSCRIPTEN : FAST_COMPILER = 1 ************)
+
+GLOBAL += EMCC_FAST_COMPILER=1
+else
+$(info ************ EMSCRIPTEN : FAST_COMPILER = 0 ************)
+endif
+
+endif
+
+SOURCES_imagecopy		=	image_copy.cpp
+SOURCES_eventprofiling	=	event_profiling.cpp
+SOURCES_dxtcompressor	=	./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp DXTCompressor.cpp
+SOURCES_particles		=	cll.cpp main.cpp part2.cpp util.cpp
+SOURCES_attractor		=	src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp
+SOURCES_fluids			= 	cl-helper.c main.c
+
+INCLUDES_dxtcompressor 	= 	-I./common/inc -I./shared/inc
+INCLUDES_particles		=	-I$(EMSCRIPTEN_ROOT)/system/include/
+INCLUDES_attractor		=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include
+INCLUDES_fluids			=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include
+
+ifeq ($(NAT),0)
+
+KERNEL_imagecopy		= 	--preload-file image_copy.cl
+KERNEL_eventprofiling	= 	--preload-file event_profiling.cl
+KERNEL_dxtcompressor	=	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl
+KERNEL_particles		= 	--preload-file part2.cl
+KERNEL_attractor		= 	--preload-file kernel/lorenz.cl --preload-file shader/lorenz.frag --preload-file shader/lorenz.vert
+KERNEL_fluids			= 	--preload-file kernels.cl
+
+CFLAGS_eventprofiling	=	-s TOTAL_MEMORY=1024*1024*100
+CFLAGS_dxtcompressor	= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1
+CFLAGS_particles		= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*256
+CFLAGS_attractor		= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256
+CFLAGS_fluids			= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*512
+
+VALPARAM_dxtcompressor	=	-s CL_VAL_PARAM='["-cl-mad-enable"]'
+VALPARAM_fluids			=	-s CL_VAL_PARAM='["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE:8","-DWGSIZE:1","-DBLOCK_SIZE_WITH_PAD:1"]'
+
+else
+
+COPY_imagecopy		= 	cp image_copy.cl $(BUILD_FOLDER) &&
+COPY_eventprofiling	= 	cp event_profiling.cl $(BUILD_FOLDER) &&
+COPY_dxtcompressor	=	mkdir -p $(BUILD_FOLDER)data/ && cp data/lena_ref.dds $(BUILD_FOLDER)data/ && cp data/lena.ppm $(BUILD_FOLDER)data/ && cp DXTCompressor_kernel.cl $(BUILD_FOLDER) &&
+COPY_particles		= 	cp part2.cl $(BUILD_FOLDER) &&
+COPY_attractor		=	mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz.frag $(BUILD_FOLDER)shader/ && cp shader/lorenz.vert $(BUILD_FOLDER)shader/ &&
+COPY_fluids			= 	cp kernels.cl $(BUILD_FOLDER) &&
+
+endif
+
+.PHONY:    
+	all clean
+
+all: \
+	all_1 all_2 all_3
 
 all_1: \
-	imagecopy_sample			\
-	dxt_sample					\
+	imagecopy_sample dxt_sample
 
 all_2: \
-	eventprofiling_sample		\
-	particles_sample			\
+	eventprofiling_sample particles_sample
 
 all_3: \
-	attractor_sample			\
-	fluids_sample 				\
-	
-	
+	attractor_sample fluids_sample
 
 imagecopy_sample:
 	$(call chdir,imagecopy/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) image_copy.cpp $(MODE) \
-	--preload-file image_copy.cl \
-	-o ../build/$(PREFIX)imagecopy.js
-
-marching_cubes_sample:
-	$(call chdir,marching_cubes/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) $(MODE) -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*50 \
-	-I./ \
-	-I./OpenCLUtilities/ \
-	./OpenCLUtilities/histogram-pyramids.cpp \
-	./OpenCLUtilities/openCLGLUtilities.cpp \
-	./OpenCLUtilities/openCLUtilities.cpp \
-	gpu-mc.cpp \
-	main.cpp \
-	rawUtilities.cpp \
-	--preload-file gpu-mc-morton.cl \
-	--preload-file gpu-mc.cl \
-	--preload-file data/nucleon_41_41_41.raw \
-	--preload-file data/silicium_98_34_34.raw \
-	-o ../build/$(PREFIX)marching_cubes.js
-
-marching_cubes_sample_osx:
-	$(call chdir,marching_cubes/)
-	clang++ -02 -D__EMSCRIPTEN__ -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -I/usr/local/include/  -L/usr/local/lib/ -framework QuartzCore -framework OpenCL -framework OpenGL -framework GLUT -framework Cocoa -framework IOKit -lGLEW \
-	-I./ \
-	-I./OpenCLUtilities/ \
-	./OpenCLUtilities/histogram-pyramids.cpp \
-	./OpenCLUtilities/openCLGLUtilities.cpp \
-	./OpenCLUtilities/openCLUtilities.cpp \
-	gpu-mc.cpp \
-	main.cpp \
-	rawUtilities.cpp \
-	-o marching_cubes.out
-
+	$(COPY_imagecopy) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_imagecopy)		$(SOURCES_imagecopy) 		$(KERNEL_imagecopy) -o $(BUILD_FOLDER)$(PREFIX)imagecopy$(EXTENSION) 
+ 
 eventprofiling_sample:
 	$(call chdir,eventprofiling/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) event_profiling.cpp $(MODE) -s TOTAL_MEMORY=1024*1024*50 \
-	--preload-file event_profiling.cl \
-	-o ../build/$(PREFIX)eventprofiling.js
+	$(COPY_eventprofiling) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_eventprofiling)	$(SOURCES_eventprofiling)	$(KERNEL_eventprofiling) -o $(BUILD_FOLDER)$(PREFIX)eventprofiling$(EXTENSION) 
 
-#JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) -O0 ./common/src/oclUtils.cpp check.cpp block.cpp -I./common/inc -I./shared/inc -s BUILD_AS_WORKER=1 -s EXPORTED_FUNCTIONS='["_checkResult"]' -o ../build/$(PREFIX)$(FOLDER)/dxtcompressor_worker.js
 dxt_sample:
 	$(call chdir,dxtcompressor/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) ./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp  DXTCompressor.cpp -I./common/inc -I./shared/inc -s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 $(MODE) -s TOTAL_MEMORY=1024*1024*350 -s CL_VAL_PARAM='["-cl-mad-enable"]' \
-	--preload-file data/lena_ref.dds --preload-file data/lena.ppm --preload-file DXTCompressor_kernel.cl \
-	-o ../build/$(PREFIX)dxtcompressor.js
-	
-fluids_sample:
-	$(call chdir,fluids/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CC) cl-helper.c main.c -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s GL_FFP_ONLY=1 -s TOTAL_MEMORY=1024*1024*512 -s LEGACY_GL_EMULATION=1 $(MODE) \
-	--preload-file kernels.cl \
-	-o ../build/$(PREFIX)fluids.js
-
-fluids_sample_osx:
-	$(call chdir,fluids/)
-	clang -std=gnu99 main.c cl-helper.c -framework OpenCL -framework GLUT -framework OpenGL	\
-	-o fluids.out
-
-
-attractor_sample:
-	$(call chdir,attractor/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 EMCC_FAST_COMPILER=1 $(CXX) -std=c++11 src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp -I ./ -I $(EMSCRIPTEN_ROOT)/system/include/ -s TOTAL_MEMORY=1024*1024*350 -s FULL_ES2=1 $(MODE) \
-	--preload-file kernel/lorenz.cl	--preload-file shader/lorenz.frag --preload-file shader/lorenz.vert \
-	-o ../build/$(PREFIX)attractor.js
+	$(COPY_dxtcompressor) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_dxtcompressor) 	$(SOURCES_dxtcompressor) 	$(KERNEL_dxtcompressor) $(INCLUDES_dxtcompressor) $(VALPARAM_dxtcompressor) -o $(BUILD_FOLDER)$(PREFIX)dxtcompressor$(EXTENSION) 
 
 particles_sample:
 	$(call chdir,particles/)
-	JAVA_HEAP_SIZE=8096m $(EMCCDEBUG)=1 $(CXX) \
-		cll.cpp \
-		main.cpp \
-		part2.cpp \
-		util.cpp \
-	$(MODE) -s TOTAL_MEMORY=1024*1024*200 -s GL_UNSAFE_OPTS=0 -s GL_MAX_TEMP_BUFFER_SIZE=1024*1024*50 -s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 \
-	--preload-file part2.cl \
-	-o ../build/$(PREFIX)particles.js	
+	$(COPY_particles) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_particles) 		$(SOURCES_particles) 		$(KERNEL_particles) $(INCLUDES_particles) -o $(BUILD_FOLDER)$(PREFIX)particles$(EXTENSION) 
+
+attractor_sample:
+	$(call chdir,attractor/)
+	$(COPY_attractor) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_attractor) 		$(SOURCES_attractor) 		$(KERNEL_attractor) $(INCLUDES_attractor) -o $(BUILD_FOLDER)$(PREFIX)attractor$(EXTENSION) 
+
+fluids_sample:
+	$(call chdir,fluids/)
+	$(COPY_fluids) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_fluids) 			$(SOURCES_fluids) 			$(KERNEL_fluids) $(INCLUDES_fluids) $(VALPARAM_fluids) -o $(BUILD_FOLDER)$(PREFIX)fluids$(EXTENSION) 
+
 
 clean:
-	$(call chdir,build/)
-	rm -rf tmp/	
-	mkdir tmp
-	cp memoryprofiler.js tmp/
-	cp settings.js tmp/
-	rm -f *.data
-	rm -f *.js
-	rm -f *.map
-	cp tmp/memoryprofiler.js ./
-	cp tmp/settings.js ./
+	rm -rf bin/
+	mkdir bin/
+	mkdir tmp/
+	cp js/memoryprofiler.js tmp/ && cp js/settings.js tmp/ && cp js/index.html tmp/
+	rm -rf js/
+	mkdir js/
+	cp tmp/memoryprofiler.js js/ && cp tmp/settings.js js/ && cp tmp/index.html js/
 	rm -rf tmp/
-	$(CXX) --clear-cache
+	../emscripten/emcc --clear-cache
 
-.PHONY: imagecopy_sample dxt_sample particles_sample attractor_sample fluids_sample	eventprofiling_sample clean
 	
+
+
+
+
+
+
+
+
+

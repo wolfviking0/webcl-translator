@@ -53,7 +53,7 @@ CL::CL(int use_gpu)
         //cl_context cxGPUContext = clCreateContextFromType(props, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
         //printf("error? %s\n", oclErrorString(err));
         try{
-            context = cl::Context(props);   //had to edit line 1448 of cl.hpp to add this constructor
+            context = cl::Context(use_gpu?CL_DEVICE_TYPE_GPU:CL_DEVICE_TYPE_CPU,props);   //had to edit line 1448 of cl.hpp to add this constructor
         }
         catch (cl::Error er) {
             printf("ERROR: %s(%s)\n", er.what(), oclErrorString(er.err()));

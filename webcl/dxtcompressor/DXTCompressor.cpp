@@ -169,6 +169,10 @@ void showtexture(int header_size)
     SDL_GL_SwapBuffers();
 }
 
+#else
+
+#define CL_SET_TYPE_POINTER(x)
+
 #endif
 
 // Main function
