@@ -94,7 +94,7 @@ The sample are using a Settings.js file who automaticaly add parameter to all th
 	&export=on/off		:	Open a new page with stack_tracer (if enabled)
 
 
-Samples repositories :
+[Samples repositories](https://docs.google.com/spreadsheets/d/1-YZrJ8odGWFLl3yy5txhys4w4-DHSjv95sHnh06pyhs/edit#gid=0) :
 ----------------------
 
 [OSX Samples](https://github.com/wolfviking0/webcl-osx-sample)
