@@ -105,6 +105,8 @@ SOURCES_particles		=	cll.cpp main.cpp part2.cpp util.cpp
 SOURCES_attractor		=	src/Application.cpp src/Demo.cpp src/error.cpp src/global.cpp src/gltools.cpp src/LorenzAttractorDemo.cpp src/LorenzAttractorOpenCLSolver.cpp src/main.cpp src/Solver.cpp
 SOURCES_fluids			= 	cl-helper.c main.c
 
+INCLUDES_imagecopy		=	-I./
+INCLUDES_eventprofiling	=	-I./
 INCLUDES_dxtcompressor 	= 	-I./common/inc -I./shared/inc
 INCLUDES_particles		=	-I$(EMSCRIPTEN_ROOT)/system/include/
 INCLUDES_attractor		=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
@@ -125,6 +127,10 @@ CFLAGS_particles		= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1
 CFLAGS_attractor		= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256
 CFLAGS_fluids			= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*512
 
+VALPARAM_imagecopy		=	-s CL_VAL_PARAM='[""]'
+VALPARAM_eventprofiling	=	-s CL_VAL_PARAM='[""]'
+VALPARAM_particles		=	-s CL_VAL_PARAM='[""]'
+VALPARAM_attractor		=	-s CL_VAL_PARAM='[""]'
 VALPARAM_dxtcompressor	=	-s CL_VAL_PARAM='["-cl-mad-enable"]'
 VALPARAM_fluids			=	-s CL_VAL_PARAM='["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE:8","-DWGSIZE:1","-DBLOCK_SIZE_WITH_PAD:1"]'
 
@@ -160,27 +166,27 @@ mkdir:
 
 imagecopy_sample: mkdir
 	$(call chdir,imagecopy/)
-	$(COPY_imagecopy) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_imagecopy)		$(SOURCES_imagecopy) 		$(KERNEL_imagecopy) -o $(BUILD_FOLDER)$(PREFIX)imagecopy$(EXTENSION) 
+	$(COPY_imagecopy) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_imagecopy)		$(SOURCES_imagecopy) 		$(VALPARAM_imagecopy)		$(KERNEL_imagecopy) 		$(INCLUDES_imagecopy) 		-o $(BUILD_FOLDER)$(PREFIX)imagecopy$(EXTENSION) 
  
 eventprofiling_sample: mkdir
 	$(call chdir,eventprofiling/)
-	$(COPY_eventprofiling) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_eventprofiling)	$(SOURCES_eventprofiling)	$(KERNEL_eventprofiling) -o $(BUILD_FOLDER)$(PREFIX)eventprofiling$(EXTENSION) 
+	$(COPY_eventprofiling) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_eventprofiling)	$(SOURCES_eventprofiling)	$(VALPARAM_eventprofiling)	$(KERNEL_eventprofiling) 	$(INCLUDESeventprofiling) 	-o $(BUILD_FOLDER)$(PREFIX)eventprofiling$(EXTENSION) 
 
 dxt_sample: mkdir
 	$(call chdir,dxtcompressor/)
-	$(COPY_dxtcompressor) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_dxtcompressor) 	$(SOURCES_dxtcompressor) 	$(KERNEL_dxtcompressor) $(INCLUDES_dxtcompressor) $(VALPARAM_dxtcompressor) -o $(BUILD_FOLDER)$(PREFIX)dxtcompressor$(EXTENSION) 
+	$(COPY_dxtcompressor) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_dxtcompressor) 	$(SOURCES_dxtcompressor) 	$(VALPARAM_dxtcompressor)	$(KERNEL_dxtcompressor) 	$(INCLUDES_dxtcompressor) 	-o $(BUILD_FOLDER)$(PREFIX)dxtcompressor$(EXTENSION) 
 
 particles_sample: mkdir
 	$(call chdir,particles/)
-	$(COPY_particles) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_particles) 		$(SOURCES_particles) 		$(KERNEL_particles) $(INCLUDES_particles) -o $(BUILD_FOLDER)$(PREFIX)particles$(EXTENSION) 
+	$(COPY_particles) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_particles) 		$(SOURCES_particles) 		$(VALPARAM_particles) 		$(KERNEL_particles) 		$(INCLUDES_particles) 		-o $(BUILD_FOLDER)$(PREFIX)particles$(EXTENSION) 
 
 attractor_sample: mkdir
 	$(call chdir,attractor/)
-	$(COPY_attractor) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_attractor) 		$(SOURCES_attractor) 		$(KERNEL_attractor) $(INCLUDES_attractor) -o $(BUILD_FOLDER)$(PREFIX)attractor$(EXTENSION) 
+	$(COPY_attractor) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_attractor) 		$(SOURCES_attractor) 		$(VALPARAM_attractor) 		$(KERNEL_attractor) 		$(INCLUDES_attractor) 		-o $(BUILD_FOLDER)$(PREFIX)attractor$(EXTENSION) 
 
 fluids_sample: mkdir
 	$(call chdir,fluids/)
-	$(COPY_fluids) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_fluids) 			$(SOURCES_fluids) 			$(KERNEL_fluids) $(INCLUDES_fluids) $(VALPARAM_fluids) -o $(BUILD_FOLDER)$(PREFIX)fluids$(EXTENSION) 
+	$(COPY_fluids) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_fluids) 			$(SOURCES_fluids) 			$(VALPARAM_fluids) 			$(KERNEL_fluids) 			$(INCLUDES_fluids) 			-o $(BUILD_FOLDER)$(PREFIX)fluids$(EXTENSION) 
 
 
 clean:
