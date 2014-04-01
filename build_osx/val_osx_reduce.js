@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/val_osx_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_osx_reduce.data';
     var REMOTE_PACKAGE_SIZE = 200355;
-    var PACKAGE_UUID = '38125723-507f-4ae0-aca5-ba43e7f613dc';
+    var PACKAGE_UUID = '04cb5e9e-9579-4754-ba19-d4f38b07658a';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -590,7 +590,13 @@ var Runtime = {
         abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    try {
+      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    } catch(e) {
+      Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
+      throw e;
+    }
+    return Runtime.asmConstCache[code] = evalled;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -7863,14 +7869,10 @@ function copyTempDouble(ptr) {
       try {
   
         if (event != 0) {
-           _event = new WebCLEvent();
-        
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
-          
-        } else {
-  
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);    
+          _event = new WebCLEvent();
         }
+        
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -7982,10 +7984,9 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);
         }
+        
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
          
         
         if (event != 0) {
@@ -10150,7 +10151,7 @@ function _main($argc,$argv) {
    $365 = (+_current_time());
    $t1 = $365;
    $k = 0;
-   L136: while(1) {
+   L138: while(1) {
     $366 = $k;
     $367 = HEAP32[1400>>2]|0;
     $368 = ($366|0)<($367|0);
@@ -10191,7 +10192,7 @@ function _main($argc,$argv) {
      $392 = ($391|0)!=(0);
      if ($392) {
       label = 96;
-      break L136;
+      break L138;
      }
      $393 = $i;
      $394 = (($393) + 1)|0;

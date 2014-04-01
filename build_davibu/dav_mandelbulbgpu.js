@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = '7b0a170c-84ac-4efa-a643-a2e463754671';
+    var PACKAGE_UUID = '92e5281b-0bfa-4c24-9966-5e972297fefb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -580,7 +580,13 @@ var Runtime = {
         abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    try {
+      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    } catch(e) {
+      Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
+      throw e;
+    }
+    return Runtime.asmConstCache[code] = evalled;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -12215,10 +12221,9 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);
         }
+        
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
          
         
         if (event != 0) {
@@ -12464,14 +12469,10 @@ function copyTempDouble(ptr) {
       try {
   
         if (event != 0) {
-           _event = new WebCLEvent();
-        
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
-          
-        } else {
-  
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);    
+          _event = new WebCLEvent();
         }
+        
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -16393,14 +16394,6 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
-  break;
- }
  case 104:  {
   $4 = +HEAPF32[((2232 + 72|0))>>2];
   $5 = $4 + 0.5;
@@ -16413,12 +16406,20 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2232 + 72|0))>>2] = $7;
   break;
  }
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
+  break;
+ }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  case 103:  {
   _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
   break;
  }
  default: {

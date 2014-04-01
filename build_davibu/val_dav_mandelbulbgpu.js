@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '../build/val_dav_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_dav_mandelbulbgpu.data';
-    var REMOTE_PACKAGE_SIZE = 35816;
-    var PACKAGE_UUID = '6d0fc945-440f-4d13-810e-29a80ad65e98';
+    var REMOTE_PACKAGE_SIZE = 35814;
+    var PACKAGE_UUID = '1a85acf0-a1ad-4f5f-9ddb-cec3143304b0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35816, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
+      new DataRequest(0, 35814, 0, 0).open('GET', '/preprocessed_rendering_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -580,7 +580,13 @@ var Runtime = {
         abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    try {
+      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    } catch(e) {
+      Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
+      throw e;
+    }
+    return Runtime.asmConstCache[code] = evalled;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -12251,10 +12257,9 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);
         }
+        
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
          
         
         if (event != 0) {
@@ -12500,14 +12505,10 @@ function copyTempDouble(ptr) {
       try {
   
         if (event != 0) {
-           _event = new WebCLEvent();
-        
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
-          
-        } else {
-  
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);    
+          _event = new WebCLEvent();
         }
+        
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -16431,16 +16432,8 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2232 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2232 + 72|0))>>2] = $7;
-  break;
- }
- case 104:  {
-  $4 = +HEAPF32[((2232 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2232 + 72|0))>>2] = $5;
+ case 101:  {
+  _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  case 103:  {
@@ -16455,8 +16448,16 @@ function _specialFunc($key,$x,$y) {
   _rotateCameraY(0.0349065847694873809814);
   break;
  }
- case 101:  {
-  _rotateCameraX(-0.0349065847694873809814);
+ case 104:  {
+  $4 = +HEAPF32[((2232 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2232 + 72|0))>>2] = $5;
+  break;
+ }
+ case 105:  {
+  $6 = +HEAPF32[((2232 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2232 + 72|0))>>2] = $7;
   break;
  }
  default: {

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '../build/osx_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'osx_noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = 'aee8c8a4-8707-4ab8-a99d-3162e09c3173';
+    var PACKAGE_UUID = 'ef28cb78-7505-4cb7-95c5-fc11e4945f9f';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -580,7 +580,13 @@ var Runtime = {
         abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    try {
+      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    } catch(e) {
+      Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
+      throw e;
+    }
+    return Runtime.asmConstCache[code] = evalled;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -11697,13 +11703,15 @@ function copyTempDouble(ptr) {
   
       try { 
   
-          if (event != 0) {
-            var _event = new WebCLEvent();
-            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
-            HEAP32[((event)>>2)]=CL.udid(_event);  
-          } else {
-            CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list);      
-          }
+        if (event != 0) {
+          var _event = new WebCLEvent();
+        }
+  
+        CL.cl_objects[command_queue].enqueueReleaseGLObjects(_mem_objects,_event_wait_list,_event);    
+        
+        if (event != 0) { 
+          HEAP32[((event)>>2)]=CL.udid(_event);  
+        }
   
       } catch (e) {
   
@@ -12193,10 +12201,9 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);
         }
+        
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
          
         
         if (event != 0) {
@@ -12476,14 +12483,10 @@ function copyTempDouble(ptr) {
       try {
   
         if (event != 0) {
-           _event = new WebCLEvent();
-        
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
-          
-        } else {
-  
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);    
+          _event = new WebCLEvent();
         }
+        
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -13015,10 +13018,12 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           var _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event); 
+        }
+  
+        CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list,_event); 
+          
+        if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueAcquireGLObjects(_mem_objects,_event_wait_list);    
         }
   
       } catch (e) {
@@ -14424,15 +14429,15 @@ function _Recompute() {
  sp = STACKTOP;
  STACKTOP = STACKTOP + 208|0;
  $vararg_buffer7 = sp;
- $vararg_buffer4 = sp + 16|0;
- $vararg_buffer1 = sp + 8|0;
- $vararg_buffer = sp + 24|0;
+ $vararg_buffer4 = sp + 24|0;
+ $vararg_buffer1 = sp + 16|0;
+ $vararg_buffer = sp + 8|0;
  $values = sp + 80|0;
- $sizes = sp + 40|0;
+ $sizes = sp + 32|0;
  $global = sp + 152|0;
- $local = sp + 136|0;
- $bias = sp + 32|0;
- $scale = sp + 144|0;
+ $local = sp + 144|0;
+ $bias = sp + 72|0;
+ $scale = sp + 128|0;
  $origin = sp + 168|0;
  $region = sp + 180|0;
  $type = sp + 196|0;
@@ -15340,9 +15345,9 @@ function _LoadTextFromFile($file_name,$result_string,$string_len) {
  sp = STACKTOP;
  STACKTOP = STACKTOP + 144|0;
  $vararg_buffer6 = sp + 16|0;
- $vararg_buffer3 = sp + 8|0;
+ $vararg_buffer3 = sp;
  $vararg_buffer1 = sp + 24|0;
- $vararg_buffer = sp;
+ $vararg_buffer = sp + 8|0;
  $file_status = sp + 52|0;
  $1 = $file_name;
  $2 = $result_string;

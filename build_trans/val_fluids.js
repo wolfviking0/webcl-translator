@@ -15,10 +15,10 @@ Module.expectedDataFileDownloads++;
       // worker
       PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
     }
-    var PACKAGE_NAME = '../build/val_fluids.data';
+    var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/build/val_fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_fluids.data';
     var REMOTE_PACKAGE_SIZE = 385804;
-    var PACKAGE_UUID = '3e94574b-e5fa-4bf8-b4a1-c819966821ef';
+    var PACKAGE_UUID = 'f3b9fa35-6b69-4cd4-b21f-46cafc26f901';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -128,10 +128,10 @@ function assert(check, msg) {
       Module['HEAPU8'].set(byteArray, ptr);
       DataRequest.prototype.byteArray = Module['HEAPU8'].subarray(ptr, ptr+byteArray.length);
           DataRequest.prototype.requests["/kernels.cl"].onload();
-          Module['removeRunDependency']('datafile_../build/val_fluids.data');
+          Module['removeRunDependency']('datafile_/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/build/val_fluids.data');
 
     };
-    Module['addRunDependency']('datafile_../build/val_fluids.data');
+    Module['addRunDependency']('datafile_/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/build/val_fluids.data');
   
     if (!Module.preloadResults) Module.preloadResults = {};
   
@@ -580,7 +580,13 @@ var Runtime = {
         abort('invalid EM_ASM input |' + source + '|. Please use EM_ASM(..code..) (no quotes) or EM_ASM({ ..code($0).. }, input) (to input values)');
       }
     }
-    return Runtime.asmConstCache[code] = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    try {
+      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+    } catch(e) {
+      Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
+      throw e;
+    }
+    return Runtime.asmConstCache[code] = evalled;
   },
   warnOnce: function (text) {
     if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
@@ -12222,10 +12228,9 @@ function copyTempDouble(ptr) {
   
         if (event != 0) {
           _event = new WebCLEvent();
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-        } else {
-          CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);
         }
+        
+        CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
          
         
         if (event != 0) {
@@ -12358,14 +12363,10 @@ function copyTempDouble(ptr) {
       try {
   
         if (event != 0) {
-           _event = new WebCLEvent();
-        
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
-          
-        } else {
-  
-          CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list);    
+          _event = new WebCLEvent();
         }
+        
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -15139,10 +15140,10 @@ function _kernel_from_string($ctx,$knl,$knl_name,$options) {
  $vararg_buffer4 = sp + 96|0;
  $vararg_buffer = sp + 16|0;
  $1 = sp + 180|0;
- $sizes = sp + 156|0;
+ $sizes = sp + 148|0;
  $status = sp + 184|0;
- $dev = sp + 168|0;
- $log_size = sp + 152|0;
+ $dev = sp + 164|0;
+ $log_size = sp + 168|0;
  $devname = sp + 208|0;
  $0 = $ctx;
  HEAP32[$1>>2] = $knl;
@@ -15622,18 +15623,18 @@ function _allocate_cl_buffers($clData) {
  STACKTOP = STACKTOP + 256|0;
  $vararg_buffer82 = sp + 224|0;
  $vararg_buffer76 = sp + 176|0;
- $vararg_buffer70 = sp + 80|0;
- $vararg_buffer64 = sp + 32|0;
+ $vararg_buffer70 = sp + 48|0;
+ $vararg_buffer64 = sp + 64|0;
  $vararg_buffer58 = sp + 128|0;
  $vararg_buffer52 = sp + 160|0;
  $vararg_buffer46 = sp + 192|0;
  $vararg_buffer40 = sp + 208|0;
- $vararg_buffer34 = sp + 16|0;
+ $vararg_buffer34 = sp;
  $vararg_buffer28 = sp + 96|0;
- $vararg_buffer22 = sp + 48|0;
+ $vararg_buffer22 = sp + 16|0;
  $vararg_buffer16 = sp + 112|0;
- $vararg_buffer10 = sp;
- $vararg_buffer4 = sp + 64|0;
+ $vararg_buffer10 = sp + 80|0;
+ $vararg_buffer4 = sp + 32|0;
  $vararg_buffer = sp + 144|0;
  $0 = $clData;
  $1 = $0;
@@ -17456,17 +17457,17 @@ function _run_cl_vorticity_confinement($clData,$dt,$e) {
  var $vararg_ptr56 = 0, $vararg_ptr57 = 0, $vararg_ptr7 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 224|0;
- $vararg_buffer52 = sp + 96|0;
+ $vararg_buffer52 = sp;
  $vararg_buffer46 = sp + 128|0;
  $vararg_buffer40 = sp + 144|0;
- $vararg_buffer34 = sp + 16|0;
+ $vararg_buffer34 = sp + 48|0;
  $vararg_buffer28 = sp + 112|0;
- $vararg_buffer22 = sp + 32|0;
- $vararg_buffer16 = sp + 48|0;
- $vararg_buffer10 = sp + 64|0;
- $vararg_buffer4 = sp + 80|0;
- $vararg_buffer = sp;
- $1 = sp + 184|0;
+ $vararg_buffer22 = sp + 64|0;
+ $vararg_buffer16 = sp + 80|0;
+ $vararg_buffer10 = sp + 96|0;
+ $vararg_buffer4 = sp + 32|0;
+ $vararg_buffer = sp + 16|0;
+ $1 = sp + 160|0;
  $2 = sp + 188|0;
  $ldim = sp + 208|0;
  $gdim = sp + 212|0;
