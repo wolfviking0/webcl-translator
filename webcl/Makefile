@@ -24,7 +24,7 @@ endef
 CURRENT_ROOT:=$(PWD)
 
 # Emscripten Folder
-EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../../emscripten
+EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../emscripten
 
 # Native build
 ifeq ($(NAT),1)
@@ -50,12 +50,12 @@ endif
 
 # Emscripten build
 else
-ifeq ($(ORIG),0)
-$(info ************ EMSCRIPTEN : SUBMODULE     = 1 ************)
-
-EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../emscripten
-else
+ifeq ($(ORIG),1)
 $(info ************ EMSCRIPTEN : SUBMODULE     = 0 ************)
+
+EMSCRIPTEN_ROOT:=$(CURRENT_ROOT)/../../emscripten
+else
+$(info ************ EMSCRIPTEN : SUBMODULE     = 1 ************)
 endif
 
 CXX = $(EMSCRIPTEN_ROOT)/em++
@@ -180,22 +180,11 @@ fluids_sample:
 
 clean:
 	rm -rf bin/
-	mkdir bin/
-	mkdir tmp/
-	cp js/memoryprofiler.js tmp/ && cp js/settings.js tmp/ && cp js/index.html tmp/
-	rm -rf js/
-	mkdir js/
-	cp tmp/memoryprofiler.js js/ && cp tmp/settings.js js/ && cp tmp/index.html js/
+	mkdir -p bin/
+	mkdir -p tmp/
+	cp build/memoryprofiler.js tmp/ && cp build/settings.js tmp/ && cp build/index.html tmp/
+	rm -rf build/
+	mkdir build/
+	cp tmp/memoryprofiler.js build/ && cp tmp/settings.js build/ && cp tmp/index.html build/
 	rm -rf tmp/
-	../emscripten/emcc --clear-cache
-
-	
-
-
-
-
-
-
-
-
-
+	$(EMSCRIPTEN_ROOT)/emcc --clear-cache
