@@ -97,6 +97,7 @@ endif
 
 endif
 
+
 SOURCES_imagecopy		=	image_copy.cpp
 SOURCES_eventprofiling	=	event_profiling.cpp
 SOURCES_dxtcompressor	=	./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp DXTCompressor.cpp
@@ -153,27 +154,31 @@ all_2: \
 all_3: \
 	attractor_sample fluids_sample
 
-imagecopy_sample:
+# Create build folder is necessary))
+mkdir:
+	mkdir -p $(BUILD_FOLDER);
+
+imagecopy_sample: mkdir
 	$(call chdir,imagecopy/)
 	$(COPY_imagecopy) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_imagecopy)		$(SOURCES_imagecopy) 		$(KERNEL_imagecopy) -o $(BUILD_FOLDER)$(PREFIX)imagecopy$(EXTENSION) 
  
-eventprofiling_sample:
+eventprofiling_sample: mkdir
 	$(call chdir,eventprofiling/)
 	$(COPY_eventprofiling) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_eventprofiling)	$(SOURCES_eventprofiling)	$(KERNEL_eventprofiling) -o $(BUILD_FOLDER)$(PREFIX)eventprofiling$(EXTENSION) 
 
-dxt_sample:
+dxt_sample: mkdir
 	$(call chdir,dxtcompressor/)
 	$(COPY_dxtcompressor) 	$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_dxtcompressor) 	$(SOURCES_dxtcompressor) 	$(KERNEL_dxtcompressor) $(INCLUDES_dxtcompressor) $(VALPARAM_dxtcompressor) -o $(BUILD_FOLDER)$(PREFIX)dxtcompressor$(EXTENSION) 
 
-particles_sample:
+particles_sample: mkdir
 	$(call chdir,particles/)
 	$(COPY_particles) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_particles) 		$(SOURCES_particles) 		$(KERNEL_particles) $(INCLUDES_particles) -o $(BUILD_FOLDER)$(PREFIX)particles$(EXTENSION) 
 
-attractor_sample:
+attractor_sample: mkdir
 	$(call chdir,attractor/)
 	$(COPY_attractor) 		$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_attractor) 		$(SOURCES_attractor) 		$(KERNEL_attractor) $(INCLUDES_attractor) -o $(BUILD_FOLDER)$(PREFIX)attractor$(EXTENSION) 
 
-fluids_sample:
+fluids_sample: mkdir
 	$(call chdir,fluids/)
 	$(COPY_fluids) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_fluids) 			$(SOURCES_fluids) 			$(KERNEL_fluids) $(INCLUDES_fluids) $(VALPARAM_fluids) -o $(BUILD_FOLDER)$(PREFIX)fluids$(EXTENSION) 
 
