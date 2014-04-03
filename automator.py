@@ -199,7 +199,7 @@ def worker_copy(folder,repo):
 
 
     if os.path.isdir(directory):
-      pr = subprocess.Popen( "cp -rf "+root_repositories + repo + "/build/ "+directory+"/" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+      pr = subprocess.Popen( "cp -rf "+root_repositories + repo + "/js/ "+directory+"/" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
 
       # Update index.html file  
@@ -292,6 +292,9 @@ def launch(parser,options):
   if (options.fastcomp):
     num_opt_enabled-=1
 
+  if (options.native):
+    num_opt_enabled-=1
+
   if (len(options.repo) > 0):
     num_opt_enabled-=1
 
@@ -312,6 +315,11 @@ def launch(parser,options):
     param += " ORIG=1 "
   else:
     param += " ORIG=0 " # Default value inside makefile
+
+  if options.native:
+    param += " NAT=1 "
+  else:
+    param += " NAT=0 " # Default value inside makefile
 
   if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 6 ) for repo in options.repo) ) ) :
     print "/!\ You must use --repo with integer between 0 & 6"
@@ -411,6 +419,10 @@ def main():
   parser.add_option("-f", "--fastcomp",
                     action="store_true", dest="fastcomp", default=False,
                     help="use fastcomp build", metavar="FAST")
+  
+  parser.add_option("-n", "--native",
+                    action="store_true", dest="native", default=False,
+                    help="use c++ / opencl build", metavar="NAT")
 
   parser.add_option('-r', '--repo',
                     action='callback', dest="repo", type='string', default='',
@@ -423,20 +435,6 @@ def main():
                     4 : webcl-ocltoys\t\t\t\
                     5 : webcl-davibu\t\t\t\
                     6 : webcl-book-samples", metavar="0,2,...")
-
-  '''
-  parser.add_option("-U", "--only-update",
-                    action="store_true", dest="onlyclean", default=False,
-                    help="only update all the javascript generated", metavar="ONLY_CLEAN")
-
-  parser.add_option("-E", "--only-erase",
-                    action="store_true", dest="onlyclean", default=False,
-                    help="only clean all the javascript generated", metavar="ONLY_CLEAN")
-
-  parser.add_option("-C", "--only-copy",
-                    action="store_true", dest="onlycopy", default=False,
-                    help="only copy all the javascript generated", metavar="ONLY_COPY")
-  '''
 
   (options, args) = parser.parse_args()
 
