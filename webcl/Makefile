@@ -61,7 +61,7 @@ endif
 CXX = $(EMSCRIPTEN_ROOT)/em++
 CC  = $(EMSCRIPTEN_ROOT)/emcc
 
-BUILD_FOLDER = $(CURRENT_ROOT)/build/
+BUILD_FOLDER = $(CURRENT_ROOT)/js/
 EXTENSION = .js
 GLOBAL =
 
@@ -188,14 +188,13 @@ fluids_sample: mkdir
 	$(call chdir,fluids/)
 	$(COPY_fluids) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_fluids) 			$(SOURCES_fluids) 			$(VALPARAM_fluids) 			$(KERNEL_fluids) 			$(INCLUDES_fluids) 			-o $(BUILD_FOLDER)$(PREFIX)fluids$(EXTENSION) 
 
-
 clean:
 	rm -rf bin/
 	mkdir -p bin/
 	mkdir -p tmp/
-	cp build/memoryprofiler.js tmp/ && cp build/settings.js tmp/ && cp build/index.html tmp/
-	rm -rf build/
-	mkdir build/
-	cp tmp/memoryprofiler.js build/ && cp tmp/settings.js build/ && cp tmp/index.html build/
+	cp js/memoryprofiler.js tmp/ && cp js/settings.js tmp/ && cp js/index.html tmp/
+	rm -rf js/
+	mkdir js/
+	cp tmp/memoryprofiler.js js/ && cp tmp/settings.js js/ && cp tmp/index.html js/
 	rm -rf tmp/
 	$(EMSCRIPTEN_ROOT)/emcc --clear-cache
