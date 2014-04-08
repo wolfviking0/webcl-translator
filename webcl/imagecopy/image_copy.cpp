@@ -10,6 +10,7 @@
 #endif
  
 #define IMG_SIZE 100
+#define NUM_COMP 4
 #define MAX_SRC_SIZE (0x100000)
  
 using namespace std;
@@ -57,17 +58,18 @@ int main(int argc, char** argv)
  
     cl_int err;
  
-    float input[IMG_SIZE * 4], output[IMG_SIZE * 4];
- 
+    float input[IMG_SIZE * NUM_COMP], output[IMG_SIZE * NUM_COMP];
+    
+    printf("INPUT: \n");
     // Create Input data
-    for(int i=0;i<4;i++){
+    for(int i=0;i<NUM_COMP;i++){
         for(int j = 0; j<IMG_SIZE; ++j){
- 
-            input[(i*IMG_SIZE)+j] = (float)(j+1);
- 
+            input[(i*IMG_SIZE)+j] = (float)((i*IMG_SIZE)+j);
+            printf("%d ",(int)input[(i*IMG_SIZE)+j]);
+
         }
- 
     }
+    printf("\n");
  
     // step 1 : getting platform ID
     err = clGetPlatformIDs(1, &platform_id, &ret_num_platform);
@@ -114,7 +116,7 @@ int main(int argc, char** argv)
     cl_mem image1, image2;
  
     size_t width, height;
-    width = height =10;// sqrt(IMG_SIZE);
+    width = height = 10;// sqrt(IMG_SIZE);
  
     image1 = clCreateImage2D(context, CL_MEM_READ_ONLY, &img_fmt, width, height, 0, 0, &err);
     err_check(err, "image1: clCreateImage2D");
@@ -168,19 +170,19 @@ int main(int argc, char** argv)
     size_t GWSize[]={width, height,1};
     err = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, GWSize, NULL, 1, event,&event[1]);
  
+    memset(output,0,IMG_SIZE * NUM_COMP);
     // Step 11 : Read output Data, from Device to Host
     err = clEnqueueReadImage(command_queue, image2, CL_TRUE, origin, region, 0, 0, output, 2, event, &event[2] );
  
     // Print Output
- 
-    for(int i=0;i<3;i++){
+    printf("OUTPUT 1 : \n");
+    // Create Input data
+    for(int i=0;i<NUM_COMP;i++){
         for(int j = 0; j<IMG_SIZE; ++j){
- 
-            cout<<output[(i*IMG_SIZE)+j]<<"  ";
- 
+            printf("%d ",(int)output[(i*IMG_SIZE)+j]);
         }
- 
     }
+    printf("\n");
  
     cl_mem image3;
  
@@ -189,7 +191,21 @@ int main(int argc, char** argv)
     // copy Image1 to Image3
     err = clEnqueueCopyImage(command_queue, image1, image3, origin, origin, region, 1, event, &event[3]);
     err_check(err, "clEnqueueCopyImage");
+     
+    memset(output,0,IMG_SIZE * NUM_COMP);
+    // Step 11 : Read output Data, from Device to Host
+    err = clEnqueueReadImage(command_queue, image3, CL_TRUE, origin, region, 0, 0, output, 2, event, &event[2] );
  
+    // Print Output
+    printf("OUTPUT 2 : \n");
+    // Create Input data
+    for(int i=0;i<NUM_COMP;i++){
+        for(int j = 0; j<IMG_SIZE; ++j){
+            printf("%d ",(int)output[(i*IMG_SIZE)+j]);
+
+        }
+    }
+    printf("\n");
  
     // Step 12 : Release Objects
  
