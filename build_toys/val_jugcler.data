@@ -1,0 +1,520 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "render_gpu" :
+                {
+                    "scene" :
+                        {
+                            "index" : 0,
+                            "type" : "struct Scene *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_scene_size"
+                        },
+                    "_wcl_scene_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "Image" :
+                        {
+                            "index" : 2,
+                            "type" : "uchar4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_Image_size"
+                        },
+                    "_wcl_Image_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((53760 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32768/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+struct Ray {
+ float3 base;
+ float3 dir;
+};
+
+struct Camera {
+ const float3 eye; // eye point
+ const float3 sky; // sky vector
+ const float3 viewCenter; // center of view rect
+ const float3 viewRight; // horizontal direction of view rect
+ const float3 viewUp; // vertical direction of view rect
+ const int imgWidth; // image width in pixels
+ const int imgHeight; // image height in pixels
+};
+
+struct Sphere {
+ // geometry of sphere
+ const float3 center;
+ const float radius;
+
+ // material
+ const float3 color; // pigment
+ const float ambient; // ambient amount
+ const float diffuse; // diffuse amount
+ const float highlight; // highlight intensity
+ const float roughness; // controls highlight size
+ const float reflection; // weight of reflected ray
+};
+
+struct Scene {
+ const struct Camera cam; // the camera
+ const float3 lightDir; // direction towards light
+ const int numSpheres; // number of valid spheres
+ const struct Sphere spheres[84]; // storage space for the spheres
+};
+
+typedef struct {
+    float _wcl_floorDist;
+    int _wcl_sphereIdx;
+    float _wcl_sphereDist;
+    float3 _wcl_normal;
+    float3 _wcl_position;
+    float3 _wcl_reflected;
+    float3 _wcl_color;
+    float3 _wcl_ambientColor;
+    float _wcl_ambient;
+    float _wcl_diffuse;
+    float _wcl_highlight;
+    float _wcl_roughness;
+    float _wcl_reflection;
+    float2 _wcl_checker;
+    struct Ray _wcl_ray;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    const __global struct Scene *restrict render_gpu__scene_min;
+    const __global struct Scene *restrict render_gpu__scene_max;
+    __global uchar4 *restrict render_gpu__Image_min;
+    __global uchar4 *restrict render_gpu__Image_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_2__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0, __global uchar4 * min1, __global uchar4 * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uchar4 *, max1)) );
+}
+__global uchar4 *_wcl_addr_clamp_global_2__u_uglobal__uchar4__Ptr(__global uchar4 *addr, unsigned size, __global uchar4 * min0, __global uchar4 * max0, __global uchar4 * min1, __global uchar4 * max1, __global uchar4 * asnull)
+{
+     return _wcl_addr_check_global_2__u_uglobal__uchar4__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__struct__Camera__Ptr(const __global struct Camera *addr, unsigned size, const __global struct Camera * min0, const __global struct Camera * max0, const __global struct Camera * min1, const __global struct Camera * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Camera *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Camera *, max1)) );
+}
+const __global struct Camera *_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr(const __global struct Camera *addr, unsigned size, const __global struct Camera * min0, const __global struct Camera * max0, const __global struct Camera * min1, const __global struct Camera * max1, const __global struct Camera * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__struct__Camera__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__struct__Scene__Ptr(const __global struct Scene *addr, unsigned size, const __global struct Scene * min0, const __global struct Scene * max0, const __global struct Scene * min1, const __global struct Scene * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Scene *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Scene *, max1)) );
+}
+const __global struct Scene *_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr(const __global struct Scene *addr, unsigned size, const __global struct Scene * min0, const __global struct Scene * max0, const __global struct Scene * min1, const __global struct Scene * max1, const __global struct Scene * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__struct__Scene__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_2_const___u_uglobal__struct__Sphere__Ptr(const __global struct Sphere *addr, unsigned size, const __global struct Sphere * min0, const __global struct Sphere * max0, const __global struct Sphere * min1, const __global struct Sphere * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Sphere *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global struct Sphere *, max1)) );
+}
+const __global struct Sphere *_wcl_addr_clamp_global_2_const___u_uglobal__struct__Sphere__Ptr(const __global struct Sphere *addr, unsigned size, const __global struct Sphere * min0, const __global struct Sphere * max0, const __global struct Sphere * min1, const __global struct Sphere * max1, const __global struct Sphere * asnull)
+{
+     return _wcl_addr_check_global_2_const___u_uglobal__struct__Sphere__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*****************************************************************************
+ *                                 jugCLer                                   *
+ *              realtime raytracing experiment: OpenCL kernel                *
+ *                                                                           *
+ *  Copyright (C) 2013  Holger Bettag               (hobold@vectorizer.org)  *
+ *                                                                           *
+ *  This program is free software; you can redistribute it and/or modify     *
+ *  it under the terms of the GNU General Public License as published by     *
+ *  the Free Software Foundation; either version 2 of the License, or        *
+ *  (at your option) any later version.                                      *
+ *                                                                           *
+ *  This program is distributed in the hope that it will be useful,          *
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            *
+ *  GNU General Public License for more details.                             *
+ *                                                                           *
+ *  You should have received a copy of the GNU General Public License along  *
+ *  with this program; if not, write to the Free Software Foundation, Inc.,  *
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.              *
+ *****************************************************************************/
+
+/***************
+ *  view rays  *
+ ***************/
+;
+
+/************************
+ *  perspective camera  *
+ ************************/
+;
+
+// ray through center of pixel
+
+struct Ray camMakePrimaryRay(_WclProgramAllocations *_wcl_allocs, __global const struct Camera* restrict c,
+  const int x, const int y) {
+ const int imgWidth = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).imgWidth;
+ const int imgHeight = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).imgHeight;
+ const float ratio = imgWidth / (float)imgHeight;
+
+ // start from relative pixel coordinates in [0.0 .. 1.0]
+ // with y axis pointing down, pixel center is at (+0.5, +0.5)
+ float fx = ((float) x + 0.5f) / imgWidth;
+ float fy = ((float) y + 0.5f) / imgHeight;
+
+ // map to [-1.0 .. 1.0], with y axis pointing down, because ...
+ // ... GLUT y-flips the bitmap later on
+ fx = (2.0f * fx - 1.0f) * ratio;
+ fy = 2.0f * fy - 1.0f;
+
+ // ray direction is from eye to that point in view rect  
+
+ return (struct Ray) {
+  (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).eye, fast_normalize((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).viewCenter
+    + fx * (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).viewRight + fy * (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).viewUp - (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Camera__Ptr((c), 1, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Camera *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Camera *)_wcl_allocs->gn))).eye)
+ };
+}
+
+/************
+ *  sphere  *
+ ************/
+;
+
+// return smallest positive t
+
+float sphIntersect(_WclProgramAllocations *_wcl_allocs, __global const struct Sphere* restrict s,
+  const struct Ray ray) {
+ // translate sphere center to origin, i.e. translate ray base
+ float3 base = ray.base - (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Sphere__Ptr((s), 1, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Sphere *)_wcl_allocs->gn))).center;
+
+ // quadratic coefficients
+ // immediately divide out leading coefficient
+ // and immediately multiply b by -0.5 to simplify further computation
+ float a = dot(ray.dir, ray.dir);
+ float b = dot(base, ray.dir) / -a;
+ float c = (dot(base, base) - (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Sphere__Ptr((s), 1, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Sphere *)_wcl_allocs->gn))).radius * (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Sphere__Ptr((s), 1, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Sphere *)_wcl_allocs->gn))).radius) / a;
+
+ // so now we have to solve:   t*t - 2.0*t*b + c = 0;
+ a = b * b - c; // discriminant
+
+ float t = MAXFLOAT; // initialize as "ray misses sphere"
+
+ if (a >= 0.0f) {
+  // if ray hits sphere
+  a = sqrt(a);
+  float tmp = b - a; // check near hit
+  if (tmp > 0.0f) {
+   // if near hit is > 0, keep it
+   t = tmp;
+  } else {
+   tmp = b + a; // check far hit
+   if (tmp > 0.0f) {
+    // if far hit is > 0, keep it
+    t = tmp;
+   }
+  }
+ }
+ return t; // return hit or miss
+}
+
+// normal vector at point, unit length
+
+float3 sphNormal(_WclProgramAllocations *_wcl_allocs, __global const struct Sphere* restrict s, const float3 where) {
+ return fast_normalize(where - (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Sphere__Ptr((s), 1, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Sphere *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Sphere *)_wcl_allocs->gn))).center);
+}
+
+/*********************
+ *  scene container  *
+ *********************/
+;
+
+
+/****************
+ *  trace rays  *
+ ****************/
+// returns true if light ray is blocked
+
+bool shadow(_WclProgramAllocations *_wcl_allocs, const struct Ray ray, __global const struct Scene* restrict scene) {
+ for (int i = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).numSpheres - 1; i >= 0; i--) {
+  if (sphIntersect(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[i]), ray) < MAXFLOAT) {
+   return true;
+  }
+ }
+ return false;
+}
+
+// returns color for ray
+
+float3 trace(_WclProgramAllocations *_wcl_allocs, struct Ray ray, __global const struct Scene* restrict scene) {
+ float weight = 1.0f; // weight of remaining reflected ray, if any
+ int rayDepth = 0; // number of reflections so far
+ float3 result = {0.0f, 0.0f, 0.0f}; // accumulates ray intensities
+
+ float floorDist; // distance to floor
+ int sphereIdx; // closest valid sphere hit, if any
+ float sphereDist; // distance to closest valid sphere hit, if any
+
+ float3 normal;
+ float3 position;
+ float3 reflected;
+ float3 color;
+ float3 ambientColor;
+ float ambient;
+ float diffuse;
+ float highlight;
+ float roughness;
+ float reflection;
+
+ const float3 lightDir = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).lightDir; // direction towards to light
+
+ while ((weight > 0.004f) && (rayDepth < 10)) { // loop over reflections
+  rayDepth++;
+
+  // test ground floor (at y = 0) first
+  _wcl_allocs->pa._wcl_floorDist = MAXFLOAT;
+  if (ray.dir.y != 0.0f) {
+   _wcl_allocs->pa._wcl_floorDist = -ray.base.y / ray.dir.y; // in terms of ray parameter t
+   if (_wcl_allocs->pa._wcl_floorDist < 0.0f) {
+    _wcl_allocs->pa._wcl_floorDist = MAXFLOAT; // floor is behind camera, so it's a miss
+   }
+  }
+
+  _wcl_allocs->pa._wcl_sphereIdx = -1; // remember closest valid sphere hit
+  _wcl_allocs->pa._wcl_sphereDist = MAXFLOAT; // and that hit's distance
+
+  for (int i = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).numSpheres - 1; i >= 0; i--) { // test all spheres
+   float dist = sphIntersect(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[i]), ray);
+   if (dist < _wcl_allocs->pa._wcl_sphereDist) {
+    _wcl_allocs->pa._wcl_sphereDist = dist; // remember closest hit
+    _wcl_allocs->pa._wcl_sphereIdx = i;
+   }
+  }
+
+  // initialize as default material (for floor)
+  _wcl_allocs->pa._wcl_ambient = 0.3f;
+  _wcl_allocs->pa._wcl_diffuse = 0.7f;
+  _wcl_allocs->pa._wcl_highlight = 0.0f;
+  _wcl_allocs->pa._wcl_roughness = 0.05f;
+  _wcl_allocs->pa._wcl_reflection = 0.0f;
+
+  // did we hit anything?  
+  if (fmin(_wcl_allocs->pa._wcl_sphereDist, _wcl_allocs->pa._wcl_floorDist) >= MAXFLOAT) {
+   // we missed the floor and all spheres, so it's sky dome color
+   _wcl_allocs->pa._wcl_color = (float3) (0.7f, 0.8f, 0.9f) * (1.0f - ray.dir.y)
+     + (float3) (0.1f, 0.1f, 0.9f) * ray.dir.y;
+  } else {
+   // what is closer, floor or sphere?
+   if (_wcl_allocs->pa._wcl_floorDist < _wcl_allocs->pa._wcl_sphereDist) {
+    // ray did hit the floor, make checkerboard pattern
+    _wcl_allocs->pa._wcl_position = ray.base + _wcl_allocs->pa._wcl_floorDist * ray.dir; // location of floor hit
+    float2 checker;
+    _wcl_allocs->pa._wcl_checker.x = 0.125f * _wcl_allocs->pa._wcl_position.x + 0.5f;
+    _wcl_allocs->pa._wcl_checker.y = 0.125f * _wcl_allocs->pa._wcl_position.z + 0.5f;
+
+    // fake floor antialiasing by blurring the pattern with distance
+    float toggle = fabs(_wcl_allocs->pa._wcl_checker.x - floor(_wcl_allocs->pa._wcl_checker.x) - 0.5f);
+    toggle = fmax(toggle, fabs(_wcl_allocs->pa._wcl_checker.y - floor(_wcl_allocs->pa._wcl_checker.y) - 0.5f));
+    toggle = fmax(toggle, (float) (((int) (floor(_wcl_allocs->pa._wcl_checker.x)) ^
+      (int) (floor(_wcl_allocs->pa._wcl_checker.y))) & 1) - toggle);
+    float m = fast_distance(_wcl_allocs->pa._wcl_position, (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam.eye);
+    m = 100000.0f / (m * m * (16.0f * ((float) rayDepth) - 15.0f));
+    float b = 0.5f * m - 0.5f;
+    toggle = m * toggle - b;
+    toggle = clamp(toggle, 0.0f, 1.0f);
+
+    _wcl_allocs->pa._wcl_color = (float3) (0.9f, 0.9f, 0.1f) * toggle
+      + (float3) (0.1f, 0.9f, 0.1f) * (1.0f - toggle);
+    _wcl_allocs->pa._wcl_normal = (float3) (0.0f, 1.0f, 0.0f); // floor normal
+   } else {
+    // ray did hit a sphere
+    _wcl_allocs->pa._wcl_position = ray.base + _wcl_allocs->pa._wcl_sphereDist * ray.dir; // location of sphere hit
+    _wcl_allocs->pa._wcl_normal = sphNormal(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx]), _wcl_allocs->pa._wcl_position); // normal
+
+    // sphere material
+    _wcl_allocs->pa._wcl_color = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].color;
+    _wcl_allocs->pa._wcl_ambient = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].ambient;
+    _wcl_allocs->pa._wcl_diffuse = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].diffuse;
+    _wcl_allocs->pa._wcl_highlight = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].highlight;
+    _wcl_allocs->pa._wcl_roughness = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].roughness;
+    _wcl_allocs->pa._wcl_reflection = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).spheres[_wcl_allocs->pa._wcl_sphereIdx].reflection;
+   }
+   // light that point
+
+   // cheat to avoid erroneous self intersections
+   _wcl_allocs->pa._wcl_position += 0.0008f * _wcl_allocs->pa._wcl_normal;
+
+   // reflected direction
+   _wcl_allocs->pa._wcl_reflected = ray.dir - ((2.0f * dot(_wcl_allocs->pa._wcl_normal, ray.dir)) * _wcl_allocs->pa._wcl_normal);
+
+   // fake ambient illumination: mix average floor and sky colors depending
+   // on y component of surface normal
+   _wcl_allocs->pa._wcl_ambientColor = 1.65f * (_wcl_allocs->pa._wcl_color + 0.1f) * mix((float3) (0.4f, 0.45f, 0.9f),
+     (float3) (0.5f, 0.9f, 0.1f) * lightDir.y,
+     (float3) (0.5f - 0.5f * _wcl_allocs->pa._wcl_normal.y)) * _wcl_allocs->pa._wcl_ambient;
+
+   float brightness = 0.0f;
+   float cosAngle = 0.0f; // temporary for diffuse and highlight
+
+   if (!shadow(_wcl_allocs, (struct Ray) {
+     _wcl_allocs->pa._wcl_position, lightDir}, scene)) {
+   // if light source is visible, add its diffuse contribution
+   cosAngle = dot(lightDir, _wcl_allocs->pa._wcl_normal);
+   cosAngle = fmax(cosAngle, 0.0f); // only if we're facing the light
+   brightness = _wcl_allocs->pa._wcl_diffuse*cosAngle;
+
+   // add specular highlight, i.e. a reflection of the light source	
+   cosAngle = dot(_wcl_allocs->pa._wcl_reflected, lightDir);
+   cosAngle = fmax(cosAngle, 0.0f); // if reflection is towards light
+
+   // resize highlight (shrinks with increasing factor)
+   cosAngle = ((cosAngle - 1.0f) / _wcl_allocs->pa._wcl_roughness) + 1.0f;
+   cosAngle = fmax(cosAngle, 0.0f); // only if inside the highlight
+   cosAngle = cosAngle * cosAngle * _wcl_allocs->pa._wcl_highlight;
+  }
+   // ambient and diffuse contributions + highlight
+   _wcl_allocs->pa._wcl_color = (_wcl_allocs->pa._wcl_color * brightness) + _wcl_allocs->pa._wcl_ambientColor + (float3) (cosAngle);
+  }
+  result += _wcl_allocs->pa._wcl_color * weight; // add weighted contribution of (reflected) ray
+  weight *= _wcl_allocs->pa._wcl_reflection; // diminish weight of further reflections
+
+  // follow the reflected ray next
+  ray.base = _wcl_allocs->pa._wcl_position;
+  ray.dir = _wcl_allocs->pa._wcl_reflected;
+ }
+
+ return result;
+}
+
+// trace a ray through each pixel
+
+__kernel
+void render_gpu(__global const struct Scene* restrict scene, ulong _wcl_scene_size, __global uchar4* restrict Image, ulong _wcl_Image_size) {
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &scene[0], &scene[_wcl_scene_size],&Image[0], &Image[_wcl_Image_size] },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.render_gpu__scene_min, _wcl_allocs->gl.render_gpu__scene_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.render_gpu__Image_min, _wcl_allocs->gl.render_gpu__Image_max, (__global uint*)0));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+ const int imgWidth = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam.imgWidth;
+ const int imgHeight = (*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam.imgHeight;
+
+ const int gid = get_global_id(0);
+ if (gid > imgWidth * imgHeight)
+  return;
+
+ const int x = gid % imgWidth;
+ const int y = gid / imgWidth;
+
+ // trace the ray through that pixel
+ struct Ray ray = camMakePrimaryRay(_wcl_allocs, &((*(_wcl_addr_clamp_global_2_const___u_uglobal__struct__Scene__Ptr((scene), 1, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__scene_max, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_min, (const __global struct Scene *)_wcl_allocs->gl.render_gpu__Image_max, (const __global struct Scene *)_wcl_allocs->gn))).cam), x, y);;_wcl_allocs->pa._wcl_ray = ray;
+ float3 color = trace(_wcl_allocs, _wcl_allocs->pa._wcl_ray, scene);
+
+ // apply 2x2 ordered dithering during conversion from float to uchar
+ float dither = (float) ((((x^y) & 1) << 1) + (y & 1)) * 0.25f;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__uchar4__Ptr((Image)+(y * imgWidth + x), 1, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_max, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_max, (__global uchar4 *)_wcl_allocs->gn))).x =
+   (unsigned char) (fmin(color.x, 1.0f) * 255.125f + dither);
+ (*(_wcl_addr_clamp_global_2__u_uglobal__uchar4__Ptr((Image)+(y * imgWidth + x), 1, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_max, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_max, (__global uchar4 *)_wcl_allocs->gn))).y =
+   (unsigned char) (fmin(color.y, 1.0f) * 255.125f + dither);
+ (*(_wcl_addr_clamp_global_2__u_uglobal__uchar4__Ptr((Image)+(y * imgWidth + x), 1, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__scene_max, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_min, (__global uchar4 *)_wcl_allocs->gl.render_gpu__Image_max, (__global uchar4 *)_wcl_allocs->gn))).z =
+   (unsigned char) (fmin(color.z, 1.0f) * 255.125f + dither);
+}
