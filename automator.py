@@ -316,11 +316,6 @@ def launch(parser,options):
   else:
     param += " ORIG=0 " # Default value inside makefile
 
-  if options.native:
-    param += " NAT=1 "
-  else:
-    param += " NAT=0 " # Default value inside makefile
-
   if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 6 ) for repo in options.repo) ) ) :
     print "/!\ You must use --repo with integer between 0 & 6"
     parser.print_help()
@@ -353,15 +348,20 @@ def launch(parser,options):
     clean(repolist,param)
     os.chdir(root_repositories)
 
-  # 3 Build without validator
-  if(options.without_validator or options.all):
-    build(repolist,param)
-    os.chdir(root_repositories)
-  
-  # 4 Build with validator
-  if(options.validator or options.all):
-    build(repolist," VAL=1" + param)
-    os.chdir(root_repositories)
+  if options.native:
+      param = " NAT=1 "
+      build(repolist,param)
+      os.chdir(root_repositories)
+  else:
+    # 3 Build without validator
+    if(options.without_validator or options.all):
+      build(repolist,param)
+      os.chdir(root_repositories)
+    
+    # 4 Build with validator
+    if(options.validator or options.all):
+      build(repolist," VAL=1" + param)
+      os.chdir(root_repositories)
 
   # 5 Copy
   if(options.copy or options.all):
