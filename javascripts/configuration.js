@@ -11,8 +11,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",  
+      "valcpu"        : "",
+      "valgpu"        : "",  
     },    
     { 
       "title"         : "Event Profiling",
@@ -22,8 +22,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
+      "valcpu"        : "",
+      "valgpu"        : "",   
     },  
     { 
       "title"         : "Attractor Copying",
@@ -33,8 +33,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
+      "valcpu"        : "",
+      "valgpu"        : "",   
     },
     { 
       "title"         : "Attractor Attached",
@@ -44,8 +44,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu&interop",
       "gpu"           : "&gpu&interop&filter",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
+      "valcpu"        : "",
+      "valgpu"        : "",   
     },
     { 
       "title"         : "DXT Compressor",
@@ -66,8 +66,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",   
+      "valcpu"        : "",
+      "valgpu"        : "",   
     },   
     { 
       "title"         : "Fluids",
@@ -93,8 +93,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",                
+      "valcpu"        : "",
+      "valgpu"        : "",                
     },
     { 
       "title"         : "Convolution",
@@ -104,8 +104,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",                
+      "valcpu"        : "",
+      "valgpu"        : "",                
     },
     { 
       "title"         : "Info",
@@ -115,8 +115,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
+      "valcpu"        : "",
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Buffer and Sub-buffer",
@@ -126,8 +126,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : " ",
       "gpu"           : " ",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",                
+      "valcpu"        : "",
+      "valgpu"        : "",                
     },
     /*{ 
       "title"         : "Image Gaussian Blur",
@@ -138,7 +138,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },*/
     { 
       "title"         : "OpenGL Interop",
@@ -148,8 +148,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",              
+      "valcpu"        : "",
+      "valgpu"        : "",              
     },
     { 
       "title"         : "Vector Add",
@@ -159,8 +159,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
+      "valcpu"        : "",
+      "valgpu"        : "",               
     },           
   ],  
   // ******** //
@@ -175,8 +175,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",                
+      "valcpu"        : "",
+      "valgpu"        : "",                
     },
     { 
       "title"         : "Transpose",
@@ -187,7 +187,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu", 
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Trajectory",
@@ -197,8 +197,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu", 
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
+      "valcpu"        : "",
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Scan",
@@ -208,8 +208,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu", 
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",               
+      "valcpu"        : "",
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Reduce Int 2",
@@ -220,7 +220,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&int2",  
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",              
+      "valgpu"        : "",              
     },
     { 
       "title"         : "Reduce Int 4",
@@ -231,7 +231,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&int4",  
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",              
+      "valgpu"        : "",              
     },
     { 
       "title"         : "Reduce Int",
@@ -242,7 +242,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&int",  
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",              
+      "valgpu"        : "",              
     },        
     { 
       "title"         : "Reduce Float",
@@ -253,7 +253,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&float", 
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Reduce Float",
@@ -264,7 +264,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&float2", 
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Reduce Float",
@@ -275,7 +275,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&float4", 
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },
     { 
       "title"         : "Noise Copying",
@@ -285,8 +285,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",   
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",             
+      "valcpu"        : "",
+      "valgpu"        : "",             
     },
     { 
       "title"         : "Noise Attached",
@@ -297,7 +297,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&interop", 
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",               
+      "valgpu"        : "",               
     },
     { 
       "title"         : "QJulia Copying",
@@ -308,7 +308,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",    
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",            
+      "valgpu"        : "",            
     },
     { 
       "title"         : "QJulia Attached",
@@ -319,7 +319,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu&interop",
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",                
+      "valgpu"        : "",                
     },
   ],
   // ********************** //
@@ -345,8 +345,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&1&0&preprocessed_rendering_kernel_julia.cl&512&512",
       "gpu"           : "&0&1&preprocessed_rendering_kernel_julia.cl&512&512",       
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",         
+      "valcpu"        : "",
+      "valgpu"        : "",         
     },
     { 
       "title"         : "Mandelbulb",
@@ -356,8 +356,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&1&0&preprocessed_rendering_kernel_mandelbulb.cl&512&512",
       "gpu"           : "&0&1&preprocessed_rendering_kernel_mandelbulb.cl&512&512",   
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",             
+      "valcpu"        : "",
+      "valgpu"        : "",             
     },
     // caustic.scn / caustic3.scn / complex.scn / cornell_large.scn / cornell.scn /simple.scn
     { 
@@ -406,8 +406,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&-o&ALL_CPUS",
       "gpu"           : "&-o&ALL_GPUS",    
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",            
+      "valcpu"        : "",
+      "valgpu"        : "",            
     },
     { 
       "title"         : "Mandel",
@@ -501,7 +501,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     },   
     { 
       "title"         : "ConvolutionSeparable",
@@ -556,7 +556,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     },     
     { 
       "title"         : "DXTCompression",
@@ -578,7 +578,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     },     
     { 
       "title"         : "HiddenMarkovModel",
@@ -720,8 +720,8 @@ var configuration_pages = {
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",     
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",           
+      "valcpu"        : "",
+      "valgpu"        : "",           
     },     
     { 
       "title"         : "SimpleMultiGPU",
@@ -731,8 +731,8 @@ var configuration_pages = {
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",     
-      "valcpu"        : "&validator=on",
-      "valgpu"        : "&validator=on",           
+      "valcpu"        : "",
+      "valgpu"        : "",           
     },     
     { 
       "title"         : "SobelFilter",
@@ -787,7 +787,7 @@ var configuration_pages = {
       "cpu"           : "",
       "gpu"           : "&gpu",     
       "valcpu"        : "",
-      "valgpu"        : "&validator=on",           
+      "valgpu"        : "",           
     }, 
   ],
   // ************ //
