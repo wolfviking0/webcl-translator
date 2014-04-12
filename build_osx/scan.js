@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = '6d147fef-225b-4ba6-90ba-5e7f7f0af27b';
+    var PACKAGE_UUID = '1ccdf208-2ead-4300-957b-6d69cbd4493e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -9297,12 +9297,12 @@ function _PreScanBufferRecursive($output_data,$input_data,$max_group_size,$max_w
  var $last_global2 = 0, $last_group_element_count = 0, $last_local = 0, $last_local3 = 0, $last_shared = 0, $local = 0, $padding = 0, $padding1 = 0, $partial_sums = 0, $remainder = 0, $remaining_work_item_count = 0, $shared = 0, $work_item_count = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 144|0;
- $global = sp + 80|0;
- $local = sp + 88|0;
- $last_global = sp + 48|0;
+ $global = sp + 56|0;
+ $local = sp + 64|0;
+ $last_global = sp + 32|0;
  $last_local = sp + 104|0;
- $last_global2 = sp;
- $last_local3 = sp + 8|0;
+ $last_global2 = sp + 88|0;
+ $last_local3 = sp;
  $1 = $output_data;
  $2 = $input_data;
  $3 = $max_group_size;

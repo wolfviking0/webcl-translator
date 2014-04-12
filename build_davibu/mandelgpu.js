@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 3507;
-    var PACKAGE_UUID = '3dbd8dd7-1013-4a7f-9065-0bc292641c01';
+    var PACKAGE_UUID = 'aaf684c0-1006-4f7b-b997-fb146bae46b9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -13702,17 +13702,17 @@ function _UpdateMandel() {
  var sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 144|0;
- $vararg_buffer28 = sp + 24|0;
+ $vararg_buffer28 = sp + 16|0;
  $vararg_buffer25 = sp + 88|0;
- $vararg_buffer22 = sp;
- $vararg_buffer19 = sp + 16|0;
+ $vararg_buffer22 = sp + 8|0;
+ $vararg_buffer19 = sp + 48|0;
  $vararg_buffer16 = sp + 80|0;
  $vararg_buffer13 = sp + 96|0;
  $vararg_buffer10 = sp + 112|0;
  $vararg_buffer7 = sp + 64|0;
  $vararg_buffer4 = sp + 56|0;
  $vararg_buffer1 = sp + 120|0;
- $vararg_buffer = sp + 8|0;
+ $vararg_buffer = sp + 40|0;
  $events = sp + 128|0;
  $globalThreads = sp + 140|0;
  $localThreads = sp + 136|0;

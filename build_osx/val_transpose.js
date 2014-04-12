@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_transpose.data';
-    var REMOTE_PACKAGE_SIZE = 33403;
-    var PACKAGE_UUID = '2fbf0c31-1fb2-46c3-8892-0de847479cdd';
+    var REMOTE_PACKAGE_SIZE = 0;
+    var PACKAGE_UUID = '29348f3a-e28c-4dbc-bb14-e00777e5f84b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 33403, 0, 0).open('GET', '/transpose_kernel.cl');
+      new DataRequest(0, 0, 0, 0).open('GET', '/transpose_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

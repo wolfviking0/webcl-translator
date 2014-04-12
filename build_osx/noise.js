@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = '939dda5c-c239-4f74-bf9b-8cd924798fa2';
+    var PACKAGE_UUID = 'be30fb0d-25a3-4426-8d65-81abfa01b16c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14104,6 +14104,19 @@ function _Keyboard($key,$x,$y) {
   STACKTOP = sp;return;
   break;
  }
+ case 44:  {
+  $63 = +HEAPF32[456>>2];
+  $64 = $63 * 1.10000002384185791016;
+  HEAPF32[456>>2] = $64;
+  $65 = +HEAPF32[456>>2];
+  $66 = $65;
+  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+  (_printf((464|0),($vararg_buffer28|0))|0);
+  HEAP32[288>>2] = 1;
+  _glutPostRedisplay();
+  STACKTOP = sp;return;
+  break;
+ }
  case 118:  {
   $43 = +HEAPF32[400>>2];
   $44 = $43 * 1.10000002384185791016;
@@ -14169,19 +14182,6 @@ function _Keyboard($key,$x,$y) {
   _ShutdownCompute();
   _exit(0);
   // unreachable;
-  break;
- }
- case 44:  {
-  $63 = +HEAPF32[456>>2];
-  $64 = $63 * 1.10000002384185791016;
-  HEAPF32[456>>2] = $64;
-  $65 = +HEAPF32[456>>2];
-  $66 = $65;
-  HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
-  (_printf((464|0),($vararg_buffer28|0))|0);
-  HEAP32[288>>2] = 1;
-  _glutPostRedisplay();
-  STACKTOP = sp;return;
   break;
  }
  default: {
@@ -14398,15 +14398,15 @@ function _Recompute() {
  sp = STACKTOP;
  STACKTOP = STACKTOP + 208|0;
  $vararg_buffer7 = sp;
- $vararg_buffer4 = sp + 24|0;
- $vararg_buffer1 = sp + 16|0;
- $vararg_buffer = sp + 8|0;
+ $vararg_buffer4 = sp + 16|0;
+ $vararg_buffer1 = sp + 8|0;
+ $vararg_buffer = sp + 24|0;
  $values = sp + 80|0;
- $sizes = sp + 32|0;
+ $sizes = sp + 40|0;
  $global = sp + 152|0;
- $local = sp + 144|0;
- $bias = sp + 72|0;
- $scale = sp + 128|0;
+ $local = sp + 136|0;
+ $bias = sp + 32|0;
+ $scale = sp + 144|0;
  $origin = sp + 168|0;
  $region = sp + 180|0;
  $type = sp + 196|0;

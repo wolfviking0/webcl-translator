@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_juliagpu.data';
-    var REMOTE_PACKAGE_SIZE = 35177;
-    var PACKAGE_UUID = '530c0136-6d74-49f6-9a90-8fa2cf9436fe';
+    var REMOTE_PACKAGE_SIZE = 0;
+    var PACKAGE_UUID = 'f069e215-423e-4515-9e4b-21f20a6f34a0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35177, 0, 0).open('GET', '/preprocessed_rendering_kernel_julia.cl');
+      new DataRequest(0, 0, 0, 0).open('GET', '/preprocessed_rendering_kernel_julia.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -15690,21 +15690,6 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
-  break;
- }
- case 32:  {
-  _ReInit(0);
-  _glutPostRedisplay();
-  $347 = (+_WallClockTime());
-  HEAPF64[2984>>3] = $347;
-  STACKTOP = sp;return;
-  break;
- }
  case 112:  {
   $5 = (_fopen((2880|0),(2896|0))|0);
   $f = $5;
@@ -15860,6 +15845,21 @@ function _keyFunc($key,$x,$y) {
    $8 = HEAP32[_stderr>>2]|0;
    (_fprintf(($8|0),(2904|0),($vararg_buffer|0))|0);
   }
+  _ReInit(0);
+  _glutPostRedisplay();
+  $347 = (+_WallClockTime());
+  HEAPF64[2984>>3] = $347;
+  STACKTOP = sp;return;
+  break;
+ }
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 32:  {
   _ReInit(0);
   _glutPostRedisplay();
   $347 = (+_WallClockTime());
@@ -16344,6 +16344,10 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2224 + 72|0))>>2] = $5;
   break;
  }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
   break;
@@ -16354,10 +16358,6 @@ function _specialFunc($key,$x,$y) {
  }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
   break;
  }
  default: {
@@ -20619,11 +20619,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;

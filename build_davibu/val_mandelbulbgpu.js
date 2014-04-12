@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_mandelbulbgpu.data';
-    var REMOTE_PACKAGE_SIZE = 35816;
-    var PACKAGE_UUID = 'a86b5139-5f67-4e13-8ca4-28068e670895';
+    var REMOTE_PACKAGE_SIZE = 0;
+    var PACKAGE_UUID = 'b1f2598a-75c4-4776-8624-15a42850097b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 35816, 0, 0).open('GET', '/preprocessed_rendering_kernel_mandelbulb.cl');
+      new DataRequest(0, 0, 0, 0).open('GET', '/preprocessed_rendering_kernel_mandelbulb.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -15696,6 +15696,13 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 27:  {
+  $96 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
  case 112:  {
   $5 = (_fopen((2904|0),(2920|0))|0);
   $f = $5;
@@ -15856,13 +15863,6 @@ function _keyFunc($key,$x,$y) {
   $347 = (+_WallClockTime());
   HEAPF64[3008>>3] = $347;
   STACKTOP = sp;return;
-  break;
- }
- case 27:  {
-  $96 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
   break;
  }
  case 32:  {
@@ -16338,10 +16338,16 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2240 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2240 + 72|0))>>2] = $7;
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
+  break;
+ }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
   break;
  }
  case 104:  {
@@ -16350,20 +16356,14 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2240 + 72|0))>>2] = $5;
   break;
  }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
-  break;
- }
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
-  break;
- }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
+  break;
+ }
+ case 105:  {
+  $6 = +HEAPF32[((2240 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2240 + 72|0))>>2] = $7;
   break;
  }
  default: {

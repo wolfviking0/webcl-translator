@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_qjulia.data';
-    var REMOTE_PACKAGE_SIZE = 17085;
-    var PACKAGE_UUID = 'cfa92adf-7288-4e1d-a676-f28222f9efac';
+    var REMOTE_PACKAGE_SIZE = 0;
+    var PACKAGE_UUID = 'd84cd7f3-dc6f-4c09-9aad-46cd9f696ea9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 17085, 0, 0).open('GET', '/qjulia_kernel.cl');
+      new DataRequest(0, 0, 0, 0).open('GET', '/qjulia_kernel.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;

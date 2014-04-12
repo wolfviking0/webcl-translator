@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/smallptgpu1.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'smallptgpu1.data';
     var REMOTE_PACKAGE_SIZE = 66207;
-    var PACKAGE_UUID = 'cc33c7d5-74dd-4040-a9b6-1505be7297c1';
+    var PACKAGE_UUID = '8a80fb3a-8142-4161-b55b-cfb9d8c22976';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16088,91 +16088,6 @@ function _keyFunc($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 52:  {
-  $312 = HEAP32[4264>>2]|0;
-  $313 = HEAP32[544>>2]|0;
-  $314 = (($313) + (($312*44)|0)|0);
-  $315 = (($314) + 4|0);
-  $316 = +HEAPF32[$315>>2];
-  $317 = $316 - 5.0;
-  HEAPF32[$315>>2] = $317;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 54:  {
-  $318 = HEAP32[4264>>2]|0;
-  $319 = HEAP32[544>>2]|0;
-  $320 = (($319) + (($318*44)|0)|0);
-  $321 = (($320) + 4|0);
-  $322 = +HEAPF32[$321>>2];
-  $323 = $322 + 5.0;
-  HEAPF32[$321>>2] = $323;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 56:  {
-  $324 = HEAP32[4264>>2]|0;
-  $325 = HEAP32[544>>2]|0;
-  $326 = (($325) + (($324*44)|0)|0);
-  $327 = (($326) + 4|0);
-  $328 = (($327) + 8|0);
-  $329 = +HEAPF32[$328>>2];
-  $330 = $329 - 5.0;
-  HEAPF32[$328>>2] = $330;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 50:  {
-  $331 = HEAP32[4264>>2]|0;
-  $332 = HEAP32[544>>2]|0;
-  $333 = (($332) + (($331*44)|0)|0);
-  $334 = (($333) + 4|0);
-  $335 = (($334) + 8|0);
-  $336 = +HEAPF32[$335>>2];
-  $337 = $336 + 5.0;
-  HEAPF32[$335>>2] = $337;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 57:  {
-  $338 = HEAP32[4264>>2]|0;
-  $339 = HEAP32[544>>2]|0;
-  $340 = (($339) + (($338*44)|0)|0);
-  $341 = (($340) + 4|0);
-  $342 = (($341) + 4|0);
-  $343 = +HEAPF32[$342>>2];
-  $344 = $343 + 5.0;
-  HEAPF32[$342>>2] = $344;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 51:  {
-  $345 = HEAP32[4264>>2]|0;
-  $346 = HEAP32[544>>2]|0;
-  $347 = (($346) + (($345*44)|0)|0);
-  $348 = (($347) + 4|0);
-  $349 = (($348) + 4|0);
-  $350 = +HEAPF32[$349>>2];
-  $351 = $350 - 5.0;
-  HEAPF32[$349>>2] = $351;
-  _ReInitScene();
-  STACKTOP = sp;return;
-  break;
- }
- case 104:  {
-  $352 = HEAP32[4152>>2]|0;
-  $353 = ($352|0)!=(0);
-  $354 = $353 ^ 1;
-  $355 = $354&1;
-  HEAP32[4152>>2] = $355;
-  STACKTOP = sp;return;
-  break;
- }
  case 112:  {
   $5 = (_fopen((4160|0),(4176|0))|0);
   $f = $5;
@@ -16642,6 +16557,91 @@ function _keyFunc($key,$x,$y) {
   HEAPF64[tempDoublePtr>>3]=$311;HEAP32[$vararg_ptr23>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_ptr23+4>>2]=HEAP32[tempDoublePtr+4>>2];
   (_fprintf(($290|0),(4272|0),($vararg_buffer18|0))|0);
   _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 52:  {
+  $312 = HEAP32[4264>>2]|0;
+  $313 = HEAP32[544>>2]|0;
+  $314 = (($313) + (($312*44)|0)|0);
+  $315 = (($314) + 4|0);
+  $316 = +HEAPF32[$315>>2];
+  $317 = $316 - 5.0;
+  HEAPF32[$315>>2] = $317;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 54:  {
+  $318 = HEAP32[4264>>2]|0;
+  $319 = HEAP32[544>>2]|0;
+  $320 = (($319) + (($318*44)|0)|0);
+  $321 = (($320) + 4|0);
+  $322 = +HEAPF32[$321>>2];
+  $323 = $322 + 5.0;
+  HEAPF32[$321>>2] = $323;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 56:  {
+  $324 = HEAP32[4264>>2]|0;
+  $325 = HEAP32[544>>2]|0;
+  $326 = (($325) + (($324*44)|0)|0);
+  $327 = (($326) + 4|0);
+  $328 = (($327) + 8|0);
+  $329 = +HEAPF32[$328>>2];
+  $330 = $329 - 5.0;
+  HEAPF32[$328>>2] = $330;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 50:  {
+  $331 = HEAP32[4264>>2]|0;
+  $332 = HEAP32[544>>2]|0;
+  $333 = (($332) + (($331*44)|0)|0);
+  $334 = (($333) + 4|0);
+  $335 = (($334) + 8|0);
+  $336 = +HEAPF32[$335>>2];
+  $337 = $336 + 5.0;
+  HEAPF32[$335>>2] = $337;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 57:  {
+  $338 = HEAP32[4264>>2]|0;
+  $339 = HEAP32[544>>2]|0;
+  $340 = (($339) + (($338*44)|0)|0);
+  $341 = (($340) + 4|0);
+  $342 = (($341) + 4|0);
+  $343 = +HEAPF32[$342>>2];
+  $344 = $343 + 5.0;
+  HEAPF32[$342>>2] = $344;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 51:  {
+  $345 = HEAP32[4264>>2]|0;
+  $346 = HEAP32[544>>2]|0;
+  $347 = (($346) + (($345*44)|0)|0);
+  $348 = (($347) + 4|0);
+  $349 = (($348) + 4|0);
+  $350 = +HEAPF32[$349>>2];
+  $351 = $350 - 5.0;
+  HEAPF32[$349>>2] = $351;
+  _ReInitScene();
+  STACKTOP = sp;return;
+  break;
+ }
+ case 104:  {
+  $352 = HEAP32[4152>>2]|0;
+  $353 = ($352|0)!=(0);
+  $354 = $353 ^ 1;
+  $355 = $354&1;
+  HEAP32[4152>>2] = $355;
   STACKTOP = sp;return;
   break;
  }

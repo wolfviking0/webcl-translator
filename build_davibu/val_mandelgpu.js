@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '5396db8b-4a46-4692-ba60-2d987c610e24';
+    var PACKAGE_UUID = 'd6c37c52-5d14-4b74-99f4-47c0aeee2258';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16331,7 +16331,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L224: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -16352,7 +16352,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L224;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -18572,11 +18572,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 43)) {
-  $neg$0 = 0;
-  label = 5;
- } else if ((($6|0) == 45)) {
+ if ((($6|0) == 45)) {
   $neg$0 = 1;
+  label = 5;
+ } else if ((($6|0) == 43)) {
+  $neg$0 = 0;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;

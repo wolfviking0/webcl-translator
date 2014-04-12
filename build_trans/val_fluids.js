@@ -17,8 +17,8 @@ Module.expectedDataFileDownloads++;
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/js/val_fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_fluids.data';
-    var REMOTE_PACKAGE_SIZE = 385804;
-    var PACKAGE_UUID = '274707a6-61a2-43fc-acee-af3e65c11383';
+    var REMOTE_PACKAGE_SIZE = 0;
+    var PACKAGE_UUID = 'd59f1361-097d-463c-8905-a84659d40c3d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -115,7 +115,7 @@ function assert(check, msg) {
         this.requests[this.name] = null;
       },
     };
-      new DataRequest(0, 385804, 0, 0).open('GET', '/kernels.cl');
+      new DataRequest(0, 0, 0, 0).open('GET', '/kernels.cl');
 
     function processPackageData(arrayBuffer) {
       Module.finishedDataFileDownloads++;
@@ -15026,10 +15026,10 @@ function _kernel_from_string($ctx,$knl,$knl_name,$options) {
  $vararg_buffer4 = sp + 96|0;
  $vararg_buffer = sp + 16|0;
  $1 = sp + 180|0;
- $sizes = sp + 148|0;
+ $sizes = sp + 156|0;
  $status = sp + 184|0;
- $dev = sp + 164|0;
- $log_size = sp + 168|0;
+ $dev = sp + 168|0;
+ $log_size = sp + 152|0;
  $devname = sp + 208|0;
  $0 = $ctx;
  HEAP32[$1>>2] = $knl;
@@ -15509,18 +15509,18 @@ function _allocate_cl_buffers($clData) {
  STACKTOP = STACKTOP + 256|0;
  $vararg_buffer82 = sp + 224|0;
  $vararg_buffer76 = sp + 176|0;
- $vararg_buffer70 = sp + 48|0;
- $vararg_buffer64 = sp + 64|0;
+ $vararg_buffer70 = sp + 80|0;
+ $vararg_buffer64 = sp + 32|0;
  $vararg_buffer58 = sp + 128|0;
  $vararg_buffer52 = sp + 160|0;
  $vararg_buffer46 = sp + 192|0;
  $vararg_buffer40 = sp + 208|0;
- $vararg_buffer34 = sp;
+ $vararg_buffer34 = sp + 16|0;
  $vararg_buffer28 = sp + 96|0;
- $vararg_buffer22 = sp + 16|0;
+ $vararg_buffer22 = sp + 48|0;
  $vararg_buffer16 = sp + 112|0;
- $vararg_buffer10 = sp + 80|0;
- $vararg_buffer4 = sp + 32|0;
+ $vararg_buffer10 = sp;
+ $vararg_buffer4 = sp + 64|0;
  $vararg_buffer = sp + 144|0;
  $0 = $clData;
  $1 = $0;
@@ -16177,33 +16177,33 @@ function _cleanup_cl($clData) {
  var sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 544|0;
- $vararg_buffer154 = sp + 32|0;
+ $vararg_buffer154 = sp + 64|0;
  $vararg_buffer148 = sp + 416|0;
- $vararg_buffer142 = sp + 128|0;
+ $vararg_buffer142 = sp + 176|0;
  $vararg_buffer136 = sp + 368|0;
- $vararg_buffer130 = sp + 112|0;
- $vararg_buffer124 = sp + 48|0;
+ $vararg_buffer130 = sp + 160|0;
+ $vararg_buffer124 = sp + 80|0;
  $vararg_buffer118 = sp + 336|0;
- $vararg_buffer112 = sp + 240|0;
- $vararg_buffer106 = sp + 64|0;
- $vararg_buffer100 = sp + 80|0;
+ $vararg_buffer112 = sp + 96|0;
+ $vararg_buffer106 = sp + 112|0;
+ $vararg_buffer100 = sp + 128|0;
  $vararg_buffer94 = sp + 320|0;
  $vararg_buffer88 = sp + 352|0;
  $vararg_buffer82 = sp + 384|0;
  $vararg_buffer76 = sp + 400|0;
- $vararg_buffer70 = sp + 160|0;
+ $vararg_buffer70 = sp + 208|0;
  $vararg_buffer64 = sp + 224|0;
- $vararg_buffer58 = sp + 176|0;
- $vararg_buffer52 = sp + 192|0;
- $vararg_buffer46 = sp + 208|0;
- $vararg_buffer40 = sp + 16|0;
- $vararg_buffer34 = sp + 256|0;
+ $vararg_buffer58 = sp + 240|0;
+ $vararg_buffer52 = sp + 256|0;
+ $vararg_buffer46 = sp + 272|0;
+ $vararg_buffer40 = sp + 48|0;
+ $vararg_buffer34 = sp + 32|0;
  $vararg_buffer28 = sp + 288|0;
- $vararg_buffer22 = sp + 96|0;
+ $vararg_buffer22 = sp + 144|0;
  $vararg_buffer16 = sp + 304|0;
- $vararg_buffer10 = sp;
- $vararg_buffer4 = sp + 272|0;
- $vararg_buffer = sp + 144|0;
+ $vararg_buffer10 = sp + 16|0;
+ $vararg_buffer4 = sp;
+ $vararg_buffer = sp + 192|0;
  $0 = $clData;
  $1 = $0;
  $2 = (($1) + 48|0);
@@ -17343,17 +17343,17 @@ function _run_cl_vorticity_confinement($clData,$dt,$e) {
  var $vararg_ptr56 = 0, $vararg_ptr57 = 0, $vararg_ptr7 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 224|0;
- $vararg_buffer52 = sp;
+ $vararg_buffer52 = sp + 96|0;
  $vararg_buffer46 = sp + 128|0;
  $vararg_buffer40 = sp + 144|0;
- $vararg_buffer34 = sp + 48|0;
+ $vararg_buffer34 = sp + 16|0;
  $vararg_buffer28 = sp + 112|0;
- $vararg_buffer22 = sp + 64|0;
- $vararg_buffer16 = sp + 80|0;
- $vararg_buffer10 = sp + 96|0;
- $vararg_buffer4 = sp + 32|0;
- $vararg_buffer = sp + 16|0;
- $1 = sp + 160|0;
+ $vararg_buffer22 = sp + 32|0;
+ $vararg_buffer16 = sp + 48|0;
+ $vararg_buffer10 = sp + 64|0;
+ $vararg_buffer4 = sp + 80|0;
+ $vararg_buffer = sp;
+ $1 = sp + 184|0;
  $2 = sp + 188|0;
  $ldim = sp + 208|0;
  $gdim = sp + 212|0;
@@ -25511,11 +25511,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
