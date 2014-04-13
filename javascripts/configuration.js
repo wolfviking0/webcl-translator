@@ -212,6 +212,17 @@ var configuration_pages = {
       "valgpu"        : "",               
     },
     { 
+      "title"         : "Reduce Int ",
+      "compatibility" : "[Webkit]",
+      "pages"         : "build_osx/",
+      "id"            : 4,
+      "gl"            : "off",
+      "cpu"           : "",
+      "gpu"           : "&gpu&int",  
+      "valcpu"        : "",
+      "valgpu"        : "",              
+    },
+    { 
       "title"         : "Reduce Int 2",
       "compatibility" : "[Webkit]",
       "pages"         : "build_osx/",
@@ -232,17 +243,6 @@ var configuration_pages = {
       "gpu"           : "&gpu&int4",  
       "valcpu"        : "",
       "valgpu"        : "",              
-    },
-    { 
-      "title"         : "Reduce Int",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_osx/",
-      "id"            : 4,
-      "gl"            : "off",
-      "cpu"           : "",
-      "gpu"           : "&gpu&int",  
-      "valcpu"        : "",
-      "valgpu"        : "",              
     },        
     { 
       "title"         : "Reduce Float",
@@ -256,7 +256,7 @@ var configuration_pages = {
       "valgpu"        : "",               
     },
     { 
-      "title"         : "Reduce Float",
+      "title"         : "Reduce Float 2",
       "compatibility" : "[Webkit]",
       "pages"         : "build_osx/",
       "id"            : 4,
@@ -267,7 +267,7 @@ var configuration_pages = {
       "valgpu"        : "",               
     },
     { 
-      "title"         : "Reduce Float",
+      "title"         : "Reduce Float 4",
       "compatibility" : "[Webkit]",
       "pages"         : "build_osx/",
       "id"            : 4,
