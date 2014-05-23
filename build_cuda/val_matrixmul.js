@@ -177,6 +177,12 @@ for (var key in moduleOverrides) {
 //========================================
 
 var Runtime = {
+  setTempRet0: function (value) {
+    tempRet0 = value;
+  },
+  getTempRet0: function () {
+    return tempRet0;
+  },
   stackSave: function () {
     return STACKTOP;
   },
@@ -559,28 +565,6 @@ function assert(condition, text) {
 
 var globalScope = this;
 
-// C calling interface. A convenient way to call C functions (in C files, or
-// defined with extern "C").
-//
-// Note: LLVM optimizations can inline and remove functions, after which you will not be
-//       able to call them. Closure can also do so. To avoid that, add your function to
-//       the exports using something like
-//
-//         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
-//
-// @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
-// @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-//                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
-// @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
-//                   except that 'array' is not possible (there is no way for us to know the length of the array)
-// @param args       An array of the arguments to the function, as native JS values (as in returnType)
-//                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
-// @return           The return value, as a native JS value (as in returnType)
-function ccall(ident, returnType, argTypes, args) {
-  return ccallFunc(getCFunc(ident), returnType, argTypes, args);
-}
-Module["ccall"] = ccall;
-
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {
   try {
@@ -592,53 +576,146 @@ function getCFunc(ident) {
   return func;
 }
 
-// Internal function that does a C call using a function, not an identifier
-function ccallFunc(func, returnType, argTypes, args) {
+var cwrap, ccall;
+(function(){
   var stack = 0;
-  function toC(value, type) {
-    if (type == 'string') {
-      if (value === null || value === undefined || value === 0) return 0; // null string
-      value = intArrayFromString(value);
-      type = 'array';
-    }
-    if (type == 'array') {
-      if (!stack) stack = Runtime.stackSave();
-      var ret = Runtime.stackAlloc(value.length);
-      writeArrayToMemory(value, ret);
+  var JSfuncs = {
+    'stackSave' : function() {
+      stack = Runtime.stackSave();
+    },
+    'stackRestore' : function() {
+      Runtime.stackRestore(stack);
+    },
+    // type conversion from js to c
+    'arrayToC' : function(arr) {
+      var ret = Runtime.stackAlloc(arr.length);
+      writeArrayToMemory(arr, ret);
+      return ret;
+    },
+    'stringToC' : function(str) {
+      var ret = 0;
+      if (str !== null && str !== undefined && str !== 0) { // null string
+        ret = Runtime.stackAlloc(str.length + 1); // +1 for the trailing '\0'
+        writeStringToMemory(str, ret);
+      }
       return ret;
     }
-    return value;
-  }
-  function fromC(value, type) {
-    if (type == 'string') {
-      return Pointer_stringify(value);
-    }
-    assert(type != 'array');
-    return value;
-  }
-  var i = 0;
-  var cArgs = args ? args.map(function(arg) {
-    return toC(arg, argTypes[i++]);
-  }) : [];
-  var ret = fromC(func.apply(null, cArgs), returnType);
-  if (stack) Runtime.stackRestore(stack);
-  return ret;
-}
+  };
+  // For fast lookup of conversion functions
+  var toC = {'string' : JSfuncs['stringToC'], 'array' : JSfuncs['arrayToC']};
 
-// Returns a native JS wrapper for a C function. This is similar to ccall, but
-// returns a function you can call repeatedly in a normal way. For example:
-//
-//   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
-//   alert(my_function(5, 22));
-//   alert(my_function(99, 12));
-//
-function cwrap(ident, returnType, argTypes) {
-  var func = getCFunc(ident);
-  return function() {
-    return ccallFunc(func, returnType, argTypes, Array.prototype.slice.call(arguments));
+  // C calling interface. A convenient way to call C functions (in C files, or
+  // defined with extern "C").
+  //
+  // Note: ccall/cwrap use the C stack for temporary values. If you pass a string
+  //       then it is only alive until the call is complete. If the code being
+  //       called saves the pointer to be used later, it may point to invalid
+  //       data. If you need a string to live forever, you can create it (and
+  //       must later delete it manually!) using malloc and writeStringToMemory,
+  //       for example.
+  //
+  // Note: LLVM optimizations can inline and remove functions, after which you will not be
+  //       able to call them. Closure can also do so. To avoid that, add your function to
+  //       the exports using something like
+  //
+  //         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
+  //
+  // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
+  // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
+  //                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
+  // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
+  //                   except that 'array' is not possible (there is no way for us to know the length of the array)
+  // @param args       An array of the arguments to the function, as native JS values (as in returnType)
+  //                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
+  // @return           The return value, as a native JS value (as in returnType)
+  ccall = function ccallFunc(ident, returnType, argTypes, args) {
+    var func = getCFunc(ident);
+    var cArgs = [];
+    assert(returnType !== 'array', 'Return type should not be "array".');
+    if (args) {
+      for (var i = 0; i < args.length; i++) {
+        var converter = toC[argTypes[i]];
+        if (converter) {
+          if (stack === 0) stack = Runtime.stackSave();
+          cArgs[i] = converter(args[i]);
+        } else {
+          cArgs[i] = args[i];
+        }
+      }
+    }
+    var ret = func.apply(null, cArgs);
+    if (returnType === 'string') ret = Pointer_stringify(ret);
+    if (stack !== 0) JSfuncs['stackRestore']();
+    return ret;
   }
-}
+
+  var sourceRegex = /^function \((.*)\)\s*{\s*([^]*?)[\s;]*(?:return\s*(.*?)[;\s]*)?}$/;
+  function parseJSFunc(jsfunc) {
+    // Match the body and the return value of a javascript function source
+    var parsed = jsfunc.toString().match(sourceRegex).slice(1);
+    return {arguments : parsed[0], body : parsed[1], returnValue: parsed[2]}
+  }
+  var JSsource = {};
+  for (var fun in JSfuncs) {
+    if (JSfuncs.hasOwnProperty(fun)) {
+      // Elements of toCsource are arrays of three items:
+      // the code, and the return value
+      JSsource[fun] = parseJSFunc(JSfuncs[fun]);
+    }
+  }
+  // Returns a native JS wrapper for a C function. This is similar to ccall, but
+  // returns a function you can call repeatedly in a normal way. For example:
+  //
+  //   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
+  //   alert(my_function(5, 22));
+  //   alert(my_function(99, 12));
+  //
+  cwrap = function cwrap(ident, returnType, argTypes) {
+    var cfunc = getCFunc(ident);
+    // When the function takes numbers and returns a number, we can just return
+    // the original function
+    var numericArgs = argTypes.every(function(type){ return type === 'number'});
+    var numericRet = (returnType !== 'string');
+    if ( numericRet && numericArgs) {
+      return cfunc;
+    }
+    // Creation of the arguments list (["$1","$2",...,"$nargs"])
+    var argNames = argTypes.map(function(x,i){return '$'+i});
+    var funcstr = "(function(" + argNames.join(',') + ") {";
+    var nargs = argTypes.length;
+    if (!numericArgs) {
+      // Generate the code needed to convert the arguments from javascript
+      // values to pointers
+      funcstr += JSsource['stackSave'].body + ';';
+      for (var i = 0; i < nargs; i++) {
+        var arg = argNames[i], type = argTypes[i];
+        if (type === 'number') continue;
+        var convertCode = JSsource[type + 'ToC']; // [code, return]
+        funcstr += 'var ' + convertCode.arguments + ' = ' + arg + ';';
+        funcstr += convertCode.body + ';';
+        funcstr += arg + '=' + convertCode.returnValue + ';';
+      }
+    }
+
+    // When the code is compressed, the name of cfunc is not literally 'cfunc' anymore
+    var cfuncname = parseJSFunc(function(){return cfunc}).returnValue;
+    // Call the function
+    funcstr += 'var ret = ' + cfuncname + '(' + argNames.join(',') + ');';
+    if (!numericRet) { // Return type can only by 'string' or 'number'
+      // Convert the result to a string
+      var strgfy = parseJSFunc(function(){return Pointer_stringify}).returnValue;
+      funcstr += 'ret = ' + strgfy + '(ret);';
+    }
+    if (!numericArgs) {
+      // If we had a stack, restore it
+      funcstr += JSsource['stackRestore'].body + ';';
+    }
+    funcstr += 'return ret})';
+    return eval(funcstr);
+  };
+})();
 Module["cwrap"] = cwrap;
+Module["ccall"] = ccall;
 
 // Sets a value in memory in a dynamic way at run-time. Uses the
 // type data. This is the same as makeSetValue, except that
@@ -652,8 +729,8 @@ function setValue(ptr, value, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
     switch(type) {
-      case 'i1': HEAP8[(ptr)]=value; break;
-      case 'i8': HEAP8[(ptr)]=value; break;
+      case 'i1': HEAP8[((ptr)>>0)]=value; break;
+      case 'i8': HEAP8[((ptr)>>0)]=value; break;
       case 'i16': HEAP16[((ptr)>>1)]=value; break;
       case 'i32': HEAP32[((ptr)>>2)]=value; break;
       case 'i64': (tempI64 = [value>>>0,(tempDouble=value,(+(Math_abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math_min((+(Math_floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math_ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[((ptr)>>2)]=tempI64[0],HEAP32[(((ptr)+(4))>>2)]=tempI64[1]); break;
@@ -669,8 +746,8 @@ function getValue(ptr, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
     switch(type) {
-      case 'i1': return HEAP8[(ptr)];
-      case 'i8': return HEAP8[(ptr)];
+      case 'i1': return HEAP8[((ptr)>>0)];
+      case 'i8': return HEAP8[((ptr)>>0)];
       case 'i16': return HEAP16[((ptr)>>1)];
       case 'i32': return HEAP32[((ptr)>>2)];
       case 'i64': return HEAP32[((ptr)>>2)];
@@ -734,7 +811,7 @@ function allocate(slab, types, allocator, ptr) {
     }
     stop = ret + size;
     while (ptr < stop) {
-      HEAP8[((ptr++)|0)]=0;
+      HEAP8[((ptr++)>>0)]=0;
     }
     return ret;
   }
@@ -787,7 +864,7 @@ function Pointer_stringify(ptr, /* optional */ length) {
   var i = 0;
   while (1) {
     assert(ptr + i < TOTAL_MEMORY);
-    t = HEAPU8[(((ptr)+(i))|0)];
+    t = HEAPU8[(((ptr)+(i))>>0)];
     if (t >= 128) hasUtf = true;
     else if (t == 0 && !length) break;
     i++;
@@ -812,7 +889,7 @@ function Pointer_stringify(ptr, /* optional */ length) {
   var utf8 = new Runtime.UTF8Processor();
   for (i = 0; i < length; i++) {
     assert(ptr + i < TOTAL_MEMORY);
-    t = HEAPU8[(((ptr)+(i))|0)];
+    t = HEAPU8[(((ptr)+(i))>>0)];
     ret += utf8.processCChar(t);
   }
   return ret;
@@ -1243,7 +1320,7 @@ function writeStringToMemory(string, buffer, dontAddNull) {
   var i = 0;
   while (i < array.length) {
     var chr = array[i];
-    HEAP8[(((buffer)+(i))|0)]=chr;
+    HEAP8[(((buffer)+(i))>>0)]=chr;
     i = i + 1;
   }
 }
@@ -1251,7 +1328,7 @@ Module['writeStringToMemory'] = writeStringToMemory;
 
 function writeArrayToMemory(array, buffer) {
   for (var i = 0; i < array.length; i++) {
-    HEAP8[(((buffer)+(i))|0)]=array[i];
+    HEAP8[(((buffer)+(i))>>0)]=array[i];
   }
 }
 Module['writeArrayToMemory'] = writeArrayToMemory;
@@ -1259,9 +1336,9 @@ Module['writeArrayToMemory'] = writeArrayToMemory;
 function writeAsciiToMemory(str, buffer, dontAddNull) {
   for (var i = 0; i < str.length; i++) {
     assert(str.charCodeAt(i) === str.charCodeAt(i)&0xff);
-    HEAP8[(((buffer)+(i))|0)]=str.charCodeAt(i);
+    HEAP8[(((buffer)+(i))>>0)]=str.charCodeAt(i);
   }
-  if (!dontAddNull) HEAP8[(((buffer)+(str.length))|0)]=0;
+  if (!dontAddNull) HEAP8[(((buffer)+(str.length))>>0)]=0;
 }
 Module['writeAsciiToMemory'] = writeAsciiToMemory;
 
@@ -1396,8 +1473,8 @@ var memoryInitializer = null;
 STATIC_BASE = 8;
 
 STATICTOP = STATIC_BASE + Runtime.alignMemory(3075);
-/* global initializers */ __ATINIT__.push();
-
+  /* global initializers */ __ATINIT__.push();
+  
 
 /* memory initializer */ allocate([116,101,109,112,108,97,116,101,32,60,105,110,116,32,66,76,79,67,75,95,83,73,90,69,62,32,95,95,103,108,111,98,97,108,95,95,32,118,111,105,100,32,109,97,116,114,105,120,77,117,108,67,85,68,65,40,102,108,111,97,116,32,42,67,44,32,102,108,111,97,116,32,42,65,44,32,102,108,111,97,116,32,42,66,44,32,105,110,116,32,119,65,44,32,105,110,116,32,119,66,41,32,123,32,105,110,116,32,98,120,32,61,32,98,108,111,99,107,73,100,120,46,120,59,32,105,110,116,32,98,121,32,61,32,98,108,111,99,107,73,100,120,46,121,59,32,105,110,116,32,116,120,32,61,32,116,104,114,101,97,100,73,100,120,46,120,59,32,105,110,116,32,116,121,32,61,32,116,104,114,101,97,100,73,100,120,46,121,59,32,105,110,116,32,97,66,101,103,105,110,32,61,32,119,65,32,42,32,66,76,79,67,75,95,83,73,90,69,32,42,32,98,121,59,32,105,110,116,32,97,69,110,100,32,61,32,97,66,101,103,105,110,32,43,32,119,65,32,45,32,49,59,32,105,110,116,32,97,83,116,101,112,32,61,32,66,76,79,67,75,95,83,73,90,69,59,32,105,110,116,32,98,66,101,103,105,110,32,61,32,66,76,79,67,75,95,83,73,90,69,32,42,32,98,120,59,32,105,110,116,32,98,83,116,101,112,32,61,32,66,76,79,67,75,95,83,73,90,69,32,42,32,119,66,59,32,102,108,111,97,116,32,67,115,117,98,32,61,32,48,59,32,102,111,114,32,40,105,110,116,32,97,32,61,32,97,66,101,103,105,110,44,32,98,32,61,32,98,66,101,103,105,110,59,32,97,32,60,61,32,97,69,110,100,59,32,97,32,43,61,32,97,83,116,101,112,44,32,98,32,43,61,32,98,83,116,101,112,41,32,123,32,95,95,115,104,97,114,101,100,95,95,32,102,108,111,97,116,32,65,115,91,66,76,79,67,75,95,83,73,90,69,93,91,66,76,79,67,75,95,83,73,90,69,93,59,32,95,95,115,104,97,114,101,100,95,95,32,102,108,111,97,116,32,66,115,91,66,76,79,67,75,95,83,73,90,69,93,91,66,76,79,67,75,95,83,73,90,69,93,59,32,65,115,91,116,121,93,91,116,120,93,32,61,32,65,91,97,32,43,32,119,65,32,42,32,116,121,32,43,32,116,120,93,59,32,66,115,91,116,121,93,91,116,120,93,32,61,32,66,91,98,32,43,32,119,66,32,42,32,116,121,32,43,32,116,120,93,59,32,95,95,115,121,110,99,116,104,114,101,97,100,115,40,41,59,32,102,111,114,32,40,105,110,116,32,107,32,61,32,48,59,32,107,32,60,32,66,76,79,67,75,95,83,73,90,69,59,32,43,43,107,41,32,123,32,67,115,117,98,32,43,61,32,65,115,91,116,121,93,91,107,93,32,42,32,66,115,91,107,93,91,116,120,93,59,32,125,32,95,95,115,121,110,99,116,104,114,101,97,100,115,40,41,59,32,125,32,105,110,116,32,99,32,61,32,119,66,32,42,32,66,76,79,67,75,95,83,73,90,69,32,42,32,98,121,32,43,32,66,76,79,67,75,95,83,73,90,69,32,42,32,98,120,59,32,67,91,99,32,43,32,119,66,32,42,32,116,121,32,43,32,116,120,93,32,61,32,67,115,117,98,59,32,125,0,0,0,8,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,104,111,115,116,32,109,97,116,114,105,120,32,67,33,10,0,0,0,0,0,0,99,117,100,97,77,97,108,108,111,99,32,100,95,65,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,0,0,0,0,0,0,99,117,100,97,77,97,108,108,111,99,32,100,95,66,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,0,0,0,0,0,0,99,117,100,97,77,97,108,108,111,99,32,100,95,67,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,0,0,0,0,0,0,99,117,100,97,77,101,109,99,112,121,32,40,100,95,65,44,104,95,65,41,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,99,117,100,97,77,101,109,99,112,121,32,40,100,95,66,44,104,95,66,41,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,67,111,109,112,117,116,105,110,103,32,114,101,115,117,108,116,32,117,115,105,110,103,32,67,85,68,65,32,75,101,114,110,101,108,46,46,46,10,0,0,109,97,116,114,105,120,77,117,108,67,85,68,65,0,0,0,45,68,66,76,79,67,75,95,83,73,90,69,61,49,54,0,100,111,110,101,10,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,115,116,97,114,116,32,101,118,101,110,116,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,115,116,111,112,32,101,118,101,110,116,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,99,111,114,100,32,115,116,97,114,116,32,101,118,101,110,116,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,70,97,105,108,101,100,32,116,111,32,114,101,99,111,114,100,32,115,116,111,112,32,101,118,101,110,116,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,0,70,97,105,108,101,100,32,116,111,32,115,121,110,99,104,114,111,110,105,122,101,32,111,110,32,116,104,101,32,115,116,111,112,32,101,118,101,110,116,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,116,105,109,101,32,101,108,97,112,115,101,100,32,98,101,116,119,101,101,110,32,101,118,101,110,116,115,32,40,101,114,114,111,114,32,99,111,100,101,32,37,115,41,33,10,0,0,0,0,0,80,101,114,102,111,114,109,97,110,99,101,61,32,37,46,50,102,32,71,70,108,111,112,47,115,44,32,84,105,109,101,61,32,37,46,51,102,32,109,115,101,99,44,32,83,105,122,101,61,32,37,46,48,102,32,79,112,115,44,32,87,111,114,107,103,114,111,117,112,83,105,122,101,61,32,37,117,32,116,104,114,101,97,100,115,47,98,108,111,99,107,10,0,0,0,0,99,117,100,97,77,101,109,99,112,121,32,40,104,95,67,44,100,95,67,41,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,67,104,101,99,107,105,110,103,32,99,111,109,112,117,116,101,100,32,114,101,115,117,108,116,32,102,111,114,32,99,111,114,114,101,99,116,110,101,115,115,58,32,0,0,0,0,0,0,69,114,114,111,114,33,32,77,97,116,114,105,120,91,37,48,53,100,93,61,37,46,56,102,44,32,114,101,102,61,37,46,56,102,32,101,114,114,111,114,32,116,101,114,109,32,105,115,32,62,32,37,69,10,0,0,37,115,10,0,0,0,0,0,82,101,115,117,108,116,32,61,32,80,65,83,83,0,0,0,82,101,115,117,108,116,32,61,32,70,65,73,76,0,0,0,10,78,111,116,101,58,32,70,111,114,32,112,101,97,107,32,112,101,114,102,111,114,109,97,110,99,101,44,32,112,108,101,97,115,101,32,114,101,102,101,114,32,116,111,32,116,104,101,32,109,97,116,114,105,120,77,117,108,67,85,66,76,65,83,32,101,120,97,109,112,108,101,46,10,0,0,0,0,0,0,91,77,97,116,114,105,120,32,77,117,108,116,105,112,108,121,32,85,115,105,110,103,32,67,85,68,65,93,32,45,32,83,116,97,114,116,105,110,103,46,46,46,10,0,0,0,0,0,104,101,108,112,0,0,0,0,63,0,0,0,0,0,0,0,85,115,97,103,101,32,45,100,101,118,105,99,101,61,110,32,40,110,32,62,61,32,48,32,102,111,114,32,100,101,118,105,99,101,73,68,41,10,0,0,32,32,32,32,32,32,45,119,65,61,87,105,100,116,104,65,32,45,104,65,61,72,101,105,103,104,116,65,32,40,87,105,100,116,104,32,120,32,72,101,105,103,104,116,32,111,102,32,77,97,116,114,105,120,32,65,41,10,0,0,0,0,0,0,32,32,32,32,32,32,45,119,66,61,87,105,100,116,104,66,32,45,104,66,61,72,101,105,103,104,116,66,32,40,87,105,100,116,104,32,120,32,72,101,105,103,104,116,32,111,102,32,77,97,116,114,105,120,32,66,41,10,0,0,0,0,0,0,32,32,78,111,116,101,58,32,79,117,116,101,114,32,109,97,116,114,105,120,32,100,105,109,101,110,115,105,111,110,115,32,111,102,32,65,32,38,32,66,32,109,97,116,114,105,99,101,115,32,109,117,115,116,32,98,101,32,101,113,117,97,108,46,10,0,0,0,0,0,0,0,100,101,118,105,99,101,0,0,99,117,100,97,71,101,116,68,101,118,105,99,101,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,69,114,114,111,114,58,32,100,101,118,105,99,101,32,105,115,32,114,117,110,110,105,110,103,32,105,110,32,60,67,111,109,112,117,116,101,32,77,111,100,101,32,80,114,111,104,105,98,105,116,101,100,62,44,32,110,111,32,116,104,114,101,97,100,115,32,99,97,110,32,117,115,101,32,58,58,99,117,100,97,83,101,116,68,101,118,105,99,101,40,41,46,10,0,0,0,99,117,100,97,71,101,116,68,101,118,105,99,101,80,114,111,112,101,114,116,105,101,115,32,114,101,116,117,114,110,101,100,32,101,114,114,111,114,32,99,111,100,101,32,37,100,44,32,108,105,110,101,40,37,100,41,10,0,0,0,0,0,0,0,71,80,85,32,68,101,118,105,99,101,32,37,100,58,32,34,37,115,34,32,119,105,116,104,32,99,111,109,112,117,116,101,32,99,97,112,97,98,105,108,105,116,121,32,37,100,46,37,100,10,10,0,0,0,0,0,119,65,0,0,0,0,0,0,104,65,0,0,0,0,0,0,119,66,0,0,0,0,0,0,104,66,0,0,0,0,0,0,69,114,114,111,114,58,32,111,117,116,101,114,32,109,97,116,114,105,120,32,100,105,109,101,110,115,105,111,110,115,32,109,117,115,116,32,98,101,32,101,113,117,97,108,46,32,40,37,100,32,33,61,32,37,100,41,10,0,0,0,0,0,0,0,77,97,116,114,105,120,65,40,37,100,44,37,100,41,44,32,77,97,116,114,105,120,66,40,37,100,44,37,100,41,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
 
@@ -1577,6 +1654,24 @@ function copyTempDouble(ptr) {
       return 0; /* cudaSuccess */
     }
 
+  function _sbrk(bytes) {
+      // Implement a Linux-like 'memory area' for our 'process'.
+      // Changes the size of the memory area by |bytes|; returns the
+      // address of the previous top ('break') of the memory area
+      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
+      var self = _sbrk;
+      if (!self.called) {
+        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
+        self.called = true;
+        assert(Runtime.dynamicAlloc);
+        self.alloc = Runtime.dynamicAlloc;
+        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
+      }
+      var ret = DYNAMICTOP;
+      if (bytes != 0) self.alloc(bytes);
+      return ret;  // Previous break location.
+    }
+
   
   
   var ___errno_state=0;function ___setErrNo(value) {
@@ -1723,6 +1818,35 @@ function copyTempDouble(ptr) {
       }
       ___setErrNo(ERRNO_CODES.EINVAL);
       return -1;
+    }
+
+  function _cudaSetDevice(device_type) {
+  
+  
+      // 0  : DEVICE_TYPE_GPU
+      // 1  : DEVICE_TYPE_CPU
+      // 2  : DEVICE_TYPE_ACCELERATOR
+      // 3  : DEVICE_TYPE_ALL
+      // ...: DEVICE_TYPE_DEFAULT
+      switch (device_type) {
+        case 0:
+          CU.cuda_from_type = 0x4;
+          break;
+        case 1:
+          CU.cuda_from_type = 0x2;
+          break;
+        case 2:
+          CU.cuda_from_type = 0x8;
+          break;
+        case 3:
+          CU.cuda_from_type = 0xFFFFFFFF;
+          break;
+        default:
+          CU.cuda_from_type = 0x1;
+      }
+  
+  
+      return 0; /* cudaSuccess */
     }
 
    
@@ -2723,7 +2847,7 @@ function copyTempDouble(ptr) {
       // int fflush(FILE *stream);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/fflush.html
       // we don't currently perform any user-space buffering of data
-    }var FS={root:null,mounts:[],devices:[null],streams:[],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,ErrnoError:null,genericErrors:{},handleFSError:function (e) {
+    }var FS={root:null,mounts:[],devices:[null],streams:[],nextInode:1,nameTable:null,currentPath:"/",initialized:false,ignorePermissions:true,trackingDelegate:{},tracking:{openFlags:{READ:1,WRITE:2}},ErrnoError:null,genericErrors:{},handleFSError:function (e) {
         if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
         return ___setErrNo(e.errno);
       },lookupPath:function (path, opts) {
@@ -3012,16 +3136,12 @@ function copyTempDouble(ptr) {
             }
           });
         }
-        if (stream.__proto__) {
-          // reuse the object
-          stream.__proto__ = FS.FSStream.prototype;
-        } else {
-          var newStream = new FS.FSStream();
-          for (var p in stream) {
-            newStream[p] = stream[p];
-          }
-          stream = newStream;
+        // clone it, so we can return an instance of FSStream
+        var newStream = new FS.FSStream();
+        for (var p in stream) {
+          newStream[p] = stream[p];
         }
+        stream = newStream;
         var fd = FS.nextfd(fd_start, fd_end);
         stream.fd = fd;
         FS.streams[fd] = stream;
@@ -3286,6 +3406,13 @@ function copyTempDouble(ptr) {
             throw new FS.ErrnoError(err);
           }
         }
+        try {
+          if (FS.trackingDelegate['willMovePath']) {
+            FS.trackingDelegate['willMovePath'](old_path, new_path);
+          }
+        } catch(e) {
+          console.log("FS.trackingDelegate['willMovePath']('"+old_path+"', '"+new_path+"') threw an exception: " + e.message);
+        }
         // remove the node from the lookup hash
         FS.hashRemoveNode(old_node);
         // do the underlying fs rename
@@ -3297,6 +3424,11 @@ function copyTempDouble(ptr) {
           // add the node back to the hash (in case node_ops.rename
           // changed its name)
           FS.hashAddNode(old_node);
+        }
+        try {
+          if (FS.trackingDelegate['onMovePath']) FS.trackingDelegate['onMovePath'](old_path, new_path);
+        } catch(e) {
+          console.log("FS.trackingDelegate['onMovePath']('"+old_path+"', '"+new_path+"') threw an exception: " + e.message);
         }
       },rmdir:function (path) {
         var lookup = FS.lookupPath(path, { parent: true });
@@ -3313,8 +3445,20 @@ function copyTempDouble(ptr) {
         if (FS.isMountpoint(node)) {
           throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
         }
+        try {
+          if (FS.trackingDelegate['willDeletePath']) {
+            FS.trackingDelegate['willDeletePath'](path);
+          }
+        } catch(e) {
+          console.log("FS.trackingDelegate['willDeletePath']('"+path+"') threw an exception: " + e.message);
+        }
         parent.node_ops.rmdir(parent, name);
         FS.destroyNode(node);
+        try {
+          if (FS.trackingDelegate['onDeletePath']) FS.trackingDelegate['onDeletePath'](path);
+        } catch(e) {
+          console.log("FS.trackingDelegate['onDeletePath']('"+path+"') threw an exception: " + e.message);
+        }
       },readdir:function (path) {
         var lookup = FS.lookupPath(path, { follow: true });
         var node = lookup.node;
@@ -3339,8 +3483,20 @@ function copyTempDouble(ptr) {
         if (FS.isMountpoint(node)) {
           throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
         }
+        try {
+          if (FS.trackingDelegate['willDeletePath']) {
+            FS.trackingDelegate['willDeletePath'](path);
+          }
+        } catch(e) {
+          console.log("FS.trackingDelegate['willDeletePath']('"+path+"') threw an exception: " + e.message);
+        }
         parent.node_ops.unlink(parent, name);
         FS.destroyNode(node);
+        try {
+          if (FS.trackingDelegate['onDeletePath']) FS.trackingDelegate['onDeletePath'](path);
+        } catch(e) {
+          console.log("FS.trackingDelegate['onDeletePath']('"+path+"') threw an exception: " + e.message);
+        }
       },readlink:function (path) {
         var lookup = FS.lookupPath(path);
         var link = lookup.node;
@@ -3522,6 +3678,20 @@ function copyTempDouble(ptr) {
             Module['printErr']('read file: ' + path);
           }
         }
+        try {
+          if (FS.trackingDelegate['onOpenFile']) {
+            var trackingFlags = 0;
+            if ((flags & 2097155) !== 1) {
+              trackingFlags |= FS.tracking.openFlags.READ;
+            }
+            if ((flags & 2097155) !== 0) {
+              trackingFlags |= FS.tracking.openFlags.WRITE;
+            }
+            FS.trackingDelegate['onOpenFile'](path, trackingFlags);
+          }
+        } catch(e) {
+          console.log("FS.trackingDelegate['onOpenFile']('"+path+"', flags) threw an exception: " + e.message);
+        }
         return stream;
       },close:function (stream) {
         try {
@@ -3587,6 +3757,11 @@ function copyTempDouble(ptr) {
         }
         var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
         if (!seeking) stream.position += bytesWritten;
+        try {
+          if (stream.path && FS.trackingDelegate['onWriteToFile']) FS.trackingDelegate['onWriteToFile'](stream.path);
+        } catch(e) {
+          console.log("FS.trackingDelegate['onWriteToFile']('"+path+"') threw an exception: " + e.message);
+        }
         return bytesWritten;
       },allocate:function (stream, offset, length) {
         if (offset < 0 || length <= 0) {
@@ -4805,9 +4980,9 @@ function copyTempDouble(ptr) {
       var curr, next, currArg;
       while(1) {
         var startTextIndex = textIndex;
-        curr = HEAP8[(textIndex)];
+        curr = HEAP8[((textIndex)>>0)];
         if (curr === 0) break;
-        next = HEAP8[((textIndex+1)|0)];
+        next = HEAP8[((textIndex+1)>>0)];
         if (curr == 37) {
           // Handle flags.
           var flagAlwaysSigned = false;
@@ -4840,7 +5015,7 @@ function copyTempDouble(ptr) {
                 break flagsLoop;
             }
             textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
+            next = HEAP8[((textIndex+1)>>0)];
           }
   
           // Handle width.
@@ -4848,12 +5023,12 @@ function copyTempDouble(ptr) {
           if (next == 42) {
             width = getNextArg('i32');
             textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
+            next = HEAP8[((textIndex+1)>>0)];
           } else {
             while (next >= 48 && next <= 57) {
               width = width * 10 + (next - 48);
               textIndex++;
-              next = HEAP8[((textIndex+1)|0)];
+              next = HEAP8[((textIndex+1)>>0)];
             }
           }
   
@@ -4863,20 +5038,20 @@ function copyTempDouble(ptr) {
             precision = 0;
             precisionSet = true;
             textIndex++;
-            next = HEAP8[((textIndex+1)|0)];
+            next = HEAP8[((textIndex+1)>>0)];
             if (next == 42) {
               precision = getNextArg('i32');
               textIndex++;
             } else {
               while(1) {
-                var precisionChr = HEAP8[((textIndex+1)|0)];
+                var precisionChr = HEAP8[((textIndex+1)>>0)];
                 if (precisionChr < 48 ||
                     precisionChr > 57) break;
                 precision = precision * 10 + (precisionChr - 48);
                 textIndex++;
               }
             }
-            next = HEAP8[((textIndex+1)|0)];
+            next = HEAP8[((textIndex+1)>>0)];
           }
           if (precision < 0) {
             precision = 6; // Standard default.
@@ -4887,7 +5062,7 @@ function copyTempDouble(ptr) {
           var argSize;
           switch (String.fromCharCode(next)) {
             case 'h':
-              var nextNext = HEAP8[((textIndex+2)|0)];
+              var nextNext = HEAP8[((textIndex+2)>>0)];
               if (nextNext == 104) {
                 textIndex++;
                 argSize = 1; // char (actually i32 in varargs)
@@ -4896,7 +5071,7 @@ function copyTempDouble(ptr) {
               }
               break;
             case 'l':
-              var nextNext = HEAP8[((textIndex+2)|0)];
+              var nextNext = HEAP8[((textIndex+2)>>0)];
               if (nextNext == 108) {
                 textIndex++;
                 argSize = 8; // long long
@@ -4918,7 +5093,7 @@ function copyTempDouble(ptr) {
               argSize = null;
           }
           if (argSize) textIndex++;
-          next = HEAP8[((textIndex+1)|0)];
+          next = HEAP8[((textIndex+1)>>0)];
   
           // Handle type specifier.
           switch (String.fromCharCode(next)) {
@@ -5133,7 +5308,7 @@ function copyTempDouble(ptr) {
               }
               if (arg) {
                 for (var i = 0; i < argLength; i++) {
-                  ret.push(HEAPU8[((arg++)|0)]);
+                  ret.push(HEAPU8[((arg++)>>0)]);
                 }
               } else {
                 ret = ret.concat(intArrayFromString('(null)'.substr(0, argLength), true));
@@ -5168,7 +5343,7 @@ function copyTempDouble(ptr) {
             default: {
               // Unknown specifiers remain untouched.
               for (var i = startTextIndex; i < textIndex + 2; i++) {
-                ret.push(HEAP8[(i)]);
+                ret.push(HEAP8[((i)>>0)]);
               }
             }
           }
@@ -5198,10 +5373,13 @@ function copyTempDouble(ptr) {
       return _fprintf(stdout, format, varargs);
     }
 
-  function _isdigit(chr) {
-      return chr >= 48 && chr <= 57;
-    }
 
+  
+  function _emscripten_memcpy_big(dest, src, num) {
+      HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
+      return dest;
+    } 
+  Module["_memcpy"] = _memcpy;
 
   function _cudaGetErrorString(err) {
       
@@ -5377,12 +5555,148 @@ function copyTempDouble(ptr) {
       return 0; /* cudaSuccess */
     }
 
+  
+  function _cudaRunKernel(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, param) {
+      var _kernel_options = options != 0 ? Pointer_stringify(options) : ""; 
+  
+      var _kernel_name = Pointer_stringify(kernel_name); 
+  
+      var _kernel_source = Pointer_stringify(kernel_source); 
+  
+      var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
+  
+      try {
+  
+  
+        var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
+  
+        
+        _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
+  
+        
+        var _kernel = _program.createKernel(_kernel_name);
+  
+        for (var i = 0; i < num_args; i++) {
+          
+          var webCLKernelArgInfo = _kernel.getArgInfo(i);
+  
+          if (webCLKernelArgInfo.addressQualifier == "local") {
+            console.error("cudaRunKernel (local paramater) not yet implemented ...\n");
+          } else {
+  
+            if (param[i] in CU.cuda_objects) {
+              // WEBCL OBJECT ARG
+              _kernel.setArg(i,CU.cuda_objects[param[i]]);
+  
+            } else {
+  
+              if (webCLKernelArgInfo.typeName == "int") {
+                _kernel.setArg(i,new Int32Array([param[i]]));
+  
+              } else if (webCLKernelArgInfo.typeName == "float") {
+                _kernel.setArg(i,new Float32Array([param[i]]));
+  
+              } else {
+                console.error("cudaRunKernel ("+webCLKernelArgInfo.typeName+" paramater) not yet implemented ...\n");
+              }
+            }
+          }
+        }
+  
+        
+        var _event = null;
+        if (CU.cuda_profile_event) {
+          _event = new WebCLEvent();
+          CU.cuda_events.push(_event);
+        }
+        
+        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[],_event);  
+  
+        _program.release();
+  
+        _kernel.release();
+  
+      } catch (e) {
+  
+        if (_program) {
+          var _buildError = _program.getBuildInfo(CU.cuda_objects[CU.cuda_device],cuda.PROGRAM_BUILD_LOG);
+          console.error(_buildError);
+        }
+  
+        var _error = CU.catchError(e);
+  
+        CU.cuda_errors.push(30 /* cudaErrorUnknown */);
+  
+  
+        return 0; /* cudaSuccess */
+  
+      }
+  
+  
+      return 0; /* cudaSuccess */
+    }function _cudaRunKernelDimFunc(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, params) {
+        
+      var _local_work_size = [];
+      var _global_work_size = [];
+      var _param = [];
+  
+      for (var i = 0; i < 3; i ++) {
+        _threadsPerBlock = HEAP32[(((threadsPerBlock)+(i*4))>>2)];
+        _blocksPerGrid = HEAP32[(((blocksPerGrid)+(i*4))>>2)];
+  
+        _local_work_size[i] = _threadsPerBlock;
+        _global_work_size[i] = _local_work_size[i] * _blocksPerGrid;
+      }
+  
+      var num_args = HEAP32[((params)>>2)];
+      
+      for (var i = 1 + num_args; i < 2 * num_args + 1; i ++) {
+        var _typeoffset = i - num_args;
+        var _type = CU.cuda_types[HEAP32[(((params)+(_typeoffset*4))>>2)]];
+  
+        switch(_type){
+          case 'i32':
+            _param.push(HEAP32[(((params)+(i*4))>>2)]);
+            
+            break;
+          case 'float':
+            _param.push(HEAPF32[(((params)+(i*4))>>2)]);
+            
+            break;
+          default:
+            console.error("cudaRunKernelFunc : unknow type"); 
+        }
+      }
+  
+      _cudaRunKernel(kernel_name, kernel_source, options, 3, _global_work_size, _local_work_size, num_args, _param);
+  
+    }
+
   function _cudaEventCreate(event, flags) {
   
   
       HEAP32[((event)>>2)]=1
   
     
+      return 0; /* cudaSuccess */
+    }
+
+  function _cudaDeviceSynchronize() {
+  
+      try {
+  
+        CU.cuda_objects[CU.cuda_command_queue].finish();
+  
+      } catch (e) {
+  
+        var _error = CU.catchError(e);
+  
+  
+        return 30; /* cudaErrorUnknown */
+  
+      }
+  
+  
       return 0; /* cudaSuccess */
     }
 
@@ -5439,6 +5753,10 @@ function copyTempDouble(ptr) {
       return 0; /* cudaSuccess */
     }
 
+  function ___errno_location() {
+      return ___errno_state;
+    }
+
   function _cudaMalloc(devPtr, size) {
       var _initialize = CU.init();
   
@@ -5480,6 +5798,63 @@ function copyTempDouble(ptr) {
       Module['exit'](status);
     }function _exit(status) {
       __exit(status);
+    }
+
+  function _cudaEventElapsedTime(ms,start,end) {
+  
+      try { 
+        
+        var _ms = 0;
+  
+        for (var i = 0; i < CU.cuda_events.length; i++) {
+  
+          var _info_start = CU.cuda_events[i].getProfilingInfo(cuda.PROFILING_COMMAND_START);
+  
+  
+          var _info_end = CU.cuda_events[i].getProfilingInfo(cuda.PROFILING_COMMAND_END);
+  
+          _ms += _info_end - _info_start;  
+  
+          CU.cuda_events[i].release();
+        }
+  
+        CU.cuda_events.length = 0;
+  
+        _ms *= 0.000001;
+  
+        HEAPF32[((ms)>>2)]=_ms
+  
+      } catch (e) {
+        var _error = CU.catchError(e);
+  
+        return 34 /* cudaErrorNotReady */;
+      }    
+  
+  
+      return 0; /* cudaSuccess */
+    }
+
+  function _time(ptr) {
+      var ret = Math.floor(Date.now()/1000);
+      if (ptr) {
+        HEAP32[((ptr)>>2)]=ret;
+      }
+      return ret;
+    }
+
+  function _cudaGetDevice(device) {
+      var _initialize = CU.init();
+  
+  
+      // Init webcl variable if necessary
+      if (_initialize == 0) {
+        return 30; /* cudaErrorUnknown */
+      }
+  
+      HEAP32[((device)>>2)]=CU.cuda_from_type;
+  
+  
+      return 0; /* cudaSuccess */
     }
 
   var Browser={mainLoop:{scheduler:null,method:"",shouldPause:false,paused:false,queue:[],pause:function () {
@@ -5649,41 +6024,42 @@ function copyTempDouble(ptr) {
         // Canvas event setup
   
         var canvas = Module['canvas'];
-        
-        // forced aspect ratio can be enabled by defining 'forcedAspectRatio' on Module
-        // Module['forcedAspectRatio'] = 4 / 3;
-        
-        canvas.requestPointerLock = canvas['requestPointerLock'] ||
-                                    canvas['mozRequestPointerLock'] ||
-                                    canvas['webkitRequestPointerLock'] ||
-                                    canvas['msRequestPointerLock'] ||
-                                    function(){};
-        canvas.exitPointerLock = document['exitPointerLock'] ||
-                                 document['mozExitPointerLock'] ||
-                                 document['webkitExitPointerLock'] ||
-                                 document['msExitPointerLock'] ||
-                                 function(){}; // no-op if function does not exist
-        canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
+        if (canvas) {
+          // forced aspect ratio can be enabled by defining 'forcedAspectRatio' on Module
+          // Module['forcedAspectRatio'] = 4 / 3;
+          
+          canvas.requestPointerLock = canvas['requestPointerLock'] ||
+                                      canvas['mozRequestPointerLock'] ||
+                                      canvas['webkitRequestPointerLock'] ||
+                                      canvas['msRequestPointerLock'] ||
+                                      function(){};
+          canvas.exitPointerLock = document['exitPointerLock'] ||
+                                   document['mozExitPointerLock'] ||
+                                   document['webkitExitPointerLock'] ||
+                                   document['msExitPointerLock'] ||
+                                   function(){}; // no-op if function does not exist
+          canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
   
-        function pointerLockChange() {
-          Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                document['mozPointerLockElement'] === canvas ||
-                                document['webkitPointerLockElement'] === canvas ||
-                                document['msPointerLockElement'] === canvas;
-        }
+          function pointerLockChange() {
+            Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                  document['mozPointerLockElement'] === canvas ||
+                                  document['webkitPointerLockElement'] === canvas ||
+                                  document['msPointerLockElement'] === canvas;
+          }
   
-        document.addEventListener('pointerlockchange', pointerLockChange, false);
-        document.addEventListener('mozpointerlockchange', pointerLockChange, false);
-        document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
-        document.addEventListener('mspointerlockchange', pointerLockChange, false);
+          document.addEventListener('pointerlockchange', pointerLockChange, false);
+          document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+          document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+          document.addEventListener('mspointerlockchange', pointerLockChange, false);
   
-        if (Module['elementPointerLock']) {
-          canvas.addEventListener("click", function(ev) {
-            if (!Browser.pointerLock && canvas.requestPointerLock) {
-              canvas.requestPointerLock();
-              ev.preventDefault();
-            }
-          }, false);
+          if (Module['elementPointerLock']) {
+            canvas.addEventListener("click", function(ev) {
+              if (!Browser.pointerLock && canvas.requestPointerLock) {
+                canvas.requestPointerLock();
+                ev.preventDefault();
+              }
+            }, false);
+          }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
         var ctx;
@@ -5724,11 +6100,6 @@ function copyTempDouble(ptr) {
         if (useWebGL) {
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
-  
-          // Warn on context loss
-          canvas.addEventListener('webglcontextlost', function(event) {
-            alert('WebGL context lost. You will need to reload the page.');
-          }, false);
         }
         if (setInModule) {
           GLctx = Module.ctx = ctx;
@@ -5816,10 +6187,12 @@ function copyTempDouble(ptr) {
           if (!ABORT) func();
         });
       },safeSetTimeout:function (func, timeout) {
+        Module['noExitRuntime'] = true;
         return setTimeout(function() {
           if (!ABORT) func();
         }, timeout);
       },safeSetInterval:function (func, timeout) {
+        Module['noExitRuntime'] = true;
         return setInterval(function() {
           if (!ABORT) func();
         }, timeout);
@@ -5850,8 +6223,22 @@ function copyTempDouble(ptr) {
                event['webkitMovementY'] ||
                0;
       },getMouseWheelDelta:function (event) {
-        return Math.max(-1, Math.min(1, event.type === 'DOMMouseScroll' ? event.detail : -event.wheelDelta));
-      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
+        var delta = 0;
+        switch (event.type) {
+          case 'DOMMouseScroll': 
+            delta = event.detail;
+            break;
+          case 'mousewheel': 
+            delta = -event.wheelDelta;
+            break;
+          case 'wheel': 
+            delta = event.deltaY;
+            break;
+          default:
+            throw 'unrecognized mouse wheel event: ' + event.type;
+        }
+        return Math.max(-1, Math.min(1, delta));
+      },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,touches:{},lastTouches:{},calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
           // based on the movement of the mouse.
@@ -5878,8 +6265,9 @@ function copyTempDouble(ptr) {
           // Otherwise, calculate the movement based on the changes
           // in the coordinates.
           var rect = Module["canvas"].getBoundingClientRect();
-          var x, y;
-          
+          var cw = Module["canvas"].width;
+          var ch = Module["canvas"].height;
+  
           // Neither .scrollX or .pageXOffset are defined in a spec, but
           // we prefer .scrollX because it is currently in a spec draft.
           // (see: http://www.w3.org/TR/2013/WD-cssom-view-20131217/)
@@ -5888,26 +6276,37 @@ function copyTempDouble(ptr) {
           // If this assert lands, it's likely because the browser doesn't support scrollX or pageXOffset
           // and we have no viable fallback.
           assert((typeof scrollX !== 'undefined') && (typeof scrollY !== 'undefined'), 'Unable to retrieve scroll position, mouse positions likely broken.');
-          if (event.type == 'touchstart' ||
-              event.type == 'touchend' ||
-              event.type == 'touchmove') {
-            var t = event.touches.item(0);
-            if (t) {
-              x = t.pageX - (scrollX + rect.left);
-              y = t.pageY - (scrollY + rect.top);
-            } else {
-              return;
+  
+          if (event.type === 'touchstart' || event.type === 'touchend' || event.type === 'touchmove') {
+            var touch = event.touch;
+            if (touch === undefined) {
+              return; // the "touch" property is only defined in SDL
+  
             }
-          } else {
-            x = event.pageX - (scrollX + rect.left);
-            y = event.pageY - (scrollY + rect.top);
+            var adjustedX = touch.pageX - (scrollX + rect.left);
+            var adjustedY = touch.pageY - (scrollY + rect.top);
+  
+            adjustedX = adjustedX * (cw / rect.width);
+            adjustedY = adjustedY * (ch / rect.height);
+  
+            var coords = { x: adjustedX, y: adjustedY };
+            
+            if (event.type === 'touchstart') {
+              Browser.lastTouches[touch.identifier] = coords;
+              Browser.touches[touch.identifier] = coords;
+            } else if (event.type === 'touchend' || event.type === 'touchmove') {
+              Browser.lastTouches[touch.identifier] = Browser.touches[touch.identifier];
+              Browser.touches[touch.identifier] = { x: adjustedX, y: adjustedY };
+            } 
+            return;
           }
+  
+          var x = event.pageX - (scrollX + rect.left);
+          var y = event.pageY - (scrollY + rect.top);
   
           // the canvas might be CSS-scaled compared to its backbuffer;
           // SDL-using content will want mouse coordinates in terms
           // of backbuffer units.
-          var cw = Module["canvas"].width;
-          var ch = Module["canvas"].height;
           x = x * (cw / rect.width);
           y = y * (ch / rect.height);
   
@@ -6015,264 +6414,6 @@ function copyTempDouble(ptr) {
         }
       }};
 
-  function _isspace(chr) {
-      return (chr == 32) || (chr >= 9 && chr <= 13);
-    }
-
-   
-  Module["_tolower"] = _tolower;
-
-  function _cudaSetDevice(device_type) {
-  
-  
-      // 0  : DEVICE_TYPE_GPU
-      // 1  : DEVICE_TYPE_CPU
-      // 2  : DEVICE_TYPE_ACCELERATOR
-      // 3  : DEVICE_TYPE_ALL
-      // ...: DEVICE_TYPE_DEFAULT
-      switch (device_type) {
-        case 0:
-          CU.cuda_from_type = 0x4;
-          break;
-        case 1:
-          CU.cuda_from_type = 0x2;
-          break;
-        case 2:
-          CU.cuda_from_type = 0x8;
-          break;
-        case 3:
-          CU.cuda_from_type = 0xFFFFFFFF;
-          break;
-        default:
-          CU.cuda_from_type = 0x1;
-      }
-  
-  
-      return 0; /* cudaSuccess */
-    }
-
-  function _cudaGetDevice(device) {
-      var _initialize = CU.init();
-  
-  
-      // Init webcl variable if necessary
-      if (_initialize == 0) {
-        return 30; /* cudaErrorUnknown */
-      }
-  
-      HEAP32[((device)>>2)]=CU.cuda_from_type;
-  
-  
-      return 0; /* cudaSuccess */
-    }
-
-  
-  function _emscripten_memcpy_big(dest, src, num) {
-      HEAPU8.set(HEAPU8.subarray(src, src+num), dest);
-      return dest;
-    } 
-  Module["_memcpy"] = _memcpy;
-
-  function _cudaEventElapsedTime(ms,start,end) {
-  
-      try { 
-        
-        var _ms = 0;
-  
-        for (var i = 0; i < CU.cuda_events.length; i++) {
-  
-          var _info_start = CU.cuda_events[i].getProfilingInfo(cuda.PROFILING_COMMAND_START);
-  
-  
-          var _info_end = CU.cuda_events[i].getProfilingInfo(cuda.PROFILING_COMMAND_END);
-  
-          _ms += _info_end - _info_start;  
-  
-          CU.cuda_events[i].release();
-        }
-  
-        CU.cuda_events.length = 0;
-  
-        _ms *= 0.000001;
-  
-        HEAPF32[((ms)>>2)]=_ms
-  
-      } catch (e) {
-        var _error = CU.catchError(e);
-  
-        return 34 /* cudaErrorNotReady */;
-      }    
-  
-  
-      return 0; /* cudaSuccess */
-    }
-
-  function _cudaDeviceSynchronize() {
-  
-      try {
-  
-        CU.cuda_objects[CU.cuda_command_queue].finish();
-  
-      } catch (e) {
-  
-        var _error = CU.catchError(e);
-  
-  
-        return 30; /* cudaErrorUnknown */
-  
-      }
-  
-  
-      return 0; /* cudaSuccess */
-    }
-
-  function _sbrk(bytes) {
-      // Implement a Linux-like 'memory area' for our 'process'.
-      // Changes the size of the memory area by |bytes|; returns the
-      // address of the previous top ('break') of the memory area
-      // We control the "dynamic" memory - DYNAMIC_BASE to DYNAMICTOP
-      var self = _sbrk;
-      if (!self.called) {
-        DYNAMICTOP = alignMemoryPage(DYNAMICTOP); // make sure we start out aligned
-        self.called = true;
-        assert(Runtime.dynamicAlloc);
-        self.alloc = Runtime.dynamicAlloc;
-        Runtime.dynamicAlloc = function() { abort('cannot dynamically allocate, sbrk now has control') };
-      }
-      var ret = DYNAMICTOP;
-      if (bytes != 0) self.alloc(bytes);
-      return ret;  // Previous break location.
-    }
-
-  function ___errno_location() {
-      return ___errno_state;
-    }
-
-  function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
-      if (ptr) {
-        HEAP32[((ptr)>>2)]=ret;
-      }
-      return ret;
-    }
-
-  
-  function _cudaRunKernel(kernel_name, kernel_source, options, work_dim, global_work_size, local_work_size, num_args, param) {
-      var _kernel_options = options != 0 ? Pointer_stringify(options) : ""; 
-  
-      var _kernel_name = Pointer_stringify(kernel_name); 
-  
-      var _kernel_source = Pointer_stringify(kernel_source); 
-  
-      var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
-  
-      try {
-  
-  
-        var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
-  
-        
-        _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
-  
-        
-        var _kernel = _program.createKernel(_kernel_name);
-  
-        for (var i = 0; i < num_args; i++) {
-          
-          var webCLKernelArgInfo = _kernel.getArgInfo(i);
-  
-          if (webCLKernelArgInfo.addressQualifier == "local") {
-            console.error("cudaRunKernel (local paramater) not yet implemented ...\n");
-          } else {
-  
-            if (param[i] in CU.cuda_objects) {
-              // WEBCL OBJECT ARG
-              _kernel.setArg(i,CU.cuda_objects[param[i]]);
-  
-            } else {
-  
-              if (webCLKernelArgInfo.typeName == "int") {
-                _kernel.setArg(i,new Int32Array([param[i]]));
-  
-              } else if (webCLKernelArgInfo.typeName == "float") {
-                _kernel.setArg(i,new Float32Array([param[i]]));
-  
-              } else {
-                console.error("cudaRunKernel ("+webCLKernelArgInfo.typeName+" paramater) not yet implemented ...\n");
-              }
-            }
-          }
-        }
-  
-        
-        var _event = null;
-        if (CU.cuda_profile_event) {
-          _event = new WebCLEvent();
-          CU.cuda_events.push(_event);
-        }
-        
-        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[],_event);  
-  
-        _program.release();
-  
-        _kernel.release();
-  
-      } catch (e) {
-  
-        if (_program) {
-          var _buildError = _program.getBuildInfo(CU.cuda_objects[CU.cuda_device],cuda.PROGRAM_BUILD_LOG);
-          console.error(_buildError);
-        }
-  
-        var _error = CU.catchError(e);
-  
-        CU.cuda_errors.push(30 /* cudaErrorUnknown */);
-  
-  
-        return 0; /* cudaSuccess */
-  
-      }
-  
-  
-      return 0; /* cudaSuccess */
-    }function _cudaRunKernelDimFunc(kernel_name, kernel_source, options, blocksPerGrid, threadsPerBlock, params) {
-        
-      var _local_work_size = [];
-      var _global_work_size = [];
-      var _param = [];
-  
-      for (var i = 0; i < 3; i ++) {
-        _threadsPerBlock = HEAP32[(((threadsPerBlock)+(i*4))>>2)];
-        _blocksPerGrid = HEAP32[(((blocksPerGrid)+(i*4))>>2)];
-  
-        _local_work_size[i] = _threadsPerBlock;
-        _global_work_size[i] = _local_work_size[i] * _blocksPerGrid;
-      }
-  
-      var num_args = HEAP32[((params)>>2)];
-      
-      for (var i = 1 + num_args; i < 2 * num_args + 1; i ++) {
-        var _typeoffset = i - num_args;
-        var _type = CU.cuda_types[HEAP32[(((params)+(_typeoffset*4))>>2)]];
-  
-        switch(_type){
-          case 'i32':
-            _param.push(HEAP32[(((params)+(i*4))>>2)]);
-            
-            break;
-          case 'float':
-            _param.push(HEAPF32[(((params)+(i*4))>>2)]);
-            
-            break;
-          default:
-            console.error("cudaRunKernelFunc : unknow type"); 
-        }
-      }
-  
-      _cudaRunKernel(kernel_name, kernel_source, options, 3, _global_work_size, _local_work_size, num_args, _param);
-  
-    }
-
   function _cudaEventSynchronize(event) {
   
   
@@ -6327,48 +6468,48 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 
 
-var Math_min = Math.min;
-function asmPrintInt(x, y) {
-  Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-}
-function asmPrintFloat(x, y) {
-  Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-}
-// EMSCRIPTEN_START_ASM
-var asm = (function(global, env, buffer) {
-  'almost asm';
-  var HEAP8 = new global.Int8Array(buffer);
-  var HEAP16 = new global.Int16Array(buffer);
-  var HEAP32 = new global.Int32Array(buffer);
-  var HEAPU8 = new global.Uint8Array(buffer);
-  var HEAPU16 = new global.Uint16Array(buffer);
-  var HEAPU32 = new global.Uint32Array(buffer);
-  var HEAPF32 = new global.Float32Array(buffer);
-  var HEAPF64 = new global.Float64Array(buffer);
-
+  var Math_min = Math.min;
+  function asmPrintInt(x, y) {
+    Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
+  }
+  function asmPrintFloat(x, y) {
+    Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
+  }
+  // EMSCRIPTEN_START_ASM
+  var asm = (function(global, env, buffer) {
+    'almost asm';
+    var HEAP8 = new global.Int8Array(buffer);
+    var HEAP16 = new global.Int16Array(buffer);
+    var HEAP32 = new global.Int32Array(buffer);
+    var HEAPU8 = new global.Uint8Array(buffer);
+    var HEAPU16 = new global.Uint16Array(buffer);
+    var HEAPU32 = new global.Uint32Array(buffer);
+    var HEAPF32 = new global.Float32Array(buffer);
+    var HEAPF64 = new global.Float64Array(buffer);
+  
   var STACKTOP=env.STACKTOP|0;
   var STACK_MAX=env.STACK_MAX|0;
   var tempDoublePtr=env.tempDoublePtr|0;
   var ABORT=env.ABORT|0;
   var _stderr=env._stderr|0;
 
-  var __THREW__ = 0;
-  var threwValue = 0;
-  var setjmpId = 0;
-  var undef = 0;
-  var nan = +env.NaN, inf = +env.Infinity;
-  var tempInt = 0, tempBigInt = 0, tempBigIntP = 0, tempBigIntS = 0, tempBigIntR = 0.0, tempBigIntI = 0, tempBigIntD = 0, tempValue = 0, tempDouble = 0.0;
-
-  var tempRet0 = 0;
-  var tempRet1 = 0;
-  var tempRet2 = 0;
-  var tempRet3 = 0;
-  var tempRet4 = 0;
-  var tempRet5 = 0;
-  var tempRet6 = 0;
-  var tempRet7 = 0;
-  var tempRet8 = 0;
-  var tempRet9 = 0;
+    var __THREW__ = 0;
+    var threwValue = 0;
+    var setjmpId = 0;
+    var undef = 0;
+    var nan = +env.NaN, inf = +env.Infinity;
+    var tempInt = 0, tempBigInt = 0, tempBigIntP = 0, tempBigIntS = 0, tempBigIntR = 0.0, tempBigIntI = 0, tempBigIntD = 0, tempValue = 0, tempDouble = 0.0;
+  
+    var tempRet0 = 0;
+    var tempRet1 = 0;
+    var tempRet2 = 0;
+    var tempRet3 = 0;
+    var tempRet4 = 0;
+    var tempRet5 = 0;
+    var tempRet6 = 0;
+    var tempRet7 = 0;
+    var tempRet8 = 0;
+    var tempRet9 = 0;
   var Math_floor=global.Math.floor;
   var Math_abs=global.Math.abs;
   var Math_sqrt=global.Math.sqrt;
@@ -6399,7 +6540,6 @@ var asm = (function(global, env, buffer) {
   var _fflush=env._fflush;
   var _pwrite=env._pwrite;
   var _cudaGetErrorString=env._cudaGetErrorString;
-  var _fprintf=env._fprintf;
   var ___setErrNo=env.___setErrNo;
   var _sbrk=env._sbrk;
   var _emscripten_memcpy_big=env._emscripten_memcpy_big;
@@ -6420,108 +6560,64 @@ var asm = (function(global, env, buffer) {
   var _abort=env._abort;
   var _fwrite=env._fwrite;
   var _time=env._time;
-  var _isdigit=env._isdigit;
+  var _fprintf=env._fprintf;
   var _cudaEventRecord=env._cudaEventRecord;
   var __formatString=env.__formatString;
-  var _isspace=env._isspace;
   var _exit=env._exit;
   var _cudaMalloc=env._cudaMalloc;
   var _cudaEventSynchronize=env._cudaEventSynchronize;
   var tempFloat = 0.0;
 
-// EMSCRIPTEN_START_FUNCS
-function stackAlloc(size) {
-  size = size|0;
-  var ret = 0;
-  ret = STACKTOP;
-  STACKTOP = (STACKTOP + size)|0;
-STACKTOP = (STACKTOP + 7)&-8;
-  return ret|0;
-}
-function stackSave() {
-  return STACKTOP|0;
-}
-function stackRestore(top) {
-  top = top|0;
-  STACKTOP = top;
-}
-function setThrew(threw, value) {
-  threw = threw|0;
-  value = value|0;
-  if ((__THREW__|0) == 0) {
-    __THREW__ = threw;
-    threwValue = value;
+  // EMSCRIPTEN_START_FUNCS
+  function stackAlloc(size) {
+    size = size|0;
+    var ret = 0;
+    ret = STACKTOP;
+    STACKTOP = (STACKTOP + size)|0;
+  STACKTOP = (STACKTOP + 7)&-8;
+    return ret|0;
   }
-}
-function copyTempFloat(ptr) {
-  ptr = ptr|0;
-  HEAP8[tempDoublePtr] = HEAP8[ptr];
-  HEAP8[tempDoublePtr+1|0] = HEAP8[ptr+1|0];
-  HEAP8[tempDoublePtr+2|0] = HEAP8[ptr+2|0];
-  HEAP8[tempDoublePtr+3|0] = HEAP8[ptr+3|0];
-}
-function copyTempDouble(ptr) {
-  ptr = ptr|0;
-  HEAP8[tempDoublePtr] = HEAP8[ptr];
-  HEAP8[tempDoublePtr+1|0] = HEAP8[ptr+1|0];
-  HEAP8[tempDoublePtr+2|0] = HEAP8[ptr+2|0];
-  HEAP8[tempDoublePtr+3|0] = HEAP8[ptr+3|0];
-  HEAP8[tempDoublePtr+4|0] = HEAP8[ptr+4|0];
-  HEAP8[tempDoublePtr+5|0] = HEAP8[ptr+5|0];
-  HEAP8[tempDoublePtr+6|0] = HEAP8[ptr+6|0];
-  HEAP8[tempDoublePtr+7|0] = HEAP8[ptr+7|0];
-}
-
-function setTempRet0(value) {
-  value = value|0;
-  tempRet0 = value;
-}
-
-function setTempRet1(value) {
-  value = value|0;
-  tempRet1 = value;
-}
-
-function setTempRet2(value) {
-  value = value|0;
-  tempRet2 = value;
-}
-
-function setTempRet3(value) {
-  value = value|0;
-  tempRet3 = value;
-}
-
-function setTempRet4(value) {
-  value = value|0;
-  tempRet4 = value;
-}
-
-function setTempRet5(value) {
-  value = value|0;
-  tempRet5 = value;
-}
-
-function setTempRet6(value) {
-  value = value|0;
-  tempRet6 = value;
-}
-
-function setTempRet7(value) {
-  value = value|0;
-  tempRet7 = value;
-}
-
-function setTempRet8(value) {
-  value = value|0;
-  tempRet8 = value;
-}
-
-function setTempRet9(value) {
-  value = value|0;
-  tempRet9 = value;
-}
-
+  function stackSave() {
+    return STACKTOP|0;
+  }
+  function stackRestore(top) {
+    top = top|0;
+    STACKTOP = top;
+  }
+  function setThrew(threw, value) {
+    threw = threw|0;
+    value = value|0;
+    if ((__THREW__|0) == 0) {
+      __THREW__ = threw;
+      threwValue = value;
+    }
+  }
+  function copyTempFloat(ptr) {
+    ptr = ptr|0;
+    HEAP8[tempDoublePtr>>0] = HEAP8[ptr>>0];
+    HEAP8[tempDoublePtr+1>>0] = HEAP8[ptr+1>>0];
+    HEAP8[tempDoublePtr+2>>0] = HEAP8[ptr+2>>0];
+    HEAP8[tempDoublePtr+3>>0] = HEAP8[ptr+3>>0];
+  }
+  function copyTempDouble(ptr) {
+    ptr = ptr|0;
+    HEAP8[tempDoublePtr>>0] = HEAP8[ptr>>0];
+    HEAP8[tempDoublePtr+1>>0] = HEAP8[ptr+1>>0];
+    HEAP8[tempDoublePtr+2>>0] = HEAP8[ptr+2>>0];
+    HEAP8[tempDoublePtr+3>>0] = HEAP8[ptr+3>>0];
+    HEAP8[tempDoublePtr+4>>0] = HEAP8[ptr+4>>0];
+    HEAP8[tempDoublePtr+5>>0] = HEAP8[ptr+5>>0];
+    HEAP8[tempDoublePtr+6>>0] = HEAP8[ptr+6>>0];
+    HEAP8[tempDoublePtr+7>>0] = HEAP8[ptr+7>>0];
+  }
+  function setTempRet0(value) {
+    value = value|0;
+    tempRet0 = value;
+  }
+  function getTempRet0() {
+    return tempRet0|0;
+  }
+  
 function __Z12constantInitPfif($data,$size,$val) {
  $data = $data|0;
  $size = $size|0;
@@ -6579,52 +6675,52 @@ function __Z14matrixMultiplyiPPciR4dim3S2_($argc,$argv,$block_size,$dimsA,$dimsB
  sp = STACKTOP;
  STACKTOP = STACKTOP + 1040|0;
  $$byval_copy75 = sp + 424|0;
- $$byval_copy74 = sp + 700|0;
- $$byval_copy73 = sp + 556|0;
+ $$byval_copy74 = sp + 712|0;
+ $$byval_copy73 = sp + 572|0;
  $$byval_copy72 = sp + 836|0;
  $$byval_copy71 = sp + 388|0;
  $$byval_copy70 = sp + 488|0;
- $$byval_copy69 = sp + 508|0;
+ $$byval_copy69 = sp + 520|0;
  $$byval_copy68 = sp + 744|0;
  $$byval_copy67 = sp + 776|0;
- $$byval_copy66 = sp + 656|0;
- $$byval_copy65 = sp + 568|0;
+ $$byval_copy66 = sp + 668|0;
+ $$byval_copy65 = sp + 584|0;
  $$byval_copy = sp + 476|0;
- $vararg_buffer63 = sp + 88|0;
- $vararg_buffer60 = sp + 168|0;
- $vararg_buffer54 = sp + 56|0;
- $vararg_buffer52 = sp + 128|0;
- $vararg_buffer48 = sp + 120|0;
- $vararg_buffer42 = sp + 232|0;
- $vararg_buffer39 = sp + 112|0;
- $vararg_buffer36 = sp + 216|0;
- $vararg_buffer33 = sp + 208|0;
- $vararg_buffer30 = sp;
- $vararg_buffer27 = sp + 96|0;
- $vararg_buffer24 = sp + 192|0;
- $vararg_buffer22 = sp + 184|0;
- $vararg_buffer20 = sp + 24|0;
- $vararg_buffer16 = sp + 176|0;
- $vararg_buffer12 = sp + 200|0;
- $vararg_buffer8 = sp + 104|0;
- $vararg_buffer4 = sp + 16|0;
- $vararg_buffer1 = sp + 160|0;
- $vararg_buffer = sp + 224|0;
+ $vararg_buffer63 = sp + 160|0;
+ $vararg_buffer60 = sp + 88|0;
+ $vararg_buffer54 = sp + 24|0;
+ $vararg_buffer52 = sp + 256|0;
+ $vararg_buffer48 = sp + 136|0;
+ $vararg_buffer42 = sp + 56|0;
+ $vararg_buffer39 = sp + 152|0;
+ $vararg_buffer36 = sp + 8|0;
+ $vararg_buffer33 = sp + 168|0;
+ $vararg_buffer30 = sp + 96|0;
+ $vararg_buffer27 = sp + 184|0;
+ $vararg_buffer24 = sp + 224|0;
+ $vararg_buffer22 = sp + 176|0;
+ $vararg_buffer20 = sp + 112|0;
+ $vararg_buffer16 = sp + 200|0;
+ $vararg_buffer12 = sp;
+ $vararg_buffer8 = sp + 16|0;
+ $vararg_buffer4 = sp + 232|0;
+ $vararg_buffer1 = sp + 208|0;
+ $vararg_buffer = sp + 248|0;
  $d_A = sp + 880|0;
- $d_B = sp + 504|0;
+ $d_B = sp + 516|0;
  $d_C = sp + 472|0;
- $dimsC = sp + 580|0;
+ $dimsC = sp + 504|0;
  $threads = sp + 412|0;
  $grid = sp + 400|0;
- $funcParams = sp + 612|0;
+ $funcParams = sp + 596|0;
  $6 = sp + 376|0;
  $7 = sp + 364|0;
  $8 = sp + 320|0;
- $9 = sp + 716|0;
+ $9 = sp + 648|0;
  $10 = sp + 308|0;
  $11 = sp + 264|0;
  $start = sp + 260|0;
- $stop = sp + 740|0;
+ $stop = sp + 724|0;
  $funcParams1 = sp + 888|0;
  $12 = sp + 932|0;
  $13 = sp + 944|0;
@@ -7524,7 +7620,7 @@ function __Z21getCmdLineArgumentIntiPPKcS0_($argc,$argv,$string_ref) {
      $32 = $length;
      $33 = $string_argv;
      $34 = (($33) + ($32)|0);
-     $35 = HEAP8[$34]|0;
+     $35 = HEAP8[$34>>0]|0;
      $36 = $35 << 24 >> 24;
      $37 = ($36|0)==(61);
      $38 = $37 ? 1 : 0;
@@ -7574,7 +7670,7 @@ function __Z21stringRemoveDelimitercPKc($delimiter,$string) {
   $3 = $string_start;
   $4 = $2;
   $5 = (($4) + ($3)|0);
-  $6 = HEAP8[$5]|0;
+  $6 = HEAP8[$5>>0]|0;
   $7 = $6 << 24 >> 24;
   $8 = $1;
   $9 = $8 << 24 >> 24;
@@ -7632,7 +7728,7 @@ function _strchr($s,$c) {
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  $0 = (___strchrnul($s,$c)|0);
- $1 = HEAP8[$0]|0;
+ $1 = HEAP8[$0>>0]|0;
  $2 = $c&255;
  $3 = ($1<<24>>24)==($2<<24>>24);
  $4 = $3 ? $0 : 0;
@@ -7663,7 +7759,7 @@ function ___strchrnul($s,$c) {
    $5 = $c&255;
    $$026 = $s;
    while(1) {
-    $12 = HEAP8[$$026]|0;
+    $12 = HEAP8[$$026>>0]|0;
     $13 = ($12<<24>>24)==(0);
     if ($13) {
      $$0 = $$026;
@@ -7734,7 +7830,7 @@ function ___strchrnul($s,$c) {
  $36 = $c&255;
  $$1 = $w$0$lcssa;
  while(1) {
-  $37 = HEAP8[$$1]|0;
+  $37 = HEAP8[$$1>>0]|0;
   $38 = ($37<<24>>24)==(0);
   $39 = ($37<<24>>24)==($36<<24>>24);
   $or$cond = $38 | $39;
@@ -8700,25 +8796,27 @@ function _malloc($bytes) {
           $429 = 1 << $424;
           $430 = $428 & $429;
           $431 = ($430|0)==(0);
-          if ($431) {
-           $432 = $428 | $429;
-           HEAP32[2584>>2] = $432;
-           $$sum14$pre$i = (($426) + 2)|0;
-           $$pre$i25 = ((2584 + ($$sum14$pre$i<<2)|0) + 40|0);
-           $$pre$phi$i26Z2D = $$pre$i25;$F5$0$i = $427;
-          } else {
-           $$sum17$i = (($426) + 2)|0;
-           $433 = ((2584 + ($$sum17$i<<2)|0) + 40|0);
-           $434 = HEAP32[$433>>2]|0;
-           $435 = HEAP32[((2584 + 16|0))>>2]|0;
-           $436 = ($434>>>0)<($435>>>0);
-           if ($436) {
+          do {
+           if ($431) {
+            $432 = $428 | $429;
+            HEAP32[2584>>2] = $432;
+            $$sum14$pre$i = (($426) + 2)|0;
+            $$pre$i25 = ((2584 + ($$sum14$pre$i<<2)|0) + 40|0);
+            $$pre$phi$i26Z2D = $$pre$i25;$F5$0$i = $427;
+           } else {
+            $$sum17$i = (($426) + 2)|0;
+            $433 = ((2584 + ($$sum17$i<<2)|0) + 40|0);
+            $434 = HEAP32[$433>>2]|0;
+            $435 = HEAP32[((2584 + 16|0))>>2]|0;
+            $436 = ($434>>>0)<($435>>>0);
+            if (!($436)) {
+             $$pre$phi$i26Z2D = $433;$F5$0$i = $434;
+             break;
+            }
             _abort();
             // unreachable;
-           } else {
-            $$pre$phi$i26Z2D = $433;$F5$0$i = $434;
            }
-          }
+          } while(0);
           HEAP32[$$pre$phi$i26Z2D>>2] = $349;
           $437 = (($F5$0$i) + 12|0);
           HEAP32[$437>>2] = $349;
@@ -9431,7 +9529,7 @@ function _malloc($bytes) {
          $746 = $743 & -8;
          $747 = $743 >>> 3;
          $748 = ($743>>>0)<(256);
-         do {
+         L356: do {
           if ($748) {
            $$sum3738$i$i = $720 | 8;
            $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -9444,21 +9542,24 @@ function _malloc($bytes) {
            $753 = $747 << 1;
            $754 = ((2584 + ($753<<2)|0) + 40|0);
            $755 = ($750|0)==($754|0);
-           if (!($755)) {
-            $756 = HEAP32[((2584 + 16|0))>>2]|0;
-            $757 = ($750>>>0)<($756>>>0);
-            if ($757) {
+           do {
+            if (!($755)) {
+             $756 = HEAP32[((2584 + 16|0))>>2]|0;
+             $757 = ($750>>>0)<($756>>>0);
+             if ($757) {
+              _abort();
+              // unreachable;
+             }
+             $758 = (($750) + 12|0);
+             $759 = HEAP32[$758>>2]|0;
+             $760 = ($759|0)==($721|0);
+             if ($760) {
+              break;
+             }
              _abort();
              // unreachable;
             }
-            $758 = (($750) + 12|0);
-            $759 = HEAP32[$758>>2]|0;
-            $760 = ($759|0)==($721|0);
-            if (!($760)) {
-             _abort();
-             // unreachable;
-            }
-           }
+           } while(0);
            $761 = ($752|0)==($750|0);
            if ($761) {
             $762 = 1 << $747;
@@ -9469,26 +9570,28 @@ function _malloc($bytes) {
             break;
            }
            $766 = ($752|0)==($754|0);
-           if ($766) {
-            $$pre57$i$i = (($752) + 8|0);
-            $$pre$phi58$i$iZ2D = $$pre57$i$i;
-           } else {
-            $767 = HEAP32[((2584 + 16|0))>>2]|0;
-            $768 = ($752>>>0)<($767>>>0);
-            if ($768) {
-             _abort();
-             // unreachable;
-            }
-            $769 = (($752) + 8|0);
-            $770 = HEAP32[$769>>2]|0;
-            $771 = ($770|0)==($721|0);
-            if ($771) {
-             $$pre$phi58$i$iZ2D = $769;
+           do {
+            if ($766) {
+             $$pre57$i$i = (($752) + 8|0);
+             $$pre$phi58$i$iZ2D = $$pre57$i$i;
             } else {
+             $767 = HEAP32[((2584 + 16|0))>>2]|0;
+             $768 = ($752>>>0)<($767>>>0);
+             if ($768) {
+              _abort();
+              // unreachable;
+             }
+             $769 = (($752) + 8|0);
+             $770 = HEAP32[$769>>2]|0;
+             $771 = ($770|0)==($721|0);
+             if ($771) {
+              $$pre$phi58$i$iZ2D = $769;
+              break;
+             }
              _abort();
              // unreachable;
             }
-           }
+           } while(0);
            $772 = (($750) + 12|0);
            HEAP32[$772>>2] = $752;
            HEAP32[$$pre$phi58$i$iZ2D>>2] = $750;
@@ -9583,25 +9686,29 @@ function _malloc($bytes) {
             }
            } while(0);
            $802 = ($774|0)==(0|0);
-           if (!($802)) {
-            $$sum30$i$i = (($tsize$246$i) + 28)|0;
-            $$sum113$i = (($$sum30$i$i) + ($720))|0;
-            $803 = (($tbase$247$i) + ($$sum113$i)|0);
-            $804 = HEAP32[$803>>2]|0;
-            $805 = ((2584 + ($804<<2)|0) + 304|0);
-            $806 = HEAP32[$805>>2]|0;
-            $807 = ($721|0)==($806|0);
+           if ($802) {
+            break;
+           }
+           $$sum30$i$i = (($tsize$246$i) + 28)|0;
+           $$sum113$i = (($$sum30$i$i) + ($720))|0;
+           $803 = (($tbase$247$i) + ($$sum113$i)|0);
+           $804 = HEAP32[$803>>2]|0;
+           $805 = ((2584 + ($804<<2)|0) + 304|0);
+           $806 = HEAP32[$805>>2]|0;
+           $807 = ($721|0)==($806|0);
+           do {
             if ($807) {
              HEAP32[$805>>2] = $R$1$i$i;
              $cond$i$i = ($R$1$i$i|0)==(0|0);
-             if ($cond$i$i) {
-              $808 = 1 << $804;
-              $809 = $808 ^ -1;
-              $810 = HEAP32[((2584 + 4|0))>>2]|0;
-              $811 = $810 & $809;
-              HEAP32[((2584 + 4|0))>>2] = $811;
+             if (!($cond$i$i)) {
               break;
              }
+             $808 = 1 << $804;
+             $809 = $808 ^ -1;
+             $810 = HEAP32[((2584 + 4|0))>>2]|0;
+             $811 = $810 & $809;
+             HEAP32[((2584 + 4|0))>>2] = $811;
+             break L356;
             } else {
              $812 = HEAP32[((2584 + 16|0))>>2]|0;
              $813 = ($774>>>0)<($812>>>0);
@@ -9620,56 +9727,57 @@ function _malloc($bytes) {
              }
              $818 = ($R$1$i$i|0)==(0|0);
              if ($818) {
-              break;
+              break L356;
              }
             }
-            $819 = HEAP32[((2584 + 16|0))>>2]|0;
-            $820 = ($R$1$i$i>>>0)<($819>>>0);
-            if ($820) {
-             _abort();
-             // unreachable;
-            }
-            $821 = (($R$1$i$i) + 24|0);
-            HEAP32[$821>>2] = $774;
-            $$sum3132$i$i = $720 | 16;
-            $$sum114$i = (($$sum3132$i$i) + ($tsize$246$i))|0;
-            $822 = (($tbase$247$i) + ($$sum114$i)|0);
-            $823 = HEAP32[$822>>2]|0;
-            $824 = ($823|0)==(0|0);
-            do {
-             if (!($824)) {
-              $825 = HEAP32[((2584 + 16|0))>>2]|0;
-              $826 = ($823>>>0)<($825>>>0);
-              if ($826) {
-               _abort();
-               // unreachable;
-              } else {
-               $827 = (($R$1$i$i) + 16|0);
-               HEAP32[$827>>2] = $823;
-               $828 = (($823) + 24|0);
-               HEAP32[$828>>2] = $R$1$i$i;
-               break;
-              }
-             }
-            } while(0);
-            $$sum115$i = (($$sum2$i23$i) + ($$sum3132$i$i))|0;
-            $829 = (($tbase$247$i) + ($$sum115$i)|0);
-            $830 = HEAP32[$829>>2]|0;
-            $831 = ($830|0)==(0|0);
-            if (!($831)) {
-             $832 = HEAP32[((2584 + 16|0))>>2]|0;
-             $833 = ($830>>>0)<($832>>>0);
-             if ($833) {
+           } while(0);
+           $819 = HEAP32[((2584 + 16|0))>>2]|0;
+           $820 = ($R$1$i$i>>>0)<($819>>>0);
+           if ($820) {
+            _abort();
+            // unreachable;
+           }
+           $821 = (($R$1$i$i) + 24|0);
+           HEAP32[$821>>2] = $774;
+           $$sum3132$i$i = $720 | 16;
+           $$sum114$i = (($$sum3132$i$i) + ($tsize$246$i))|0;
+           $822 = (($tbase$247$i) + ($$sum114$i)|0);
+           $823 = HEAP32[$822>>2]|0;
+           $824 = ($823|0)==(0|0);
+           do {
+            if (!($824)) {
+             $825 = HEAP32[((2584 + 16|0))>>2]|0;
+             $826 = ($823>>>0)<($825>>>0);
+             if ($826) {
               _abort();
               // unreachable;
              } else {
-              $834 = (($R$1$i$i) + 20|0);
-              HEAP32[$834>>2] = $830;
-              $835 = (($830) + 24|0);
-              HEAP32[$835>>2] = $R$1$i$i;
+              $827 = (($R$1$i$i) + 16|0);
+              HEAP32[$827>>2] = $823;
+              $828 = (($823) + 24|0);
+              HEAP32[$828>>2] = $R$1$i$i;
               break;
              }
             }
+           } while(0);
+           $$sum115$i = (($$sum2$i23$i) + ($$sum3132$i$i))|0;
+           $829 = (($tbase$247$i) + ($$sum115$i)|0);
+           $830 = HEAP32[$829>>2]|0;
+           $831 = ($830|0)==(0|0);
+           if ($831) {
+            break;
+           }
+           $832 = HEAP32[((2584 + 16|0))>>2]|0;
+           $833 = ($830>>>0)<($832>>>0);
+           if ($833) {
+            _abort();
+            // unreachable;
+           } else {
+            $834 = (($R$1$i$i) + 20|0);
+            HEAP32[$834>>2] = $830;
+            $835 = (($830) + 24|0);
+            HEAP32[$835>>2] = $R$1$i$i;
+            break;
            }
           }
          } while(0);
@@ -9701,25 +9809,27 @@ function _malloc($bytes) {
          $849 = 1 << $844;
          $850 = $848 & $849;
          $851 = ($850|0)==(0);
-         if ($851) {
-          $852 = $848 | $849;
-          HEAP32[2584>>2] = $852;
-          $$sum26$pre$i$i = (($846) + 2)|0;
-          $$pre$i25$i = ((2584 + ($$sum26$pre$i$i<<2)|0) + 40|0);
-          $$pre$phi$i26$iZ2D = $$pre$i25$i;$F4$0$i$i = $847;
-         } else {
-          $$sum29$i$i = (($846) + 2)|0;
-          $853 = ((2584 + ($$sum29$i$i<<2)|0) + 40|0);
-          $854 = HEAP32[$853>>2]|0;
-          $855 = HEAP32[((2584 + 16|0))>>2]|0;
-          $856 = ($854>>>0)<($855>>>0);
-          if ($856) {
+         do {
+          if ($851) {
+           $852 = $848 | $849;
+           HEAP32[2584>>2] = $852;
+           $$sum26$pre$i$i = (($846) + 2)|0;
+           $$pre$i25$i = ((2584 + ($$sum26$pre$i$i<<2)|0) + 40|0);
+           $$pre$phi$i26$iZ2D = $$pre$i25$i;$F4$0$i$i = $847;
+          } else {
+           $$sum29$i$i = (($846) + 2)|0;
+           $853 = ((2584 + ($$sum29$i$i<<2)|0) + 40|0);
+           $854 = HEAP32[$853>>2]|0;
+           $855 = HEAP32[((2584 + 16|0))>>2]|0;
+           $856 = ($854>>>0)<($855>>>0);
+           if (!($856)) {
+            $$pre$phi$i26$iZ2D = $853;$F4$0$i$i = $854;
+            break;
+           }
            _abort();
            // unreachable;
-          } else {
-           $$pre$phi$i26$iZ2D = $853;$F4$0$i$i = $854;
           }
-         }
+         } while(0);
          HEAP32[$$pre$phi$i26$iZ2D>>2] = $725;
          $857 = (($F4$0$i$i) + 12|0);
          HEAP32[$857>>2] = $725;
@@ -9733,13 +9843,15 @@ function _malloc($bytes) {
         }
         $860 = $qsize$0$i$i >>> 8;
         $861 = ($860|0)==(0);
-        if ($861) {
-         $I7$0$i$i = 0;
-        } else {
-         $862 = ($qsize$0$i$i>>>0)>(16777215);
-         if ($862) {
-          $I7$0$i$i = 31;
+        do {
+         if ($861) {
+          $I7$0$i$i = 0;
          } else {
+          $862 = ($qsize$0$i$i>>>0)>(16777215);
+          if ($862) {
+           $I7$0$i$i = 31;
+           break;
+          }
           $863 = (($860) + 1048320)|0;
           $864 = $863 >>> 16;
           $865 = $864 & 8;
@@ -9764,7 +9876,7 @@ function _malloc($bytes) {
           $884 = $883 | $880;
           $I7$0$i$i = $884;
          }
-        }
+        } while(0);
         $885 = ((2584 + ($I7$0$i$i<<2)|0) + 304|0);
         $$sum12$i$i = (($$sum$i21$i) + 28)|0;
         $886 = (($tbase$247$i) + ($$sum12$i$i)|0);
@@ -9998,25 +10110,27 @@ function _malloc($bytes) {
       $988 = 1 << $983;
       $989 = $987 & $988;
       $990 = ($989|0)==(0);
-      if ($990) {
-       $991 = $987 | $988;
-       HEAP32[2584>>2] = $991;
-       $$sum10$pre$i$i = (($985) + 2)|0;
-       $$pre$i$i = ((2584 + ($$sum10$pre$i$i<<2)|0) + 40|0);
-       $$pre$phi$i$iZ2D = $$pre$i$i;$F$0$i$i = $986;
-      } else {
-       $$sum11$i$i = (($985) + 2)|0;
-       $992 = ((2584 + ($$sum11$i$i<<2)|0) + 40|0);
-       $993 = HEAP32[$992>>2]|0;
-       $994 = HEAP32[((2584 + 16|0))>>2]|0;
-       $995 = ($993>>>0)<($994>>>0);
-       if ($995) {
+      do {
+       if ($990) {
+        $991 = $987 | $988;
+        HEAP32[2584>>2] = $991;
+        $$sum10$pre$i$i = (($985) + 2)|0;
+        $$pre$i$i = ((2584 + ($$sum10$pre$i$i<<2)|0) + 40|0);
+        $$pre$phi$i$iZ2D = $$pre$i$i;$F$0$i$i = $986;
+       } else {
+        $$sum11$i$i = (($985) + 2)|0;
+        $992 = ((2584 + ($$sum11$i$i<<2)|0) + 40|0);
+        $993 = HEAP32[$992>>2]|0;
+        $994 = HEAP32[((2584 + 16|0))>>2]|0;
+        $995 = ($993>>>0)<($994>>>0);
+        if (!($995)) {
+         $$pre$phi$i$iZ2D = $992;$F$0$i$i = $993;
+         break;
+        }
         _abort();
         // unreachable;
-       } else {
-        $$pre$phi$i$iZ2D = $992;$F$0$i$i = $993;
        }
-      }
+      } while(0);
       HEAP32[$$pre$phi$i$iZ2D>>2] = $636;
       $996 = (($F$0$i$i) + 12|0);
       HEAP32[$996>>2] = $636;
@@ -11027,6 +11141,49 @@ function _free($mem) {
  HEAP32[((2584 + 32|0))>>2] = -1;
  STACKTOP = sp;return;
 }
+function _isdigit($c) {
+ $c = $c|0;
+ var $0 = 0, $1 = 0, $2 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = (($c) + -48)|0;
+ $1 = ($0>>>0)<(10);
+ $2 = $1&1;
+ STACKTOP = sp;return ($2|0);
+}
+function _isspace($c) {
+ $c = $c|0;
+ var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = ($c|0)==(32);
+ if ($0) {
+  $4 = 1;
+ } else {
+  $1 = (($c) + -9)|0;
+  $2 = ($1>>>0)<(5);
+  $4 = $2;
+ }
+ $3 = $4&1;
+ STACKTOP = sp;return ($3|0);
+}
+function _isupper($c) {
+ $c = $c|0;
+ var $0 = 0, $1 = 0, $2 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = (($c) + -65)|0;
+ $1 = ($0>>>0)<(26);
+ $2 = $1&1;
+ STACKTOP = sp;return ($2|0);
+}
+function _tolower($c) {
+ $c = $c|0;
+ var $$0 = 0, $0 = 0, $1 = 0, $2 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = (_isupper($c)|0);
+ $1 = ($0|0)==(0);
+ $2 = $c | 32;
+ $$0 = $1 ? $c : $2;
+ STACKTOP = sp;return ($$0|0);
+}
 function _atoi($s) {
  $s = $s|0;
  var $$0 = 0, $$1$ph = 0, $$12 = 0, $$neg1 = 0, $$pre = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0;
@@ -11034,9 +11191,9 @@ function _atoi($s) {
  sp = STACKTOP;
  $$0 = $s;
  while(1) {
-  $0 = HEAP8[$$0]|0;
+  $0 = HEAP8[$$0>>0]|0;
   $1 = $0 << 24 >> 24;
-  $2 = (_isspace(($1|0))|0);
+  $2 = (_isspace($1)|0);
   $3 = ($2|0)==(0);
   $4 = (($$0) + 1|0);
   if ($3) {
@@ -11045,7 +11202,7 @@ function _atoi($s) {
    $$0 = $4;
   }
  }
- $5 = HEAP8[$$0]|0;
+ $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
  if ((($6|0) == 45)) {
   $neg$0 = 1;
@@ -11057,11 +11214,11 @@ function _atoi($s) {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
  }
  if ((label|0) == 5) {
-  $$pre = HEAP8[$4]|0;
+  $$pre = HEAP8[$4>>0]|0;
   $$1$ph = $4;$8 = $$pre;$neg$1$ph = $neg$0;
  }
  $7 = $8 << 24 >> 24;
- $9 = (_isdigit(($7|0))|0);
+ $9 = (_isdigit($7)|0);
  $10 = ($9|0)==(0);
  if ($10) {
   $n$0$lcssa = 0;
@@ -11075,13 +11232,13 @@ function _atoi($s) {
  while(1) {
   $11 = ($n$03*10)|0;
   $12 = (($$12) + 1|0);
-  $13 = HEAP8[$$12]|0;
+  $13 = HEAP8[$$12>>0]|0;
   $14 = $13 << 24 >> 24;
   $$neg1 = (($11) + 48)|0;
   $15 = (($$neg1) - ($14))|0;
-  $16 = HEAP8[$12]|0;
+  $16 = HEAP8[$12>>0]|0;
   $17 = $16 << 24 >> 24;
-  $18 = (_isdigit(($17|0))|0);
+  $18 = (_isdigit($17)|0);
   $19 = ($18|0)==(0);
   if ($19) {
    $n$0$lcssa = $15;
@@ -11107,7 +11264,7 @@ function _strncasecmp($_l,$_r,$n) {
   $$04 = 0;
   STACKTOP = sp;return ($$04|0);
  }
- $1 = HEAP8[$_l]|0;
+ $1 = HEAP8[$_l>>0]|0;
  $2 = ($1<<24>>24)==(0);
  L4: do {
   if ($2) {
@@ -11117,7 +11274,7 @@ function _strncasecmp($_l,$_r,$n) {
    $$08$in = $n;$8 = $1;$9 = $3;$l$06 = $_l;$r$07 = $_r;
    while(1) {
     $$08 = (($$08$in) + -1)|0;
-    $4 = HEAP8[$r$07]|0;
+    $4 = HEAP8[$r$07>>0]|0;
     $5 = ($4<<24>>24)==(0);
     $6 = ($$08|0)==(0);
     $or$cond = $5 | $6;
@@ -11127,10 +11284,10 @@ function _strncasecmp($_l,$_r,$n) {
     }
     $7 = ($8<<24>>24)==($4<<24>>24);
     if (!($7)) {
-     $10 = (_tolower(($9|0))|0);
-     $11 = HEAP8[$r$07]|0;
+     $10 = (_tolower($9)|0);
+     $11 = HEAP8[$r$07>>0]|0;
      $12 = $11&255;
-     $13 = (_tolower(($12|0))|0);
+     $13 = (_tolower($12)|0);
      $14 = ($10|0)==($13|0);
      if (!($14)) {
       break;
@@ -11138,7 +11295,7 @@ function _strncasecmp($_l,$_r,$n) {
     }
     $15 = (($l$06) + 1|0);
     $16 = (($r$07) + 1|0);
-    $17 = HEAP8[$15]|0;
+    $17 = HEAP8[$15>>0]|0;
     $18 = $17&255;
     $19 = ($17<<24>>24)==(0);
     if ($19) {
@@ -11148,15 +11305,15 @@ function _strncasecmp($_l,$_r,$n) {
      $$08$in = $$08;$8 = $17;$9 = $18;$l$06 = $15;$r$07 = $16;
     }
    }
-   $$pre$pre = HEAP8[$l$06]|0;
+   $$pre$pre = HEAP8[$l$06>>0]|0;
    $21 = $$pre$pre;$r$0$lcssa = $r$07;
   }
  } while(0);
  $20 = $21&255;
- $22 = (_tolower(($20|0))|0);
- $23 = HEAP8[$r$0$lcssa]|0;
+ $22 = (_tolower($20)|0);
+ $23 = HEAP8[$r$0$lcssa>>0]|0;
  $24 = $23&255;
- $25 = (_tolower(($24|0))|0);
+ $25 = (_tolower($24)|0);
  $26 = (($22) - ($25))|0;
  $$04 = $26;
  STACKTOP = sp;return ($$04|0);
@@ -11177,7 +11334,7 @@ function _memset(ptr, value, num) {
       if (unaligned) {
         unaligned = (ptr + 4 - unaligned)|0;
         while ((ptr|0) < (unaligned|0)) { // no need to check for stop, since we have large num
-          HEAP8[(ptr)]=value;
+          HEAP8[((ptr)>>0)]=value;
           ptr = (ptr+1)|0;
         }
       }
@@ -11187,7 +11344,7 @@ function _memset(ptr, value, num) {
       }
     }
     while ((ptr|0) < (stop|0)) {
-      HEAP8[(ptr)]=value;
+      HEAP8[((ptr)>>0)]=value;
       ptr = (ptr+1)|0;
     }
     return (ptr-num)|0;
@@ -11196,16 +11353,10 @@ function _strlen(ptr) {
     ptr = ptr|0;
     var curr = 0;
     curr = ptr;
-    while (((HEAP8[(curr)])|0)) {
+    while (((HEAP8[((curr)>>0)])|0)) {
       curr = (curr + 1)|0;
     }
     return (curr - ptr)|0;
-}
-function _tolower(chr) {
-    chr = chr|0;
-    if ((chr|0) < 65) return chr|0;
-    if ((chr|0) > 90) return chr|0;
-    return (chr - 65 + 97)|0;
 }
 function _memcpy(dest, src, num) {
     dest = dest|0; src = src|0; num = num|0;
@@ -11215,7 +11366,7 @@ function _memcpy(dest, src, num) {
     if ((dest&3) == (src&3)) {
       while (dest & 3) {
         if ((num|0) == 0) return ret|0;
-        HEAP8[(dest)]=((HEAP8[(src)])|0);
+        HEAP8[((dest)>>0)]=((HEAP8[((src)>>0)])|0);
         dest = (dest+1)|0;
         src = (src+1)|0;
         num = (num-1)|0;
@@ -11228,7 +11379,7 @@ function _memcpy(dest, src, num) {
       }
     }
     while ((num|0) > 0) {
-      HEAP8[(dest)]=((HEAP8[(src)])|0);
+      HEAP8[((dest)>>0)]=((HEAP8[((src)>>0)])|0);
       dest = (dest+1)|0;
       src = (src+1)|0;
       num = (num-1)|0;
@@ -11238,28 +11389,29 @@ function _memcpy(dest, src, num) {
 
 // EMSCRIPTEN_END_FUNCS
 
-  
+    
 
   // EMSCRIPTEN_END_FUNCS
   
 
-  return { _strlen: _strlen, _free: _free, _main: _main, _tolower: _tolower, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, setTempRet1: setTempRet1, setTempRet2: setTempRet2, setTempRet3: setTempRet3, setTempRet4: setTempRet4, setTempRet5: setTempRet5, setTempRet6: setTempRet6, setTempRet7: setTempRet7, setTempRet8: setTempRet8, setTempRet9: setTempRet9 };
-})
-// EMSCRIPTEN_END_ASM
-({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaEventElapsedTime": _cudaEventElapsedTime, "__reallyNegative": __reallyNegative, "_cudaSetDevice": _cudaSetDevice, "_cudaMemcpy": _cudaMemcpy, "_cudaRunKernelDimFunc": _cudaRunKernelDimFunc, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "_fprintf": _fprintf, "___setErrNo": ___setErrNo, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_cudaGetDevice": _cudaGetDevice, "_cudaDeviceSynchronize": _cudaDeviceSynchronize, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_cudaGetDeviceProperties": _cudaGetDeviceProperties, "_mkport": _mkport, "__exit": __exit, "_cudaEventCreate": _cudaEventCreate, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_isdigit": _isdigit, "_cudaEventRecord": _cudaEventRecord, "__formatString": __formatString, "_isspace": _isspace, "_exit": _exit, "_cudaMalloc": _cudaMalloc, "_cudaEventSynchronize": _cudaEventSynchronize, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
-var _strlen = Module["_strlen"] = asm["_strlen"];
+    return { _strlen: _strlen, _free: _free, _main: _main, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
+  })
+  // EMSCRIPTEN_END_ASM
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaEventElapsedTime": _cudaEventElapsedTime, "__reallyNegative": __reallyNegative, "_cudaSetDevice": _cudaSetDevice, "_cudaMemcpy": _cudaMemcpy, "_cudaRunKernelDimFunc": _cudaRunKernelDimFunc, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "___setErrNo": ___setErrNo, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_cudaGetDevice": _cudaGetDevice, "_cudaDeviceSynchronize": _cudaDeviceSynchronize, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_cudaGetDeviceProperties": _cudaGetDeviceProperties, "_mkport": _mkport, "__exit": __exit, "_cudaEventCreate": _cudaEventCreate, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "_cudaEventRecord": _cudaEventRecord, "__formatString": __formatString, "_exit": _exit, "_cudaMalloc": _cudaMalloc, "_cudaEventSynchronize": _cudaEventSynchronize, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
+  var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
-var _tolower = Module["_tolower"] = asm["_tolower"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
-
-Runtime.stackAlloc = function(size) { return asm['stackAlloc'](size) };
-Runtime.stackSave = function() { return asm['stackSave']() };
-Runtime.stackRestore = function(top) { asm['stackRestore'](top) };
-
+  
+  Runtime.stackAlloc = asm['stackAlloc'];
+  Runtime.stackSave = asm['stackSave'];
+  Runtime.stackRestore = asm['stackRestore'];
+  Runtime.setTempRet0 = asm['setTempRet0'];
+  Runtime.getTempRet0 = asm['getTempRet0'];
+  
 
 // Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
 var i64Math = null;
