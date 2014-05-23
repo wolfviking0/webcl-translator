@@ -169,7 +169,7 @@ __kernel void advectRK2(
             const float delta_time,
             int3  dims,
             const float H,
-            __global float *q,
+            __global float * q,
             __global float * q_prev,
             __global float * u_prev,
             __global float * v_prev,

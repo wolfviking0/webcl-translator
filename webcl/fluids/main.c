@@ -1085,7 +1085,9 @@ static void open_glut_window ( void )
 	glutKeyboardFunc ( key_func );
 	glutMouseFunc ( mouse_func );
 	glutMotionFunc ( motion_func );
+	#ifndef __EMSCRIPTEN__
 	glutReshapeFunc ( reshape_func );
+	#endif
 	glutIdleFunc ( idle_func );
 	glutDisplayFunc ( display_func );
 }
