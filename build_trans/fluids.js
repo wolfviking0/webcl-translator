@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/js/fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'fluids.data';
     var REMOTE_PACKAGE_SIZE = 19220;
-    var PACKAGE_UUID = '44bd98b8-7703-418a-8bb2-2c7e66d7de57';
+    var PACKAGE_UUID = 'f68c1dfc-1372-4f34-9ebc-a2f3af7819c8';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11639,11 +11639,11 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Int8Array(src) );
               break;
             case webcl.SIGNED_INT16:
-              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size);
+              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size >> 1);
               _data_heap.set( new Int16Array(src) );
               break;
             case webcl.SIGNED_INT32:
-              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size);
+              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size >> 2);
               _data_heap.set( new Int32Array(src) );
               break;
             case webcl.UNSIGNED_INT8:
@@ -11651,20 +11651,20 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Uint8Array(src) );
               break;
             case webcl.UNSIGNED_INT16:
-              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size);
+              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size >> 1);
               _data_heap.set( new Uint16Array(src) );
               break;
             case webcl.UNSIGNED_INT32:
-              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size);
+              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
               break;         
             default:
-              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
               break;
           }
         } else {
-          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
           _data_heap.set( new Float32Array(src) );
         }
       },catchError:function (e) {
@@ -19283,6 +19283,34 @@ function _key_func($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
+ case 77: case 109:  {
+  $16 = HEAP32[3752>>2]|0;
+  $17 = ($16|0)!=(0);
+  $18 = $17 ^ 1;
+  $19 = $18&1;
+  HEAP32[3752>>2] = $19;
+  $20 = HEAP32[3752>>2]|0;
+  $21 = ($20|0)!=(0);
+  $22 = $21 ? 3984 : 3992;
+  HEAP32[$vararg_buffer1>>2] = $22;
+  (_printf((3960|0),($vararg_buffer1|0))|0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 79: case 111:  {
+  $23 = HEAP32[3760>>2]|0;
+  $24 = ($23|0)!=(0);
+  $25 = $24 ^ 1;
+  $26 = $25&1;
+  HEAP32[3760>>2] = $26;
+  $27 = HEAP32[3760>>2]|0;
+  $28 = ($27|0)!=(0);
+  $29 = $28 ? 3984 : 3992;
+  HEAP32[$vararg_buffer4>>2] = $29;
+  (_printf((4000|0),($vararg_buffer4|0))|0);
+  STACKTOP = sp;return;
+  break;
+ }
  case 88: case 120:  {
   _clear_data();
   STACKTOP = sp;return;
@@ -19319,34 +19347,6 @@ function _key_func($key,$x,$y) {
   $15 = $14 ? 3928 : 3952;
   HEAP32[$vararg_buffer>>2] = $15;
   (_printf((3904|0),($vararg_buffer|0))|0);
-  STACKTOP = sp;return;
-  break;
- }
- case 77: case 109:  {
-  $16 = HEAP32[3752>>2]|0;
-  $17 = ($16|0)!=(0);
-  $18 = $17 ^ 1;
-  $19 = $18&1;
-  HEAP32[3752>>2] = $19;
-  $20 = HEAP32[3752>>2]|0;
-  $21 = ($20|0)!=(0);
-  $22 = $21 ? 3984 : 3992;
-  HEAP32[$vararg_buffer1>>2] = $22;
-  (_printf((3960|0),($vararg_buffer1|0))|0);
-  STACKTOP = sp;return;
-  break;
- }
- case 79: case 111:  {
-  $23 = HEAP32[3760>>2]|0;
-  $24 = ($23|0)!=(0);
-  $25 = $24 ^ 1;
-  $26 = $25&1;
-  HEAP32[3760>>2] = $26;
-  $27 = HEAP32[3760>>2]|0;
-  $28 = ($27|0)!=(0);
-  $29 = $28 ? 3984 : 3992;
-  HEAP32[$vararg_buffer4>>2] = $29;
-  (_printf((4000|0),($vararg_buffer4|0))|0);
   STACKTOP = sp;return;
   break;
  }

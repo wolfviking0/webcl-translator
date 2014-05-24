@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'transpose.data';
     var REMOTE_PACKAGE_SIZE = 9421;
-    var PACKAGE_UUID = 'fb7fa458-18ff-4811-a7e1-9f61e50e7d14';
+    var PACKAGE_UUID = '34efb59f-cf0b-49d0-bb9e-574da8897e0b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -2915,11 +2915,11 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Int8Array(src) );
               break;
             case webcl.SIGNED_INT16:
-              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size);
+              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size >> 1);
               _data_heap.set( new Int16Array(src) );
               break;
             case webcl.SIGNED_INT32:
-              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size);
+              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size >> 2);
               _data_heap.set( new Int32Array(src) );
               break;
             case webcl.UNSIGNED_INT8:
@@ -2927,20 +2927,20 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Uint8Array(src) );
               break;
             case webcl.UNSIGNED_INT16:
-              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size);
+              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size >> 1);
               _data_heap.set( new Uint16Array(src) );
               break;
             case webcl.UNSIGNED_INT32:
-              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size);
+              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
               break;         
             default:
-              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
               break;
           }
         } else {
-          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
           _data_heap.set( new Float32Array(src) );
         }
       },catchError:function (e) {

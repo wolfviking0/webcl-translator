@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_mandelgpu.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '35022ba0-857f-4db7-aca6-82fe448f4bef';
+    var PACKAGE_UUID = '7c468595-5cc9-4b10-88ca-f9bb00f17702';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11667,11 +11667,11 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Int8Array(src) );
               break;
             case webcl.SIGNED_INT16:
-              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size);
+              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size >> 1);
               _data_heap.set( new Int16Array(src) );
               break;
             case webcl.SIGNED_INT32:
-              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size);
+              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size >> 2);
               _data_heap.set( new Int32Array(src) );
               break;
             case webcl.UNSIGNED_INT8:
@@ -11679,20 +11679,20 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Uint8Array(src) );
               break;
             case webcl.UNSIGNED_INT16:
-              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size);
+              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size >> 1);
               _data_heap.set( new Uint16Array(src) );
               break;
             case webcl.UNSIGNED_INT32:
-              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size);
+              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
               break;         
             default:
-              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
               break;
           }
         } else {
-          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
           _data_heap.set( new Float32Array(src) );
         }
       },catchError:function (e) {
@@ -18707,11 +18707,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;

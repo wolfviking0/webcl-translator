@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = 'b29d48f6-a663-4e69-809b-4d4bd2265549';
+    var PACKAGE_UUID = '22be4c6f-114c-4c47-80ff-0afa64cbae1d';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11798,11 +11798,11 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Int8Array(src) );
               break;
             case webcl.SIGNED_INT16:
-              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size);
+              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size >> 1);
               _data_heap.set( new Int16Array(src) );
               break;
             case webcl.SIGNED_INT32:
-              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size);
+              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size >> 2);
               _data_heap.set( new Int32Array(src) );
               break;
             case webcl.UNSIGNED_INT8:
@@ -11810,20 +11810,20 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Uint8Array(src) );
               break;
             case webcl.UNSIGNED_INT16:
-              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size);
+              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size >> 1);
               _data_heap.set( new Uint16Array(src) );
               break;
             case webcl.UNSIGNED_INT32:
-              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size);
+              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
               break;         
             default:
-              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
               break;
           }
         } else {
-          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
           _data_heap.set( new Float32Array(src) );
         }
       },catchError:function (e) {
@@ -15746,21 +15746,6 @@ function _keyFunc($key,$x,$y) {
  $4 = $3&255;
  do {
   switch ($4|0) {
-  case 27:  {
-   $96 = HEAP32[_stderr>>2]|0;
-   (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
-   _exit(0);
-   // unreachable;
-   break;
-  }
-  case 32:  {
-   _ReInit(0);
-   _glutPostRedisplay();
-   $347 = (+_WallClockTime());
-   HEAPF64[2984>>3] = $347;
-   STACKTOP = sp;return;
-   break;
-  }
   case 112:  {
    $5 = (_fopen((2880|0),(2896|0))|0);
    $f = $5;
@@ -15916,6 +15901,21 @@ function _keyFunc($key,$x,$y) {
     $8 = HEAP32[_stderr>>2]|0;
     (_fprintf(($8|0),(2904|0),($vararg_buffer|0))|0);
    }
+   _ReInit(0);
+   _glutPostRedisplay();
+   $347 = (+_WallClockTime());
+   HEAPF64[2984>>3] = $347;
+   STACKTOP = sp;return;
+   break;
+  }
+  case 27:  {
+   $96 = HEAP32[_stderr>>2]|0;
+   (_fprintf(($96|0),(2976|0),($vararg_buffer10|0))|0);
+   _exit(0);
+   // unreachable;
+   break;
+  }
+  case 32:  {
    _ReInit(0);
    _glutPostRedisplay();
    $347 = (+_WallClockTime());
@@ -16389,12 +16389,10 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 100:  {
-  _rotateCameraY(-0.0349065847694873809814);
-  break;
- }
- case 102:  {
-  _rotateCameraY(0.0349065847694873809814);
+ case 105:  {
+  $6 = +HEAPF32[((2224 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2224 + 72|0))>>2] = $7;
   break;
  }
  case 104:  {
@@ -16403,18 +16401,20 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2224 + 72|0))>>2] = $5;
   break;
  }
- case 105:  {
-  $6 = +HEAPF32[((2224 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2224 + 72|0))>>2] = $7;
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
+ case 100:  {
+  _rotateCameraY(-0.0349065847694873809814);
+  break;
+ }
+ case 102:  {
+  _rotateCameraY(0.0349065847694873809814);
   break;
  }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
   break;
  }
  default: {

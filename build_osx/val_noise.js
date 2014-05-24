@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_noise.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '35950b81-c8d6-4557-bafb-e5758394b8be';
+    var PACKAGE_UUID = '17ba6e44-589e-4aa3-8e3b-7405b112ffe7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -3009,11 +3009,11 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Int8Array(src) );
               break;
             case webcl.SIGNED_INT16:
-              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size);
+              var _data_heap = new Int16Array(Module.HEAP16.buffer, dest, size >> 1);
               _data_heap.set( new Int16Array(src) );
               break;
             case webcl.SIGNED_INT32:
-              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size);
+              var _data_heap = new Int32Array(Module.HEAP32.buffer, dest, size >> 2);
               _data_heap.set( new Int32Array(src) );
               break;
             case webcl.UNSIGNED_INT8:
@@ -3021,20 +3021,20 @@ function copyTempDouble(ptr) {
               _data_heap.set( new Uint8Array(src) );
               break;
             case webcl.UNSIGNED_INT16:
-              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size);
+              var _data_heap = new Uint16Array(Module.HEAPU16.buffer, dest, size >> 1);
               _data_heap.set( new Uint16Array(src) );
               break;
             case webcl.UNSIGNED_INT32:
-              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size);
+              var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
               break;         
             default:
-              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+              var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
               break;
           }
         } else {
-          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size);
+          var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
           _data_heap.set( new Float32Array(src) );
         }
       },catchError:function (e) {
@@ -14246,25 +14246,6 @@ function _Keyboard($key,$x,$y) {
    STACKTOP = sp;return;
    break;
   }
-  case 44:  {
-   $63 = +HEAPF32[456>>2];
-   $64 = $63 * 1.10000002384185791016;
-   HEAPF32[456>>2] = $64;
-   $65 = +HEAPF32[456>>2];
-   $66 = $65;
-   HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
-   (_printf((464|0),($vararg_buffer28|0))|0);
-   HEAP32[288>>2] = 1;
-   _glutPostRedisplay();
-   STACKTOP = sp;return;
-   break;
-  }
-  case 27:  {
-   _ShutdownCompute();
-   _exit(0);
-   // unreachable;
-   break;
-  }
   case 118:  {
    $43 = +HEAPF32[400>>2];
    $44 = $43 * 1.10000002384185791016;
@@ -14282,6 +14263,19 @@ function _Keyboard($key,$x,$y) {
    $50 = $49;
    HEAPF64[tempDoublePtr>>3]=$50;HEAP32[$vararg_buffer16>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer16+4>>2]=HEAP32[tempDoublePtr+4>>2];
    (_printf((408|0),($vararg_buffer16|0))|0);
+   HEAP32[288>>2] = 1;
+   _glutPostRedisplay();
+   STACKTOP = sp;return;
+   break;
+  }
+  case 44:  {
+   $63 = +HEAPF32[456>>2];
+   $64 = $63 * 1.10000002384185791016;
+   HEAPF32[456>>2] = $64;
+   $65 = +HEAPF32[456>>2];
+   $66 = $65;
+   HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   (_printf((464|0),($vararg_buffer28|0))|0);
    HEAP32[288>>2] = 1;
    _glutPostRedisplay();
    STACKTOP = sp;return;
@@ -14324,6 +14318,12 @@ function _Keyboard($key,$x,$y) {
    HEAP32[288>>2] = 1;
    _glutPostRedisplay();
    STACKTOP = sp;return;
+   break;
+  }
+  case 27:  {
+   _ShutdownCompute();
+   _exit(0);
+   // unreachable;
    break;
   }
   default: {
