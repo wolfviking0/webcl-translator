@@ -5,7 +5,7 @@ var configuration_pages = {
   "Demos Translator" : [
     { 
       "title"         : "Image Copy",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_trans/",
       "id"            : 0,
       "gl"            : "off",
@@ -16,7 +16,7 @@ var configuration_pages = {
     },    
     { 
       "title"         : "Event Profiling",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_trans/",
       "id"            : 1,
       "gl"            : "off",
@@ -27,7 +27,7 @@ var configuration_pages = {
     },  
     { 
       "title"         : "Attractor Copying",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_trans/",
       "id"            : 2,
       "gl"            : "on",
@@ -49,7 +49,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "DXT Compressor",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_trans/",
       "id"            : 3,
       "gl"            : "on",
@@ -71,7 +71,7 @@ var configuration_pages = {
     },   
     { 
       "title"         : "Fluids",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_trans/",
       "id"            : 5,
       "gl"            : "on",
@@ -87,7 +87,7 @@ var configuration_pages = {
   "Demos OpenCL Book Samples" : [
     { 
       "title"         : "Hello World",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_book/",
       "id"            : 0,
       "gl"            : "off",
@@ -98,7 +98,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Convolution",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_book/",
       "id"            : 1,
       "gl"            : "off",
@@ -109,7 +109,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Info",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_book/",
       "id"            : 2,
       "gl"            : "off",
@@ -129,22 +129,11 @@ var configuration_pages = {
       "valcpu"        : "",
       "valgpu"        : "",                
     },
-    /*{ 
-      "title"         : "Image Gaussian Blur",
-      "compatibility" : "[Webkit]",
-      "pages"         : "build_book/",
-      "id"            : 4,
-      "gl"            : "on",
-      "cpu"           : "",
-      "gpu"           : "&gpu",
-      "valcpu"        : "",
-      "valgpu"        : "",               
-    },*/
     { 
       "title"         : "OpenGL Interop",
       "compatibility" : "[Webkit]",
       "pages"         : "build_book/",
-      "id"            : 5,
+      "id"            : 4,
       "gl"            : "on",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
@@ -155,7 +144,7 @@ var configuration_pages = {
       "title"         : "Vector Add",
       "compatibility" : "[Webkit]",
       "pages"         : "build_book/",
-      "id"            : 6,
+      "id"            : 5,
       "gl"            : "off",
       "cpu"           : "&cpu",
       "gpu"           : "&gpu",
@@ -169,7 +158,7 @@ var configuration_pages = {
   "Demos OSX" : [
     { 
       "title"         : "Hello World",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 0,
       "gl"            : "off",
@@ -180,7 +169,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Transpose",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 1,
       "gl"            : "off",
@@ -191,7 +180,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Trajectory",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 2,
       "gl"            : "off",
@@ -202,7 +191,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Scan",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 3,
       "gl"            : "off",
@@ -213,7 +202,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Reduce Int ",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -224,7 +213,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Reduce Int 2",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -235,7 +224,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Reduce Int 4",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -246,7 +235,7 @@ var configuration_pages = {
     },        
     { 
       "title"         : "Reduce Float",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -257,7 +246,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Reduce Float 2",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -268,7 +257,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Reduce Float 4",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 4,
       "gl"            : "off",
@@ -279,7 +268,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Noise Copying",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 5,
       "gl"            : "on",
@@ -301,7 +290,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "QJulia Copying",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_osx/",
       "id"            : 6,
       "gl"            : "on",
@@ -328,7 +317,7 @@ var configuration_pages = {
   "Demos David Bucciarelli" : [
     { 
       "title"         : "Mandel",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_davibu/",
       "id"            : 0,
       "gl"            : "on",
