@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/js/val_fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_fluids.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = 'e789445d-4887-4c53-a375-630f90d71479';
+    var PACKAGE_UUID = '3228fdfc-1aa9-4e2a-b29f-24580f9267f0';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -12037,11 +12037,11 @@ function copyTempDouble(ptr) {
     
             var _array = null;
   
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
+            //if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
+            //  _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
+            //} else {
               _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            //}
            
             _kernel.setArg(_posarg,_array);
   
@@ -25636,11 +25636,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 43)) {
-  $neg$0 = 0;
-  label = 5;
- } else if ((($6|0) == 45)) {
+ if ((($6|0) == 45)) {
   $neg$0 = 1;
+  label = 5;
+ } else if ((($6|0) == 43)) {
+  $neg$0 = 0;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;

@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-translator/webcl/js/fluids.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'fluids.data';
     var REMOTE_PACKAGE_SIZE = 19220;
-    var PACKAGE_UUID = 'f68c1dfc-1372-4f34-9ebc-a2f3af7819c8';
+    var PACKAGE_UUID = '4558d9f7-50c4-44e7-82c7-1d0fa9ca6838';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -12006,11 +12006,11 @@ function copyTempDouble(ptr) {
     
             var _array = null;
   
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
+            //if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
+            //  _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
+            //} else {
               _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            //}
            
             _kernel.setArg(_posarg,_array);
   
@@ -19283,34 +19283,6 @@ function _key_func($key,$x,$y) {
  $3 = $0;
  $4 = $3&255;
  switch ($4|0) {
- case 77: case 109:  {
-  $16 = HEAP32[3752>>2]|0;
-  $17 = ($16|0)!=(0);
-  $18 = $17 ^ 1;
-  $19 = $18&1;
-  HEAP32[3752>>2] = $19;
-  $20 = HEAP32[3752>>2]|0;
-  $21 = ($20|0)!=(0);
-  $22 = $21 ? 3984 : 3992;
-  HEAP32[$vararg_buffer1>>2] = $22;
-  (_printf((3960|0),($vararg_buffer1|0))|0);
-  STACKTOP = sp;return;
-  break;
- }
- case 79: case 111:  {
-  $23 = HEAP32[3760>>2]|0;
-  $24 = ($23|0)!=(0);
-  $25 = $24 ^ 1;
-  $26 = $25&1;
-  HEAP32[3760>>2] = $26;
-  $27 = HEAP32[3760>>2]|0;
-  $28 = ($27|0)!=(0);
-  $29 = $28 ? 3984 : 3992;
-  HEAP32[$vararg_buffer4>>2] = $29;
-  (_printf((4000|0),($vararg_buffer4|0))|0);
-  STACKTOP = sp;return;
-  break;
- }
  case 88: case 120:  {
   _clear_data();
   STACKTOP = sp;return;
@@ -19347,6 +19319,34 @@ function _key_func($key,$x,$y) {
   $15 = $14 ? 3928 : 3952;
   HEAP32[$vararg_buffer>>2] = $15;
   (_printf((3904|0),($vararg_buffer|0))|0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 77: case 109:  {
+  $16 = HEAP32[3752>>2]|0;
+  $17 = ($16|0)!=(0);
+  $18 = $17 ^ 1;
+  $19 = $18&1;
+  HEAP32[3752>>2] = $19;
+  $20 = HEAP32[3752>>2]|0;
+  $21 = ($20|0)!=(0);
+  $22 = $21 ? 3984 : 3992;
+  HEAP32[$vararg_buffer1>>2] = $22;
+  (_printf((3960|0),($vararg_buffer1|0))|0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 79: case 111:  {
+  $23 = HEAP32[3760>>2]|0;
+  $24 = ($23|0)!=(0);
+  $25 = $24 ^ 1;
+  $26 = $25&1;
+  HEAP32[3760>>2] = $26;
+  $27 = HEAP32[3760>>2]|0;
+  $28 = ($27|0)!=(0);
+  $29 = $28 ? 3984 : 3992;
+  HEAP32[$vararg_buffer4>>2] = $29;
+  (_printf((4000|0),($vararg_buffer4|0))|0);
   STACKTOP = sp;return;
   break;
  }
