@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_reduce.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_reduce.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = 'deee15e8-abbb-4e50-9d7a-12213c771966';
+    var PACKAGE_UUID = '2823ca73-01e7-4a29-968a-9b892ada9a4b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -2919,6 +2919,9 @@ function copyTempDouble(ptr) {
   
         return _host_ptr;           
       },getNextPowOfTwo:function (v) { 
+        // Accept 1 / 2 / 3 / 4
+        if (v <= 4) return v;
+        // Accept 8 / 16 / 32 
         var _v = v;
         _v--;
         _v |= _v >> 1;
@@ -8063,13 +8066,7 @@ function copyTempDouble(ptr) {
             
           } else {
     
-            var _array = null;
-  
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
-              _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
            
             _kernel.setArg(_posarg,_array);
   

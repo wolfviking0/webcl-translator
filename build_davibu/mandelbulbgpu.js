@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/mandelbulbgpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'mandelbulbgpu.data';
     var REMOTE_PACKAGE_SIZE = 7784;
-    var PACKAGE_UUID = '18ba8e10-10b3-423c-b10d-c67ea7fcef2d';
+    var PACKAGE_UUID = 'cc470348-a84e-489e-88ad-ad48c977ab50';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -11773,6 +11773,9 @@ function copyTempDouble(ptr) {
   
         return _host_ptr;           
       },getNextPowOfTwo:function (v) { 
+        // Accept 1 / 2 / 3 / 4
+        if (v <= 4) return v;
+        // Accept 8 / 16 / 32 
         var _v = v;
         _v--;
         _v |= _v >> 1;
@@ -12123,13 +12126,7 @@ function copyTempDouble(ptr) {
             
           } else {
     
-            var _array = null;
-  
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
-              _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
            
             _kernel.setArg(_posarg,_array);
   
@@ -15752,6 +15749,21 @@ function _keyFunc($key,$x,$y) {
  $4 = $3&255;
  do {
   switch ($4|0) {
+  case 27:  {
+   $96 = HEAP32[_stderr>>2]|0;
+   (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
+   _exit(0);
+   // unreachable;
+   break;
+  }
+  case 32:  {
+   _ReInit(0);
+   _glutPostRedisplay();
+   $347 = (+_WallClockTime());
+   HEAPF64[3008>>3] = $347;
+   STACKTOP = sp;return;
+   break;
+  }
   case 112:  {
    $5 = (_fopen((2904|0),(2920|0))|0);
    $f = $5;
@@ -15907,21 +15919,6 @@ function _keyFunc($key,$x,$y) {
     $8 = HEAP32[_stderr>>2]|0;
     (_fprintf(($8|0),(2928|0),($vararg_buffer|0))|0);
    }
-   _ReInit(0);
-   _glutPostRedisplay();
-   $347 = (+_WallClockTime());
-   HEAPF64[3008>>3] = $347;
-   STACKTOP = sp;return;
-   break;
-  }
-  case 27:  {
-   $96 = HEAP32[_stderr>>2]|0;
-   (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
-   _exit(0);
-   // unreachable;
-   break;
-  }
-  case 32:  {
    _ReInit(0);
    _glutPostRedisplay();
    $347 = (+_WallClockTime());
@@ -16407,6 +16404,10 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2240 + 72|0))>>2] = $5;
   break;
  }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
   break;
@@ -16417,10 +16418,6 @@ function _specialFunc($key,$x,$y) {
  }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
   break;
  }
  default: {
@@ -17995,7 +17992,7 @@ function _malloc($bytes) {
      $276 = ((3736 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L9: do {
+     L126: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -18019,7 +18016,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L9;
+          break L126;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -18304,7 +18301,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L87: do {
+       L204: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -18443,7 +18440,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L108: do {
+         L225: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -18464,7 +18461,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L108;
+             break L225;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -18485,7 +18482,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L87;
+            break L204;
            }
           }
          } while(0);

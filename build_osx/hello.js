@@ -2735,6 +2735,9 @@ function copyTempDouble(ptr) {
   
         return _host_ptr;           
       },getNextPowOfTwo:function (v) { 
+        // Accept 1 / 2 / 3 / 4
+        if (v <= 4) return v;
+        // Accept 8 / 16 / 32 
         var _v = v;
         _v--;
         _v |= _v >> 1;
@@ -7445,13 +7448,7 @@ function copyTempDouble(ptr) {
             
           } else {
     
-            var _array = null;
-  
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
-              _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
            
             _kernel.setArg(_posarg,_array);
   

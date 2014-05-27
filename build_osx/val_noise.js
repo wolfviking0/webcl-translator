@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_noise.data';
     var REMOTE_PACKAGE_SIZE = 0;
-    var PACKAGE_UUID = '17ba6e44-589e-4aa3-8e3b-7405b112ffe7';
+    var PACKAGE_UUID = '151a5f4a-523e-4ffb-abbe-e7eb532abf85';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -2984,6 +2984,9 @@ function copyTempDouble(ptr) {
   
         return _host_ptr;           
       },getNextPowOfTwo:function (v) { 
+        // Accept 1 / 2 / 3 / 4
+        if (v <= 4) return v;
+        // Accept 8 / 16 / 32 
         var _v = v;
         _v--;
         _v |= _v >> 1;
@@ -12241,13 +12244,7 @@ function copyTempDouble(ptr) {
             
           } else {
     
-            var _array = null;
-  
-            if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) {
-              _array = CL.getCopyPointerToArray(arg_value,arg_size,[[_sig,1]]);
-            } else {
-              _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-            }
+            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
            
             _kernel.setArg(_posarg,_array);
   
@@ -14268,19 +14265,6 @@ function _Keyboard($key,$x,$y) {
    STACKTOP = sp;return;
    break;
   }
-  case 44:  {
-   $63 = +HEAPF32[456>>2];
-   $64 = $63 * 1.10000002384185791016;
-   HEAPF32[456>>2] = $64;
-   $65 = +HEAPF32[456>>2];
-   $66 = $65;
-   HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
-   (_printf((464|0),($vararg_buffer28|0))|0);
-   HEAP32[288>>2] = 1;
-   _glutPostRedisplay();
-   STACKTOP = sp;return;
-   break;
-  }
   case 98:  {
    $51 = +HEAPF32[424>>2];
    $52 = $51 * 0.999899983406066894531;
@@ -14324,6 +14308,19 @@ function _Keyboard($key,$x,$y) {
    _ShutdownCompute();
    _exit(0);
    // unreachable;
+   break;
+  }
+  case 44:  {
+   $63 = +HEAPF32[456>>2];
+   $64 = $63 * 1.10000002384185791016;
+   HEAPF32[456>>2] = $64;
+   $65 = +HEAPF32[456>>2];
+   $66 = $65;
+   HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   (_printf((464|0),($vararg_buffer28|0))|0);
+   HEAP32[288>>2] = 1;
+   _glutPostRedisplay();
+   STACKTOP = sp;return;
    break;
   }
   default: {
