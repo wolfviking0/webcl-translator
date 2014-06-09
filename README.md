@@ -34,6 +34,8 @@ How To (OSX) :
 	cd YOUR_ROOT_DIRECTORY
 	git clone https://github.com/KhronosGroup/webcl-validator
 	build the llvm/clang webcl-validator
+	go inside your binary build folder and type :
+	"install_name_tool -change libclv_standalone.dylib @executable_path/../lib/libclv_standalone.dylib"
 
 #### Step 2 :
 
